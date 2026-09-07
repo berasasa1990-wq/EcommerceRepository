@@ -1,4 +1,10 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-offers-reference is-offer-editor{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-offers-reference.css' %}?v=20260906-3">
+{% endblock %}
 
 {% block magacin_content %}
 <div class="vp-page pn-page" id="pnApp" data-lookup="{{ lookup_url }}">
@@ -101,34 +107,6 @@
         </div>
     </div>
 
-    <section class="vp-box mg-card">
-        <h2 class="mg-h">Ručni artikal</h2>
-        <form method="post" class="pn-manual">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="dodaj_rucno">
-            <div class="mg-form-grid" style="grid-template-columns:2fr 1fr 0.7fr 0.9fr auto;">
-                <div class="mg-field">
-                    <label for="pnManNaziv">Naziv *</label>
-                    <input id="pnManNaziv" name="naziv" required maxlength="200">
-                </div>
-                <div class="mg-field">
-                    <label for="pnManSifra">Šifra</label>
-                    <input id="pnManSifra" name="sifra" maxlength="200">
-                </div>
-                <div class="mg-field">
-                    <label for="pnManQty">Kol.</label>
-                    <input id="pnManQty" name="kolicina" type="number" min="1" step="1" value="1">
-                </div>
-                <div class="mg-field">
-                    <label for="pnManCijena">Cijena sa PDV</label>
-                    <input id="pnManCijena" name="cijena" inputmode="decimal" required>
-                </div>
-                <div class="mg-field" style="align-self:end;">
-                    <button type="submit" class="mg-btn">Dodaj</button>
-                </div>
-            </div>
-        </form>
-    </section>
 
     <section class="vp-table mg-card">
         <h2 class="mg-h">Stavke</h2>

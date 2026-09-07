@@ -191,21 +191,50 @@ class Cart:
         )
         return max(0, on_hand - in_cart)
 
+    def availability(self, *, products=None, variants=None):
+        """Fresh, batched SKU availability; warehouse-managed items use physical locations."""
+        from .models import WarehouseStock
+        from .magacin import is_ignored_stock_location
+        if products is None:
+            products = Product.objects.in_bulk({item['product_id'] for item in self.cart.values()})
+        if variants is None:
+            variants = ProductVariation.objects.in_bulk({item['variation_id'] for item in self.cart.values() if item.get('variation_id')})
+        tracked = set()
+        quantities = {}
+        for row in WarehouseStock.objects.filter(product_id__in=products).select_related('location'):
+            tracked.add(row.product_id)
+            if not row.location.aktivan or is_ignored_stock_location(row.location):
+                continue
+            sku = (row.product_id, row.variation_id)
+            quantities[sku] = quantities.get(sku, 0) + max(0, int(row.kolicina or 0) - max(0, int(row.rezervisano or 0)))
+        result = {}
+        for key, item in self.cart.items():
+            product = products.get(item['product_id'])
+            variant_id = item.get('variation_id')
+            variant = variants.get(variant_id) if variant_id else None
+            if not product or not product.aktivan or product.sakriven_do_stanja or (variant_id and (not variant or variant.artikal_id != product.pk)):
+                result[key] = 0
+            elif product.pk in tracked or product.magacin_sync_at:
+                result[key] = quantities.get((product.pk, variant_id or None), 0)
+            else:
+                result[key] = stock_on_hand(product, variant) if product.na_stanju and (not variant or variant.na_stanju) else 0
+        return result
+
     def clamp_to_stock(self):
         """Smanji / ukloni stavke iznad stanja. Vraća (changed, poruke)."""
         changed = False
         notices = []
+        available = self.availability()
         for key in list(self.cart.keys()):
             item = self.cart.get(key)
             if not item:
                 continue
-            product, variation = self.get_product_and_variation(item)
-            if not product:
-                continue
-            on_hand = stock_on_hand(product, variation)
+            on_hand = available.get(key, 0)
+            if on_hand <= 0:
+                continue  # Keep sold-out lines visible until the customer removes them.
             others = self.qty_for_sku(
-                product.pk,
-                variation.pk if variation else None,
+                item['product_id'],
+                item.get('variation_id'),
                 exclude_key=key,
             )
             max_qty = max(0, on_hand - others)
@@ -357,6 +386,17 @@ class Cart:
             for it in self.cart.values()
         )
         korpa_nudjenje_map = build_korpa_nudjenje_map(self)
+        products = {p.pk: p for p in Product.objects.filter(pk__in={item['product_id'] for item in self.cart.values()}).prefetch_related('varijacije')}
+        variants = {v.pk: v for p in products.values() for v in p.varijacije.all()}
+        available = self.availability(products=products, variants=variants)
+        from .upsell import prime_quantity_deals
+        from .models import Akcija
+        prime_quantity_deals(products.values())
+        conditions = {}
+        for candidate in Akcija.objects.filter(tip=Akcija.Tip.USLOV, aktivan=True,
+                artikal_id__in=products, popust_postotak__isnull=False, prag_korpe_km__isnull=False).order_by('redoslijed', '-id'):
+            if candidate.artikal_id not in conditions and candidate.jos_traje():
+                conditions[candidate.artikal_id] = candidate
 
         for key, item in self.cart.items():
             item = item.copy()
@@ -374,26 +414,22 @@ class Cart:
             item['pakovanje_label'] = ''
             item['pakovanje_cijena_hint'] = ''
             item['pakovanje_komada'] = 0
-            item['max_quantity'] = 99
+            item['max_quantity'] = available.get(key, 0)
+            item['sold_out'] = item['max_quantity'] <= 0
 
             # Compute deal if exists
             deal_info = None
             try:
-                from .models import Product
-                product = Product.objects.filter(pk=item['product_id']).first()
+                product = products.get(item['product_id'])
                 if product:
                     deal_info = get_deal_info_for_cart_item(item, product)
                     pack_src = product
                     var_id = item.get('variation_id')
                     var = None
                     if var_id:
-                        from .models import ProductVariation
-                        var = ProductVariation.objects.filter(
-                            pk=var_id, artikal_id=product.pk,
-                        ).first()
+                        var = variants.get(var_id)
                         if var and var.je_pakovanje:
                             pack_src = var
-                    item['max_quantity'] = stock_on_hand(product, var)
                     if pack_src.je_pakovanje:
                         item['pakovanje_label'] = pack_src.pakovanje_label
                         item['pakovanje_cijena_hint'] = pack_src.pakovanje_cijena_hint
@@ -410,18 +446,7 @@ class Cart:
 
             # Uslov prodaja: popust na jednu jedinicu kad ostatak korpe dostigne prag
             try:
-                from .models import Akcija
-                uslov = None
-                for candidate in Akcija.objects.filter(
-                    tip=Akcija.Tip.USLOV,
-                    aktivan=True,
-                    artikal_id=item['product_id'],
-                    popust_postotak__isnull=False,
-                    prag_korpe_km__isnull=False,
-                ).order_by('redoslijed', '-id'):
-                    if candidate.jos_traje():
-                        uslov = candidate
-                        break
+                uslov = conditions.get(item['product_id'])
                 if uslov:
                     pct = uslov.popust_postotak
                     threshold = uslov.prag_korpe_km

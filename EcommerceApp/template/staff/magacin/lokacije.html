@@ -1,4 +1,10 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-locations-reference{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-locations-reference.css' %}?v=20260907-actions">
+{% endblock %}
 
 {% block magacin_content %}
 <div class="mg-toolbar">
@@ -61,7 +67,7 @@
                 <a class="mg-btn" href="{% url 'staff_magacin_lokacije' %}">Zatvori</a>
             </div>
         </div>
-        <p class="mg-muted" style="margin:-4px 0 12px;">Klikni artikal da skineš količinu s ove lokacije.</p>
+        <p class="mg-muted" style="margin:-4px 0 12px;">Klikni artikal da ga premjestiš u drugu lokaciju ili skineš sa stanja.</p>
         <div class="mg-table-wrap">
         <table class="mg-table">
             <thead>
@@ -106,15 +112,48 @@
 </div>
 
 {% if selected_location %}
-<form method="post" id="locSkiniForm" hidden>
-    {% csrf_token %}
-    <input type="hidden" name="action" value="skini">
-    <input type="hidden" name="location_id" id="locSkiniLocation" value="{{ selected_location.pk }}">
-    <input type="hidden" name="product_id" id="locSkiniProduct" value="">
-    <input type="hidden" name="variation_id" id="locSkiniVariation" value="">
-    <input type="hidden" name="kolicina" id="locSkiniQty" value="">
-    <input type="hidden" name="pretraga" value="{{ location_query }}">
-</form>
+<div class="mg-modal" id="locStockModal" hidden>
+    <div class="mg-modal-bg" data-stock-close></div>
+    <div class="mg-modal-panel" role="dialog" aria-modal="true" aria-labelledby="locStockTitle">
+        <h2 id="locStockTitle">Artikal na lokaciji</h2>
+        <p id="locStockInfo" class="mg-muted"></p>
+        <form method="post" id="locSkiniForm">
+            {% csrf_token %}
+            <input type="hidden" name="location_id" id="locSkiniLocation" value="{{ selected_location.pk }}">
+            <input type="hidden" name="product_id" id="locSkiniProduct">
+            <input type="hidden" name="variation_id" id="locSkiniVariation">
+            <input type="hidden" name="pretraga" value="{{ location_query }}">
+            <div class="mg-field">
+                <label for="locStockAction">Akcija</label>
+                <select name="action" id="locStockAction">
+                    <option value="premjesti">Premjesti u drugu lokaciju</option>
+                    <option value="skini">Skini sa stanja</option>
+                </select>
+            </div>
+            <div class="mg-field" id="locDestinationField">
+                <label for="locDestination">Odredišna lokacija</label>
+                <input type="text" id="locDestination" list="locDestinationOptions" placeholder="Unesi šifru ili naziv lokacije…" autocomplete="off" required>
+                <input type="hidden" name="to_location_id" id="locDestinationId">
+                <datalist id="locDestinationOptions">
+                    {% for loc in transfer_locations %}<option value="{{ loc.label }}" data-id="{{ loc.pk }}" data-code="{{ loc.sifra }}" data-name="{{ loc.naziv }}"></option>{% endfor %}
+                </datalist>
+            </div>
+            <div class="mg-field">
+                <label for="locSkiniQty">Količina</label>
+                <input type="number" name="kolicina" id="locSkiniQty" min="1" step="1" inputmode="numeric" required value="1">
+            </div>
+            <div class="mg-field">
+                <label for="locStockNote">Napomena (opciono)</label>
+                <input name="napomena" id="locStockNote" maxlength="300">
+            </div>
+            <p id="locStockError" role="alert" hidden>Nema slobodne zalihe na ovoj lokaciji.</p>
+            <div class="mg-modal-actions">
+                <button type="button" class="mg-btn" data-stock-close>Odustani</button>
+                <button type="submit" class="mg-btn mg-btn-primary" id="locStockSubmit">Premjesti</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endif %}
 
 <div class="mg-modal" id="locModal" hidden>
@@ -209,36 +248,87 @@
         cell.addEventListener('click', function (event) { event.stopPropagation(); });
     });
     var skiniForm = document.getElementById('locSkiniForm');
+    var stockModal = document.getElementById('locStockModal');
+    if (!skiniForm) return;
+    var action = document.getElementById('locStockAction');
+    var destination = document.getElementById('locDestination');
+    var destinationId = document.getElementById('locDestinationId');
+    function resolveDestination() {
+        var value = destination.value.trim().toLocaleLowerCase();
+        var options = Array.from(document.querySelectorAll('#locDestinationOptions option'));
+        var matches = options.filter(function (option) {
+            return [option.value, option.dataset.code].some(function (text) { return text.trim().toLocaleLowerCase() === value; });
+        });
+        if (!matches.length) matches = options.filter(function (option) { return option.dataset.name.trim().toLocaleLowerCase() === value; });
+        destinationId.value = value && matches.length === 1 ? matches[0].dataset.id : '';
+        destination.setCustomValidity(value && !destinationId.value ? 'Izaberi postojeću lokaciju iz prijedloga ili unesi njenu tačnu šifru.' : '');
+    }
+    destination.addEventListener('input', resolveDestination);
+    destination.addEventListener('change', resolveDestination);
+    var submit = document.getElementById('locStockSubmit');
+    var opener;
+    function updateAction() {
+        var transfer = action.value === 'premjesti';
+        document.getElementById('locDestinationField').hidden = !transfer;
+        destination.disabled = !transfer;
+        destination.required = transfer;
+        destinationId.disabled = !transfer;
+        if (!transfer) destination.setCustomValidity('');
+        else resolveDestination();
+        submit.textContent = transfer ? 'Premjesti' : 'Skini sa stanja';
+    }
+    function closeStock() {
+        stockModal.hidden = true;
+        if (opener) opener.focus();
+    }
+    action.addEventListener('change', updateAction);
+    document.querySelectorAll('[data-stock-close]').forEach(function (el) { el.addEventListener('click', closeStock); });
+    document.addEventListener('keydown', function (event) {
+        if (stockModal.hidden) return;
+        if (event.key === 'Escape') closeStock();
+        if (event.key === 'Tab') {
+            var controls = Array.from(skiniForm.querySelectorAll('input,select,button')).filter(function (el) { return !el.disabled && el.offsetParent !== null; });
+            var first = controls[0], last = controls[controls.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        }
+    });
+    skiniForm.addEventListener('submit', function (event) {
+        if (action.value === 'premjesti') {
+            resolveDestination();
+            if (!destinationId.value) {
+                event.preventDefault();
+                destination.reportValidity();
+                return;
+            }
+        }
+        if (action.value === 'skini' && !window.confirm('Skinuti ' + document.getElementById('locSkiniQty').value + ' kom sa stanja ove lokacije?')) {
+            event.preventDefault();
+            return;
+        }
+        submit.disabled = true;
+    });
     document.querySelectorAll('[data-loc-skini]').forEach(function (row) {
-        row.addEventListener('click', function () {
-            if (!skiniForm) return;
-            var available = parseInt(row.getAttribute('data-available') || '0', 10) || 0;
-            var onHand = parseInt(row.getAttribute('data-qty') || '0', 10) || 0;
-            var loc = row.getAttribute('data-location-label') || '';
-            var name = row.getAttribute('data-naziv') || 'Artikal';
-            if (available <= 0) {
-                window.alert(name + ' na ' + loc + ' nema slobodne zalihe (na stanju ' + onHand + ').');
-                return;
-            }
-            var raw = window.prompt(
-                name + '\nLokacija ' + loc + '\nNa stanju ' + onHand + ', dostupno ' + available + '.\n\nKoliko skidaš?',
-                '1'
-            );
-            if (raw === null) return;
-            var qty = parseInt(String(raw).trim(), 10);
-            if (!qty || qty < 1) {
-                window.alert('Unesi količinu veću od nule.');
-                return;
-            }
-            if (qty > available) {
-                window.alert('Dostupno je ' + available + ' kom.');
-                return;
-            }
-            document.getElementById('locSkiniLocation').value = row.getAttribute('data-location-id') || '';
-            document.getElementById('locSkiniProduct').value = row.getAttribute('data-product-id') || '';
-            document.getElementById('locSkiniVariation').value = row.getAttribute('data-variation-id') || '';
-            document.getElementById('locSkiniQty').value = String(qty);
-            skiniForm.submit();
+        row.tabIndex = 0;
+        function openStock() {
+            opener = row;
+            skiniForm.reset();
+            var available = Math.max(0, Number(row.dataset.available) || 0);
+            document.getElementById('locStockTitle').textContent = row.dataset.naziv;
+            document.getElementById('locStockInfo').textContent = 'Lokacija ' + row.dataset.locationLabel + ' · Na stanju: ' + row.dataset.qty + ' · Dostupno: ' + available;
+            document.getElementById('locSkiniLocation').value = row.dataset.locationId;
+            document.getElementById('locSkiniProduct').value = row.dataset.productId;
+            document.getElementById('locSkiniVariation').value = row.dataset.variationId || '';
+            document.getElementById('locSkiniQty').max = String(available);
+            submit.disabled = available <= 0;
+            document.getElementById('locStockError').hidden = available > 0;
+            updateAction();
+            stockModal.hidden = false;
+            action.focus();
+        }
+        row.addEventListener('click', openStock);
+        row.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openStock(); }
         });
     });
 })();

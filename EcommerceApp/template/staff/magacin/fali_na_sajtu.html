@@ -1,10 +1,16 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-mp-shortage{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-mp-shortage.css' %}?v=20260906-2">
+{% endblock %}
 
 {% block magacin_content %}
 <div class="mg-fali-page" id="mgFaliPage">
     <div class="mg-page-head">
         <div>
-            <h1>Fali na sajtu</h1>
+            <h1>Fali u MP-u</h1>
             <p class="mg-count">Artikli koji su na magacinu, a nemaju ništa u maloprodaji — {{ result_count }}.</p>
         </div>
     </div>

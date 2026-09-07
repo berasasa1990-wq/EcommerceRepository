@@ -1,4 +1,10 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-manual-reference{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-manual-order-reference.css' %}?v=20260906-3">
+{% endblock %}
 
 {% block magacin_content %}
 <div class="mg-order-page" id="mgOrderPage">
@@ -14,7 +20,7 @@
         </a>
     </div>
 
-<form id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-customer-save="{% url 'staff_magacin_kupci_save' %}" data-loyalty-lookup="{{ loyalty_lookup_url }}" data-bulk-url="{% url 'staff_magacin_narudzba_bulk' %}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
+<form data-missing-fulfillment-count="{{ missing_fulfillment_items|length }}" data-invoice-only-total="{{ invoice_only_total|default:0 }}" id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-customer-save="{% url 'staff_magacin_kupci_save' %}" data-loyalty-lookup="{{ loyalty_lookup_url }}" data-bulk-url="{% url 'staff_magacin_narudzba_bulk' %}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
     {% csrf_token %}
     {% if existing_order %}<input type="hidden" name="order_broj" value="{{ existing_order.broj }}">{% endif %}
     <section class="mg-card mg-order-customer" id="mgCustomerCard">
@@ -49,6 +55,7 @@
                 <button type="button" class="mg-btn" id="mgCustomerChange">Promijeni kupca</button>
             </div>
         </div>
+        <p id="mgCustomerRefused" class="mg-customer-refused" role="alert" data-initial="{{ customer_refused|yesno:'1,0' }}"{% if not customer_refused %} hidden{% endif %}>UPOZORENJE: Ovaj kupac je odbio pošiljku.</p>
         <input type="hidden" name="customer_id" id="id_customer_id" value="{{ form.customer_id|default:'' }}">
         <input type="hidden" name="ime_prezime" id="id_ime_prezime" value="{{ form.ime_prezime|default:'' }}">
         <input type="hidden" name="telefon" id="id_telefon" value="{{ form.telefon|default:'' }}">
@@ -60,6 +67,8 @@
     </section>
 
     <div class="mg-order-build" id="mgOrderBuild">
+    {% if missing_fulfillment_items %}<section class="mg-card"><h2>Dugujemo kupcu — samo picking, bez fakturisanja</h2>{% for item in missing_fulfillment_items %}<p>{{ item.naziv }} · {{ item.kolicina }} kom.</p>{% endfor %}</section>{% endif %}
+    {% if invoice_only_items %}<section class="mg-card"><h2>Već poslati artikli — samo za fakturisanje</h2>{% for item in invoice_only_items %}<p>{{ item.naziv }} · {{ item.kolicina }} kom. · {{ item.ukupno|floatformat:2 }} KM — bez pickinga</p>{% endfor %}</section>{% endif %}
     <section class="mg-card vp-box vp-search" id="mgOrderSearchBox">
         <h2 class="mg-h">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
@@ -133,7 +142,7 @@
                     <td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>
                 </tr>
                 {% else %}
-                <tr data-line="1" data-pid="{{ line.product.pk }}" data-vid="{{ line.variation.pk|default:'' }}" data-cijena="{{ line.cijena }}" data-available="{{ line.dostupno }}"{% if line.dostupno <= 0 %} class="is-out-row"{% endif %}>
+                <tr data-line="1" data-pid="{{ line.product.pk }}" data-vid="{{ line.variation.pk|default:'' }}" data-mpc="{% if line.variation %}{{ line.variation.prikazna_cijena }}{% else %}{{ line.product.prikazna_cijena }}{% endif %}" data-cijena="{{ line.cijena }}" data-available="{{ line.dostupno }}"{% if line.dostupno <= 0 %} class="is-out-row"{% endif %}>
                     <td class="mg-line-n"></td>
                     <td>{{ line.variation.sifra|default:line.product.sifra|default:"—" }}</td>
                     <td>

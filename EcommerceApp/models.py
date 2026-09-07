@@ -4199,6 +4199,8 @@ class Order(models.Model):
         blank=True,
         verbose_name='Unijeto u Brzu poštu u',
     )
+    pick_short_events = models.JSONField(default=list, blank=True, verbose_name='Picking — manjak na lokacijama')
+
     pick_state = models.JSONField(
         default=dict,
         blank=True,
@@ -4342,6 +4344,10 @@ class Order(models.Model):
         return f'OZB{self.broj}'
 
     @property
+    def picking_missing_entries(self):
+        return [row for row in (self.pick_short_events or []) if row.get('missing', 0) > 0]
+
+    @property
     def pick_shortages(self):
         rows = []
         for item in self.stavke.all():
@@ -4360,6 +4366,8 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
+    ledger_missing_line = models.ForeignKey('WarehouseLedgerLine', null=True, blank=True, on_delete=models.PROTECT, related_name='fulfillment_items')
+    ledger_excess_line = models.OneToOneField('WarehouseLedgerLine', null=True, blank=True, on_delete=models.PROTECT, related_name='invoice_item')
     narudzba = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='stavke')
     artikal = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     varijacija = models.ForeignKey(ProductVariation, on_delete=models.SET_NULL, null=True, blank=True)
@@ -4416,6 +4424,8 @@ class OrderItem(models.Model):
 
     @property
     def kolicina_faktura(self):
+        if self.ledger_missing_line_id:
+            return 0
         if self.kolicina_pokupljeno is not None:
             return self.kolicina_pokupljeno
         return self.kolicina
@@ -6174,6 +6184,7 @@ class WarehouseCustomer(models.Model):
         verbose_name='VP kupac',
         help_text='Narudžbe ovog kupca idu kao VP narudžbe.',
     )
+    odbio_posiljku = models.BooleanField(default=False, verbose_name='Odbio pošiljku')
     kreiran = models.DateTimeField(auto_now_add=True)
     azuriran = models.DateTimeField(auto_now=True)
 
@@ -6319,3 +6330,116 @@ class WarehouseSyncLog(models.Model):
         if hours:
             return f'{hours:02d}:{minutes:02d}:{seconds:02d}'
         return f'{minutes:02d}:{seconds:02d}'
+
+
+class MagacinSubscriptionOwner(models.Model):
+    """Pinned owner prevents granting billing administration by changing an email."""
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+
+class MagacinPlan(models.Model):
+    class Code(models.TextChoices):
+        BASIC = 'basic', 'Basic'
+        PREMIUM = 'premium', 'Premium'
+        ULTIMATE = 'ultimate', 'Ultimate'
+
+    code = models.CharField(max_length=12, choices=Code.choices, unique=True)
+    features = models.JSONField(default=list)
+
+    def __str__(self):
+        return self.get_code_display()
+
+
+class MagacinSubscription(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='magacin_subscription')
+    plan = models.ForeignKey(MagacinPlan, on_delete=models.PROTECT)
+    active = models.BooleanField(default=True)
+    expires_on = models.DateField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    assigned_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='+')
+
+
+class MagacinSubscriptionRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Čeka aktivaciju'
+        APPROVED = 'approved', 'Odobreno'
+        REJECTED = 'rejected', 'Odbijeno'
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    plan = models.ForeignKey(MagacinPlan, on_delete=models.PROTECT)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='+')
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['user'], condition=models.Q(status='pending'), name='one_pending_magacin_subscription')]
+        ordering = ['-created_at']
+
+
+class WarehousePartner(models.Model):
+    customer = models.OneToOneField(WarehouseCustomer, null=True, blank=True, on_delete=models.SET_NULL, related_name='ledger_partner')
+    naziv = models.CharField(max_length=200, db_index=True)
+    grad = models.CharField(max_length=100, blank=True)
+    adresa = models.CharField(max_length=300, blank=True)
+    telefon = models.CharField(max_length=30, blank=True)
+    pdv_broj = models.CharField(max_length=30, blank=True)
+    kontakt = models.CharField(max_length=200, blank=True)
+    napomena = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['naziv', 'pk']
+
+    def __str__(self):
+        return self.naziv
+
+
+class WarehouseLedgerEntry(models.Model):
+    class Kind(models.TextChoices):
+        DEBIT = 'debit', 'Duguje — partner nama'
+        CREDIT = 'credit', 'Potražuje — mi partneru'
+        RECEIPT = 'receipt', 'Primljena uplata'
+        PAYMENT = 'payment', 'Naša uplata partneru'
+        ORDER = 'order', 'Narudžba'
+        RETURN = 'return', 'Povrat robe'
+        MISSING = 'missing', 'Mi dugujemo — artikli koji fale'
+        EXCESS = 'excess', 'Kupac duguje — više poslato'
+        DAMAGED = 'damaged', 'Oštećen artikal — mi dugujemo kupcu'
+        SETTLED = 'settled', 'Izmireno — zamjena validatovana'
+        VOID = 'void', 'Poništen pogrešan unos'
+
+    partner = models.ForeignKey(WarehousePartner, on_delete=models.PROTECT, related_name='entries')
+    kind = models.CharField(max_length=12, choices=Kind.choices)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    description = models.CharField(max_length=300)
+    created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    order = models.OneToOneField(Order, null=True, blank=True, on_delete=models.PROTECT, related_name='ledger_entry')
+    source_order = models.ForeignKey(Order, null=True, blank=True, on_delete=models.PROTECT, related_name='missing_ledger_entries')
+    source_line = models.ForeignKey('WarehouseLedgerLine', null=True, blank=True, on_delete=models.PROTECT, related_name='returns')
+    returned_qty = models.PositiveIntegerField(default=0)
+    token = models.UUIDField(unique=True)
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+        indexes = [models.Index(fields=['partner', '-created_at'])]
+
+
+class WarehouseLedgerLine(models.Model):
+    voided_by = models.ForeignKey(WarehouseLedgerEntry, null=True, blank=True, on_delete=models.PROTECT, related_name="voided_lines")
+    settled_by = models.ForeignKey(WarehouseLedgerEntry, null=True, blank=True, on_delete=models.PROTECT, related_name="settled_lines")
+    replacement_order = models.OneToOneField(Order, null=True, blank=True, on_delete=models.PROTECT, related_name="ledger_replacement_line")
+    order_item = models.ForeignKey(OrderItem, null=True, blank=True, on_delete=models.PROTECT, related_name="missing_ledger_lines")
+    entry = models.ForeignKey(WarehouseLedgerEntry, on_delete=models.PROTECT, related_name='lines')
+    product = models.ForeignKey(Product, null=True, blank=True, on_delete=models.PROTECT)
+    variation = models.ForeignKey(ProductVariation, null=True, blank=True, on_delete=models.PROTECT)
+    location = models.ForeignKey(WarehouseLocation, null=True, blank=True, on_delete=models.PROTECT)
+    name = models.CharField(max_length=300)
+    code = models.CharField(max_length=200, blank=True)
+    quantity = models.PositiveIntegerField()
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+
+    @property
+    def unit_price(self):
+        return self.amount / self.quantity if self.quantity else Decimal('0')

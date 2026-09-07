@@ -1,0 +1,29 @@
+body.magacin-page.is-counted-reference{--ct-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--ct-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--ct-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;background:#dedfe1!important}
+.magacin-page.is-counted-reference .mg-app,.magacin-page.is-counted-reference .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
+.magacin-page.is-counted-reference .mg-main{padding:4px 10px 70px;min-width:0;color:#111}
+.magacin-page.is-counted-reference .pp-page{width:100%;max-width:none;padding:0}
+.magacin-page.is-counted-reference .mg-page-head{padding:8px 12px;margin:0 0 8px;border:1px solid #9b9da2;background:var(--ct-metal);box-shadow:var(--ct-bevel);gap:8px}
+.magacin-page.is-counted-reference .mg-page-head h1{font-size:22px;line-height:1.2;margin:0;color:#111}
+.magacin-page.is-counted-reference .mg-count{font-size:13px;color:#505b6c;margin:5px 0 0}
+.magacin-page.is-counted-reference .pp-actions{gap:7px;flex-wrap:wrap}
+.magacin-page.is-counted-reference .mg-main .mg-btn,.magacin-page.is-counted-reference .mg-modal .mg-btn,.magacin-page.is-counted-reference .vp-scan-btn{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:0;background:var(--ct-metal);box-shadow:var(--ct-bevel);color:#111;font-size:14px;font-weight:750}
+.magacin-page.is-counted-reference .mg-main .mg-btn-primary,.magacin-page.is-counted-reference .mg-modal .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:inset 2px 2px #a6e395,inset -3px -3px #1e5f18;color:#fff}
+.magacin-page.is-counted-reference .mg-main .mg-btn-danger{color:#b52525}
+.magacin-page.is-counted-reference .mg-card,.magacin-page.is-counted-reference .pp-dock{padding:10px;border:1px solid #9b9da2;border-radius:0;background:var(--ct-panel);box-shadow:inset 1px 1px #fff}
+.magacin-page.is-counted-reference .pp-list{padding:0;margin:10px 0}
+.magacin-page.is-counted-reference .pp-list>li{padding:10px;border:1px solid #b6b8bd;border-radius:0;box-shadow:inset 1px 1px #fff;margin-bottom:7px}
+.magacin-page.is-counted-reference .pp-line-info strong{font-size:16px;color:#111}
+.magacin-page.is-counted-reference .pp-line-info span{font-size:13px;color:#505b6c}
+.magacin-page.is-counted-reference .pp-count-box{padding:6px 10px;border:1px solid #adb4be;border-radius:0;background:var(--ct-panel);color:#35445d}
+.magacin-page.is-counted-reference .pp-count-box.is-ok{background:#dcefdc;color:#167315}
+.magacin-page.is-counted-reference .pp-count-box.is-diff{background:#f9dedf;color:#b52525}
+.magacin-page.is-counted-reference .pp-step-btn,.magacin-page.is-counted-reference .pp-step-qty{border:1px solid #92949a;border-radius:0;background:var(--ct-metal);box-shadow:var(--ct-bevel);color:#111}
+.magacin-page.is-counted-reference .pp-paused{margin-top:12px;padding:8px;border:1px solid #9b9da2;background:var(--ct-panel)}
+.magacin-page.is-counted-reference .pp-paused h2{padding:7px 10px;margin:0 0 8px;background:var(--ct-metal);border:1px solid #9b9da2;box-shadow:var(--ct-bevel);font-size:18px}
+.magacin-page.is-counted-reference .pp-paused li{padding:9px;border:1px solid #b6b8bd;border-radius:0;background:linear-gradient(115deg,#f5f5f6,#e9e9ec)}
+.magacin-page.is-counted-reference .mg-main input:not([type=hidden]):not([type=checkbox]),.magacin-page.is-counted-reference .mg-modal input:not([type=hidden]){min-height:36px;border:1px solid #969faa;border-radius:0;background:#fff;font-size:16px;box-sizing:border-box}
+.magacin-page.is-counted-reference .mg-icon-field input{padding-left:36px}
+.magacin-page.is-counted-reference .mg-modal-panel{border:1px solid #9b9da2;border-radius:2px;background:var(--ct-panel);box-shadow:var(--ct-bevel),0 15px 45px #0004}
+.magacin-page.is-counted-reference input[type=checkbox]{accent-color:#25821b}
+.magacin-page.is-counted-reference :is(a,button,input):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+@media(max-width:600px){.magacin-page.is-counted-reference .mg-main{padding:4px 6px 70px}.magacin-page.is-counted-reference .mg-page-head h1{font-size:20px}.magacin-page.is-counted-reference .pp-list>li{padding:8px}}

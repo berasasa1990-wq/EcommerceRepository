@@ -1,0 +1,28 @@
+/* Shared warehouse navigation, matching the silver stocktaking panels. */
+body.magacin-page .mg-app .mg-sidebar{--menu-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--menu-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;background:linear-gradient(110deg,#e5e6e8,#d8d9dc);border-right:1px solid #989ca4;color:#111;scrollbar-color:#a4a8af #dedfe2}
+body.magacin-page .mg-app .mg-side-top{padding:8px;margin-bottom:8px;gap:8px;background:var(--menu-metal);border-bottom:1px solid #989ca4;box-shadow:var(--menu-bevel)}
+body.magacin-page .mg-app .mg-brand-lockup{padding:4px 2px;color:#111;font-size:18px;font-weight:800;letter-spacing:.02em;gap:10px}
+body.magacin-page .mg-app .mg-brand-cube{width:32px;height:34px;border:1px solid #9b9fa6;border-radius:0;background:var(--menu-metal);box-shadow:var(--menu-bevel);color:#111}
+body.magacin-page .mg-app .mg-brand-cube svg{width:22px;height:22px}
+body.magacin-page .mg-app .mg-nav{gap:5px;padding:0 8px 10px}
+body.magacin-page .mg-app .mg-nav :is(a,.mg-nav-locked){min-height:38px;box-sizing:border-box;padding:7px 10px;border:1px solid #969ba4;border-radius:0;background:var(--menu-metal);box-shadow:var(--menu-bevel);color:#1c2026;font-size:14px;font-weight:650;line-height:1.25}
+body.magacin-page .mg-app .mg-nav :is(a,.mg-nav-locked) svg{width:19px;height:19px;color:#252a32}
+body.magacin-page .mg-app .mg-nav a:hover:not(.is-active){background:linear-gradient(115deg,#fff,#dce0e5);color:#080808}
+body.magacin-page .mg-app .mg-nav a.is-active{background:linear-gradient(115deg,#dce9d7,#adc9a3);border-color:#749168;box-shadow:inset 2px 2px #edf8e8,inset -2px -2px #7a9670;color:#163b13;font-weight:800}
+body.magacin-page .mg-app .mg-nav a.is-active svg{color:#23551d}
+body.magacin-page .mg-app .mg-sidebar :is(.mg-history-btn,.mg-side-close){min-height:36px;padding:6px 10px;border:1px solid #969ba4;border-radius:0;background:var(--menu-metal);box-shadow:var(--menu-bevel);color:#171c23;font-size:13px;font-weight:700;text-decoration:none}
+body.magacin-page .mg-app .mg-sidebar :is(.mg-history-btn,.mg-side-close):hover{background:linear-gradient(115deg,#fff,#dce0e5)}
+body.magacin-page .mg-app .mg-sidebar button:disabled{opacity:.55;cursor:default}
+body.magacin-page .mg-app .mg-sidebar :is(.mg-sync-meta,.mg-version,.mg-side-label){color:#555d68}
+body.magacin-page .mg-app .mg-sidebar :is(a,button):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+@media(max-width:600px){body.magacin-page .mg-app .mg-nav :is(a,.mg-nav-locked){min-height:42px;font-size:15px}body.magacin-page .mg-app .mg-side-top{padding-top:calc(8px + env(safe-area-inset-top,0px))}}
+
+.magacin-page .mg-menu-standalone{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:14px;z-index:40;width:42px;height:42px;padding:8px;border:1px solid #969ba4;border-radius:0;background:linear-gradient(115deg,#e8e8e9,#bfc1c4);box-shadow:inset 2px 2px #fff,inset -2px -2px #8f9195;color:#111;cursor:pointer}
+.magacin-page .mg-menu-standalone svg{width:24px;height:24px}
+.magacin-page .mg-menu-standalone:focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+.magacin-page .mg-main:has(>.mg-menu-standalone){padding-bottom:70px}
+
+body.magacin-page .mg-app .mg-sidebar .mg-nav-locked{display:flex;align-items:center;gap:8px;cursor:not-allowed;color:#626872;background:linear-gradient(115deg,#e1e2e4,#caccd0);animation:none;text-decoration:none}
+body.magacin-page .mg-app .mg-sidebar .mg-nav-locked:hover{background:linear-gradient(115deg,#e1e2e4,#caccd0);color:#626872}
+body.magacin-page .mg-app .mg-sidebar .mg-menu-lock{width:16px;height:16px;flex:0 0 16px;margin-left:auto;color:#626872}
+body.magacin-page .mg-app .mg-side-foot>.mg-nav-locked{margin-bottom:6px}

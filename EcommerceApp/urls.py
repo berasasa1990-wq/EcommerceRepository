@@ -4,11 +4,16 @@ from . import views
 from . import views_catalog_api
 from . import views_chat
 from . import views_feed
+from . import views_subscriptions
+from . import views_ledger
 from . import views_magacin
 from . import views_site_prep
 from . import views_sync
 
 urlpatterns = [
+    path('nalog/magacin/duguje/', views_ledger.ledger, name='staff_magacin_duguje'),
+    path('nalog/planovi/', views_subscriptions.plans, name='magacin_planovi'),
+    path('nalog/magacin/pretplate/', views_subscriptions.subscriptions, name='staff_magacin_pretplate'),
     path('api/sync/korisnik/', views_sync.sync_korisnik_api, name='sync_korisnik_api'),
     path('api/sync/narudzba/', views_sync.sync_narudzba_api, name='sync_narudzba_api'),
     path('api/pretraga/', views.search_suggest, name='search_suggest'),
@@ -89,6 +94,7 @@ urlpatterns = [
     path('upsell/<int:offer_id>/<int:product_id>/dodaj/', views.add_upsell_to_cart, name='add_upsell_to_cart'),
     path('upsell/odbaci/', views.dismiss_upsell_popup, name='dismiss_upsell_popup'),
     path('korpa/', views.cart_view, name='cart'),
+    path('korpa/stanje/', views.cart_stock, name='cart_stock'),
     path('korpa/azuriraj/', views.update_cart, name='update_cart'),
     path('korpa/kupon/', views.apply_coupon, name='apply_coupon'),
     path('korpa/kupon/ukloni/', views.remove_coupon, name='remove_coupon'),

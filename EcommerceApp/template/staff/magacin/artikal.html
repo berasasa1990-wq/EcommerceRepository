@@ -1,8 +1,17 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-item-detail{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-artikal-reference.css' %}?v=20260906-mobile-7">
+{% endblock %}
+
+{% block article_zero_filter %}{% endblock %}
 
 {% block magacin_content %}
 <div class="mg-toolbar">
-    <a class="mg-back" href="{% url 'staff_magacin_artikli' %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">
+    <strong class="item-page-title">◇ &nbsp; Artikal</strong>
+    <a class="mg-back" href="{% url 'staff_magacin_artikli' %}?rezultati=1&amp;pretraga={% if magacin_search %}{{ magacin_search|urlencode }}{% elif product.sifra %}{{ product.sifra|urlencode }}{% else %}{{ product.naziv|urlencode }}{% endif %}{% if include_zero %}&amp;bez_zalihe=1{% endif %}">
         ← Nazad na rezultate
     </a>
     <div class="mg-toolbar-actions">
@@ -21,7 +30,7 @@
 <p class="mg-mp-alert" role="alert">{{ artikal_error }}</p>
 {% endif %}
 
-<section class="mg-card mg-artikal-top">
+<section class="mg-card mg-artikal-top" id="itemOverview">
     <div class="mg-phone-artikal{% if totals.dostupno > 0 %} is-stock{% else %} is-out{% endif %}">
         <div class="mg-phone-visual">
             <div class="mg-phone-shot">
@@ -119,25 +128,30 @@
                 <dd>{{ product.kategorija.naziv|default:"—" }}</dd>
                 <dt>Brend</dt>
                 <dd>{{ product.brend.naziv|default:"—" }}</dd>
-                <dt>Cijena</dt>
+                <dt class="item-main-price-label">Cijena</dt>
                 <dd class="mg-meta-price">
                     {{ mpc }} KM{% if variation and variation.na_akciji %} <s>{{ variation.cijena }} KM</s>{% elif product.na_akciji %} <s>{{ product.cijena }} KM</s>{% endif %}
                 </dd>
-                <dt>Vpc</dt>
-                <dd>{{ vpc }} KM</dd>
+                <dt class="item-main-vpc-label">Vpc</dt>
+                <dd class="item-main-vpc">{{ vpc }} KM</dd>
             </dl>
         </div>
-        <div class="mg-hero-aside">
-            <div class="mg-status-row">
-                Status:
-                {% if totals.na_stanju <= 0 %}
-                <span class="mg-pill is-out">Nije na stanju</span>
-                {% elif product.aktivan %}
-                <span class="mg-pill">Na stanju</span>
-                {% else %}
-                <span class="mg-pill is-off">Neaktivan</span>
-                {% endif %}
+        <div class="item-mobile-summary">
+            <div class="item-mobile-available">
+                <span>Dostupno</span>
+                <strong class="{% if totals.dostupno <= 0 %}is-out{% endif %}">{{ totals.dostupno }} <small>{{ meta.jedinica_mjere|default:"kom" }}</small></strong>
             </div>
+            <div class="item-mobile-price">
+                <span>Cijena</span>
+                <strong>{{ mpc }} KM</strong>
+                {% if variation and variation.na_akciji %}<s>{{ variation.cijena }} KM</s>{% elif product.na_akciji %}<s>{{ product.cijena }} KM</s>{% endif %}
+            </div>
+            <div class="item-mobile-vpc">
+                <span>VPC</span>
+                <strong>{{ vpc }} KM</strong>
+            </div>
+        </div>
+        <div class="mg-hero-aside">
             <div class="mg-stats">
                 <div class="mg-stat">
                     <span class="mg-stat-label">UKUPNO NA STANJU</span>
@@ -156,8 +170,9 @@
     </div>
 </section>
 
+
 <div class="mg-artikal-main">
-    <section class="mg-card mg-artikal-stock">
+    <section class="mg-card mg-artikal-stock" id="itemLocations">
         <div class="mg-card-head">
             <h2 class="mg-h">Zalihe po lokacijama</h2>
         </div>
@@ -178,35 +193,35 @@
             <tbody>
                 {% for row in location_rows %}
                 <tr class="is-clickable mg-stock-row" data-mg-open-move data-mode="remove" data-location-id="{{ row.location.pk }}" data-location-label="{{ row.location.sifra }}" data-qty="{{ row.kolicina }}" data-available="{{ row.dostupno }}">
-                    <td><strong class="mg-loc-name">{{ row.location.sifra }}</strong></td>
-                    <td class="num">{{ row.kolicina }}</td>
-                    <td class="num">{{ row.rezervisano }}</td>
-                    <td class="num num-ok mg-loc-qty">{{ row.dostupno }}</td>
+                    <td data-label="Lokacija"><strong class="mg-loc-name">{{ row.location.sifra }}</strong></td>
+                    <td data-label="Na stanju" class="num">{{ row.kolicina }}</td>
+                    <td data-label="Rezervisano" class="num">{{ row.rezervisano }}</td>
+                    <td data-label="Dostupno" class="num num-ok mg-loc-qty">{{ row.dostupno }}</td>
                 </tr>
                 {% empty %}
                 {% if not mp_location_rows %}
-                <tr><td colspan="4" class="mg-muted">Nema zalihe na nijednoj lokaciji.</td></tr>
+                <tr><td data-label="Lokacija" colspan="4" class="mg-muted">Nema zalihe na nijednoj lokaciji.</td></tr>
                 {% endif %}
                 {% endfor %}
                 {% for row in mp_location_rows %}
                 <tr class="is-clickable mg-stock-row is-mp" data-mg-open-move data-mode="remove" data-location-id="{{ row.location.pk }}" data-location-label="{{ row.location.sifra }}" data-qty="{{ row.kolicina }}" data-available="{{ row.dostupno }}">
-                    <td>
+                    <td data-label="Lokacija">
                         <strong class="mg-loc-name">{{ row.location.sifra }}</strong>
                         <span class="mg-mp-tag">Maloprodaja</span>
                     </td>
-                    <td class="num">{{ row.kolicina }}</td>
-                    <td class="num">{{ row.rezervisano }}</td>
-                    <td class="num mg-loc-qty">{{ row.dostupno }}</td>
+                    <td data-label="Na stanju" class="num">{{ row.kolicina }}</td>
+                    <td data-label="Rezervisano" class="num">{{ row.rezervisano }}</td>
+                    <td data-label="Dostupno" class="num mg-loc-qty">{{ row.dostupno }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
             {% if location_rows or mp_location_rows %}
             <tfoot>
                 <tr>
-                    <td>UKUPNO</td>
-                    <td class="num">{{ totals.na_stanju }}</td>
-                    <td class="num">{{ totals.rezervisano }}</td>
-                    <td class="num num-ok">{{ totals.dostupno }}</td>
+                    <td data-label="Lokacija">UKUPNO</td>
+                    <td data-label="Na stanju" class="num">{{ totals.na_stanju }}</td>
+                    <td data-label="Rezervisano" class="num">{{ totals.rezervisano }}</td>
+                    <td data-label="Dostupno" class="num num-ok">{{ totals.dostupno }}</td>
                 </tr>
             </tfoot>
             {% endif %}
@@ -234,19 +249,19 @@
                 <tbody>
                     {% for row in price_history %}
                     <tr>
-                        <td>{{ row.uvoz.kreiran|date:"d.m.Y" }}</td>
-                        <td>
+                        <td data-label="Datum">{{ row.uvoz.kreiran|date:"d.m.Y" }}</td>
+                        <td data-label="Uvoz">
                             {% if row.uvoz.izvor == 'magacin' %}
                             <a href="{% url 'staff_magacin_uvoz_detail' row.uvoz.pk %}">{{ row.uvoz.naziv }}</a>
                             {% else %}
                             {{ row.uvoz.naziv }}
                             {% endif %}
                         </td>
-                        <td class="num">{% if row.nabavna %}{{ row.nabavna }} KM{% else %}—{% endif %}</td>
-                        <td class="num">{% if row.vpc %}{{ row.vpc }} KM{% else %}—{% endif %}</td>
-                        <td class="num">{% if row.mpc %}{{ row.mpc }} KM{% else %}—{% endif %}</td>
-                        <td class="num">{% if row.marza is not None %}{{ row.marza }}%{% else %}—{% endif %}</td>
-                        <td>
+                        <td data-label="Nabavna" class="num">{% if row.nabavna %}{{ row.nabavna }} KM{% else %}—{% endif %}</td>
+                        <td data-label="Vpc" class="num">{% if row.vpc %}{{ row.vpc }} KM{% else %}—{% endif %}</td>
+                        <td data-label="Mpc" class="num">{% if row.mpc %}{{ row.mpc }} KM{% else %}—{% endif %}</td>
+                        <td data-label="Marža" class="num">{% if row.marza is not None %}{{ row.marza }}%{% else %}—{% endif %}</td>
+                        <td data-label="Promjena">
                             {% if row.is_first %}
                             <span class="mg-muted">Prvi uvoz</span>
                             {% elif row.changes %}
@@ -270,7 +285,7 @@
     </section>
 
 <div class="mg-grid-3">
-    <section class="mg-card mg-artikal-prices">
+    <section class="mg-card mg-artikal-prices" id="itemPrices">
         <h2 class="mg-h">Cijene</h2>
         <table class="mg-table">
             <thead>
@@ -278,20 +293,20 @@
             </thead>
             <tbody>
                 <tr>
-                    <td>Osnovna cijena</td>
-                    <td class="num">{{ product.cijena }} KM</td>
+                    <td data-label="Tip cijene">Osnovna cijena</td>
+                    <td data-label="Iznos" class="num">{{ product.cijena }} KM</td>
                 </tr>
                 <tr>
-                    <td>Vpc</td>
-                    <td class="num">{{ vpc }} KM</td>
+                    <td data-label="Tip cijene">Vpc</td>
+                    <td data-label="Iznos" class="num">{{ vpc }} KM</td>
                 </tr>
                 <tr>
-                    <td>Akcijska cijena</td>
-                    <td class="num">{% if product.akcijska_cijena %}{{ product.akcijska_cijena }} KM{% else %}—{% endif %}</td>
+                    <td data-label="Tip cijene">Akcijska cijena</td>
+                    <td data-label="Iznos" class="num">{% if product.akcijska_cijena %}{{ product.akcijska_cijena }} KM{% else %}—{% endif %}</td>
                 </tr>
                 <tr>
-                    <td>Posljednja promjena</td>
-                    <td class="num">{{ product.azuriran|date:"d.m.Y" }}</td>
+                    <td data-label="Tip cijene">Posljednja promjena</td>
+                    <td data-label="Iznos" class="num">{{ product.azuriran|date:"d.m.Y" }}</td>
                 </tr>
             </tbody>
         </table>
@@ -310,7 +325,7 @@
         </form>
     </section>
 
-    <section class="mg-card mg-artikal-history">
+    <section class="mg-card mg-artikal-history" id="itemHistory">
         <h2 class="mg-h">Istorija kretanja (zadnjih 10)</h2>
         <table class="mg-table">
             <thead>
@@ -326,27 +341,27 @@
             <tbody>
                 {% for m in movements %}
                 <tr>
-                    <td>{{ m.kreiran|date:"d.m.Y H:i" }}</td>
-                    <td>{{ m.get_tip_display }}</td>
-                    <td>{% if m.kupac_label %}{{ m.kupac_label }}{% else %}—{% endif %}</td>
-                    <td>
+                    <td data-label="Datum">{{ m.kreiran|date:"d.m.Y H:i" }}</td>
+                    <td data-label="Tip">{{ m.get_tip_display }}</td>
+                    <td data-label="Kupac">{% if m.kupac_label %}{{ m.kupac_label }}{% else %}—{% endif %}</td>
+                    <td data-label="Lokacija">
                         {{ m.location.sifra }}
                         {% if m.to_location %} → {{ m.to_location.sifra }}{% endif %}
                     </td>
-                    <td class="num {% if m.tip == 'prijem' or m.kolicina > 0 and m.tip != 'prodaja' and m.tip != 'transfer' %}num-plus{% elif m.tip == 'prodaja' or m.tip == 'transfer' or m.kolicina < 0 %}num-minus{% endif %}">
+                    <td data-label="Količina" class="num {% if m.tip == 'prijem' or m.kolicina > 0 and m.tip != 'prodaja' and m.tip != 'transfer' %}num-plus{% elif m.tip == 'prodaja' or m.tip == 'transfer' or m.kolicina < 0 %}num-minus{% endif %}">
                         {% if m.tip == 'prijem' %}+{% elif m.tip == 'prodaja' or m.tip == 'transfer' %}-{% elif m.kolicina > 0 %}+{% elif m.kolicina < 0 %}-{% endif %}{% if m.kolicina < 0 %}{{ m.kolicina|cut:"-" }}{% else %}{{ m.kolicina }}{% endif %}
                     </td>
-                    <td>{{ m.napomena|default:"—" }}</td>
+                    <td data-label="Napomena">{{ m.napomena|default:"—" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" class="mg-muted">Nema kretanja.</td></tr>
+                <tr><td data-label="Datum" colspan="6" class="mg-muted">Nema kretanja.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
         <a class="mg-link" href="{% url 'staff_magacin_istorija' product.pk %}{% if variation %}?varijacija={{ variation.pk }}{% endif %}">Pogledaj kompletnu istoriju →</a>
     </section>
 
-    <section class="mg-card mg-artikal-variants">
+    <section class="mg-card mg-artikal-variants" id="itemVariations">
         <h2 class="mg-h">Varijacije</h2>
         <table class="mg-table">
             <thead>
@@ -360,17 +375,17 @@
             <tbody>
                 {% for row in variant_rows %}
                 <tr class="is-clickable{% if row.na_stanju <= 0 %} is-out{% endif %}" onclick="location.href='{% url 'staff_magacin_artikal' product.pk %}?varijacija={{ row.variation.pk }}{% if magacin_search %}&pretraga={{ magacin_search|urlencode }}{% endif %}'">
-                    <td>{{ row.variation.naziv }}</td>
-                    <td>{{ row.variation.sifra|default:"—" }}</td>
-                    <td class="num{% if row.na_stanju <= 0 %} num-out{% endif %}">{{ row.na_stanju }} {{ meta.jedinica_mjere|default:"kom" }}</td>
-                    <td class="num">{{ row.cijena }} KM</td>
+                    <td data-label="Naziv">{{ row.variation.naziv }}</td>
+                    <td data-label="Šifra">{{ row.variation.sifra|default:"—" }}</td>
+                    <td data-label="Količina" class="num{% if row.na_stanju <= 0 %} num-out{% endif %}">{{ row.na_stanju }} {{ meta.jedinica_mjere|default:"kom" }}</td>
+                    <td data-label="Cijena" class="num">{{ row.cijena }} KM</td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td>{{ product.naziv }}</td>
-                    <td>{{ product.sifra|default:"—" }}</td>
-                    <td class="num">{{ totals.na_stanju }} {{ meta.jedinica_mjere|default:"kom" }}</td>
-                    <td class="num">{{ product.cijena }} KM</td>
+                    <td data-label="Naziv">{{ product.naziv }}</td>
+                    <td data-label="Šifra">{{ product.sifra|default:"—" }}</td>
+                    <td data-label="Količina" class="num">{{ totals.na_stanju }} {{ meta.jedinica_mjere|default:"kom" }}</td>
+                    <td data-label="Cijena" class="num">{{ product.cijena }} KM</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -435,7 +450,7 @@
                         <input type="search" id="mgAddLocationQuery" placeholder="Kucaj šifru ili naziv lokacije..." autocomplete="off">
                         <ul class="mg-loc-suggest" id="mgAddLocationList" hidden>
                             {% for loc in locations %}
-                            <li data-id="{{ loc.pk }}" data-label="{{ loc.sifra }}">{{ loc.sifra }}</li>
+                            <li data-id="{{ loc.pk }}">{{ loc.sifra }}</li>
                             {% empty %}
                             <li class="is-empty" data-empty="1">Nema lokacija</li>
                             {% endfor %}

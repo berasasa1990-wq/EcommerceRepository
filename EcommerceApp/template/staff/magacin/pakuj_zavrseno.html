@@ -1,14 +1,19 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-picking-list-reference{% endblock %}
+{% block extra_css %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-picking-list-reference.css' %}?v=20260906-2">
+{% endblock %}
 
 {% block magacin_content %}
 <div class="mg-page-head">
     <div>
         <h1>Pick lista PL-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</h1>
-        <p class="mg-count">Završeno — odakle je uzeto i koliko.</p>
+        <p class="mg-count">{% if order.status == 'otkazana' %}Picking zatvoren — narudžba je otkazana. Evidencija nepokupljenih artikala je ispod.{% else %}Završeno — odakle je uzeto i koliko.{% endif %}</p>
     </div>
-    <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_pakuj' %}?status=zavrseno">
+    <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_pakuj' %}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-        Nazad na Završeno
+        Nazad na picking
     </a>
 </div>
 
@@ -16,7 +21,7 @@
     <div class="pk-done-meta">
         <p><span>Narudžba</span><strong>#{{ order.broj }}</strong></p>
         <p><span>Kupac</span><strong>{{ order.ime_prezime }}</strong></p>
-        <p><span>Status</span><strong>Završeno</strong></p>
+        <p><span>Status</span><strong>{% if order.status == 'otkazana' %}Otkazana{% else %}Završeno{% endif %}</strong></p>
         <p><span>Datum</span><strong>{{ order.zapakovana_at|default:order.kreirana|date:"d.m.Y. H:i" }}</strong></p>
     </div>
     <div class="mg-table-wrap">
@@ -47,4 +52,5 @@
         </table>
     </div>
 </section>
+{% include 'partials/picking_shortages.html' %}
 {% endblock %}

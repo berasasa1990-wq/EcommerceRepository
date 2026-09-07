@@ -100,6 +100,9 @@ def stock_filter(*, product, variation, location=None):
 def _product_has_variations(product):
     if product is None:
         return False
+    prefetched = getattr(product, '_prefetched_objects_cache', {})
+    if 'varijacije' in prefetched:
+        return bool(prefetched['varijacije'])
     return ProductVariation.objects.filter(artikal_id=product.pk).exists()
 
 
@@ -410,6 +413,46 @@ def display_stock_totals(product, variation=None):
     return totals
 
 
+
+def display_variant_stock_totals(product, variations):
+    """Same display totals for all variants, with two stock queries, not N per variant."""
+    variations = list(variations)
+    if not variations:
+        return {}
+    fields = ('variation_id', 'variation_key', 'location_id', 'kolicina', 'rezervisano')
+    warehouse = list(countable_stock_qs(WarehouseStock.objects.filter(product=product)).values(*fields))
+    retail = list(WarehouseStock.objects.filter(product=product, location__in=maloprodaja_locations()).values(*fields))
+    wh_own, mp_own = defaultdict(list), defaultdict(list)
+    wh_parent, mp_parent = [], []
+    for rows, own, parent in ((warehouse, wh_own, wh_parent), (retail, mp_own, mp_parent)):
+        for row in rows:
+            own[row['variation_id']].append(row)
+            if row['variation_id'] is None or row['variation_key'] == 0:
+                parent.append(row)
+    def positive(rows):
+        return any(_int(row['kolicina']) > 0 for row in rows)
+    result = {}
+    for variation in variations:
+        wh = wh_own[variation.pk]
+        if not positive(wh) and positive(wh_parent):
+            wh = wh_parent
+        mp = mp_own[variation.pk]
+        if not positive(mp):
+            mp = mp_parent
+        qty = sum(_int(row['kolicina']) for row in wh)
+        reserved = max(0, sum(_int(row['rezervisano']) for row in wh))
+        by_location = defaultdict(lambda: [0, 0])
+        for row in mp:
+            by_location[row['location_id']][0] += _int(row['kolicina'])
+            by_location[row['location_id']][1] += max(0, _int(row['rezervisano']))
+        for mp_qty, mp_reserved in by_location.values():
+            if mp_qty > 0:
+                qty += mp_qty
+                reserved += mp_reserved
+        result[variation.pk] = {'na_stanju': qty, 'rezervisano': reserved, 'dostupno': max(0, qty - reserved)}
+    return result
+
+
 def missing_maloprodaja_rows(*, query=''):
     """Artikli na magacinskim lokacijama koji nemaju ništa u maloprodaji."""
     mp_ids = list(maloprodaja_locations().values_list('pk', flat=True))
@@ -471,6 +514,19 @@ def missing_maloprodaja_rows(*, query=''):
         (row['product'].naziv or '').casefold(),
         (row['variation'].naziv if row['variation'] else ''),
     ))
+    return rows
+
+
+def exact_order_location_rows(product, variation=None):
+    """Physical stock for this exact item; no parent/other-variation fallback."""
+    rows = []
+    for stock in WarehouseStock.objects.filter(product=product, variation=variation, location__aktivan=True, kolicina__gt=0).select_related('location').order_by('location__sifra'):
+        if is_ignored_stock_location(stock.location):
+            continue
+        available = max(0, int(stock.kolicina) - max(0, int(stock.rezervisano)))
+        if available:
+            rows.append({'location': stock.location, 'kolicina': stock.kolicina,
+                         'rezervisano': stock.rezervisano, 'dostupno': available})
     return rows
 
 
@@ -5291,6 +5347,9 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False, placanje=''):
             draft.placanje = pay
             update_fields.append('placanje')
         draft.save(update_fields=update_fields)
+        from .warehouse_ledger import attach_customer_excess, attach_customer_missing
+        attach_customer_excess(order, draft.customer, user=user)
+        attach_customer_missing(order, draft.customer, user=user)
     return order
 
 
@@ -5320,19 +5379,23 @@ def deduct_for_order(product, qty, *, variation=None, user=None, napomena=''):
     return remaining
 
 
-def reserve_for_order(order, product, qty, *, variation=None, user=None, napomena='', location=None):
+def reserve_for_order(order, product, qty, *, variation=None, user=None, napomena='', location=None, exact=False):
     """Rezerviši slobodnu zalihu za narudžbu. Vraća koliko nije rezervisano."""
     remaining = max(0, _int(qty))
     if remaining <= 0:
         return 0
-    rows, _ = order_location_rows(product, variation)
+    rows = exact_order_location_rows(product, variation) if exact else order_location_rows(product, variation)[0]
     if location is not None:
         loc_pk = getattr(location, 'pk', location)
         rows = [row for row in rows if row['location'].pk == loc_pk]
     for row in rows:
         if remaining <= 0:
             break
-        stock, hold_variation = _stock_row_for_sale(product, variation, row['location'])
+        if exact:
+            stock = get_or_create_stock(product=product, variation=variation, location=row['location'])
+            hold_variation = variation
+        else:
+            stock, hold_variation = _stock_row_for_sale(product, variation, row['location'])
         avail = max(0, int(stock.kolicina or 0) - max(0, int(stock.rezervisano or 0)))
         take = min(avail, remaining)
         if take <= 0:
@@ -5588,7 +5651,7 @@ def add_item_to_order(order, *, product, qty, variation=None, mp_ok=False, user=
         )
     cijena, bazna = _order_item_unit_price(order, product, variation)
     existing = OrderItem.objects.filter(
-        narudzba_id=order.pk, artikal=product, **_item_variation_filter(variation),
+        narudzba_id=order.pk, artikal=product, ledger_excess_line__isnull=True, ledger_missing_line__isnull=True, **_item_variation_filter(variation),
     ).first()
     if existing:
         existing.kolicina += qty
@@ -5629,6 +5692,8 @@ def add_item_to_order(order, *, product, qty, variation=None, mp_ok=False, user=
 @transaction.atomic
 def set_order_item_qty(order, item, qty, *, mp_ok=False, user=None):
     _assert_order_editable(order)
+    if item.ledger_excess_line_id or item.ledger_missing_line_id:
+        raise MagacinError('Ova stavka je povezana s dugovanjem kupca. Uredi je kroz Duguje / Potražuje.')
     qty = max(1, _int(qty))
     if item.narudzba_id != order.pk:
         raise MagacinError('Stavka nije na ovoj narudžbi.')
@@ -5673,6 +5738,8 @@ def set_order_item_qty(order, item, qty, *, mp_ok=False, user=None):
 @transaction.atomic
 def remove_item_from_order(order, item, *, user=None):
     _assert_order_editable(order)
+    if item.ledger_excess_line_id or item.ledger_missing_line_id:
+        raise MagacinError('Ova stavka je povezana s dugovanjem kupca. Uredi je kroz Duguje / Potražuje.')
     if item.narudzba_id != order.pk:
         raise MagacinError('Stavka nije na ovoj narudžbi.')
     if OrderItem.objects.filter(narudzba_id=order.pk).count() <= 1:
@@ -5813,11 +5880,12 @@ def drop_missing_pick_line(order, item, *, loc, qty, user=None):
 
 
 @transaction.atomic
-def clear_pick_location_stock(order, item, *, loc, user=None):
+def clear_pick_location_stock(order, item, *, loc, user=None, relocate_qty=None):
     """Usputni popis: količine ovog artikla na toj lokaciji na 0.
 
     Druge lokacije se ne diraju. Sa sajta ide tek ako UKUPNO (sve lokacije + MP) padne na 0.
-    Stavka ostaje na narudžbi; rezervacija se prebaci ako ima zalihe drugdje.
+    Rezervacija se prebaci ako ima zalihe drugdje. Bez preostale zalihe,
+    na narudžbi ostaje samo već pokupljena količina; prazna stavka se uklanja.
     """
     _assert_order_open(order)
     if item.narudzba_id != order.pk:
@@ -5874,6 +5942,8 @@ def clear_pick_location_stock(order, item, *, loc, user=None):
         hold.status = OrderStockHold.Status.OTKAZANO
         hold.save(update_fields=['status'])
 
+    if relocate_qty is not None:
+        this_qty = max(0, int(relocate_qty))
     relocated = 0
     if this_qty > 0:
         leftover = reserve_for_order(
@@ -5883,12 +5953,35 @@ def clear_pick_location_stock(order, item, *, loc, user=None):
             variation=variation,
             user=user,
             napomena=f'Usputni popis prebacivanje #{order.broj}',
+            exact=True,
         )
         relocated = this_qty - leftover
 
     refresh_catalog_qty(product)
     _clear_pick_state_for_item(order, item.pk)
+    removed = False
+    cancelled = False
+    if not is_prenos_mp_order(order) and display_stock_totals(product, variation)['na_stanju'] <= 0:
+        # A confirmed empty item must disappear at the source, so every invoice,
+        # packing list and print template sees the same corrected order.
+        picked = max(0, int(item.kolicina_pokupljeno or 0))
+        if picked:
+            item.kolicina = min(int(item.kolicina), picked)
+            item.kolicina_pokupljeno = item.kolicina
+            item.save(update_fields=['kolicina', 'kolicina_pokupljeno'])
+        else:
+            item.delete()
+            removed = True
+        recalculate_order_totals(order)
+        if not OrderItem.objects.filter(narudzba_id=order.pk).exists():
+            cancel_order_stock(order, user=user)
+            order.medjuzbir = order.dostava = order.popust = order.ukupno = Decimal('0.00')
+            order.save(update_fields=['medjuzbir', 'dostava', 'popust', 'ukupno'])
+            cancelled = True
     return {
+        'removed': removed,
+        'cancelled': cancelled,
+        'kept_picked': int(item.kolicina_pokupljeno or 0) if not removed else 0,
         'cleared': cleared,
         'relocated': relocated,
         'loc': location.sifra or loc,
@@ -6143,10 +6236,12 @@ def _location_for_pick_label(label):
 def _iter_pick_deduct_rows(order):
     """Pokupljene količine po lokaciji iz pickinga. MP/rezervni se ne skidaju s magacina."""
     state = order.pick_state if isinstance(getattr(order, 'pick_state', None), dict) else {}
-    items = {item.pk: item for item in order.stavke.select_related('artikal', 'varijacija')}
+    items = {item.pk: item for item in order.stavke.filter(ledger_excess_line__isnull=True).select_related('artikal', 'varijacija')}
     rows = []
     for key, row in state.items():
         if not isinstance(row, dict):
+            continue
+        if any(event.get('picked_key') == key for event in (order.pick_short_events or [])):
             continue
         try:
             got = max(0, int(row.get('got') or 0))
@@ -6297,7 +6392,7 @@ def _sell_remaining_holds(order, *, user=None):
     holds = list(order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO))
     for hold in holds:
         reserved[(hold.product_id, hold.variation_id)] += int(hold.kolicina or 0)
-    items = list(order.stavke.all())
+    items = list(order.stavke.filter(ledger_excess_line__isnull=True))
     picked = defaultdict(int)
     for item in items:
         if item.kolicina_pokupljeno is None:
@@ -6380,14 +6475,15 @@ def _warehouse_qty_still_needed(order, pick_rows):
         for row in pick_rows:
             needed[_stock_key(row['product'], row['variation'])] += int(row['qty'] or 0)
         return needed
-    for item in order.stavke.all():
+    for item in order.stavke.filter(ledger_excess_line__isnull=True):
         if not item.artikal_id:
             continue
         if item.kolicina_pokupljeno is None:
             qty = int(item.kolicina or 0)
         else:
             qty = int(item.kolicina_pokupljeno or 0)
-        qty = max(0, qty - _mp_picked_qty(order, item.pk))
+        already_taken = sum(int(event.get('got') or 0) for event in (order.pick_short_events or []) if event.get('item_id') == item.pk)
+        qty = max(0, qty - _mp_picked_qty(order, item.pk) - already_taken)
         if qty <= 0:
             continue
         needed[_stock_key(item.artikal, item.varijacija)] += qty
@@ -6398,13 +6494,17 @@ def _warehouse_qty_still_needed(order, pick_rows):
 def validate_order_stock(order, *, user=None):
     """Skini količine s picking lokacija (ručna, VP, webshop). Nikad ne ostavi validirano bez skidanja."""
     if order.lager_status == Order.LagerStatus.VALIDIRANO:
+        from .warehouse_ledger import settle_replacement, settle_invoiced_excess, settle_picked_missing
+        settle_replacement(order, user=user)
+        settle_invoiced_excess(order, user=user)
+        settle_picked_missing(order, user=user)
         return
     if order.lager_status == Order.LagerStatus.OTKAZANO:
         raise MagacinError('Otkazana narudžba se ne može validirati.')
 
     pick_rows = _iter_pick_deduct_rows(order)
     needed = _warehouse_qty_still_needed(order, pick_rows)
-    if not any(needed.values()):
+    if not any(needed.values()) and not order.pick_short_events:
         for hold in order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO):
             needed[_stock_key(hold.product, hold.variation)] += int(hold.kolicina or 0)
     for row in pick_rows:
@@ -6456,6 +6556,10 @@ def validate_order_stock(order, *, user=None):
     order.zapakovana_at = timezone.now()
     update_fields.extend(['zapakovana', 'zapakovana_at'])
     order.save(update_fields=update_fields)
+    from .warehouse_ledger import settle_replacement, settle_invoiced_excess, settle_picked_missing
+    settle_replacement(order, user=user)
+    settle_invoiced_excess(order, user=user)
+    settle_picked_missing(order, user=user)
     try:
         from .views_magacin import invalidate_magacin_nav_counts
 

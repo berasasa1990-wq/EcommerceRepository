@@ -1,4 +1,10 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-overview-reference{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-overview-reference.css' %}?v=20260906-1">
+{% endblock %}
 
 {% block magacin_content %}
 <nav class="mg-crumb">Pregled</nav>

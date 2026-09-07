@@ -1,0 +1,30 @@
+/* Daily retail stock deduction: shared compact silver presentation. */
+body.magacin-page.is-daily-reference{--daily-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--daily-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--daily-edge:#9b9da2;--daily-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;background:#dedfe1!important}
+.magacin-page.is-daily-reference .mg-app,.magacin-page.is-daily-reference .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
+.magacin-page.is-daily-reference .mg-main{padding:4px 10px 70px;min-width:0;color:#111}
+.magacin-page.is-daily-reference .mg-toolbar{padding:8px 12px;margin:0 0 8px;border:1px solid var(--daily-edge);background:var(--daily-metal);box-shadow:var(--daily-bevel)}
+.magacin-page.is-daily-reference .mg-toolbar h1{font-size:22px;line-height:1.2;text-transform:uppercase;margin:0;color:#080808}
+.magacin-page.is-daily-reference .mg-count{font-size:13px;line-height:1.4;color:#505b6c;margin:5px 0 0}
+.magacin-page.is-daily-reference .mg-card{padding:10px;margin-bottom:10px;min-width:0;border:1px solid var(--daily-edge);border-radius:0;background:var(--daily-panel);box-shadow:inset 1px 1px #fff;overflow-x:auto}
+.magacin-page.is-daily-reference .mg-h{margin:0 0 8px;padding:7px 10px;border:1px solid var(--daily-edge);background:var(--daily-metal);box-shadow:var(--daily-bevel);font-size:18px;letter-spacing:0;text-transform:none;color:#111}
+.magacin-page.is-daily-reference .mg-main .mg-btn,.magacin-page.is-daily-reference .mg-mp-daily-back{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:0;background:var(--daily-metal);box-shadow:var(--daily-bevel);color:#111;font-size:14px;font-weight:750;text-decoration:none}
+.magacin-page.is-daily-reference .mg-main .mg-btn-primary,.magacin-page.is-daily-reference #mpDailyUploadBtn{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:inset 2px 2px #a6e395,inset -3px -3px #1e5f18;color:#fff}
+.magacin-page.is-daily-reference .mg-main .mg-btn-danger{color:#b52525}
+.magacin-page.is-daily-reference .mg-main .mg-btn:hover{filter:brightness(1.08)}
+.magacin-page.is-daily-reference .mg-main button:disabled{opacity:.55;cursor:default}
+.magacin-page.is-daily-reference .mg-main input:not([type=hidden]):not([type=checkbox]){min-height:36px;border:1px solid #969faa;border-radius:0;background:#fff;padding:6px 8px;font-size:15px;box-sizing:border-box;max-width:100%}
+.magacin-page.is-daily-reference input[type=file]::file-selector-button{border:1px solid #92949a;border-radius:0;background:var(--daily-metal);box-shadow:var(--daily-bevel);padding:5px 10px;margin-right:10px;color:#111;cursor:pointer}
+.magacin-page.is-daily-reference .mg-field label,.magacin-page.is-daily-reference .mg-check{color:#414c5e;font-size:13px}
+.magacin-page.is-daily-reference input[type=checkbox]{accent-color:#25821b}
+.magacin-page.is-daily-reference .mg-table{width:100%;border-collapse:collapse}
+.magacin-page.is-daily-reference .mg-table th{padding:7px 8px;border:1px solid #a4aab3;background:var(--daily-metal);font-size:13px;letter-spacing:0;color:#37465e}
+.magacin-page.is-daily-reference .mg-table td{padding:7px 8px;border:1px solid #b6b8bd;background:linear-gradient(115deg,#f5f5f6,#e9e9ec);font-size:14px;color:#35445d}
+.magacin-page.is-daily-reference .mg-table .mg-sifra-ok{color:#167315;font-weight:750}
+.magacin-page.is-daily-reference .mg-table .mg-sifra-bad{color:#c52424;font-weight:750}
+.magacin-page.is-daily-reference .mg-mp-daily-filter{padding:8px;border:1px solid #b3b9c2;border-radius:0;background:var(--daily-panel);gap:8px}
+.magacin-page.is-daily-reference .mg-mp-daily-batch{border:1px solid var(--daily-edge);border-radius:0;background:var(--daily-panel);padding:8px}
+.magacin-page.is-daily-reference .mg-mp-daily-batch-head{font-size:14px;color:#35445d}
+.magacin-page.is-daily-reference .mg-mp-date{border:1px solid #92949a;border-radius:0;background:var(--daily-metal);box-shadow:var(--daily-bevel);padding:8px 12px;color:#111}
+.magacin-page.is-daily-reference .mg-mp-daily-actions{gap:8px}
+.magacin-page.is-daily-reference :is(a,button,input,select):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+@media(max-width:600px){.magacin-page.is-daily-reference .mg-main{padding:4px 6px 70px}.magacin-page.is-daily-reference .mg-toolbar h1{font-size:20px}.magacin-page.is-daily-reference .mg-card{padding:8px}.magacin-page.is-daily-reference .mg-table{min-width:600px}}

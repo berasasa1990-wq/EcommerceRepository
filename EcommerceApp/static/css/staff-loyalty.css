@@ -1,0 +1,64 @@
+/* Loyalty admin: silver desktop panels inspired by the supplied reference. */
+body.loy-full{--loy-border:#858b94;--loy-panel:linear-gradient(115deg,#eeeef0,#d7d9dc);--loy-metal:linear-gradient(#f4f5f6 0%,#d1d4d8 12%,#c3c6cb 85%,#a6abb2 100%);--loy-inset:inset 1px 1px 0 #fff,inset -1px -1px 0 #9399a1;color:#10151c}
+body.loy-full,body.loy-full .site-main{background:#cdd0d4!important}
+body.loy-full main{width:100%;max-width:none;margin:0;padding:0!important;box-sizing:border-box}
+.loy-desk,.lm{padding:12px 12px 24px;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif;color:#10151c;width:100%;max-width:none;margin:0}
+.loy-top,.lm-top{min-height:64px;border:1px solid var(--loy-border);background:var(--loy-metal);box-shadow:var(--loy-inset);padding:10px 16px;margin-bottom:12px}
+.loy-top h1,.lm-top h1{font-size:32px;letter-spacing:-.02em;flex:1;color:#070b10}
+.loy-top h1:before,.lm-top h1:before{content:"◇";display:inline-block;padding-right:18px;margin-right:18px;border-right:1px solid #80858d;font-size:38px;vertical-align:middle}
+.loy-back,.lm-back{color:#222a35;margin-bottom:10px}
+.loy-grid{grid-template-columns:minmax(0,1fr) 330px;gap:12px}
+.loy-grid>div,.lm-grid>div{min-width:0}
+.loy-search-card,.loy-table,.loy-card,.loy-stat article,.lm-card,.lm-stat article,.lm-hero{background:var(--loy-panel);border:1px solid var(--loy-border);border-radius:0;box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #f8f9fa}
+.loy-search-card,.loy-card,.lm-card{padding:12px}
+.loy-card h3,.lm-card h3,.lm-card h2.plain,.loyalty-panel-title{background:linear-gradient(90deg,#d6d8db,#bec2c7);border-bottom:1px solid var(--loy-border);box-shadow:inset 0 1px #fff;margin:-12px -12px 12px;padding:6px 12px;color:#0b1017;font-size:18px;font-weight:750;letter-spacing:0;text-transform:none;text-align:left}
+.loy-kicker{color:#171d25;font-size:16px;letter-spacing:0;text-transform:none}
+.loy-sub,.loy-contact-p,.loy-help,.loy-send-lab,.lm-meta,.lm-rank .sub,.lm-next span,.lm-dl dt,.loy-year-sum,.lm-year-sum{color:#414b59}
+.loy-btn-new,.loy-find button,.loy-btn,.lm-btn,.lm-search,.lm-act a,.lm-act button,.loyalty-searchbar button,.loy-ch,.loy-ch-wide,.lm-send a,.lm-send button{background:var(--loy-metal);border:1px solid #767d87;border-radius:2px;box-shadow:var(--loy-inset),0 1px 1px #0002;color:#0b1017;font-size:15px;font-weight:750;min-height:43px}
+.loy-btn-new:hover,.loy-find button:hover,.loy-btn:hover,.lm-btn:hover,.lm-search:hover,.lm-act a:hover,.lm-act button:hover,.loyalty-searchbar button:hover{background:linear-gradient(#fff,#dce0e5);color:#000}
+.loy-full :is(button,a,input,textarea,summary):focus-visible{outline:3px solid #356ea8;outline-offset:3px}
+.loy-phone,.loy-find input,.loy-new input[type=text],.loy-new input[type=tel],.lm-form input[type=number],.lm-form input[type=text],.lm-form textarea,.loyalty-searchbar input{border:1px solid #89919c;border-radius:0;background:#fcfcfd;box-shadow:inset 1px 2px 2px #00000014;color:#182335}
+.loy-phone input::placeholder,.loy-find input::placeholder,.loyalty-searchbar input::placeholder{color:#526071}
+.loy-hint{background:#e6ebf1;color:#35475d;border:1px solid #9faebf;border-radius:0}
+.loy-tabs,.lm-tabs{gap:8px;border-bottom:1px solid #828a94;padding-bottom:8px}
+.loy-tabs a,.lm-tabs a,.loy-years a,.lm-years a,.lm-years span{background:var(--loy-metal);border:1px solid #89919c;border-radius:1px;padding:8px 16px;color:#27313f;box-shadow:var(--loy-inset)}
+.loy-tabs a.is-on,.lm-tabs a.is-on,.loy-years .is-on,.lm-years .is-on,.loy-pages .is-on,.lm-pages .is-on{background:linear-gradient(#f7f9fc,#b5c8df);color:#0c213b;border-color:#6c8aac}
+.loy-table th,.lm-table th{background:linear-gradient(#e1e3e7,#c7cbd1);color:#182234;font-size:13px;text-transform:none;letter-spacing:0;padding:8px 10px;border:1px solid #a4aab3}
+.loy-table td,.lm-table td{padding:8px 10px;border:1px solid #a4aab3;background:#f7f7f9;font-size:14px;color:#182234}
+.loy-table tbody tr:hover td{background:#c9d8ec}
+.loy-table a.row,.loy-table td.num,.loy-table td.muted{color:#344154}
+.loy-foot,.lm-foot{color:#414b59;font-size:12px;flex-wrap:wrap}
+.loy-badge,.lm-pill{border:1px solid #8b9198;border-radius:2px;box-shadow:inset 1px 1px #fff9,inset -1px -1px #0002;padding:4px 12px;font-size:12px}
+.loy-badge.gold,.loy-badge.zlatna,.lm-pill.gold,.lm-pill.zlatna{background:linear-gradient(#fff38b,#ffda34 45%,#e2ae06);color:#181400;border-color:#b79521}
+.loy-badge.silver,.loy-badge.srebrna,.lm-pill.silver,.lm-pill.srebrna{background:var(--loy-metal);color:#151b24}
+.loy-badge.bronze,.loy-badge.bronza,.lm-pill.bronze,.lm-pill.bronza{background:linear-gradient(#e9cbb1,#b97e51);color:#25170f}
+.loy-badge.platinum,.lm-pill.platinum{background:linear-gradient(#7a808a,#353b46);color:#fff}
+.loy-stat{gap:8px}.loy-stat .lab,.lm-stat .lab{color:#46505e}.loy-stat article,.lm-stat article{padding:12px}.loy-stat span.sub,.loy-tier em{color:#475361}.loy-side{gap:12px}
+.loyalty-searchbar{display:flex;align-items:center;gap:10px;padding:7px;border:1px solid var(--loy-border);background:var(--loy-panel);box-shadow:var(--loy-inset);margin-bottom:12px}
+.loyalty-searchbar label{font-size:14px;font-weight:700;padding:0 8px}.loyalty-searchbar input{flex:1;min-width:0;padding:10px 12px;font:inherit}.loyalty-searchbar button{padding:0 32px;cursor:pointer}
+.lm-grid{display:grid;grid-template-columns:minmax(260px,.75fr) minmax(0,1.65fr);gap:12px;align-items:start}
+.lm-grid>div,.lm-split,.lm-side{display:contents}
+.lm-hero{grid-column:1/-1;display:grid;grid-template-columns:minmax(240px,.7fr) minmax(0,1.5fr);gap:18px;padding:12px;margin:0;position:relative}
+.loyalty-panel-title{grid-column:1/-1;margin-bottom:0}
+.lm-who{grid-column:2;grid-row:2}.lm-av{display:none}.lm-name{font-size:28px}.lm-spend{font-size:18px;margin:10px 0}.lm-spend strong{margin-left:12px}.lm-phone{font-size:18px}.lm-meta{font-size:14px}
+.lm-viz{grid-column:1;grid-row:2;width:100%;min-width:0;max-width:360px;justify-self:center;border-radius:8px;box-shadow:0 3px 5px #0006,inset 1px 1px #ffffff7a;background:linear-gradient(135deg,#242424,#030303)!important;border:1px solid #767676;padding:14px}
+.lm-viz-brand img{height:42px;max-width:170px}.lm-viz-no{font-size:25px;margin-top:12px}.lm-viz-nm{font-size:10px;margin-bottom:8px}.lm-viz-pct{border-radius:2px}.lm-viz-bar{border-radius:2px}
+.lm-actions{grid-column:1/-1;grid-row:2}.lm-actions h3{display:none}.lm-act{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.lm-act form{margin:0}.lm-act button{width:100%;justify-content:center;font-size:16px;min-height:48px}.lm-act .danger{color:#8d2525;border-color:#9a8585}
+.lm-split>.lm-card:first-child{grid-column:2;grid-row:3 / span 2}.lm-rank{grid-column:1;grid-row:3}.lm-rank .big{font-size:30px}.lm-rank .sub b,.lm-next em{color:#4a3c08}.lm-bar{height:19px;border:1px solid #7d838c;border-radius:2px;background:linear-gradient(#d5d8dd,#b4b8be);box-shadow:inset 1px 1px #fff}.lm-bar i{border-radius:1px;background:linear-gradient(#fff18a,#ffdb32 45%,#e3b307);box-shadow:inset 0 1px #fff;border-right:1px solid #a88916}
+.lm-table{min-width:700px}.lm-sharing{grid-column:1;grid-row:4}.lm-sharing p{color:#404b59!important}.lm-send{grid-template-columns:1fr 1fr}.lm-send .viber{background:var(--loy-metal);color:#5b3690}.lm-send .wa{background:var(--loy-metal);color:#116333}
+.lm-details{grid-column:2;grid-row:5;margin-top:0!important}.lm-overview{grid-column:1;grid-row:5}.lm-overview>h3{margin:0 0 8px;padding:0!important;background:none!important;box-shadow:none!important}.lm-stat{gap:8px}.lm-dl{grid-template-columns:110px minmax(0,1fr)}.lm-dl dd{overflow-wrap:anywhere}
+.lm-panel,.loy-panel,.loyalty-scan-modal__panel{border-radius:3px;border:1px solid #818994;background:var(--loy-panel);box-shadow:var(--loy-inset),0 20px 60px #0004}.lm-pay label{border-radius:2px}.lm-form textarea{min-height:100px}
+@media(max-width:1000px){.loy-desk,.lm{padding:12px}.loy-grid{grid-template-columns:minmax(0,1fr)}.loy-side{display:grid;grid-template-columns:1fr 1fr}.loy-top h1,.lm-top h1{font-size:26px}.lm-hero{grid-template-columns:minmax(220px,.8fr) minmax(0,1fr)}.lm-name{font-size:23px}.lm-spend{font-size:16px}.lm-grid{grid-template-columns:minmax(220px,.7fr) minmax(0,1fr)}}
+@media(max-width:680px){.loy-desk,.lm{padding:8px}.loy-top,.lm-top{flex-wrap:wrap;padding:10px;gap:8px}.loy-top h1,.lm-top h1{flex-basis:100%;font-size:25px}.loy-top h1:before,.lm-top h1:before{font-size:28px;padding-right:12px;margin-right:12px}.loy-side{display:flex}.loyalty-searchbar{flex-wrap:wrap}.loyalty-searchbar label{width:100%}.loyalty-searchbar button{padding:0 12px}.lm-grid{display:flex;flex-direction:column}.lm-grid>div,.lm-side,.lm-split{display:contents}.lm-grid .lm-hero{display:flex;flex-direction:column;align-items:stretch;gap:14px;width:100%;box-sizing:border-box;order:0}.loyalty-panel-title{margin-bottom:0}.lm-viz{align-self:center;order:1}.lm-who{order:2}.lm-actions{order:1}.lm-rank{order:2}.lm-split>.lm-card:first-child{order:3}.lm-sharing{order:4}.lm-details{order:5}.lm-overview{order:6}.lm-grid .lm-card,.lm-overview{width:100%;box-sizing:border-box}.lm-act{grid-template-columns:1fr}.lm-top .lm-search{font-size:13px}.lm-name{font-size:24px}.loy-find{flex-wrap:wrap}.loy-find input{flex-basis:65%}.loy-table table{min-width:620px}.lm-form input,.lm-form select{max-width:100%}}
+.loyalty-results-title{margin:0;padding:7px 12px;background:var(--loy-metal);font-size:18px;color:#10151c;border-bottom:1px solid var(--loy-border);box-shadow:inset 1px 1px #fff}
+
+/* Keep the quick overview beside the member card and customer information. */
+.lm-hero{grid-template-columns:minmax(240px,.8fr) minmax(0,1fr) minmax(280px,.9fr)}
+.lm-hero>.lm-overview{grid-column:3;grid-row:2;min-width:0;align-self:start}
+.lm-hero .lm-stat article{min-width:0;overflow-wrap:anywhere}
+@media(min-width:681px) and (max-width:1000px){
+ .lm-hero{grid-template-columns:minmax(220px,.8fr) minmax(0,1fr)}
+ .lm-hero>.lm-overview{grid-column:2;grid-row:3}
+ .lm-hero>.lm-viz{grid-row:2 / span 2;align-self:start}
+}
+@media(max-width:680px){.lm-hero>.lm-overview{order:3}}

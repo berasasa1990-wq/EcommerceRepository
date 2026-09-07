@@ -1,0 +1,42 @@
+/* Compact silver warehouse shortage screen. */
+body.magacin-page.is-mp-shortage{--mp-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--mp-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--mp-edge:#9b9da2;--mp-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;background:#dedfe1!important}
+.magacin-page.is-mp-shortage .mg-app,.magacin-page.is-mp-shortage .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
+.magacin-page.is-mp-shortage .mg-main{padding:8px 12px 18px;min-width:0}
+.magacin-page.is-mp-shortage .mg-chrome{padding:6px 8px;gap:8px;margin-bottom:10px;min-height:0;background:var(--mp-metal);border:1px solid var(--mp-edge);border-radius:0;box-shadow:var(--mp-bevel)}
+.magacin-page.is-mp-shortage :is(.mg-chrome-burger,.mg-chrome-icon){width:40px;height:40px;min-height:0;border:1px solid #92949a;border-radius:0;background:var(--mp-metal);box-shadow:var(--mp-bevel);color:#111;flex-shrink:0}
+.magacin-page.is-mp-shortage .mg-chrome-search{flex:1;min-width:0;max-width:none}
+.magacin-page.is-mp-shortage .mg-chrome-search input{height:40px;border:1px solid #8e9097;border-radius:0;background:linear-gradient(110deg,#fff,#eeeef0);font-size:16px}
+.magacin-page.is-mp-shortage .mg-avatar{width:36px;height:36px;background:var(--mp-metal);border:1px solid #aaa;box-shadow:inset 1px 1px #fff;color:#111;font-size:16px}
+.magacin-page.is-mp-shortage .mg-fali-page{max-width:none;width:100%;color:#111}
+.magacin-page.is-mp-shortage .mg-page-head{padding:8px 12px;margin-bottom:8px;border:1px solid var(--mp-edge);background:var(--mp-metal);box-shadow:var(--mp-bevel)}
+.magacin-page.is-mp-shortage .mg-page-head h1{font-size:22px;text-transform:uppercase;line-height:1.2;margin:0;color:#080808}
+.magacin-page.is-mp-shortage .mg-count{font-size:13px;color:#505b6c;margin:5px 0 0}
+.magacin-page.is-mp-shortage .pp-loc-search{display:flex;flex-wrap:nowrap;align-items:stretch;gap:8px;padding:5px;margin-bottom:10px;background:var(--mp-panel);border:1px solid var(--mp-edge);box-shadow:inset 1px 1px #fff;max-width:none}
+.magacin-page.is-mp-shortage .pp-loc-search input{width:auto;flex:1;min-width:0;height:40px;border:1px solid #8e9097;border-radius:0;background:linear-gradient(110deg,#fff,#eeeef0);padding-left:38px;font-size:16px}
+.magacin-page.is-mp-shortage .pp-loc-search .mg-search-icon{left:16px;color:#111}
+.magacin-page.is-mp-shortage .mg-fali-page .mg-btn,.magacin-page.is-mp-shortage .mg-pager a,.magacin-page.is-mp-shortage .mg-pager .is-current{min-height:36px;padding:6px 14px;border:1px solid #92949a;border-radius:0;background:var(--mp-metal);box-shadow:var(--mp-bevel);font-size:14px;font-weight:750;color:#111;text-decoration:none}
+.magacin-page.is-mp-shortage .mg-fali-page .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:inset 2px 2px #a6e395,inset -3px -3px #1e5f18;color:#fff}
+.magacin-page.is-mp-shortage .mg-fali-page .mg-btn:hover{filter:brightness(1.08)}
+.magacin-page.is-mp-shortage .mg-fali-list{gap:8px}
+.magacin-page.is-mp-shortage .mg-fali-card{padding:10px 12px;border:1px solid var(--mp-edge);border-radius:0;background:var(--mp-panel);box-shadow:inset 1px 1px #fff;gap:12px}
+.magacin-page.is-mp-shortage .mg-fali-info a{color:#111;text-decoration:none}
+.magacin-page.is-mp-shortage .mg-fali-info strong{font-size:16px}
+.magacin-page.is-mp-shortage :is(.mg-fali-sifra,.mg-fali-max,.mg-fali-info .sub){color:#505b6c;font-size:13px}
+.magacin-page.is-mp-shortage .mg-fali-locs{gap:5px;margin:6px 0}
+.magacin-page.is-mp-shortage .mg-fali-locs li{border:1px solid #afb5be;border-radius:0;background:#f9fafb;padding:4px 8px;color:#35445b}
+.magacin-page.is-mp-shortage .mg-fali-prenos{gap:8px;align-items:end}
+.magacin-page.is-mp-shortage .mg-fali-prenos label{font-size:13px;color:#414c5e}
+.magacin-page.is-mp-shortage .mg-fali-prenos input,.magacin-page.is-mp-shortage .mg-fali-prenos select{min-height:36px;height:36px;border:1px solid #969faa;border-radius:0;background:#fff;padding:5px 8px;font-size:15px;box-sizing:border-box}
+.magacin-page.is-mp-shortage .mg-fali-card.is-pending{background:linear-gradient(115deg,#edf2e9,#d6e1d0)}
+.magacin-page.is-mp-shortage .mg-fali-pending{border-radius:0;color:#365c27;font-size:14px}
+.magacin-page.is-mp-shortage .mg-fali-empty{padding:12px;background:var(--mp-panel);border:1px solid var(--mp-edge);border-radius:0;color:#505b6c}
+.magacin-page.is-mp-shortage .mg-pager{gap:7px;margin-top:10px}
+.magacin-page.is-mp-shortage .mg-pager .is-current{background:linear-gradient(#7191b9,#3a5f8c);color:#fff;border-color:#344d72;box-shadow:inset 1px 1px #a3bbd9}
+.magacin-page.is-mp-shortage :is(a,button,input,select):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+@media(max-width:600px){.magacin-page.is-mp-shortage .mg-main{padding:6px}.magacin-page.is-mp-shortage .mg-chrome{gap:5px}.magacin-page.is-mp-shortage .mg-page-head h1{font-size:20px}.magacin-page.is-mp-shortage .mg-fali-card{padding:8px}.magacin-page.is-mp-shortage .mg-fali-prenos{width:100%;min-width:0}.magacin-page.is-mp-shortage .mg-fali-prenos select{max-width:100%}}
+
+/* Align the page with the other warehouse screens without the top search bar. */
+.magacin-page.is-mp-shortage .mg-main{padding:4px 10px 70px}
+.magacin-page.is-mp-shortage .mg-fali-page{margin:0;padding-top:0}
+.magacin-page.is-mp-shortage .mg-page-head{margin-top:0;margin-bottom:8px}
+@media(max-width:600px){.magacin-page.is-mp-shortage .mg-main{padding:4px 6px 70px}}

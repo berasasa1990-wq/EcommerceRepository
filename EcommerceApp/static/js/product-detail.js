@@ -36,11 +36,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (thumb.dataset.width) mainImage.width = thumb.dataset.width;
                 if (thumb.dataset.height) mainImage.height = thumb.dataset.height;
-                thumbnails.forEach((t) => t.classList.remove('active'));
+                thumbnails.forEach((t) => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-pressed', 'false');
+                });
                 thumb.classList.add('active');
+                thumb.setAttribute('aria-pressed', 'true');
             }
         });
     });
+
+    const gallery = document.getElementById('mainProductImageWrap');
+    thumbnails.forEach((thumb) => {
+        thumb.setAttribute('aria-pressed', String(thumb.classList.contains('active')));
+    });
+    if (gallery && mainImage?.tagName === 'IMG' && thumbnails.length > 1) {
+        let start = null;
+        const moveImage = (direction) => {
+            const current = Array.from(thumbnails).findIndex(t => t.classList.contains('active'));
+            thumbnails[(Math.max(0, current) + direction + thumbnails.length) % thumbnails.length].click();
+        };
+        gallery.tabIndex = 0;
+        gallery.setAttribute('role', 'region');
+        gallery.setAttribute('aria-label', 'Galerija proizvoda — prevucite lijevo ili desno za promjenu slike');
+        mainImage.draggable = false;
+        gallery.addEventListener('pointerdown', event => {
+            if (!event.isPrimary || event.button !== 0 || event.target.closest('button, a')) return;
+            start = { x: event.clientX, y: event.clientY, id: event.pointerId };
+            gallery.setPointerCapture(event.pointerId);
+        });
+        gallery.addEventListener('pointerup', event => {
+            if (!start || start.id !== event.pointerId) return;
+            const dx = event.clientX - start.x;
+            const dy = event.clientY - start.y;
+            start = null;
+            if (Math.abs(dx) >= 40 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+                moveImage(dx < 0 ? 1 : -1);
+            }
+        });
+        gallery.addEventListener('pointercancel', () => { start = null; });
+        gallery.addEventListener('lostpointercapture', () => { start = null; });
+        gallery.addEventListener('keydown', event => {
+            if (event.target !== gallery) return;
+            if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+                event.preventDefault();
+                moveImage(event.key === 'ArrowRight' ? 1 : -1);
+            }
+        });
+    }
 
     function getCsrfToken() {
         const meta = document.querySelector('meta[name="csrf-token"]');

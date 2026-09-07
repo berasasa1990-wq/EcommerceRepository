@@ -157,6 +157,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
   .lm-table{min-width:640px}
 }
 </style>
+<link rel="stylesheet" href="{% static 'css/staff-loyalty.css' %}">
 {% endblock %}
 
 {% block body_class %}staff-shell-page loy-full{% endblock %}
@@ -164,21 +165,20 @@ body.loy-full main{padding-top:28px!important;max-width:none}
 {% block content %}
 <section class="lm">
     <a class="lm-back" href="{% url 'staff_loyalty_system' %}">← Loyalty program</a>
-    <div class="lm-top">
-        <h1>Detalji člana / kartica</h1>
-        <a class="lm-search" href="{% url 'staff_loyalty_system' %}">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
-            Pretraga članova
-        </a>
-    </div>
 
     {% if newly_issued %}
     <p class="lm-banner">Kartica uspješno registrovana.</p>
     {% endif %}
 
+    <form class="loyalty-searchbar" method="get" action="{% url 'staff_loyalty_system' %}">
+        <input type="hidden" name="mode" value="any">
+        <label for="memberSearch">Pretraga kupca</label>
+        <input id="memberSearch" name="q" placeholder="Pretraži kupca (ime, prezime, broj kartice, telefon)">
+        <button type="submit">Pretraži</button>
+    </form>
     <div class="lm-grid">
         <div>
-            <div class="lm-hero">
+            <div class="lm-hero"><h2 class="loyalty-panel-title">Podaci o kupcu</h2>
                 <div class="lm-who">
                     <div class="lm-av">{{ member_initials }}</div>
                     <div>
@@ -204,6 +204,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                             </a>
                             {% endif %}
                         </p>
+                        <p class="lm-spend">Ukupna potrošnja: <strong>{{ member_spend_fmt }} KM</strong></p>
                         <p class="lm-meta">Kartica: {{ selected_card.kod }} &nbsp;|&nbsp; Član od: {{ member_since|date:"d.m.Y." }}</p>
                     </div>
                 </div>
@@ -230,11 +231,36 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                         <img src="{% url 'staff_loyalty_card_barcode' selected_card.pk %}" alt="">
                     </div>
                 </div>
+            <div class="lm-overview">
+                <h3 class="lm-card" style="box-shadow:none;border:0;padding:0 0 8px;background:transparent">Brzi pregled</h3>
+                <div class="lm-stat">
+                    <article>
+                        <div class="ic g"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.4 11.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.5L22 7H6"/></svg></div>
+                        <span class="lab">Ukupna potrošnja</span>
+                        <b>{{ member_spend_fmt }} KM</b>
+                    </article>
+                    <article>
+                        <div class="ic p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></div>
+                        <span class="lab">Napomena</span>
+                        {% if member_note %}<span class="note">{{ member_note }}</span>{% else %}<b style="color:#9aa3ad;font-weight:600">—</b>{% endif %}
+                    </article>
+                    <article>
+                        <div class="ic b"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 7h15l-1.5 9h-12z"/><path d="M6 7 5 3H2"/></svg></div>
+                        <span class="lab">Ukupno narudžbi</span>
+                        <b>{{ member_orders_count }}</b>
+                    </article>
+                    <article>
+                        <div class="ic o"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/></svg></div>
+                        <span class="lab">Prosječna kupovina</span>
+                        <b>{{ member_avg_fmt }} KM</b>
+                    </article>
+                </div>
+            </div>
             </div>
 
             <div class="lm-split">
                 <div class="lm-card">
-                    <h2 class="plain">Evidencija kupovina</h2>
+                    <h2 class="plain">Posljednje kupovine</h2>
                     {% if purchase_years %}
                     <nav class="lm-years" aria-label="Godina kupovina">
                         {% for year in purchase_years %}
@@ -304,7 +330,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                 </div>
 
                 <div class="lm-card lm-rank">
-                    <h3>Rang i napredak</h3>
+                    <h3>Do sljedećeg nivoa</h3>
                     <svg class="lm-medal" viewBox="0 0 48 48" style="margin:0 auto">
                         <circle cx="24" cy="28" r="13" fill="#eab308"/>
                         <circle cx="24" cy="28" r="8" fill="#fde047"/>
@@ -334,7 +360,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                 </div>
             </div>
 
-            <div class="lm-card" style="margin-top:16px">
+            <div class="lm-card lm-details" style="margin-top:16px">
                 <h3>Detalji člana</h3>
                 <dl class="lm-dl">
                     <dt>Telefon:</dt><dd>{{ member_phone_fmt }}</dd>
@@ -361,33 +387,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
         </div>
 
         <aside class="lm-side">
-            <div>
-                <h3 class="lm-card" style="box-shadow:none;border:0;padding:0 0 8px;background:transparent">Brzi pregled</h3>
-                <div class="lm-stat">
-                    <article>
-                        <div class="ic g"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.4 11.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.5L22 7H6"/></svg></div>
-                        <span class="lab">Ukupna potrošnja</span>
-                        <b>{{ member_spend_fmt }} KM</b>
-                    </article>
-                    <article>
-                        <div class="ic p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></div>
-                        <span class="lab">Napomena</span>
-                        {% if member_note %}<span class="note">{{ member_note }}</span>{% else %}<b style="color:#9aa3ad;font-weight:600">—</b>{% endif %}
-                    </article>
-                    <article>
-                        <div class="ic b"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 7h15l-1.5 9h-12z"/><path d="M6 7 5 3H2"/></svg></div>
-                        <span class="lab">Ukupno narudžbi</span>
-                        <b>{{ member_orders_count }}</b>
-                    </article>
-                    <article>
-                        <div class="ic o"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/></svg></div>
-                        <span class="lab">Prosječna kupovina</span>
-                        <b>{{ member_avg_fmt }} KM</b>
-                    </article>
-                </div>
-            </div>
-
-            <div class="lm-card">
+            <div class="lm-card lm-sharing">
                 <h3>Pošalji karticu</h3>
                 <p style="margin:0 0 12px;color:#6b7280;font-size:13px">Pošaljite digitalnu karticu putem Viber ili WhatsApp.</p>
                 {% if loyalty.card_caption or loyalty.viber_caption %}
@@ -405,7 +405,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
                 </div>
             </div>
 
-            <div class="lm-card">
+            <div class="lm-card lm-actions">
                 <h3>Akcije</h3>
                 <div class="lm-act">
                     <button type="button" id="lmBuyOpen">Evidentiraj kupovinu</button>

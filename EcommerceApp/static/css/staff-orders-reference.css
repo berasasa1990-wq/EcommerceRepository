@@ -1,0 +1,65 @@
+/* Silver order workspace; status and shortage indicators retain their semantics. */
+body.magacin-page.is-orders-reference{--ord-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--ord-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--ord-edge:#9b9da2;--ord-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;background:#dedfe1!important}
+.magacin-page.is-orders-reference .mg-app,.magacin-page.is-orders-reference .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
+.magacin-page.is-orders-reference .mg-main{padding:4px 10px 18px;min-width:0;color:#111}
+.magacin-page.is-orders-reference .mg-orders-page{padding:0;max-width:none}
+.magacin-page.is-orders-reference .mg-chrome{padding:6px 8px;margin-bottom:8px;gap:8px;min-height:0;border:1px solid var(--ord-edge);border-radius:0;background:var(--ord-metal);box-shadow:var(--ord-bevel)}
+.magacin-page.is-orders-reference :is(.mg-chrome-burger,.mg-chrome-icon){width:40px;height:40px;min-height:0;border:1px solid #92949a;border-radius:0;background:var(--ord-metal);box-shadow:var(--ord-bevel);color:#111}
+.magacin-page.is-orders-reference .mg-chrome-search{flex:1;min-width:0;max-width:none}
+.magacin-page.is-orders-reference .mg-chrome-search input{height:40px;border:1px solid #8e9097;border-radius:0;background:#fff;font-size:16px}
+.magacin-page.is-orders-reference .mg-avatar{width:36px;height:36px;background:var(--ord-metal);color:#111;border:1px solid #aaa;font-size:16px}
+.magacin-page.is-orders-reference .mg-page-head{padding:8px 12px;margin:0 0 8px;border:1px solid var(--ord-edge);background:var(--ord-metal);box-shadow:var(--ord-bevel);gap:10px}
+.magacin-page.is-orders-reference .mg-page-head h1{font-size:22px;line-height:1.2;margin:0;color:#080808}
+.magacin-page.is-orders-reference .mg-count{font-size:13px;color:#505b6c;margin:5px 0 0}
+.magacin-page.is-orders-reference .mg-main .mg-btn,.magacin-page.is-orders-reference .mg-filter-tabs a{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:0;background:var(--ord-metal);box-shadow:var(--ord-bevel);color:#111;font-size:14px;font-weight:750;text-decoration:none}
+.magacin-page.is-orders-reference .mg-main .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:inset 2px 2px #a6e395,inset -3px -3px #1e5f18;color:#fff}
+.magacin-page.is-orders-reference .mg-main .mg-btn.is-disabled,.magacin-page.is-orders-reference .mg-main button:disabled{opacity:.5;cursor:default}
+.magacin-page.is-orders-reference .mg-filter-tabs{gap:7px;margin-bottom:10px;flex-wrap:wrap;border:0}
+.magacin-page.is-orders-reference .mg-filter-tabs a.is-active{background:linear-gradient(115deg,#e1f0dc,#bed5b4);border-color:#749168;color:#23551d}
+.magacin-page.is-orders-reference .mg-card,.magacin-page.is-orders-reference .mg-orders-panel{border:1px solid var(--ord-edge);border-radius:0;background:var(--ord-panel);box-shadow:inset 1px 1px #fff;padding:8px;min-width:0}
+.magacin-page.is-orders-reference .mg-orders-find input,.magacin-page.is-orders-reference .bp-days-form input{border:1px solid #969faa;border-radius:0;background:#fff;min-height:36px;font-size:15px}
+.magacin-page.is-orders-reference .mg-bulk-bar{padding:8px;border:1px solid #b3b9c2;border-radius:0;background:var(--ord-panel);gap:8px}
+.magacin-page.is-orders-reference .mg-table th{padding:7px 8px;border:1px solid #a4aab3;background:var(--ord-metal);font-size:13px;letter-spacing:0;color:#37465e}
+.magacin-page.is-orders-reference .mg-table td{padding:7px 8px;border:1px solid #c2c7cf;font-size:14px}
+.magacin-page.is-orders-reference .mg-table tr:not(.has-short-pick):not(.is-mp-lock) td{background:linear-gradient(115deg,#f5f5f6,#e9e9ec)}
+.magacin-page.is-orders-reference .mg-pill{border-radius:2px}
+.magacin-page.is-orders-reference .mg-order-name{font-size:15px}
+.magacin-page.is-orders-reference .mg-order-date,.magacin-page.is-orders-reference .mg-order-note{font-size:13px}
+.magacin-page.is-orders-reference input[type=checkbox]{accent-color:#25821b}
+.magacin-page.is-orders-reference :is(a,button,input):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+@media(max-width:600px){.magacin-page.is-orders-reference .mg-main{padding:4px 6px 18px}.magacin-page.is-orders-reference .mg-page-head h1{font-size:20px}.magacin-page.is-orders-reference .mg-chrome{gap:5px}.magacin-page.is-orders-reference .mg-table-stack-narudzbe tr{border-radius:0}.magacin-page.is-orders-reference .mg-table-stack-narudzbe td{border:0}}
+
+/* Replace the previous orange theme, including higher-specificity legacy rules. */
+body.magacin-page.is-orders-reference{--mg-accent:#278922;--mg-accent-hover:#206f1c;--mg-accent-soft:#e1f0dc;--mg-accent-line:#a3bf98}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-orders-title-ico{color:#111}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-toolbar-actions .mg-btn-pill,
+body.magacin-page.is-orders-reference .mg-orders-page .mg-bulk-bar .mg-btn-pill{border:1px solid #92949a;border-radius:0;background:var(--ord-metal);box-shadow:var(--ord-bevel);color:#111}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-toolbar-actions .mg-btn-primary,
+body.magacin-page.is-orders-reference .mg-orders-page .mg-orders-find .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:inset 2px 2px #a6e395,inset -3px -3px #1e5f18;color:#fff}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-filter-tabs a{border:1px solid #92949a;border-radius:0;background:var(--ord-metal);box-shadow:var(--ord-bevel);color:#111}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-filter-tabs a.is-active{background:linear-gradient(115deg,#e1f0dc,#bed5b4);border-color:#749168;color:#23551d}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-toolbar-actions .mg-btn-pill:hover,
+body.magacin-page.is-orders-reference .mg-orders-page .mg-bulk-bar .mg-btn-pill:hover{background:linear-gradient(#fff,#dce1e8);color:#111}
+
+/* Allow the complete customer name on a single line. */
+body.magacin-page.is-orders-reference .mg-orders-page .mg-table{table-layout:auto}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-table th:nth-child(3),
+body.magacin-page.is-orders-reference .mg-orders-page .mg-table td:nth-child(3){min-width:260px;width:auto}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-order-name{display:block;white-space:nowrap;max-width:none;overflow:visible;text-overflow:clip;word-break:normal}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-table-wrap{overflow-x:auto}
+
+/* Wider source filters with equal space for each option. */
+body.magacin-page.is-orders-reference .mg-orders-page .mg-filter-tabs{display:flex;width:100%;gap:8px;flex-wrap:nowrap;box-sizing:border-box}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-filter-tabs a{display:flex;flex:1 1 0;min-width:0;align-items:center;justify-content:center;padding:10px 18px;min-height:42px;box-sizing:border-box;font-size:16px;text-align:center}
+
+/* Hide the warehouse column while preserving existing table column hooks. */
+body.magacin-page.is-orders-reference .mg-orders-page .mg-table .mg-order-loc{display:none}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-table th:nth-child(3),
+body.magacin-page.is-orders-reference .mg-orders-page .mg-table td:nth-child(3){min-width:340px;width:30%}
+@media(max-width:600px){body.magacin-page.is-orders-reference .mg-orders-page .mg-table td:nth-child(3){width:auto;min-width:0;grid-column:2 / -1}}
+body.magacin-page.is-orders-reference .order-row-menu summary{list-style:none;cursor:pointer;font-size:24px}
+body.magacin-page.is-orders-reference .order-row-menu summary::-webkit-details-marker{display:none}
+body.magacin-page.is-orders-reference .order-row-menu-panel{min-width:180px;padding:5px;border:1px solid #92949a;background:var(--ord-panel);box-shadow:var(--ord-bevel)}
+body.magacin-page.is-orders-reference .order-row-menu-panel a,body.magacin-page.is-orders-reference .order-row-menu-panel button{display:block;width:100%;box-sizing:border-box;padding:8px;border:0;background:transparent;color:#111;font:inherit;font-size:14px;text-align:left;text-decoration:none;white-space:nowrap;cursor:pointer}
+body.magacin-page.is-orders-reference .order-row-menu-panel button{color:#b52525}
+body.magacin-page.is-orders-reference .order-row-menu-panel :is(a,button):hover{background:#e2e8ef}

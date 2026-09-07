@@ -343,6 +343,8 @@ def pripremi_stavke_za_racun(order):
 
     stavke = []
     for oi in order.stavke.all():
+        if oi.ledger_missing_line_id:
+            continue
         qty = oi.kolicina_faktura
         if qty <= 0:
             continue

@@ -1,6 +1,6 @@
 {% load static %}
-{# Live chat: kupac (proaktivni) ili superuser/staff (samo chat sa kupcima) #}
-{% if site_settings.chat_sa_kupcem_aktivan or user.is_authenticated and user.is_staff %}
+{# Chat ikonica na sajtu je ugašena za kupce. Staff i dalje ima inbox. #}
+{% if user.is_authenticated and user.is_staff %}
 
 <div class="site-chat" id="siteChat" hidden>
     {# —— Kupac panel (NE za staff/superuser — oni imaju samo chat sa kupcima) —— #}
@@ -140,32 +140,7 @@
     {% endif %}
 </div>
 
-<div class="site-chat-launchers{% if site_settings.chat_sa_kupcem_aktivan and not user.is_staff %} is-customer-hidden{% endif %}" id="siteChatLaunchers">
-    {% if site_settings.chat_sa_kupcem_aktivan and not user.is_staff %}
-    <button type="button" class="site-chat-launcher site-chat-launcher--customer site-chat-launcher--fab" id="customerChatBtn" hidden aria-label="Pišite nam — otvori chat" aria-controls="customerChatPanel">
-        <span class="site-chat-fab-ring" aria-hidden="true">
-            <svg class="site-chat-fab-ring-svg" viewBox="0 0 120 120" width="120" height="120">
-                <defs>
-                    <path id="siteChatWritePath" d="M60,60 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0"/>
-                </defs>
-                <text class="site-chat-fab-ring-text">
-                    <textPath href="#siteChatWritePath" startOffset="0%">Pišite nam · Pišite nam · Pišite nam · </textPath>
-                </text>
-            </svg>
-        </span>
-        <span class="site-chat-fab-core{% if site_settings.chat_avatar_slika %} site-chat-fab-core--photo{% endif %}" aria-hidden="true">
-            {% if site_settings.chat_avatar_slika %}
-            <img src="{{ site_settings.chat_avatar_slika.url }}" alt="" class="site-chat-fab-photo" width="58" height="58">
-            {% else %}
-            <svg class="site-chat-fab-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-            </svg>
-            {% endif %}
-        </span>
-        <span class="site-chat-badge" id="customerChatBadge" hidden>0</span>
-    </button>
-    {% endif %}
-
+<div class="site-chat-launchers" id="siteChatLaunchers">
     {% if user.is_authenticated and user.is_staff %}
     <button type="button" class="site-chat-launcher site-chat-launcher--staff site-chat-launcher--fab" id="staffChatBtn" aria-label="Chat sa kupcima" aria-controls="staffChatPanel" hidden>
         <span class="site-chat-launcher-pulse" id="staffChatPulse" hidden aria-hidden="true"></span>
@@ -190,7 +165,7 @@
     "isAuthenticated": {% if user.is_authenticated %}true{% else %}false{% endif %},
     "isStaff": {% if user.is_authenticated and user.is_staff %}true{% else %}false{% endif %},
     "isSuperuser": {% if user.is_authenticated and user.is_superuser %}true{% else %}false{% endif %},
-    "chatEnabled": {% if site_settings.chat_sa_kupcem_aktivan %}true{% else %}false{% endif %},
+    "chatEnabled": false,
     "proactiveDelayMs": {% widthratio site_settings.chat_delay_seconds|default:120 1 1000 %},
     "leaveUrl": "{% url 'chat_leave' %}",
     "autoOpenOnCustomerMessage": true

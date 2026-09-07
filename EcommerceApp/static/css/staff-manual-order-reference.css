@@ -1,0 +1,37 @@
+/* Manual order presentation; form submission and stock logic stay unchanged. */
+body.magacin-page.is-manual-reference{--mo-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--mo-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--mo-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;--mg-accent:#278922;--mg-accent-hover:#206f1c;--mg-accent-soft:#e1f0dc;--mg-accent-line:#a3bf98;background:#dedfe1!important}
+.magacin-page.is-manual-reference .mg-app,.magacin-page.is-manual-reference .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
+.magacin-page.is-manual-reference .mg-main{padding:4px 10px 18px;min-width:0;color:#111}
+.magacin-page.is-manual-reference .mg-order-page{max-width:none;padding:0}
+.magacin-page.is-manual-reference .mg-page-head,.magacin-page.is-manual-reference .mg-chrome{padding:8px 12px;margin:0 0 8px;border:1px solid #9b9da2;border-radius:0;background:var(--mo-metal);box-shadow:var(--mo-bevel);gap:8px}
+.magacin-page.is-manual-reference .mg-order-page .mg-page-head h1{font-size:22px;margin:0;color:#111;line-height:1.2}
+.magacin-page.is-manual-reference .mg-count{font-size:13px;color:#505b6c}
+body.magacin-page.is-manual-reference .mg-order-page .mg-card{padding:10px;border:1px solid #9b9da2;border-radius:0;background:var(--mo-panel);box-shadow:inset 1px 1px #fff;min-width:0}
+.magacin-page.is-manual-reference .mg-h{font-size:18px;color:#111;margin-bottom:8px;letter-spacing:0}
+body.magacin-page.is-manual-reference .mg-order-page .mg-btn,body.magacin-page.is-manual-reference .mg-modal .mg-btn{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:0;background:var(--mo-metal);box-shadow:var(--mo-bevel);color:#111;font-size:14px;font-weight:750;text-decoration:none}
+body.magacin-page.is-manual-reference .mg-order-page .mg-btn-primary,body.magacin-page.is-manual-reference .mg-modal .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:inset 2px 2px #a6e395,inset -3px -3px #1e5f18;color:#fff}
+.magacin-page.is-manual-reference .mg-order-page .mg-btn-danger{color:#b52525}
+.magacin-page.is-manual-reference button:disabled{opacity:.5;cursor:default}
+.magacin-page.is-manual-reference .mg-order-page input:not([type=hidden]):not([type=checkbox]):not([type=radio]),.magacin-page.is-manual-reference .mg-order-page select,.magacin-page.is-manual-reference .mg-order-page textarea{min-height:36px;border:1px solid #969faa;border-radius:0;background:#fff;font-size:15px;box-sizing:border-box;max-width:100%}
+.magacin-page.is-manual-reference .mg-field label,.magacin-page.is-manual-reference .mg-cust-field label{font-size:13px;color:#414c5e}
+.magacin-page.is-manual-reference .mg-order-build,.magacin-page.is-manual-reference .mg-cust-grid{gap:10px}
+.magacin-page.is-manual-reference .mg-order-page .mg-table th{padding:7px 8px;border:1px solid #a4aab3;background:var(--mo-metal);font-size:13px;letter-spacing:0;color:#37465e}
+.magacin-page.is-manual-reference .mg-order-page .mg-table td{padding:7px 8px;border:1px solid #c2c7cf;font-size:14px}
+.magacin-page.is-manual-reference .mg-order-page .mg-table tr:not(.is-out-row):not(.is-spare-row) td{background:linear-gradient(115deg,#f5f5f6,#e9e9ec)}
+.magacin-page.is-manual-reference .mg-customer-chip,.magacin-page.is-manual-reference .mg-order-foot{border:1px solid #9b9da2;border-radius:0;background:var(--mo-panel);padding:10px}
+.magacin-page.is-manual-reference .mg-mode-toggle button{border-radius:0;background:var(--mo-metal);border:1px solid #92949a;color:#111}
+.magacin-page.is-manual-reference .mg-mode-toggle button.is-on{background:#dce8d7;color:#23551d;border-color:#749168}
+.magacin-page.is-manual-reference .mg-loc-suggest,.magacin-page.is-manual-reference .vp-suggest{border:1px solid #999da5;border-radius:0;background:#fff}
+.magacin-page.is-manual-reference .mg-modal-panel{border:1px solid #9b9da2;border-radius:2px;background:var(--mo-panel);box-shadow:var(--mo-bevel),0 15px 45px #0004}
+.magacin-page.is-manual-reference .mg-pill{border-radius:0}
+.magacin-page.is-manual-reference input:is([type=checkbox],[type=radio]){accent-color:#25821b}
+.magacin-page.is-manual-reference :is(a,button,input,select,textarea):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+@media(max-width:600px){.magacin-page.is-manual-reference .mg-main{padding:4px 6px 18px}.magacin-page.is-manual-reference .mg-order-page .mg-page-head h1{font-size:20px}.magacin-page.is-manual-reference .mg-order-page .mg-card{padding:8px}}
+
+body.magacin-page.is-manual-reference .mg-order-page #mgCustomerAdd{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:0;background:var(--mo-metal);box-shadow:var(--mo-bevel);color:#111;font-size:14px;font-weight:750;gap:7px;white-space:nowrap}
+body.magacin-page.is-manual-reference .mg-order-page #mgCustomerAdd svg{width:18px;height:18px;color:inherit;flex-shrink:0}
+body.magacin-page.is-manual-reference .mg-order-page #mgCustomerAdd:hover{background:linear-gradient(#fff,#dce1e8);color:#111}
+
+/* Match the add-item actions to the silver buttons. */
+body.magacin-page.is-manual-reference .mg-modal :is(#mgOrderQtyAdd,#mgSpareAdd){min-height:36px;padding:6px 14px;border:1px solid #92949a;border-radius:0;background:var(--mo-metal);box-shadow:var(--mo-bevel);color:#111;font-size:14px;font-weight:750}
+body.magacin-page.is-manual-reference .mg-modal :is(#mgOrderQtyAdd,#mgSpareAdd):hover{background:linear-gradient(#fff,#dce1e8);color:#111}

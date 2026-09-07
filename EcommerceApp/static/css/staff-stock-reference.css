@@ -1,0 +1,24 @@
+/* Compact silver stock overview. */
+body.magacin-page.is-stock-reference{--stock-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--stock-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--stock-edge:#9b9da2;--stock-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;background:#dedfe1!important}
+.magacin-page.is-stock-reference .mg-app,.magacin-page.is-stock-reference .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
+.magacin-page.is-stock-reference .mg-main{padding:4px 10px 70px;min-width:0;color:#111}
+.magacin-page.is-stock-reference .mg-toolbar{padding:8px 12px;margin:0 0 8px;border:1px solid var(--stock-edge);background:var(--stock-metal);box-shadow:var(--stock-bevel);gap:10px;flex-wrap:wrap}
+.magacin-page.is-stock-reference .mg-toolbar h1{font-size:22px;line-height:1.2;text-transform:uppercase;margin:0;color:#080808}
+.magacin-page.is-stock-reference .mg-page-search{display:flex;align-items:stretch;gap:8px;padding:5px;border:1px solid var(--stock-edge);background:var(--stock-panel);max-width:none!important;min-width:220px}
+.magacin-page.is-stock-reference .mg-page-search input[type=search]{flex:1;width:auto;min-width:0;height:40px;border:1px solid #8e9097;border-radius:0;background:linear-gradient(110deg,#fff,#eeeef0);padding-left:38px;font-size:16px}
+.magacin-page.is-stock-reference .mg-search-icon{left:16px;color:#111}
+.magacin-page.is-stock-reference .mg-main .mg-btn,.magacin-page.is-stock-reference .mg-pager a,.magacin-page.is-stock-reference .mg-pager .is-current{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:0;background:var(--stock-metal);box-shadow:var(--stock-bevel);color:#111;font-size:14px;font-weight:750;text-decoration:none}
+.magacin-page.is-stock-reference .mg-main .mg-btn-primary,.magacin-page.is-stock-reference .mg-page-search .mg-btn{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:inset 2px 2px #a6e395,inset -3px -3px #1e5f18;color:#fff}
+.magacin-page.is-stock-reference .mg-main>.mg-toolbar+form{padding:8px 10px;margin-bottom:8px!important;border:1px solid var(--stock-edge);background:var(--stock-panel);box-shadow:inset 1px 1px #fff;align-items:center}
+.magacin-page.is-stock-reference .mg-main select[name=lokacija]{min-height:36px;border:1px solid #969faa!important;border-radius:0!important;background:var(--stock-metal);box-shadow:var(--stock-bevel);color:#222b39;padding:6px 10px!important;max-width:100%}
+.magacin-page.is-stock-reference input[type=checkbox]{accent-color:#25821b}
+.magacin-page.is-stock-reference .mg-card{padding:8px;min-width:0;border:1px solid var(--stock-edge);border-radius:0;background:var(--stock-panel);box-shadow:inset 1px 1px #fff;overflow-x:auto}
+.magacin-page.is-stock-reference .mg-table{width:100%;border-collapse:collapse}
+.magacin-page.is-stock-reference .mg-table th{padding:7px 8px;border:1px solid #a4aab3;background:var(--stock-metal);font-size:13px;letter-spacing:0;color:#37465e}
+.magacin-page.is-stock-reference .mg-table td{padding:7px 8px;border:1px solid #b6b8bd;background:linear-gradient(115deg,#f5f5f6,#e9e9ec);font-size:14px;color:#35445d}
+.magacin-page.is-stock-reference .mg-table tr.is-clickable:hover td{background:#e2e8ef}
+.magacin-page.is-stock-reference .mg-table .num-ok{color:#167315;font-weight:750}
+.magacin-page.is-stock-reference .mg-pager{gap:7px;margin-top:10px;flex-wrap:wrap}
+.magacin-page.is-stock-reference .mg-pager .is-current{background:linear-gradient(#7191b9,#3a5f8c);color:#fff;border-color:#344d72;box-shadow:inset 1px 1px #a3bbd9}
+.magacin-page.is-stock-reference :is(a,button,input,select):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+@media(max-width:600px){.magacin-page.is-stock-reference .mg-main{padding:4px 6px 70px}.magacin-page.is-stock-reference .mg-toolbar h1{font-size:20px}.magacin-page.is-stock-reference .mg-page-search{flex-basis:100%!important;min-width:0}.magacin-page.is-stock-reference .mg-table{min-width:580px}}

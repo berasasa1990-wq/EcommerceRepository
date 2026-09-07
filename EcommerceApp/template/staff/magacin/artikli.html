@@ -1,7 +1,13 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-article-list{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-artikli-reference.css' %}?v=20260907-search-inset">
+{% endblock %}
 
-{% block magacin_content %}
-<div class="mg-toolbar">
+{% block magacin_before_search %}
+<div class="mg-toolbar article-titlebar">
     <div>
         <h1>Artikli</h1>
         <p class="mg-count">
@@ -12,93 +18,48 @@
             {% endif %}
         </p>
     </div>
+    <div class="article-title-actions">
+        <a class="mg-btn" href="{% url 'staff_magacin_pregled' %}">‹ Nazad</a>
+        <a class="mg-btn article-new" href="{% url 'staff_magacin_brzi_unos_novi' %}">＋ Novi artikal</a>
+    </div>
 </div>
+{% endblock %}
+
+{% block magacin_content %}
 {% if magacin_notice %}
 <p class="mg-mp-alert is-ok" role="status">{{ magacin_notice }}</p>
 {% endif %}
 
-{% if not searched %}
-<section class="mg-card">
-    <h2 class="mg-h">Zadnje izmjene količina</h2>
-    <div class="mg-table-wrap">
-    <table class="mg-table mg-table-stack mg-table-stack-moves">
-        <thead>
-            <tr>
-                <th>DATUM</th>
-                <th>ARTIKAL</th>
-                <th>TIP</th>
-                <th>LOKACIJA</th>
-                <th>KORISNIK</th>
-                <th class="num">KOL.</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for m in recent_movements %}
-            <tr class="is-clickable" onclick="location.href='{% url 'staff_magacin_artikal' m.product_id %}'">
-                <td>{{ m.kreiran|date:"d.m.Y H:i" }}</td>
-                <td>
-                    {{ m.product.naziv }}
-                    {% if m.variation %}<span class="mg-muted">{{ m.variation.naziv }}</span>{% endif %}
-                </td>
-                <td>{{ m.get_tip_display }}</td>
-                <td>
-                    {% if m.tip == 'transfer' %}
-                    {{ m.location.sifra }} → {{ m.to_location.sifra }}
-                    {% else %}
-                    {{ m.location.sifra }}
-                    {% endif %}
-                </td>
-                <td class="mg-move-user">{% if m.korisnik_label %}{{ m.korisnik_label }}{% else %}—{% endif %}</td>
-                <td class="num {% if m.tip == 'prijem' %}num-plus{% elif m.tip == 'prodaja' %}num-out{% endif %}">
-                    {% if m.tip == 'prijem' %}+{% elif m.tip == 'prodaja' %}−{% endif %}{{ m.kolicina }}
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="6" class="mg-muted">Još nema izmjena količina.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
-</section>
-{% else %}
-<section class="mg-card" style="padding:14px 10px;">
+{% if searched %}
+<section class="mg-card mg-articles-results" style="padding:14px 10px;">
+    <h2 class="mg-h">Pronađeni artikli ({{ result_count }})</h2>
     <div class="mg-list-head">
         <span></span>
         <span>ARTIKAL</span>
         <span>ŠIFRA</span>
         <span>STANJE</span>
         <span>MPC</span>
-        <span>STATUS</span>
     </div>
     {% for row in page %}
     <a class="mg-product-row{% if row.na_stanju <= 0 %} is-out{% endif %}" href="{% url 'staff_magacin_artikal' row.product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">
         {% if row.product.prikazna_slika %}
-        <img src="{{ row.product.prikazna_slika.url }}" alt="">
+        <img src="{{ row.product.prikazna_slika.url }}" alt="" loading="lazy" decoding="async">
         {% else %}
         <span class="ph">—</span>
         {% endif %}
-        <span>
+        <span class="article-result-title">
             <strong>{{ row.product.naziv }}</strong>
             <span class="sub">{{ row.product.brend.naziv|default:"" }}</span>
         </span>
-        <span>{{ row.product.sifra|default:"—" }}</span>
-        <span class="mg-loc-inline">
+        <span class="article-result-code">{{ row.product.sifra|default:"—" }}</span>
+        <span class="mg-loc-inline article-result-stock">
             {% if row.na_stanju > 0 %}
-            <i>Na stanju</i>
+            <i>{{ row.na_stanju }}</i>
             {% else %}
             <i class="is-empty">Nema zalihe</i>
             {% endif %}
         </span>
         <span class="mg-mpc">{{ row.product.prikazna_cijena }} KM</span>
-        <span>
-            {% if row.na_stanju <= 0 %}
-            <span class="mg-pill is-out">Nije na stanju</span>
-            {% elif row.product.aktivan %}
-            <span class="mg-pill">Aktivan</span>
-            {% else %}
-            <span class="mg-pill is-off">Neaktivan</span>
-            {% endif %}
-        </span>
     </a>
     {% empty %}
     <div class="mg-empty">
@@ -119,4 +80,47 @@
 </nav>
 {% endif %}
 {% endif %}
+<section class="mg-card">
+    <h2 class="mg-h">Posljednje promjene lagera</h2>
+    <div class="mg-table-wrap">
+    <table class="mg-table mg-table-stack mg-table-stack-moves">
+        <thead>
+            <tr>
+                <th>DATUM</th>
+                <th>ARTIKAL</th>
+                <th>TIP</th>
+                <th>LOKACIJA</th>
+                <th>KORISNIK</th>
+                <th class="num">KOL.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in recent_movements %}
+            <tr class="is-clickable" onclick="location.href='{% url 'staff_magacin_artikal' m.product_id %}'">
+                <td data-label="Datum">{{ m.kreiran|date:"d.m.Y H:i" }}</td>
+                <td data-label="Artikal" class="article-move-product">
+                    {% if m.product.slika %}<img src="{{ m.product.slika.url }}" alt="" loading="lazy">{% endif %}
+                    <a href="{% url 'staff_magacin_artikal' m.product_id %}">{{ m.product.naziv }}</a>
+                    {% if m.variation %}<span class="mg-muted">{{ m.variation.naziv }}</span>{% endif %}
+                </td>
+                <td data-label="Tip"><span class="article-move-tag {% if m.tip == 'prijem' %}is-in{% elif m.tip == 'prodaja' %}is-out{% endif %}">{{ m.get_tip_display }}</span></td>
+                <td data-label="Lokacija">
+                    {% if m.tip == 'transfer' %}
+                    {{ m.location.sifra }} → {{ m.to_location.sifra }}
+                    {% else %}
+                    {{ m.location.sifra }}
+                    {% endif %}
+                </td>
+                <td data-label="Korisnik" class="mg-move-user">{% if m.korisnik_label %}{{ m.korisnik_label }}{% else %}—{% endif %}</td>
+                <td data-label="Količina" class="num {% if m.tip == 'prijem' %}num-plus{% elif m.tip == 'prodaja' %}num-out{% endif %}">
+                    {% if m.tip == 'prijem' %}+{% elif m.tip == 'prodaja' %}−{% endif %}{{ m.kolicina }}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="mg-muted">Još nema izmjena količina.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
 {% endblock %}

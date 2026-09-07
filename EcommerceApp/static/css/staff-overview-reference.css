@@ -1,0 +1,27 @@
+body.magacin-page.is-overview-reference{--ov-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--ov-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--ov-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;background:#dedfe1!important}
+.magacin-page.is-overview-reference .mg-app,.magacin-page.is-overview-reference .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
+.magacin-page.is-overview-reference .mg-main{padding:4px 10px 18px;min-width:0;color:#111}
+.magacin-page.is-overview-reference .mg-page-head,.magacin-page.is-overview-reference .mg-chrome{padding:8px 12px;margin:0 0 8px;border:1px solid #9b9da2;border-radius:0;background:var(--ov-metal);box-shadow:var(--ov-bevel);gap:8px}
+.magacin-page.is-overview-reference .mg-page-head h1{font-size:22px;line-height:1.2;margin:0;color:#111}
+.magacin-page.is-overview-reference .mg-count,.magacin-page.is-overview-reference .mg-crumb{font-size:13px;color:#505b6c}
+.magacin-page.is-overview-reference .mg-card{padding:10px;margin-bottom:10px;min-width:0;border:1px solid #9b9da2;border-radius:0;background:var(--ov-panel);box-shadow:inset 1px 1px #fff}
+.magacin-page.is-overview-reference .mg-h{padding:7px 10px;margin:0 0 8px;border:1px solid #9b9da2;background:var(--ov-metal);box-shadow:var(--ov-bevel);font-size:18px;letter-spacing:0;color:#111}
+.magacin-page.is-overview-reference .mg-mode-tabs{gap:7px;flex-wrap:wrap}
+.magacin-page.is-overview-reference .mg-mode-tabs a,.magacin-page.is-overview-reference .mg-main .mg-btn{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:0;background:var(--ov-metal);box-shadow:var(--ov-bevel);color:#111;font-size:14px;font-weight:750;text-decoration:none}
+.magacin-page.is-overview-reference .mg-mode-tabs a.is-active{background:linear-gradient(115deg,#e1f0dc,#bed5b4);border-color:#749168;color:#23551d}
+.magacin-page.is-overview-reference .mg-main .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:inset 2px 2px #a6e395,inset -3px -3px #1e5f18;color:#fff}
+.magacin-page.is-overview-reference .mg-stats-row{gap:8px}
+.magacin-page.is-overview-reference .mg-mini-stat{padding:10px 12px;border:1px solid #a4aab3;border-radius:0;background:var(--ov-metal);box-shadow:inset 1px 1px #fff}
+.magacin-page.is-overview-reference .mg-mini-stat strong{font-size:24px;color:#111}
+.magacin-page.is-overview-reference .mg-range-form{gap:8px;flex-wrap:wrap}
+.magacin-page.is-overview-reference .mg-main input{min-height:36px;border:1px solid #969faa;border-radius:0;background:#fff;font-size:15px;box-sizing:border-box}
+.magacin-page.is-overview-reference .mg-table{width:100%;border-collapse:collapse}
+.magacin-page.is-overview-reference .mg-table th{padding:7px 8px;border:1px solid #a4aab3;background:var(--ov-metal);font-size:13px;letter-spacing:0;color:#37465e}
+.magacin-page.is-overview-reference .mg-table td{padding:7px 8px;border:1px solid #b6b8bd;background:linear-gradient(115deg,#f5f5f6,#e9e9ec);font-size:14px;color:#35445d}
+.magacin-page.is-overview-reference .mg-table tr.is-clickable:hover td{background:#e2e8ef}
+.magacin-page.is-overview-reference .mg-table .num-plus{color:#167315;font-weight:750}
+.magacin-page.is-overview-reference .mg-table .num-out{color:#c52424;font-weight:750}
+.magacin-page.is-overview-reference .mg-chart-wrap{border:1px solid #b6b8bd;border-radius:0;background:#fff;padding:8px}
+.magacin-page.is-overview-reference .mg-chrome-icon,.magacin-page.is-overview-reference .mg-chrome-burger{border-radius:0;border:1px solid #92949a;background:var(--ov-metal);box-shadow:var(--ov-bevel);color:#111}
+.magacin-page.is-overview-reference :is(a,button,input):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+@media(max-width:600px){.magacin-page.is-overview-reference .mg-main{padding:4px 6px 18px}.magacin-page.is-overview-reference .mg-page-head h1{font-size:20px}.magacin-page.is-overview-reference .mg-card{padding:8px}.magacin-page.is-overview-reference .mg-table-stack tr{border:1px solid #b6b8bd;border-radius:0;background:var(--ov-panel);margin-bottom:6px}.magacin-page.is-overview-reference .mg-table-stack td{border:0;background:transparent}}

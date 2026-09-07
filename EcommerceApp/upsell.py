@@ -176,8 +176,29 @@ def get_checkout_upsell_offers(cart):
 
 # ====================== X+1 Quantity Deal helpers ======================
 
+def prime_quantity_deals(products):
+    """Load the same first active deal for a collection without per-product queries."""
+    from .models import Akcija
+    products = list(products)
+    by_id = {product.pk: product for product in products}
+    if not by_id:
+        return
+    chosen = {}
+    for deal in Akcija.objects.filter(aktivan=True, tip=Akcija.Tip.X_PLUS_1,
+            artikal_id__in=by_id, deal_vrsta__isnull=False, popust_postotak__isnull=False).order_by('redoslijed', '-id'):
+        if deal.artikal_id not in chosen and deal.jos_traje():
+            chosen[deal.artikal_id] = deal
+    for deal in UpsellOffer.objects.filter(aktivan=True, deal_artikal_id__in=by_id,
+            deal_vrsta__isnull=False, deal_popust__isnull=False):
+        chosen.setdefault(deal.deal_artikal_id, deal)
+    for product in products:
+        product._prefetched_quantity_deal = chosen.get(product.pk)
+
+
 def get_quantity_deal(product):
     """Vrati aktivni X+1 deal za dati artikal, ako postoji."""
+    if hasattr(product, '_prefetched_quantity_deal'):
+        return product._prefetched_quantity_deal
     if not product:
         return None
     from .models import Akcija

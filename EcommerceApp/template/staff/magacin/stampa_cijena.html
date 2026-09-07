@@ -1,4 +1,10 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-price-print{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-price-print.css' %}?v=20260906-2">
+{% endblock %}
 
 {% block magacin_content %}
 <div class="sc-page" data-lookup="{{ lookup_url }}" data-mode="{{ mode }}">

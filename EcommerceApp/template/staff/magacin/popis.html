@@ -1,4 +1,10 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-counted-reference{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-counted-reference.css' %}?v=20260906-1">
+{% endblock %}
 
 {% block magacin_content %}
 <div class="pp-page mg-orders-page{% if popis and popis.location and popis.status == 'u_toku' %} is-live{% endif %}{% if provjera_mode %} is-provjera{% if provjera_location %} is-live{% endif %}{% endif %}" id="ppApp" data-lookup="{{ lookup_url }}" data-popis-id="{{ popis.pk|default:'' }}" data-live="{% if popis and popis.location_id and popis.status == 'u_toku' %}1{% elif provjera_mode and provjera_location %}1{% else %}0{% endif %}" data-mode="{% if provjera_mode %}provjera{% else %}popis{% endif %}" data-location-id="{{ provjera_location.pk|default:'' }}">

@@ -1,0 +1,30 @@
+/* Declaration editor only; printed labels use their unchanged print template. */
+@media screen{
+body.magacin-page.is-declaration-print{--sd-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--sd-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--sd-edge:#9b9da2;--sd-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;background:#dedfe1!important}
+.magacin-page.is-declaration-print .mg-app,.magacin-page.is-declaration-print .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
+.magacin-page.is-declaration-print .mg-main{padding:4px 10px 70px;min-width:0}
+.magacin-page.is-declaration-print .sd-page{padding:0;margin:0;max-width:none;color:#111}
+.magacin-page.is-declaration-print .mg-page-head{padding:8px 12px;margin:0 0 8px;border:1px solid var(--sd-edge);background:var(--sd-metal);box-shadow:var(--sd-bevel)}
+.magacin-page.is-declaration-print .mg-page-head h1{font-size:22px;line-height:1.2;text-transform:uppercase;margin:0;color:#080808}
+.magacin-page.is-declaration-print .mg-count{font-size:13px;color:#505b6c;margin:5px 0 0}
+.magacin-page.is-declaration-print .mg-grid-2{gap:10px;align-items:start}
+.magacin-page.is-declaration-print .mg-card{padding:10px;min-width:0;border:1px solid var(--sd-edge);border-radius:0;background:var(--sd-panel);box-shadow:inset 1px 1px #fff;overflow-x:auto}
+.magacin-page.is-declaration-print .mg-h{margin:0 0 8px;padding:7px 10px;border:1px solid var(--sd-edge);background:var(--sd-metal);box-shadow:var(--sd-bevel);font-size:18px;letter-spacing:0;text-transform:none;color:#111}
+.magacin-page.is-declaration-print .sd-page .mg-btn{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:0;background:var(--sd-metal);box-shadow:var(--sd-bevel);color:#111;font-size:14px;font-weight:750;text-decoration:none}
+.magacin-page.is-declaration-print .sd-page .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:inset 2px 2px #a6e395,inset -3px -3px #1e5f18;color:#fff}
+.magacin-page.is-declaration-print .sd-page .mg-btn-danger{color:#b52525}
+.magacin-page.is-declaration-print .sd-page .mg-btn:hover{filter:brightness(1.08)}
+.magacin-page.is-declaration-print .mg-table{width:100%;border-collapse:collapse}
+.magacin-page.is-declaration-print .mg-table th{padding:7px 8px;border:1px solid #a4aab3;background:var(--sd-metal);font-size:13px;letter-spacing:0;color:#37465e}
+.magacin-page.is-declaration-print .mg-table td{padding:7px 8px;border:1px solid #b6b8bd;background:linear-gradient(115deg,#f5f5f6,#e9e9ec);font-size:14px;color:#35445d}
+.magacin-page.is-declaration-print .mg-table tr.is-active td{background:#dce8d7}
+.magacin-page.is-declaration-print .sd-page input:not([type=hidden]),.magacin-page.is-declaration-print .sd-page select,.magacin-page.is-declaration-print .sd-page textarea{border:1px solid #969faa;border-radius:0;background:#fff;padding:6px 8px;font-size:15px;box-sizing:border-box;max-width:100%}
+.magacin-page.is-declaration-print .sd-page input:not([type=hidden]),.magacin-page.is-declaration-print .sd-page select{min-height:36px}
+.magacin-page.is-declaration-print .mg-field{margin-bottom:8px}
+.magacin-page.is-declaration-print .mg-field label{color:#414c5e;font-size:13px}
+.magacin-page.is-declaration-print .sd-actions,.magacin-page.is-declaration-print .sd-form-actions{gap:6px}
+.magacin-page.is-declaration-print .sd-opis{color:#505b6c;font-size:13px;line-height:1.4}
+.magacin-page.is-declaration-print .sd-preview{border:1px solid #a4aab3;border-radius:0;background:#fff;box-shadow:inset 1px 1px #ddd}
+.magacin-page.is-declaration-print :is(a,button,input,textarea,select):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+}
+@media screen and (max-width:600px){.magacin-page.is-declaration-print .mg-main{padding:4px 6px 70px}.magacin-page.is-declaration-print .mg-page-head h1{font-size:20px}.magacin-page.is-declaration-print .mg-card{padding:8px}.magacin-page.is-declaration-print .mg-table{min-width:480px}}

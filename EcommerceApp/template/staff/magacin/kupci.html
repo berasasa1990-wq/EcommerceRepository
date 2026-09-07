@@ -1,4 +1,10 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-customers-reference{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-customers-reference.css' %}?v=20260906-1">
+{% endblock %}
 
 {% block magacin_content %}
 <div class="mg-toolbar">
@@ -41,6 +47,7 @@
                             data-grad="{{ row.grad }}"
                             data-email="{{ row.email }}"
                             data-postanski="{{ row.postanski_broj }}"
+                            data-refused="{{ row.odbio_posiljku|yesno:'1,0' }}"
                             data-vp="{% if row.vp_kupac %}1{% endif %}">Izmijeni</button>
                     </td>
                 </tr>
@@ -84,6 +91,10 @@
                 <input type="checkbox" name="vp_kupac" id="custVp" value="1"{% if editing.vp_kupac %} checked{% endif %}>
                 VP kupac
             </label>
+            <label style="display:flex;gap:8px;align-items:center;">
+                <input type="checkbox" name="odbio_posiljku" id="custRefused" value="1"{% if editing.odbio_posiljku %} checked{% endif %}>
+                Odbio pošiljku
+            </label>
             <div style="display:flex;gap:8px;margin-top:14px;">
                 <button type="submit" class="mg-btn mg-btn-primary">Sačuvaj</button>
                 <button type="button" class="mg-btn" id="custReset">Novi</button>
@@ -113,6 +124,7 @@
             document.getElementById('custEmail').value = btn.dataset.email || '';
             document.getElementById('custPost').value = btn.dataset.postanski || '';
             document.getElementById('custVp').checked = btn.dataset.vp === '1';
+            document.getElementById('custRefused').checked = btn.dataset.refused === '1';
             document.getElementById('custDelete').hidden = false;
             document.getElementById('custDeleteId').value = btn.dataset.id;
             title.textContent = 'Izmijeni kupca';

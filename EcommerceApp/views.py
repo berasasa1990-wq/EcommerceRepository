@@ -9,6 +9,7 @@ from functools import lru_cache
 from urllib.parse import urlencode, urlparse
 
 from django.conf import settings
+from .warehouse_access import warehouse_user_required
 from .models import SiteSettings
 from django import forms as django_forms
 from django.core.files.base import ContentFile
@@ -4383,6 +4384,7 @@ def _cart_context(request, cart):
     return {
         'cart': cart,
         'cart_items': cart_items,
+        'cart_has_sold_out': any(item.get('sold_out') for item in cart_items),
         'cart_total': summary['ukupno'],
         'summary': summary,
         'pricing': summary['pdv'],
@@ -4426,6 +4428,14 @@ def cart_view(request):
         }),
     }
     return render(request, 'cart.html', context)
+
+
+@require_GET
+def cart_stock(request):
+    available = Cart(request).availability()
+    response = JsonResponse({'items': [{'key': key, 'quantity': qty, 'sold_out': qty <= 0} for key, qty in available.items()]})
+    response['Cache-Control'] = 'no-store, private'
+    return response
 
 
 @require_POST
@@ -4578,6 +4588,9 @@ def _save_profile_from_checkout(user, cleaned_data):
 
 def checkout(request):
     cart = Cart(request)
+    if any(qty <= 0 for qty in cart.availability().values()):
+        messages.error(request, 'Neki artikli su rasprodati. Uklonite ih iz korpe prije naručivanja.')
+        return redirect('cart')
     if not cart.item_count:
         messages.warning(request, 'Korpa je prazna.')
         return redirect('home')
@@ -5493,7 +5506,7 @@ def _mark_order_completed(request, broj):
 
 
 @login_required(login_url='login')
-@user_passes_test(_superuser_required)
+@user_passes_test(warehouse_user_required)
 def staff_order_lookup(request):
     query = request.GET.get('q', '').strip()
     url = reverse('staff_online_orders')
@@ -5533,7 +5546,7 @@ def _create_odoo_sale_order_from_web(request, broj, *, force=False):
 
 
 @login_required(login_url='login')
-@user_passes_test(_superuser_required)
+@user_passes_test(warehouse_user_required)
 def staff_order_detail(request, broj):
     order = get_object_or_404(
         Order.objects.prefetch_related('stavke'),
@@ -5621,7 +5634,7 @@ def _send_order_to_xexpress(request, broj):
 
 
 @login_required(login_url='login')
-@user_passes_test(_superuser_required)
+@user_passes_test(warehouse_user_required)
 @require_POST
 def staff_order_xexpress(request, broj):
     _send_order_to_xexpress(request, broj)
@@ -5642,13 +5655,13 @@ def _order_print_job(order):
         'packing_lines': packing_lines,
         'odoo_error': odoo_error,
         'packing_missing': packing_missing,
-        'requires_mp_check': bool(packing_missing),
+        'requires_mp_check': False,
     })
     return job
 
 
 @login_required(login_url='login')
-@user_passes_test(_superuser_required)
+@user_passes_test(warehouse_user_required)
 def staff_order_print(request, broj):
     """Štampa: samo faktura (račun + garancija). Pakovanje je u Magacinu."""
     order = get_object_or_404(
@@ -5676,7 +5689,7 @@ def staff_order_print(request, broj):
 
 
 @login_required(login_url='login')
-@user_passes_test(_superuser_required)
+@user_passes_test(warehouse_user_required)
 @require_POST
 def staff_order_mark_printed(request, broj):
     """Označi narudžbu kao odštampanu (zeleni check na listi)."""
@@ -5817,7 +5830,7 @@ def _deduct_order_stock_from_packing(order):
 
 
 @login_required(login_url='login')
-@user_passes_test(_superuser_required)
+@user_passes_test(warehouse_user_required)
 def staff_order_brza_posta(request, broj):
     """Podaci za unos u Brzu poštu + dugme Skini sa stanja (Odoo lokacije)."""
     from django.utils import timezone
@@ -5918,15 +5931,24 @@ def _allocate_packing_locations(needed_qty, stock_locations):
     return picks, remaining
 
 
-def _magacin_stock_picks(items):
+def _magacin_stock_picks(items, *, exact_items=None):
     """Picks iz lokalnog Magacin stanja kad nema rezervacije (npr. webshop)."""
-    from .magacin import order_location_rows
-
+    from .magacin import is_ignored_stock_location
+    from .models import WarehouseStock
+    stocks = {}
+    for stock in WarehouseStock.objects.filter(product_id__in={item.artikal_id for item in items if item.artikal_id},
+            location__aktivan=True, kolicina__gt=0).select_related('location').order_by('location__sifra'):
+        if is_ignored_stock_location(stock.location):
+            continue
+        available = max(0, int(stock.kolicina) - max(0, int(stock.rezervisano)))
+        if available:
+            stocks.setdefault((stock.product_id, stock.variation_id), []).append({
+                'location': stock.location, 'kolicina': stock.kolicina, 'dostupno': available})
     picks_by_item = {}
     for item in items:
         if not item.artikal_id:
             continue
-        rows, _ = order_location_rows(item.artikal, item.varijacija)
+        rows = stocks.get((item.artikal_id, item.varijacija_id), [])
         remaining = int(item.kolicina or 0)
         picks = []
         for row in rows:
@@ -5945,6 +5967,7 @@ def _magacin_stock_picks(items):
                 'location_path': loc.odoo_location_path or loc.naziv or '',
             })
             remaining -= take
+            row['dostupno'] -= take
         if picks:
             picks_by_item[item.pk] = (picks, remaining)
     return picks_by_item
@@ -5952,8 +5975,8 @@ def _magacin_stock_picks(items):
 
 def _magacin_hold_picks(order, items):
     """Picks iz lokalnih Magacin rezervacija (rezervisano / validirano)."""
-    from .models import OrderStockHold
-
+    from .models import OrderStockHold, WarehouseStock
+    from .magacin import is_ignored_stock_location
     holds = list(
         order.magacin_holds.exclude(status=OrderStockHold.Status.OTKAZANO)
         .select_related('location', 'product', 'variation')
@@ -5961,15 +5984,23 @@ def _magacin_hold_picks(order, items):
     if not holds:
         return {}
 
-    buckets = [
-        {
-            'product_id': hold.product_id,
-            'variation_id': hold.variation_id,
-            'left': int(hold.kolicina or 0),
-            'location': hold.location,
-        }
-        for hold in holds
-    ]
+    capacity = {}
+    for stock in WarehouseStock.objects.filter(product_id__in={h.product_id for h in holds}, location_id__in={h.location_id for h in holds}):
+        key = (stock.product_id, stock.variation_id, stock.location_id)
+        capacity[key] = capacity.get(key, 0) + max(0, int(stock.kolicina or 0))
+    buckets = []
+    for hold in holds:
+        key = (hold.product_id, hold.variation_id, hold.location_id)
+        qty = int(hold.kolicina or 0)
+        if hold.status == OrderStockHold.Status.VALIDIRANO and order.lager_status != Order.LagerStatus.VALIDIRANO:
+            continue
+        if hold.status == OrderStockHold.Status.REZERVISANO:
+            if not hold.location.aktivan or is_ignored_stock_location(hold.location):
+                continue
+            qty = min(qty, capacity.get(key, 0))
+            capacity[key] = max(0, capacity.get(key, 0) - qty)
+        buckets.append({'product_id':hold.product_id, 'variation_id':hold.variation_id,
+                        'left':qty, 'location':hold.location})
 
     def consume(item, variation_id, need):
         picks = []
@@ -6001,9 +6032,6 @@ def _magacin_hold_picks(order, items):
             continue
         need = int(item.kolicina or 0)
         picks, need = consume(item, item.varijacija_id, need)
-        if need > 0 and item.varijacija_id:
-            extra, need = consume(item, None, need)
-            picks.extend(extra)
         if not picks:
             continue
         picks = sorted(picks, key=lambda p: (p.get('location_name') or '').casefold())
@@ -6051,16 +6079,21 @@ def _build_order_packing_lines(order):
     from .magacin import NIJE_POPISAN_LABEL, order_has_nije_popisan
 
     items = list(
-        order.stavke.select_related('artikal', 'artikal__brend', 'artikal__kategorija', 'varijacija').all()
+        order.stavke.filter(ledger_excess_line__isnull=True).select_related('artikal', 'artikal__brend', 'artikal__kategorija', 'varijacija').all()
     )
     lines = []
     odoo_error = None
     stock_by_product = {}
     template_variants = {}
+    exact_items = {e.get("item_id") for e in (order.pick_short_events or [])}
     magacin_picks = _magacin_hold_picks(order, items)
     if len(magacin_picks) < len(items):
-        for pk, val in _magacin_stock_picks(items).items():
+        for pk, val in _magacin_stock_picks([item for item in items if item.pk not in magacin_picks], exact_items=exact_items).items():
             magacin_picks.setdefault(pk, val)
+    for item in items:
+        if item.artikal_id:
+            # Never replace missing physical stock with a remote/parent location.
+            magacin_picks.setdefault(item.pk, ([], int(item.kolicina or 0)))
     mp_confirmed = _mp_confirmed_item_ids(order)
     pick_state = order.pick_state if isinstance(getattr(order, 'pick_state', None), dict) else {}
 
@@ -6245,7 +6278,7 @@ def _build_order_packing_lines(order):
 
 
 @login_required(login_url='login')
-@user_passes_test(_superuser_required)
+@user_passes_test(warehouse_user_required)
 def staff_order_packing(request, broj):
     """Pakovanje: artikli narudžbe + Odoo lokacije (abecedno, quantity on hand)."""
     from django.utils import timezone

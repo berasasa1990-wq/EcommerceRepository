@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
@@ -9,7 +10,8 @@
 {% endblock %}
 
 {% block content %}
-<section class="checkout-page"{% if meta_pixel_id and meta_initiate_checkout_event_id %} data-meta-initiate-checkout data-event-id="{{ meta_initiate_checkout_event_id }}" data-num-items="{{ cart_count|default:0 }}" data-value="{{ cart_total }}"{% endif %}>
+<script src="{% static 'js/cart-stock.js' %}?v=20260907" defer></script>
+<section data-cart-stock-url="{% url 'cart_stock' %}" class="checkout-page"{% if meta_pixel_id and meta_initiate_checkout_event_id %} data-meta-initiate-checkout data-event-id="{{ meta_initiate_checkout_event_id }}" data-num-items="{{ cart_count|default:0 }}" data-value="{{ cart_total }}"{% endif %}>
     <h1>{{ seo_h1|default:"Narudžba" }}</h1>
     {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
     {% if not user.is_authenticated %}

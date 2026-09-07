@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/staff-subscriptions.css' %}?v=20260906-1">{% endblock %}
+{% block content %}
+<div class="subscription-page">
+    <header class="subscription-head"><h1>Planovi magacina</h1>{% if has_warehouse_access %}<a class="sub-button" href="{% url 'staff_magacin' %}">Otvori magacin</a>{% endif %}</header>
+    {% for message in messages %}<p class="subscription-message" role="status">{{ message }}</p>{% endfor %}
+    <p>Odaberi plan i pošalji zahtjev. Vlasnik magacina potvrđuje uplatu i aktivira pristup. Slanje zahtjeva se ne naplaćuje automatski.</p>
+    {% if subscription %}<p>Dodijeljeni plan: <strong>{{ subscription.plan }}</strong> — {% if has_warehouse_access %}aktivan{% else %}neaktivan ili istekao{% endif %}{% if subscription.expires_on %}, vrijedi do {{ subscription.expires_on|date:'d.m.Y' }}{% endif %}.</p>{% endif %}
+    {% if pending_request %}<p class="subscription-message">Zahtjev za {{ pending_request.plan }} čeka aktivaciju. Izbor drugog plana mijenja zahtjev.</p>{% endif %}
+    <div class="subscription-grid">{% for card in plan_cards %}<section class="subscription-card"><h2>{{ card.plan }}</h2>{% if card.plan.code == 'ultimate' %}<p>Sve sekcije magacina.</p>{% else %}<ul>{% for label in card.labels %}<li>{{ label }}</li>{% endfor %}</ul>{% endif %}<form method="post">{% csrf_token %}<input type="hidden" name="plan" value="{{ card.plan.code }}"><button class="sub-primary" type="submit">Zatraži {{ card.plan }}</button></form></section>{% endfor %}</div>
+</div>
+{% endblock %}

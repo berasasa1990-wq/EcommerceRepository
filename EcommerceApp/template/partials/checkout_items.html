@@ -1,7 +1,8 @@
 {% for item in cart_items %}
-<li>
+<li data-cart-key="{{ item.key }}">
     <span class="checkout-item-label">
         {% include 'partials/cart_item_name.html' with item=item %}
+        <span data-stock-label role="status"{% if item.sold_out %} style="color:#b91c1c"{% endif %}>{% if item.sold_out %}Rasprodat — uklonite iz korpe{% endif %}</span><a data-stock-remove href="{% url 'cart' %}"{% if not item.sold_out %} hidden{% endif %}>Ukloni iz korpe</a>
         <span class="checkout-item-qty">× {{ item.quantity }}</span>
     </span>
     <span>{{ item.ukupno_stavka }} KM</span>

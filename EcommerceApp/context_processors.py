@@ -100,7 +100,7 @@ def _build_nav_categories():
 def _is_light_request_path(path: str) -> bool:
     """Putanje bez menija/popupova/marketing contexta (brži TTFB)."""
     path = path or ''
-    if path.startswith(('/api/', '/uzivo/', '/static/', '/media/', '/admin/', '/nalog/magacin/')):
+    if path.startswith(('/api/', '/uzivo/', '/static/', '/media/', '/admin/', '/nalog/magacin/', '/nalog/provjera-narudzbi/')):
         return True
     if path.startswith(('/sitemap', '/robots.txt', '/healthz', '/favicon', '/feeds/')):
         return True

@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/product-detail-mobile.css' %}?v=20260905graydots2">
 {% if staff_product_tools %}
 <link rel="stylesheet" href="{% static 'css/staff-image-fit.css' %}?v=20260829imgFit">
 {% endif %}
@@ -45,6 +46,7 @@
                     {% endif %}
                 </div>
                 {% if product.prikazna_slika %}
+                <button type="button" class="pd-mobile-zoom" aria-label="Uvećaj sliku proizvoda" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6M7 10h6M10 7v6"/></svg></button>
                 {% with img=product.prikazna_slika_responsive %}
                 <img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" id="mainProductImage" width="{{ img.width }}" height="{{ img.height }}" sizes="(max-width: 768px) 92vw, 50vw" loading="eager" fetchpriority="high" decoding="async" data-full-src="{{ product.prikazna_slika.url }}">
                 {% endwith %}
@@ -67,9 +69,12 @@
                 </button>
                 {% endif %}
             </div>
-            {% if product.dodatne_slike.exists %}
+            {% if product.prikazna_slika or product.dodatne_slike.exists %}
             <div class="pd-gallery-bar">
-                <div class="product-thumbnails" id="productThumbnails">
+                <div class="product-thumbnails" id="productThumbnails" aria-label="Slike proizvoda">
+                    {% if product.prikazna_slika %}{% with r=product.prikazna_slika_responsive %}
+                    <button type="button" class="product-thumbnail pd-mobile-primary active" data-src="{{ r.src }}" data-full="{{ product.prikazna_slika.url }}"{% if r.srcset %} data-srcset="{{ r.srcset }}"{% endif %} data-width="{{ r.width }}" data-height="{{ r.height }}" aria-label="Prikaži glavnu sliku"></button>
+                    {% endwith %}{% endif %}
                     {% for img in product.dodatne_slike.all %}
                     {% with r=img.prikazna_slika_responsive %}
                     <button type="button" class="product-thumbnail"
@@ -98,6 +103,7 @@
              {% if product.prikazna_slika %} data-default-image="{{ product.prikazna_slika.url }}"{% endif %}>
             <div class="product-detail-title-row">
                 <h1>{{ seo_h1|default:product.naziv }}</h1>
+                <p class="pd-mobile-meta"><span>Šifra: {{ product.sifra }}</span>{% if product.brend %}<span>Brend: {{ product.brend.naziv }}</span>{% endif %}</p>
             </div>
             <div class="product-detail-body">
             {% if product.proizvedeno_u_japanu %}
@@ -515,11 +521,11 @@
                 {% if conversion_boost %}
                 <div class="pd-conversion-boost">
                     {% if conversion_boost.free_shipping_hint %}
-                    <p class="pd-conversion-ship">🚚 {{ conversion_boost.free_shipping_hint|safe }}</p>
+                    <p class="pd-conversion-ship"><svg class="pd-mobile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 5h11v12H3zM14 9h4l4 5v3h-8M1 9h5M0 13h5"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>{{ conversion_boost.free_shipping_hint|safe }}</span></p>
                     {% endif %}
                     <ul class="pd-conversion-trust">
                         {% for line in conversion_boost.trust_lines %}
-                        <li>✓ {{ line }}</li>
+                        <li><svg class="pd-mobile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{% if forloop.counter == 1 %}<path d="M3 5h11v12H3zM14 9h4l4 5v3h-8M1 9h5M1 13h4"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>{% elif forloop.counter == 2 %}<path d="M12 2 3 5v6c0 6 9 11 9 11s9-5 9-11V5z"/>{% else %}<path d="m8 2-5 5 5 4M3 7h9a8 8 0 1 1-7 12"/>{% endif %}</svg><span>{{ line }}</span></li>
                         {% endfor %}
                     </ul>
                 </div>
@@ -704,7 +710,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-detail.min.js' %}?v=20260901nozoom" defer></script>
+<script src="{% static 'js/product-detail.min.js' %}?v=20260905gallery" defer></script>
+<script src="{% static 'js/product-detail-mobile.js' %}?v=20260905a" defer></script>
 {% if staff_product_tools %}
 <script src="{% static 'js/staff-image-fit.js' %}?v=20260829imgFit"></script>
 {% endif %}

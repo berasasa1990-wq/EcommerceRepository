@@ -1,4 +1,10 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-levels-reference{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-levels-reference.css' %}?v=20260906-1">
+{% endblock %}
 
 {% block magacin_content %}
 <div class="mg-orders-page mg-nivelacije-page">

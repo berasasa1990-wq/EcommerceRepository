@@ -1,4 +1,10 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-orders-reference{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-orders-reference.css' %}?v=20260906-6">
+{% endblock %}
 
 {% block magacin_content %}
 <div class="mg-orders-page">
@@ -8,11 +14,11 @@
             <span class="mg-orders-title-ico" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.5L22 8H6.4"/></svg>
             </span>
-            {% if show_validated %}Validatovane narudžbe{% else %}Narudžbe{% endif %}
+            {% if order_query %}Rezultati pretrage — svi statusi{% elif show_validated %}Validatovane narudžbe{% else %}Narudžbe{% endif %}
         </h1>
         <p class="mg-count">
-            {% if show_validated and order_query %}
-            Pretraga validatovanih — broj, ime ili telefon.
+            {% if order_query %}
+            Pretraga svih statusa — nove, otkazane i validatovane narudžbe.
             {% elif show_validated and show_all_validated %}
             Sve validatovane iz pickinga — pretraži po imenu ili broju.
             {% elif show_validated %}
@@ -136,7 +142,7 @@
                     <th>KUPAC</th>
                     <th>IZVOR</th>
                     <th>STATUS</th>
-                    <th>LAGER</th>
+                    <th class="mg-order-loc">LAGER</th>
                     <th>DATUM</th>
                     <th>NAPOMENA</th>
                     <th class="num">UKUPNO</th>
@@ -145,7 +151,7 @@
             </thead>
             <tbody>
                 {% for order in orders %}
-                <tr class="is-clickable{% if order.pick_shortages %} has-short-pick{% endif %}{% if order.needs_mp_check %} is-mp-lock{% endif %}" data-order-url="{% if order.status == 'rezervacija' %}{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" data-mp="{% if order.needs_mp_check %}1{% else %}0{% endif %}"{% if order.is_vp %} data-vp="1"{% endif %}>
+                <tr class="is-clickable{% if order.pick_shortages %} has-short-pick{% endif %}{% if order.needs_mp_check %} is-mp-lock{% endif %}" data-order-url="{% url 'staff_order_detail' order.broj %}" data-mp="{% if order.needs_mp_check %}1{% else %}0{% endif %}"{% if order.is_vp %} data-vp="1"{% endif %}>
                     <td class="mg-check-col" data-stop-row>
                         <input type="checkbox" name="b" value="{{ order.broj }}" class="mg-order-check"{% if order.needs_mp_check %} data-mp="1"{% endif %}{% if order.is_vp %} data-vp="1"{% endif %}>
                     </td>
@@ -225,9 +231,18 @@
                         <a class="mg-order-print" href="{% url 'staff_magacin_narudzbe_stampa_kolicine' %}?b={{ order.broj }}" target="_blank" rel="noopener" title="Štampaj količine za fakturu" aria-label="Štampaj količine za fakturu">Količine</a>
                         {% endif %}
                         {% endif %}
-                        <a class="mg-row-more" href="{% if order.status == 'rezervacija' %}{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}{% else %}{% url 'staff_order_detail' order.broj %}{% endif %}" aria-label="Otvori narudžbu">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
-                        </a>
+                        <details class="order-row-menu">
+                            <summary class="mg-row-more" aria-label="Opcije narudžbe">⋮</summary>
+                            <div class="order-row-menu-panel">
+                                {% if order.can_edit_from_list %}
+                                <a href="{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}">Izmijeni narudžbu</a>
+                                {% endif %}
+                                {% if order.lager_status == 'rezervisano' %}
+                                <button type="submit" form="cancelOrder{{ order.pk }}">Otkaži narudžbu</button>
+                                {% endif %}
+                                <a href="{% url 'staff_order_detail' order.broj %}">Prikaži fakturu</a>
+                            </div>
+                        </details>
                     </td>
                 </tr>
                 {% empty %}
@@ -281,4 +296,12 @@
     {% csrf_token %}
     <input type="hidden" name="lozinka" value="">
 </form>
+{% for order in orders %}
+{% if order.lager_status == 'rezervisano' %}
+<form id="cancelOrder{{ order.pk }}" method="post" action="{% url 'staff_order_detail' order.broj %}" onsubmit="return confirm('Otkazati narudžbu?');" hidden>
+    {% csrf_token %}
+    <input type="hidden" name="action" value="otkazi">
+</form>
+{% endif %}
+{% endfor %}
 {% endblock %}

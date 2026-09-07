@@ -1,35 +1,44 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-spares{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-spares-reference.css' %}?v=20260906-1">
+{% endblock %}
 
 {% block magacin_content %}
+<div class="spares-page">
 <div class="mg-toolbar">
     <h1>Rezervni dijelovi</h1>
     <form method="get" class="mg-page-search" style="margin:0;max-width:420px;flex:1;">
         <svg class="mg-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
         <input type="search" name="pretraga" value="{{ magacin_search }}" placeholder="Artikal, šifra, dio, kupac, broj narudžbe…" autocomplete="off">
-        <button type="submit" class="mg-btn">Filtriraj</button>
+        <button type="submit" class="mg-btn">Pretraži</button>
     </form>
 </div>
 
-<p class="mg-count">Artikli kojima je na narudžbi poslan rezervni dio. Crveno je što fali / što je otišlo kupcu.</p>
+<div class="spares-notice"><p>Prikazani su artikli kojima je na narudžbi poslan rezervni dio. U koloni „Fali / Poslano“ navedeno je šta je poslano kupcu.</p><span>Ukupno: <strong>{{ page.paginator.count }}</strong></span></div>
 
 <section class="mg-card">
     <table class="mg-table">
         <thead>
             <tr>
-                <th>ARTIKAL</th>
-                <th>ŠIFRA</th>
-                <th>FALI / POSLANO</th>
-                <th>NARUDŽBA</th>
-                <th>KUPAC</th>
-                <th>DATUM</th>
+                <th>Slika</th>
+                <th>Naziv artikla</th>
+                <th>Šifra</th>
+                <th>Fali / Poslano</th>
+                <th>Narudžba</th>
+                <th>Kupac</th>
+                <th>Datum</th>
+                <th>Cijena</th><th>Količina</th><th>Akcije</th>
             </tr>
         </thead>
         <tbody>
             {% for item in page %}
             <tr class="is-clickable" onclick="location.href='{% url 'staff_order_detail' item.narudzba.broj %}'">
+                <td class="spares-photo">{% if item.artikal.slika %}<img src="{{ item.artikal.slika.url }}" alt="" loading="lazy">{% else %}<span aria-label="Nema slike">—</span>{% endif %}</td>
                 <td>
                     <strong>{% if item.artikal %}{{ item.artikal.naziv }}{% else %}{{ item.product_naziv|default:item.naziv }}{% endif %}</strong>
-                    <span class="mg-spare-missing">Fali: {{ item.naziv }}{% if item.kolicina %} × {{ item.kolicina }}{% endif %}</span>
                 </td>
                 <td>{% if item.artikal %}{{ item.artikal.sifra|default:"—" }}{% else %}{{ item.sifra|default:"—" }}{% endif %}</td>
                 <td>
@@ -37,15 +46,19 @@
                 </td>
                 <td>#{{ item.narudzba.broj }}</td>
                 <td>{{ item.narudzba.ime_prezime }}</td>
-                <td>{{ item.narudzba.kreirana|date:"d.m.Y. H:i" }}</td>
+                <td>{{ item.narudzba.kreirana|date:"d.m.Y." }}<br>{{ item.narudzba.kreirana|date:"H:i" }}</td>
+                <td class="spares-price">{{ item.cijena|floatformat:2 }} KM</td>
+                <td class="spares-qty">{{ item.kolicina }}</td>
+                <td><a class="mg-btn" href="{% url 'staff_order_detail' item.narudzba.broj %}">Detalji <span aria-hidden="true">›</span></a></td>
             </tr>
             {% empty %}
-            <tr><td colspan="6" class="mg-muted">Nema poslanih rezervnih dijelova.</td></tr>
+            <tr><td colspan="10" class="mg-muted">Nema poslanih rezervnih dijelova.</td></tr>
             {% endfor %}
         </tbody>
     </table>
 </section>
 
+<div class="spares-footer">
 {% if page.has_other_pages %}
 <nav class="mg-pager">
     {% if page.has_previous %}
@@ -57,4 +70,7 @@
     {% endif %}
 </nav>
 {% endif %}
+<span class="spares-range">Prikazano {{ page.start_index }} – {{ page.end_index }} od {{ page.paginator.count }}</span>
+</div>
+</div>
 {% endblock %}

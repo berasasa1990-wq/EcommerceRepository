@@ -1,9 +1,15 @@
 {% extends 'staff/magacin/base.html' %}
 {% load static %}
+{% block body_class %}{{ block.super }} is-import-reference is-import-count-reference{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-import-reference.css' %}?v=20260907-detail">
+<link rel="stylesheet" href="{% static 'css/staff-import-count-reference.css' %}?v=20260907-barcode">
+{% endblock %}
 
 {% block magacin_content %}
 <div class="up-page" id="upApp" data-url="{% url 'staff_magacin_uvoz_popis' uvoz.pk %}" data-print="{% url 'staff_magacin_uvoz_popis_stampa' uvoz.pk %}">
-    <script type="application/json" id="upPayload">{{ payload_json|safe }}</script>
+    {{ payload|json_script:"upPayload" }}
     {% csrf_token %}
     <div class="up-crumb">
         <a href="{% url 'staff_magacin_uvoz' %}">Uvoz</a>
@@ -87,5 +93,5 @@
 {% endblock %}
 
 {% block magacin_js %}
-<script src="{% static 'js/staff-uvoz-popis.js' %}?v=20260904popisMob"></script>
+<script src="{% static 'js/staff-uvoz-popis.js' %}?v=20260907barcode"></script>
 {% endblock %}

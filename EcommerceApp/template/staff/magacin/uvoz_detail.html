@@ -1,4 +1,10 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-import-reference is-import-detail-reference{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-import-reference.css' %}?v=20260907-detail">
+{% endblock %}
 
 {% block magacin_content %}
 <div class="mg-toolbar">
@@ -40,9 +46,9 @@
 </div>
 
 <section class="mg-card">
-    <div class="mg-toolbar" style="margin-bottom:12px;">
+    <div class="mg-toolbar mg-import-section-head">
         <div>
-            <h2 style="margin:0;font-size:16px;">Artikli u uvozu</h2>
+            <h2>Artikli u uvozu</h2>
             <p class="mg-count">{% if popis_stats %}{{ popis_stats.artikala }} artikala · {{ popis_stats.ocekivano_kom }} kom{% endif %}</p>
         </div>
         <div class="mg-toolbar-actions">

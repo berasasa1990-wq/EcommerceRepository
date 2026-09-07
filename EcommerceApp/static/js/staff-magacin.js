@@ -32,6 +32,22 @@
         navClose.addEventListener('click', function () { setMagacinNav(false); });
     }
 
+    // On phones, warehouse Back controls open navigation without leaving the page.
+    if (app) {
+        document.addEventListener('click', function (event) {
+            if (!window.matchMedia('(max-width: 860px)').matches) return;
+            var control = event.target.closest && event.target.closest('a,button');
+            if (!control || !app.contains(control) || control.closest('.mg-sidebar') || control.hasAttribute('data-picking-list')) return;
+            var label = (control.getAttribute('aria-label') || control.textContent || '')
+                .replace(/^[\s←‹«❮]+/, '').trim();
+            if (!control.matches('.mg-back,.pk-bar-back,.pt-back') && !/^nazad(?:\s|$)/i.test(label)) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            setMagacinNav(true);
+            if (navClose) navClose.focus({ preventScroll: true });
+        }, true);
+    }
+
     var user = document.getElementById('mgUser');
     if (user) {
         user.addEventListener('click', function (event) {
@@ -398,6 +414,10 @@ function initCustomerPicker() {
         if (modal) modal.hidden = true;
         showHint('');
     }
+    function showRefusedCustomer(refused) {
+        var warning = document.getElementById('mgCustomerRefused');
+        if (warning) warning.hidden = !refused;
+    }
     function lockCustomer(data) {
         var ime = (data.ime_prezime || '').trim();
         if (!ime) {
@@ -411,8 +431,9 @@ function initCustomerPicker() {
         if (adresaInput) adresaInput.value = data.adresa || '';
         if (emailInput) emailInput.value = data.email || '';
         if (postInput) postInput.value = data.postanski_broj || '';
-        if (vpInput) vpInput.value = data.vp_kupac ? '1' : '';
+        if (vpInput) { vpInput.value = data.vp_kupac ? '1' : ''; vpInput.dispatchEvent(new Event('change', { bubbles: true })); }
         if (vpFlag) vpFlag.hidden = !data.vp_kupac;
+        showRefusedCustomer(data.odbio_posiljku);
         if (nameEl) nameEl.textContent = ime;
         var dash = function (v) { return (v || '').trim() || '—'; };
         var telEl = document.getElementById('mgLockTel');
@@ -440,9 +461,60 @@ function initCustomerPicker() {
         }
         if (intro) intro.textContent = 'Kreiraj narudžbu dodavanjem kupca i artikla.';
         closeAddModal();
+        showCustomerExcess(data.excess_items || [], data.missing_items || []);
         applyLoyaltyForPhone(data.telefon || '');
         var articleSearch = document.getElementById('mgOrderSearch');
         if (articleSearch) window.setTimeout(function () { articleSearch.focus(); }, 40);
+    }
+    function showCustomerExcess(items, missing) {
+        missing = missing || [];
+        items = items.concat(missing);
+        if (!form || form.querySelector('[name="order_broj"]')) return;
+        var preview = document.getElementById('mgAutoExcessPreview');
+        if (!preview) {
+            preview = document.createElement('section');
+            preview.id = 'mgAutoExcessPreview';
+            preview.className = 'mg-card';
+            var articleBox = document.getElementById('mgOrderSearchBox');
+            if (articleBox) articleBox.before(preview); else form.appendChild(preview);
+        }
+        preview.replaceChildren();
+        preview.hidden = !items.length;
+        var total = 0;
+        var title = document.createElement('h3');
+        title.textContent = 'Raniji višak / manjak za ovog kupca';
+        preview.appendChild(title);
+        items.forEach(function (item) {
+            var row = document.createElement('p');
+            row.textContent = (item.missing ? 'Manjak — dugujemo kupcu: ' : 'Ranije poslati višak: ') + (item.code ? item.code + ' · ' : '') + item.name + ' — ' + item.quantity + ' kom.' + (item.missing ? ' · picking, bez fakture' : ' · ' + item.amount + ' KM · faktura, bez pickinga');
+            preview.appendChild(row);
+            total += Number(item.amount) || 0;
+        });
+        form.setAttribute('data-auto-excess-total', total.toFixed(2));
+        form.setAttribute('data-auto-missing-count', missing.length);
+        refreshOrderTotal();
+        var modal = document.getElementById('mgAutoExcessNotice');
+        if (modal) modal.remove();
+        if (!items.length) return;
+        modal = document.createElement('div');
+        modal.id = 'mgAutoExcessNotice';
+        modal.className = 'mg-modal';
+        var panel = document.createElement('div');
+        panel.className = 'mg-modal-panel';
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-modal', 'true');
+        panel.setAttribute('aria-label', 'Višak i dugovanje kupcu');
+        panel.style.background = 'linear-gradient(120deg,#f5f5f6,#d9dce1)';
+        Array.from(preview.children).forEach(function (row) { panel.appendChild(row.cloneNode(true)); });
+        var ok = document.createElement('button');
+        ok.type = 'button';
+        ok.className = 'mg-btn';
+        ok.textContent = 'OK';
+        ok.addEventListener('click', function () { modal.remove(); var input = document.getElementById('mgOrderSearch'); if (input) input.focus(); });
+        panel.appendChild(ok);
+        modal.appendChild(panel);
+        document.body.appendChild(modal);
+        window.setTimeout(function () { ok.focus(); }, 60);
     }
     function refreshOrderTotal() {
         var discInput = document.getElementById('mgOrderDisc');
@@ -529,6 +601,7 @@ function initCustomerPicker() {
             });
     }
     function unlockCustomer() {
+        showRefusedCustomer(false);
         if (wrap) wrap.hidden = false;
         if (locked) locked.hidden = true;
         if (noteWrap) noteWrap.hidden = true;
@@ -540,7 +613,8 @@ function initCustomerPicker() {
         }
         if (intro) intro.textContent = 'Kreiraj narudžbu dodavanjem kupca i artikla.';
         if (idInput) idInput.value = '';
-        if (vpInput) vpInput.value = '';
+        if (vpInput) { vpInput.value = ''; vpInput.dispatchEvent(new Event('change', { bubbles: true })); }
+        showCustomerExcess([]);
         if (vpFlag) vpFlag.hidden = true;
         setLoyaltyUi(null, true);
         if (search) {
@@ -755,6 +829,7 @@ function initCustomerPicker() {
             adresa: adresaInput ? adresaInput.value : '',
             email: emailInput ? emailInput.value : '',
             postanski_broj: postInput ? postInput.value : '',
+            odbio_posiljku: document.getElementById('mgCustomerRefused')?.dataset.initial === '1',
             vp_kupac: !!(vpInput && vpInput.value === '1'),
         });
     }
@@ -1345,7 +1420,8 @@ function initManualOrderForm() {
         return pct;
     }
     function shipWaived() {
-        return !!(noShipInput && noShipInput.value === '1');
+        var vpCustomer = document.getElementById('mgVpKupac');
+        return !!((noShipInput && noShipInput.value === '1') || (vpCustomer && vpCustomer.value === '1'));
     }
     function payByCard() {
         var el = form.querySelector('input[name="placanje"]:checked');
@@ -1361,12 +1437,21 @@ function initManualOrderForm() {
     function lineCount() {
         return body ? body.querySelectorAll('tr[data-line]').length : 0;
     }
+    form.addEventListener('change', function (event) { if (event.target.id === 'mgVpKupac') refreshTotal(); });
     function refreshTotal() {
-        var sum = 0;
+        var sum = (parseFloat(String(form.getAttribute('data-invoice-only-total') || '0').replace(',', '.')) || 0) + (parseFloat(form.getAttribute('data-auto-excess-total')) || 0);
         if (!body) return;
         body.querySelectorAll('tr[data-line]').forEach(function (row) {
             var qty = parseInt(row.querySelector('[name="kolicina"]').value, 10) || 0;
             var price = parseFloat(row.getAttribute('data-cijena')) || 0;
+            var vpCustomer = document.getElementById('mgVpKupac');
+            if (row.getAttribute('data-rezervni') !== '1') {
+                var mpc = parseFloat(String(row.getAttribute('data-mpc') || price).replace(',', '.')) || 0;
+                row.setAttribute('data-mpc', mpc);
+                price = vpCustomer && vpCustomer.value === '1' ? Math.round(mpc / 1.38 * 100) / 100 : mpc;
+                var priceCell = row.querySelector('[data-line-total]');
+                if (priceCell && priceCell.previousElementSibling) priceCell.previousElementSibling.textContent = money(price) + ' KM';
+            }
             var lineTotal = qty * price;
             var cell = row.querySelector('[data-line-total]');
             if (cell) cell.textContent = money(lineTotal) + ' KM';
@@ -2142,7 +2227,7 @@ function initManualOrderForm() {
             commitPick();
             return;
         }
-        if (!lineCount()) {
+        if (!lineCount() && !(parseFloat(form.getAttribute('data-auto-excess-total')) > 0) && !(parseFloat(form.getAttribute('data-invoice-only-total')) > 0) && !(Number(form.getAttribute('data-auto-missing-count')) > 0) && !(Number(form.getAttribute('data-missing-fulfillment-count')) > 0)) {
             event.preventDefault();
             if (search) search.focus();
         }
@@ -3419,31 +3504,25 @@ function initArticleScanner() {
         return out;
     }
     function findSaved(item, bag) {
-        if (!item) return null;
-        if (bag[item.key]) return bag[item.key];
-        var found = null;
-        Object.keys(bag).forEach(function (key) {
-            var row = bag[key];
-            if (!row || typeof row !== 'object') return;
-            if (item.item_id && String(row.item_id) === String(item.item_id)) found = row;
-        });
-        return found;
+        // A pick on another location must never complete this location.
+        return item && bag[item.key] ? bag[item.key] : null;
     }
 
     var state = mergePickState(localState, serverState);
     var current = 0;
     var editingKey = '';
+    var draftQuantities = {};
     queue.forEach(function (item, idx) {
         var prev = findSaved(item, state);
         if (prev === true) prev = { got: item.need, done: true };
         if (prev && prev !== state[item.key]) state[item.key] = prev;
         if (!state[item.key]) state[item.key] = { got: 0, done: false, item_id: item.item_id };
         if (state[item.key] === true) state[item.key] = { got: item.need, done: true, item_id: item.item_id };
+        if (item.already_picked) state[item.key] = { got: item.need, done: true, item_id: item.item_id };
         if (!state[item.key].done && current === 0) current = idx;
     });
-    if (queue.length && queue.every(function (item) { return state[item.key] && state[item.key].done; })) {
-        current = queue.length;
-    }
+    current = queue.findIndex(function (item) { return !itemState(item).done; });
+    if (current < 0) current = queue.length;
 
     var els = {
         card: document.getElementById('pkCard'),
@@ -3533,6 +3612,7 @@ function initArticleScanner() {
         btn.className = 'pk-line' + (item.rezervni ? ' is-spare' : '');
         btn.innerHTML = '<b>' + (item.loc || '') + '</b><span>' + (item.naziv || '') + '</span><em>' + st.got + '/' + item.need + '</em>';
         btn.addEventListener('click', function () {
+            if (item.already_picked) return;
             if (fromDone) {
                 if (!window.confirm('Želiš li promijeniti pokupljenu količinu?')) return;
                 editingKey = item.key;
@@ -3583,6 +3663,9 @@ function initArticleScanner() {
 
     function appendItemCard(into, item, idx, number, isNow) {
         var st = itemState(item);
+        if (Object.prototype.hasOwnProperty.call(draftQuantities, item.key)) {
+            st = { got: draftQuantities[item.key], done: false };
+        }
         var loc = item.is_mp ? 'MP' : (item.loc || '—');
         var locPath = item.is_mp ? 'Maloprodaja' : (item.loc_path || '');
         var sku = item.sifra || item.barkod || '—';
@@ -3595,7 +3678,7 @@ function initArticleScanner() {
                 : '') +
             '<div class="pk-item-step">' +
                 '<button type="button" data-pk-minus aria-label="Manje">−</button>' +
-                '<div class="pk-step-val"><b>' + st.got + ' / ' + item.need + '</b><small>kom</small></div>' +
+                '<div class="pk-step-val" role="button" tabindex="0" aria-label="Unesi pokupljenu količinu"><b>' + st.got + ' / ' + item.need + '</b><small>kom</small><input class="pk-direct-qty" type="number" inputmode="numeric" min="0" max="' + item.need + '" step="1" aria-label="Pokupljena količina" hidden></div>' +
                 '<button type="button" data-pk-plus aria-label="Više">+</button>' +
                 (st.done
                     ? '<span class="pk-odvojeno-tag">Odvojeno</span>'
@@ -3612,62 +3695,69 @@ function initArticleScanner() {
             '</div>' +
             (st.done
                 ? ''
-                : '<div class="pk-less-row">' +
-                    '<input type="number" inputmode="numeric" min="0" max="' + item.need + '" step="1" placeholder="0 = nema" data-pk-less-qty aria-label="Količina">' +
-                    '<button type="button" data-pk-less>Pokupi manje</button>' +
-                  '</div>') +
-            (isNow && !st.done && !item.is_mp && !item.nije_popisan && item.loc && item.loc !== 'Rezervni dio'
-                ? '<button type="button" class="pk-clear-loc" data-pk-clear-loc>Očisti lokaciju</button>'
-                : '');
+                : '<div class="pk-quick-quantities">' + [0, 1, 2, 5, 10].map(function (qty) {
+                    return '<button type="button" data-pk-quick="' + qty + '" aria-pressed="' + (st.got === qty) + '"' + (qty > item.need ? ' disabled' : '') + '>' + qty + '</button>';
+                  }).join('') + '</div>') +
+            '';
+        function setDraft(qty) {
+            current = idx;
+            draftQuantities[item.key] = Math.max(0, Math.min(item.need, qty));
+            render();
+        }
+        var quantityDisplay = art.querySelector('.pk-step-val');
+        var directQuantity = quantityDisplay.querySelector('.pk-direct-qty');
+        var enteringQuantity = false;
+        function openQuantity() {
+            if (enteringQuantity) return;
+            enteringQuantity = true;
+            quantityDisplay.querySelector('b').hidden = true;
+            quantityDisplay.querySelector('small').hidden = true;
+            directQuantity.hidden = false;
+            directQuantity.value = String(st.got);
+            directQuantity.focus();
+            directQuantity.select();
+        }
+        function saveQuantity() {
+            if (!enteringQuantity) return;
+            var raw = directQuantity.value.trim();
+            var qty = Number(raw);
+            if (!raw || !Number.isInteger(qty) || qty < 0 || qty > item.need) {
+                showMsg('Unesi cijeli broj od 0 do ' + item.need + '.');
+                return;
+            }
+            enteringQuantity = false;
+            setDraft(qty);
+        }
+        quantityDisplay.addEventListener('click', openQuantity);
+        quantityDisplay.addEventListener('keydown', function (event) {
+            if (event.target === directQuantity) return;
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault(); openQuantity();
+            }
+        });
+        directQuantity.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') { event.preventDefault(); saveQuantity(); }
+            if (event.key === 'Escape') {
+                event.preventDefault(); enteringQuantity = false; render();
+            }
+        });
+        directQuantity.addEventListener('blur', saveQuantity);
+        art.querySelectorAll('[data-pk-quick]').forEach(function (button) {
+            button.addEventListener('click', function () { setDraft(Number(button.dataset.pkQuick)); });
+        });
         art.querySelector('[data-pk-minus]').addEventListener('click', function () {
             current = idx;
-            setGot(item, itemState(item).got - 1);
+            setDraft(st.got - 1);
         });
         art.querySelector('[data-pk-plus]').addEventListener('click', function () {
             current = idx;
-            setGot(item, itemState(item).got + 1);
+            setDraft(st.got + 1);
         });
         var allBtn = art.querySelector('[data-pk-all]');
         if (allBtn) {
             allBtn.addEventListener('click', function () {
                 current = idx;
-                setGot(item, item.need);
-            });
-        }
-        var lessBtn = art.querySelector('[data-pk-less]');
-        var lessQty = art.querySelector('[data-pk-less-qty]');
-        if (lessBtn && lessQty) {
-            function pickLess() {
-                current = idx;
-                var raw = parseInt(lessQty.value, 10);
-                if (isNaN(raw) || raw < 0) {
-                    showMsg('Unesi količinu koju imaš (0 = nema).');
-                    lessQty.focus();
-                    return;
-                }
-                if (raw === 0) {
-                    setGot(item, 0, true);
-                    dropMissing(item);
-                    return;
-                }
-                if (raw >= item.need) {
-                    setGot(item, item.need);
-                    return;
-                }
-                setGot(item, raw, true);
-            }
-            lessBtn.addEventListener('click', pickLess);
-            lessQty.addEventListener('keydown', function (event) {
-                if (event.key !== 'Enter') return;
-                event.preventDefault();
-                pickLess();
-            });
-        }
-        var clearBtn = art.querySelector('[data-pk-clear-loc]');
-        if (clearBtn) {
-            clearBtn.addEventListener('click', function () {
-                current = idx;
-                clearLocation(item, clearBtn);
+                setDraft(item.need);
             });
         }
         into.appendChild(art);
@@ -3678,6 +3768,8 @@ function initArticleScanner() {
         els.itemList.innerHTML = '';
         var doneN = doneCount();
         var remaining = queue.length - doneN;
+        var confirmQty = document.getElementById('pkConfirmQuantity');
+        if (confirmQty) confirmQty.hidden = remaining === 0 && !editingKey;
         var focusIdx = -1;
         if (editingKey) {
             for (var i = 0; i < queue.length; i += 1) {
@@ -3793,70 +3885,79 @@ function initArticleScanner() {
     function syncPickJson() {
         if (els.pickJson) els.pickJson.value = JSON.stringify(pickPayload());
     }
+    var leavingPicking = false;
     var saveTimer = 0;
+    var saveInFlight = Promise.resolve();
     function saveServer() {
+        if (leavingPicking) return saveInFlight;
         syncPickJson();
         var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
         var body = new URLSearchParams();
         body.set('action', 'pick_save');
         body.set('pick_json', JSON.stringify(pickPayload()));
         if (csrf) body.set('csrfmiddlewaretoken', csrf.value);
-        fetch(window.location.pathname, {
+        saveInFlight = saveInFlight.then(function () { return fetch(window.location.pathname, {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: body,
             credentials: 'same-origin',
-        }).catch(function () {});
+        }); }).catch(function () {});
+        return saveInFlight;
     }
     function saveSoon() {
         persist();
         window.clearTimeout(saveTimer);
         saveTimer = window.setTimeout(saveServer, 250);
     }
-    function clearLocation(item, btn) {
-        if (!item) return;
-        var loc = item.loc || '';
-        if (!loc) return;
-        var password = window.prompt(
-            'Artikal fizički nema na lokaciji ' + loc + '.\n\n' +
-            'Očistiti lokaciju — količine ovog artikla na TOJ lokaciji idu na 0. ' +
-            'Druge lokacije se ne diraju. Sa sajta ide tek ako nema ništa nigdje.\n' +
-            'Unesi šifru:'
-        );
-        if (password === null) return;
-        if (String(password).trim() !== 'admin') {
-            window.alert('Pogrešna šifra.');
-            return;
-        }
-        if (btn) btn.disabled = true;
-        var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
+    function renderShortages(rows) {
+        var list = document.getElementById('pkShortageList');
+        if (!list) return;
+        list.replaceChildren();
+        (rows || []).filter(function (row) { return row.missing > 0; }).forEach(function (row) {
+            var entry = document.createElement('li');
+            entry.textContent = row.naziv + ' — nije bilo na stanju: ' + row.missing + ' kom';
+            list.appendChild(entry);
+        });
+        var empty = document.getElementById('pkShortageEmpty');
+        if (empty) empty.hidden = list.children.length > 0;
+    }
+    var shortPending = false;
+    function confirmShortQuantity(item, got) {
+        if (shortPending) return;
+        shortPending = true;
+        window.clearTimeout(saveTimer);
+        root.inert = true;
         var body = new URLSearchParams();
-        body.set('action', 'pick_ocisti');
-        body.set('item_id', String(item.item_id || ''));
-        body.set('loc', loc);
-        body.set('key', item.key || '');
-        body.set('lozinka', String(password).trim());
+        var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
+        body.set('action', 'pick_short');
+        body.set('item_id', item.item_id);
+        body.set('loc', item.loc);
+        body.set('got', got);
         if (csrf) body.set('csrfmiddlewaretoken', csrf.value);
-        fetch(window.location.pathname, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': csrf ? csrf.value : '',
-            },
-            body: body,
-            credentials: 'same-origin',
-        }).then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
-          .then(function (result) {
-              if (!result.data || !result.data.ok) {
-                  if (btn) btn.disabled = false;
-                  window.alert((result.data && result.data.error) || 'Lokacija nije očišćena.');
-                  return;
-              }
-              window.location.reload();
-          }).catch(function () {
-              if (btn) btn.disabled = false;
-              window.alert('Lokacija nije očišćena.');
-          });
+        // Persist other confirmed lines before the stock correction starts.
+        Promise.resolve(saveServer()).then(function () {
+            return fetch(window.location.pathname, { method: 'POST', body: body,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+        }).then(function (response) { return response.json(); }).then(function (data) {
+            if (!data.ok || !Array.isArray(data.queue)) throw Error(data.error || 'Količina nije potvrđena.');
+            queue = data.queue;
+            state = data.state || {};
+            draftQuantities = {};
+            editingKey = '';
+            current = -1;
+            queue.forEach(function (line, index) {
+                if (line.already_picked) state[line.key] = {got: line.need, done: true, item_id: line.item_id};
+                if (!state[line.key]) state[line.key] = {got: 0, done: false, item_id: line.item_id};
+                if (String(line.item_id) === String(item.item_id) && !itemState(line).done && current < 0) current = index;
+            });
+            if (current < 0) current = firstOpenIndex();
+            persist();
+            setPickView('now', true);
+            renderShortages(data.shortages);
+            showMsg(data.message, true);
+        }).catch(function (error) {
+            window.alert(error.message || 'Količina nije potvrđena. Pokušaj ponovo.');
+        }).finally(function () { shortPending = false; root.inert = false; });
     }
 
     function dropMissing(item) {
@@ -3895,6 +3996,7 @@ function initArticleScanner() {
     }
 
     function setGot(item, got, forceDone) {
+        delete draftQuantities[item.key];
         var next = Math.max(0, Math.min(item.need, got));
         var exact = next >= item.need && item.need > 0;
         var missing = forceDone && next === 0 && item.need > 0;
@@ -3929,6 +4031,27 @@ function initArticleScanner() {
         return queue[current];
     }
 
+    var confirmQuantity = document.getElementById('pkConfirmQuantity');
+    if (confirmQuantity) confirmQuantity.addEventListener('click', function () {
+        var item = currentItem();
+        if (!item) return;
+        var qty = Object.prototype.hasOwnProperty.call(draftQuantities, item.key)
+            ? draftQuantities[item.key] : itemState(item).got;
+        if (qty < item.need) { confirmShortQuantity(item, qty); return; }
+        setGot(item, qty, true);
+    });
+    [['pkPreviousItem', -1], ['pkNextItem', 1]].forEach(function (entry) {
+        var button = document.getElementById(entry[0]);
+        if (!button) return;
+        button.addEventListener('click', function () {
+            var index = current + entry[1];
+            while (index >= 0 && index < queue.length && itemState(queue[index]).done) index += entry[1];
+            if (index < 0 || index >= queue.length) return;
+            current = index;
+            editingKey = '';
+            setPickView('now', true);
+        });
+    });
     var minus = document.getElementById('pkMinus');
     var plus = document.getElementById('pkPlus');
     if (minus) minus.addEventListener('click', function () {
@@ -3943,7 +4066,7 @@ function initArticleScanner() {
         var item = currentItem();
         if (!item) return;
         var got = itemState(item).got;
-        if (got > 0 && got < item.need) setGot(item, got, true);
+        if (got >= 0 && got < item.need) confirmShortQuantity(item, got);
     });
     if (els.takeAll) els.takeAll.addEventListener('click', function () {
         var item = currentItem();
@@ -3958,34 +4081,13 @@ function initArticleScanner() {
         setGot(item, itemState(item).got + raw);
         els.addQty.value = '0';
     });
-    var resetBtn = document.getElementById('pkReset');
-    if (resetBtn) resetBtn.addEventListener('click', function () {
-        var allDone = queue.length > 0 && doneCount() === queue.length && !editingKey;
-        if (allDone) {
-            if (!window.confirm('Poništiti cijeli picking?')) return;
-            queue.forEach(function (item) {
-                state[item.key] = { got: 0, done: false, item_id: item.item_id };
-            });
-            editingKey = '';
-            current = 0;
-            persist();
-            render();
-            saveSoon();
-            return;
-        }
-        var item = currentItem();
-        if (!item) return;
-        if (!window.confirm('Poništiti pokupljenu količinu za ovu stavku?')) return;
-        editingKey = item.key;
-        setGot(item, 0);
-    });
     if (els.got) {
         function applyTypedQty(asDone) {
             var item = currentItem();
             if (!item) return;
             var raw = parseInt(els.got.value, 10);
             if (isNaN(raw)) raw = 0;
-            if (asDone && raw > 0 && raw < item.need) setGot(item, raw, true);
+            if (asDone && raw >= 0 && raw < item.need) confirmShortQuantity(item, raw);
             else setGot(item, raw);
         }
         els.got.addEventListener('change', function () { applyTypedQty(false); });
@@ -4042,19 +4144,57 @@ function initArticleScanner() {
     }
 
     function clickValidate() {
+        if (queue.some(function (item) { return !itemState(item).done; })) {
+            setPickView('now');
+            showMsg('Prvo potvrdi količinu za svaki artikal. Manjak se automatski provjerava na drugim lokacijama.');
+            return;
+        }
         if (els.valid) els.valid.click();
     }
     if (els.validDone) els.validDone.addEventListener('click', clickValidate);
     var validDone2 = document.getElementById('pkValidDoneBtn2');
     if (validDone2) validDone2.addEventListener('click', clickValidate);
+    async function leavePicking(control, action) {
+        if (leavingPicking) return;
+        leavingPicking = true;
+        root.inert = true;
+        window.clearTimeout(saveTimer);
+        queue.forEach(function (item) {
+            if (Object.prototype.hasOwnProperty.call(draftQuantities, item.key)) {
+                state[item.key] = {got: draftQuantities[item.key], done: false, item_id: item.item_id};
+            }
+        });
+        persist();
+        var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
+        var payload = new URLSearchParams();
+        payload.set('action', action);
+        payload.set('pick_json', JSON.stringify(pickPayload()));
+        if (csrf) payload.set('csrfmiddlewaretoken', csrf.value);
+        if (control) control.setAttribute('aria-disabled', 'true');
+        try {
+            await saveInFlight;
+            var response = await fetch(window.location.pathname, {method: 'POST', credentials: 'same-origin',
+                headers: {'X-Requested-With': 'XMLHttpRequest'}, body: payload});
+            var data = await response.json();
+            if (!response.ok || !data.ok) throw new Error(data.error || 'Promjene nisu sačuvane. Pokušaj ponovo.');
+            if (action === 'otkazi') { try { window.localStorage.removeItem(storageKey); } catch (err) {} }
+            window.location.assign(data.redirect);
+        } catch (err) {
+            leavingPicking = false;
+            root.inert = false;
+            if (control) control.removeAttribute('aria-disabled');
+            window.alert(err.message || 'Nije sačuvano. Pokušaj ponovo.');
+        }
+    }
+    root.querySelectorAll('[data-picking-list]').forEach(function (control) {
+        control.addEventListener('click', function (event) { event.preventDefault(); leavePicking(control, 'pick_pause'); });
+    });
     var cancelForm = document.getElementById('pkCancelForm');
     if (cancelForm) {
         cancelForm.addEventListener('submit', function (event) {
-            var cancelMsg = isPrenosMp
-                ? 'Otkazati prenos u MP? Artikli ostaju na lokacijama, ništa se ne prenosi.'
-                : 'Otkazati narudžbu i vratiti rezervaciju na lokacije?';
-            if (!window.confirm(cancelMsg)) {
-                event.preventDefault();
+            event.preventDefault();
+            if (window.confirm(isPrenosMp ? 'Poništiti pakovanje i otkazati prenos u MP?' : 'Poništiti cijelo pakovanje i otkazati narudžbu?')) {
+                leavePicking(event.submitter, 'otkazi');
             }
         });
     }
@@ -4107,7 +4247,7 @@ function initArticleScanner() {
         });
     }
 
-    window.addEventListener('pagehide', function () { persist(); saveServer(); });
+    window.addEventListener('pagehide', function () { if (!leavingPicking) { persist(); saveServer(); } });
     persist();
     if (Object.keys(state).length) saveSoon();
     render();
@@ -5518,7 +5658,27 @@ function initPopisProvjera() {
     var query = document.getElementById('ptQuery');
     var suggest = document.getElementById('ptSuggest');
     var toast = document.getElementById('ptToast');
+    var duplicateDialog = document.getElementById('ptDuplicateDialog');
+    var duplicateOk = document.getElementById('ptDuplicateOk');
+    if (duplicateDialog && duplicateOk) {
+        duplicateOk.addEventListener('click', function () { duplicateDialog.close(); });
+        duplicateDialog.addEventListener('close', function () { focusQuery(); });
+    }
+
+    function showDuplicateNotice() {
+        if (!duplicateDialog || typeof duplicateDialog.showModal !== 'function') {
+            window.alert('Artikal je već skeniran.');
+            focusQuery();
+            return;
+        }
+        if (!duplicateDialog.open) duplicateDialog.showModal();
+        duplicateOk.focus();
+    }
+
     var searchTimer = 0;
+    var searchVersion = 0;
+    var searchAbort = null;
+    var mutationQueue = Promise.resolve();
     var currentWrap = document.getElementById('ptCurrent');
     var listEl = document.getElementById('ptList');
     var listWrap = document.getElementById('ptListWrap');
@@ -5600,7 +5760,7 @@ function initPopisProvjera() {
         var popisano = parseInt(item.popisano, 10) || 0;
         var razlika = parseInt(item.razlika, 10);
         if (isNaN(razlika)) razlika = popisano - sistem;
-        set('ptSistem', sistem);
+        set('ptSistem', popisano);
         var qtyInp = document.getElementById('ptQtyInput');
         if (qtyInp) {
             if (!(document.activeElement === qtyInp && qtyTouched)) {
@@ -5622,47 +5782,13 @@ function initPopisProvjera() {
         }
     }
 
-    function alarmDuplicate() {
-        try {
-            var Ctx = window.AudioContext || window.webkitAudioContext;
-            if (Ctx) {
-                var ctx = new Ctx();
-                function tone(freq, start, dur) {
-                    var osc = ctx.createOscillator();
-                    var gain = ctx.createGain();
-                    osc.type = 'square';
-                    osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0.0001, ctx.currentTime + start);
-                    gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + start + 0.015);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + dur);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(ctx.currentTime + start);
-                    osc.stop(ctx.currentTime + start + dur + 0.02);
-                }
-                tone(1400, 0, 0.14);
-                tone(520, 0.15, 0.16);
-                tone(1400, 0.33, 0.14);
-                tone(520, 0.48, 0.16);
-                tone(1600, 0.68, 0.14);
-                tone(380, 0.84, 0.28);
-                window.setTimeout(function () { try { ctx.close(); } catch (e) {} }, 1300);
-            }
-        } catch (err) {}
-        if (navigator.vibrate) {
-            try { navigator.vibrate([220, 60, 220, 60, 220, 60, 400]); } catch (err2) {}
-        }
-    }
-
     function markRepeat(on) {
         var panel = document.getElementById('ptQtyPanel');
         if (!panel) return;
-        panel.classList.remove('is-repeat');
-        void panel.offsetWidth;
         panel.classList.toggle('is-repeat', !!on);
     }
 
-    function renderList(items, current, isDup) {
+    function renderList(items, current) {
         items = items || [];
         if (listWrap) listWrap.hidden = !items.length;
         if (countEl) countEl.textContent = String(items.length);
@@ -5670,40 +5796,48 @@ function initPopisProvjera() {
         if (showAllBtn) showAllBtn.hidden = items.length <= listPreview;
         if (!listEl) return;
         if (!items.length) {
-            listEl.innerHTML = '<p class="pt-empty" id="ptEmpty">Još nema skeniranih artikala.</p>';
+            if (!listEl.querySelector('#ptEmpty')) listEl.innerHTML = '<p class="pt-empty" id="ptEmpty">Još nema skeniranih artikala.</p>';
             return;
         }
+        var empty = listEl.querySelector('#ptEmpty');
+        if (empty) empty.remove();
+        var existing = new Map();
+        listEl.querySelectorAll('.pt-row').forEach(function (btn) { existing.set(btn.getAttribute('data-key'), btn); });
         var curKey = (current && current.key) || '';
-        listEl.innerHTML = items.map(function (row, index) {
-            var hidden = !showAll && index >= listPreview ? ' is-hidden' : '';
-            var on = row.key === curKey ? ' is-on' : '';
-            var thumb = row.slika
-                ? '<img src="' + row.slika + '" alt="">'
-                : '';
-            return (
-                '<button type="button" class="pt-row' + on + hidden + '" data-key="' + row.key + '">' +
-                '<span class="pt-row-info"><span class="pt-thumb">' + thumb + '</span><span>' +
-                '<strong></strong><em></em><b class="pt-row-stock"></b></span></span>' +
-                '<span class="pt-row-num"></span>' +
-                '<span class="pt-row-num' + qtyClass(row.popisano, row.sistem) + '"></span>' +
-                '<span class="pt-row-num' + diffClass(row.razlika) + '"></span>' +
-                '<span class="pt-chev" aria-hidden="true">›</span></button>'
-            );
-        }).join('');
-        Array.prototype.forEach.call(listEl.querySelectorAll('.pt-row'), function (btn, index) {
-            var row = items[index];
-            if (!row) return;
-            var name = btn.querySelector('.pt-row-info strong');
-            var bar = btn.querySelector('.pt-row-info em');
-            var stock = btn.querySelector('.pt-row-stock');
-            if (name) name.textContent = row.naziv || '';
-            if (bar) bar.textContent = 'Barkod: ' + (row.barkod || '—');
-            if (stock) stock.textContent = 'Ukupno stanje: ' + (parseInt(row.sistem, 10) || 0) + ' kom';
-            var nums = btn.querySelectorAll('.pt-row-num');
-            if (nums[0]) nums[0].textContent = String(row.sistem || 0);
-            if (nums[1]) nums[1].textContent = String(row.popisano || 0);
-            if (nums[2]) nums[2].textContent = signed(row.razlika || 0);
+        items.forEach(function (row, index) {
+            var btn = existing.get(row.key);
+            if (!btn) {
+                btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'pt-row';
+                btn.setAttribute('data-key', row.key);
+                btn.innerHTML = '<span class="pt-row-info"><span class="pt-thumb"></span><span><strong></strong><em></em><b class="pt-row-stock"></b></span></span><span class="pt-row-num"></span><span class="pt-row-num"></span><span class="pt-row-num"></span><span class="pt-chev" aria-hidden="true">›</span>';
+            }
+            existing.delete(row.key);
+            btn.classList.toggle('is-on', row.key === curKey);
+            btn.classList.toggle('is-hidden', !showAll && index >= listPreview);
+            var signature = JSON.stringify([row.naziv, row.barkod, row.slika, row.sistem, row.popisano, row.razlika]);
+            if (btn._ptSignature !== signature) {
+                btn._ptSignature = signature;
+                var thumb = btn.querySelector('.pt-thumb');
+                var image = thumb.querySelector('img');
+                if (row.slika) {
+                    if (!image) { image = document.createElement('img'); image.alt = ''; image.loading = 'lazy'; thumb.appendChild(image); }
+                    if (image.getAttribute('src') !== row.slika) image.src = row.slika;
+                } else if (image) { image.remove(); }
+                btn.querySelector('.pt-row-info strong').textContent = row.naziv || '';
+                btn.querySelector('.pt-row-info em').textContent = 'Barkod: ' + (row.barkod || '—');
+                btn.querySelector('.pt-row-stock').textContent = 'Ukupno stanje: ' + (parseInt(row.sistem, 10) || 0) + ' kom';
+                var nums = btn.querySelectorAll('.pt-row-num');
+                nums[0].textContent = String(row.sistem || 0);
+                nums[1].textContent = String(row.popisano || 0);
+                nums[1].className = 'pt-row-num' + qtyClass(row.popisano, row.sistem);
+                nums[2].textContent = signed(row.razlika || 0);
+                nums[2].className = 'pt-row-num' + diffClass(row.razlika);
+            }
+            if (listEl.children[index] !== btn) listEl.insertBefore(btn, listEl.children[index] || null);
         });
+        existing.forEach(function (btn) { btn.remove(); });
     }
 
     function applyPayload(data) {
@@ -5713,16 +5847,18 @@ function initPopisProvjera() {
             return;
         }
         renderCurrent(data.current);
-        markRepeat(!!data.already_on_list);
+        markRepeat(false);
         renderList(data.items || [], data.current);
-        if (data.already_on_list) {
-            alarmDuplicate();
-            return;
-        }
         if (data.message) showToast(data.message, true);
     }
 
     function post(action, extra) {
+        var task = mutationQueue.then(function () { return sendPost(action, extra); });
+        mutationQueue = task.catch(function () {});
+        return task;
+    }
+
+    function sendPost(action, extra) {
         var body = new URLSearchParams();
         body.set('action', action);
         extra = extra || {};
@@ -5835,6 +5971,11 @@ function initPopisProvjera() {
         }
         if (query) query.value = '';
         hideSuggest();
+        if (data.already_on_list) {
+            showToast('');
+            showDuplicateNotice();
+            return;
+        }
         var qtyPanel = document.getElementById('ptQtyPanel');
         if (qtyPanel && typeof qtyPanel.scrollIntoView === 'function') {
             qtyPanel.scrollIntoView({ block: 'nearest', behavior: 'instant' });
@@ -5843,7 +5984,10 @@ function initPopisProvjera() {
     }
 
     function pickItem(item) {
+        if (duplicateDialog && duplicateDialog.open) return;
         if (!item || !item.id) return;
+        searchVersion++;
+        if (searchAbort) searchAbort.abort();
         focusQty();
         var extra = { product_id: item.id };
         if (item.variation_id) extra.variation_id = item.variation_id;
@@ -5851,6 +5995,10 @@ function initPopisProvjera() {
     }
 
     function searchArticles(value, commit) {
+        if (duplicateDialog && duplicateDialog.open) return;
+        var version = ++searchVersion;
+        if (searchAbort) searchAbort.abort();
+        searchAbort = !commit && typeof AbortController === 'function' ? new AbortController() : null;
         var q = String(value || '').trim();
         if (!q) {
             hideSuggest();
@@ -5865,9 +6013,11 @@ function initPopisProvjera() {
             return;
         }
         fetch(lookupUrl + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1&limit=20', {
+            signal: searchAbort ? searchAbort.signal : undefined,
             credentials: 'same-origin',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         }).then(function (res) { return res.json(); }).then(function (data) {
+            if (!commit && (version !== searchVersion || (duplicateDialog && duplicateDialog.open))) return;
             var rows = flattenLookup(data.results || []);
             var exactRows = rows.filter(function (row) { return isExactMatch(row, q); });
             if (commit) {
@@ -5894,12 +6044,14 @@ function initPopisProvjera() {
                 return;
             }
             showSuggest(rows);
-        }).catch(function () {
+        }).catch(function (error) {
+            if ((!commit && version !== searchVersion) || error.name === 'AbortError') return;
             if (commit) showToast('Pretraga nije uspjela.', false);
         });
     }
 
     function scan() {
+        if (duplicateDialog && duplicateDialog.open) return;
         searchArticles(query && query.value, true);
     }
 
@@ -5947,6 +6099,8 @@ function initPopisProvjera() {
 
     if (query) {
         query.addEventListener('input', function () {
+            searchVersion++;
+            if (searchAbort) searchAbort.abort();
             window.clearTimeout(searchTimer);
             var q = (query.value || '').trim();
             if (!q) {

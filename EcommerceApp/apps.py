@@ -22,7 +22,15 @@ class EcommerceappConfig(AppConfig):
     def ready(self):
         connection_created.connect(_configure_sqlite)
 
-        from django.db.models.signals import post_delete
+        from django.db.models.signals import post_delete, post_save
+        from django.contrib.auth import get_user_model
+        from .warehouse_access import assign_default_superuser_plan
+
+        post_save.connect(assign_default_superuser_plan, sender=get_user_model(), dispatch_uid='magacin_default_superuser_plan')
+
+        from .warehouse_customers_ledger import sync_customer_partner
+        from .models import WarehouseCustomer
+        post_save.connect(sync_customer_partner, sender=WarehouseCustomer, dispatch_uid='warehouse_customer_ledger')
 
         from .magacin import fold_stock_after_variation_delete
         from .models import ProductVariation

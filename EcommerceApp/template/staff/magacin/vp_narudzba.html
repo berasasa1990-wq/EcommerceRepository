@@ -49,6 +49,7 @@
             </div>
         </div>
         {% endif %}
+        {% if draft.customer.odbio_posiljku %}<p class="mg-customer-refused" role="alert">UPOZORENJE: Ovaj kupac je odbio pošiljku.</p>{% endif %}
         <div class="vp-customer-edit">
             <h2 class="mg-h">Kupac</h2>
             <p class="mg-field-label">Pretraga kupca</p>
@@ -351,6 +352,30 @@
     function pickCustomer(row) {
         if (!row || !custId || !custForm) return;
         custId.value = row.id;
+        var obligations = (row.excess_items || []).concat(row.missing_items || []);
+        if (obligations.length) {
+            var notice = document.createElement('div');
+            notice.className = 'mg-modal';
+            var panel = document.createElement('div');
+            panel.className = 'mg-modal-panel';
+            panel.style.background = 'linear-gradient(120deg,#f5f5f6,#d9dce1)';
+            panel.setAttribute('role', 'dialog');
+            panel.setAttribute('aria-modal', 'true');
+            panel.setAttribute('aria-label', 'Ranije poslati višak');
+            var heading = document.createElement('h3');
+            heading.textContent = 'Raniji višak / manjak za ovog kupca';
+            panel.appendChild(heading);
+            obligations.forEach(function (item) {
+                var text = document.createElement('p');
+                text.textContent = (item.missing ? 'Dugujemo kupcu: ' : 'Višak: ') + item.name + ' — ' + item.quantity + ' kom.' + (item.missing ? ' · picking, bez fakture' : ' · faktura, bez pickinga');
+                panel.appendChild(text);
+            });
+            var ok = document.createElement('button');
+            ok.type = 'button'; ok.className = 'mg-btn'; ok.textContent = 'OK';
+            ok.addEventListener('click', function () { ok.disabled = true; custForm.submit(); });
+            panel.appendChild(ok); notice.appendChild(panel); document.body.appendChild(notice); ok.focus();
+            return;
+        }
         custForm.submit();
     }
     function renderCustomers(rows) {

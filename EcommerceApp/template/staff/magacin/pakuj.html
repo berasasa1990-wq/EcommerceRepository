@@ -1,4 +1,10 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-picking-list-reference{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-picking-list-reference.css' %}?v=20260907-waiting-one-row">
+{% endblock %}
 
 {% block magacin_content %}
 <div class="mg-orders-page pk-home" id="pkListApp">
@@ -20,15 +26,6 @@
         <p>Preuzeo {{ claimed_order.pick_claimed_name|default:"drugi radnik" }} — #{{ claimed_order.broj }}</p>
         <button type="submit">Skini preuzimanje</button>
     </form>
-    {% endif %}
-    {% if mp_pending_count %}
-    <div class="pk-mp-gate">
-        <a class="pk-mp-cta" href="{% url 'staff_magacin_pakuj_provjera' %}?next=pick">
-            Artikli u MP
-            <i>{{ mp_pending_count }}</i>
-        </a>
-        <p>Izaberi kupca, vidi šta mu treba u maloprodaji, pa pokupi.</p>
-    </div>
     {% endif %}
     <div class="pk-home-top">
         <div class="mg-filter-tabs">
@@ -66,7 +63,7 @@
                         <strong class="mg-order-rn">PL-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</strong>
                         <span class="sub">#{{ order.pk }}</span>
                     </td>
-                    <td>RN-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</td>
+                    <td><span class="pk-full-order-number">RN-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</span><span class="pk-mobile-order-number">#{{ order.broj }}</span></td>
                     <td>
                         <strong class="mg-order-name">{{ order.ime_prezime }}</strong>
                         {% if order.telefon %}<span class="sub">{{ order.telefon }}</span>{% endif %}

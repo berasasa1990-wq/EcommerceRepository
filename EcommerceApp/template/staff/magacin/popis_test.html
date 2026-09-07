@@ -1,9 +1,15 @@
 {% extends 'staff/magacin/base.html' %}
 {% load static %}
 
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-popis-reference.css' %}?v=20260906-popis-mobile-9">
+{% endblock %}
+
 {% block magacin_content %}
 <div class="pt-page" id="ptApp" data-url="{% url 'staff_magacin_popis_test' %}" data-lookup="{{ lookup_url }}" data-has-location="{% if location %}1{% else %}0{% endif %}">
     {% csrf_token %}
+    <a class="pt-back mg-btn" href="{% url 'staff_magacin' %}">← Nazad</a>
     <header class="pt-head">
         <div>
             <h1>Popisivanje artikala</h1>
@@ -33,7 +39,7 @@
 
     {% if not location %}
     <section class="mg-card mg-orders-card pp-start-card">
-        <p>Ukucaj šifru ili naziv lokacije, pa je izaberi. Tek onda skeniraj artikle na toj lokaciji.</p>
+        <p>Ukucaj šifru ili naziv lokacije, pa je izaberi.<br>Tek onda skeniraj artikle na toj lokaciji.</p>
         <form method="get" class="mg-page-search pp-loc-search" role="search">
             <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
             <input type="search" name="q" value="{{ popis_lokacija_q }}" placeholder="Šifra ili naziv lokacije…" autocomplete="off" enterkeyhint="search" autofocus>
@@ -69,6 +75,7 @@
             {% for row in finished_popisi %}
             <li{% if row.odstampan %} class="is-done"{% endif %}>
                 <a class="pp-paused-main" href="{% url 'staff_magacin_popis_detail' row.pk %}">
+                    <svg class="pp-document-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 2h9l5 5v15H5z"/><path d="M14 2v6h5M8 12h8M8 16h8M8 8h3"/></svg>
                     <strong>Popis #{{ row.pk }}{% if row.location %} · {{ row.location.sifra }}{% endif %}{% if row.odstampan %} <em class="pp-done-tag">Završeno</em>{% endif %}</strong>
                     <span>završen {{ row.zavrsen_at|date:"d.m.Y H:i" }} · {{ row.n_stavke|default:0 }} stavki · {{ row.n_kom|default:0 }} kom</span>
                 </a>
@@ -107,27 +114,6 @@
     <p class="pt-toast" id="ptToast" hidden></p>
 
     <section class="pt-current" id="ptCurrent"{% if not current %} hidden{% endif %}>
-        <div class="pt-qty-panel" id="ptQtyPanel">
-            <div class="pt-sistem">
-                <span>Trenutno stanje</span>
-                <strong><em id="ptSistem">{{ current.sistem|default:0 }}</em> kom</strong>
-                <i class="pt-box-ico" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
-                </i>
-            </div>
-            <span class="pt-arrow" aria-hidden="true">→</span>
-            <div class="pt-count">
-                <span>Popisana količina</span>
-                <div class="pt-step">
-                    <button type="button" id="ptMinus" aria-label="Smanji">−</button>
-                    <input id="ptQtyInput" class="pt-qty-input" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="next" autocomplete="off" aria-label="Popisana količina" value="{% if current %}{{ current.popisano }}{% else %}1{% endif %}">
-                    <span class="pt-qty-unit">kom</span>
-                    <button type="button" id="ptPlus" aria-label="Povećaj">+</button>
-                </div>
-                <button type="button" class="pt-quick" id="ptNext">Sljedeći</button>
-            </div>
-        </div>
-
         <h2>Trenutni artikal</h2>
         <article class="pt-card">
             <div class="pt-card-main">
@@ -145,6 +131,28 @@
                 </div>
             </div>
         </article>
+
+        <div class="pt-qty-panel" id="ptQtyPanel">
+            <div class="pt-sistem">
+                <span title="Količina iz tekućeg popisa">Količina na ovoj lokaciji</span>
+                <strong><em id="ptSistem">{{ current.popisano|default:0 }}</em> kom</strong>
+                <span class="pt-location-code">{{ location.sifra }}</span>
+                <i class="pt-box-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
+                </i>
+            </div>
+            <span class="pt-arrow" aria-hidden="true">→</span>
+            <div class="pt-count">
+                <span>Popisana količina</span>
+                <div class="pt-step">
+                    <button type="button" id="ptMinus" aria-label="Smanji">−</button>
+                    <input id="ptQtyInput" class="pt-qty-input" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="next" autocomplete="off" aria-label="Popisana količina" value="{% if current %}{{ current.popisano }}{% else %}1{% endif %}">
+                    <span class="pt-qty-unit">kom</span>
+                    <button type="button" id="ptPlus" aria-label="Povećaj">+</button>
+                </div>
+                <button type="button" class="pt-quick" id="ptNext">Sljedeći</button>
+            </div>
+        </div>
 
         <div class="pt-summary">
             <p class="pt-sum-kicker">Rezime popisa</p>
@@ -199,5 +207,10 @@
         </div>
     </section>
     {% endif %}
+    <dialog class="pt-notice-dialog" id="ptDuplicateDialog" aria-labelledby="ptDuplicateTitle" aria-describedby="ptDuplicateMessage">
+        <h2 id="ptDuplicateTitle">Obavijest</h2>
+        <p id="ptDuplicateMessage">Artikal je već skeniran.</p>
+        <div class="pt-notice-actions"><button type="button" id="ptDuplicateOk" autofocus>OK</button></div>
+    </dialog>
 </div>
 {% endblock %}

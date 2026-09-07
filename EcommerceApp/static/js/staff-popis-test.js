@@ -8,7 +8,27 @@
     var query = document.getElementById('ptQuery');
     var suggest = document.getElementById('ptSuggest');
     var toast = document.getElementById('ptToast');
+    var duplicateDialog = document.getElementById('ptDuplicateDialog');
+    var duplicateOk = document.getElementById('ptDuplicateOk');
+    if (duplicateDialog && duplicateOk) {
+        duplicateOk.addEventListener('click', function () { duplicateDialog.close(); });
+        duplicateDialog.addEventListener('close', function () { focusQuery(); });
+    }
+
+    function showDuplicateNotice() {
+        if (!duplicateDialog || typeof duplicateDialog.showModal !== 'function') {
+            window.alert('Artikal je već skeniran.');
+            focusQuery();
+            return;
+        }
+        if (!duplicateDialog.open) duplicateDialog.showModal();
+        duplicateOk.focus();
+    }
+
     var searchTimer = 0;
+    var searchVersion = 0;
+    var searchAbort = null;
+    var mutationQueue = Promise.resolve();
     var currentWrap = document.getElementById('ptCurrent');
     var listEl = document.getElementById('ptList');
     var listWrap = document.getElementById('ptListWrap');
@@ -90,7 +110,7 @@
         var popisano = parseInt(item.popisano, 10) || 0;
         var razlika = parseInt(item.razlika, 10);
         if (isNaN(razlika)) razlika = popisano - sistem;
-        set('ptSistem', sistem);
+        set('ptSistem', popisano);
         var qtyInpRender = document.getElementById('ptQtyInput');
         if (qtyInpRender) {
             if (!(document.activeElement === qtyInpRender && qtyTouched)) {
@@ -112,47 +132,13 @@
         }
     }
 
-    function alarmDuplicate() {
-        try {
-            var Ctx = window.AudioContext || window.webkitAudioContext;
-            if (Ctx) {
-                var ctx = new Ctx();
-                function tone(freq, start, dur) {
-                    var osc = ctx.createOscillator();
-                    var gain = ctx.createGain();
-                    osc.type = 'square';
-                    osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0.0001, ctx.currentTime + start);
-                    gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + start + 0.015);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + dur);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(ctx.currentTime + start);
-                    osc.stop(ctx.currentTime + start + dur + 0.02);
-                }
-                tone(1400, 0, 0.14);
-                tone(520, 0.15, 0.16);
-                tone(1400, 0.33, 0.14);
-                tone(520, 0.48, 0.16);
-                tone(1600, 0.68, 0.14);
-                tone(380, 0.84, 0.28);
-                window.setTimeout(function () { try { ctx.close(); } catch (e) {} }, 1300);
-            }
-        } catch (err) {}
-        if (navigator.vibrate) {
-            try { navigator.vibrate([220, 60, 220, 60, 220, 60, 400]); } catch (err2) {}
-        }
-    }
-
     function markRepeat(on) {
         var panel = document.getElementById('ptQtyPanel');
         if (!panel) return;
-        panel.classList.remove('is-repeat');
-        void panel.offsetWidth;
         panel.classList.toggle('is-repeat', !!on);
     }
 
-    function renderList(items, current, isDup) {
+    function renderList(items, current) {
         items = items || [];
         if (listWrap) listWrap.hidden = !items.length;
         if (countEl) countEl.textContent = String(items.length);
@@ -160,40 +146,48 @@
         if (showAllBtn) showAllBtn.hidden = items.length <= listPreview;
         if (!listEl) return;
         if (!items.length) {
-            listEl.innerHTML = '<p class="pt-empty" id="ptEmpty">Još nema skeniranih artikala.</p>';
+            if (!listEl.querySelector('#ptEmpty')) listEl.innerHTML = '<p class="pt-empty" id="ptEmpty">Još nema skeniranih artikala.</p>';
             return;
         }
+        var empty = listEl.querySelector('#ptEmpty');
+        if (empty) empty.remove();
+        var existing = new Map();
+        listEl.querySelectorAll('.pt-row').forEach(function (btn) { existing.set(btn.getAttribute('data-key'), btn); });
         var curKey = (current && current.key) || '';
-        listEl.innerHTML = items.map(function (row, index) {
-            var hidden = !showAll && index >= listPreview ? ' is-hidden' : '';
-            var on = row.key === curKey ? ' is-on' : '';
-            var thumb = row.slika
-                ? '<img src="' + row.slika + '" alt="">'
-                : '';
-            return (
-                '<button type="button" class="pt-row' + on + hidden + '" data-key="' + row.key + '">' +
-                '<span class="pt-row-info"><span class="pt-thumb">' + thumb + '</span><span>' +
-                '<strong></strong><em></em><b class="pt-row-stock"></b></span></span>' +
-                '<span class="pt-row-num"></span>' +
-                '<span class="pt-row-num' + qtyClass(row.popisano, row.sistem) + '"></span>' +
-                '<span class="pt-row-num' + diffClass(row.razlika) + '"></span>' +
-                '<span class="pt-chev" aria-hidden="true">›</span></button>'
-            );
-        }).join('');
-        Array.prototype.forEach.call(listEl.querySelectorAll('.pt-row'), function (btn, index) {
-            var row = items[index];
-            if (!row) return;
-            var name = btn.querySelector('.pt-row-info strong');
-            var bar = btn.querySelector('.pt-row-info em');
-            var stock = btn.querySelector('.pt-row-stock');
-            if (name) name.textContent = row.naziv || '';
-            if (bar) bar.textContent = 'Barkod: ' + (row.barkod || '—');
-            if (stock) stock.textContent = 'Ukupno stanje: ' + (parseInt(row.sistem, 10) || 0) + ' kom';
-            var nums = btn.querySelectorAll('.pt-row-num');
-            if (nums[0]) nums[0].textContent = String(row.sistem || 0);
-            if (nums[1]) nums[1].textContent = String(row.popisano || 0);
-            if (nums[2]) nums[2].textContent = signed(row.razlika || 0);
+        items.forEach(function (row, index) {
+            var btn = existing.get(row.key);
+            if (!btn) {
+                btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'pt-row';
+                btn.setAttribute('data-key', row.key);
+                btn.innerHTML = '<span class="pt-row-info"><span class="pt-thumb"></span><span><strong></strong><em></em><b class="pt-row-stock"></b></span></span><span class="pt-row-num"></span><span class="pt-row-num"></span><span class="pt-row-num"></span><span class="pt-chev" aria-hidden="true">›</span>';
+            }
+            existing.delete(row.key);
+            btn.classList.toggle('is-on', row.key === curKey);
+            btn.classList.toggle('is-hidden', !showAll && index >= listPreview);
+            var signature = JSON.stringify([row.naziv, row.barkod, row.slika, row.sistem, row.popisano, row.razlika]);
+            if (btn._ptSignature !== signature) {
+                btn._ptSignature = signature;
+                var thumb = btn.querySelector('.pt-thumb');
+                var image = thumb.querySelector('img');
+                if (row.slika) {
+                    if (!image) { image = document.createElement('img'); image.alt = ''; image.loading = 'lazy'; thumb.appendChild(image); }
+                    if (image.getAttribute('src') !== row.slika) image.src = row.slika;
+                } else if (image) { image.remove(); }
+                btn.querySelector('.pt-row-info strong').textContent = row.naziv || '';
+                btn.querySelector('.pt-row-info em').textContent = 'Barkod: ' + (row.barkod || '—');
+                btn.querySelector('.pt-row-stock').textContent = 'Ukupno stanje: ' + (parseInt(row.sistem, 10) || 0) + ' kom';
+                var nums = btn.querySelectorAll('.pt-row-num');
+                nums[0].textContent = String(row.sistem || 0);
+                nums[1].textContent = String(row.popisano || 0);
+                nums[1].className = 'pt-row-num' + qtyClass(row.popisano, row.sistem);
+                nums[2].textContent = signed(row.razlika || 0);
+                nums[2].className = 'pt-row-num' + diffClass(row.razlika);
+            }
+            if (listEl.children[index] !== btn) listEl.insertBefore(btn, listEl.children[index] || null);
         });
+        existing.forEach(function (btn) { btn.remove(); });
     }
 
     function applyPayload(data) {
@@ -203,16 +197,18 @@
             return;
         }
         renderCurrent(data.current);
-        markRepeat(!!data.already_on_list);
+        markRepeat(false);
         renderList(data.items || [], data.current);
-        if (data.already_on_list) {
-            alarmDuplicate();
-            return;
-        }
         if (data.message) showToast(data.message, true);
     }
 
     function post(action, extra) {
+        var task = mutationQueue.then(function () { return sendPost(action, extra); });
+        mutationQueue = task.catch(function () {});
+        return task;
+    }
+
+    function sendPost(action, extra) {
         var body = new URLSearchParams();
         body.set('action', action);
         extra = extra || {};
@@ -325,6 +321,11 @@
         }
         if (query) query.value = '';
         hideSuggest();
+        if (data.already_on_list) {
+            showToast('');
+            showDuplicateNotice();
+            return;
+        }
         var qtyPanel = document.getElementById('ptQtyPanel');
         if (qtyPanel && typeof qtyPanel.scrollIntoView === 'function') {
             qtyPanel.scrollIntoView({ block: 'nearest', behavior: 'instant' });
@@ -333,7 +334,10 @@
     }
 
     function pickItem(item) {
+        if (duplicateDialog && duplicateDialog.open) return;
         if (!item || !item.id) return;
+        searchVersion++;
+        if (searchAbort) searchAbort.abort();
         focusQty();
         var extra = { product_id: item.id };
         if (item.variation_id) extra.variation_id = item.variation_id;
@@ -341,6 +345,10 @@
     }
 
     function searchArticles(value, commit) {
+        if (duplicateDialog && duplicateDialog.open) return;
+        var version = ++searchVersion;
+        if (searchAbort) searchAbort.abort();
+        searchAbort = !commit && typeof AbortController === 'function' ? new AbortController() : null;
         var q = String(value || '').trim();
         if (!q) {
             hideSuggest();
@@ -355,9 +363,11 @@
             return;
         }
         fetch(lookupUrl + '?q=' + encodeURIComponent(q) + '&bez_zalihe=1&limit=20', {
+            signal: searchAbort ? searchAbort.signal : undefined,
             credentials: 'same-origin',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         }).then(function (res) { return res.json(); }).then(function (data) {
+            if (!commit && (version !== searchVersion || (duplicateDialog && duplicateDialog.open))) return;
             var rows = flattenLookup(data.results || []);
             var exactRows = rows.filter(function (row) { return isExactMatch(row, q); });
             if (commit) {
@@ -384,12 +394,14 @@
                 return;
             }
             showSuggest(rows);
-        }).catch(function () {
+        }).catch(function (error) {
+            if ((!commit && version !== searchVersion) || error.name === 'AbortError') return;
             if (commit) showToast('Pretraga nije uspjela.', false);
         });
     }
 
     function scan() {
+        if (duplicateDialog && duplicateDialog.open) return;
         searchArticles(query && query.value, true);
     }
 
@@ -437,6 +449,8 @@
 
     if (query) {
         query.addEventListener('input', function () {
+            searchVersion++;
+            if (searchAbort) searchAbort.abort();
             window.clearTimeout(searchTimer);
             var q = (query.value || '').trim();
             if (!q) {

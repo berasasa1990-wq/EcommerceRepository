@@ -3704,6 +3704,215 @@ class MagacinViewTests(TestCase):
         extra_stock.refresh_from_db()
         self.assertEqual(extra_stock.kolicina, before - 1)
 
+    def test_two_requested_one_found_clears_location_and_bills_one(self):
+        from .views_magacin import apply_order_pick
+        from .magacin import validate_order_stock
+        self.client.force_login(self.user)
+        self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Jedan od dva', 'telefon': '061555555',
+            'product_id': [str(self.product.pk)], 'variation_id': [''],
+            'kolicina': ['2'], 'mp_ok': ['0'],
+        })
+        order = Order.objects.get(ime_prezime='Jedan od dva')
+        item = order.stavke.get()
+        response = self.client.post(reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {'action':'pick_short', 'item_id':item.pk, 'loc':'T-1', 'got':'1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertTrue(response.json()['ok'])
+        self.assertIn('na računu ostaje 1 kom.', response.json()['message'])
+        self.assertEqual(WarehouseStock.objects.get(product=self.product, location__sifra='T-1').kolicina, 0)
+        self.assertTrue(all(row.get('already_picked') for row in response.json()['queue']))
+        order.refresh_from_db()
+        apply_order_pick(order, [], finalize=True, user=self.user)
+        validate_order_stock(order, user=self.user)
+        item.refresh_from_db()
+        self.assertEqual(item.kolicina, 1)
+        self.assertEqual(item.kolicina_faktura, 1)
+        self.assertEqual(order.medjuzbir, item.cijena)
+
+    def test_partial_pick_clears_location_and_deducts_remainder_only_once(self):
+        from .views_magacin import confirm_short_pick, _order_pick_bundle, apply_order_pick
+        from .magacin import validate_order_stock
+        loc2 = WarehouseLocation.objects.create(sifra='T-2', naziv='Druga lokacija')
+        apply_movement(product=self.product, location=loc2, tip='prijem', kolicina=5)
+        self.client.force_login(self.user)
+        self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Automatski manjak', 'telefon': '061555555',
+            'product_id': [str(self.product.pk)], 'variation_id': [''],
+            'kolicina': ['3'], 'mp_ok': ['0'],
+        })
+        order = Order.objects.get(ime_prezime='Automatski manjak')
+        item = order.stavke.get()
+        url = reverse('staff_magacin_pakuj_detail', args=[order.broj])
+        response = self.client.post(url, {'action': 'pick_short', 'item_id': item.pk, 'loc': 'T-1', 'got': '1'},
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['ok'])
+        self.assertEqual(WarehouseStock.objects.get(product=self.product, location__sifra='T-1').kolicina, 0)
+        queue = response.json()['queue']
+        remaining = [row for row in queue if not row.get('already_picked')]
+        self.assertEqual([(row['loc'], row['need']) for row in remaining], [('T-2', 2)])
+        order.refresh_from_db()
+        self.assertEqual(order.picking_missing_entries, [])
+        confirm_short_pick(order, item_id=item.pk, loc='T-1', got=1, user=self.user)
+        self.assertEqual(len(order.pick_short_events), 1)
+        apply_order_pick(order, [dict(row, got=row['need'], done=True) for row in queue], finalize=True, user=self.user)
+        validate_order_stock(order, user=self.user)
+        self.assertEqual(WarehouseStock.objects.get(product=self.product, location=loc2).kolicina, 3)
+        item.refresh_from_db()
+        self.assertEqual(item.kolicina_faktura, 3)
+
+    def test_partial_pick_exhausts_second_location_keeps_taken_and_logs_shortage(self):
+        from .views_magacin import confirm_short_pick, _order_pick_bundle, apply_order_pick
+        from .magacin import validate_order_stock
+        loc2 = WarehouseLocation.objects.create(sifra='T-2', naziv='Druga lokacija')
+        apply_movement(product=self.product, location=loc2, tip='prijem', kolicina=5)
+        self.client.force_login(self.user)
+        self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Manjak na obje', 'telefon': '061555555',
+            'product_id': [str(self.product.pk)], 'variation_id': [''],
+            'kolicina': ['3'], 'mp_ok': ['0'],
+        })
+        order = Order.objects.get(ime_prezime='Manjak na obje')
+        item = order.stavke.get()
+        confirm_short_pick(order, item_id=item.pk, loc='T-1', got=1, user=self.user)
+        confirm_short_pick(order, item_id=item.pk, loc='T-2', got=0, user=self.user)
+        item.refresh_from_db()
+        self.assertEqual(item.kolicina, 1)
+        self.assertEqual(sum(e['missing'] for e in order.picking_missing_entries), 2)
+        queue = _order_pick_bundle(order)[0]
+        self.assertTrue(all(row.get('already_picked') for row in queue))
+        # Empty/stale client payload cannot erase the one already taken unit.
+        apply_order_pick(order, [], finalize=True, user=self.user)
+        validate_order_stock(order, user=self.user)
+        item.refresh_from_db()
+        self.assertEqual(item.kolicina_faktura, 1)
+        self.assertEqual(WarehouseStock.objects.get(product=self.product, location=loc2).kolicina, 0)
+
+    def test_short_pick_zero_moves_to_next_location_without_password(self):
+        loc2 = WarehouseLocation.objects.create(sifra='T-2', naziv='Druga lokacija')
+        apply_movement(product=self.product, location=loc2, tip='prijem', kolicina=2)
+        self.client.force_login(self.user)
+        order = Order.objects.create(ime_prezime='Nula na prvoj', ukupno=Decimal('10.00'))
+        item = OrderItem.objects.create(narudzba=order, artikal=self.product,
+            naziv=self.product.naziv, kolicina=1, cijena=Decimal('10.00'))
+        url = reverse('staff_magacin_pakuj_detail', args=[order.broj])
+        response = self.client.post(url, {'action': 'pick_short', 'item_id': item.pk, 'loc': 'T-1', 'got': '0'},
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([(r['loc'], r['need']) for r in response.json()['queue']], [('T-2', 1)])
+        self.assertEqual(response.json()['shortages'], [])
+        self.assertTrue(order.stavke.filter(pk=item.pk).exists())
+
+    @override_settings(STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    })
+    def test_finish_pick_after_last_shortage_opens_summary_instead_of_404(self):
+        from .views_magacin import confirm_short_pick
+        self.client.force_login(self.user)
+        order = Order.objects.create(ime_prezime='Završi praznu', ukupno=Decimal('10.00'))
+        item = OrderItem.objects.create(narudzba=order, artikal=self.product,
+            naziv=self.product.naziv, kolicina=1, cijena=Decimal('10.00'))
+        confirm_short_pick(order, item_id=item.pk, loc='T-1', got=0, user=self.user)
+        url = reverse('staff_magacin_pakuj_detail', args=[order.broj])
+        response = self.client.post(url, {'action': 'validiraj', 'pick_json': '[]'})
+        self.assertRedirects(response, url)
+        summary = self.client.get(url)
+        self.assertContains(summary, 'Nepokupljeni artikli')
+        self.assertContains(summary, 'Otkazana')
+        self.assertContains(summary, self.product.naziv)
+        saved = self.client.post(url, {'action': 'pick_save', 'pick_json': '[]'},
+                                 HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(saved.status_code, 200)
+        self.assertTrue(saved.json()['terminal'])
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.OTKAZANA)
+        self.assertFalse(order.stavke.exists())
+
+    def test_zero_pick_without_other_location_records_missing_without_billing(self):
+        from .views_magacin import confirm_short_pick, _order_pick_bundle
+        order = Order.objects.create(ime_prezime='Nema na polici', ukupno=Decimal('10.00'))
+        item = OrderItem.objects.create(narudzba=order, artikal=self.product,
+            naziv=self.product.naziv, kolicina=1, cijena=Decimal('10.00'))
+        item_id = item.pk
+        confirm_short_pick(order, item_id=item_id, loc='T-1', got=0, user=self.user)
+        self.assertFalse(order.stavke.exists())
+        self.assertEqual(order.picking_missing_entries[0]['missing'], 1)
+        self.assertEqual(order.picking_missing_entries[0]['naziv'], self.product.naziv)
+        self.assertEqual(order.ukupno, Decimal('0.00'))
+        self.assertEqual(_order_pick_bundle(order)[0], [])
+
+    def test_clear_last_missing_item_leaves_no_printable_lines_or_total(self):
+        from .magacin import clear_pick_location_stock
+        order = Order.objects.create(ime_prezime='Prazan račun', medjuzbir=Decimal('10.00'), ukupno=Decimal('10.00'))
+        item = OrderItem.objects.create(narudzba=order, artikal=self.product,
+                                        naziv=self.product.naziv, kolicina=1, cijena=Decimal('10.00'))
+        result = clear_pick_location_stock(order, item, loc='T-1', user=self.user)
+        self.assertTrue(result['removed'])
+        self.assertTrue(result['cancelled'])
+        order.refresh_from_db()
+        self.assertFalse(order.stavke.exists())
+        self.assertEqual(order.ukupno, Decimal('0.00'))
+        self.assertEqual(order.status, Order.Status.OTKAZANA)
+
+    def test_clear_location_keeps_already_picked_quantity_on_invoice(self):
+        from .magacin import clear_pick_location_stock
+        order = Order.objects.create(ime_prezime='Već pokupljeno', ukupno=Decimal('30.00'))
+        item = OrderItem.objects.create(narudzba=order, artikal=self.product,
+                                        naziv=self.product.naziv, kolicina=3,
+                                        kolicina_pokupljeno=1, cijena=Decimal('10.00'))
+        result = clear_pick_location_stock(order, item, loc='T-1', user=self.user)
+        self.assertFalse(result['removed'])
+        item.refresh_from_db()
+        self.assertEqual(item.kolicina, 1)
+        self.assertEqual(item.kolicina_faktura, 1)
+        order.refresh_from_db()
+        self.assertEqual(order.medjuzbir, Decimal('10.00'))
+
+    def test_pick_clear_returns_next_location_then_remaining_article(self):
+        loc = WarehouseLocation.objects.get(sifra='T-1')
+        loc2 = WarehouseLocation.objects.create(sifra='T-2', naziv='Druga lokacija')
+        apply_movement(product=self.product, location=loc2, tip='prijem', kolicina=5)
+        other = Product.objects.create(
+            naziv='Sljedeći artikal', sifra='PICK-NEXT', cijena=Decimal('3.00'),
+            stanje=4, na_stanju=True, magacin_sync_at=timezone.now(),
+        )
+        apply_movement(product=other, location=loc, tip='prijem', kolicina=4)
+        self.client.force_login(self.user)
+        self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Nastavi picking', 'telefon': '061505050',
+            'product_id': [str(self.product.pk), str(other.pk)],
+            'variation_id': ['', ''], 'kolicina': ['3', '1'], 'mp_ok': ['0', '0'],
+        })
+        order = Order.objects.get(ime_prezime='Nastavi picking')
+        item = order.stavke.get(artikal=self.product)
+        other_item = order.stavke.get(artikal=other)
+        url = reverse('staff_magacin_pakuj_detail', args=[order.broj])
+        def clear(location):
+            response = self.client.post(url, {
+                'action': 'pick_ocisti', 'item_id': str(item.pk),
+                'loc': location, 'lozinka': 'admin',
+            }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            self.assertEqual(response.status_code, 200)
+            data = response.json()
+            self.assertTrue(data['ok'])
+            self.assertNotIn('redirect', data)
+            return data['queue']
+        queue = clear('T-1')
+        self.assertTrue(any(row['item_id'] == item.pk and row['loc'] == 'T-2' for row in queue))
+        self.assertFalse(any(row['item_id'] == item.pk and row['loc'] == 'T-1' for row in queue))
+        queue = clear('T-2')
+        self.assertTrue(any(row['item_id'] == other_item.pk for row in queue))
+        self.assertFalse(any(row['item_id'] == item.pk and row['loc'] in {'T-1', 'T-2'} for row in queue))
+        self.assertFalse(order.stavke.filter(pk=item.pk).exists())
+        from .views import _order_print_job
+        order.refresh_from_db()
+        self.assertEqual(order.medjuzbir, Decimal('3.00'))
+        job = _order_print_job(order)
+        self.assertFalse(any(line.get('item_id') == item.pk for line in job['packing_lines']))
+        self.assertEqual(list(order.stavke.values_list('artikal_id', flat=True)), [other.pk])
+
     def test_pick_ocisti_zeros_location_keeps_order_item(self):
         loc = WarehouseLocation.objects.get(sifra='T-1')
         loc2 = WarehouseLocation.objects.create(sifra='T-2', naziv='Druga loc', redoslijed=20)
@@ -5291,6 +5500,8 @@ class MagacinViewTests(TestCase):
         self.assertTrue(order.napomena.startswith('VP narudžba'))
         self.assertTrue(MagacinVpNarudzba.objects.filter(order=order).exists())
         self.assertEqual(order.dostava, Decimal('0.00'))
+        self.assertEqual(order.stavke.get().cijena, Decimal('7.25'))
+        self.assertEqual(order.ukupno, Decimal('7.25'))
 
     def test_lookup_returns_synced_and_zero_stock(self):
         self.client.force_login(self.user)
@@ -6768,7 +6979,22 @@ class MagacinViewTests(TestCase):
             narudzba=mp_order, naziv=empty.naziv, cijena=Decimal('3.00'), kolicina=1,
             artikal=empty, sifra=empty.sifra,
         )
-        self.assertTrue(order_needs_mp_check(mp_order))
+        self.assertFalse(order_needs_mp_check(mp_order))
+        from .views_magacin import collect_mp_checks, collect_pick_jobs
+        from .views import _order_print_job
+        self.assertEqual(collect_mp_checks([mp_order]), [])
+        self.assertIn(mp_order.pk, [job.pk for job in collect_pick_jobs()])
+        self.assertFalse(_order_print_job(mp_order)['requires_mp_check'])
+        pick_url = reverse('staff_magacin_pakuj_detail', args=[mp_order.broj])
+        response = self.client.get(pick_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Ima u MP')
+        saved = self.client.post(pick_url, {'action': 'pick_save', 'pick_json': '[]'},
+                                 HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(saved.status_code, 200)
+        old_url = reverse('staff_magacin_pakuj_provjera')
+        self.assertRedirects(self.client.get(old_url, {'narudzba': mp_order.broj}),
+                             pick_url, fetch_redirect_response=False)
 
     def test_validate_deducts_from_picking_location(self):
         from .views_magacin import apply_order_pick
@@ -7985,7 +8211,54 @@ class MagacinUvozTests(TestCase):
         self.assertIn('Fox Edges Lead Clip', names)
         self.assertNotIn('Novi bez stare cijene', names)
 
+    def test_uvoz_popis_saves_missing_barcode_and_protects_existing(self):
+        from .models import MagacinPlan, MagacinSubscription
+        MagacinSubscription.objects.update_or_create(
+            user=self.user, defaults={'plan': MagacinPlan.objects.get(code='ultimate')},
+        )
+        from .magacin import create_magacin_uvoz_from_rows
+
+        self.client.force_login(self.user)
+        uvoz, _ = create_magacin_uvoz_from_rows(
+            [{'artikal': self.existing.naziv, 'kolicina': Decimal('2'),
+              'mpc_brutto': Decimal('7.50')}],
+            naziv='Barkod test', user=self.user, apply_stock=False,
+        )
+        stavka = uvoz.stavke.get(product=self.existing)
+        url = reverse('staff_magacin_uvoz_popis', args=[uvoz.pk])
+
+        def save(code):
+            return self.client.post(url, {
+                'action': 'save_barcode', 'stavka_id': stavka.pk, 'barkod': code,
+            }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        for code in ['', 'x' * 201]:
+            self.assertEqual(save(code).status_code, 400)
+        self.site_only.barkod = 'DUPLICATE'
+        self.site_only.save(update_fields=['barkod'])
+        self.assertEqual(save('duplicate').status_code, 400)
+        response = save(' 0012345678905 ')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['current']['barkod'], '0012345678905')
+        self.existing.refresh_from_db()
+        self.assertEqual(self.existing.barkod_normalized, '0012345678905')
+        self.assertEqual(save('999999').status_code, 400)
+        scanned = self.client.post(url, {'action': 'scan', 'q': '0012345678905'},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(scanned.json()['current_id'], stavka.pk)
+        stavka.refresh_from_db()
+        self.assertIsNone(stavka.popisano)
+        uvoz.popis_status = Uvoz.PopisStatus.ZAVRSEN
+        uvoz.save(update_fields=['popis_status'])
+        self.assertEqual(save('999999').status_code, 400)
+        self.existing.refresh_from_db()
+        self.assertEqual(self.existing.barkod, '0012345678905')
+
     def test_uvoz_popis_applies_counted_qty_and_records_diff(self):
+        from .models import MagacinPlan, MagacinSubscription
+        MagacinSubscription.objects.update_or_create(
+            user=self.user, defaults={'plan': MagacinPlan.objects.get(code='ultimate')},
+        )
         from .magacin import create_magacin_uvoz_from_rows
 
         self.client.force_login(self.user)

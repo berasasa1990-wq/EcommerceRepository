@@ -20,6 +20,11 @@
     var scan = document.getElementById('upScan');
     var finished = !!state.zavrsen;
 
+    function escapeHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
     function qty(value) {
         if (value === null || value === undefined || value === '') return '—';
         return String(value);
@@ -106,7 +111,7 @@
                 '<div class="up-card-info">' +
                     (item.sifra ? '<div class="up-sifra">Šifra: ' + item.sifra + '</div>' : '') +
                     '<strong>' + item.naziv + '</strong>' +
-                    (item.barkod ? '<div class="up-barkod">Barkod: ' + item.barkod + '</div>' : '') +
+                    (item.barkod ? '<div class="up-barkod">Barkod: ' + escapeHtml(item.barkod) + '</div>' : (item.product_id && !finished ? '<div class="up-barcode-editor"><label for="upBarcode">Barkod artikla</label><div><input id="upBarcode" type="text" maxlength="200" autocomplete="off" placeholder="Unesi ili skeniraj barkod"><button type="button" class="mg-btn" data-act="save_barcode">Sačuvaj barkod</button></div></div>' : '')) +
                     (item.status !== 'nije' ? '<span class="up-pill is-' + item.status + '">' + statusLabel(item) + '</span>' : '') +
                 '</div>' +
                 '<div class="up-card-qty">' +
@@ -176,7 +181,7 @@
             return '<tr class="is-clickable' + active + '" data-id="' + item.id + '">' +
                 '<td>' + (item.sifra || '—') + '</td>' +
                 '<td><strong>' + item.naziv + '</strong></td>' +
-                '<td>' + (item.barkod || '—') + '</td>' +
+                '<td>' + escapeHtml(item.barkod || '—') + '</td>' +
                 '<td class="num">' + qty(item.ocekivano) + '</td>' +
                 '<td class="num">' + qty(item.popisano) + '</td>' +
                 '<td class="num ' + deltaClass(item.razlika) + '">' + deltaText(item.razlika) + '</td>' +
@@ -221,6 +226,14 @@
         var item = currentItem();
         if (!item) return;
         var act = btn.getAttribute('data-act');
+        if (act === 'save_barcode') {
+            var barcodeInput = document.getElementById('upBarcode');
+            btn.disabled = true;
+            run(act, { stavka_id: item.id, barkod: barcodeInput.value }).then(function () {
+                btn.disabled = false;
+            });
+            return;
+        }
         if (act === 'confirm') {
             var input = document.getElementById('upQty');
             run('confirm', { stavka_id: item.id, kolicina: (input && input.value !== '') ? input.value : '0' });
@@ -236,6 +249,12 @@
         event.target.select();
     });
     currentEl.addEventListener('keydown', function (event) {
+        if (event.target.id === 'upBarcode' && event.key === 'Enter') {
+            event.preventDefault();
+            var saveButton = currentEl.querySelector('[data-act="save_barcode"]');
+            if (saveButton) saveButton.click();
+            return;
+        }
         if (event.target.id !== 'upQty' || finished) return;
         if (event.key !== 'Enter') return;
         event.preventDefault();
