@@ -7820,6 +7820,10 @@ class OdooCustomerAddressTests(TestCase):
         self.assertNotIn('mobile', second)
 
 
+@override_settings(STORAGES={
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+})
 class MagacinUvozTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_superuser('admin', 'admin@example.com', 'pass')
@@ -8212,10 +8216,6 @@ class MagacinUvozTests(TestCase):
         self.assertNotIn('Novi bez stare cijene', names)
 
     def test_uvoz_popis_saves_missing_barcode_and_protects_existing(self):
-        from .models import MagacinPlan, MagacinSubscription
-        MagacinSubscription.objects.update_or_create(
-            user=self.user, defaults={'plan': MagacinPlan.objects.get(code='ultimate')},
-        )
         from .magacin import create_magacin_uvoz_from_rows
 
         self.client.force_login(self.user)
@@ -8255,10 +8255,6 @@ class MagacinUvozTests(TestCase):
         self.assertEqual(self.existing.barkod, '0012345678905')
 
     def test_uvoz_popis_applies_counted_qty_and_records_diff(self):
-        from .models import MagacinPlan, MagacinSubscription
-        MagacinSubscription.objects.update_or_create(
-            user=self.user, defaults={'plan': MagacinPlan.objects.get(code='ultimate')},
-        )
         from .magacin import create_magacin_uvoz_from_rows
 
         self.client.force_login(self.user)

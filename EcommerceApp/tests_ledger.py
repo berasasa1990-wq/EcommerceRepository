@@ -16,7 +16,7 @@ from .warehouse_ledger import post_entry
 @override_settings(ALLOWED_HOSTS=['testserver'], STORAGES={'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'}, 'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
 class WarehouseLedgerTests(TestCase):
     def setUp(self):
-        self.user = get_user_model().objects.create_user(username='ledger-user', password='test')
+        self.user = get_user_model().objects.create_user(username='ledger-user', password='test', is_superuser=True)
         plan, _ = MagacinPlan.objects.get_or_create(code='ultimate', defaults={'name': 'Ultimate', 'features': []})
         MagacinSubscription.objects.update_or_create(user=self.user, defaults={'plan': plan, 'active': True})
         self.partner = WarehousePartner.objects.create(naziv='Partner <test>', grad='Sarajevo')
@@ -143,7 +143,7 @@ class WarehouseLedgerTests(TestCase):
         self.assertEqual(sum(returned), Decimal('-.02'))
         self.assertTrue(all(value <= 0 for value in returned))
 
-    def test_page_forms_export_and_plan_access(self):
+    def test_page_forms_export_and_superuser_access(self):
         self.client.force_login(self.user)
         url = reverse('staff_magacin_duguje')
         self.assertContains(self.client.get(url), 'Duguje / Potražuje')
@@ -157,8 +157,10 @@ class WarehouseLedgerTests(TestCase):
         self.assertEqual(self.balance(), Decimal('25'))
         basic = MagacinPlan.objects.get(code='basic')
         MagacinSubscription.objects.filter(user=self.user).update(plan=basic)
-        self.assertEqual(self.client.get(url).status_code, 403)
-        self.assertEqual(self.client.post(url, {'action':'partner', 'naziv':'Blocked'}).status_code, 403)
+        self.assertEqual(self.client.get(url).status_code, 200)
+        self.user.is_superuser = False
+        self.user.save(update_fields=['is_superuser'])
+        self.assertEqual(self.client.post(url, {'action':'partner', 'naziv':'Blocked'}).status_code, 302)
         self.assertFalse(WarehousePartner.objects.filter(naziv='Blocked').exists())
 
     def test_multi_article_booking_and_rollback(self):

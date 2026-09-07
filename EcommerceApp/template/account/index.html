@@ -47,7 +47,6 @@
 
     <div class="acc-dash-layout">
         <nav class="acc-dash-nav" aria-label="Nalog">
-            <a href="{% url 'magacin_planovi' %}" class="acc-dash-nav-link">Planovi magacina</a>
             {% if user.is_superuser or user.is_staff %}
             <a href="{% url 'staff_admin_panel' %}" class="acc-dash-nav-link acc-dash-nav-link--staff">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
