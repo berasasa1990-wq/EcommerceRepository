@@ -89,6 +89,24 @@ class SubscriptionTests(TestCase):
         self.assertFalse(allowed_features(AnonymousUser()))
         self.assertFalse(allowed_features(self.user))
 
+    def test_designated_owner_has_all_warehouse_controls_without_active_plan(self):
+        from .urls import urlpatterns
+        from .warehouse_access import FEATURES
+
+        MagacinSubscription.objects.update_or_create(user=self.owner, defaults={
+            'plan': self.basic, 'active': False,
+            'expires_on': timezone.localdate() - timedelta(days=1),
+        })
+        owner = self.fresh_user(self.owner)
+        self.assertEqual(allowed_features(owner), set(FEATURES))
+        for pattern in urlpatterns:
+            name = getattr(pattern, 'name', '') or ''
+            if name.startswith('staff_magacin'):
+                self.assertTrue(can_access_route(owner, name), name)
+        owner.is_active = False
+        self.assertFalse(allowed_features(owner))
+        self.assertFalse(can_access_route(owner, 'staff_magacin_pretplate'))
+
     def test_menu_visibility(self):
         self.subscribe(self.basic)
         request = RequestFactory().get('/')
