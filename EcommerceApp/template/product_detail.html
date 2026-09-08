@@ -2,6 +2,9 @@
 {% load static %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/product-sale-alignment.v20260908.css' %}">
+<link rel="stylesheet" href="{% static 'css/product-inline-qty.v20260912.css' %}">
+<link rel="stylesheet" href="{% static 'css/product-inline-bundle.v20260912.css' %}">
 <link rel="stylesheet" href="{% static 'css/product-detail-mobile.css' %}?v=20260905graydots2">
 {% if staff_product_tools %}
 <link rel="stylesheet" href="{% static 'css/staff-image-fit.css' %}?v=20260829imgFit">
@@ -433,7 +436,7 @@
             </div>
             {% endif %}
 
-            <div class="pd-options-price">
+            <div class="pd-options-price{% if product.na_akciji %} pd-options-price--sale{% endif %}">
                 <div class="pd-options-price__price">
                     {% if not product.varijacije.count %}
                     {% if product.na_akciji %}
@@ -514,23 +517,9 @@
                             </svg>
                             {{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}
                         </button>
-                        {% include 'partials/qty_deal_promo.html' %}
                         {% include 'partials/gratis_promo.html' %}
                     </div>
                 </div>
-                {% if conversion_boost %}
-                <div class="pd-conversion-boost">
-                    {% if conversion_boost.free_shipping_hint %}
-                    <p class="pd-conversion-ship"><svg class="pd-mobile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 5h11v12H3zM14 9h4l4 5v3h-8M1 9h5M0 13h5"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>{{ conversion_boost.free_shipping_hint|safe }}</span></p>
-                    {% endif %}
-                    <ul class="pd-conversion-trust">
-                        {% for line in conversion_boost.trust_lines %}
-                        <li><svg class="pd-mobile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{% if forloop.counter == 1 %}<path d="M3 5h11v12H3zM14 9h4l4 5v3h-8M1 9h5M1 13h4"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>{% elif forloop.counter == 2 %}<path d="M12 2 3 5v6c0 6 9 11 9 11s9-5 9-11V5z"/>{% else %}<path d="m8 2-5 5 5 4M3 7h9a8 8 0 1 1-7 12"/>{% endif %}</svg><span>{{ line }}</span></li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% endif %}
-
                 {% if deal_promo %}
                 <div class="deal-promo">
                     <div class="deal-promo-line1">{{ deal_promo.promo_text }}</div>
@@ -544,6 +533,18 @@
             </form>
             {% endif %}
             {% endif %}
+
+                {% if conversion_boost.free_shipping_hint %}
+                <div class="pd-conversion-boost">
+                    {% if conversion_boost.free_shipping_hint %}
+                    <p class="pd-conversion-ship"><svg class="pd-mobile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 5h11v12H3zM14 9h4l4 5v3h-8M1 9h5M0 13h5"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>{{ conversion_boost.free_shipping_hint|safe }}</span></p>
+                    {% endif %}
+
+                </div>
+                {% endif %}
+
+            {% include 'partials/product_qty_deal.html' %}
+            {% include 'partials/product_bundle_set.html' %}
 
             {% if product.varijacije.count and product_available %}
             {# AI dwell: isti izgled kao na kartici + tajmer #}
@@ -574,7 +575,6 @@
                 <div class="product-detail-variations" id="detailVariations">
                     {% include 'partials/product_detail_variation_rows.html' with product=product in_stock_variations=in_stock_variations %}
                 </div>
-                {% include 'partials/qty_deal_promo.html' %}
                 {% include 'partials/gratis_promo.html' %}
             </div>
             {% endif %}
@@ -582,9 +582,7 @@
         </div>
     </div>
 
-    {% include 'partials/product_flash_offer.html' %}
-    {% include 'partials/product_bundle_set.html' %}
-    {% include 'partials/product_qty_deal.html' %}
+
 
     {% if site_settings.politika_dostava or site_settings.politika_povrat %}
     <div class="product-detail-policies">

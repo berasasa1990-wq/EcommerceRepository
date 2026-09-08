@@ -155,8 +155,11 @@
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260905compactbrands" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260905compactbrands">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260908sethoverorange" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260908sethoverorange">
+    <link rel="stylesheet" href="{% static 'css/menu-color.v20260909.css' %}">
+    <link rel="stylesheet" href="{% static 'css/site-logo-compact.v20260911.css' %}">
+    <link rel="stylesheet" href="{% static 'css/mobile-header-actions.v20260909.css' %}">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -233,7 +236,7 @@
     </script>
     {% endif %}
 </head>
-<body class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
+<body data-menu-color="{{ site_settings.boja_menija|default:'white' }}" class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
     <div class="site-chrome-backdrop" aria-hidden="true"></div>
 
@@ -284,14 +287,7 @@
                         </span>
                         {% endif %}
                     </a>
-                    {% if site_settings.logo_glavni_sajt %}
-                    <div class="logo-byline">
-                        <span class="logo-by">by</span>
-                        <a href="https://www.carpologijabh.ba" class="logo-parent" target="_blank" rel="noopener noreferrer" aria-label="Carpologija BH">
-                            <img src="{{ site_settings.logo_glavni_sajt.url }}" alt="Carpologija BH" class="logo-parent-image" width="120" height="28" loading="eager" decoding="async">
-                        </a>
-                    </div>
-                    {% endif %}
+
                 </div>
 
                 <div class="header-search" id="headerSearch">
@@ -495,6 +491,7 @@
                     <h2 class="mobile-nav-subview-title" id="mobileNavSubTitle"></h2>
                     <div class="mobile-nav-subview-body" id="mobileNavSubBody"></div>
                 </div>
+
             </nav>
 
             {# Plutajuća dugmad Akcija/Noviteti uklonjena — sekcije su na početnoj #}
@@ -660,7 +657,6 @@
 
     {% include 'partials/footer.html' %}
     {% include 'partials/contact_float.html' %}
-    {% include 'partials/site_chat.html' %}
     {# Ribolovački savjetnik — uključuje se u Podešavanjima #}
     {% if site_settings.savjetnik_aktivan %}
     {% include 'partials/fishing_advisor.html' %}

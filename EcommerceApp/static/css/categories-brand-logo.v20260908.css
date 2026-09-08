@@ -1,0 +1,20 @@
+.header-row--categories > .categories-brand-logo {
+    display: flex;
+    flex: 0 1 220px;
+    min-width: 100px;
+    align-items: center;
+    margin-left: auto;
+    padding: 4px 0;
+}
+.categories-brand-logo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 44px;
+    object-fit: contain;
+    object-position: right center;
+}
+@media (max-width: 1024px) {
+    .header-row--categories > .categories-brand-logo { flex-basis: 160px; min-width: 80px; }
+    .categories-brand-logo img { max-height: 32px; }
+}

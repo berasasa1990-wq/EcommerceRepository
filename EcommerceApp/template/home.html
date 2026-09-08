@@ -2,6 +2,62 @@
 
 {% block extra_css %}
 <style>
+.featured-grid.featured-grid--promos {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    padding: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    background: #e5e5e5;
+    box-sizing: border-box;
+}
+.featured-grid--promos > .featured-card {
+    grid-column: auto;
+    min-width: 0;
+    aspect-ratio: 3 / 2;
+    border: 0;
+    border-radius: 0;
+}
+.featured-grid--promos .card-image--featured { object-fit: cover; }
+.featured-grid--promos .card-overlay { padding: 12px; }
+.featured-grid--promos .card-overlay h3 { font-size: clamp(14px, 1.4vw, 22px); overflow-wrap: anywhere; }
+.featured-grid--promos .card-overlay p { font-size: 12px; }
+.featured-grid--promos .btn-banner { padding: 6px 10px; font-size: 12px; }
+@media (max-width: 767px) {
+    .featured-grid.featured-grid--promos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1px;
+        padding: 0;
+    }
+    .featured-grid--promos > .featured-card:nth-child(n+5) { display: none; }
+    .featured-grid--promos .card-overlay { padding: 8px; }
+}
+.home-trust-bar {
+    background: #fff;
+    color: #222;
+    border-color: #e5e5e5;
+}
+.home-trust-bar .home-trust-bar__inner {
+    padding-top: 24px;
+    padding-bottom: 24px;
+}
+@media (max-width: 767px) {
+    .home-trust-bar .home-trust-bar__inner {
+        padding-top: 20px;
+        padding-bottom: 20px;
+    }
+}
+.home-trust-bar .home-trust-bar__title {
+    color: #222;
+}
+.home-trust-bar .home-trust-bar__sub {
+    color: #555;
+}
+.home-trust-bar .home-trust-bar__item {
+    border-color: #e5e5e5;
+}
 .hero-carousel {
     border-bottom: 2px solid var(--ozr-orange, #FF5A00) !important;
 }
@@ -109,14 +165,14 @@
 
 
 {% if featured_cards %}
-<section class="featured-grid">
-    {% for card in featured_cards %}
+<section class="featured-grid featured-grid--promos" aria-label="Promotivne ponude">
+    {% for card in featured_cards|slice:":8" %}
     {% if card.url %}
     <a href="{{ card.url }}" class="featured-card featured-card--linked{% if card.wide %} featured-card--wide{% endif %}">
     {% else %}
     <article class="featured-card{% if card.wide %} featured-card--wide{% endif %}">
     {% endif %}
-        {% include 'partials/banner_media.html' with card=card video_class='card-image card-image--featured banner-media-video' image_class='card-image card-image--featured' image_sizes='(max-width: 768px) 100vw, 50vw' image_loading='lazy' %}
+        {% include 'partials/banner_media.html' with card=card video_class='card-image card-image--featured banner-media-video' image_class='card-image card-image--featured' image_sizes='(max-width: 767px) 50vw, 25vw' image_loading='lazy' %}
         {% if card.title or card.subtitle or card.actions %}
         <div class="card-overlay">
             {% if card.title %}<h3>{{ card.title }}</h3>{% endif %}

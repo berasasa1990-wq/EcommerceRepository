@@ -38,6 +38,16 @@ def _izracunaj_postotak_umanjenja(bazna_cijena, prikazna_cijena):
 
 
 class SiteSettings(models.Model):
+    class BojaMenija(models.TextChoices):
+        BIJELA = 'white', 'Bijela'
+        CRNA = 'black', 'Crna'
+
+    boja_menija = models.CharField(
+        max_length=5, choices=BojaMenija.choices, default=BojaMenija.BIJELA,
+        verbose_name='Boja',
+        help_text='Boja menija kategorija i trake pogodnosti ispod banera. Bijela zadržava sadašnji izgled; crna koristi svijetli tekst i narandžaste ikone.',
+    )
+
     class ArtikalaPoRedu(models.IntegerChoices):
         TRI = 3, '3 artikla u redu'
         CETIRI = 4, '4 artikla u redu'
@@ -54,6 +64,11 @@ class SiteSettings(models.Model):
             'Prikazuje se u headeru ispod glavnog loga uz tekst „by” '
             '(pod-sajt / Carpologija BH). Automatski se skalira na ~200×48px PNG.'
         ),
+    )
+    logo_desno_kategorije = models.ImageField(
+        upload_to='site/category-logos/', blank=True, null=True,
+        verbose_name='Desni logo uz Sve kategorije',
+        help_text='Upload loga na krajnjoj desnoj strani reda kategorija. Preporuka: 1000 × 200 px (5:1), JPG ili PNG. Ako je prazno, prikazuje se priloženi Carpologija BH logo.',
     )
     favicon = models.ImageField(
         upload_to='site/', blank=True, null=True,
@@ -136,6 +151,21 @@ class SiteSettings(models.Model):
             'Npr. 5, 10, 15…'
         ),
     )
+    browse_interest_mode = models.CharField(
+        max_length=20, default='balanced',
+        choices=[('assertive', 'Nametljivo'), ('balanced', 'Uravnoteženo'), ('no_discount', 'Bez popusta')],
+        verbose_name='Način prikazivanja',
+    )
+    browse_interest_source = models.CharField(
+        max_length=20, default='category',
+        choices=[('category', 'Iz kategorije koju kupac gleda'), ('manual', 'Artikli koje ja odaberem')],
+        verbose_name='Koje artikle prikazivati',
+    )
+    browse_interest_min_seconds = models.PositiveIntegerField(default=35, verbose_name='Najranije prikaži ponudu (sekundi)')
+    browse_interest_max_offers = models.PositiveIntegerField(default=2, verbose_name='Najviše ponuda po posjeti')
+    browse_interest_gap_seconds = models.PositiveIntegerField(default=180, verbose_name='Razmak između ponuda (sekundi)')
+    browse_interest_duration_seconds = models.PositiveIntegerField(default=180, verbose_name='Trajanje AI ponude (sekundi)')
+
     product_dwell_popup_aktivan = models.BooleanField(
         default=False,
         verbose_name='AI dwell (odmah na artiklu) aktivan',
@@ -976,6 +1006,20 @@ class PageSEO(models.Model):
         return self.get_page_key_display()
 
 
+class AIPopupItem(models.Model):
+    settings = models.ForeignKey(SiteSettings, on_delete=models.CASCADE, related_name='popup_items')
+    product = models.ForeignKey('Product', on_delete=models.CASCADE, related_name='ai_popup_items', verbose_name='Artikal')
+
+    class Meta:
+        ordering = ['pk']
+        unique_together = [('settings', 'product')]
+        verbose_name = 'Artikal za AI ponudu'
+        verbose_name_plural = 'Artikli za AI ponude'
+
+    def __str__(self):
+        return str(self.product)
+
+
 class ProductDwellItem(models.Model):
     """
     Artikal s ručnim flash popustom za AI dwell.
@@ -1292,8 +1336,8 @@ class Brand(models.Model):
 class Banner(models.Model):
     class BannerType(models.TextChoices):
         HERO = 'hero', 'Hero Carousel'
-        GRID = 'grid', 'Grid Kartica (4×2 ispod Hero, 8 desktop / 6 mobilni)'
-        FEATURED = 'featured', 'Featured Kartica'
+        GRID = 'grid', 'Grid niže na početnoj (ispod akcijskih artikala)'
+        FEATURED = 'featured', 'Grid ispod banera (ispod Brza dostava / Sigurna kupovina)'
         SPOTLIGHT = 'spotlight', 'Spotlight'
 
     naslov = models.CharField(max_length=200, blank=True, default='')
@@ -2601,7 +2645,7 @@ class Akcija(models.Model):
 
     def qty_deal_page_offer(self):
         """
-        Product-page blok: 1 kom (redovna) + svi tierovi.
+        Product-page blok: količinske ponude od 2 komada.
         Zadnji tier prikazuje se kao N+ (otvorena količina).
         """
         product = self.artikal
@@ -2615,23 +2659,10 @@ class Akcija(models.Model):
             return None
         best = self.qty_deal_best_option()
         best_id = best['id'] if best else None
-        q1 = bazna.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        columns = [{
-            'id': '',
-            'quantity': 1,
-            'qty_label': '1x',
-            'title': 'KUPI 1 KOM',
-            'subtitle': 'Redovna cijena',
-            'pct_label': None,
-            'unit_bazna': bazna,
-            'unit_snizena': bazna,
-            'line_bazna': q1,
-            'line_snizena': q1,
-            'is_single': True,
-            'is_best': False,
-            'is_open': False,
-            'cta': f'{q1} KM / kom',
-        }]
+        deal_opts = [opt for opt in deal_opts if opt['quantity'] >= 2]
+        if not deal_opts:
+            return None
+        columns = []
         n = len(deal_opts)
         for i, opt in enumerate(deal_opts):
             is_last = i == n - 1
@@ -2686,6 +2717,8 @@ class Akcija(models.Model):
         """Akcijska ponuda: aktivan i (nema kraja ili još nije istekla)."""
         if self.tip != self.Tip.AKCIJSKA or not self.aktivan:
             return False
+        if self.pocetak and timezone.now() < self.pocetak:
+            return False
         end = self.zavrsava
         if end is None:
             return True
@@ -2701,13 +2734,6 @@ class Akcija(models.Model):
     def flash_applies_to_product(self, product):
         if not product or not self.flash_still_running():
             return False
-        trigger = (self.flash_trigger or self.FlashTrigger.OFFER_PRODUCT).strip()
-        if trigger == self.FlashTrigger.PRODUCT:
-            return bool(self.artikal_id and product.pk == self.artikal_id)
-        if trigger == self.FlashTrigger.CATEGORY:
-            if not self.kategorija_id or not getattr(product, 'kategorija', None):
-                return False
-            return self._category_matches_root(product.kategorija, self.kategorija_id)
         # offer_product: bilo koji artikal iz ponude (max 4)
         if not self.pk:
             return False
@@ -3290,9 +3316,21 @@ class Product(models.Model):
 
     @property
     def na_akciji(self):
-        if not _akcija_jos_vazi(self.akcija_do):
-            return False
-        return self.akcijska_cijena is not None and self.akcijska_cijena < self.cijena
+        return self.prikazna_cijena is not None and self.cijena is not None and self.prikazna_cijena < self.cijena
+
+    def flash_sale_price(self, base):
+        if not self.pk or base is None:
+            return None
+        rows = getattr(self, '_prefetched_objects_cache', {}).get('akcija_flash_lines')
+        if rows is None:
+            rows = self.akcija_flash_lines.select_related('akcija').filter(akcija__aktivan=True)
+        prices = []
+        for row in rows:
+            if row.akcija.flash_still_running():
+                price = _izracunaj_akcijsku_od_postotka(base, row.effective_discount_percent())
+                if price is not None and price < base:
+                    prices.append(price)
+        return min(prices) if prices else None
 
     @property
     def bazna_cijena(self):
@@ -3300,9 +3338,13 @@ class Product(models.Model):
 
     @property
     def prikazna_cijena(self):
-        if self.na_akciji:
-            return self.akcijska_cijena
-        return self.cijena
+        prices = [self.cijena] if self.cijena is not None else []
+        if _akcija_jos_vazi(self.akcija_do) and self.akcijska_cijena is not None:
+            prices.append(self.akcijska_cijena)
+        flash_price = self.flash_sale_price(self.cijena)
+        if flash_price is not None:
+            prices.append(flash_price)
+        return min(prices) if prices else None
 
     def _own_pakovanje_komada(self):
         """Pakovanje sa polja artikla (bez varijacija) — baza za fallback."""
@@ -3681,12 +3723,17 @@ class ProductVariation(models.Model):
 
     @property
     def efektivna_akcijska_cijena(self):
+        prices = []
         if self.akcijska_cijena is not None and self.akcijska_cijena < self.bazna_cijena:
-            return self.akcijska_cijena
-        if self.artikal.na_akciji:
+            prices.append(self.akcijska_cijena)
+        if (_akcija_jos_vazi(self.artikal.akcija_do) and self.artikal.akcijska_cijena is not None
+                and self.artikal.cijena and self.artikal.akcijska_cijena < self.artikal.cijena):
             ratio = self.artikal.akcijska_cijena / self.artikal.cijena
-            return (self.bazna_cijena * ratio).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        return None
+            prices.append((self.bazna_cijena * ratio).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+        flash_price = self.artikal.flash_sale_price(self.bazna_cijena)
+        if flash_price is not None:
+            prices.append(flash_price)
+        return min(prices) if prices else None
 
     @property
     def na_akciji(self):

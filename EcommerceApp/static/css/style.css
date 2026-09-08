@@ -33947,3 +33947,18 @@ body.page-account main {
         object-position: center center;
     }
 }
+
+/* Kreiraj svoj set — običan navigacijski link, bez obojene pozadine. */
+.header .header-row--categories .nav-item--set > a.nav-link-set,
+.header .header-row--categories .nav-item--set > a.nav-link-set:hover,
+.header .header-row--categories .nav-item--set > a.nav-link-set:focus-visible {
+    background: transparent !important;
+    color: inherit !important;
+    box-shadow: none !important;
+}
+.header .header-row--categories .nav-item--set > a.nav-link-set:hover,
+.header .header-row--categories .nav-item--set > a.nav-link-set:focus-visible {
+    color: var(--ozr-orange, #FF5A00) !important;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}

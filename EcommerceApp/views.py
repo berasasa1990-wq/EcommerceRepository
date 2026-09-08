@@ -123,10 +123,12 @@ def _in_stock_variations_qs():
 
 
 def _prefetch_product_cards(qs):
+    from .models import AkcijaFlashLine
     return qs.select_related('kategorija', 'kategorija__roditelj', 'brend').annotate(
         variation_count=Count('varijacije'),
     ).prefetch_related(
         Prefetch('varijacije', queryset=_in_stock_variations_qs()),
+        Prefetch('akcija_flash_lines', queryset=AkcijaFlashLine.objects.select_related('akcija').filter(akcija__aktivan=True)),
     )
 
 
@@ -217,6 +219,12 @@ def _product_is_on_sale(product):
 def _akcija_products_qs(products_qs):
     """Artikli na akciji — u SQL-u, bez učitavanja cijelog kataloga u Python."""
     today = timezone.localdate()
+    from .models import Akcija, AkcijaFlashLine
+    active_ids = [offer.pk for offer in Akcija.objects.filter(tip=Akcija.Tip.AKCIJSKA, aktivan=True)
+                  if offer.flash_still_running()]
+    flash_products = AkcijaFlashLine.objects.filter(akcija_id__in=active_ids).filter(
+        Q(popust_postotak__gt=0) | Q(popust_postotak__isnull=True, akcija__popust_postotak__gt=0)
+    ).values('product_id')
     product_sale = (
         Q(akcijska_cijena__isnull=False)
         & Q(akcijska_cijena__lt=F('cijena'))
@@ -233,7 +241,7 @@ def _akcija_products_qs(products_qs):
         & Q(varijacije__akcijska_cijena__lt=F('cijena'))
     )
     return products_qs.filter(
-        product_sale | variation_own_price | variation_inherit_price
+        product_sale | variation_own_price | variation_inherit_price | Q(pk__in=flash_products)
     ).distinct()
 
 
@@ -3162,6 +3170,7 @@ def product_detail(request, slug):
         .prefetch_related(
             Prefetch('varijacije', queryset=ProductVariation.objects.order_by('redoslijed', 'id')),
             Prefetch('dodatne_slike', queryset=ProductImage.objects.order_by('redoslijed', 'id')),
+            'akcija_flash_lines__akcija',
             'tagovi',
         ),
         slug=slug,
@@ -3368,6 +3377,7 @@ def _product_page_bundle(product):
         .filter(
             Q(bundle_lines__product=product)
             | Q(bundle_artikli=product)
+            | Q(bundle_trigger=Akcija.BundleTrigger.TRIGGER_PRODUCT, artikal=product)
             | Q(
                 bundle_trigger=Akcija.BundleTrigger.CATEGORY,
                 kategorija_id__isnull=False,
@@ -3394,7 +3404,7 @@ def _product_page_bundle(product):
             continue
         items = akcija.bundle_display_items()
         pricing = akcija.bundle_pricing_summary()
-        if not items or len(items) < 2 or not pricing:
+        if not items or sum(int(item.get('quantity') or 1) for item in items) < 2 or not pricing:
             continue
         in_set = any(
             item.get('product') is not None and item['product'].pk == product.pk
@@ -3407,7 +3417,8 @@ def _product_page_bundle(product):
             and product_category is not None
             and akcija._category_matches_root(product_category, akcija.kategorija_id)
         )
-        if not in_set and not category_ok:
+        trigger_ok = trigger == Akcija.BundleTrigger.TRIGGER_PRODUCT and akcija.artikal_id == product.pk
+        if not in_set and not category_ok and not trigger_ok:
             continue
         pack = (akcija, items, pricing)
         if in_set:
@@ -3635,10 +3646,10 @@ def add_to_cart(request, slug):
                     if ln.product_id == product.pk:
                         pct = ln.effective_discount_percent(flash_akcija)
                         break
-                base = variation.prikazna_cijena if variation else product.bazna_cijena
+                base = variation.bazna_cijena if variation else product.bazna_cijena
                 sale = _izracunaj_akcijsku_od_postotka(base, pct)
                 if sale is not None:
-                    custom_price = sale
+                    custom_price = min(sale, variation.prikazna_cijena if variation else product.prikazna_cijena)
                     promo_bazna = base
                     promo_akcija = flash_akcija
                     request._flash_discount_percent = pct

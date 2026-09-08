@@ -21,3 +21,9 @@
 {% endblock %}
 
 {% block nav-global %}{% endblock %}
+
+{% block responsive %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/retro-admin.v20260908.css' %}">
+<script src="{% static 'admin/js/retro-admin.v20260908.js' %}" defer></script>
+{% endblock %}

@@ -1,0 +1,67 @@
+/* Bijela koristi postojeći izgled; tamna paleta obuhvata samo navigaciju i pogodnosti. */
+body[data-menu-color="black"] .cats-dropdown__panel,
+body[data-menu-color="black"] .cats-dropdown__list,
+body[data-menu-color="black"] .cats-dropdown__sub,
+body[data-menu-color="black"] .mega-menu-panel,
+body[data-menu-color="black"] .mega-menu,
+body[data-menu-color="black"] .mega-menu-inner,
+body[data-menu-color="black"] .mobile-nav-panel,
+body[data-menu-color="black"] .mobile-nav-panel__main,
+body[data-menu-color="black"] .mobile-nav-panel__header,
+body[data-menu-color="black"] .mobile-nav-subview,
+body[data-menu-color="black"] .nav-submenu,
+body[data-menu-color="black"] .nav-submenu-nested {
+    background: #111315 !important;
+    color: #f5f5f5 !important;
+    border-color: #343638 !important;
+}
+body[data-menu-color="black"] .cats-dropdown__item,
+body[data-menu-color="black"] .mega-menu-group,
+body[data-menu-color="black"] .mobile-nav-panel li {
+    border-color: #343638 !important;
+}
+body[data-menu-color="black"] .cats-dropdown__panel a,
+body[data-menu-color="black"] .cats-dropdown__panel .cat-ico,
+body[data-menu-color="black"] .mega-menu-panel a,
+body[data-menu-color="black"] .mega-menu-group-title,
+body[data-menu-color="black"] .mobile-nav-panel a:not(.nav-link-akcija),
+body[data-menu-color="black"] .mobile-nav-panel button {
+    color: #f5f5f5 !important;
+    background-color: transparent !important;
+}
+body[data-menu-color="black"] .cats-dropdown__panel a:hover,
+body[data-menu-color="black"] .cats-dropdown__panel a:focus-visible,
+body[data-menu-color="black"] .cats-dropdown__item.is-open > a,
+body[data-menu-color="black"] .mega-menu-panel a:hover,
+body[data-menu-color="black"] .mega-menu-panel a:focus-visible,
+body[data-menu-color="black"] .mobile-nav-panel a:not(.nav-link-akcija):hover,
+body[data-menu-color="black"] .mobile-nav-panel a:not(.nav-link-akcija):focus-visible {
+    color: #ff7900 !important;
+    background-color: #202326 !important;
+}
+body[data-menu-color="black"] .cats-dropdown__link--sale,
+body[data-menu-color="black"] .cats-dropdown__link--sale .cat-ico,
+body[data-menu-color="black"] .cats-dropdown__link--sale .cats-dropdown__name {
+    color: #ff7900 !important;
+}
+body[data-menu-color="black"] .home-trust-bar {
+    background: linear-gradient(120deg, #0a0b0c, #141618) !important;
+    color: #f5f5f5 !important;
+    border-color: #343638 !important;
+}
+body[data-menu-color="black"] .home-trust-bar .home-trust-bar__title { color: #f5f5f5 !important; }
+body[data-menu-color="black"] .home-trust-bar .home-trust-bar__sub { color: #c8c8c8 !important; }
+body[data-menu-color="black"] .home-trust-bar .home-trust-bar__item { border-color: #343638 !important; }
+body[data-menu-color="black"] .home-trust-bar .home-trust-bar__icon { color: #ff7900 !important; }
+
+/* Narandžasti razdjelnici pripadaju samo crnoj varijanti. */
+body[data-menu-color="white"] .header,
+body[data-menu-color="white"] .hero-carousel {
+    border-bottom: 0 !important;
+}
+body[data-menu-color="white"] .home-products--akcija,
+body[data-menu-color="white"] .home-brand-strip-section--mockup,
+body[data-menu-color="white"] .home-image-trio {
+    border-top: 0 !important;
+    border-bottom: 0 !important;
+}

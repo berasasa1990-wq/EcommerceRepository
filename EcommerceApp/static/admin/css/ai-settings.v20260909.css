@@ -1,0 +1,15 @@
+.ai-popup-intro[hidden]{display:none!important}
+.ai-popup-intro{padding:22px 24px;margin:0 0 22px;background:linear-gradient(115deg,#eceef0,#cbd1d7);border:1px solid #98a4af;box-shadow:inset 2px 2px #fff,inset -2px -2px #a0a8b1;color:#293a48}
+.ai-popup-intro>span{font-size:11px;letter-spacing:2px;font-weight:700}
+.ai-popup-intro h2{font-size:24px;margin:10px 0;color:#243645}
+.ai-popup-intro p{font-size:14px;line-height:1.6;margin:10px 0 0}
+.ai-popup-summary{padding:12px;background:#f6f8fa;border-left:3px solid #546f86}
+html body.ai-popup-settings #id_browse_interest_mode,html body.ai-popup-settings #id_browse_interest_source{display:flex;flex-wrap:wrap;gap:12px;max-width:100%;padding:4px 0}
+html body.ai-popup-settings #id_browse_interest_mode>div,html body.ai-popup-settings #id_browse_interest_source>div{flex:1 1 200px}
+html body.ai-popup-settings #id_browse_interest_mode label,html body.ai-popup-settings #id_browse_interest_source label{display:flex;align-items:center;gap:10px;float:none;width:auto!important;min-height:64px;box-sizing:border-box;padding:16px!important;border:1px solid #99a6b2;background:linear-gradient(#f7f8f9,#d7dde3);box-shadow:inset 2px 2px #fff,inset -2px -2px #a4adb7;cursor:pointer;color:#2a3d4d}
+html body.ai-popup-settings #id_browse_interest_mode label:has(input:checked),html body.ai-popup-settings #id_browse_interest_source label:has(input:checked){border:2px solid #42617a;background:#d6e2ec;box-shadow:inset 1px 1px #fff;font-weight:800}
+html body.ai-popup-category .akcija-inline-dwell-items,html body.ai-popup-no-discount .field-browse_interest_popust{display:none!important}
+html body.ai-popup-settings .field-browse_interest_mode .flex-container,html body.ai-popup-settings .field-browse_interest_source .flex-container{display:block}
+html body.ai-popup-settings .field-browse_interest_mode>div>label,html body.ai-popup-settings .field-browse_interest_source>div>label{float:none;display:block;width:auto;margin-bottom:12px}
+html body.ai-popup-settings .inline-group .tabular{overflow-x:auto}
+@media(max-width:767px){.ai-popup-intro{padding:18px}.ai-popup-intro h2{font-size:21px}html body.ai-popup-settings #id_browse_interest_mode,html body.ai-popup-settings #id_browse_interest_source{display:block}html body.ai-popup-settings #id_browse_interest_mode>div,html body.ai-popup-settings #id_browse_interest_source>div{margin-bottom:10px}}

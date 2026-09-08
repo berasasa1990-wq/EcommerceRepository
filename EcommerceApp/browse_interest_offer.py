@@ -1,12 +1,9 @@
 """
 AI prodaja — prati kupca i šalje personalizovanu popup ponudu.
 
-Pravila:
-- Max 2 popup ponude po posjeti
-- Razmak min ~3 min između 1. i 2. ponude
-- 1 ili 2 artikla (zavisi od gledanja)
-- Popust % iz admina (0 = samo ponuda bez sniženja)
-- Prva: kad AI osjeti namjeru (~40 s high-intent / ~2 min inače)
+Jedan artikal po ponudi, bez ponavljanja tokom posjete.
+Izvor je gledana kategorija ili ručni izbor; način određuje učestalost.
+Način bez popusta isključuje sniženje i za ranije otvorene ponude.
 """
 
 from __future__ import annotations
@@ -75,12 +72,8 @@ def _is_mobile_request(request):
 
 
 def _rec_limit(request=None, visitor=None):
-    """1 ili 2 artikla prema ponašanju (hard max 2)."""
-    if visitor is not None:
-        return max(1, min(2, _ai_product_count(visitor, request)))
-    if request is not None and _is_mobile_request(request):
-        return MAX_RECOMMENDATIONS_MOBILE
-    return MAX_RECOMMENDATIONS
+    # One product per popup; subsequent popups rotate through eligible products.
+    return 1
 
 
 def _clamp_percent(value):
@@ -108,6 +101,8 @@ def _settings():
         percent = _clamp_percent(DEFAULT_DISCOUNT)
     else:
         percent = _clamp_percent(raw)
+    if getattr(postavke, 'browse_interest_mode', 'balanced') == 'no_discount':
+        percent = Decimal('0')
     return aktivan, percent
 
 
@@ -254,7 +249,6 @@ def _has_active_staff_offer(request):
         .filter(
             Q(tip=LiveVisitorOffer.Tip.NARUDZBA, kod_aktiviran=False)
             | Q(tip=LiveVisitorOffer.Tip.ARTIKAL, added_to_cart=False)
-            | Q(tip=LiveVisitorOffer.Tip.REGISTRACIJA)
         )
         .exclude(aktivacioni_kod=AUTO_BROWSE_CODE)
         .exclude(aktivacioni_kod__startswith=f'{AUTO_BROWSE_CODE}-')
@@ -911,41 +905,58 @@ def compute_purchase_intent_score(visitor, request=None):
         return 0
 
 
+def _mode_config():
+    mode = getattr(SiteSettings.load(), 'browse_interest_mode', 'balanced')
+    return {'delay': 35, 'gap': 60, 'max': 6} if mode == 'assertive' else {'delay': 120, 'gap': 180, 'max': 3}
+
+
+def _max_offers():
+    return _mode_config()['max']
+
+
+def _offer_gap():
+    return _mode_config()['gap']
+
+
+def _offer_duration():
+    return 180
+
+
 def _minutes_required_for_wave(wave, *, intent_score=0):
-    """
-    Wave 1: ~2 min, ili ~45 s pri high-intent.
-    Wave 2: tek nakon ~5 min na sajtu + high intent + min gap 3 min od 1. ponude.
-    """
-    try:
-        from .ai_conversion import auto_offer_delay_seconds, INTENT_WARM as _WARM
-        warm = _WARM
-        delay_fn = auto_offer_delay_seconds
-    except Exception:
-        warm = HIGH_INTENT_SCORE
+    return _mode_config()['delay'] / 60.0
 
-        def delay_fn(s):
-            return HIGH_INTENT_OFFER_SECONDS if s >= HIGH_INTENT_SCORE else (FIRST_OFFER_AFTER_MINUTES * 60)
 
-    wave = max(1, int(wave or 1))
-    if wave == 1:
-        return delay_fn(intent_score) / 60.0
-    if wave == 2:
-        if intent_score >= warm:
-            return float(SECOND_OFFER_AFTER_MINUTES)
-        return 10**9
-    return 10**9
+def _manual_source():
+    return getattr(SiteSettings.load(), 'browse_interest_source', 'category') == 'manual'
+
+
+def _popup_product_ids(visitor, exclude_ids=None):
+    """Eligible products only, stable order, without unrelated category fallbacks."""
+    available = Product.objects.filter(aktivan=True, sakriven_do_stanja=False).filter(
+        Q(na_stanju=True) | Q(varijacije__na_stanju=True),
+    ).exclude(pk__in=exclude_ids or set()).distinct()
+    if _manual_source():
+        return list(available.filter(ai_popup_items__settings=SiteSettings.load()).order_by('ai_popup_items__pk').values_list('pk', flat=True))
+    category = _focus_category_name(visitor)
+    if not category:
+        return []
+    available = available.filter(kategorija__naziv=category)
+    viewed = _normalize_product_views(getattr(visitor, 'pregledani_proizvodi', None))
+    ranked = sorted(viewed, key=lambda item: -int(item.get('views') or 1))
+    candidates = list(available.order_by('-prioritet_lagera', '-prikazi_na_pocetnoj', 'pk').values_list('pk', flat=True))
+    seen = {int(row['id']) for row in ranked if row.get('id')}
+    return [int(row['id']) for row in ranked if row.get('id') and int(row['id']) in candidates] + [pid for pid in candidates if pid not in seen]
 
 
 def _should_trigger_wave(request, visitor, state, wave):
     offers_done = int(state.get('offers_done') or 0)
     if offers_done != wave - 1:
         return False
-    if offers_done >= MAX_OFFERS_PER_SESSION:
+    if offers_done >= _max_offers():
         return False
-    if not _has_browse_signal(visitor):
+    if not _manual_source() and not _has_browse_signal(visitor):
         return False
-    intent = compute_purchase_intent_score(visitor, request)
-    needed = _minutes_required_for_wave(wave, intent_score=intent) * 60
+    needed = _minutes_required_for_wave(wave) * 60
     if _site_seconds(request, visitor, state) < needed:
         return False
     # Razmak između 1. i 2. ponude (nakon zatvaranja / prihvatanja prve)
@@ -956,11 +967,8 @@ def _should_trigger_wave(request, visitor, state, wave):
                 gap = timezone.now().timestamp() - float(last)
             except (TypeError, ValueError):
                 gap = 0
-            if gap < MIN_GAP_BETWEEN_OFFERS_SECONDS:
+            if gap < _offer_gap():
                 return False
-        # Druga ponuda samo ako još uvijek ima jasan signal
-        if intent < HIGH_INTENT_SCORE:
-            return False
     return True
 
 
@@ -1070,7 +1078,7 @@ def _complete_active_offer(request, state, *, product_id=None, outcome='dismiss'
     state['active'] = None
     state['tracking_offer_id'] = None
     state['offers_done'] = min(
-        MAX_OFFERS_PER_SESSION,
+        1000000,
         int(state.get('offers_done') or 0) + 1,
     )
     state['last_completed_ts'] = timezone.now().timestamp()
@@ -1085,11 +1093,7 @@ def _create_active_offer(request, visitor, state, percent, wave):
         | {int(x) for x in (state.get('offered_ids') or []) if x}
     )
     limit = _rec_limit(request, visitor=visitor)
-    product_ids = pick_recommendation_product_ids(
-        visitor,
-        exclude_ids=exclude,
-        limit=limit,
-    )
+    product_ids = _popup_product_ids(visitor, exclude_ids=exclude)[:1]
     if not product_ids:
         return None
 
@@ -1104,7 +1108,7 @@ def _create_active_offer(request, visitor, state, percent, wave):
         'discount_percent': str(percent),
         'top_category': _focus_category_name(visitor) or _top_category_name(visitor) or '',
         'created_ts': now.timestamp(),
-        'expires_ts': (now + timedelta(minutes=OFFER_TTL_MINUTES)).timestamp(),
+        'expires_ts': (now + timedelta(seconds=_offer_duration())).timestamp(),
         'version': int(now.timestamp()),
         'reason': _build_reason(visitor, product_ids),
         'tracking_offer_id': tracking.pk if tracking else None,
@@ -1170,20 +1174,7 @@ def maybe_create_browse_interest_offer(request, visitor=None):
     if viewed_count >= 1 and not state.get('first_product_ts'):
         state['first_product_ts'] = now_ts
 
-    # % iz admin postavki (0 = samo ponuda bez popusta)
-    intent = compute_purchase_intent_score(visitor, request)
-    if percent <= 0:
-        offer_percent = Decimal('0')
-    else:
-        try:
-            from .ai_conversion import auto_offer_discount
-            # Nikad iznad admin postavke
-            offer_percent = min(
-                _clamp_percent(percent),
-                _clamp_percent(auto_offer_discount(percent, intent)),
-            )
-        except Exception:
-            offer_percent = _clamp_percent(percent)
+    offer_percent = _clamp_percent(percent)
 
     active = state.get('active')
     if active and active.get('show'):
@@ -1200,11 +1191,11 @@ def maybe_create_browse_interest_offer(request, visitor=None):
             return active
 
     offers_done = int(state.get('offers_done') or 0)
-    if offers_done >= MAX_OFFERS_PER_SESSION:
+    if offers_done >= _max_offers():
         _save_state(request, state)
         return None
 
-    if not _has_browse_signal(visitor):
+    if not _manual_source() and not _has_browse_signal(visitor):
         _save_state(request, state)
         return None
 
@@ -1282,7 +1273,7 @@ def _build_product_card(product, percent):
 def _timer_seconds(offer_data):
     expires = offer_data.get('expires_ts')
     if not expires:
-        return OFFER_TIMER_MINUTES * 60
+        return _offer_duration()
     remaining = int(float(expires) - timezone.now().timestamp())
     return max(0, remaining)
 
@@ -1327,7 +1318,8 @@ def build_browse_interest_payload(request):
     limit = max(1, min(2, limit))
 
     exclude = _cart_product_ids(request) | _claimed_ids(request)
-    product_ids = [pid for pid in product_ids if pid not in exclude]
+    eligible = set(_popup_product_ids(visitor))
+    product_ids = [pid for pid in product_ids if pid not in exclude and pid in eligible][:1]
     if not product_ids:
         state = _get_state(request)
         _complete_active_offer(request, state, outcome='dismiss')
@@ -1337,7 +1329,7 @@ def build_browse_interest_payload(request):
     try:
         session_pct = data.get('discount_percent')
         if session_pct is not None and str(session_pct).strip() != '':
-            percent = _clamp_percent(session_pct)
+            percent = min(percent, _clamp_percent(session_pct))
     except Exception:
         pass
     percent = _clamp_percent(percent)
@@ -1412,7 +1404,7 @@ def build_browse_interest_payload(request):
         'layout': layout,
         'mobile': limit <= MAX_RECOMMENDATIONS_MOBILE,
         'timer_seconds': timer,
-        'timer_minutes': OFFER_TIMER_MINUTES,
+        'timer_minutes': _offer_duration() / 60,
         'add_url': '/preporuka/dodaj/',
         'dismiss_url': '/preporuka/zatvori/',
     }
@@ -1428,6 +1420,10 @@ def apply_browse_interest_offer(request, cart):
     if not data or not data.get('show'):
         return False, 'Ponuda više nije dostupna.'
 
+    if not data.get('expires_ts') or float(data['expires_ts']) <= timezone.now().timestamp():
+        _complete_active_offer(request, _get_state(request), outcome='expire')
+        return False, 'Ponuda je istekla.'
+
     aktivan, percent = _settings()
     if not aktivan:
         return False, 'Ponuda više nije dostupna.'
@@ -1436,7 +1432,7 @@ def apply_browse_interest_offer(request, cart):
     try:
         session_pct = data.get('discount_percent')
         if session_pct is not None and str(session_pct).strip() != '':
-            percent = _clamp_percent(session_pct)
+            percent = min(percent, _clamp_percent(session_pct))
     except Exception:
         pass
 
@@ -1445,6 +1441,8 @@ def apply_browse_interest_offer(request, cart):
     except (TypeError, ValueError):
         product_id = 0
     allowed = {int(x) for x in (data.get('product_ids') or [])}
+    visitor = LiveVisitor.objects.filter(session_key=get_cart_session_key(request)).first()
+    allowed &= set(_popup_product_ids(visitor))
     if not product_id or product_id not in allowed:
         return False, 'Artikal nije dio ponude.'
 
@@ -1498,8 +1496,6 @@ def apply_browse_interest_offer(request, cart):
     # Staff obavijest — prihvaćena personalizovana / AI ponuda
     try:
         from .staff_alerts import notify_offer_accepted
-        from .models import LiveVisitor
-        from .cart_tracking import get_cart_session_key
 
         sk = get_cart_session_key(request) or ''
         lv = LiveVisitor.objects.filter(session_key=sk).only(

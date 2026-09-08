@@ -812,75 +812,8 @@ def _client_welcome_elapsed(request):
 
 
 def maybe_auto_welcome_registration(request):
-    """
-    Gost → automatski popup registracija + % na prvu narudžbu.
-    Uključuje se u SiteSettings → „Registracija + popust”.
-    Kašnjenje (npr. 4 s) broji se od učitavanja stranice (client welcome_elapsed),
-    ne odmah na prvi request.
-    """
-    aktivan, percent, delay = _welcome_reg_settings()
-    if not aktivan:
-        return None
-    if not request or _blocked_path(request):
-        return None
-    user = getattr(request, 'user', None)
-    if user and getattr(user, 'is_authenticated', False):
-        return None
-    if request.session.get(SESSION_WELCOME_REG_KEY):
-        return None
-
-    session_key = get_cart_session_key(request)
-    if not session_key:
-        return None
-
-    # Već ima (ili je imao) reg poziv u ovoj sesiji
-    existing = (
-        LiveVisitorOffer.objects.filter(
-            session_key=session_key,
-            tip=LiveVisitorOffer.Tip.REGISTRACIJA,
-        )
-        .order_by('-azurirano')
-        .first()
-    )
-    if existing:
-        request.session[SESSION_WELCOME_REG_KEY] = '1'
-        request.session.modified = True
-        return existing if existing.show_popup and not existing.kod_aktiviran else None
-
-    # Client šalje welcome_elapsed (sekunde od page load) — to je izvor istine za delay
-    client_elapsed = _client_welcome_elapsed(request)
-    now_ts = timezone.now().timestamp()
-    clock = request.session.get(SESSION_WELCOME_REG_CLOCK)
-    try:
-        clock = float(clock) if clock is not None else None
-    except (TypeError, ValueError):
-        clock = None
-    if clock is None:
-        request.session[SESSION_WELCOME_REG_CLOCK] = now_ts
-        request.session.modified = True
-        clock = now_ts
-
-    if delay <= 0:
-        elapsed = 0.0
-    elif client_elapsed is not None:
-        # Poll s JS-a: tačno N sekundi nakon učitavanja stranice
-        elapsed = client_elapsed
-    else:
-        # SSR / bez welcome_elapsed — nikad ne kreiraj odmah kad delay > 0
-        return None
-
-    if elapsed + 0.15 < float(delay):
-        return None
-
-    offer = send_live_visitor_registration_invite(
-        session_key,
-        auto=True,
-        discount_percent=percent,
-        free_shipping=percent <= 0,
-    )
-    request.session[SESSION_WELCOME_REG_KEY] = '1'
-    request.session.modified = True
-    return offer
+    """Automatic registration popups have been removed from the storefront."""
+    return None
 
 
 def set_session_free_shipping(request, active=True):
@@ -1123,6 +1056,7 @@ def get_active_live_visitor_offer(request):
             show_popup=True,
         )
         .filter(_active_offer_filter())
+        .exclude(tip=LiveVisitorOffer.Tip.REGISTRACIJA)
         .exclude(aktivacioni_kod=AUTO_BROWSE_CODE)
         .exclude(aktivacioni_kod__startswith=f'{AUTO_BROWSE_CODE}-')
         .exclude(aktivacioni_kod=AI_PRODAJA_CODE)
@@ -1297,7 +1231,7 @@ def _build_registration_offer_payload(offer):
 
 def _build_offer_payload(offer):
     if offer.tip == LiveVisitorOffer.Tip.REGISTRACIJA:
-        return _build_registration_offer_payload(offer)
+        return None
     if offer.tip == LiveVisitorOffer.Tip.NARUDZBA:
         return _build_order_offer_payload(offer)
     return _build_product_offer_payload(offer)

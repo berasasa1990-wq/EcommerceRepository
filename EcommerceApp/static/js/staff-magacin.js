@@ -2240,7 +2240,14 @@ function initManualOrderForm() {
             if (event.defaultPrevented || vpPaymentConfirmed) return;
             var vpCustomer = document.getElementById('mgVpKupac');
             var action = event.submitter ? event.submitter.value : 'sacuvaj';
-            if (!vpCustomer || vpCustomer.value !== '1' || action !== 'sacuvaj') return;
+            if (action !== 'sacuvaj') return;
+            var isVp = !!(vpCustomer && vpCustomer.value === '1');
+            var alternative = document.getElementById('mgPaymentAlternative');
+            alternative.setAttribute('data-vp-payment', isVp ? 'ziralno' : 'kartica');
+            alternative.textContent = isVp ? 'Žiralno' : 'Kartično';
+            document.getElementById('mgVpPaymentDescription').textContent = isVp
+                ? 'Veleprodajni kupac — kako se plaća ova narudžba?'
+                : 'Kako se plaća ova narudžba?';
             event.preventDefault();
             vpPaymentSubmitter = event.submitter || form.querySelector('[name="action"][value="sacuvaj"]');
             vpPaymentDialog.showModal();

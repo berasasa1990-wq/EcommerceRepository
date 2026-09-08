@@ -481,6 +481,7 @@ class PonudaAkcijaTests(TestCase):
             cijena=Decimal('20.00'),
             aktivan=True,
             na_stanju=True,
+            stanje=50,
         )
         self.offer = Product.objects.create(
             naziv='Ponuda artikal',
@@ -488,6 +489,7 @@ class PonudaAkcijaTests(TestCase):
             cijena=Decimal('10.00'),
             aktivan=True,
             na_stanju=True,
+            stanje=50,
         )
         self.Akcija = Akcija
 

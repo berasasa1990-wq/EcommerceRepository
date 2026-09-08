@@ -1,0 +1,4 @@
+#akcija_form [hidden] { display: none !important; }
+#akcija_form .errorlist { font-weight: 600; }
+#akcija_form #id_tip { width: 100%; max-width: 36rem; min-height: 2.5rem; }
+#akcija_form .tabular .empty-form { display: none !important; }

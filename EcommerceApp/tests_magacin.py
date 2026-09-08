@@ -5877,6 +5877,10 @@ class MagacinViewTests(TestCase):
         self.assertContains(edit, 'id="mgOrderNoShip"')
         self.assertRegex(edit.content.decode(), r'id="mgOrderNoShip"[^>]*value="1"')
 
+    @override_settings(STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    })
     def test_manual_order_card_payment_zeros_invoice(self):
         from .pricing import sazetak_iz_narudzbe
 
