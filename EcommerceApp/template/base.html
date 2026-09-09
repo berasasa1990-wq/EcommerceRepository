@@ -167,6 +167,7 @@
     {% if dwell_ui and dwell_ui.css_vars %}
     <style id="ai-dwell-theme">:root{ {{ dwell_ui.css_vars }} }</style>
     {% endif %}
+    <link rel="stylesheet" href="{% static 'css/touch-navigation.css' %}?v=20260909">
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
