@@ -680,16 +680,11 @@ def _responsive_variant_url(storage, main_name, width):
     base, main_ext = filename.rsplit('.', 1)
     main_ext = main_ext.lower()
 
-    # R2/S3: NE zovi storage.exists() (HEAD request) — 4 širine × 5 ext = desetine
-    # mrežnih poziva po slici → boto3 hang → gunicorn ubija worker → sajt “mrtav”.
+    # Uvoz i stari uploadi mogu imati samo original, bez responsive datoteka.
+    # Ne izmišljaj URL-ove i ne radi mrežni HEAD po slici pri svakom renderu.
+    # Dok nema trajnog manifesta varijanti, remote storage koristi original.
     if _is_remote_storage(storage):
-        # Ista ekstenzija kao glavni fajl (upload pipeline kreira npr. -320w.avif)
-        variant = f'{base}-{width}w.{main_ext}'
-        path = f'{folder}/{variant}' if folder else variant
-        try:
-            return storage.url(path)
-        except Exception:
-            return None
+        return None
 
     for ext in (main_ext, 'avif', 'jpg', 'jpeg', 'webp', 'png'):
         variant = f'{base}-{width}w.{ext}'

@@ -18,7 +18,7 @@ class CategoryLogoTests(TestCase):
         self.assertNotContains(response, 'site/old-parent.jpg')
         self.assertNotContains(response, 'site/old-right.jpg')
         self.assertNotContains(response, 'class="categories-brand-logo"')
-        self.assertContains(response, 'site-logo-compact.v20260911.css')
+        self.assertContains(response, 'site-logo-compact.v20260912.css')
         request = RequestFactory().get('/')
         request.user = get_user_model().objects.create_superuser('logo', 'logo@example.com', 'test')
         form = admin.site._registry[SiteSettings].get_form(request, site)

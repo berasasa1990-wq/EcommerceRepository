@@ -67,3 +67,17 @@ body .header .header-row--primary .logo-brand {
     }
     body .header .header-row--primary .header-search { margin-left: 0; }
 }
+
+@media (min-width: 1025px) {
+    body .header .header-row--primary .header-search {
+        width: calc(100% - 80px);
+        min-width: 0;
+        margin-left: 0;
+        justify-self: end;
+        box-sizing: border-box;
+    }
+    .header .header-search .search-suggestions {
+        min-width: 0;
+        box-sizing: border-box;
+    }
+}

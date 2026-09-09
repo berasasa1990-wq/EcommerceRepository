@@ -257,7 +257,7 @@ def _filter_size_scope_qs(filter_params, base_qs=None, *, request=None):
     if filter_params.get('akcija'):
         qs = _akcija_products_qs(qs)
     if filter_params.get('noviteti'):
-        qs = qs.filter(je_novitet=True)
+        qs = qs.filter(na_stanju=True, stanje__gt=0)
     if filter_params.get('brend'):
         brand = Brand.objects.filter(slug=filter_params['brend']).first()
         if brand:
@@ -1614,6 +1614,7 @@ def _suggest_product_queryset(request=None):
     """
     Lagani queryset za autocomplete — minimum polja, bez tagova M2M.
     """
+    from .models import AkcijaFlashLine
     qs = Product.objects.filter(aktivan=True)
     if not _staff_edit_mode_enabled(request):
         qs = qs.filter(sakriven_do_stanja=False)
@@ -1621,16 +1622,10 @@ def _suggest_product_queryset(request=None):
         'opis', 'meta_title', 'meta_description',
         'olx_listing_url', 'olx_listing_slug', 'olx_listing_id',
     ).prefetch_related(
+        Prefetch('akcija_flash_lines', queryset=AkcijaFlashLine.objects.select_related('akcija').filter(akcija__aktivan=True)),
         Prefetch(
             'varijacije',
-            queryset=ProductVariation.objects.filter(na_stanju=True).only(
-                'id',
-                'artikal_id',
-                'cijena',
-                'akcijska_cijena',
-                'akcija_postotak',
-                'na_stanju',
-            ),
+            queryset=ProductVariation.objects.filter(na_stanju=True),
         ),
     )
 
@@ -1828,7 +1823,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     if params.get('akcija'):
         products_qs = _akcija_products_qs(products_qs)
     if params.get('noviteti'):
-        products_qs = products_qs.filter(je_novitet=True)
+        products_qs = products_qs.filter(na_stanju=True, stanje__gt=0)
     if params.get('brend'):
         brand = Brand.objects.filter(slug=params['brend']).first()
         products_qs = products_qs.filter(brend_id=brand.pk) if brand else products_qs.none()
@@ -1896,7 +1891,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
         products = [product for product in products if _product_is_on_sale(product)]
 
     if params['noviteti']:
-        products = [product for product in products if getattr(product, 'je_novitet', False)]
+        products = [product for product in products if product.na_stanju and product.stanje > 0]
 
     if params['velicina']:
         size_label = params['velicina']
@@ -2236,50 +2231,18 @@ def _fill_home_section_products(products, request=None):
 
 
 def _home_latest_products(request=None):
-    """
-    Noviteti na početnoj:
-    1) Artikli označeni „Noviteti” (je_novitet) — prioritet
-    2) Ručni odabir (HomeNovoProduct) ako je mod manual
-    3) Dopuna: najnoviji artikli da bude 5 u nizu
-    """
-    return _home_cache_get(
-        'home_latest_products_v4',
-        lambda: _home_latest_products_uncached(request),
-    )
+    # Svako otvaranje bira novi uzorak; ne keširaj slučajni izbor.
+    return _home_latest_products_uncached(request)
 
 
 def _home_latest_products_uncached(request=None):
-    base_qs = _home_product_queryset(request)
-    marked = list(
-        _order_qs_by_lager_priority(
-            base_qs.filter(je_novitet=True),
-            '-kreiran', '-id',
-        )[:HOME_SECTION_PRODUCT_LIMIT],
+    recent_ids = list(
+        _home_product_queryset(request).order_by('-kreiran', '-pk')
+        .values_list('pk', flat=True)[:50]
     )
-    if len(marked) >= HOME_SECTION_PRODUCT_LIMIT:
-        return marked
-
-    if not marked:
-        site_settings = SiteSettings.load()
-        if site_settings.noviteti_mod == SiteSettings.NovitetiMod.MANUAL:
-            entries_qs = HomeNovoProduct.objects.filter(
-                aktivan=True,
-                artikal__aktivan=True,
-                artikal__na_stanju=True,
-                artikal__stanje__gt=0,
-            )
-            if not _staff_edit_mode_enabled(request):
-                entries_qs = entries_qs.filter(artikal__sakriven_do_stanja=False)
-            entries = entries_qs.select_related(
-                'artikal', 'artikal__kategorija', 'artikal__brend',
-            ).prefetch_related(
-                Prefetch('artikal__varijacije', queryset=_in_stock_variations_qs()),
-            ).order_by(
-                '-artikal__prioritet_lagera', 'redoslijed', '-id',
-            )[:HOME_SECTION_PRODUCT_LIMIT]
-            marked = [entry.artikal for entry in entries]
-
-    return _fill_home_section_products(marked, request)
+    selected_ids = random.sample(recent_ids, min(HOME_SECTION_PRODUCT_LIMIT, len(recent_ids)))
+    products = {product.pk: product for product in _home_product_queryset(request).filter(pk__in=selected_ids)}
+    return [products[pk] for pk in selected_ids if pk in products]
 
 
 def _home_featured_products(request=None):
@@ -2635,9 +2598,9 @@ def home(request):
         elif filter_params.get('noviteti'):
             catalog_title = 'Noviteti'
             if result_count:
-                catalog_subtitle = f'{result_count} novih artikala.'
+                catalog_subtitle = f'{result_count} artikala na stanju.'
             else:
-                catalog_subtitle = 'Trenutno nema označenih noviteta.'
+                catalog_subtitle = 'Trenutno nema artikala na stanju.'
         elif filter_params.get('brend'):
             brand = Brand.objects.filter(slug=filter_params['brend']).first()
             if brand:

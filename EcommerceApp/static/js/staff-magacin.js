@@ -862,6 +862,7 @@ function initPonudaArticlePicker() {
     var pick = null;
     var lastResults = [];
     var searchAbort = null;
+    var searchVersion = 0;
 
     function escapeHtml(value) {
         return String(value == null ? '' : value)
@@ -1215,6 +1216,7 @@ function initPonudaArticlePicker() {
     }
     function searchProducts(opts) {
         opts = opts || {};
+        var version = ++searchVersion;
         var q = (search && search.value || '').trim();
         if (q.length < 1) {
             if (searchAbort) {
@@ -1233,7 +1235,8 @@ function initPonudaArticlePicker() {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin',
             signal: searchAbort ? searchAbort.signal : undefined,
-        }).then(function (res) { return res.json(); }).then(function (data) {
+        }).then(function (res) { if (!res.ok) throw new Error('Lookup failed'); return res.json(); }).then(function (data) {
+            if (version !== searchVersion || q !== (search.value || '').trim()) return null;
             var rows = flatten(data);
             lastResults = rows;
             var hit = pickBarcode(rows, q);
@@ -1253,7 +1256,7 @@ function initPonudaArticlePicker() {
             renderSuggest(rows);
             return null;
         }).catch(function (err) {
-            if (err && err.name === 'AbortError') return null;
+            if (version !== searchVersion || (err && err.name === 'AbortError')) return null;
             if (list) {
                 list.innerHTML = '<li class="is-empty">Pretraga nije uspjela.</li>';
                 list.hidden = false;
@@ -1264,10 +1267,14 @@ function initPonudaArticlePicker() {
 
     if (search) {
         search.addEventListener('input', function () {
+            searchVersion += 1;
+            if (searchAbort) searchAbort.abort();
+            lastResults = [];
+            if (list) list.hidden = true;
             pick = null;
             showHint('');
             window.clearTimeout(timer);
-            timer = window.setTimeout(function () { searchProducts({}); }, 50);
+            timer = window.setTimeout(function () { searchProducts({}); }, 140);
         });
         search.addEventListener('keydown', function (event) {
             if (event.key === 'Tab' && !event.shiftKey) {
@@ -1407,6 +1414,7 @@ function initManualOrderForm() {
     var pick = null;
     var lastResults = [];
     var searchAbort = null;
+    var searchVersion = 0;
 
     function money(n) {
         return (Math.round((Number(n) || 0) * 100) / 100).toFixed(2);
@@ -1922,6 +1930,7 @@ function initManualOrderForm() {
     }
     function searchProducts(opts) {
         opts = opts || {};
+        var version = ++searchVersion;
         var q = (search && search.value || '').trim();
         if (q.length < 1) {
             if (searchAbort) {
@@ -1940,7 +1949,8 @@ function initManualOrderForm() {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin',
             signal: searchAbort ? searchAbort.signal : undefined,
-        }).then(function (res) { return res.json(); }).then(function (data) {
+        }).then(function (res) { if (!res.ok) throw new Error('Lookup failed'); return res.json(); }).then(function (data) {
+            if (version !== searchVersion || q !== (search.value || '').trim()) return null;
             var rows = flatten(data);
             lastResults = rows;
             var hit = pickBarcode(rows, q);
@@ -1960,7 +1970,7 @@ function initManualOrderForm() {
             renderSuggest(rows);
             return null;
         }).catch(function (err) {
-            if (err && err.name === 'AbortError') return null;
+            if (version !== searchVersion || (err && err.name === 'AbortError')) return null;
             if (list) {
                 list.innerHTML = '<li class="is-empty">Pretraga nije uspjela.</li>';
                 list.hidden = false;
@@ -1971,10 +1981,14 @@ function initManualOrderForm() {
 
     if (search) {
         search.addEventListener('input', function () {
+            searchVersion += 1;
+            if (searchAbort) searchAbort.abort();
+            lastResults = [];
+            if (list) list.hidden = true;
             pick = null;
             showHint('');
             window.clearTimeout(timer);
-            timer = window.setTimeout(function () { searchProducts({}); }, 50);
+            timer = window.setTimeout(function () { searchProducts({}); }, 140);
         });
         search.addEventListener('keydown', function (event) {
             if (event.key === 'Tab' && !event.shiftKey) {

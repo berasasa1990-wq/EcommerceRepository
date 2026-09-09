@@ -1740,7 +1740,11 @@ def _lookup_product_field_q(query):
 def search_products_for_lookup(query, *, limit=30, include_zero=False):
     """Brža pretraga za autocomplete: bez JOIN+DISTINCT i bez N+1 zalihe."""
     q = (query or '').strip()
-    base = magacin_products_qs()
+    from django.db.models import Prefetch
+    from .models import AkcijaFlashLine
+    base = magacin_products_qs().defer('opis', 'meta_title', 'meta_description').prefetch_related(
+        Prefetch('akcija_flash_lines', queryset=AkcijaFlashLine.objects.select_related('akcija').filter(akcija__aktivan=True)),
+    )
     exact = None
     if q:
         folded = q.casefold()

@@ -3690,6 +3690,8 @@ def magacin_artikli_lookup(request):
     stock_map = lookup_stock_payload(products)
     results = []
     for product in products:
+        for variation in product.varijacije.all():
+            variation.artikal = product
         totals = stock_map.get(product.pk) or {'na_stanju': 0, 'dostupno': 0, 'varijacije': {}}
         if not include_zero and totals['na_stanju'] <= 0 and totals['dostupno'] <= 0:
             continue
