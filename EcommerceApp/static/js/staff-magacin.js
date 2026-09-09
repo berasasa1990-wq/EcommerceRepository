@@ -3990,7 +3990,16 @@ function initArticleScanner() {
         Promise.resolve(saveServer()).then(function () {
             return fetch(window.location.pathname, { method: 'POST', body: body,
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
-        }).then(function (response) { return response.json(); }).then(function (data) {
+        }).then(function (response) {
+            return response.json().catch(function () {
+                throw Error('Server nije vratio ispravan odgovor. Osvježi picking i provjeri količinu prije ponovne potvrde.');
+            });
+        }).then(function (data) {
+            if (data.terminal && data.redirect) {
+                leavingPicking = true;
+                window.location.assign(data.redirect);
+                return;
+            }
             if (!data.ok || !Array.isArray(data.queue)) throw Error(data.error || 'Količina nije potvrđena.');
             queue = data.queue;
             state = data.state || {};

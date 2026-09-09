@@ -4501,17 +4501,18 @@ def _order_list_napomena(napomena):
     return ' '.join(kept)
 
 
-def _clear_order_items_and_holds(order, user=None, *, retained=None):
-    for item in list(order.stavke.filter(ledger_excess_line__isnull=True, ledger_missing_line__isnull=True)):
+def _clear_order_items_and_holds(order, user=None, *, retained=None, keep_item_ids=()):
+    from .magacin import _clear_pick_state_for_item
+
+    for item in list(order.stavke.filter(ledger_excess_line__isnull=True, ledger_missing_line__isnull=True).exclude(pk__in=keep_item_ids)):
         product = item.artikal
         variation = item.varijacija
         if product is not None:
             keep = (retained or {}).get((product.pk, variation.pk if variation else None), 0)
             held = _held_qty_on_order(order, product, variation)
             release_holds_for_product(order, product, variation, qty=min(item.kolicina, max(0, held - keep)), user=user)
+        _clear_pick_state_for_item(order, item.pk)
         item.delete()
-    order.pick_state = {}
-    order.save(update_fields=['pick_state'])
 
 
 def _save_manual_order(
@@ -4581,7 +4582,23 @@ def _save_manual_order(
         ukupno = Decimal('0.00')
     status = Order.Status.REZERVACIJA if rezervacija else Order.Status.NOVA
     retained = {}
+    kept_items = {}
     if existing is not None:
+        candidates = list(existing.stavke.filter(
+            ledger_excess_line__isnull=True, ledger_missing_line__isnull=True,
+        ).order_by('pk'))
+        for index, line in enumerate(lines):
+            product = line.get('product')
+            variation = line.get('variation')
+            for item in candidates:
+                if (item.artikal_id == (product.pk if product else None)
+                        and item.varijacija_id == (variation.pk if variation else None)
+                        and item.kolicina == line['qty']
+                        and item.rezervni_dio == bool(line.get('rezervni'))
+                        and (not item.rezervni_dio or item.naziv == line.get('naziv', '')[:200])):
+                    kept_items[index] = item
+                    candidates.remove(item)
+                    break
         for line in lines:
             product = line.get('product')
             if product is None:
@@ -4589,7 +4606,8 @@ def _save_manual_order(
             variation = line.get('variation')
             key = (product.pk, variation.pk if variation else None)
             retained[key] = retained.get(key, 0) + max(0, line['qty'] - line['shortfall'])
-        _clear_order_items_and_holds(existing, user=request.user, retained=retained)
+        _clear_order_items_and_holds(existing, user=request.user, retained=retained,
+                                     keep_item_ids=[item.pk for item in kept_items.values()])
         for key in retained:
             retained[key] = sum(existing.magacin_holds.filter(
                 product_id=key[0], variation_id=key[1],
@@ -4629,7 +4647,7 @@ def _save_manual_order(
             izvor=Order.Izvor.MAGACIN,
             kupon_kod=loyalty_coupon.kod if loyalty_coupon else '',
         )
-    for line in lines:
+    for index, line in enumerate(lines):
         product = line.get('product')
         variation = line.get('variation')
         key = (product.pk if product else None, variation.pk if variation else None)
@@ -4637,6 +4655,18 @@ def _save_manual_order(
         kept = min(needed, retained.get(key, 0))
         retained[key] = retained.get(key, 0) - kept
         reserve_qty = needed - kept
+        if index in kept_items:
+            item = kept_items[index]
+            item.cijena = line['cijena']
+            item.bazna_cijena = line['bazna']
+            item.save(update_fields=['cijena', 'bazna_cijena'])
+            # Existing holds and picking keys still refer to this same item.
+            if reserve_qty:
+                leftover = reserve_for_order(order, product, reserve_qty, variation=variation,
+                    user=request.user, napomena=f'Rezervacija #{order.broj}')
+                if leftover and not line['mp_ok']:
+                    raise MagacinError(f'Nije rezervisana puna količina za {product.naziv}.')
+            continue
         if line.get('rezervni'):
             naziv = (line.get('naziv') or 'Rezervni dio')[:200]
             spare_product = line.get('product')
@@ -5874,6 +5904,8 @@ def magacin_pakuj_detail(request, broj):
                 got = _parse_qty(request.POST.get('got') or '0')
                 confirm_short_pick(order, item_id=int(request.POST.get('item_id') or 0),
                                    loc=(request.POST.get('loc') or '').strip(), got=got, user=request.user)
+            except Http404:
+                return JsonResponse({'ok': False, 'error': 'Stavka više nije na narudžbi. Osvježi picking.'}, status=404)
             except (MagacinError, ValueError, TypeError) as exc:
                 return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
             queue, _, _ = _order_pick_bundle(order)

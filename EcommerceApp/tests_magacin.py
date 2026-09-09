@@ -3836,6 +3836,42 @@ class MagacinViewTests(TestCase):
         self.assertEqual(item.kolicina_faktura, 1)
         self.assertEqual(WarehouseStock.objects.get(product=self.product, location=loc2).kolicina, 0)
 
+    def test_short_pick_missing_item_returns_json(self):
+        self.client.force_login(self.user)
+        order = Order.objects.create(ime_prezime='Promijenjena stavka', ukupno=Decimal('10.00'))
+        OrderItem.objects.create(narudzba=order, artikal=self.product,
+            naziv=self.product.naziv, kolicina=1, cijena=Decimal('10.00'))
+        response = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {'action': 'pick_short', 'item_id': 0, 'loc': 'T-1', 'got': '0'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(response.json()['ok'])
+        self.assertIn('Osvježi picking', response.json()['error'])
+        self.assertEqual(WarehouseStock.objects.get(product=self.product, location__sifra='T-1').kolicina, 8)
+
+    def test_short_pick_zero_without_remaining_stock_returns_json(self):
+        self.client.force_login(self.user)
+        order = Order.objects.create(ime_prezime='Nula na jedinoj', ukupno=Decimal('10.00'))
+        item = OrderItem.objects.create(narudzba=order, artikal=self.product,
+            naziv=self.product.naziv, kolicina=1, cijena=Decimal('10.00'))
+        response = self.client.post(
+            reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+            {'action': 'pick_short', 'item_id': item.pk, 'loc': 'T-1', 'got': '0'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['ok'])
+        self.assertTrue(data['cancelled'])
+        self.assertEqual(data['queue'], [])
+        self.assertEqual(data['shortages'][0]['missing'], 1)
+        self.assertFalse(order.stavke.exists())
+        stock = WarehouseStock.objects.get(product=self.product, location__sifra='T-1')
+        self.assertEqual(stock.kolicina, 0)
+        self.assertEqual(stock.rezervisano, 0)
+
     def test_short_pick_zero_moves_to_next_location_without_password(self):
         loc2 = WarehouseLocation.objects.create(sifra='T-2', naziv='Druga lokacija')
         apply_movement(product=self.product, location=loc2, tip='prijem', kolicina=2)
@@ -6110,6 +6146,56 @@ class MagacinViewTests(TestCase):
         stock.refresh_from_db()
         self.assertEqual(stock.kolicina, 2)
         self.assertEqual(stock.rezervisano, 0)
+
+    def test_edit_adds_items_without_resetting_existing_picking(self):
+        from .views_magacin import apply_order_pick, _order_pick_bundle
+
+        self.client.force_login(self.user)
+        extra = Product.objects.create(naziv='Dodani artikal', sifra='ADD-1', cijena=Decimal('5.00'),
+                                       magacin_sync_at=timezone.now())
+        apply_movement(product=extra, location=WarehouseLocation.objects.get(sifra='T-1'),
+                       tip='prijem', kolicina=5)
+        url = reverse('staff_magacin_narudzba_nova')
+        for got in (1, 2):
+            with self.subTest(got=got):
+                payload = {
+                    'ime_prezime': f'Nastavi picking {got}', 'telefon': '061123456',
+                    'product_id': [str(self.product.pk)], 'variation_id': [''],
+                    'kolicina': ['2'], 'mp_ok': ['0'], 'action': 'sacuvaj',
+                }
+                self.assertEqual(self.client.post(url, payload).status_code, 302)
+                order = Order.objects.get(ime_prezime=payload['ime_prezime'])
+                item = order.stavke.get()
+                hold = order.magacin_holds.get(status=OrderStockHold.Status.REZERVISANO)
+                key = f'{item.pk}:T-1'
+                apply_order_pick(order, [{'key': key, 'item_id': item.pk, 'loc': 'T-1',
+                    'got': got, 'need': 2, 'done': got == 2}], user=self.user)
+                saved_state = dict(order.pick_state)
+                item.refresh_from_db()
+                saved_qty = item.kolicina_pokupljeno
+                payload.update(order_broj=order.broj,
+                    product_id=[str(extra.pk), str(self.product.pk)],
+                    variation_id=['', ''], kolicina=['1', '2'], mp_ok=['0', '0'])
+                for _ in range(2):
+                    self.assertEqual(self.client.post(url, payload).status_code, 302)
+                    order.refresh_from_db()
+                    item.refresh_from_db()
+                    self.assertEqual(order.pick_state, saved_state)
+                    self.assertEqual(item.kolicina_pokupljeno, saved_qty)
+                    self.assertEqual(order.stavke.count(), 2)
+                    hold.refresh_from_db()
+                    self.assertEqual(hold.status, OrderStockHold.Status.REZERVISANO)
+                    self.assertEqual(hold.kolicina, 2)
+                    queue = _order_pick_bundle(order)[0]
+                    self.assertIn(key, [row['key'] for row in queue])
+                    new_item = order.stavke.get(artikal=extra)
+                    self.assertFalse(any(row.get('item_id') == new_item.pk
+                                         for row in order.pick_state.values()))
+                apply_order_pick(order, [dict(row, got=row['need'], done=True)
+                    for row in queue], finalize=True, user=self.user)
+                validate_order_stock(order, user=self.user)
+                item.refresh_from_db()
+                self.assertEqual(item.kolicina_faktura, 2)
 
     def test_created_order_stays_editable_and_updates_picking(self):
         from .views_magacin import apply_order_pick
