@@ -1692,6 +1692,53 @@ class MagacinViewTests(TestCase):
         })
         self.assertEqual(blocked.status_code, 302)
 
+    def test_ponuda_selects_existing_and_creates_customer(self):
+        self.client.force_login(self.user)
+        self.client.post(reverse('staff_magacin_ponude'), {'action': 'nova'})
+        offer = MagacinPonuda.objects.get()
+        url = reverse('staff_magacin_ponuda_detail', args=[offer.pk])
+        customer = WarehouseCustomer.objects.create(ime_prezime='Postojeci', telefon='061111222', grad='Tuzla')
+        response = self.client.post(url, {'action': 'kupac', 'customer_id': customer.pk, 'ime_prezime': 'Ignorisano'})
+        self.assertEqual(response.status_code, 302)
+        offer.refresh_from_db()
+        self.assertEqual(offer.ime_prezime, customer.ime_prezime)
+        self.assertEqual(offer.telefon, customer.telefon)
+        self.assertEqual(WarehouseCustomer.objects.count(), 1)
+        self.assertEqual(offer.customer_id, customer.pk)
+        response = self.client.post(url, {
+            'action': 'kupac', 'customer_id': customer.pk,
+        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertTrue(response.json()['ok'])
+        self.assertEqual(response.json()['customer']['id'], customer.pk)
+        response = self.client.post(url, {
+            'action': 'kupac', 'customer_id': customer.pk, 'customer_mode': 'edit',
+            'ime_prezime': 'Izmijenjen kupac', 'telefon': customer.telefon,
+            'grad': 'Mostar', 'postanski_broj': '88000', 'vp_kupac': '1',
+        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertTrue(response.json()['ok'])
+        customer.refresh_from_db()
+        offer.refresh_from_db()
+        self.assertEqual(customer.grad, 'Mostar')
+        self.assertEqual(offer.ime_prezime, customer.ime_prezime)
+        self.assertTrue(customer.vp_kupac)
+        data = {'action': 'kupac', 'customer_mode': 'new', 'ime_prezime': 'Novi',
+                'telefon': '062333444', 'postanski_broj': '71000', 'grad': 'Sarajevo',
+                'vp_kupac': '1', 'odbio_posiljku': '1', 'napomena': 'Ponuda test'}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        new = WarehouseCustomer.objects.get(telefon='062333444')
+        self.assertTrue(new.vp_kupac)
+        self.assertTrue(new.odbio_posiljku)
+        self.assertEqual(new.postanski_broj, '71000')
+        offer.refresh_from_db()
+        self.assertEqual(offer.ime_prezime, new.ime_prezime)
+        self.assertEqual(offer.napomena, 'Ponuda test')
+        data.update(telefon='063999888', postanski_broj='')
+        self.client.post(url, data)
+        self.assertEqual(WarehouseCustomer.objects.count(), 2)
+        offer.refresh_from_db()
+        self.assertEqual(offer.telefon, new.telefon)
+
     def test_ponuda_catalog_manual_discount_and_public_pdf(self):
         self.client.force_login(self.user)
         listed = self.client.get(reverse('staff_magacin_ponude'))
@@ -6017,6 +6064,52 @@ class MagacinViewTests(TestCase):
         self.assertEqual(stock_totals(self.product)['rezervisano'], 3)
         picking_ready = self.client.get(reverse('staff_magacin_pakuj'))
         self.assertContains(picking_ready, 'Reza Kupac')
+
+    def test_edit_keeps_original_hold_location_after_other_location_receipt(self):
+        WarehouseLocation.objects.filter(sifra="T-1").update(naziv="MALOPRODAJA")
+        self.client.force_login(self.user)
+        payload = {
+            'ime_prezime': 'Edin test', 'telefon': '061123456',
+            'product_id': [str(self.product.pk)], 'variation_id': [''],
+            'kolicina': ['2'], 'mp_ok': ['0'], 'action': 'sacuvaj',
+        }
+        response = self.client.post(reverse('staff_magacin_narudzba_nova'), payload)
+        self.assertEqual(response.status_code, 302)
+        order = Order.objects.get(ime_prezime='Edin test')
+        original = order.magacin_holds.get(status=OrderStockHold.Status.REZERVISANO)
+        other = WarehouseLocation.objects.create(sifra='A04', naziv='A04')
+        apply_movement(product=self.product, location=other, tip='prijem', kolicina=2)
+        movement_count = WarehouseMovement.objects.count()
+        payload.update(order_broj=order.broj, napomena='Nova napomena')
+        response = self.client.post(reverse('staff_magacin_narudzba_nova'), payload)
+        self.assertEqual(response.status_code, 302)
+        hold = order.magacin_holds.get(status=OrderStockHold.Status.REZERVISANO)
+        self.assertEqual(hold.pk, original.pk)
+        self.assertEqual(hold.location_id, original.location_id)
+        self.assertEqual(WarehouseMovement.objects.count(), movement_count)
+        payload['kolicina'] = ['1']
+        response = self.client.post(reverse('staff_magacin_narudzba_nova'), payload)
+        self.assertEqual(response.status_code, 302)
+        hold.refresh_from_db()
+        self.assertEqual(hold.kolicina, 1)
+        self.assertEqual(hold.location_id, original.location_id)
+        stock = WarehouseStock.objects.get(product=self.product, location=other)
+        self.assertEqual(stock.kolicina, 2)
+        self.assertEqual(stock.rezervisano, 0)
+
+        from .views_magacin import apply_order_pick
+        order.refresh_from_db()
+        item = order.stavke.get()
+        apply_order_pick(order, [{
+            'key': f'{item.pk}:T-1', 'item_id': item.pk, 'loc': 'T-1',
+            'got': 1, 'need': 1, 'done': True,
+        }], finalize=True, user=self.user)
+        validate_order_stock(order, user=self.user)
+        order.refresh_from_db()
+        self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        stock.refresh_from_db()
+        self.assertEqual(stock.kolicina, 2)
+        self.assertEqual(stock.rezervisano, 0)
 
     def test_created_order_stays_editable_and_updates_picking(self):
         from .views_magacin import apply_order_pick

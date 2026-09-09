@@ -4,6 +4,7 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'css/staff-offers-reference.css' %}?v=20260906-3">
+<style>#pnCustomerForm[hidden], #pnNewCustomer[hidden], #pnCustomerSelected[hidden], #pnCustomerSearchWrap[hidden] { display: none !important; }</style>
 {% endblock %}
 
 {% block magacin_content %}
@@ -21,7 +22,21 @@
 
     <section class="vp-box mg-card">
         <h2 class="mg-h">Kupac</h2>
-        <form method="post" class="pn-customer">
+        <div id="pnCustomerSelected"{% if not ponuda.ime_prezime %} hidden{% endif %}>
+            <strong id="pnCustomerName">{{ ponuda.ime_prezime }}</strong>
+            <button type="button" class="mg-btn" id="pnEditCustomer">Izmijeni</button>
+            <button type="button" class="mg-btn" id="pnChangeCustomer">Promijeni kupca</button>
+        </div>
+        <div class="mg-field" id="pnCustomerSearchWrap"{% if ponuda.ime_prezime %} hidden{% endif %}>
+            <label for="pnCustomerSearch">Izaberi postojećeg kupca</label>
+            <input type="search" id="pnCustomerSearch" placeholder="Ime, telefon ili grad…" autocomplete="off" data-url="{% url 'staff_magacin_kupci_lookup' %}">
+            <div id="pnCustomerResults" aria-live="polite"></div>
+        </div>
+        <button type="button" class="mg-btn" id="pnNewCustomer" hidden>+ Dodaj kupca</button>
+        <p id="pnCustomerStatus" role="status"></p>
+        <form method="post" action="{% url 'staff_magacin_ponuda_detail' ponuda.pk %}" class="pn-customer" id="pnCustomerForm" hidden>
+            <input type="hidden" name="customer_id" id="pnCustomerId" value="{{ ponuda.customer_id|default:'' }}">
+            <input type="hidden" name="customer_mode" id="pnCustomerMode">
             {% csrf_token %}
             <input type="hidden" name="action" value="kupac">
             <div class="mg-form-grid" style="grid-template-columns:1fr 1fr;">
@@ -44,6 +59,11 @@
                 <div class="mg-field" style="grid-column:1 / -1;">
                     <label for="pnAdresa">Adresa</label>
                     <input id="pnAdresa" name="adresa" value="{{ ponuda.adresa }}" maxlength="300">
+                </div>
+                <div id="pnNewFields" hidden style="grid-column:1 / -1;">
+                    <div class="mg-field"><label for="pnPost">Poštanski broj *</label><input id="pnPost" name="postanski_broj" maxlength="20" value="{{ ponuda.customer.postanski_broj }}"></div>
+                    <label class="mg-check"><input type="checkbox" name="vp_kupac" value="1"{% if ponuda.customer.vp_kupac %} checked{% endif %}> VP kupac</label>
+                    <label class="mg-check"><input type="checkbox" name="odbio_posiljku" value="1"{% if ponuda.customer.odbio_posiljku %} checked{% endif %}> Odbio pošiljku</label>
                 </div>
                 <div class="mg-field" style="grid-column:1 / -1;">
                     <label for="pnNote">Napomena na ponudi</label>
@@ -211,6 +231,7 @@
 {% endblock %}
 
 {% block magacin_js %}
+<script src="{% static 'js/ponuda-customer.js' %}?v=20260909-5" defer></script>
 <script>
 (function () {
     var copyBtn = document.getElementById('pnCopyLink');

@@ -850,3 +850,57 @@ body.staff-order-celebration-open {
     font-size: 10px;
     font-weight: 700;
 }
+
+/* New-order notification, matching the storefront branding. */
+.staff-order-celebration__backdrop { background: #0009; backdrop-filter: blur(5px); }
+.staff-order-celebration__card { width: min(780px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 0; border: 1px solid #ddd; border-radius: 20px; color: #14181c; }
+.soc-brand { background: #050505; border-bottom: 7px solid #ff5900; padding: 8px 60px; border-radius: 19px 19px 0 0; }
+.soc-brand img { display: block; width: min(390px, 100%); height: 76px; object-fit: contain; margin: auto; }
+.staff-order-celebration__close { top: 12px; right: 12px; z-index: 2; width: 44px; height: 44px; background: #111; color: #fff; font-size: 36px; }
+.soc-content { padding: 18px 30px 16px; }
+.soc-success { position: relative; height: 112px; display: grid; place-items: center; background-image: radial-gradient(circle at 15% 30%, #ff6200 0 3px, transparent 4px), radial-gradient(circle at 85% 65%, #111 0 4px, transparent 5px), radial-gradient(circle at 28% 80%, #bbb 0 3px, transparent 4px), radial-gradient(circle at 72% 15%, #ff6200 0 4px, transparent 5px); }
+.soc-success span { display: grid; place-items: center; width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(145deg,#ff9c19,#ff4800); box-shadow: 0 9px 20px #ff590044, inset 0 2px 3px #ffd693; color: white; font-size: 74px; font-weight: 800; line-height: 1; }
+.staff-order-celebration__title { margin: 12px 0 6px; color: #080808; font-size: clamp(25px, 4vw, 39px); font-weight: 850; line-height: 1.12; letter-spacing: -.035em; }
+.staff-order-celebration__title em { color: #ff5000; font-style: normal; }
+.soc-subtitle { margin: 0 0 18px; font-size: 16px; line-height: 1.5; }
+.soc-summary { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr); gap: 18px; align-items: center; }
+.soc-summary .staff-order-celebration__box { margin: 0; padding: 16px; background: #f0f1f2; border: 0; border-radius: 14px; }
+.soc-summary .staff-order-celebration__row { padding: 5px 0; font-size: 13px; }
+.soc-summary .staff-order-celebration__value { overflow-wrap: anywhere; min-width: 0; }
+.soc-status { display: flex; align-items: center; gap: 16px; border-top: 1px solid #c5c7ca; padding-top: 12px; margin-top: 8px; font-weight: 700; font-size: 12px; }
+.soc-status b { background: #ff5b00; color: white; border-radius: 24px; padding: 6px 24px; font-size: 16px; }
+.soc-package strong { display: block; font-style: italic; font-size: 23px; line-height: 1; transform: rotate(-8deg); color: #111; }
+.soc-package svg { width: 100%; display: block; margin-top: 8px; }
+.soc-steps { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); margin-top: 20px; }
+.soc-steps > div { padding: 0 10px; border-right: 1px solid #d5d6d9; }
+.soc-steps > div:last-child { border: 0; }
+.soc-steps i { display: grid; place-items: center; margin: 0 auto 6px; width: 44px; height: 44px; border-radius: 50%; background: #fff0e6; color: #ff5900; font-style: normal; font-size: 28px; }
+.soc-steps strong { display: block; font-size: 13px; }
+.soc-steps span { display: block; margin-top: 4px; font-size: 12px; line-height: 1.35; }
+.soc-pending { margin: 12px 0; font-size: 12px; color: #62656b; }
+.staff-order-celebration__actions { grid-template-columns: 1.6fr 1fr; gap: 12px; margin-top: 12px; }
+.staff-order-celebration__btn--primary { background: linear-gradient(130deg,#ff8200,#ff4800); }
+.staff-order-celebration__btn--ghost { background: linear-gradient(#e5e6e8,#d1d3d7); }
+.soc-footer { display: flex; align-items: center; gap: 16px; margin-top: 18px; font-size: 11px; letter-spacing: .22em; }
+.soc-footer::before, .soc-footer::after { content: ''; height: 1px; background: #c1c4c9; flex: 1; }
+@media (max-width: 520px) {
+    .staff-order-celebration { padding: 8px; }
+    .staff-order-celebration__card { max-height: calc(100dvh - 16px); border-radius: 16px; }
+    .soc-brand { padding: 6px 48px 6px 12px; }
+    .soc-brand img { height: 54px; }
+    .soc-content { padding: 12px 14px; }
+    .soc-success { height: 82px; }
+    .soc-success span { width: 72px; height: 72px; font-size: 52px; }
+    .soc-subtitle { font-size: 13px; margin-bottom: 12px; }
+    .soc-summary { grid-template-columns: minmax(0,1fr); }
+    .soc-package { display: none; }
+    .soc-steps { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px 0; margin-top: 14px; }
+    .soc-steps > div:nth-child(2) { border-right: 0; }
+    .soc-steps span { display: none; }
+    .staff-order-celebration__actions { grid-template-columns: minmax(0,1fr); gap: 8px; }
+    .staff-order-celebration__btn { min-height: 46px; font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .staff-order-celebration, .staff-order-celebration__card { transition: none; }
+}
+.soc-steps i svg { width: 26px; height: 26px; }

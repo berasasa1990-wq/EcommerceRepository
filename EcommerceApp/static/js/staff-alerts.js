@@ -325,7 +325,11 @@
     function showOrderCelebration(event, pendingCount) {
         if (!event) return;
         const existing = document.getElementById('staffOrderCelebration');
-        if (existing) existing.remove();
+        if (existing) {
+            if (existing.cleanup) existing.cleanup();
+            existing.remove();
+        }
+        const previousFocus = document.activeElement;
 
         const orderNo = event.order_number || '';
         const total = event.order_total || '';
@@ -348,45 +352,41 @@
         overlay.innerHTML =
             '<div class="staff-order-celebration__backdrop" data-order-celeb-close></div>' +
             '<div class="staff-order-celebration__card">' +
+            '<div class="soc-brand"><img src="' + escapeHtml(root.dataset.logoUrl || '') + '" alt="Carpologija BH — Oprema za ribolov"></div>' +
             '<button type="button" class="staff-order-celebration__close" data-order-celeb-close aria-label="Zatvori">×</button>' +
-            '<div class="staff-order-celebration__hero" aria-hidden="true">' +
-            '<span class="staff-order-celebration__cart">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">' +
-            '<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/>' +
-            '<path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.5L21 8H7"/>' +
-            '</svg>' +
-            '<span class="staff-order-celebration__badge">' + pending + '</span>' +
-            '</span>' +
-            '</div>' +
-            '<h2 id="staffOrderCelebrationTitle" class="staff-order-celebration__title">Stigla je nova narudžba!</h2>' +
-            '<p class="staff-order-celebration__lead">' + escapeHtml(pendingOrdersCopy(pending)) + '</p>' +
-            '<div class="staff-order-celebration__box">' +
-            detailRow('tag', 'Broj narudžbe:', orderNo ? '#' + orderNo : '', true) +
+            '<div class="soc-content"><div class="soc-success" aria-hidden="true"><span>✓</span></div>' +
+            '<h2 id="staffOrderCelebrationTitle" class="staff-order-celebration__title">Primili ste <em>novu narudžbu</em></h2>' +
+            '<p class="soc-subtitle"><strong>Kupac je uspješno kreirao narudžbu.</strong><br>Pregledajte detalje narudžbe i nastavite obradu.</p>' +
+            '<div class="soc-summary"><div class="staff-order-celebration__box">' +
+            detailRow('tag', 'Broj narudžbe:', orderNo ? '#' + orderNo : '—', true) +
+            detailRow('date', 'Datum / vrijeme:', dateLabel, false) +
             detailRow('user', 'Kupac:', ime, false) +
-            detailRow('date', 'Datum:', dateLabel, false) +
             detailRow('total', 'Ukupno:', totalLabel, true) +
-            detailRow('ship', 'Način dostave:', shipping, false) +
-            '</div>' +
+            '<div class="soc-status">STATUS <b>Nova</b></div>' +
+            '</div><div class="soc-package" aria-hidden="true"><strong>FISH MORE.<br>LIVE REAL.</strong>' +
+            '<svg viewBox="0 0 200 155"><path fill="#d3a574" d="M12 38 120 13 188 43 83 70Z"/><path fill="#bb8856" d="M12 38 83 70 83 145 12 111Z"/><path fill="#deb487" d="M83 70 188 43 188 119 83 145Z"/><path fill="#edcba8" d="m63 26 72 31 18-5-72-30Z"/><path fill="#c99a68" d="m135 57 18-5v35l-18 5Z"/><path fill="#111" d="m94 87 80-21v26l-80 21Z"/><text x="101" y="100" fill="white" font-size="10" font-weight="bold" transform="rotate(-15 101 100)">CARPOLOGIJA BH</text></svg></div></div>' +
+            '<div class="soc-steps"><div><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5Zm5 3h4"/></svg></i><strong>Nova narudžba</strong><span>Stigla nova narudžba od kupca.</span></div>' +
+            '<div><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h8M8 17h5"/></svg></i><strong>Pregled detalja</strong><span>Provjerite proizvode, podatke i napomene.</span></div>' +
+            '<div><i aria-hidden="true">⚙</i><strong>Brza obrada</strong><span>Krenite sa pripremom narudžbe.</span></div>' +
+            '<div><i aria-hidden="true">' + rowIcon('user') + '</i><strong>Kupac čeka potvrdu</strong><span>Obradite narudžbu i obavijestite kupca.</span></div></div>' +
+            '<p class="soc-pending">' + escapeHtml(pendingOrdersCopy(pending)) + '</p>' +
             '<div class="staff-order-celebration__actions">' +
-            '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--ghost" data-order-celeb-close>Kasnije</button>' +
-            '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--primary" data-order-celeb-orders>' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">' +
-            '<path d="M8 7h8M8 12h8M8 17h5"/><path d="M5 4h14a1 1 0 0 1 1 1v16l-3-2-3 2-3-2-3 2-3-2V5a1 1 0 0 1 1-1z"/>' +
-            '</svg>' +
-            'PREGLEDAJ NARUDŽBU</button>' +
-            '</div>' +
-            '</div>';
+            '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--primary" data-order-celeb-orders>PREGLEDAJ NARUDŽBU <span aria-hidden="true">→</span></button>' +
+            '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--ghost" data-order-celeb-close>IZAĐI</button></div>' +
+            '<div class="soc-footer">OPREMAZARIBOLOV.BA</div></div></div>';
 
         document.body.appendChild(overlay);
         document.body.classList.add('staff-order-celebration-open');
         requestAnimationFrame(function () {
             overlay.classList.add('is-visible');
+            overlay.querySelector('[data-order-celeb-orders]').focus();
         });
 
         function closeCeleb() {
             overlay.classList.remove('is-visible');
             document.body.classList.remove('staff-order-celebration-open');
             document.removeEventListener('keydown', onKey);
+            if (previousFocus && previousFocus.isConnected) previousFocus.focus();
             window.setTimeout(function () {
                 if (overlay.parentNode) overlay.remove();
             }, 280);
@@ -394,6 +394,12 @@
 
         function onKey(e) {
             if (e.key === 'Escape') closeCeleb();
+            if (e.key === 'Tab') {
+                const buttons = overlay.querySelectorAll('button');
+                const first = buttons[0], last = buttons[buttons.length - 1];
+                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+            }
         }
 
         overlay.querySelectorAll('[data-order-celeb-close]').forEach(function (el) {
@@ -402,6 +408,7 @@
         overlay.querySelector('[data-order-celeb-orders]')?.addEventListener('click', function (e) {
             goToOrder(orderUrl, e);
         });
+        overlay.cleanup = function () { document.removeEventListener('keydown', onKey); };
         document.addEventListener('keydown', onKey);
     }
 

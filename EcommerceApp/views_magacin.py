@@ -4501,12 +4501,14 @@ def _order_list_napomena(napomena):
     return ' '.join(kept)
 
 
-def _clear_order_items_and_holds(order, user=None):
+def _clear_order_items_and_holds(order, user=None, *, retained=None):
     for item in list(order.stavke.filter(ledger_excess_line__isnull=True, ledger_missing_line__isnull=True)):
         product = item.artikal
         variation = item.varijacija
         if product is not None:
-            release_holds_for_product(order, product, variation, qty=item.kolicina, user=user)
+            keep = (retained or {}).get((product.pk, variation.pk if variation else None), 0)
+            held = _held_qty_on_order(order, product, variation)
+            release_holds_for_product(order, product, variation, qty=min(item.kolicina, max(0, held - keep)), user=user)
         item.delete()
     order.pick_state = {}
     order.save(update_fields=['pick_state'])
@@ -4578,8 +4580,21 @@ def _save_manual_order(
     if ukupno < 0:
         ukupno = Decimal('0.00')
     status = Order.Status.REZERVACIJA if rezervacija else Order.Status.NOVA
+    retained = {}
     if existing is not None:
-        _clear_order_items_and_holds(existing, user=request.user)
+        for line in lines:
+            product = line.get('product')
+            if product is None:
+                continue
+            variation = line.get('variation')
+            key = (product.pk, variation.pk if variation else None)
+            retained[key] = retained.get(key, 0) + max(0, line['qty'] - line['shortfall'])
+        _clear_order_items_and_holds(existing, user=request.user, retained=retained)
+        for key in retained:
+            retained[key] = sum(existing.magacin_holds.filter(
+                product_id=key[0], variation_id=key[1],
+                status=OrderStockHold.Status.REZERVISANO,
+            ).values_list('kolicina', flat=True))
         existing.ime_prezime = ime[:200]
         existing.email = email[:254]
         existing.telefon = telefon[:30]
@@ -4615,6 +4630,13 @@ def _save_manual_order(
             kupon_kod=loyalty_coupon.kod if loyalty_coupon else '',
         )
     for line in lines:
+        product = line.get('product')
+        variation = line.get('variation')
+        key = (product.pk if product else None, variation.pk if variation else None)
+        needed = max(0, line['qty'] - line['shortfall'])
+        kept = min(needed, retained.get(key, 0))
+        retained[key] = retained.get(key, 0) - kept
+        reserve_qty = needed - kept
         if line.get('rezervni'):
             naziv = (line.get('naziv') or 'Rezervni dio')[:200]
             spare_product = line.get('product')
@@ -4634,7 +4656,7 @@ def _save_manual_order(
             leftover = reserve_for_order(
                 order,
                 spare_product,
-                line['qty'] - line['shortfall'],
+                reserve_qty,
                 variation=None,
                 user=request.user,
                 napomena=f'Rezervacija #{order.broj}',
@@ -4659,7 +4681,7 @@ def _save_manual_order(
         leftover = reserve_for_order(
             order,
             product,
-            line['qty'] - line['shortfall'],
+            reserve_qty,
             variation=variation,
             user=request.user,
             napomena=f'Rezervacija #{order.broj}',
@@ -6874,13 +6896,44 @@ def magacin_ponuda_detail(request, pk):
             return redirect(pick or reverse('staff_magacin_ponuda_detail', args=[ponuda.pk]))
         try:
             if action == 'kupac':
+                customer = None
+                customer_id = request.POST.get('customer_id')
+                if customer_id:
+                    customer = get_object_or_404(WarehouseCustomer, pk=customer_id)
+                    if request.POST.get('customer_mode') == 'edit':
+                        if not all((request.POST.get(field) or '').strip() for field in ('ime_prezime', 'telefon')):
+                            raise MagacinError('Ime i telefon su obavezni.')
+                        customer = _save_warehouse_customer(
+                            customer_id=customer.pk, replace=True,
+                            ime=request.POST.get('ime_prezime'), telefon=request.POST.get('telefon'),
+                            adresa=request.POST.get('adresa'), grad=request.POST.get('grad'),
+                            email=request.POST.get('email'), postanski_broj=request.POST.get('postanski_broj'),
+                            vp_kupac=_post_flag(request.POST, 'vp_kupac'),
+                            odbio_posiljku=_post_flag(request.POST, 'odbio_posiljku'),
+                        )
+                elif request.POST.get('customer_mode') == 'new':
+                    if not all((request.POST.get(field) or '').strip() for field in ('ime_prezime', 'telefon', 'postanski_broj')):
+                        raise MagacinError('Ime, telefon i poštanski broj su obavezni za novog kupca.')
+                    customer = _save_warehouse_customer(
+                        ime=request.POST.get('ime_prezime'), telefon=request.POST.get('telefon'),
+                        adresa=request.POST.get('adresa') or '', grad=request.POST.get('grad') or '',
+                        email=request.POST.get('email') or '', postanski_broj=request.POST.get('postanski_broj') or '',
+                        vp_kupac=_post_flag(request.POST, 'vp_kupac'),
+                        odbio_posiljku=_post_flag(request.POST, 'odbio_posiljku'),
+                    )
                 ponuda.ime_prezime = (request.POST.get('ime_prezime') or '').strip()[:200]
                 ponuda.telefon = (request.POST.get('telefon') or '').strip()[:30]
                 ponuda.email = (request.POST.get('email') or '').strip()[:254]
                 ponuda.adresa = (request.POST.get('adresa') or '').strip()[:300]
                 ponuda.grad = (request.POST.get('grad') or '').strip()[:100]
+                ponuda.customer = customer
+                if customer:
+                    for field in ('ime_prezime', 'telefon', 'email', 'adresa', 'grad'):
+                        setattr(ponuda, field, getattr(customer, field))
                 ponuda.napomena = (request.POST.get('napomena') or '').strip()
                 ponuda.save()
+                if _pakuj_is_ajax(request):
+                    return JsonResponse({'ok': True, 'customer': _customer_payload(customer) if customer else None})
                 messages.success(request, 'Podaci kupca su sačuvani.')
             elif action == 'dodaj':
                 product = get_object_or_404(Product, pk=int(request.POST.get('product_id') or 0))

@@ -701,13 +701,14 @@
     <script>idleLoadScript("{% static 'js/visitor-presence.js' %}?v=20260831fast");</script>
     {% endif %}
     {% if user.is_authenticated and user.is_superuser %}
-    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260831orderpop">
+    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260909ordercard">
     <div id="staffAlertsRoot" hidden
+         data-logo-url="{% static 'img/carpologija-nav-logo-dark.jpg' %}"
          data-poll-url="{% url 'staff_site_events_poll' %}"
          data-analytics-url="{% url 'staff_live_analytics' %}"
          data-orders-url="{% url 'staff_online_orders' %}"
          {% if request.resolver_match and request.resolver_match.url_name == 'staff_live_analytics' %}data-disable-toasts="1"{% endif %}></div>
-    <script src="{% static 'js/staff-alerts.js' %}?v=20260831orderpop" defer></script>
+    <script src="{% static 'js/staff-alerts.js' %}?v=20260909ordercard" defer></script>
     {% endif %}
     {% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
     {% include 'partials/staff_site_editor.html' %}

@@ -5357,7 +5357,59 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False, placanje=''):
     return order
 
 
-def deduct_for_order(product, qty, *, variation=None, user=None, napomena=''):
+@transaction.atomic
+def deduct_web_order_stock(order):
+    """Commit a web sale once, before checkout sends confirmations."""
+    locked = Order.objects.select_for_update().get(pk=order.pk)
+    if locked.izvor != Order.Izvor.WEBSHOP:
+        raise MagacinError('Automatsko skidanje je samo za web narudžbe.')
+    if locked.stanje_skinuto or locked.lager_status == Order.LagerStatus.VALIDIRANO:
+        return
+    items = list(locked.stavke.select_related('artikal', 'varijacija').order_by('artikal_id', 'pk'))
+    products = {p.pk: p for p in Product.objects.select_for_update().filter(
+        pk__in=[item.artikal_id for item in items if item.artikal_id],
+    ).order_by('pk')}
+    note = f'Web narudžba #{locked.broj}'
+    for item in items:
+        product = products.get(item.artikal_id)
+        if product is None:
+            raise MagacinError('Artikal više nije dostupan. Osvježite korpu.')
+        qty = int(item.kolicina)
+        variation = ProductVariation.objects.select_for_update().get(pk=item.varijacija_id) if item.varijacija_id else None
+        if WarehouseStock.objects.filter(product=product).exists():
+            if deduct_for_order(product, qty, variation=variation, napomena=note, web_order=locked):
+                raise MagacinError(f'Artikal „{product.naziv}” nema dovoljnu količinu. Provjerite korpu.')
+        else:
+            # Catalog-only stock has no physical warehouse location to deduct from.
+            target = variation or product
+            target.refresh_from_db()
+            available = max(0, int(target.stanje or 0))
+            if not target.na_stanju or available < qty:
+                raise MagacinError(f'Artikal „{product.naziv}” nema dovoljnu količinu. Provjerite korpu.')
+            target.stanje = available - qty
+            target.na_stanju = target.stanje > 0
+            target.save(update_fields=['stanje', 'na_stanju'])
+            if variation:
+                product.stanje = sum(product.varijacije.values_list('stanje', flat=True))
+                product.na_stanju = product.stanje > 0
+                product.save(update_fields=['stanje', 'na_stanju'])
+            location, _ = WarehouseLocation.objects.get_or_create(
+                sifra='WEB', defaults={'naziv': 'Webshop — bez magacinske lokacije'},
+            )
+            WarehouseMovement.objects.create(product=product, variation=variation, location=location,
+                tip=WarehouseMovement.Tip.PRODAJA, kolicina=-qty, napomena=note)
+            OrderStockHold.objects.create(narudzba=locked, product=product, variation=variation,
+                location=location, kolicina=qty, status=OrderStockHold.Status.VALIDIRANO)
+    locked.stanje_skinuto = True
+    locked.stanje_skinuto_at = timezone.now()
+    locked.lager_status = Order.LagerStatus.REZERVISANO
+    locked.save(update_fields=['stanje_skinuto', 'stanje_skinuto_at', 'lager_status'])
+    order.stanje_skinuto = locked.stanje_skinuto
+    order.stanje_skinuto_at = locked.stanje_skinuto_at
+    order.lager_status = locked.lager_status
+
+
+def deduct_for_order(product, qty, *, variation=None, user=None, napomena='', web_order=None):
     """Skini slobodnu količinu (bez rezervisanog). Vraća koliko nije skinuto."""
     remaining = max(0, _int(qty))
     if remaining <= 0:
@@ -5379,6 +5431,9 @@ def deduct_for_order(product, qty, *, variation=None, user=None, napomena=''):
             napomena=napomena or 'Ručna narudžba',
             user=user,
         )
+        if web_order is not None:
+            OrderStockHold.objects.create(narudzba=web_order, product=product, variation=hold_variation,
+                location=row['location'], kolicina=take, status=OrderStockHold.Status.VALIDIRANO)
         remaining -= take
     return remaining
 
@@ -5807,7 +5862,8 @@ def drop_missing_pick_line(order, item, *, loc, qty, user=None):
     product = item.artikal
     variation = item.varijacija
     skip_stock = (
-        loc in VIRTUAL_PICK_LOCS
+        (order.izvor == Order.Izvor.WEBSHOP and order.stanje_skinuto)
+        or loc in VIRTUAL_PICK_LOCS
         or product is None
     )
     if not skip_stock:
@@ -6307,6 +6363,8 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
     remaining = max(0, _int(qty))
     if remaining <= 0 or product is None or location is None:
         return 0
+    if order.izvor == Order.Izvor.WEBSHOP and order.stanje_skinuto:
+        return remaining
     _, sell_variation = _stock_scope(product, variation)
     sold = 0
     napomena = f'Validacija #{order.broj}'
@@ -6506,50 +6564,51 @@ def validate_order_stock(order, *, user=None):
     if order.lager_status == Order.LagerStatus.OTKAZANO:
         raise MagacinError('Otkazana narudžba se ne može validirati.')
 
-    pick_rows = _iter_pick_deduct_rows(order)
-    needed = _warehouse_qty_still_needed(order, pick_rows)
-    if not any(needed.values()) and not order.pick_short_events:
-        for hold in order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO):
-            needed[_stock_key(hold.product, hold.variation)] += int(hold.kolicina or 0)
-    for row in pick_rows:
-        sold = _sell_qty_from_location(
-            order, row['product'], row['variation'], row['location'], row['qty'],
-            user=user,
-        )
-        key = _stock_key(row['product'], row['variation'])
-        needed[key] = max(0, needed.get(key, 0) - sold)
+    if not (order.izvor == Order.Izvor.WEBSHOP and order.stanje_skinuto):
+        pick_rows = _iter_pick_deduct_rows(order)
+        needed = _warehouse_qty_still_needed(order, pick_rows)
+        if not any(needed.values()) and not order.pick_short_events:
+            for hold in order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO):
+                needed[_stock_key(hold.product, hold.variation)] += int(hold.kolicina or 0)
+        for row in pick_rows:
+            sold = _sell_qty_from_location(
+                order, row['product'], row['variation'], row['location'], row['qty'],
+                user=user,
+            )
+            key = _stock_key(row['product'], row['variation'])
+            needed[key] = max(0, needed.get(key, 0) - sold)
 
-    for hold in list(order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO)):
-        key = _stock_key(hold.product, hold.variation)
-        still = needed.get(key, 0)
-        if still <= 0 and hold.variation_id:
-            key = _stock_key(hold.product, None)
+        for hold in list(order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO)):
+            key = _stock_key(hold.product, hold.variation)
             still = needed.get(key, 0)
-        if still <= 0:
-            continue
-        sold = _sell_qty_from_location(
-            order, hold.product, hold.variation, hold.location, min(hold.kolicina, still),
-            user=user,
-        )
-        needed[key] = max(0, still - sold)
+            if still <= 0 and hold.variation_id:
+                key = _stock_key(hold.product, None)
+                still = needed.get(key, 0)
+            if still <= 0:
+                continue
+            sold = _sell_qty_from_location(
+                order, hold.product, hold.variation, hold.location, min(hold.kolicina, still),
+                user=user,
+            )
+            needed[key] = max(0, still - sold)
 
-    for (product_id, variation_id), still in list(needed.items()):
-        if still <= 0 or not product_id:
-            continue
-        product = Product.objects.filter(pk=product_id).first()
-        if product is None:
-            continue
-        variation = ProductVariation.objects.filter(pk=variation_id).first() if variation_id else None
-        leftover = deduct_for_order(
-            product,
-            still,
-            variation=variation,
-            user=user,
-            napomena=f'Validacija #{order.broj}',
-        )
-        needed[(product_id, variation_id)] = leftover
+        for (product_id, variation_id), still in list(needed.items()):
+            if still <= 0 or not product_id:
+                continue
+            product = Product.objects.filter(pk=product_id).first()
+            if product is None:
+                continue
+            variation = ProductVariation.objects.filter(pk=variation_id).first() if variation_id else None
+            leftover = deduct_for_order(
+                product,
+                still,
+                variation=variation,
+                user=user,
+                napomena=f'Validacija #{order.broj}',
+            )
+            needed[(product_id, variation_id)] = leftover
 
-    _release_leftover_holds(order, user=user)
+        _release_leftover_holds(order, user=user)
 
     order.lager_status = Order.LagerStatus.VALIDIRANO
     update_fields = ['lager_status']

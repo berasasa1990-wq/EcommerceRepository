@@ -5912,6 +5912,7 @@ class MagacinPonuda(models.Model):
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.NACRT, db_index=True,
     )
+    customer = models.ForeignKey('WarehouseCustomer', null=True, blank=True, on_delete=models.SET_NULL, related_name='ponude')
     ime_prezime = models.CharField(max_length=200, blank=True, verbose_name='Kupac')
     telefon = models.CharField(max_length=30, blank=True)
     email = models.EmailField(blank=True)

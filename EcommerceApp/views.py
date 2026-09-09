@@ -18,7 +18,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
-from django.db import DatabaseError
+from django.db import DatabaseError, transaction
 from django.db.models import Case, Count, Exists, F, IntegerField, Max, OuterRef, Prefetch, Q, Value, When
 from django.utils import timezone
 from django.http import Http404, JsonResponse
@@ -4603,112 +4603,117 @@ def checkout(request):
                     'iznos': str(summary['prize_popust']),
                 })
 
-            order = Order.objects.create(
-                korisnik=request.user if request.user.is_authenticated else None,
-                ime_prezime=form.cleaned_data['ime_prezime'],
-                email=form.cleaned_data['email'],
-                telefon=form.cleaned_data['telefon'],
-                adresa=form.cleaned_data['adresa'],
-                grad=form.cleaned_data['grad'],
-                postanski_broj=form.cleaned_data.get('postanski_broj', ''),
-                napomena=form.cleaned_data.get('napomena', ''),
-                medjuzbir=summary['medjuzbir'],
-                dostava=summary['dostava'],
-                popust=summary['popust'],
-                kupon_kod=summary.get('kupon_kod', ''),
-                popust_detalji=popust_detalji,
-                ukupno=summary['ukupno'],
-            )
+            from .magacin import deduct_web_order_stock, MagacinError
             try:
-                from .views_magacin import invalidate_magacin_nav_counts
-
-                invalidate_magacin_nav_counts()
-            except Exception:
-                pass
-            if request.user.is_authenticated:
-                _save_profile_from_checkout(request.user, form.cleaned_data)
-            for item in cart:
-                product, variation = cart.get_product_and_variation(item)
-                if not product:
-                    messages.error(request, 'Neki artikli više nisu dostupni. Osvježite korpu.')
-                    order.delete()
-                    return redirect('cart')
-                line_price = item['cijena_decimal']
-                bazna = item.get('bazna_cijena_decimal')
-                if bazna is None:
-                    bazna = Decimal(str(item.get('bazna_cijena') or line_price))
-                deal_info = item.get('deal_info')
-                from .upsell import format_deal_order_note
-
-                deal_note = format_deal_order_note(deal_info)
-                akcija_info = item.get('akcija_popup_discount')
-                discounted_unit = item.get('discounted_unit_price')
-                popust_opis = (item.get('discount_source') or '').strip()
-                popust_postotak = None
-                raw_pct = item.get('discount_percent')
-                if raw_pct not in (None, ''):
+                with transaction.atomic():
+                    order = Order.objects.create(
+                        korisnik=request.user if request.user.is_authenticated else None,
+                        ime_prezime=form.cleaned_data['ime_prezime'],
+                        email=form.cleaned_data['email'],
+                        telefon=form.cleaned_data['telefon'],
+                        adresa=form.cleaned_data['adresa'],
+                        grad=form.cleaned_data['grad'],
+                        postanski_broj=form.cleaned_data.get('postanski_broj', ''),
+                        napomena=form.cleaned_data.get('napomena', ''),
+                        medjuzbir=summary['medjuzbir'],
+                        dostava=summary['dostava'],
+                        popust=summary['popust'],
+                        kupon_kod=summary.get('kupon_kod', ''),
+                        popust_detalji=popust_detalji,
+                        ukupno=summary['ukupno'],
+                    )
                     try:
-                        popust_postotak = Decimal(str(raw_pct))
+                        from .views_magacin import invalidate_magacin_nav_counts
+
+                        invalidate_magacin_nav_counts()
                     except Exception:
+                        pass
+                    if request.user.is_authenticated:
+                        _save_profile_from_checkout(request.user, form.cleaned_data)
+                    for item in cart:
+                        product, variation = cart.get_product_and_variation(item)
+                        if not product:
+                            raise MagacinError('Neki artikli više nisu dostupni. Osvježite korpu.')
+                        line_price = item['cijena_decimal']
+                        bazna = item.get('bazna_cijena_decimal')
+                        if bazna is None:
+                            bazna = Decimal(str(item.get('bazna_cijena') or line_price))
+                        deal_info = item.get('deal_info')
+                        from .upsell import format_deal_order_note
+
+                        deal_note = format_deal_order_note(deal_info)
+                        akcija_info = item.get('akcija_popup_discount')
+                        discounted_unit = item.get('discounted_unit_price')
+                        popust_opis = (item.get('discount_source') or '').strip()
                         popust_postotak = None
-
-                if deal_note:
-                    naziv = item['product_naziv'] + deal_note
-                    product_naziv = item['product_naziv'] + deal_note
-                    varijacija_naziv = (item.get('varijacija_naziv', '') + deal_note).strip()
-                    if not popust_opis and deal_info:
-                        pct = deal_info.get('pct') or deal_info.get('percent')
-                        vrsta = deal_info.get('vrsta') or deal_info.get('label') or 'Deal'
-                        popust_opis = f'Deal {vrsta}' + (f' (−{pct}%)' if pct else '')
-                        if pct and popust_postotak is None:
+                        raw_pct = item.get('discount_percent')
+                        if raw_pct not in (None, ''):
                             try:
-                                popust_postotak = Decimal(str(pct))
+                                popust_postotak = Decimal(str(raw_pct))
                             except Exception:
-                                pass
-                elif akcija_info and discounted_unit is not None:
-                    pct = Decimal(str(akcija_info['percent']))
-                    disc_for_one = discounted_unit
-                    extra_note = f" (popust iz akcije {pct}% na 1 kom. - sniženo na {disc_for_one} KM)"
-                    naziv = item['product_naziv'] + extra_note
-                    product_naziv = item['product_naziv'] + extra_note
-                    varijacija_naziv = (item.get('varijacija_naziv', '') + extra_note).strip()
-                    if not popust_opis:
-                        aid = akcija_info.get('akcija_id')
-                        popust_opis = f'Uslov prodaja / akcija #{aid}' if aid else 'Uslov prodaja'
-                        popust_opis = f'{popust_opis} (−{pct}% na 1 kom.)'
-                    popust_postotak = pct
-                else:
-                    naziv = item['product_naziv']
-                    product_naziv = item['product_naziv']
-                    varijacija_naziv = item.get('varijacija_naziv', '')
-                    if not popust_opis and item.get('na_akciji') and bazna > line_price:
-                        popust_opis = 'Katalog akcija (snižena cijena)'
+                                popust_postotak = None
 
-                # Ušteda: regularna vs naplaćena
-                qty = int(item['quantity'] or 1)
-                charged_line = Decimal(str(item.get('ukupno_stavka') or (line_price * qty)))
-                regular_line = (bazna * qty).quantize(Decimal('0.01'))
-                popust_iznos = None
-                if regular_line > charged_line:
-                    popust_iznos = (regular_line - charged_line).quantize(Decimal('0.01'))
-                elif discounted_unit is not None and bazna > discounted_unit:
-                    popust_iznos = (bazna - discounted_unit).quantize(Decimal('0.01'))
+                        if deal_note:
+                            naziv = item['product_naziv'] + deal_note
+                            product_naziv = item['product_naziv'] + deal_note
+                            varijacija_naziv = (item.get('varijacija_naziv', '') + deal_note).strip()
+                            if not popust_opis and deal_info:
+                                pct = deal_info.get('pct') or deal_info.get('percent')
+                                vrsta = deal_info.get('vrsta') or deal_info.get('label') or 'Deal'
+                                popust_opis = f'Deal {vrsta}' + (f' (−{pct}%)' if pct else '')
+                                if pct and popust_postotak is None:
+                                    try:
+                                        popust_postotak = Decimal(str(pct))
+                                    except Exception:
+                                        pass
+                        elif akcija_info and discounted_unit is not None:
+                            pct = Decimal(str(akcija_info['percent']))
+                            disc_for_one = discounted_unit
+                            extra_note = f" (popust iz akcije {pct}% na 1 kom. - sniženo na {disc_for_one} KM)"
+                            naziv = item['product_naziv'] + extra_note
+                            product_naziv = item['product_naziv'] + extra_note
+                            varijacija_naziv = (item.get('varijacija_naziv', '') + extra_note).strip()
+                            if not popust_opis:
+                                aid = akcija_info.get('akcija_id')
+                                popust_opis = f'Uslov prodaja / akcija #{aid}' if aid else 'Uslov prodaja'
+                                popust_opis = f'{popust_opis} (−{pct}% na 1 kom.)'
+                            popust_postotak = pct
+                        else:
+                            naziv = item['product_naziv']
+                            product_naziv = item['product_naziv']
+                            varijacija_naziv = item.get('varijacija_naziv', '')
+                            if not popust_opis and item.get('na_akciji') and bazna > line_price:
+                                popust_opis = 'Katalog akcija (snižena cijena)'
 
-                OrderItem.objects.create(
-                    narudzba=order,
-                    artikal=product,
-                    varijacija=variation,
-                    naziv=naziv,
-                    product_naziv=product_naziv,
-                    varijacija_naziv=varijacija_naziv,
-                    sifra=item['sifra'],
-                    cijena=line_price,
-                    bazna_cijena=bazna,
-                    popust_opis=popust_opis[:300] if popust_opis else '',
-                    popust_postotak=popust_postotak,
-                    popust_iznos=popust_iznos,
-                    kolicina=qty,
-                )
+                        # Ušteda: regularna vs naplaćena
+                        qty = int(item['quantity'] or 1)
+                        charged_line = Decimal(str(item.get('ukupno_stavka') or (line_price * qty)))
+                        regular_line = (bazna * qty).quantize(Decimal('0.01'))
+                        popust_iznos = None
+                        if regular_line > charged_line:
+                            popust_iznos = (regular_line - charged_line).quantize(Decimal('0.01'))
+                        elif discounted_unit is not None and bazna > discounted_unit:
+                            popust_iznos = (bazna - discounted_unit).quantize(Decimal('0.01'))
+
+                        OrderItem.objects.create(
+                            narudzba=order,
+                            artikal=product,
+                            varijacija=variation,
+                            naziv=naziv,
+                            product_naziv=product_naziv,
+                            varijacija_naziv=varijacija_naziv,
+                            sifra=item['sifra'],
+                            cijena=line_price,
+                            bazna_cijena=bazna,
+                            popust_opis=popust_opis[:300] if popust_opis else '',
+                            popust_postotak=popust_postotak,
+                            popust_iznos=popust_iznos,
+                            kolicina=qty,
+                        )
+                    deduct_web_order_stock(order)
+            except MagacinError as exc:
+                messages.error(request, str(exc))
+                return redirect('cart')
 
             try:
                 from .online_gift import mark_reward_consumed
@@ -5966,7 +5971,9 @@ def _magacin_hold_picks(order, items):
     for hold in holds:
         key = (hold.product_id, hold.variation_id, hold.location_id)
         qty = int(hold.kolicina or 0)
-        if hold.status == OrderStockHold.Status.VALIDIRANO and order.lager_status != Order.LagerStatus.VALIDIRANO:
+        if (hold.status == OrderStockHold.Status.VALIDIRANO
+                and order.lager_status != Order.LagerStatus.VALIDIRANO
+                and not (order.izvor == Order.Izvor.WEBSHOP and order.stanje_skinuto)):
             continue
         if hold.status == OrderStockHold.Status.REZERVISANO:
             if not hold.location.aktivan or is_ignored_stock_location(hold.location):
