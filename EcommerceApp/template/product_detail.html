@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="{% static 'css/product-sale-alignment.v20260908.css' %}">
 <link rel="stylesheet" href="{% static 'css/product-inline-qty.v20260912.css' %}">
 <link rel="stylesheet" href="{% static 'css/product-inline-bundle.v20260912.css' %}">
-<link rel="stylesheet" href="{% static 'css/product-detail-mobile.css' %}?v=20260905graydots2">
+<link rel="stylesheet" href="{% static 'css/product-detail-mobile.css' %}?v=20260909mobile-gallery5">
 {% if staff_product_tools %}
 <link rel="stylesheet" href="{% static 'css/staff-image-fit.css' %}?v=20260829imgFit">
 {% endif %}
@@ -49,7 +49,6 @@
                     {% endif %}
                 </div>
                 {% if product.prikazna_slika %}
-                <button type="button" class="pd-mobile-zoom" aria-label="Uvećaj sliku proizvoda" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6M7 10h6M10 7v6"/></svg></button>
                 {% with img=product.prikazna_slika_responsive %}
                 <img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" id="mainProductImage" width="{{ img.width }}" height="{{ img.height }}" sizes="(max-width: 768px) 92vw, 50vw" loading="eager" fetchpriority="high" decoding="async" data-full-src="{{ product.prikazna_slika.url }}">
                 {% endwith %}
@@ -74,6 +73,8 @@
             </div>
             {% if product.prikazna_slika or product.dodatne_slike.exists %}
             <div class="pd-gallery-bar">
+                <button type="button" class="pd-mobile-gallery-arrow pd-mobile-gallery-prev" data-gallery-step="-1" aria-label="Prethodna slika artikla" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
+
                 <div class="product-thumbnails" id="productThumbnails" aria-label="Slike proizvoda">
                     {% if product.prikazna_slika %}{% with r=product.prikazna_slika_responsive %}
                     <button type="button" class="product-thumbnail pd-mobile-primary active" data-src="{{ r.src }}" data-full="{{ product.prikazna_slika.url }}"{% if r.srcset %} data-srcset="{{ r.srcset }}"{% endif %} data-width="{{ r.width }}" data-height="{{ r.height }}" aria-label="Prikaži glavnu sliku"></button>
@@ -96,6 +97,7 @@
                     {% endwith %}
                     {% endfor %}
                 </div>
+                <button type="button" class="pd-mobile-gallery-arrow pd-mobile-gallery-next" data-gallery-step="1" aria-label="Sljedeća slika artikla" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
             </div>
             {% endif %}
         </div>
@@ -709,7 +711,7 @@
 
 {% block extra_js %}
 <script src="{% static 'js/product-detail.min.js' %}?v=20260905gallery" defer></script>
-<script src="{% static 'js/product-detail-mobile.js' %}?v=20260905a" defer></script>
+<script src="{% static 'js/product-detail-mobile.js' %}?v=20260909mobile-gallery5" defer></script>
 {% if staff_product_tools %}
 <script src="{% static 'js/staff-image-fit.js' %}?v=20260829imgFit"></script>
 {% endif %}
