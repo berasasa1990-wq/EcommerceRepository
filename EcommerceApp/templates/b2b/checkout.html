@@ -1,0 +1,11 @@
+{% extends 'b2b/base.html' %}{% block content %}
+<main class="checkout-page"><a href="{% url 'b2b_cart' %}">← Nazad u korpu</a><h1>Završetak narudžbe</h1><p>{{ account.company }}</p>
+<div class="checkout-summary"><p>Ukupno netto: <strong>{{ b2b_cart_total|floatformat:2 }} KM</strong></p><p>PDV 17%: <strong>{{ tax_total|floatformat:2 }} KM</strong></p><p>Ukupno sa PDV-om: <strong>{{ gross_total|floatformat:2 }} KM</strong></p></div>
+<form method="post" data-b2b-checkout>{% csrf_token %}{{ form.token }}{{ form.token.errors }}
+<p>{{ form.napomena.label_tag }}{{ form.napomena }}{{ form.napomena.errors }}</p>
+<button type="submit" data-open-payment>Pošalji narudžbu u magacin</button>
+<dialog class="b2b-payment-dialog" aria-labelledby="payment-title" {% if form.is_bound %}open{% endif %}>
+<h2 id="payment-title">Gotovinski ili žiralno?</h2><p>Izborom načina plaćanja odmah šaljete narudžbu u magacin.</p>{{ form.non_field_errors }}{{ form.payment.errors }}
+<div class="payment-options"><button type="submit" name="payment" value="gotovina">Gotovinski</button><button type="submit" name="payment" value="ziralno">Žiralno</button></div>
+<button type="button" class="payment-cancel" data-close-payment hidden>Odustani</button>
+</dialog></form></main>{% endblock %}

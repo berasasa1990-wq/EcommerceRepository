@@ -4037,3 +4037,97 @@ class WarehouseSyncLogAdmin(admin.ModelAdmin):
         'status', 'izvor', 'poruka', 'artikala', 'lokacija',
         'started_at', 'finished_at', 'trajanje_sekundi', 'korisnik',
     )
+
+
+from django.contrib.auth.password_validation import validate_password
+from .models import B2BAccount
+
+
+class B2BAccountForm(forms.ModelForm):
+    new_password = forms.CharField(
+        label='Nova šifra', widget=forms.PasswordInput, required=False,
+        help_text='Obavezna za novog korisnika. Ostavite prazno da zadržite postojeću šifru.',
+    )
+
+    class Meta:
+        model = B2BAccount
+        fields = ['username', 'company', 'is_active']
+
+    def clean_new_password(self):
+        password = self.cleaned_data.get('new_password')
+        if not password and not self.instance.pk:
+            raise forms.ValidationError('Unesite šifru za novog B2B korisnika.')
+        if password:
+            validate_password(password)
+        return password
+
+    def save(self, commit=True):
+        account = super().save(commit=False)
+        if self.cleaned_data.get('new_password'):
+            account.set_password(self.cleaned_data['new_password'])
+        if commit:
+            account.save()
+        return account
+
+
+@admin.register(B2BAccount)
+class B2BAccountAdmin(admin.ModelAdmin):
+    form = B2BAccountForm
+    list_display = ['username', 'company', 'is_active']
+    list_filter = ['is_active']
+    search_fields = ['username', 'company']
+
+
+from .models import B2BSettings, B2BCategoryIcon, B2BBanner
+
+
+class B2BCategoryIconInline(admin.TabularInline):
+    model = B2BCategoryIcon
+    autocomplete_fields = ['category']
+    extra = 1
+
+
+class B2BBannerInline(admin.TabularInline):
+    model = B2BBanner
+    fields = ['image', 'alt', 'link', 'position', 'active']
+    extra = 1
+
+
+@admin.register(B2BSettings)
+class B2BSettingsAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['noviteti', 'akcijska_ponuda']
+    fieldsets = (
+        ('Noviteti', {'fields': ['noviteti']}),
+        ('Akcijska ponuda', {'fields': ['akcijska_ponuda']}),
+        ('Banner', {'fields': ['banner', 'banner_alt', 'banner_link', 'banner_preview']}),
+    )
+    readonly_fields = ['banner_preview']
+    inlines = [B2BBannerInline, B2BCategoryIconInline]
+
+    def has_add_permission(self, request):
+        return super().has_add_permission(request) and not B2BSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    @admin.display(description='Pregled bannera')
+    def banner_preview(self, obj):
+        if obj and obj.banner:
+            return format_html('<img src="{}" style="max-width:450px;max-height:150px;object-fit:contain" alt="B2B banner">', obj.banner.url)
+        return 'Glavni banner nije postavljen. Prikazaće se aktivni dodatni banneri, ako postoje.'
+
+
+from .models import B2BSubmission
+
+
+@admin.register(B2BSubmission)
+class B2BSubmissionAdmin(admin.ModelAdmin):
+    list_display = ['order', 'account', 'payment', 'netto_total', 'created_at']
+    list_filter = ['payment']
+    readonly_fields = ['account', 'order', 'token', 'payment', 'netto_total', 'created_at']
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

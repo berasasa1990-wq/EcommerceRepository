@@ -6,6 +6,7 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
+from .b2b_validators import validate_banner_link
 
 
 def _akcija_jos_vazi(akcija_do):
@@ -6491,3 +6492,95 @@ class WarehouseLedgerLine(models.Model):
     @property
     def unit_price(self):
         return self.amount / self.quantity if self.quantity else Decimal('0')
+
+
+class B2BAccount(models.Model):
+    username = models.CharField('Korisničko ime', max_length=150, unique=True)
+    company = models.CharField('Firma / kupac', max_length=200)
+    password = models.CharField('Šifra (hash)', max_length=128, editable=False)
+    is_active = models.BooleanField('Aktivan', default=True)
+
+    class Meta:
+        verbose_name = 'B2B korisnik'
+        verbose_name_plural = 'B2B korisnici'
+        ordering = ['company', 'username']
+
+    def __str__(self):
+        return f'{self.company} ({self.username})'
+
+    def set_password(self, raw_password):
+        from django.contrib.auth.hashers import make_password
+        self.password = make_password(raw_password)
+
+    def session_hash(self):
+        from django.utils.crypto import salted_hmac
+        return salted_hmac('b2b.session', self.password).hexdigest()
+
+
+class B2BSettings(models.Model):
+    banner = models.ImageField(
+        'Glavni banner (prvi slajd)', upload_to='b2b/banners/', blank=True,
+        help_text='Prikazuje se preko cijele širine kataloga. Preporuka: 1600 × 400 px, JPG, PNG ili WebP. Dodatne bannere dodajte ispod.',
+    )
+    banner_alt = models.CharField('Opis bannera', max_length=200, blank=True)
+    banner_link = models.CharField('Link bannera', max_length=500, blank=True, validators=[validate_banner_link],
+        help_text='Opcionalno. Npr. /veleprodaja?kategorija=stapovi ili https://primjer.ba/stranica.')
+
+    noviteti = models.ManyToManyField(Product, blank=True, related_name='b2b_noviteti_settings',
+        verbose_name='Noviteti', help_text='Pretražite i dodajte proizvoljan broj artikala u B2B novitete.')
+    akcijska_ponuda = models.ManyToManyField(Product, blank=True, related_name='b2b_akcija_settings',
+        verbose_name='Akcijska ponuda', help_text='Pretražite i dodajte proizvoljan broj artikala u B2B akcijsku ponudu.')
+
+    class Meta:
+        verbose_name = 'B2B'
+        verbose_name_plural = 'B2B'
+        constraints = [models.CheckConstraint(condition=models.Q(pk=1), name='b2b_settings_singleton')]
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return 'B2B — banner i ikonice kategorija'
+
+
+class B2BCategoryIcon(models.Model):
+    settings = models.ForeignKey(B2BSettings, on_delete=models.CASCADE, related_name='category_icons')
+    category = models.OneToOneField(Category, on_delete=models.CASCADE, verbose_name='Kategorija')
+    image = models.ImageField('Ikonica', upload_to='b2b/category-icons/',
+                              help_text='PNG s prozirnom pozadinom, JPG ili WebP. Preporuka: 64 × 64 px.')
+
+    class Meta:
+        verbose_name = 'Ikonica kategorije'
+        verbose_name_plural = 'Ikonice kategorija'
+
+    def __str__(self):
+        return str(self.category)
+
+
+class B2BSubmission(models.Model):
+    account = models.ForeignKey(B2BAccount, on_delete=models.PROTECT, related_name='orders', verbose_name='B2B korisnik')
+    order = models.OneToOneField(Order, on_delete=models.PROTECT, related_name='b2b_submission', verbose_name='Narudžba')
+    token = models.UUIDField(unique=True, editable=False)
+    payment = models.CharField('Plaćanje', max_length=10, choices=[('ziralno', 'Žiralno'), ('gotovina', 'Gotovinski')])
+    netto_total = models.DecimalField('Ukupno netto pri slanju', max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'B2B narudžba'
+        verbose_name_plural = 'B2B narudžbe'
+
+
+class B2BBanner(models.Model):
+    settings = models.ForeignKey(B2BSettings, on_delete=models.CASCADE, related_name='banners')
+    image = models.ImageField('Banner', upload_to='b2b/banners/', help_text='Preporuka: 1600 × 400 px. Koristite isti odnos stranica za sve bannere.')
+    alt = models.CharField('Opis slike', max_length=200, blank=True)
+    link = models.CharField('Link bannera', max_length=500, blank=True, validators=[validate_banner_link],
+        help_text='Opcionalno. Lokalni link koji počinje sa / ili puna https:// adresa.')
+    position = models.PositiveIntegerField('Redoslijed', default=0)
+    active = models.BooleanField('Aktivan', default=True)
+
+    class Meta:
+        ordering = ['position', 'pk']
+        verbose_name = 'B2B banner'
+        verbose_name_plural = 'Dodatni banneri za slider'

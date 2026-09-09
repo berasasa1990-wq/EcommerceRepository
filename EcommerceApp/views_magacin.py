@@ -5013,6 +5013,11 @@ def confirm_short_pick(order, *, item_id, loc, got, user):
     location = _location_for_pick_label(loc)
     if location is None and (loc != 'Nije popisan' or got):
         raise MagacinError('Artikal nema fizičku lokaciju koju je moguće isprazniti.')
+    if hasattr(locked, 'b2b_submission'):
+        from .b2b_orders import save_pick
+        save_pick(locked, [dict(line, got=got, done=True)])
+        order.refresh_from_db()
+        return
     if got:
         sold = _sell_qty_from_location(locked, item.artikal, item.varijacija, location, got, user=user)
         if sold != got:
@@ -5328,6 +5333,9 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
     finalize=True (završi picking): stavke s 0 pokupljenih se skidaju s narudžbe
     (nema artikla). Ostale dobiju pokupljenu količinu za račun.
     """
+    if hasattr(order, 'b2b_submission'):
+        from .b2b_orders import save_pick
+        return save_pick(order, lines)
     state = dict(order.pick_state or {})
     locked_picks = {e['picked_key']: e for e in (order.pick_short_events or []) if e.get('got')}
     lines = [row for row in (lines or []) if str(row.get('key') or '') not in locked_picks]

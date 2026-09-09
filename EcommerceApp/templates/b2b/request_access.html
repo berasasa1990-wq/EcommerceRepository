@@ -1,0 +1,5 @@
+{% extends 'b2b/base.html' %}{% block content %}
+<main class="login access-request"><a href="{% url 'b2b_catalog' %}">← Nazad na prijavu</a>
+{% if sent %}<h1>Zahtjev je poslan</h1><p>Primili smo vaš zahtjev za B2B pristup. Kontaktiraćemo vas nakon pregleda podataka.</p><p class="muted">Pristup odobrava administrator. Slanje zahtjeva ne kreira korisnički nalog.</p>
+{% else %}<h1>Zatraži B2B pristup</h1><p>Unesite podatke firme i kontakt osobe. Sva polja su obavezna.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Pošalji zahtjev za pristup</button></form><p class="muted">Pristup odobrava administrator nakon pregleda zahtjeva.</p>{% endif %}
+</main>{% endblock %}

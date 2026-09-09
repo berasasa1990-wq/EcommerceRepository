@@ -6555,6 +6555,9 @@ def _warehouse_qty_still_needed(order, pick_rows):
 @transaction.atomic
 def validate_order_stock(order, *, user=None):
     """Skini količine s picking lokacija (ručna, VP, webshop). Nikad ne ostavi validirano bez skidanja."""
+    if hasattr(order, "b2b_submission"):
+        from .b2b_orders import finish_pick
+        return finish_pick(order, user=user)
     if order.lager_status == Order.LagerStatus.VALIDIRANO:
         from .warehouse_ledger import settle_replacement, settle_invoiced_excess, settle_picked_missing
         settle_replacement(order, user=user)

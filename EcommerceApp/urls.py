@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from . import views_b2b
 from . import views_catalog_api
 from . import views_chat
 from . import views_feed
@@ -10,6 +11,14 @@ from . import views_site_prep
 from . import views_sync
 
 urlpatterns = [
+    path("veleprodaja/zatrazi-pristup/", views_b2b.request_access, name="b2b_request_access"),
+    path("veleprodaja/zavrsi/", views_b2b.checkout, name="b2b_checkout"),
+    path("veleprodaja/narudzba/<int:pk>/", views_b2b.order_confirmation, name="b2b_order"),
+    path("veleprodaja/korpa/", views_b2b.cart_view, name="b2b_cart"),
+    path("veleprodaja/korpa/<int:product_id>/", views_b2b.cart_change, name="b2b_cart_change"),
+    path("veleprodaja", views_b2b.catalog, name="b2b_catalog"),
+    path("veleprodaja/", views_b2b.catalog),
+    path("veleprodaja/odjava/", views_b2b.logout, name="b2b_logout"),
     path('nalog/magacin/duguje/', views_ledger.ledger, name='staff_magacin_duguje'),
     path('api/sync/korisnik/', views_sync.sync_korisnik_api, name='sync_korisnik_api'),
     path('api/sync/narudzba/', views_sync.sync_narudzba_api, name='sync_narudzba_api'),

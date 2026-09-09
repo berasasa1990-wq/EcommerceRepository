@@ -1,0 +1,8 @@
+{% for node in nodes %}
+{% if node.children %}
+<details class="category-branch" {% if node.expanded %}open{% endif %}>
+<summary {% if node.current %}class="current-category"{% endif %}>{{ node.category.naziv }}<b aria-hidden="true">›</b></summary>
+<div class="category-children"><a href="?kategorija={{ node.category.slug|urlencode }}&q={{ q|urlencode }}&ponuda={{ collection|urlencode }}#catalog-filters" {% if node.current %}aria-current="page"{% endif %}>Svi artikli iz kategorije</a>{% include 'b2b/category_tree.html' with nodes=node.children %}</div>
+</details>
+{% else %}<a href="?kategorija={{ node.category.slug|urlencode }}&q={{ q|urlencode }}&ponuda={{ collection|urlencode }}#catalog-filters" {% if node.current %}aria-current="page"{% endif %}>{{ node.category.naziv }}</a>{% endif %}
+{% endfor %}

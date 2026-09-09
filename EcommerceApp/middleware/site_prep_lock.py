@@ -46,6 +46,9 @@ class SitePrepLockMiddleware:
             return True
         if path.startswith('/media/'):
             return True
+        # B2B ima vlastitu obaveznu prijavu, nezavisnu od javnog sajta.
+        if path == '/veleprodaja' or path.startswith('/veleprodaja/'):
+            return True
         if path.startswith('/admin/'):
             return True
         # Prijava/odjava moraju raditi i dok je sajt u pripremi — inače loop na login.
