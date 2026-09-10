@@ -3748,7 +3748,7 @@ function initArticleScanner() {
                 '<button type="button" data-pk-plus aria-label="Više">+</button>' +
                 (st.done
                     ? '<span class="pk-odvojeno-tag">Odvojeno</span>'
-                    : '<button type="button" class="pk-all" data-pk-all>Pokupi sve</button>') +
+                    : '<button type="button" class="pk-all" data-pk-all>Pokupi sve (' + (Number(item.need) || 0) + ' kom)</button>') +
             '</div>' +
             '<div class="pk-item-top">' +
                 '<em class="pk-item-n">' + number + '</em>' +
@@ -3823,7 +3823,7 @@ function initArticleScanner() {
         if (allBtn) {
             allBtn.addEventListener('click', function () {
                 current = idx;
-                setDraft(item.need);
+                setGot(item, item.need, true);
             });
         }
         into.appendChild(art);
@@ -3989,6 +3989,11 @@ function initArticleScanner() {
     }
     var shortPending = false;
     function confirmShortQuantity(item, got) {
+        if (got > 0 || isPrenosMp) { setGot(item, got, true); return; }
+        if (!window.confirm('Pokupljeno je 0 komada. Želiš li očistiti lager ovog artikla na lokaciji ' + item.loc + '?')) {
+            setGot(item, 0, true);
+            return;
+        }
         if (shortPending) return;
         shortPending = true;
         window.clearTimeout(saveTimer);
@@ -3996,6 +4001,7 @@ function initArticleScanner() {
         var body = new URLSearchParams();
         var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
         body.set('action', 'pick_short');
+        body.set('clear_location', '1');
         body.set('item_id', item.item_id);
         body.set('loc', item.loc);
         body.set('got', got);

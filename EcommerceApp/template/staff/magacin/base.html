@@ -347,7 +347,7 @@
     }
 })();
 </script>
-<script src="{% static 'js/staff-magacin.js' %}?v=20260910prenosPassword"></script>
+<script src="{% static 'js/staff-magacin.js' %}?v=20260910pickRequestedQty"></script>
 {% if request.duplicate_barcode_message %}
 {{ request.duplicate_barcode_message|json_script:"duplicate-barcode-message" }}
 <script>window.alert(JSON.parse(document.getElementById('duplicate-barcode-message').textContent));</script>

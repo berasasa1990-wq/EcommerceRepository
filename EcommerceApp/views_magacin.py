@@ -4983,6 +4983,7 @@ def _pick_queue(location_groups):
             'artikal', 'artikal__brend', 'artikal__kategorija', 'varijacija',
         )
     } if item_ids else {}
+    remaining_need = {pk: int(item.kolicina) for pk, item in order_items.items()}
     for loc in location_groups:
         if loc['label'] == 'Provjeri u MP':
             continue
@@ -5021,6 +5022,10 @@ def _pick_queue(location_groups):
                     brend = oi.artikal.brend.naziv or ''
                 if not kategorija and oi.artikal.kategorija_id:
                     kategorija = oi.artikal.kategorija.naziv or ''
+            need = min(max(0, int(item.get('take') or 0)), remaining_need.get(item_id, 0))
+            if not need:
+                continue
+            remaining_need[item_id] -= need
             queue.append({
                 'key': f"{item_id}:{loc['label']}" if item_id else f"{loc['label']}-{item['line_id']}-{item['rb']}",
                 'i': index,
@@ -5035,7 +5040,7 @@ def _pick_queue(location_groups):
                 'slika': item.get('slika') or '',
                 'brend': brend,
                 'kategorija': kategorija,
-                'need': int(item.get('take') or 0),
+                'need': need,
                 'on_hand': on_hand,
                 'codes': codes,
                 'is_mp': loc['label'] in {'MP', 'Provjeri u MP'},
@@ -5046,7 +5051,7 @@ def _pick_queue(location_groups):
 
 
 @transaction.atomic
-def confirm_short_pick(order, *, item_id, loc, got, user):
+def confirm_short_pick(order, *, item_id, loc, got, user, clear_location=False):
     """Confirm physical shortage and rebuild the remainder, without an MP gate."""
     from .magacin import (
         _sell_qty_from_location, _location_for_pick_label,
@@ -5062,6 +5067,10 @@ def confirm_short_pick(order, *, item_id, loc, got, user):
     line = next((row for row in queue if row['item_id'] == item_id and row['loc'] == loc and not row.get('already_picked')), None)
     if line is None or got < 0 or got >= int(line['need']):
         raise MagacinError('Količina mora biti manja od tražene količine na trenutnoj lokaciji.')
+    if got > 0 or not clear_location:
+        apply_order_pick(locked, [dict(line, got=got, done=True)], user=user)
+        order.refresh_from_db()
+        return
     location = _location_for_pick_label(loc)
     if location is None and (loc != 'Nije popisan' or got):
         raise MagacinError('Artikal nema fizičku lokaciju koju je moguće isprazniti.')
@@ -5393,6 +5402,9 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
     lines = [row for row in (lines or []) if str(row.get('key') or '') not in locked_picks]
     lines += [dict(key=key, item_id=e['item_id'], loc=e['loc'], got=e['got'], need=e['got'], done=True)
               for key, e in locked_picks.items()]
+    remaining_by_item = dict(order.stavke.values_list('pk', 'kolicina'))
+    queue, _, _ = _order_pick_bundle(order)
+    location_limits = {(row['item_id'], row['loc']): int(row['need']) for row in queue}
     picked_by_item = {}
     missing_lines = []
     for raw in lines or []:
@@ -5406,8 +5418,10 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
         except (TypeError, ValueError):
             continue
         done = bool(raw.get('done'))
-        if need:
-            got = min(got, need)
+        available_for_order = remaining_by_item.get(item_id, 0)
+        need = min(need, available_for_order, location_limits.get((item_id, _pick_line_loc(raw)), available_for_order))
+        got = min(got, need)
+        remaining_by_item[item_id] = max(0, available_for_order - got)
         key = str(raw.get('key') or '')
         if not key:
             continue
@@ -5437,28 +5451,23 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
             except MagacinError:
                 cancelled = False
             return {'cancelled': cancelled, 'removed': True}
-        try:
-            return drop_missing_pick_line(
-                order, item, loc=loc, qty=qty, user=user,
-            )
-        except MagacinError:
-            if OrderItem.objects.filter(narudzba_id=order.pk).count() <= 1:
-                try:
-                    cancel_order_stock(order, user=user)
-                except MagacinError:
-                    order.lager_status = Order.LagerStatus.OTKAZANO
-                    order.status = Order.Status.OTKAZANA
-                    order.save(update_fields=['lager_status', 'status'])
-                return {'cancelled': True, 'removed': True}
+        if OrderItem.objects.filter(narudzba_id=order.pk).count() <= 1:
             try:
-                remove_item_from_order(order, item, user=user)
+                cancel_order_stock(order, user=user)
             except MagacinError:
-                item_id = item.pk
-                item.delete()
-                order.refresh_from_db()
-            return {'cancelled': False, 'removed': True}
+                order.lager_status = Order.LagerStatus.OTKAZANO
+                order.status = Order.Status.OTKAZANA
+                order.save(update_fields=['lager_status', 'status'])
+            return {'cancelled': True, 'removed': True}
+        try:
+            remove_item_from_order(order, item, user=user)
+        except MagacinError:
+            item_id = item.pk
+            item.delete()
+            order.refresh_from_db()
+        return {'cancelled': False, 'removed': True}
 
-    if finalize:
+    if finalize and is_prenos_mp_order(order):
         for item_id, loc, qty in missing_lines:
             item = OrderItem.objects.filter(pk=item_id, narudzba=order).first()
             if item is None:
@@ -5970,14 +5979,17 @@ def magacin_pakuj_detail(request, broj):
             try:
                 got = _parse_qty(request.POST.get('got') or '0')
                 confirm_short_pick(order, item_id=int(request.POST.get('item_id') or 0),
-                                   loc=(request.POST.get('loc') or '').strip(), got=got, user=request.user)
+                                   loc=(request.POST.get('loc') or '').strip(), got=got, user=request.user,
+                                   clear_location=request.POST.get('clear_location') == '1')
             except Http404:
                 return JsonResponse({'ok': False, 'error': 'Stavka više nije na narudžbi. Osvježi picking.'}, status=404)
             except (MagacinError, ValueError, TypeError) as exc:
                 return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
             queue, _, _ = _order_pick_bundle(order)
             same_item = [row for row in queue if row['item_id'] == int(request.POST.get('item_id') or 0) and not row.get('already_picked')]
-            if same_item:
+            if got > 0 or request.POST.get('clear_location') != '1':
+                message = f'Potvrđeno {got} kom. za picking. Preostala zaliha na lokaciji je sačuvana.'
+            elif same_item:
                 next_row = same_item[0]
                 message = f'Lokacija je očišćena. Pokupi još {next_row["need"]} kom. sa lokacije {next_row["loc"]}.'
             else:
