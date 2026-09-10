@@ -6199,6 +6199,19 @@ class WarehouseMovement(models.Model):
         related_name='magacin_kretanja',
     )
 
+    order = models.ForeignKey(Order, null=True, blank=True, on_delete=models.SET_NULL,
+                              related_name='stock_movements', verbose_name='Narudžba')
+    order_number = models.CharField(max_length=100, blank=True, editable=False)
+    customer_name = models.CharField(max_length=200, blank=True, editable=False)
+    source_label = models.CharField(max_length=500, blank=True, editable=False)
+    destination_label = models.CharField(max_length=500, blank=True, editable=False)
+
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            from .warehouse_history import capture_movement
+            capture_movement(self)
+        return super().save(*args, **kwargs)
+
     class Meta:
         verbose_name = 'Kretanje zalihe'
         verbose_name_plural = 'Kretanja zalihe'

@@ -327,37 +327,7 @@
 
     <section class="mg-card mg-artikal-history" id="itemHistory">
         <h2 class="mg-h">Istorija kretanja (zadnjih 10)</h2>
-        <table class="mg-table">
-            <thead>
-                <tr>
-                    <th>DATUM</th>
-                    <th>TIP</th>
-                    <th>KUPAC</th>
-                    <th>LOKACIJA</th>
-                    <th class="num">KOLIČINA</th>
-                    <th>NAPOMENA</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for m in movements %}
-                <tr>
-                    <td data-label="Datum">{{ m.kreiran|date:"d.m.Y H:i" }}</td>
-                    <td data-label="Tip">{{ m.get_tip_display }}</td>
-                    <td data-label="Kupac">{% if m.kupac_label %}{{ m.kupac_label }}{% else %}—{% endif %}</td>
-                    <td data-label="Lokacija">
-                        {{ m.location.sifra }}
-                        {% if m.to_location %} → {{ m.to_location.sifra }}{% endif %}
-                    </td>
-                    <td data-label="Količina" class="num {% if m.tip == 'prijem' or m.kolicina > 0 and m.tip != 'prodaja' and m.tip != 'transfer' %}num-plus{% elif m.tip == 'prodaja' or m.tip == 'transfer' or m.kolicina < 0 %}num-minus{% endif %}">
-                        {% if m.tip == 'prijem' %}+{% elif m.tip == 'prodaja' or m.tip == 'transfer' %}-{% elif m.kolicina > 0 %}+{% elif m.kolicina < 0 %}-{% endif %}{% if m.kolicina < 0 %}{{ m.kolicina|cut:"-" }}{% else %}{{ m.kolicina }}{% endif %}
-                    </td>
-                    <td data-label="Napomena">{{ m.napomena|default:"—" }}</td>
-                </tr>
-                {% empty %}
-                <tr><td data-label="Datum" colspan="6" class="mg-muted">Nema kretanja.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% include 'staff/magacin/movement_history_table.html' %}
         <a class="mg-link" href="{% url 'staff_magacin_istorija' product.pk %}{% if variation %}?varijacija={{ variation.pk }}{% endif %}">Pogledaj kompletnu istoriju →</a>
     </section>
 

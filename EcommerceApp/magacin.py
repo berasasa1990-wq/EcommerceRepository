@@ -696,6 +696,7 @@ def apply_movement(
     user=None,
     rezervisano=None,
     from_reservation=False,
+    order=None,
 ):
     """
     Promijeni zalihu i upiši kretanje.
@@ -811,6 +812,7 @@ def apply_movement(
     stock.save(update_fields=['kolicina', 'rezervisano', 'azurirano'])
 
     movement = WarehouseMovement.objects.create(
+        order=order,
         product=product,
         variation=variation,
         location=location,
@@ -6378,6 +6380,7 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
     def _apply_take(move_product, move_variation, move_location, take, *, from_reservation):
         kwargs = {
             'product': move_product,
+            'order': order,
             'variation': move_variation,
             'location': move_location,
             'tip': WarehouseMovement.Tip.PRODAJA,

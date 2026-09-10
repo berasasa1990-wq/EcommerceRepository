@@ -154,7 +154,7 @@ def finish_pick(order, user=None):
             raise MagacinError('Nedovoljno zalihe na potvrđenoj lokaciji. Provjerite picking.')
         apply_movement(product=product_id, variation=variation_id, location=location_id,
             tip=WarehouseMovement.Tip.PRODAJA, kolicina=qty, user=user,
-            napomena=f'B2B picking #{locked.broj}')
+            napomena=f'B2B picking #{locked.broj}', order=locked)
     total = Decimal('0.00')
     for item in items:
         item.kolicina_pokupljeno = picked[item.pk]

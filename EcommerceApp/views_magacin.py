@@ -3,6 +3,7 @@
 from .b2b_pricing import brand_divisors, discounts_for, net_price, price_snapshot
 from .b2b_orders import gross as b2b_gross
 from .barcodes import DuplicateBarcode, conflicting_products, record_conflicts
+from .warehouse_history import physical_movements, attach_history
 
 import base64
 import hmac
@@ -1157,14 +1158,14 @@ def magacin_artikal(request, pk):
     meta = getattr(product, 'magacin_meta', None)
     tags = list(product.tagovi.all())
     movements = (
-        WarehouseMovement.objects.filter(product=product)
-        .select_related('location', 'to_location', 'variation', 'korisnik')
+        physical_movements(WarehouseMovement.objects.filter(product=product))
+        .select_related('location', 'to_location', 'variation', 'korisnik', 'order')
         .order_by('-kreiran', '-id')
     )
     if variation:
         movements = movements.filter(variation=variation)
     movements = list(movements[:10])
-    _attach_movement_kupci(movements)
+    movements = attach_history(movements)
 
     variant_totals = display_variant_stock_totals(product, variations)
     variant_rows = []
@@ -2246,15 +2247,15 @@ def magacin_artikal_izmjena(request, pk):
 def magacin_istorija(request, pk):
     product = get_object_or_404(Product, pk=pk)
     qs = (
-        WarehouseMovement.objects.filter(product=product)
-        .select_related('location', 'to_location', 'variation', 'korisnik')
+        physical_movements(WarehouseMovement.objects.filter(product=product))
+        .select_related('location', 'to_location', 'variation', 'korisnik', 'order')
     )
     variation_id = request.GET.get('varijacija')
     if variation_id:
         qs = qs.filter(variation_id=variation_id)
     paginator = Paginator(qs, 50)
     page = paginator.get_page(request.GET.get('page') or 1)
-    _attach_movement_kupci(page.object_list)
+    page.object_list = attach_history(page.object_list)
     context = _magacin_context(request, section='artikli', page_title=f'Istorija — {product.naziv}', hide_top_search=True)
     context.update({'product': product, 'page': page})
     return render(request, 'staff/magacin/istorija.html', context)
