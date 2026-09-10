@@ -190,6 +190,8 @@ class B2BTests(TestCase):
             response = self.client.post('/admin/EcommerceApp/b2bsettings/add/', {
                 'banner': SimpleUploadedFile('banner.png', buffer.getvalue(), content_type='image/png'),
                 'banner_alt': 'Naš B2B banner',
+                'brand_prices-TOTAL_FORMS': '0', 'brand_prices-INITIAL_FORMS': '0',
+                'offer_items-TOTAL_FORMS': '0', 'offer_items-INITIAL_FORMS': '0',
                 'banners-TOTAL_FORMS': '0', 'banners-INITIAL_FORMS': '0',
                 'banners-MIN_NUM_FORMS': '0', 'banners-MAX_NUM_FORMS': '1000',
                 'category_icons-TOTAL_FORMS': '1', 'category_icons-INITIAL_FORMS': '0',
@@ -481,14 +483,199 @@ class B2BTests(TestCase):
         from .models import B2BSettings
         user = get_user_model().objects.create_superuser('collections-admin', 'a@example.com', 'Admin-secret-723!')
         self.client.force_login(user)
+        from .models import Brand
+        brand = Brand.objects.create(naziv='Admin brend')
         second = Product.objects.create(naziv='Drugi novitet', cijena=Decimal('20'))
         response = self.client.post('/admin/EcommerceApp/b2bsettings/add/', {
             'noviteti': [self.product.pk, second.pk], 'akcijska_ponuda': [second.pk],
-            'banners-TOTAL_FORMS': '0', 'banners-INITIAL_FORMS': '0',
+            'brand_prices-TOTAL_FORMS': '1', 'brand_prices-INITIAL_FORMS': '0',
+            'brand_prices-0-brand': brand.pk, 'brand_prices-0-divisor': '1.5',
+            'offer_items-TOTAL_FORMS': '1', 'offer_items-INITIAL_FORMS': '0',
+            'offer_items-0-product': second.pk, 'offer_items-0-discount_percent': '15',
+                'banners-TOTAL_FORMS': '0', 'banners-INITIAL_FORMS': '0',
             'category_icons-TOTAL_FORMS': '0', 'category_icons-INITIAL_FORMS': '0', '_save': 'Sačuvaj',
         })
         self.assertEqual(response.status_code, 302)
         settings = B2BSettings.objects.get()
+        self.assertEqual(settings.brand_prices.get().divisor, Decimal('1.5'))
         self.assertEqual(settings.noviteti.count(), 2)
         self.assertEqual(list(settings.akcijska_ponuda.all()), [second])
-        self.assertEqual(admin.site._registry[B2BSettings].autocomplete_fields, ['noviteti', 'akcijska_ponuda'])
+        self.assertEqual(admin.site._registry[B2BSettings].autocomplete_fields, ['noviteti'])
+
+    def test_offer_discount_used_in_catalog_cart_checkout_and_order(self):
+        from .models import B2BSettings, B2BOfferItem
+        settings = B2BSettings.objects.create()
+        B2BOfferItem.objects.create(settings=settings, product=self.product, discount_percent=Decimal('15'))
+        self.login()
+        response = self.client.get('/veleprodaja', {'ponuda': 'akcijska'})
+        self.assertEqual(response.context['rows'][0]['netto'], Decimal('85.00'))
+        self.assertContains(response, '−15%')
+        self.client.post(f'/veleprodaja/korpa/{self.product.pk}/', {'quantity': 2})
+        response = self.client.get('/veleprodaja/korpa/')
+        self.assertEqual(response.context['total'], Decimal('170.00'))
+        self.assertEqual(response.context['gross_total'], Decimal('198.90'))
+        response = self.client.get('/veleprodaja/zavrsi/')
+        self.assertEqual(response.context['gross_total'], Decimal('198.90'))
+        token = response.context['form']['token'].value()
+        self.client.post('/veleprodaja/zavrsi/', {'token': token, 'payment': 'ziralno'})
+        from .models import B2BSubmission
+        submission = B2BSubmission.objects.get()
+        self.assertEqual(submission.netto_total, Decimal('170.00'))
+        self.assertEqual(submission.order.ukupno, Decimal('198.90'))
+
+    def test_admin_autocomplete_excludes_selected_and_discount_validation(self):
+        from django.core.exceptions import ValidationError
+        from .models import B2BSettings, B2BOfferItem
+        user = get_user_model().objects.create_superuser('search-admin', 's@example.com', 'Admin-secret-123!')
+        self.client.force_login(user)
+        for model, field in [('b2bsettings', 'noviteti'), ('b2bofferitem', 'product')]:
+            params = {'app_label': 'EcommerceApp', 'model_name': model, 'field_name': field,
+                      'term': self.product.naziv, 'b2b_exclude': str(self.product.pk)}
+            response = self.client.get('/admin/autocomplete/', params)
+            self.assertEqual(response.status_code, 200)
+            self.assertNotIn(str(self.product.pk), [r['id'] for r in response.json()['results']])
+            params['b2b_exclude'] = ''
+            response = self.client.get('/admin/autocomplete/', params)
+            self.assertIn(str(self.product.pk), [r['id'] for r in response.json()['results']])
+        settings = B2BSettings.objects.create()
+        for value in ['-1', '101']:
+            with self.assertRaises(ValidationError):
+                B2BOfferItem(settings=settings, product=self.product, discount_percent=Decimal(value)).full_clean()
+
+    def test_brand_pricing_catalog_sort_cart_and_order(self):
+        from .models import Brand, B2BSettings, B2BBrandPricing, B2BOfferItem, B2BSubmission
+        from django.core.exceptions import ValidationError
+        settings = B2BSettings.objects.create()
+        brand = Brand.objects.create(naziv='Poseban brend')
+        self.product.brend = brand
+        self.product.save()
+        rule = B2BBrandPricing.objects.create(settings=settings, brand=brand, divisor=Decimal('1.5'))
+        other = Product.objects.create(naziv='Standardni brend', cijena=Decimal('153.387'), kategorija=self.child)
+        WarehouseStock.objects.create(product=other, location=self.location, kolicina=5)
+        self.login()
+        response = self.client.get('/veleprodaja', {'sort': 'price'})
+        rows = response.context['rows']
+        self.assertEqual(rows[0]['product'], self.product)
+        self.assertEqual(rows[0]['original_netto'], Decimal('92.00'))
+        self.assertEqual(rows[0]['netto'], Decimal('92.00'))
+        self.assertEqual(rows[1]['netto'], Decimal('95.00'))
+        B2BOfferItem.objects.create(settings=settings, product=self.product, discount_percent=15)
+        response = self.client.get('/veleprodaja', {'ponuda': 'akcijska'})
+        self.assertEqual(response.context['rows'][0]['original_netto'], Decimal('92.00'))
+        self.assertEqual(response.context['rows'][0]['netto'], Decimal('78.20'))
+        self.client.post(f'/veleprodaja/korpa/{self.product.pk}/', {'quantity': 2})
+        response = self.client.get('/veleprodaja/korpa/')
+        self.assertEqual(response.context['total'], Decimal('156.40'))
+        self.assertEqual(response.context['gross_total'], Decimal('182.98'))
+        response = self.client.get('/veleprodaja/zavrsi/')
+        self.assertEqual(response.context['gross_total'], Decimal('182.98'))
+        token = response.context['form']['token'].value()
+        self.client.post('/veleprodaja/zavrsi/', {'token': token, 'payment': 'ziralno'})
+        submission = B2BSubmission.objects.get()
+        self.assertEqual(submission.netto_total, Decimal('156.40'))
+        self.assertEqual(submission.order.ukupno, Decimal('182.98'))
+        # Print must keep order-time terms even after admin rules change.
+        B2BOfferItem.objects.filter(product=self.product).delete()
+        rule.divisor = Decimal('2')
+        rule.save()
+        item = submission.order.stavke.get()
+        item.kolicina_pokupljeno = 1
+        item.save(update_fields=['kolicina_pokupljeno'])
+        admin_user = get_user_model().objects.create_superuser('print-admin', 'print@example.com', 'secret-723!')
+        self.client.force_login(admin_user)
+        from django.urls import reverse
+        printed = self.client.get(reverse('staff_magacin_narudzbe_stampa_kolicine'), {'b': submission.order.broj})
+        self.assertContains(printed, 'Posebna VPC cijena — Poseban brend')
+        self.assertContains(printed, 'MPC / 1.5 / 1,17 = 92.00 KM netto')
+        self.assertContains(printed, 'Akcijski popust −15%')
+        self.assertContains(printed, '92.00 → 78.20 KM netto')
+        self.assertContains(printed, 'ukupno 13.80 KM')
+        self.assertContains(printed, 'VPC netto za fakturu: 78.20 KM/kom.')
+        for invalid in [Decimal('0'), Decimal('-1')]:
+            rule.divisor = invalid
+            with self.assertRaises(ValidationError):
+                rule.full_clean()
+        with self.assertRaises(ValidationError):
+            B2BBrandPricing(settings=settings, brand=brand, divisor=2).full_clean()
+
+    def test_invoice_notes_regular_discount_and_no_discount(self):
+        from .b2b_pricing import invoice_price_notes
+        from .models import OrderItem
+        item = OrderItem(cijena=Decimal('80'), bazna_cijena=Decimal('100'), kolicina=3)
+        notes = invoice_price_notes(item, 2)
+        self.assertIn('−20%', notes[0])
+        self.assertIn('ukupno 40.00 KM', notes[0])
+        item.bazna_cijena = Decimal('80')
+        self.assertEqual(invoice_price_notes(item, 2), [])
+
+    def test_manual_wholesale_uses_b2b_netto_and_tax(self):
+        from django.urls import reverse
+        from .models import Brand, B2BSettings, B2BBrandPricing, B2BOfferItem, WarehouseCustomer, Order
+        from django.utils import timezone
+        self.product.magacin_sync_at = timezone.now()
+        brand = Brand.objects.create(naziv='Ručni VP brend')
+        self.product.brend = brand
+        self.product.save()
+        settings = B2BSettings.objects.create()
+        B2BBrandPricing.objects.create(settings=settings, brand=brand, divisor=Decimal('1.5'))
+        B2BOfferItem.objects.create(settings=settings, product=self.product, discount_percent=15)
+        staff = get_user_model().objects.create_superuser('manual-vp-admin', 'vp@example.com', 'secret-723!')
+        self.client.force_login(staff)
+        customer = WarehouseCustomer.objects.create(ime_prezime='VP firma', telefon='061555123', vp_kupac=True)
+        lookup = self.client.get(reverse('staff_magacin_artikli_lookup'), {'q': self.product.naziv, 'bez_zalihe': '1'})
+        payload = next(p for p in lookup.json()['results'] if p['id'] == self.product.pk)
+        self.assertEqual(payload['vpc_netto'], '78.20')
+        listing = self.client.get(reverse('staff_magacin_artikli'), {'pretraga': self.product.naziv, 'rezultati': '1', 'bez_zalihe': '1'})
+        self.assertContains(listing, 'VPC netto: 78.20')
+        detail = self.client.get(reverse('staff_magacin_artikal', args=[self.product.pk]))
+        self.assertEqual(detail.context['vpc'], Decimal('78.20'))
+        self.assertContains(detail, 'VPC netto')
+        url = reverse('staff_magacin_narudzba_nova')
+        data = {'customer_id': customer.pk, 'ime_prezime': customer.ime_prezime,
+                'telefon': customer.telefon, 'product_id': [self.product.pk], 'variation_id': [''],
+                'kolicina': ['2'], 'mp_ok': ['0'], 'placanje': 'ziralno', 'action': 'sacuvaj'}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        order = Order.objects.get(telefon=customer.telefon)
+        self.assertEqual(order.stavke.get().cijena, Decimal('91.49'))
+        self.assertEqual(order.ukupno, Decimal('182.98'))
+        self.assertEqual(order.dostava, Decimal('0'))
+        snapshot = order.stavke.get().b2b_pricing_snapshot
+        self.assertEqual(snapshot['netto'], '78.20')
+        self.assertEqual(snapshot['original_netto'], '92.00')
+        edit = self.client.get(url, {'broj': order.broj})
+        self.assertContains(edit, 'data-vpc-netto="78.20"')
+        self.assertContains(edit, 'PDV 17%:')
+        response = self.client.post(url, {**data, 'order_broj': order.broj, 'kolicina': ['3']})
+        self.assertEqual(response.status_code, 302)
+        order.refresh_from_db()
+        self.assertEqual(order.ukupno, Decimal('274.47'))
+        printed = self.client.get(reverse('staff_magacin_narudzbe_stampa_kolicine'), {'b': order.broj})
+        self.assertContains(printed, 'Posebna VPC cijena — Ručni VP brend')
+        self.assertContains(printed, 'Akcijski popust −15%')
+
+    def test_manual_wholesale_variation_price_from_brand(self):
+        from django.urls import reverse
+        from django.utils import timezone
+        from .models import Brand, B2BSettings, B2BBrandPricing, Order
+        brand = Brand.objects.create(naziv='VP varijacije')
+        self.product.brend = brand
+        self.product.magacin_sync_at = timezone.now()
+        self.product.save()
+        settings = B2BSettings.objects.create()
+        B2BBrandPricing.objects.create(settings=settings, brand=brand, divisor=Decimal('1.5'))
+        variant = ProductVariation.objects.create(artikal=self.product, naziv='Veća', cijena=Decimal('322.92'))
+        WarehouseStock.objects.create(product=self.product, variation=variant, location=self.location, kolicina=5)
+        staff = get_user_model().objects.create_superuser('variant-vp-admin', 'v@example.com', 'secret-723!')
+        self.client.force_login(staff)
+        lookup = self.client.get(reverse('staff_magacin_artikli_lookup'), {'q': self.product.naziv, 'bez_zalihe': '1'})
+        self.assertEqual(lookup.json()['results'][0]['varijacije'][0]['vpc_netto'], '184.00')
+        response = self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'VP Varijacije', 'telefon': '061777123', 'vp_kupac': '1',
+            'product_id': [self.product.pk], 'variation_id': [variant.pk],
+            'kolicina': ['2'], 'mp_ok': ['0'], 'placanje': 'gotovina', 'action': 'sacuvaj',
+        })
+        self.assertEqual(response.status_code, 302)
+        order = Order.objects.get(telefon='061777123')
+        self.assertEqual(order.ukupno, Decimal('430.56'))
+        self.assertEqual(order.stavke.get().b2b_pricing_snapshot['netto'], '184.00')

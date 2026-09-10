@@ -168,6 +168,7 @@
     <style id="ai-dwell-theme">:root{ {{ dwell_ui.css_vars }} }</style>
     {% endif %}
     <link rel="stylesheet" href="{% static 'css/touch-navigation.css' %}?v=20260909">
+    <link rel="stylesheet" href="{% static 'css/wholesale-nav.css' %}?v=20260909-2">
     {% block extra_css %}{% endblock %}
 
     {% if meta_pixel_id %}
@@ -493,6 +494,8 @@
                     <div class="mobile-nav-subview-body" id="mobileNavSubBody"></div>
                 </div>
 
+                <span class="nav-wholesale-prompt">Želite naše usluge veleprodaje? Kliknite --&gt;</span>
+                <a href="{% url 'b2b_catalog' %}" class="nav-link-veleprodaja">VELEPRODAJA</a>
             </nav>
 
             {# Plutajuća dugmad Akcija/Noviteti uklonjena — sekcije su na početnoj #}

@@ -170,6 +170,9 @@ urlpatterns = [
     path('nalog/aktivne-korpe/', views.staff_active_carts, name='staff_active_carts'),
     path('nalog/magacin/', views_magacin.magacin_home, name='staff_magacin'),
     path('nalog/magacin/pregled/', views_magacin.magacin_pregled, name='staff_magacin_pregled'),
+    path('nalog/magacin/barkod-provjera/', views_magacin.magacin_barkod_provjera, name='staff_magacin_barkod_provjera'),
+    path('nalog/magacin/dupli-barkodovi/<int:pk>/obrisi/', views_magacin.magacin_dupli_barkod_obrisi, name='staff_magacin_dupli_barkod_obrisi'),
+    path('nalog/magacin/dupli-barkodovi/', views_magacin.magacin_dupli_barkodovi, name='staff_magacin_dupli_barkodovi'),
     path('nalog/magacin/artikli/', views_magacin.magacin_artikli, name='staff_magacin_artikli'),
     path('nalog/magacin/artikli/brzi-unos/', views_magacin.magacin_brzi_unos, name='staff_magacin_brzi_unos'),
     path(

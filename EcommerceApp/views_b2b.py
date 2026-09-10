@@ -9,13 +9,14 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.cache import cache
 from django.core.paginator import Paginator
-from django.db.models import Prefetch, Q, Exists, OuterRef, F, Value
-from django.db.models.functions import Coalesce
+from django.db.models import Prefetch, Q, Exists, OuterRef, F, Value, FloatField, Case, When
+from django.db.models.functions import Coalesce, Cast
 from django.shortcuts import redirect, render
 from django.utils.crypto import constant_time_compare, salted_hmac
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_POST
 
+from .b2b_pricing import discounts_for, net_price, brand_divisors, base_net
 from .magacin import ignored_location_q
 from .models import B2BAccount, B2BSettings, Brand, Category, Product, WarehouseLocation, WarehouseStock
 
@@ -130,8 +131,12 @@ def catalog(request):
         locations = list(WarehouseLocation.objects.filter(aktivan=True).exclude(ignored_location_q()))
         # Paginate actual displayed SKU rows, so sold-out variations cannot precede
         # available articles on a later page. Availability always outranks user sorting.
+        divisors = brand_divisors()
+        price_divisor = Case(*[When(brend_id=pk, then=Value(float(value))) for pk, value in divisors.items()],
+                             default=Value(1.38), output_field=FloatField())
         catalog_rows = products.annotate(b2b_variant_id=F('varijacije__pk'),
-            b2b_price=Coalesce('varijacije__cijena', 'cijena'))
+            b2b_price=Cast(Coalesce('varijacije__cijena', 'cijena'), FloatField()) / price_divisor / Value(1.17) *
+            (Value(100.0) - Cast(Coalesce('b2b_offer_items__discount_percent', Decimal('0')), FloatField())) / Value(100.0))
         stocks = WarehouseStock.objects.filter(product_id=OuterRef('pk'),
             variation_key=Coalesce(OuterRef('b2b_variant_id'), Value(0)),
             location__in=locations, kolicina__gt=0).filter(kolicina__gt=F('rezervisano'))
@@ -146,6 +151,7 @@ def catalog(request):
             'kategorija', 'brend').prefetch_related('varijacije', Prefetch(
                 'magacin_zalihe', queryset=WarehouseStock.objects.filter(location__in=locations)))
         product_map = {p.pk: p for p in page_products}
+        discounts = discounts_for(product_map)
         rows = []
         for catalog_row in page_rows:
             product = product_map[catalog_row['pk']]
@@ -160,7 +166,8 @@ def catalog(request):
             rows.append({'product': product, 'variation': variation,
                          'sku': variation.sifra if variation else product.sifra,
                          'image': (variation.slika if variation and variation.slika else product.prikazna_slika),
-                         'mpc': mpc, 'netto': netto(mpc), 'quantities': quantities,
+                         'mpc': mpc, 'original_netto': base_net(mpc, divisors.get(product.brend_id, Decimal('1.38'))), 'netto': net_price(product, variation, discounts, divisors),
+                         'discount_percent': discounts.get(product.pk, 0), 'quantities': quantities,
                          'available': sum(q['available'] for q in quantities)})
         params = request.GET.copy()
         params.pop('page', None)
@@ -257,6 +264,8 @@ def cart_view(request):
         aktivan=True, sakriven_do_stanja=False).filter(
         Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).prefetch_related('varijacije')
     product_map = {product.pk: product for product in products}
+    discounts = discounts_for(product_map)
+    divisors = brand_divisors()
     for key, quantity in cart.items():
         product_id, variation_id = map(int, key.split(':'))
         product = product_map.get(product_id)
@@ -265,7 +274,7 @@ def cart_view(request):
         if not product or (variation_id and not variation) or (not variation_id and variations):
             stale.append(key)
             continue
-        price = netto(variation.bazna_cijena if variation else product.cijena)
+        price = net_price(product, variation, discounts, divisors)
         subtotal = price * quantity
         total += subtotal
         available = available_stock(product, variation)
@@ -291,12 +300,14 @@ def cart_summary(request):
     total = Decimal('0.00')
     products = Product.objects.filter(pk__in=[k.split(':')[0] for k in cart], aktivan=True,
         sakriven_do_stanja=False).filter(Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).prefetch_related('varijacije')
+    discounts = discounts_for(p.pk for p in products)
+    divisors = brand_divisors()
     for product in products:
         variations = list(product.varijacije.all())
         for variation in variations or [None]:
             quantity = cart.get(f'{product.pk}:{variation.pk if variation else 0}', 0)
             count += quantity
-            total += netto(variation.bazna_cijena if variation else product.cijena) * quantity
+            total += net_price(product, variation, discounts, divisors) * quantity
     return {'b2b_cart_count': count, 'b2b_cart_total': total}
 
 
@@ -345,10 +356,12 @@ def checkout(request):
     from .b2b_orders import gross
     cart = request.session.get('b2b_cart', {})
     total = Decimal('0.00')
+    discounts = discounts_for(k.split(':')[0] for k in cart)
+    divisors = brand_divisors()
     for product in Product.objects.filter(pk__in=[k.split(':')[0] for k in cart]).prefetch_related('varijacije'):
         for variation in list(product.varijacije.all()) or [None]:
             qty = cart.get(f'{product.pk}:{variation.pk if variation else 0}', 0)
-            total += gross(netto(variation.bazna_cijena if variation else product.cijena)) * qty
+            total += gross(net_price(product, variation, discounts, divisors)) * qty
     response = render(request, 'b2b/checkout.html', {'account': account, 'form': form,
         **summary, 'gross_total': total, 'tax_total': total - summary['b2b_cart_total']})
     response['X-Robots-Tag'] = 'noindex, nofollow'

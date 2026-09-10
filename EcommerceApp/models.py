@@ -3,6 +3,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
@@ -3278,7 +3279,17 @@ class Product(models.Model):
         verbose_name_plural = 'Artikli'
         ordering = ['-kreiran']
 
+    def clean(self):
+        super().clean()
+        from .barcodes import validate_barcode
+        validate_barcode(self, self.barkod)
+
     def save(self, *args, **kwargs):
+        from .barcodes import barcode_save_guard
+        with barcode_save_guard(self, kwargs.get('update_fields')):
+            return self._save_product(*args, **kwargs)
+
+    def _save_product(self, *args, **kwargs):
         if not self.slug:
             self.slug = _build_unique_slug(
                 Product,
@@ -4432,6 +4443,7 @@ class OrderItem(models.Model):
         verbose_name='Regularna cijena (jed.)',
         help_text='Cijena prije sniženja na ovoj stavci (ako postoji popust).',
     )
+    b2b_pricing_snapshot = models.JSONField(default=dict, blank=True, editable=False)
     popust_opis = models.CharField(
         max_length=300,
         blank=True,
@@ -6528,7 +6540,7 @@ class B2BSettings(models.Model):
 
     noviteti = models.ManyToManyField(Product, blank=True, related_name='b2b_noviteti_settings',
         verbose_name='Noviteti', help_text='Pretražite i dodajte proizvoljan broj artikala u B2B novitete.')
-    akcijska_ponuda = models.ManyToManyField(Product, blank=True, related_name='b2b_akcija_settings',
+    akcijska_ponuda = models.ManyToManyField(Product, through='B2BOfferItem', blank=True, related_name='b2b_akcija_settings',
         verbose_name='Akcijska ponuda', help_text='Pretražite i dodajte proizvoljan broj artikala u B2B akcijsku ponudu.')
 
     class Meta:
@@ -6584,3 +6596,66 @@ class B2BBanner(models.Model):
         ordering = ['position', 'pk']
         verbose_name = 'B2B banner'
         verbose_name_plural = 'Dodatni banneri za slider'
+
+
+class B2BOfferItem(models.Model):
+    settings = models.ForeignKey(B2BSettings, on_delete=models.CASCADE, related_name='offer_items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='b2b_offer_items', verbose_name='Artikal')
+    discount_percent = models.DecimalField('Sniženje (%)', max_digits=5, decimal_places=2, default=Decimal('0'),
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text='Popust na B2B VPC netto cijenu. 0 = bez dodatnog sniženja.')
+
+    class Meta:
+        verbose_name = 'Akcijski artikal'
+        verbose_name_plural = 'Akcijska ponuda — artikli i sniženje'
+        constraints = [
+            models.UniqueConstraint(fields=['settings', 'product'], name='unique_b2b_offer_product'),
+            models.CheckConstraint(condition=models.Q(discount_percent__gte=0, discount_percent__lte=100), name='b2b_discount_range'),
+        ]
+
+    def __str__(self):
+        return f'{self.product} — {self.discount_percent}%'
+
+
+class B2BBrandPricing(models.Model):
+    settings = models.ForeignKey(B2BSettings, on_delete=models.CASCADE, related_name='brand_prices')
+    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, verbose_name='Brend')
+    divisor = models.DecimalField('Djelilac MPC cijene', max_digits=8, decimal_places=4,
+        default=Decimal('1.38'), validators=[MinValueValidator(Decimal('0.0001'))],
+        help_text='VPC netto = MPC sa sajta / ovaj broj / 1,17. Primjer: 1,38. PDV djelilac 1,17 je fiksan.')
+
+    class Meta:
+        verbose_name = 'VPC netto cijena po brendu'
+        verbose_name_plural = 'VPC netto cijene — po brendovima'
+        constraints = [
+            models.UniqueConstraint(fields=['settings', 'brand'], name='unique_b2b_brand_pricing'),
+            models.CheckConstraint(condition=models.Q(divisor__gt=0), name='b2b_brand_divisor_positive'),
+        ]
+
+    def __str__(self):
+        return f'{self.brand}: MPC / {self.divisor} / 1,17'
+
+
+class BarcodeWriteLock(models.Model):
+    code = models.CharField(max_length=BARKOD_MAX_LENGTH, primary_key=True)
+
+
+class BarcodeConflict(models.Model):
+    key = models.CharField(max_length=64, unique=True)
+    barcode = models.CharField(max_length=BARKOD_MAX_LENGTH, db_index=True)
+    product = models.ForeignKey(Product, null=True, blank=True, on_delete=models.SET_NULL, related_name='barcode_conflicts')
+    other_product = models.ForeignKey(Product, null=True, blank=True, on_delete=models.SET_NULL, related_name='barcode_matches')
+    product_name = models.CharField(max_length=200)
+    product_sku = models.CharField(max_length=SIFRA_MAX_LENGTH, blank=True)
+    other_name = models.CharField(max_length=200)
+    other_sku = models.CharField(max_length=SIFRA_MAX_LENGTH, blank=True)
+    existing_duplicate = models.BooleanField(default=False)
+    attempts = models.PositiveIntegerField(default=1)
+    reported_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-last_seen', '-pk']
+        verbose_name = 'Dupli barkod'
+        verbose_name_plural = 'Dupli barkodovi'

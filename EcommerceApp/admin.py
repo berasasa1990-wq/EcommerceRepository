@@ -2361,6 +2361,11 @@ class ProductAdmin(admin.ModelAdmin):
             request, queryset, search_term,
         )
         model_name = (request.GET.get('model_name') or '').lower()
+        if model_name in ('b2bsettings', 'b2bofferitem'):
+            excluded = [int(value) for value in request.GET.get('b2b_exclude', '').split(',') if value.isdecimal()]
+            if excluded:
+                queryset = queryset.exclude(pk__in=excluded)
+
         if model_name in (
             'advisorbeginnersetitem',
             'productdwellitem',
@@ -2382,8 +2387,16 @@ class ProductAdmin(admin.ModelAdmin):
     )
     inlines = [ProductVariationInline, ProductImageInline]
 
+    class Media:
+        js = ('js/barcode-check.js',)
+
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
+        if 'barkod' in form.base_fields:
+            form.base_fields['barkod'].widget.attrs.update({
+                'data-barcode-check': reverse('staff_magacin_barkod_provjera'),
+                'data-product-id': str(obj.pk) if obj else '',
+            })
         if obj:
             # Postavi placeholder-e da korisnik vidi šta će se koristiti ako ostavi prazno
             if 'meta_title' in form.base_fields:
@@ -4078,7 +4091,7 @@ class B2BAccountAdmin(admin.ModelAdmin):
     search_fields = ['username', 'company']
 
 
-from .models import B2BSettings, B2BCategoryIcon, B2BBanner
+from .models import B2BSettings, B2BCategoryIcon, B2BBanner, B2BOfferItem, B2BBrandPricing
 
 
 class B2BCategoryIconInline(admin.TabularInline):
@@ -4093,16 +4106,33 @@ class B2BBannerInline(admin.TabularInline):
     extra = 1
 
 
+class B2BOfferItemInline(admin.TabularInline):
+    model = B2BOfferItem
+    fields = ['product', 'discount_percent']
+    autocomplete_fields = ['product']
+    extra = 1
+
+
+class B2BBrandPricingInline(admin.TabularInline):
+    model = B2BBrandPricing
+    fields = ['brand', 'divisor']
+    autocomplete_fields = ['brand']
+    extra = 1
+
+
 @admin.register(B2BSettings)
 class B2BSettingsAdmin(admin.ModelAdmin):
-    autocomplete_fields = ['noviteti', 'akcijska_ponuda']
+    autocomplete_fields = ['noviteti']
     fieldsets = (
         ('Noviteti', {'fields': ['noviteti']}),
-        ('Akcijska ponuda', {'fields': ['akcijska_ponuda']}),
         ('Banner', {'fields': ['banner', 'banner_alt', 'banner_link', 'banner_preview']}),
     )
     readonly_fields = ['banner_preview']
-    inlines = [B2BBannerInline, B2BCategoryIconInline]
+    inlines = [B2BBrandPricingInline, B2BOfferItemInline, B2BBannerInline, B2BCategoryIconInline]
+
+    class Media:
+        css = {'all': ('admin/css/b2b-settings.css',)}
+        js = ('admin/js/b2b-settings.js',)
 
     def has_add_permission(self, request):
         return super().has_add_permission(request) and not B2BSettings.objects.exists()

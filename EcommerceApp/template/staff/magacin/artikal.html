@@ -58,7 +58,7 @@
         <h1>{{ product.naziv }}</h1>
         <p class="mg-phone-price">
             {{ mpc }} KM{% if variation and variation.na_akciji %} <s>{{ variation.cijena }} KM</s>{% elif product.na_akciji %} <s>{{ product.cijena }} KM</s>{% endif %}
-            <span class="mg-phone-vpc">Vpc {{ vpc }} KM</span>
+            <span class="mg-phone-vpc">VPC netto {{ vpc|floatformat:2 }} KM</span>
         </p>
         {% if product.barkod or product.sifra %}
         <p class="mg-phone-barkod">
@@ -132,8 +132,8 @@
                 <dd class="mg-meta-price">
                     {{ mpc }} KM{% if variation and variation.na_akciji %} <s>{{ variation.cijena }} KM</s>{% elif product.na_akciji %} <s>{{ product.cijena }} KM</s>{% endif %}
                 </dd>
-                <dt class="item-main-vpc-label">Vpc</dt>
-                <dd class="item-main-vpc">{{ vpc }} KM</dd>
+                <dt class="item-main-vpc-label">VPC netto</dt>
+                <dd class="item-main-vpc">{{ vpc|floatformat:2 }} KM</dd>
             </dl>
         </div>
         <div class="item-mobile-summary">
@@ -147,8 +147,8 @@
                 {% if variation and variation.na_akciji %}<s>{{ variation.cijena }} KM</s>{% elif product.na_akciji %}<s>{{ product.cijena }} KM</s>{% endif %}
             </div>
             <div class="item-mobile-vpc">
-                <span>VPC</span>
-                <strong>{{ vpc }} KM</strong>
+                <span>VPC netto</span>
+                <strong>{{ vpc|floatformat:2 }} KM</strong>
             </div>
         </div>
         <div class="mg-hero-aside">
@@ -298,7 +298,7 @@
                 </tr>
                 <tr>
                     <td data-label="Tip cijene">Vpc</td>
-                    <td data-label="Iznos" class="num">{{ vpc }} KM</td>
+                    <td data-label="Iznos" class="num">{{ vpc|floatformat:2 }} KM</td>
                 </tr>
                 <tr>
                     <td data-label="Tip cijene">Akcijska cijena</td>

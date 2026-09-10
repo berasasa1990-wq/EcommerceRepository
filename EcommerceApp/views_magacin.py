@@ -1,5 +1,9 @@
 """Staff Magacin — lager artikala po lokacijama."""
 
+from .b2b_pricing import brand_divisors, discounts_for, net_price, price_snapshot
+from .b2b_orders import gross as b2b_gross
+from .barcodes import DuplicateBarcode, conflicting_products, record_conflicts
+
 import base64
 import hmac
 import json
@@ -74,7 +78,6 @@ from .magacin import (
     remove_item_from_order,
     drop_missing_pick_line,
     clear_pick_location_stock,
-    wipe_product_location_stock,
     _location_for_pick_label,
     order_is_editable,
     mark_order_packed,
@@ -713,6 +716,11 @@ def magacin_brzi_unos_aktivacija(request, product_id):
                 form_errors.append('Pakovanje: količina mora biti najmanje 2 komada.')
                 pack_value = None
 
+        if not form_errors:
+            try:
+                _check_barcode_input(request, product, form_data['barkod'])
+            except MagacinError as exc:
+                form_errors.append(str(exc))
         if not form_errors and cijena is not None:
             try:
                 tagovi = resolve_tags(form_data['tagovi'])
@@ -931,6 +939,10 @@ def magacin_artikli(request):
                 'dostupno': max(0, na_stanju - rezervisano),
             }
 
+    from django.db.models import prefetch_related_objects
+    prefetch_related_objects(page.object_list, 'varijacije')
+    divisors = brand_divisors()
+    discounts = discounts_for(product_ids)
     rows = []
     for product in page.object_list:
         totals = totals_by_product.get(product.pk) or {
@@ -938,7 +950,9 @@ def magacin_artikli(request):
             'rezervisano': 0,
             'dostupno': 0,
         }
-        rows.append({'product': product, **totals, 'locations': []})
+        prices = [net_price(product, variant, discounts, divisors) for variant in list(product.varijacije.all()) or [None]]
+        rows.append({'product': product, **totals, 'locations': [],
+                     'vpc_netto': min(prices), 'vpc_netto_max': max(prices)})
     locs_by_product = {}
     if product_ids:
         for stock in (
@@ -1163,7 +1177,8 @@ def magacin_artikal(request, pk):
         })
 
     price_history, price_chart = _product_uvoz_price_history(product)
-    vpc, mpc = vp_cijena(product, variation)
+    mpc = variation.prikazna_cijena if variation else product.prikazna_cijena
+    vpc = net_price(product, variation, discounts_for([product.pk]), brand_divisors())
 
     context = _magacin_context(request, section='artikli', page_title=f'{product.naziv} — Magacin', hide_top_search=True)
     context.update({
@@ -2072,6 +2087,16 @@ def _parse_optional_date(raw):
         raise MagacinError('Datum akcije nije validan.')
 
 
+def _check_barcode_input(request, product, barcode):
+    from .barcodes import DuplicateBarcode, validate_barcode
+    try:
+        validate_barcode(product, barcode, request.user)
+    except DuplicateBarcode as exc:
+        message = exc.message_dict['barkod'][0]
+        request.duplicate_barcode_message = message
+        raise MagacinError(message)
+
+
 def _save_product_edit(request, product):
     from .odoo_import import _sifra_zauzeta
 
@@ -2183,6 +2208,7 @@ def magacin_artikal_izmjena(request, pk):
     )
     if request.method == 'POST':
         try:
+            _check_barcode_input(request, product, (request.POST.get('barkod') or '').strip()[:BARKOD_MAX_LENGTH])
             with transaction.atomic():
                 _save_product_edit(request, product)
             url = reverse('staff_magacin_artikal', args=[product.pk])
@@ -2190,6 +2216,11 @@ def magacin_artikal_izmjena(request, pk):
             if q:
                 url = f'{url}?{urlencode({"pretraga": q})}'
             return redirect(url)
+        except DuplicateBarcode as exc:
+            record_conflicts(product, product.barkod, conflicting_products(product, product.barkod), request.user)
+            request.duplicate_barcode_message = exc.message_dict['barkod'][0]
+            messages.error(request, request.duplicate_barcode_message)
+            product.refresh_from_db()
         except MagacinError as exc:
             messages.error(request, str(exc))
     meta = getattr(product, 'magacin_meta', None)
@@ -3293,6 +3324,7 @@ def magacin_narudzbe_stampa(request):
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
 def magacin_narudzbe_stampa_kolicine(request):
+    from .b2b_pricing import invoice_price_notes
     brojevi = [b.strip() for b in request.GET.getlist('b') if (b or '').strip()]
     brojevi = list(dict.fromkeys(brojevi))[:30]
     if not brojevi:
@@ -3326,6 +3358,7 @@ def magacin_narudzbe_stampa_kolicine(request):
                 'naziv': item.puni_naziv,
                 'sifra': sifra,
                 'kolicina': qty,
+                'price_notes': invoice_price_notes(item, qty),
             })
         print_jobs.append({
             'order': order,
@@ -3685,8 +3718,9 @@ def magacin_artikli_lookup(request):
         limit = 30
     limit = max(1, min(limit, 200))
     products, exact = search_products_for_lookup(query, limit=limit, include_zero=include_zero)
-    if exact:
-        products = list(products)
+    products = list(products)
+    divisors = brand_divisors()
+    discounts = discounts_for(p.pk for p in products)
     stock_map = lookup_stock_payload(products)
     results = []
     for product in products:
@@ -3702,6 +3736,7 @@ def magacin_artikli_lookup(request):
             'sifra': product.sifra or '',
             'barkod': product.barkod or '',
             'cijena': str(product.prikazna_cijena),
+            'vpc_netto': str(net_price(product, None, discounts, divisors)),
             'na_stanju': totals['na_stanju'],
             'dostupno': totals['dostupno'],
             'varijacije': [
@@ -3710,6 +3745,7 @@ def magacin_artikli_lookup(request):
                     'naziv': var.naziv,
                     'sifra': var.sifra or '',
                     'cijena': str(var.prikazna_cijena),
+                    'vpc_netto': str(net_price(product, var, discounts, divisors)),
                     'na_stanju': (var_stock.get(var.pk) or {}).get('dostupno', 0),
                 }
                 for var in product.varijacije.all()
@@ -3965,6 +4001,8 @@ def magacin_narudzba_bulk(request):
     except Exception:
         logger.exception('Bulk unos na ručnoj narudžbi nije uspio')
         return JsonResponse({'ok': False, 'error': 'Bulk unos nije uspio.'}, status=500)
+    divisors = brand_divisors()
+    discounts = discounts_for(row['product'].pk for row in matched)
     added = []
     mp_names = []
     for row in matched:
@@ -3978,6 +4016,7 @@ def magacin_narudzba_bulk(request):
             'naziv': product.naziv,
             'sifra': product.sifra or '',
             'cijena': str(product.prikazna_cijena),
+            'vpc_netto': str(net_price(product, None, discounts, divisors)),
             'dostupno': available,
         }
         var_payload = None
@@ -3987,6 +4026,7 @@ def magacin_narudzba_bulk(request):
                 'naziv': variation.naziv,
                 'sifra': variation.sifra or '',
                 'cijena': str(variation.prikazna_cijena),
+                'vpc_netto': str(net_price(product, variation, discounts, divisors)),
                 'na_stanju': available,
             }
         added.append({
@@ -4126,6 +4166,8 @@ def _editable_order_from_request(request):
 
 
 def _posted_display_lines(request):
+    divisors = brand_divisors()
+    discounts = discounts_for(pid for pid in request.POST.getlist('product_id') if str(pid).isdigit())
     lines = []
     product_ids = request.POST.getlist('product_id')
     variation_ids = request.POST.getlist('variation_id')
@@ -4179,6 +4221,7 @@ def _posted_display_lines(request):
             'qty': qty,
             'mp_ok': (mp_flags[index] if index < len(mp_flags) else '') == '1',
             'cijena': cijena,
+            'vpc_netto': net_price(product, variation, discounts, divisors),
             'dostupno': available,
             'rezervni': False,
             'naziv': product.naziv,
@@ -4198,6 +4241,8 @@ def _held_qty_on_order(order, product, variation):
 
 
 def _order_display_lines(order):
+    divisors = brand_divisors()
+    discounts = discounts_for(order.stavke.values_list('artikal_id', flat=True))
     lines = []
     for item in order.stavke.filter(ledger_excess_line__isnull=True, ledger_missing_line__isnull=True).select_related('artikal', 'varijacija'):
         product = item.artikal
@@ -4212,7 +4257,8 @@ def _order_display_lines(order):
             'variation': variation,
             'qty': item.kolicina,
             'mp_ok': 'Nije popisan' in (order.napomena or ''),
-            'cijena': item.cijena,
+            'cijena': (item.cijena / Decimal('1.17')).quantize(Decimal('0.01')) if item.rezervni_dio and order.napomena.startswith('VP narudžba') else item.cijena,
+            'vpc_netto': net_price(product, variation, discounts, divisors) if product else 0,
             'dostupno': available,
             'rezervni': bool(getattr(item, 'rezervni_dio', False)),
             'naziv': item.naziv or (product.naziv if product else 'Rezervni dio'),
@@ -4255,6 +4301,8 @@ def _create_manual_order(request, *, existing=None):
     if not product_ids and not has_pending_excess and not has_pending_missing and not (existing and existing.stavke.filter(Q(ledger_excess_line__isnull=False) | Q(ledger_missing_line__isnull=False)).exists()):
         raise MagacinError('Dodaj barem jedan artikal.')
 
+    divisors = brand_divisors() if vp_kupac else {}
+    discounts = discounts_for(pid for pid in product_ids if str(pid).isdigit()) if vp_kupac else {}
     lines = []
     for index, raw_pid in enumerate(product_ids):
         qty = _parse_qty(kolicine[index] if index < len(kolicine) else 1)
@@ -4273,7 +4321,7 @@ def _create_manual_order(request, *, existing=None):
             cijena = _parse_money(spare_prices[index] if index < len(spare_prices) else '')
             if cijena is None or cijena < 0:
                 raise MagacinError('Unesi naplatu za rezervni dio.')
-            cijena = cijena.quantize(Decimal('0.01'))
+            cijena = b2b_gross(cijena) if vp_kupac else cijena.quantize(Decimal('0.01'))
             mp_ok = (mp_flags[index] if index < len(mp_flags) else '') == '1'
             available = display_stock_totals(spare_product)['dostupno'] + _held_qty_on_order(
                 existing, spare_product, None,
@@ -4316,8 +4364,9 @@ def _create_manual_order(request, *, existing=None):
                 f'„{product.naziv}” nema dostupnog artikla ({available}). '
                 'Označi Nije popisan da ga dodaš, ili makni stavku.'
             )
-        cijena = vp_cijena(product, variation)[0] if vp_kupac else (variation.prikazna_cijena if variation else product.prikazna_cijena)
-        bazna = variation.bazna_cijena if variation else product.bazna_cijena
+        snapshot = price_snapshot(product, variation, discounts, divisors) if vp_kupac else {}
+        cijena = b2b_gross(Decimal(snapshot['netto'])) if vp_kupac else (variation.prikazna_cijena if variation else product.prikazna_cijena)
+        bazna = b2b_gross(Decimal(snapshot['original_netto'])) if vp_kupac else (variation.bazna_cijena if variation else product.bazna_cijena)
         lines.append({
             'product': product,
             'variation': variation,
@@ -4325,6 +4374,7 @@ def _create_manual_order(request, *, existing=None):
             'mp_ok': mp_ok,
             'cijena': cijena,
             'bazna': bazna,
+            'b2b_pricing_snapshot': snapshot,
             'shortfall': max(0, qty - available),
             'rezervni': False,
             'naziv': product.naziv,
@@ -4659,7 +4709,8 @@ def _save_manual_order(
             item = kept_items[index]
             item.cijena = line['cijena']
             item.bazna_cijena = line['bazna']
-            item.save(update_fields=['cijena', 'bazna_cijena'])
+            item.b2b_pricing_snapshot = line.get('b2b_pricing_snapshot', {})
+            item.save(update_fields=['cijena', 'bazna_cijena', 'b2b_pricing_snapshot'])
             # Existing holds and picking keys still refer to this same item.
             if reserve_qty:
                 leftover = reserve_for_order(order, product, reserve_qty, variation=variation,
@@ -4706,6 +4757,7 @@ def _save_manual_order(
             sifra=((variation.sifra if variation and variation.sifra else product.sifra) or '')[:200],
             cijena=line['cijena'],
             bazna_cijena=line['bazna'],
+            b2b_pricing_snapshot=line.get('b2b_pricing_snapshot', {}),
             kolicina=line['qty'],
         )
         leftover = reserve_for_order(
@@ -5868,6 +5920,13 @@ def magacin_pakuj_detail(request, broj):
                 messages.error(request, 'Narudžba se ne može mijenjati.')
                 return redirect('staff_magacin_pakuj_detail', broj=order.broj)
             return _pakuj_edit_order(request, order)
+        if prenos_mp and (action in {'pick_nema', 'pick_short'} or
+                          (request.POST.get('ocisti_lokaciju') or '').strip() == '1'):
+            message = 'Za čišćenje koristi dugme Očisti lokaciju i unesi lozinku Admin.'
+            if _pakuj_is_ajax(request):
+                return JsonResponse({'ok': False, 'error': message}, status=403)
+            messages.error(request, message)
+            return redirect('staff_magacin_pakuj_detail', broj=order.broj)
         if action == 'pick_nema':
             try:
                 item = get_object_or_404(order.stavke, pk=int(request.POST.get('item_id') or 0))
@@ -5931,7 +5990,9 @@ def magacin_pakuj_detail(request, broj):
                                  'cancelled': order.status == Order.Status.OTKAZANA,
                                  'message': message})
         if action == 'pick_ocisti':
-            if not _packing_reprint_password_ok(request.POST.get('lozinka')):
+            password = request.POST.get('lozinka') or ''
+            password_ok = hmac.compare_digest(password.encode(), b'Admin') if prenos_mp else _packing_reprint_password_ok(password)
+            if not password_ok:
                 if _pakuj_is_ajax(request):
                     return JsonResponse(
                         {'ok': False, 'error': 'Pogrešna šifra.'},
@@ -6052,37 +6113,7 @@ def magacin_pakuj_detail(request, broj):
                 return redirect('staff_magacin_pakuj')
             try:
                 validate_order_stock(order, user=request.user)
-                ocisti = (request.POST.get('ocisti_lokaciju') or '').strip() == '1'
-                if prenos_mp and ocisti:
-                    for raw in pick_lines or []:
-                        try:
-                            got = max(0, int(raw.get('got') or 0))
-                            need = max(0, int(raw.get('need') or 0))
-                        except (TypeError, ValueError):
-                            continue
-                        if got <= 0 or need <= 0 or got >= need:
-                            continue
-                        loc = _pick_line_loc(raw)
-                        try:
-                            item = order.stavke.filter(pk=int(raw.get('item_id') or 0)).first()
-                        except (TypeError, ValueError):
-                            item = None
-                        product = item.artikal if item else None
-                        location = _location_for_pick_label(loc) if loc else None
-                        if product is None or location is None:
-                            continue
-                        wipe_product_location_stock(
-                            product,
-                            location,
-                            variation=item.varijacija if item else None,
-                            user=request.user,
-                            napomena=f'Očisti lokaciju nakon prenosa u MP #{order.broj}',
-                        )
-                    messages.success(
-                        request,
-                        f'Prenos u MP #{order.broj} je validatovan. Lokacija je očišćena.',
-                    )
-                elif not is_prenos_mp_order(order):
+                if not is_prenos_mp_order(order):
                     messages.success(request, f'Narudžba #{order.broj} je validatovana.')
                 return redirect('staff_magacin_pakuj')
             except MagacinError as exc:
@@ -6537,6 +6568,9 @@ def magacin_uvoz_popis(request, pk):
                 barkod = (request.POST.get('barkod') or '').strip()
                 if not barkod or len(barkod) > BARKOD_MAX_LENGTH or not barkod.isprintable():
                     raise MagacinError(f'Unesi barkod do {BARKOD_MAX_LENGTH} znakova.')
+                candidate = uvoz.stavke.select_related('product').filter(pk=request.POST.get('stavka_id')).first()
+                if candidate and candidate.product_id and not (candidate.product.barkod or '').strip():
+                    _check_barcode_input(request, candidate.product, barkod)
                 with transaction.atomic():
                     locked_uvoz = Uvoz.objects.select_for_update().get(pk=uvoz.pk)
                     if locked_uvoz.popis_status == Uvoz.PopisStatus.ZAVRSEN:
@@ -6549,8 +6583,6 @@ def magacin_uvoz_popis(request, pk):
                     product = Product.objects.select_for_update().get(pk=stavka.product_id)
                     if (product.barkod or '').strip():
                         raise MagacinError('Artikal već ima barkod. Postojeći barkod nije promijenjen.')
-                    if Product.objects.filter(barkod__iexact=barkod).exclude(pk=product.pk).exists():
-                        raise MagacinError('Ovaj barkod već pripada drugom artiklu.')
                     product.barkod = barkod
                     product.barkod_normalized = barkod.casefold()[:80]
                     product.save(update_fields=['barkod', 'barkod_normalized'])
@@ -6592,6 +6624,12 @@ def magacin_uvoz_popis(request, pk):
                 return redirect('staff_magacin_uvoz')
             else:
                 raise MagacinError('Nepoznata akcija.')
+        except DuplicateBarcode as exc:
+            record_conflicts(product, barkod, conflicting_products(product, barkod), request.user)
+            message = exc.message_dict['barkod'][0]
+            if ajax:
+                return JsonResponse({'ok': False, 'error': message}, status=400)
+            messages.error(request, message)
         except MagacinError as exc:
             if ajax:
                 return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
@@ -8518,3 +8556,62 @@ def magacin_sync(request):
         request.session.modified = True
         messages.error(request, str(exc))
         return HttpResponseRedirect(next_url)
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+def magacin_dupli_barkodovi(request):
+    from .models import BarcodeConflict
+    from .barcodes import normalized_barcode
+    query = (request.GET.get('q') or '').strip()[:200]
+    records = BarcodeConflict.objects.select_related('product', 'other_product', 'reported_by')
+    if query:
+        records = records.filter(Q(barcode__icontains=query) | Q(product_name__icontains=query) |
+                                 Q(other_name__icontains=query) | Q(product_sku__icontains=query) |
+                                 Q(other_sku__icontains=query))
+    printing = request.GET.get('print') == '1'
+    page = list(records) if printing else Paginator(records, 30).get_page(request.GET.get('page'))
+    for record in page:
+        code = normalized_barcode(record.barcode)
+        record.current_duplicate = bool(record.product and record.other_product and
+            normalized_barcode(record.product.barkod) == code and
+            normalized_barcode(record.other_product.barkod) == code)
+    if printing:
+        return render(request, 'staff/magacin/dupli_barkodovi_stampa.html', {
+            'records': page, 'barcode_query': query, 'printed_at': timezone.now(),
+        })
+    context = _magacin_context(request, section='dupli_barkodovi', page_title='Dupli barkodovi — Magacin')
+    context.update({'page': page, 'barcode_query': query})
+    return render(request, 'staff/magacin/dupli_barkodovi.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+@require_POST
+def magacin_barkod_provjera(request):
+    from .barcodes import DuplicateBarcode, validate_barcode
+    pk = request.POST.get('product_id')
+    product = get_object_or_404(Product, pk=pk) if pk and pk.isdigit() else Product(
+        naziv=(request.POST.get('naziv') or 'Novi artikal')[:200],
+        sifra=(request.POST.get('sifra') or '')[:SIFRA_MAX_LENGTH])
+    barcode = (request.POST.get('barkod') or '').strip()
+    if len(barcode) > BARKOD_MAX_LENGTH:
+        return JsonResponse({'ok': False, 'message': f'Barkod može imati najviše {BARKOD_MAX_LENGTH} znakova.'}, status=400)
+    try:
+        validate_barcode(product, barcode, request.user)
+    except DuplicateBarcode as exc:
+        return JsonResponse({'ok': False, 'duplicate': True, 'message': exc.message_dict['barkod'][0]}, status=409)
+    return JsonResponse({'ok': True})
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+@require_POST
+def magacin_dupli_barkod_obrisi(request, pk):
+    from .models import BarcodeConflict
+    record = get_object_or_404(BarcodeConflict, pk=pk)
+    record.delete()
+    messages.success(request, 'Zapis duplog barkoda je obrisan.')
+    params = {'q': (request.POST.get('q') or '')[:200],
+              'page': (request.POST.get('page') or '1')[:10]}
+    return redirect(reverse('staff_magacin_dupli_barkodovi') + '?' + urlencode(params))

@@ -4,6 +4,7 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'css/staff-artikli-reference.css' %}?v=20260907-search-inset">
+<style>.article-vpc-netto{display:block;font-size:12px;font-weight:500;line-height:1.4;margin-top:4px;white-space:normal}</style>
 {% endblock %}
 
 {% block magacin_before_search %}
@@ -59,7 +60,7 @@
             <i class="is-empty">Nema zalihe</i>
             {% endif %}
         </span>
-        <span class="mg-mpc">{{ row.product.prikazna_cijena }} KM</span>
+        <span class="mg-mpc">{{ row.product.prikazna_cijena }} KM<small class="article-vpc-netto" title="Cijena samo za veleprodajne kupce">VPC netto: {{ row.vpc_netto|floatformat:2 }}{% if row.vpc_netto_max != row.vpc_netto %} – {{ row.vpc_netto_max|floatformat:2 }}{% endif %} KM</small></span>
     </a>
     {% empty %}
     <div class="mg-empty">

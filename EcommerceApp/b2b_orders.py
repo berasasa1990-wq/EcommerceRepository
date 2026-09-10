@@ -4,6 +4,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from .b2b_pricing import discounts_for, net_price, brand_divisors, price_snapshot
 from .models import (B2BAccount, B2BSubmission, Order, OrderItem, OrderStockHold,
                      Product, WarehouseStock, WarehouseMovement)
 from .magacin import (MagacinError, ignored_location_q, apply_movement,
@@ -16,7 +17,6 @@ def gross(net):
 
 @transaction.atomic
 def submit_order(account, cart, token, details):
-    from .views_b2b import netto
     account = B2BAccount.objects.select_for_update().get(pk=account.pk, is_active=True)
     existing = B2BSubmission.objects.filter(account=account, token=token).first()
     if existing:
@@ -26,6 +26,8 @@ def submit_order(account, cart, token, details):
     products = {p.pk: p for p in Product.objects.select_for_update().filter(
         pk__in=[k.split(':')[0] for k in cart], aktivan=True, sakriven_do_stanja=False
     ).filter(Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).order_by('pk').prefetch_related('varijacije')}
+    discounts = discounts_for(products)
+    divisors = brand_divisors()
     lines = []
     for key, quantity in cart.items():
         product_id, variation_id = map(int, key.split(':'))
@@ -38,7 +40,7 @@ def submit_order(account, cart, token, details):
             variation=variation, location__aktivan=True).exclude(ignored_location_q('location')).order_by('location_id', 'pk'))
         if sum(stock.dostupno for stock in stocks) < quantity:
             raise MagacinError(f'Nedovoljno dostupne količine: {product.naziv}.')
-        price = netto(variation.bazna_cijena if variation else product.cijena)
+        price = net_price(product, variation, discounts, divisors)
         lines.append((product, variation, quantity, price, stocks))
     net_total = sum((price * qty for _, _, qty, price, _ in lines), Decimal('0.00'))
     total = sum((gross(price) * qty for _, _, qty, price, _ in lines), Decimal('0.00'))
@@ -52,12 +54,13 @@ def submit_order(account, cart, token, details):
     submission = B2BSubmission.objects.create(account=account, order=order, token=token,
         payment=details['payment'], netto_total=net_total)
     for product, variation, quantity, price, stocks in lines:
+        pricing_snapshot = price_snapshot(product, variation, discounts, divisors)
         OrderItem.objects.create(narudzba=order, artikal=product, varijacija=variation,
             naziv=product.naziv, product_naziv=product.naziv,
             varijacija_naziv=variation.naziv if variation else '',
             sifra=(variation.sifra if variation else product.sifra) or '',
             cijena=gross(price), bazna_cijena=gross(price), kolicina=quantity,
-            popust_opis=f'B2B VPC netto: {price} KM')
+            popust_opis=f'B2B VPC netto: {price} KM', b2b_pricing_snapshot=pricing_snapshot)
         remaining = quantity
         for stock in stocks:
             take = min(remaining, stock.dostupno)

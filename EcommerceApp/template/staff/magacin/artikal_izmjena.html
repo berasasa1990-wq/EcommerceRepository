@@ -27,7 +27,7 @@
             <div class="mg-field">
                 <label for="id_barkod">Barkod</label>
                 <div class="mg-add-row">
-                    <input id="id_barkod" name="barkod" maxlength="200" value="{{ product.barkod|default:'' }}">
+                    <input id="id_barkod" data-barcode-check="{% url 'staff_magacin_barkod_provjera' %}" data-product-id="{{ product.pk }}" name="barkod" maxlength="200" value="{{ product.barkod|default:'' }}">
                     <button type="button" class="mg-btn mg-scan-btn" data-mg-scan-target="id_barkod" title="Skeniraj barkod">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>

@@ -1,0 +1,28 @@
+.header .header-row--categories > .nav-link-veleprodaja {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 auto; margin-left: auto; margin-right: 4px;
+    min-height: 34px; padding: 0 18px; border-radius: 6px;
+    background: #ff5900; color: #fff; font-size: 12px; line-height: 1;
+    font-weight: 800; letter-spacing: .035em; text-decoration: none;
+    white-space: nowrap; animation: wholesale-nav-pulse 2s ease-in-out infinite;
+}
+.header .header-row--categories > .nav-link-veleprodaja:hover { background: #e74e00; color: #fff; }
+.header .header-row--categories > .nav-link-veleprodaja:focus-visible { outline: 2px solid #111; outline-offset: 4px; }
+@keyframes wholesale-nav-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 #ff590060; }
+    50% { box-shadow: 0 0 0 5px #ff590000; }
+}
+@media (max-width: 1024px) {
+    .header .header-row--categories > .nav-link-veleprodaja { padding: 0 12px; min-height: 32px; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .header .header-row--categories > .nav-link-veleprodaja { animation: none; }
+}
+.header .header-row--categories > .nav-wholesale-prompt {
+    margin-left: auto; margin-right: 10px; font-size: 11px; line-height: 1.3;
+    font-weight: 400; text-transform: none; letter-spacing: normal; text-align: right;
+}
+.header .header-row--categories > .nav-wholesale-prompt + .nav-link-veleprodaja { margin-left: 0; }
+@media (max-width: 1024px) {
+    .header .header-row--categories > .nav-wholesale-prompt { font-size: 10px; max-width: 150px; margin-right: 7px; }
+}

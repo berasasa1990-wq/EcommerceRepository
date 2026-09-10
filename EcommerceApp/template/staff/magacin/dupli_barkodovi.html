@@ -1,0 +1,39 @@
+{% extends 'staff/magacin/base.html' %}
+{% block extra_css %}{{ block.super }}
+<style>
+.barcode-record{margin:16px 0;padding:20px;background:#fff;border:1px solid #e0e3e8;border-radius:10px}.barcode-record header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:15px}.barcode-record code{font-size:18px;font-weight:bold;overflow-wrap:anywhere}.barcode-status{color:#b42318;font-weight:700}.barcode-pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}.barcode-product{padding:16px;border:1px solid #e0e3e8;border-radius:7px;min-width:0}.barcode-product h3{margin:7px 0;overflow-wrap:anywhere}.barcode-product p{margin:7px 0;overflow-wrap:anywhere}.barcode-product img{width:80px;height:80px;object-fit:contain;float:right;margin:0 0 10px 12px}.barcode-record small{display:block;color:#626873;margin-top:12px}.barcode-search{display:flex;gap:10px;margin-bottom:20px}.barcode-search input{flex:1;min-width:0;padding:10px}.barcode-history{color:#626873}@media(max-width:600px){.barcode-pair{grid-template-columns:1fr}.barcode-record{padding:12px}}
+</style>
+{% endblock %}
+{% block magacin_content %}
+<h1>Dupli barkodovi</h1>
+<a class="mg-btn" href="{% url 'staff_magacin_dupli_barkodovi' %}?print=1&amp;q={{ barcode_query|urlencode }}" target="_blank" rel="noopener">Štampaj listu</a>
+<p>Postojeći duplikati i blokirani pokušaji dodjele istog barkoda drugom artiklu.</p>
+<form method="get" class="barcode-search"><input name="q" value="{{ barcode_query }}" placeholder="Barkod, naziv ili šifra artikla" aria-label="Pretraga duplih barkodova"><button class="mg-btn" type="submit">Pretraži</button></form>
+{% for record in page %}
+<section class="barcode-record">
+<header><code>{{ record.barcode }}</code><span class="{% if record.current_duplicate or not record.existing_duplicate %}barcode-status{% else %}barcode-history{% endif %}">{% if record.current_duplicate %}Dupli barkod na oba artikla{% elif record.existing_duplicate %}Raniji duplikat — barkod je promijenjen{% else %}Dupli barkod — unos blokiran{% endif %}</span></header>
+<div class="barcode-pair">
+<article class="barcode-product">
+{% if record.product.prikazna_slika %}<img src="{{ record.product.prikazna_slika.url }}" alt="">{% endif %}
+<span>{% if record.existing_duplicate %}Prvi artikal{% else %}Pokušaj dodjele barkoda{% endif %}</span>
+<h3>{{ record.product.naziv|default:record.product_name }}</h3><p>Šifra: {{ record.product.sifra|default:record.product_sku|default:'—' }}</p>
+<p>{% if record.existing_duplicate %}Evidentirani{% else %}Uneseni{% endif %} barkod: <strong>{{ record.barcode }}</strong></p>
+{% if record.product %}<p>Trenutni barkod: {{ record.product.barkod|default:'Nije unesen' }}</p><a class="mg-btn" href="{% if record.product.magacin_sync_at or record.product.odoo_template_id %}{% url 'staff_magacin_artikal_izmjena' record.product.pk %}{% else %}{% url 'admin:EcommerceApp_product_change' record.product.pk %}{% endif %}">Otvori artikal</a>{% else %}<p>Artikal nije sačuvan ili je obrisan.</p>{% endif %}
+</article>
+<article class="barcode-product">
+{% if record.other_product.prikazna_slika %}<img src="{{ record.other_product.prikazna_slika.url }}" alt="">{% endif %}
+<span>Artikal sa istim barkodom</span>
+<h3>{{ record.other_product.naziv|default:record.other_name }}</h3><p>Šifra: {{ record.other_product.sifra|default:record.other_sku|default:'—' }}</p>
+<p>Evidentirani barkod: <strong>{{ record.barcode }}</strong></p>
+{% if record.other_product %}<p>Trenutni barkod: {{ record.other_product.barkod|default:'Nije unesen' }}</p><a class="mg-btn" href="{% if record.other_product.magacin_sync_at or record.other_product.odoo_template_id %}{% url 'staff_magacin_artikal_izmjena' record.other_product.pk %}{% else %}{% url 'admin:EcommerceApp_product_change' record.other_product.pk %}{% endif %}">Otvori artikal</a>{% else %}<p>Artikal je obrisan.</p>{% endif %}
+</article>
+</div>
+<small>{{ record.last_seen|date:'d.m.Y. H:i' }}{% if record.reported_by %} · {{ record.reported_by.get_username }}{% endif %}{% if not record.existing_duplicate %} · Broj pokušaja: {{ record.attempts }}{% endif %}</small>
+<form method="post" action="{% url 'staff_magacin_dupli_barkod_obrisi' record.pk %}" style="margin-top:12px">
+{% csrf_token %}<input type="hidden" name="q" value="{{ barcode_query }}"><input type="hidden" name="page" value="{{ page.number }}">
+<button type="submit" class="mg-btn mg-btn-danger">Obriši evidenciju</button>
+</form>
+</section>
+{% empty %}<div class="mg-card">Nema evidentiranih duplih barkodova{% if barcode_query %} za ovu pretragu{% endif %}.</div>{% endfor %}
+{% if page.has_other_pages %}<nav class="mg-pager">{% if page.has_previous %}<a href="?page={{ page.previous_page_number }}&amp;q={{ barcode_query|urlencode }}">← Prethodna</a>{% endif %}<span>{{ page.number }} / {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a href="?page={{ page.next_page_number }}&amp;q={{ barcode_query|urlencode }}">Sljedeća →</a>{% endif %}</nav>{% endif %}
+{% endblock %}

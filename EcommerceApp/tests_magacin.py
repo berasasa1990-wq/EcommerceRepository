@@ -284,30 +284,25 @@ class MagacinStockTests(TestCase):
             3,
         )
 
-    def test_prenos_mp_short_qty_wipe_clears_source_location(self):
+    def test_prenos_mp_clear_cannot_bypass_explicit_password_action(self):
         user = User.objects.create_superuser('admin', 'admin@example.com', 'pass')
         apply_movement(product=self.product, location=self.a10, tip='prijem', kolicina=10)
         order = create_prenos_mp_pick(product=self.product, location=self.a10, qty=5)
         self.client.force_login(user)
         item = order.stavke.get()
-        pick = [{
-            'key': f'{item.pk}:A-10',
-            'item_id': item.pk,
-            'loc': 'A-10',
-            'got': 3,
-            'need': 5,
-            'done': True,
-        }]
-        res = self.client.post(reverse('staff_magacin_pakuj_detail', args=[order.broj]), {
-            'action': 'validiraj',
-            'pick_json': json.dumps(pick),
-            'ocisti_lokaciju': '1',
-        })
-        self.assertEqual(res.status_code, 302)
-        magacin = WarehouseStock.objects.get(product=self.product, location=self.a10)
-        mp = WarehouseStock.objects.get(product=self.product, location=self.b03)
-        self.assertEqual(mp.kolicina, 3)
-        self.assertEqual(magacin.kolicina, 0)
+        pick = [{'key': f'{item.pk}:A-10', 'item_id': item.pk,
+                 'loc': 'A-10', 'got': 3, 'need': 5, 'done': True}]
+        for data in [
+            {'action': 'validiraj', 'pick_json': json.dumps(pick), 'ocisti_lokaciju': '1'},
+            {'action': 'validiraj', 'pick_json': json.dumps(pick), 'ocisti_lokaciju': '1', 'lozinka': 'Admin'},
+            {'action': 'pick_nema', 'item_id': item.pk, 'loc': 'A-10', 'need': '5'},
+            {'action': 'pick_short', 'item_id': item.pk, 'loc': 'A-10', 'got': '3'},
+        ]:
+            response = self.client.post(reverse('staff_magacin_pakuj_detail', args=[order.broj]),
+                                        data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            self.assertEqual(response.status_code, 403)
+            stock = WarehouseStock.objects.get(product=self.product, location=self.a10)
+            self.assertEqual(stock.kolicina, 10)
 
     def test_prenos_mp_short_qty_keeps_leftover_when_not_wiped(self):
         user = User.objects.create_superuser('admin', 'admin@example.com', 'pass')
@@ -3254,7 +3249,9 @@ class MagacinViewTests(TestCase):
         self.assertContains(qty_page, 'Šifra')
         self.assertContains(qty_page, self.product.sifra)
         self.assertContains(qty_page, '>1<')
-        self.assertNotContains(qty_page, 'KM')
+        self.assertContains(qty_page, 'Sniženje −27.5%')
+        self.assertContains(qty_page, '10.00 → 7.25 KM')
+        self.assertContains(qty_page, 'ukupno 2.75 KM')
         self.assertContains(qty_page, '@page { size: A4 portrait; margin: 16mm 24mm; }')
         self.assertContains(qty_page, 'font-size: 12px')
         self.assertContains(qty_page, 'max-width: 100%')
@@ -5054,7 +5051,7 @@ class MagacinViewTests(TestCase):
                 'action': 'pick_ocisti',
                 'item_id': str(item.pk),
                 'loc': 'T-1',
-                'lozinka': 'admin',
+                'lozinka': 'Admin',
             },
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
@@ -5617,8 +5614,8 @@ class MagacinViewTests(TestCase):
         self.assertTrue(order.napomena.startswith('VP narudžba'))
         self.assertTrue(MagacinVpNarudzba.objects.filter(order=order).exists())
         self.assertEqual(order.dostava, Decimal('0.00'))
-        self.assertEqual(order.stavke.get().cijena, Decimal('7.25'))
-        self.assertEqual(order.ukupno, Decimal('7.25'))
+        self.assertEqual(order.stavke.get().cijena, Decimal('7.24'))
+        self.assertEqual(order.ukupno, Decimal('7.24'))
 
     def test_lookup_returns_synced_and_zero_stock(self):
         self.client.force_login(self.user)

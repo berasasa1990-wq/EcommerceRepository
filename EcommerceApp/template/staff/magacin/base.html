@@ -81,6 +81,12 @@
                 Dnevno skidanje MP lagera
             </a>
             {% endif %}
+            {% if request.user|warehouse_can:"staff_magacin_dupli_barkodovi" %}
+            <a href="{% url 'staff_magacin_dupli_barkodovi' %}" class="{% if magacin_section == 'dupli_barkodovi' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="6" width="16" height="15" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12M7 10v7m4-7v7m4-7v7"/></svg>
+                Dupli barkodovi
+            </a>
+            {% endif %}
             {% if request.user|warehouse_can:"staff_magacin_duguje" %}
             <a href="{% url 'staff_magacin_duguje' %}" class="{% if magacin_section == 'duguje' %}is-active{% endif %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3v18m-4-4 4 4 4-4M17 21V3m-4 4 4-4 4 4"/></svg>Duguje / Potražuje</a>
             {% endif %}
@@ -341,6 +347,12 @@
     }
 })();
 </script>
-<script src="{% static 'js/staff-magacin.js' %}?v=20260909pickShortResponse"></script>
+<script src="{% static 'js/staff-magacin.js' %}?v=20260910prenosPassword"></script>
+{% if request.duplicate_barcode_message %}
+{{ request.duplicate_barcode_message|json_script:"duplicate-barcode-message" }}
+<script>window.alert(JSON.parse(document.getElementById('duplicate-barcode-message').textContent));</script>
+{% endif %}
+
+<script src="{% static 'js/barcode-check.js' %}?v=20260910" defer></script>
 {% block magacin_js %}{% endblock %}
 {% endblock %}

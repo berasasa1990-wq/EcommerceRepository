@@ -816,7 +816,7 @@
               <input
                 type="text"
                 name="barkod"
-                id="id_barkod"
+                id="id_barkod" data-barcode-check="{% url 'staff_magacin_barkod_provjera' %}" data-product-id="{{ product.pk }}"
                 value="{{ form_data.barkod }}"
                 placeholder="Skeniraj ili upiši…"
                 autocomplete="off"

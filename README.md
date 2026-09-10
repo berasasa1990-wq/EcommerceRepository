@@ -119,6 +119,9 @@ Sve je pokriveno u `.gitignore`.
   Slider se smjenjuje automatski svake 3 sekunde (i kada je miš preko bannera), uz strelice, tačkice i pauzu; jedan banner je statičan.
   U meniju se ikonica prikazuje samo uz **Sve kategorije**. Glavne kategorije klikom otvaraju/zatvaraju podkategorije.
 - **Admin → B2B → Noviteti / Akcijska ponuda**: dodajte više artikala preko pretrage (bez ograničenja broja).
+  Polje noviteta je prošireno, a već odabrani artikli se izostavljaju iz pretrage.
+  Akcijska ponuda ima redove **Artikal + Sniženje (%)**; procenat umanjuje B2B netto cijenu u katalogu, korpi i narudžbi.
+  Postojeći akcijski artikli zadržavaju se s 0% dodatnog sniženja dok ne unesete procenat.
   Zeleno **NOVITETI** i crveno **AKCIJSKA PONUDA** iznad fiksne korpe otvaraju ove grupe; isti artikal može biti u obje.
 - B2B prikaz: crno-narandžasti raspored, kategorije lijevo, logotipi brendova i tabela artikala.
   Pretraga uključuje nazive, šifre i brendove; dostupni su filter brenda, samo na stanju, sortiranje i 25/50/100 artikala po stranici.
@@ -135,3 +138,9 @@ Sve je pokriveno u `.gitignore`.
   i ažurira ukupan iznos prema stvarno pokupljenim količinama. Ponovljeno slanje/završavanje ne duplira narudžbu ili skidanje.
   Evidencija je dostupna kroz **Admin → B2B narudžbe** i postojeće narudžbe/picking u Magacinu.
 - Pri objavi primijeniti migraciju: `python manage.py migrate` i prikupiti statiku: `python manage.py collectstatic --noinput`.
+
+- **Admin → B2B → VPC netto cijene — po brendovima**: izaberite brend i unesite djelilac MPC cijene. Obračun je MPC / djelilac / 1,17; bez pravila koristi se 1,38. Važi za varijacije, katalog, sortiranje, korpu i nove narudžbe. Akcijski popust se obračunava nakon toga; već poslane narudžbe zadržavaju svoje cijene.
+
+- Ručna narudžba u Magacinu za VP kupca koristi isti B2B obračun po brendu i akcijski popust. Stavke se prikazuju netto, PDV 17% i iznos sa PDV-om u zbiru; sačuvane stavke koriste postojeću bruto konvenciju narudžbi.
+
+- **Magacin → Dupli barkodovi** prikazuje postojeće duplikate i blokirane pokušaje dodjele, sa oba artikla i linkovima za izmjenu. Provjera barkoda u Magacinu i adminu prikazuje poruku pri unosu, a serverska provjera sprečava čuvanje. Prazni barkodovi i vlastiti nepromijenjeni barkod su dozvoljeni. Migracija 0265 evidentira ranije duplikate bez izmjene artikala.

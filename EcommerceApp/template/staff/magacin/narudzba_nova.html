@@ -114,8 +114,8 @@
                     <th>Naziv artikla</th>
                     <th class="num">Količina</th>
                     <th class="num">Popust %</th>
-                    <th class="num">Cijena (KM)</th>
-                    <th class="num">Ukupno (KM)</th>
+                    <th class="num" id="mgOrderPriceLabel">Cijena (KM)</th>
+                    <th class="num" id="mgOrderLineSumLabel">Ukupno (KM)</th>
                     <th></th>
                 </tr>
             </thead>
@@ -144,7 +144,7 @@
                     <td class="num"><button type="button" class="mg-btn mg-btn-danger" data-remove-line>Ukloni</button></td>
                 </tr>
                 {% else %}
-                <tr data-line="1" data-pid="{{ line.product.pk }}" data-vid="{{ line.variation.pk|default:'' }}" data-mpc="{% if line.variation %}{{ line.variation.prikazna_cijena }}{% else %}{{ line.product.prikazna_cijena }}{% endif %}" data-cijena="{{ line.cijena }}" data-available="{{ line.dostupno }}"{% if line.dostupno <= 0 %} class="is-out-row"{% endif %}>
+                <tr data-line="1" data-pid="{{ line.product.pk }}" data-vid="{{ line.variation.pk|default:'' }}" data-vpc-netto="{{ line.vpc_netto }}" data-mpc="{% if line.variation %}{{ line.variation.prikazna_cijena }}{% else %}{{ line.product.prikazna_cijena }}{% endif %}" data-cijena="{{ line.cijena }}" data-available="{{ line.dostupno }}"{% if line.dostupno <= 0 %} class="is-out-row"{% endif %}>
                     <td class="mg-line-n"></td>
                     <td>{{ line.variation.sifra|default:line.product.sifra|default:"—" }}</td>
                     <td>
@@ -237,9 +237,10 @@
             </div>
         </section>
         <aside class="mg-card mg-order-summary">
-            <div class="mg-sum-line"><span>Ukupno artikli:</span><b id="mgOrderGoods">0,00 KM</b></div>
+            <div class="mg-sum-line"><span id="mgOrderGoodsLabel">Ukupno artikli:</span><b id="mgOrderGoods">0,00 KM</b></div>
             <div class="mg-sum-line"><span>Dostava:</span><b id="mgOrderShipVal">11,00 KM</b></div>
-            <div class="mg-sum-pay"><span>ZA PLAĆANJE:</span><strong id="mgOrderTotal">11,00 KM</strong></div>
+            <div class="mg-sum-line" id="mgOrderVatRow" hidden><span>PDV 17%:</span><b id="mgOrderVat">0,00 KM</b></div>
+            <div class="mg-sum-pay"><span id="mgOrderTotalLabel">ZA PLAĆANJE:</span><strong id="mgOrderTotal">11,00 KM</strong></div>
         </aside>
     </div>
 

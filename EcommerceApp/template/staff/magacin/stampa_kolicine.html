@@ -84,6 +84,8 @@
         td.naziv, th.naziv { width: auto; overflow-wrap: anywhere; word-break: break-word; }
         td.sifra, th.sifra { width: 28%; white-space: nowrap; font-weight: 700; letter-spacing: .02em; }
         td.qty, th.qty { text-align: right; width: 72px; font-weight: 700; font-size: 13px; }
+        .price-note { font-size: 10px; line-height: 1.4; margin-top: 4px; font-weight: 600; color: #222; }
+        tr { break-inside: avoid; }
         @media print {
             html, body {
                 width: auto !important;
@@ -137,7 +139,7 @@
             <tbody>
                 {% for row in job.stavke %}
                 <tr>
-                    <td class="naziv">{{ row.naziv }}</td>
+                    <td class="naziv">{{ row.naziv }}{% for note in row.price_notes %}<div class="price-note">{{ note }}</div>{% endfor %}</td>
                     <td class="sifra">{% if row.sifra %}{{ row.sifra }}{% else %}—{% endif %}</td>
                     <td class="qty">{{ row.kolicina }}</td>
                 </tr>
