@@ -4,14 +4,21 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>B2B veleprodaja | Carpologija BH</title>
-<link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20260912rabatDown2">
-<script src="{% static 'js/b2b.js' %}?v=20260910noQtyCol" defer></script>
+<link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20260912brandLine">
+<script src="{% static 'js/b2b.js' %}?v=20260912headCart" defer></script>
 <link rel="stylesheet" href="{% static 'css/touch-navigation.css' %}?v=20260909">
 </head>
 <body class="{% if account %}b2b-has-cart-bar{% endif %}{% block body_class %}{% endblock %}">
 <header class="masthead">
   <a class="brand-logo" href="{% url 'b2b_catalog' %}"><img src="{% static 'img/carpologija-nav-logo-dark.jpg' %}" alt="Carpologija BH · Oprema za ribolov"></a>
   <div class="b2b-mark"><strong>B2B</strong><span>VELEPRODAJA</span></div>
+  {% if account %}
+  <a class="masthead-cart" href="{% url 'b2b_cart' %}">
+    <svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 3h3l3 13h11l3-10H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg>
+    <div><strong>Korpa</strong><small data-b2b-cart-total>{{ b2b_cart_total|default:'0'|floatformat:2 }} KM</small></div>
+    <b data-b2b-cart-count>{{ b2b_cart_count|default:0 }}</b>
+  </a>
+  {% endif %}
   <p class="partner-line">POUZDAN PARTNER<br>ZA VAŠ POSAO</p>
   <div class="header-benefit">
     <span class="header-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.4"/><path d="M4 19c.6-3.2 2.6-5 5-5s4.4 1.8 5 5M14 14.2c2 .2 3.6 1.6 4.2 4.8"/></svg></span>
@@ -73,11 +80,6 @@
   </div>
   <a class="b2b-collection-button b2b-new-button" href="{% url 'b2b_catalog' %}?ponuda=noviteti#catalog-filters" {% if collection == 'noviteti' %}aria-current="page"{% endif %}>NOVITETI</a>
   <a class="b2b-collection-button b2b-sale-button" href="{% url 'b2b_catalog' %}?ponuda=akcijska#catalog-filters" {% if collection == 'akcijska' %}aria-current="page"{% endif %}>AKCIJSKA PONUDA</a>
-  <a class="cart-link" href="{% url 'b2b_cart' %}">
-    <span><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 3h3l3 13h11l3-10H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg></span>
-    <div><strong>Korpa</strong><small data-b2b-cart-total>{{ b2b_cart_total|default:'0'|floatformat:2 }} KM</small></div>
-    <b data-b2b-cart-count>{{ b2b_cart_count|default:0 }}</b>
-  </a>
 </nav>
 <dialog class="b2b-quantity-dialog" aria-labelledby="quantity-title">
   <form>

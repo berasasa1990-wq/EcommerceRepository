@@ -2,17 +2,20 @@
 {% block body_class %} is-catalog{% endblock %}
 {% block sidebar %}
 <aside>
-  <a class="side-heading" href="{% url 'b2b_catalog' %}">
+  <details class="cats-panel" open>
+  <summary class="side-heading">
     <span class="category-icon"><img src="{% static 'img/b2b-icons/gear.svg' %}" alt=""></span>
     Kategorije
-  </a>
+  </summary>
   <nav class="category-nav" aria-label="Kategorije">
-    <a href="{% url 'b2b_catalog' %}" {% if not selected %}aria-current="page"{% endif %}>
+    <a class="b2b-all-cats-desktop" href="{% url 'b2b_catalog' %}" {% if not selected %}aria-current="page"{% endif %}>
       <span class="category-icon"><img src="{% static 'img/b2b-icons/gear.svg' %}" alt=""></span>
       Prikazi sve artikle <b aria-hidden="true">›</b>
     </a>
     {% include 'b2b/category_tree.html' with nodes=navigation %}
   </nav>
+  <a class="b2b-all-products" href="{% url 'b2b_catalog' %}">Svi artikli</a>
+  </details>
   <details class="benefits">
     <summary>
       <span class="benefits-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3.2 20.5 12 12 20.8 3.5 12z"/></svg></span>
@@ -56,11 +59,13 @@
   <input type="hidden" name="ponuda" value="{{ collection }}">
   <input type="hidden" name="kategorija" value="{{ selected.slug }}">
   <div class="brands">
-    <strong>Brendovi:</strong>
-    <button type="submit" name="brend" value="" class="brand-chip {% if not brand_slug %}active{% endif %}">Svi</button>
-    {% for brand in brands %}
-    <button type="submit" name="brend" value="{{ brand.slug }}" class="brand-chip {% if brand_slug == brand.slug %}active{% endif %}" title="{{ brand.naziv }}">{% if brand.slika %}<img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}">{% else %}{{ brand.naziv }}{% endif %}</button>
-    {% endfor %}
+    <button type="button" class="brand-scroll" data-brand-scroll="-1" aria-label="Prethodni brendovi">‹</button>
+    <div class="brand-track" data-brand-track>
+      {% for brand in brands %}
+      <button type="submit" name="brend" value="{{ brand.slug }}" class="brand-chip {% if brand_slug == brand.slug %}active{% endif %}" title="{{ brand.naziv }}">{% if brand.slika %}<img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}">{% else %}{{ brand.naziv }}{% endif %}</button>
+      {% endfor %}
+    </div>
+    <button type="button" class="brand-scroll" data-brand-scroll="1" aria-label="Sljedeći brendovi">›</button>
   </div>
   <div class="filters">
     <label>Sortiraj: <select name="sort">
@@ -95,16 +100,16 @@
   <tbody>
     {% for row in rows %}
     <tr>
-      <td class="picture">{% if row.image %}<a class="b2b-image-zoom" href="{{ row.image.url }}" data-image-zoom aria-label="Uvećaj sliku: {{ row.product.naziv }}{% if row.variation %} — {{ row.variation.naziv }}{% endif %}"><img src="{{ row.image.url }}" alt="{{ row.product.naziv }}" loading="lazy"></a>{% else %}<span class="no-image">Bez slike</span>{% endif %}</td>
-      <td class="product-name">
+      <td class="picture" data-label="Slika">{% if row.image %}<a class="b2b-image-zoom" href="{{ row.image.url }}" data-image-zoom aria-label="Uvećaj sliku: {{ row.product.naziv }}{% if row.variation %} — {{ row.variation.naziv }}{% endif %}"><img src="{{ row.image.url }}" alt="{{ row.product.naziv }}" loading="lazy"></a>{% else %}<span class="no-image">Bez slike</span>{% endif %}</td>
+      <td class="product-name" data-label="Naziv">
         <strong>{{ row.product.naziv }}</strong>
         <small>{% if row.variation %}{{ row.variation.naziv }}{% elif row.product.kategorija %}{{ row.product.kategorija.naziv }}{% endif %}</small>
       </td>
-      <td class="sku">{{ row.sku|default:'—' }}</td>
-      <td class="available {% if not row.available %}sold-out{% endif %}">{% if row.available %}{{ row.available }}{% else %}Nije na stanju{% endif %}</td>
-      <td class="netto">{% if row.discount_percent %}<span class="b2b-price-line"><span class="b2b-original-price"><del>{{ row.original_netto|floatformat:2 }}</del> <span class="b2b-original-currency"><del>KM</del></span></span><span class="b2b-sale-price">{{ row.netto|floatformat:2 }} KM</span></span>{% else %}{{ row.netto|floatformat:2 }} KM{% endif %}</td>
-      {% if show_rabat %}<td class="volume-discount">{% if row.rabat_percent %}−{{ row.rabat_percent|floatformat:-2 }}%{% else %}—{% endif %}</td>{% endif %}
-      <td>
+      <td class="sku" data-label="Šifra">{{ row.sku|default:'—' }}</td>
+      <td class="available {% if not row.available %}sold-out{% endif %}" data-label="Dostupno">{% if row.available %}{{ row.available }}{% else %}Nije na stanju{% endif %}</td>
+      <td class="netto" data-label="VPC (netto)">{% if row.discount_percent %}<span class="b2b-price-line"><span class="b2b-original-price"><del>{{ row.original_netto|floatformat:2 }}</del> <span class="b2b-original-currency"><del>KM</del></span></span><span class="b2b-sale-price">{{ row.netto|floatformat:2 }} KM</span></span>{% else %}{{ row.netto|floatformat:2 }} KM{% endif %}</td>
+      {% if show_rabat %}<td class="volume-discount" data-label="Rabat">{% if row.rabat_percent %}−{{ row.rabat_percent|floatformat:-2 }}%{% else %}—{% endif %}</td>{% endif %}
+      <td data-label="Akcije">
         <form id="add-{{ forloop.counter }}" method="post" action="{% url 'b2b_cart_change' row.product.pk %}" class="add-form" data-max-quantity="{{ row.available }}" data-product-name="{{ row.product.naziv }}{% if row.variation %} — {{ row.variation.naziv }}{% endif %}">
           {% csrf_token %}
           <input type="hidden" name="variation_id" value="{{ row.variation.pk|default:'' }}">

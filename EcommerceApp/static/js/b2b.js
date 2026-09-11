@@ -1,3 +1,11 @@
+document.querySelectorAll('[data-brand-scroll]').forEach((button) => {
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    const track = button.closest('.brands')?.querySelector('[data-brand-track]');
+    if (!track) return;
+    track.scrollBy({ left: Number(button.dataset.brandScroll) * Math.max(180, track.clientWidth * 0.7), behavior: 'smooth' });
+  });
+});
 document.querySelectorAll('[data-b2b-slider]').forEach((slider) => {
   const slides = [...slider.querySelectorAll('[data-slide]')];
   if (slides.length < 2) return;
@@ -109,6 +117,20 @@ if (quantityDialog) {
   });
   quantityDialog.querySelector('[data-quantity-cancel]').addEventListener('click', () => quantityDialog.close(''));
   quantityDialog.addEventListener('cancel', (event) => { event.preventDefault(); quantityDialog.close(''); });
+}
+const catsPanel = document.querySelector('.cats-panel');
+const isMobileCatalog = () => window.matchMedia('(max-width: 900px)').matches;
+if (catsPanel && isMobileCatalog()) catsPanel.open = false;
+if (isMobileCatalog()) {
+  document.querySelectorAll('.product-table tbody tr').forEach((row) => {
+    row.addEventListener('click', (event) => {
+      if (event.target.closest('[data-image-zoom], a, button, input, label')) return;
+      const form = row.querySelector('.add-form');
+      const button = form?.querySelector('.add-to-cart');
+      if (!form || button?.disabled) return;
+      form.requestSubmit();
+    });
+  });
 }
 document.querySelectorAll('.add-form').forEach((form) => {
   form.addEventListener('submit', async (event) => {
