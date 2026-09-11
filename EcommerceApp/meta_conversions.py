@@ -112,8 +112,14 @@ def send_event(
     custom_data=None,
     event_source_url=None,
 ):
+    logger.warning('Meta CAPI send_event entered: %s', event_name)
+    pixel_id_present = bool(str(getattr(settings, 'META_PIXEL_ID', '') or '').strip())
+    access_token_present = bool(str(getattr(settings, 'META_ACCESS_TOKEN', '') or '').strip())
     if not is_configured():
-        logger.debug('Meta CAPI skipped (%s): META_PIXEL_ID or META_ACCESS_TOKEN not set', event_name)
+        logger.warning(
+            'Meta CAPI not configured: pixel_id_present=%s access_token_present=%s',
+            pixel_id_present, access_token_present,
+        )
         return event_id
 
     if not event_id:
@@ -142,12 +148,16 @@ def send_event(
         'data': [event],
         'access_token': settings.META_ACCESS_TOKEN,
     }
+    test_event_code = (getattr(settings, 'META_TEST_EVENT_CODE', '') or '').strip()
+    if test_event_code:
+        body['test_event_code'] = test_event_code
+    test_mode = bool(test_event_code)
 
     # Ne blokiraj request (timeout 10s na 1 worker = cijeli sajt stoji).
     try:
         threading.Thread(
             target=_post_meta_event,
-            args=(url, body, event_name, event_id),
+            args=(url, body, event_name, event_id, test_mode),
             daemon=True,
         ).start()
     except Exception:
@@ -155,16 +165,35 @@ def send_event(
     return event_id
 
 
-def _post_meta_event(url, body, event_name, event_id):
+def _post_meta_event(url, body, event_name, event_id, test_mode=False):
+    logger.warning(
+        'Meta CAPI POST starting: event=%s event_id=%s test_mode=%s',
+        event_name, event_id, test_mode,
+    )
     try:
         response = requests.post(url, json=body, timeout=4)
-        result = response.json()
-        if response.ok and 'error' not in result:
-            logger.info('Meta CAPI %s sent (event_id=%s)', event_name, event_id)
-            return
-        logger.warning('Meta CAPI %s failed: %s', event_name, result)
     except Exception:
-        logger.exception('Meta CAPI %s request error', event_name)
+        logger.exception('Meta CAPI %s request error (event_id=%s)', event_name, event_id)
+        return
+    snippet = (response.text or '')[:500]
+    try:
+        result = response.json()
+    except ValueError:
+        logger.warning(
+            'Meta CAPI %s failed HTTP %s (event_id=%s): %s',
+            event_name, response.status_code, event_id, snippet,
+        )
+        return
+    error = result.get('error') if isinstance(result, dict) else None
+    if response.ok and not error:
+        logger.info('Meta CAPI %s sent (event_id=%s)', event_name, event_id)
+        return
+    if isinstance(error, dict):
+        snippet = error.get('message') or error.get('error_user_msg') or snippet
+    logger.warning(
+        'Meta CAPI %s failed HTTP %s (event_id=%s): %s',
+        event_name, response.status_code, event_id, snippet,
+    )
 
 
 def track_page_view(request, event_id=None):

@@ -559,19 +559,17 @@ STORE_EMAIL = _env('STORE_EMAIL', 'narudzbe@opremazaribolov.ba')
 # Meta (Facebook / Instagram) Pixel + Conversions API
 META_PIXEL_ID = _env('META_PIXEL_ID', '1380997860816172')
 META_ACCESS_TOKEN = _env('META_ACCESS_TOKEN', '')
+META_TEST_EVENT_CODE = _env('META_TEST_EVENT_CODE', '')
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'account'
 LOGOUT_REDIRECT_URL = 'home'
 
-# Sync prema Loyalty Programu na Renderu (loyaltyprogram-jsg5.onrender.com)
-SYNC_REMOTE_URL = _env('SYNC_REMOTE_URL', '').rstrip('/')
+# Odlazni sync prema starom Loyalty Programu (loyaltyprogram-jsg5) je ugašen.
+SYNC_REMOTE_URL = ''
 SYNC_API_KEY = _env('SYNC_API_KEY', '')
 SYNC_TIMEOUT = int(_env('SYNC_TIMEOUT', '15'))
-# Sync je omogućen ako su URL i KEY postavljeni.
-# Render automatski postavlja neke varijable (npr. RENDER_EXTERNAL_HOSTNAME).
-# Ako želiš, možeš postaviti RENDER=true u environment za custom logiku.
-SYNC_ENABLED = bool(SYNC_REMOTE_URL and SYNC_API_KEY)
+SYNC_ENABLED = False
 
 # X-Express (najava pošiljke) — username/password iz .env, nikad u kodu
 XEXPRESS_USERNAME = _env('XEXPRESS_USERNAME', '').strip()

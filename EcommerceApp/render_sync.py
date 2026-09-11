@@ -9,11 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def sync_je_aktivan():
-    return bool(
-        getattr(settings, 'SYNC_ENABLED', False)
-        and getattr(settings, 'SYNC_REMOTE_URL', '')
-        and getattr(settings, 'SYNC_API_KEY', '')
-    )
+    return False
 
 
 def _headers():
@@ -52,15 +48,8 @@ def _post(endpoint, payload):
 
 
 def sync_korisnik(user):
-    if not user or not user.email:
-        logger.info("sync_korisnik preskočen: nema user ili email")
-        return None
-    logger.info("Šaljem sync_korisnik za %s na %s", user.email, settings.SYNC_REMOTE_URL)
-    return _post('/api/sync/korisnik/', serialize_korisnik(user))
+    return None
 
 
 def sync_narudzba(order):
-    order = order.__class__.objects.prefetch_related('stavke').select_related('korisnik').get(pk=order.pk)
-    logger.info("Šaljem sync_narudzba #%s (email=%s, korisnik_id=%s) na %s", order.broj, order.email, order.korisnik_id, settings.SYNC_REMOTE_URL)
-    result = _post('/api/sync/narudzba/', serialize_narudzba(order))
-    return result
+    return None

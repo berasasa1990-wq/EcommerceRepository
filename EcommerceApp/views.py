@@ -4815,6 +4815,7 @@ def checkout(request):
                 logger.error("sync_narudzba nije uspio: %s", result)
 
             purchase_event_id = f'purchase-{order.broj}'
+            logger.warning('Meta CAPI Purchase call reached (event_id=%s)', purchase_event_id)
             track_purchase(request, order, event_id=purchase_event_id)
             request.session['meta_purchase_event_id'] = purchase_event_id
             request.session.modified = True
