@@ -360,6 +360,27 @@ class B2BTests(TestCase):
         self.assertContains(response, 'Nedovoljno dostupne količine')
         self.assertFalse(B2BSubmission.objects.exists())
 
+    def test_checkout_unexpected_error_keeps_cart(self):
+        from unittest.mock import patch
+        self.login()
+        self.client.post(f'/veleprodaja/korpa/{self.product.pk}/', {'quantity': 2})
+        response = self.client.get('/veleprodaja/zavrsi/')
+        data = {'token': str(response.context['form']['token'].value()), 'payment': 'gotovina'}
+        with patch('EcommerceApp.b2b_orders.submit_order', side_effect=RuntimeError('boom')):
+            response = self.client.post('/veleprodaja/zavrsi/', data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Narudžba se nije mogla poslati')
+        self.assertIn('b2b_cart', self.client.session)
+
+    def test_submit_order_accepts_string_quantity(self):
+        import uuid
+        from .b2b_orders import submit_order
+        submission = submit_order(
+            self.account, {f'{self.product.pk}:0': '2'}, uuid.uuid4(),
+            {'payment': 'gotovina', 'napomena': ''},
+        )
+        self.assertEqual(submission.order.stavke.get().kolicina, 2)
+
     def test_short_pick_confirmation_does_not_deduct_before_finish(self):
         from .views_magacin import confirm_short_pick
         from .magacin import validate_order_stock

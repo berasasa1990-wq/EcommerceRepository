@@ -1,8 +1,9 @@
 """B2B checkout and exact-location, deferred inventory deduction."""
 from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
-from django.db import transaction
-from django.db.models import Q
+from django.db import IntegrityError, OperationalError, transaction
+from django.db.models import Q, prefetch_related_objects
+from django.db.utils import NotSupportedError
 from django.utils import timezone
 from .b2b_pricing import (
     discounts_for, net_price, brand_divisors, price_snapshot, rabat_totals,
@@ -29,7 +30,17 @@ def _cart_line_key(key):
 
 @transaction.atomic
 def submit_order(account, cart, token, details):
+    try:
+        return _submit_order(account, cart, token, details)
+    except MagacinError:
+        raise
+    except (IntegrityError, OperationalError, NotSupportedError) as exc:
+        raise MagacinError('Narudžba se nije mogla spremiti. Pokušajte ponovo.') from exc
+
+
+def _submit_order(account, cart, token, details):
     account = B2BAccount.objects.select_for_update().get(pk=account.pk, is_active=True)
+    prefetch_related_objects([account], 'brand_rabats__brand')
     existing = B2BSubmission.objects.filter(account=account, token=token).first()
     if existing:
         return existing
@@ -39,14 +50,23 @@ def submit_order(account, cart, token, details):
     for key in cart:
         product_id, _variation_id = _cart_line_key(key)
         product_ids.append(product_id)
-    products = {p.pk: p for p in Product.objects.select_for_update().filter(
+    # Lock only product rows. Joining nullable FKs (brend/kategorija) with
+    # SELECT FOR UPDATE fails on PostgreSQL ("nullable side of an outer join").
+    eligible_ids = list(Product.objects.filter(
         pk__in=product_ids, aktivan=True, sakriven_do_stanja=False
-    ).filter(Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).order_by('pk').select_related('brend')}
+    ).filter(Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).values_list('pk', flat=True))
+    locked = list(Product.objects.select_for_update().filter(pk__in=eligible_ids).order_by('pk'))
+    prefetch_related_objects(locked, 'brend', 'varijacije')
+    products = {p.pk: p for p in locked}
     discounts = discounts_for(products.keys())
     divisors = brand_divisors()
     lines = []
     for key, quantity in cart.items():
         product_id, variation_id = _cart_line_key(key)
+        try:
+            quantity = int(quantity)
+        except (TypeError, ValueError):
+            raise MagacinError('Artikal više nije dostupan. Provjerite korpu.')
         product = products.get(product_id)
         variations = {v.pk: v for v in product.varijacije.all()} if product else {}
         variation = variations.get(variation_id)
@@ -114,14 +134,19 @@ def submit_order(account, cart, token, details):
             if take:
                 apply_movement(product=product, variation=variation, location=stock.location,
                     tip=WarehouseMovement.Tip.REZERVACIJA, kolicina=take,
-                    rezervisano=stock.rezervisano + take, napomena=f'B2B rezervacija #{order.broj}')
+                    rezervisano=stock.rezervisano + take, order=order,
+                    napomena=f'B2B rezervacija #{order.broj}')
                 OrderStockHold.objects.create(narudzba=order, product=product, variation=variation,
                     location=stock.location, kolicina=take)
                 remaining -= take
             if not remaining:
                 break
-    from .views_magacin import invalidate_magacin_nav_counts
-    transaction.on_commit(invalidate_magacin_nav_counts)
+    try:
+        from .views_magacin import invalidate_magacin_nav_counts
+        transaction.on_commit(invalidate_magacin_nav_counts)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception('B2B nav cache nije osvježen nakon narudžbe')
     return submission
 
 

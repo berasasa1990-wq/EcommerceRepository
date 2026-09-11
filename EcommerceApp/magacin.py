@@ -855,7 +855,12 @@ def apply_movement(
         napomena=(napomena or '')[:300],
         korisnik=user if getattr(user, 'is_authenticated', False) else None,
     )
-    refresh_catalog_qty(product)
+    try:
+        refresh_catalog_qty(product)
+    except Exception:
+        logger.exception('Katalog količina nije ažurirana nakon kretanja za artikal %s', product.pk)
+        if tip != WarehouseMovement.Tip.REZERVACIJA:
+            raise
     return movement
 
 

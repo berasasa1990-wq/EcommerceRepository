@@ -346,7 +346,8 @@ def cart_totals(account, cart):
                 from .b2b_pricing import volume_discount_for_netto
                 saving = volume_discount_for_netto(price * quantity, percent)
                 if saving:
-                    brand_name = product.brend.naziv if product.brend_id else 'Brend'
+                    from .b2b_pricing import _product_brand_name
+                    brand_name = _product_brand_name(product) or 'Brend'
                     rabat_breakdown.append({
                         'brand': brand_name, 'percent': percent, 'discount': saving,
                     })
@@ -437,10 +438,12 @@ def checkout(request):
                     form.cleaned_data['token'], form.cleaned_data)
             except MagacinError as exc:
                 form.add_error(None, str(exc))
-            except Exception:
+            except Exception as exc:
                 import logging
+                from django.conf import settings
                 logging.getLogger(__name__).exception('B2B checkout failed')
-                form.add_error(None, 'Narudžba se nije mogla poslati. Pokušajte ponovo ili kontaktirajte podršku.')
+                detail = f' ({type(exc).__name__}: {exc})' if settings.DEBUG else ''
+                form.add_error(None, 'Narudžba se nije mogla poslati. Pokušajte ponovo ili kontaktirajte podršku.' + detail)
             else:
                 request.session.pop('b2b_cart', None)
                 request.session.pop('b2b_checkout_token', None)
