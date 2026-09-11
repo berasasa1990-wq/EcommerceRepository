@@ -572,6 +572,8 @@ class B2BTests(TestCase):
         catalog = self.client.get('/veleprodaja')
         self.assertContains(catalog, 'Rabat')
         self.assertContains(catalog, '−5%')
+        self.assertContains(catalog, 'Radnja Partner firma ostvaruje popuste na brendove:')
+        self.assertContains(catalog, 'Fox Carp - 5%')
         self.assertNotContains(catalog, 'Preko 1500 KM')
         self.client.post(f'/veleprodaja/korpa/{self.product.pk}/', {'quantity': 2})
         cart = self.client.get('/veleprodaja/korpa/')
@@ -608,6 +610,24 @@ class B2BTests(TestCase):
         self.assertEqual(cart.context['volume_discount'], Decimal('0.00'))
         self.assertEqual(cart.context['gross_total'], Decimal('234.00'))
         self.assertNotContains(cart, 'Rabat (−5%)')
+
+    def test_admin_b2b_live_shows_logged_in_cart(self):
+        from django.urls import reverse
+        self.login()
+        self.client.post(f'/veleprodaja/korpa/{self.product.pk}/', {'quantity': 2})
+        admin_user = get_user_model().objects.create_superuser(
+            'b2b-live-admin', 'b2blive@example.com', 'secret-723!')
+        admin_client = Client()
+        admin_client.force_login(admin_user)
+        response = admin_client.get(reverse('staff_b2b_live'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Partner firma')
+        self.assertContains(response, 'partner')
+        self.assertContains(response, 'U korpi')
+        self.assertContains(response, '200.00 KM')
+        panel = admin_client.get(reverse('staff_admin_panel'))
+        self.assertContains(panel, 'B2B Live')
+        self.assertContains(panel, reverse('staff_b2b_live'))
 
     def test_admin_autocomplete_excludes_selected_and_discount_validation(self):
         from django.core.exceptions import ValidationError

@@ -6550,6 +6550,13 @@ class B2BAccount(models.Model):
         return salted_hmac('b2b.session', self.password).hexdigest()
 
 
+class B2BLive(B2BAccount):
+    class Meta:
+        proxy = True
+        verbose_name = 'B2B Live'
+        verbose_name_plural = 'B2B Live'
+
+
 class B2BAccountBrandRabat(models.Model):
     account = models.ForeignKey(
         B2BAccount, on_delete=models.CASCADE, related_name='brand_rabats', verbose_name='B2B korisnik')

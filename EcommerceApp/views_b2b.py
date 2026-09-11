@@ -319,10 +319,9 @@ def cart_view(request):
 
 
 
-def cart_summary(request, account=None):
+def cart_totals(account, cart):
     from .b2b_orders import gross
-    account = account or current_account(request)
-    cart = request.session.get('b2b_cart', {})
+    cart = cart or {}
     count = 0
     total = Decimal('0.00')
     line_gross = Decimal('0.00')
@@ -361,6 +360,47 @@ def cart_summary(request, account=None):
         'b2b_cart_tax': tax_total,
         'b2b_rabat_lines': rabat_breakdown,
     }
+
+
+def cart_summary(request, account=None):
+    account = account or current_account(request)
+    cart = request.session.get('b2b_cart', {}) if request else {}
+    return cart_totals(account, cart)
+
+
+def live_b2b_sessions():
+    from django.contrib.sessions.models import Session
+    from django.utils import timezone
+    now = timezone.now()
+    accounts = {
+        account.pk: account
+        for account in B2BAccount.objects.filter(is_active=True).prefetch_related('brand_rabats__brand')
+    }
+    rows = []
+    for session in Session.objects.filter(expire_date__gte=now).iterator():
+        try:
+            data = session.get_decoded()
+        except Exception:
+            continue
+        account = accounts.get(data.get('b2b_account_id'))
+        if not account:
+            continue
+        stored_hash = str(data.get('b2b_hash') or '')
+        if not stored_hash or not constant_time_compare(stored_hash, account.session_hash()):
+            continue
+        totals = cart_totals(account, data.get('b2b_cart') or {})
+        if totals['b2b_cart_count'] <= 0:
+            continue
+        rows.append({
+            'account': account,
+            'expire_date': session.expire_date,
+            'count': totals['b2b_cart_count'],
+            'netto': totals['b2b_cart_total'],
+            'gross': totals['b2b_cart_gross'],
+            'has_cart': True,
+        })
+    rows.sort(key=lambda row: (-row['count'], -row['netto'], row['account'].company.lower()))
+    return rows
 
 
 class B2BCheckoutForm(forms.Form):

@@ -6588,6 +6588,17 @@ def staff_admin_panel(request):
     return render(request, 'staff/admin_panel.html', context)
 
 
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_b2b_live(request):
+    from .views_b2b import live_b2b_sessions
+
+    return render(request, 'staff/b2b_live.html', {
+        **_base_context(),
+        'rows': live_b2b_sessions(),
+    })
+
+
 GIFT_VOUCHER_AMOUNTS = (50, 100, 200, 300, 500)
 
 

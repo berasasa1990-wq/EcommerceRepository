@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>B2B Live — opremazaribolov.ba</title>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff-b2b-live.css' %}?v=20260912">
+{% endblock %}
+
+{% block body_class %}staff-shell-page{% endblock %}
+
+{% block content %}
+<section class="staff-admin-page b2b-live-page">
+    <header class="staff-page-hero">
+        <div class="staff-page-hero__inner">
+            <a href="{% url 'staff_admin_panel' %}" class="staff-page-back">← Nazad na Admin panel</a>
+            <p class="staff-page-kicker">Live</p>
+            <h1 class="staff-page-title">B2B Live</h1>
+            <p class="staff-page-subtitle">
+                Samo kupci koji trenutno imaju artikle u veleprodajnoj korpi. Osvježava se svakih 20 sekundi.
+            </p>
+        </div>
+    </header>
+
+    <div class="b2b-live-body">
+        <div class="b2b-live-summary">
+            <span class="b2b-live-summary__dot" aria-hidden="true"></span>
+            <strong>{{ rows|length }}</strong>
+            <span>{% if rows|length == 1 %}aktivna B2B korpa{% else %}aktivnih B2B korpi{% endif %}</span>
+        </div>
+
+        {% if rows %}
+        <div class="b2b-live-list">
+            {% for row in rows %}
+            <article class="b2b-live-card">
+                <div>
+                    <h2 class="b2b-live-card__company">{{ row.account.company }}</h2>
+                    <p class="b2b-live-card__user">{{ row.account.username }}</p>
+                    <div class="b2b-live-card__meta">
+                        <span class="b2b-live-pill b2b-live-pill--live">U korpi</span>
+                        <span class="b2b-live-pill">{{ row.count }} kom.</span>
+                        <span class="b2b-live-pill">Sesija do {{ row.expire_date|date:"H:i" }}</span>
+                    </div>
+                </div>
+                <div class="b2b-live-amounts">
+                    <div class="b2b-live-amounts__gross">{{ row.gross|floatformat:2 }} KM</div>
+                    <div class="b2b-live-amounts__netto">netto {{ row.netto|floatformat:2 }} KM</div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="b2b-live-empty">
+            <strong>Nema aktivnih B2B korpi</strong>
+            Trenutno niko od veleprodajnih kupaca nema artikle u korpi.
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>setTimeout(function () { location.reload(); }, 20000);</script>
+{% endblock %}

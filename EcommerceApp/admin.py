@@ -4053,7 +4053,9 @@ class WarehouseSyncLogAdmin(admin.ModelAdmin):
 
 
 from django.contrib.auth.password_validation import validate_password
-from .models import B2BAccount, B2BAccountBrandRabat
+from django.template.response import TemplateResponse
+
+from .models import B2BAccount, B2BAccountBrandRabat, B2BLive
 
 
 class B2BAccountForm(forms.ModelForm):
@@ -4109,6 +4111,33 @@ class B2BAccountAdmin(admin.ModelAdmin):
         if not rows:
             return '—'
         return ', '.join(f'{row.brand.naziv} −{row.postotak.normalize():f}%' for row in rows)
+
+
+@admin.register(B2BLive)
+class B2BLiveAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_staff
+
+    def changelist_view(self, request, extra_context=None):
+        from .views_b2b import live_b2b_sessions
+        context = {
+            **self.admin_site.each_context(request),
+            **(extra_context or {}),
+            'title': 'B2B Live',
+            'opts': self.model._meta,
+            'rows': live_b2b_sessions(),
+            'has_view_permission': True,
+        }
+        return TemplateResponse(request, 'admin/b2b_live.html', context)
 
 
 from .models import B2BSettings, B2BCategoryIcon, B2BBanner, B2BOfferItem, B2BBrandPricing

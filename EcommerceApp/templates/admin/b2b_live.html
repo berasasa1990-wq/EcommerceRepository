@@ -1,0 +1,44 @@
+{% extends "admin/base_site.html" %}
+{% block extrahead %}
+{{ block.super }}
+<meta http-equiv="refresh" content="20">
+<style>
+.b2b-live-table { width: 100%; border-collapse: collapse; }
+.b2b-live-table th, .b2b-live-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--hairline-color, #e0e0e0); }
+.b2b-live-empty { color: #888; }
+.b2b-live-km { font-variant-numeric: tabular-nums; white-space: nowrap; }
+</style>
+{% endblock %}
+{% block content %}
+<p>Ulogovani B2B kupci i trenutna korpa. Stranica se osvježava svakih 20 sekundi.</p>
+{% if rows %}
+<table class="b2b-live-table">
+  <thead>
+    <tr>
+      <th>Kupac</th>
+      <th>Korisničko ime</th>
+      <th>Korpa</th>
+      <th>Komada</th>
+      <th>VPC netto</th>
+      <th>Sa PDV-om</th>
+      <th>Sesija do</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.account.company }}</td>
+      <td>{{ row.account.username }}</td>
+      <td>{% if row.has_cart %}Ima korpu{% else %}<span class="b2b-live-empty">Prazna</span>{% endif %}</td>
+      <td>{{ row.count }}</td>
+      <td class="b2b-live-km">{% if row.has_cart %}{{ row.netto|floatformat:2 }} KM{% else %}0.00 KM{% endif %}</td>
+      <td class="b2b-live-km">{% if row.has_cart %}{{ row.gross|floatformat:2 }} KM{% else %}0.00 KM{% endif %}</td>
+      <td>{{ row.expire_date|date:"d.m.Y. H:i" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="b2b-live-empty">Trenutno nema ulogovanih B2B kupaca.</p>
+{% endif %}
+{% endblock %}

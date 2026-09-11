@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>B2B veleprodaja | Carpologija BH</title>
-<link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20260911brandRabat">
+<link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20260912rabatDown2">
 <script src="{% static 'js/b2b.js' %}?v=20260910noQtyCol" defer></script>
 <link rel="stylesheet" href="{% static 'css/touch-navigation.css' %}?v=20260909">
 </head>
@@ -58,6 +58,19 @@
 {% endif %}
 {% if account %}
 <nav class="b2b-bottom-bar" aria-label="B2B ponude i korpa">
+  <div class="b2b-bottom-notes">
+    {% if account.brand_rabats.all %}
+    <div class="b2b-rabat-hint">
+      <p>Radnja {{ account.company }} ostvaruje popuste na brendove:</p>
+      <ul>
+        {% for row in account.brand_rabats.all %}
+        <li>{{ row.brand.naziv }} - {{ row.postotak|floatformat:-2 }}%</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    <p class="b2b-zoom-hint">Klikom na sliku artikla možete je uvećati.</p>
+  </div>
   <a class="b2b-collection-button b2b-new-button" href="{% url 'b2b_catalog' %}?ponuda=noviteti#catalog-filters" {% if collection == 'noviteti' %}aria-current="page"{% endif %}>NOVITETI</a>
   <a class="b2b-collection-button b2b-sale-button" href="{% url 'b2b_catalog' %}?ponuda=akcijska#catalog-filters" {% if collection == 'akcijska' %}aria-current="page"{% endif %}>AKCIJSKA PONUDA</a>
   <a class="cart-link" href="{% url 'b2b_cart' %}">
