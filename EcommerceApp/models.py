@@ -6550,6 +6550,28 @@ class B2BAccount(models.Model):
         return salted_hmac('b2b.session', self.password).hexdigest()
 
 
+class B2BAccountBrandRabat(models.Model):
+    account = models.ForeignKey(
+        B2BAccount, on_delete=models.CASCADE, related_name='brand_rabats', verbose_name='B2B korisnik')
+    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, verbose_name='Brend')
+    postotak = models.DecimalField(
+        'Rabat (%)', max_digits=5, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01')), MaxValueValidator(Decimal('100'))],
+        help_text='Npr. 5 za −5% na artikle ovog brenda.',
+    )
+
+    class Meta:
+        verbose_name = 'Rabat po brendu'
+        verbose_name_plural = 'Rabati po brendovima'
+        constraints = [
+            models.UniqueConstraint(fields=['account', 'brand'], name='unique_b2b_account_brand_rabat'),
+        ]
+        ordering = ['brand__naziv']
+
+    def __str__(self):
+        return f'{self.brand}: −{self.postotak}%'
+
+
 class B2BSettings(models.Model):
     banner = models.ImageField(
         'Glavni banner (prvi slajd)', upload_to='b2b/banners/', blank=True,

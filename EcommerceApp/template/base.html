@@ -192,6 +192,9 @@
     window.trackMetaPurchase = function (el) {
         window._fbqPending.push(['purchase', el]);
     };
+    window.trackMetaInitiateCheckout = function (el) {
+        window._fbqPending.push(['ic', el]);
+    };
     function loadMetaPixel() {
         if (window.fbq) return;
         !function(f,b,e,v,n,t,s)
@@ -224,9 +227,25 @@
             }
             fbq('track', 'Purchase', payload, el.dataset.eventId ? { eventID: el.dataset.eventId } : {});
         };
+        window.trackMetaInitiateCheckout = function (el) {
+            if (!el || typeof fbq !== 'function' || window._metaInitiateCheckoutSent) return;
+            window._metaInitiateCheckoutSent = true;
+            var payload = {
+                currency: 'BAM',
+                value: parseFloat(el.dataset.value, 10),
+                num_items: parseInt(el.dataset.numItems, 10) || 0,
+                content_type: 'product',
+                content_ids: (el.dataset.contentIds || '').split(',').filter(Boolean)
+            };
+            if (el.dataset.contents) {
+                try { payload.contents = JSON.parse(el.dataset.contents); } catch (e) {}
+            }
+            fbq('track', 'InitiateCheckout', payload, el.dataset.eventId ? { eventID: el.dataset.eventId } : {});
+        };
         (window._fbqPending || []).forEach(function (item) {
             if (item[0] === 'atc') window.trackMetaAddToCart(item[1]);
             else if (item[0] === 'purchase') window.trackMetaPurchase(item[1]);
+            else if (item[0] === 'ic') window.trackMetaInitiateCheckout(item[1]);
         });
         window._fbqPending = [];
     }

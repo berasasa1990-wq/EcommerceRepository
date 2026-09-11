@@ -156,7 +156,7 @@
                 {% endfor %}
             </tbody>
         </table>
-        {% if job.volume_note %}<p class="volume-note">{{ job.volume_note }}</p>{% endif %}
+        {% for note in job.volume_notes %}<p class="volume-note">{{ note }}</p>{% endfor %}
     </section>
     {% endfor %}
 </body>

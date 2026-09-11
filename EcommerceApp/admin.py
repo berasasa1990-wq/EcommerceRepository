@@ -4053,7 +4053,7 @@ class WarehouseSyncLogAdmin(admin.ModelAdmin):
 
 
 from django.contrib.auth.password_validation import validate_password
-from .models import B2BAccount
+from .models import B2BAccount, B2BAccountBrandRabat
 
 
 class B2BAccountForm(forms.ModelForm):
@@ -4064,19 +4064,7 @@ class B2BAccountForm(forms.ModelForm):
 
     class Meta:
         model = B2BAccount
-        fields = ['username', 'company', 'is_active', 'rabat', 'rabat_postotak']
-
-    def clean(self):
-        cleaned = super().clean()
-        rabat = cleaned.get('rabat')
-        percent = cleaned.get('rabat_postotak')
-        if rabat and (percent is None or percent <= 0):
-            self.add_error('rabat_postotak', 'Unesite iznos rabata (npr. 5 za −5%).')
-        elif percent is not None and percent > 100:
-            self.add_error('rabat_postotak', 'Rabat ne može biti veći od 100%.')
-        if not rabat:
-            cleaned['rabat_postotak'] = None
-        return cleaned
+        fields = ['username', 'company', 'is_active']
 
     def clean_new_password(self):
         password = self.cleaned_data.get('new_password')
@@ -4095,12 +4083,32 @@ class B2BAccountForm(forms.ModelForm):
         return account
 
 
+class B2BAccountBrandRabatInline(admin.TabularInline):
+    model = B2BAccountBrandRabat
+    extra = 1
+    autocomplete_fields = ['brand']
+    fields = ['brand', 'postotak']
+    verbose_name = 'Rabat'
+    verbose_name_plural = 'Rabati po brendovima (jedan ispod drugog)'
+
+
 @admin.register(B2BAccount)
 class B2BAccountAdmin(admin.ModelAdmin):
     form = B2BAccountForm
-    list_display = ['username', 'company', 'is_active', 'rabat', 'rabat_postotak']
-    list_filter = ['is_active', 'rabat']
+    list_display = ['username', 'company', 'is_active', 'rabat_pregled']
+    list_filter = ['is_active']
     search_fields = ['username', 'company']
+    inlines = [B2BAccountBrandRabatInline]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('brand_rabats__brand')
+
+    @admin.display(description='Rabat')
+    def rabat_pregled(self, obj):
+        rows = list(obj.brand_rabats.select_related('brand'))
+        if not rows:
+            return '—'
+        return ', '.join(f'{row.brand.naziv} −{row.postotak.normalize():f}%' for row in rows)
 
 
 from .models import B2BSettings, B2BCategoryIcon, B2BBanner, B2BOfferItem, B2BBrandPricing

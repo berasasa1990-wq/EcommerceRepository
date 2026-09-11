@@ -4839,7 +4839,23 @@ def checkout(request):
     if request.method == 'GET':
         initiate_checkout_event_id = f'initiatecheckout-{uuid.uuid4().hex}'
         track_initiate_checkout(request, cart, event_id=initiate_checkout_event_id)
+        initiate_contents = []
+        initiate_value = Decimal('0')
+        for item in cart:
+            content_id = str(item.get('sifra') or item['product_id'])
+            quantity = item['quantity']
+            price = Decimal(item['cijena'])
+            initiate_value += price * quantity
+            initiate_contents.append({
+                'id': content_id,
+                'quantity': quantity,
+                'item_price': float(price),
+            })
         context['meta_initiate_checkout_event_id'] = initiate_checkout_event_id
+        context['meta_initiate_content_ids'] = ','.join(row['id'] for row in initiate_contents)
+        context['meta_initiate_contents'] = json.dumps(initiate_contents, ensure_ascii=False)
+        context['meta_initiate_value'] = initiate_value
+        context['meta_initiate_num_items'] = sum(item['quantity'] for item in cart)
 
     # Remove deal and popup discount info from checkout (they only work/shows in cart/product detail)
     for item in context.get('cart_items', []):

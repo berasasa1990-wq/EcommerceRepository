@@ -19,7 +19,8 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from .b2b_icons import category_icon_name
 from .b2b_pricing import (
-    discounts_for, net_price, brand_divisors, base_net, apply_volume_discount, account_rabat_percent,
+    discounts_for, net_price, brand_divisors, base_net, rabat_totals,
+    account_brand_rabats, rabat_percent_for_product,
 )
 from .magacin import ignored_location_q
 from .models import B2BAccount, B2BSettings, Brand, Category, Product, WarehouseLocation, WarehouseStock
@@ -37,7 +38,9 @@ def netto(mpc):
 
 
 def current_account(request):
-    account = B2BAccount.objects.filter(pk=request.session.get('b2b_account_id'), is_active=True).first()
+    account = B2BAccount.objects.filter(
+        pk=request.session.get('b2b_account_id'), is_active=True,
+    ).prefetch_related('brand_rabats__brand').first()
     if account and constant_time_compare(request.session.get('b2b_hash', ''), account.session_hash()):
         return account
     return None
@@ -183,14 +186,16 @@ def catalog(request):
                          'image': (variation.slika if variation and variation.slika else product.prikazna_slika),
                          'mpc': site_price, 'original_netto': base_net(mpc, divisors.get(product.brend_id, Decimal('1.38'))), 'netto': net_price(product, variation, discounts, divisors),
                          'discount_percent': discounts.get(product.pk, 0), 'quantities': quantities,
-                         'available': sum(q['available'] for q in quantities)})
+                         'available': sum(q['available'] for q in quantities),
+                         'rabat_percent': rabat_percent_for_product(product, account_brand_rabats(account))})
         params = request.GET.copy()
         params.pop('page', None)
         response = render(request, 'b2b/catalog.html', {'account': account, 'navigation': navigation, 'b2b_settings': b2b_settings, 'banners': banners,
             'collection': collection, 'collection_label': collection_labels.get(collection, ''),
             'brands': brands, 'brand_slug': brand_slug, 'sort': sort, 'per_page': per_page, 'in_stock': in_stock,
             'page_links': page.paginator.get_elided_page_range(page.number, on_each_side=2, on_ends=1),
-            **cart_summary(request, account), 'selected': selected, 'q': query, 'page': page, 'rows': rows, 'params': params.urlencode()})
+            **cart_summary(request, account), 'selected': selected, 'q': query, 'page': page, 'rows': rows,
+            'params': params.urlencode(), 'show_rabat': bool(account_brand_rabats(account))})
     response['X-Robots-Tag'] = 'noindex, nofollow'
     return response
 
@@ -277,7 +282,7 @@ def cart_view(request):
     stale = []
     products = Product.objects.filter(pk__in=[key.split(':')[0] for key in cart],
         aktivan=True, sakriven_do_stanja=False).filter(
-        Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).prefetch_related('varijacije')
+        Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).select_related('brend').prefetch_related('varijacije')
     product_map = {product.pk: product for product in products}
     discounts = discounts_for(product_map)
     divisors = brand_divisors()
@@ -301,12 +306,14 @@ def cart_view(request):
         request.session['b2b_cart'] = {k: v for k, v in cart.items() if k not in stale}
         messages.info(request, 'Artikli koji više nisu u ponudi uklonjeni su iz korpe.')
     from .b2b_orders import gross
+    rabats = account_brand_rabats(account)
     line_gross = sum((gross(row['netto']) * row['quantity'] for row in rows), Decimal('0.00'))
-    netto_after, volume_discount, gross_total, tax_total = apply_volume_discount(
-        total, line_gross, percent=account_rabat_percent(account))
+    rabat_lines = [(row['netto'], row['quantity'], rabat_percent_for_product(row['product'], rabats)) for row in rows]
+    netto_after, volume_discount, gross_total, tax_total = rabat_totals(rabat_lines, line_gross)
+    summary = cart_summary(request, account)
     response = render(request, 'b2b/cart.html', {'account': account, 'rows': rows, 'total': total,
         'netto_after': netto_after, 'volume_discount': volume_discount,
-        'gross_total': gross_total, 'tax_total': tax_total, **cart_summary(request, account)})
+        'gross_total': gross_total, 'tax_total': tax_total, **summary})
     response['X-Robots-Tag'] = 'noindex, nofollow'
     return response
 
@@ -320,9 +327,12 @@ def cart_summary(request, account=None):
     total = Decimal('0.00')
     line_gross = Decimal('0.00')
     products = Product.objects.filter(pk__in=[k.split(':')[0] for k in cart], aktivan=True,
-        sakriven_do_stanja=False).filter(Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).prefetch_related('varijacije')
+        sakriven_do_stanja=False).filter(Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).select_related('brend').prefetch_related('varijacije')
     discounts = discounts_for(p.pk for p in products)
     divisors = brand_divisors()
+    rabats = account_brand_rabats(account)
+    rabat_lines = []
+    rabat_breakdown = []
     for product in products:
         variations = list(product.varijacije.all())
         for variation in variations or [None]:
@@ -331,9 +341,17 @@ def cart_summary(request, account=None):
             price = net_price(product, variation, discounts, divisors)
             total += price * quantity
             line_gross += gross(price) * quantity
-    rabat_percent = account_rabat_percent(account)
-    netto_after, volume_discount, gross_total, tax_total = apply_volume_discount(
-        total, line_gross, percent=rabat_percent)
+            percent = rabat_percent_for_product(product, rabats)
+            rabat_lines.append((price, quantity, percent))
+            if percent > 0 and quantity:
+                from .b2b_pricing import volume_discount_for_netto
+                saving = volume_discount_for_netto(price * quantity, percent)
+                if saving:
+                    brand_name = product.brend.naziv if product.brend_id else 'Brend'
+                    rabat_breakdown.append({
+                        'brand': brand_name, 'percent': percent, 'discount': saving,
+                    })
+    netto_after, volume_discount, gross_total, tax_total = rabat_totals(rabat_lines, line_gross)
     return {
         'b2b_cart_count': count,
         'b2b_cart_total': netto_after,
@@ -341,7 +359,7 @@ def cart_summary(request, account=None):
         'b2b_volume_discount': volume_discount,
         'b2b_cart_gross': gross_total,
         'b2b_cart_tax': tax_total,
-        'b2b_rabat_percent': rabat_percent,
+        'b2b_rabat_lines': rabat_breakdown,
     }
 
 

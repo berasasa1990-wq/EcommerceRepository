@@ -88,7 +88,7 @@
       <th>Šifra</th>
       <th>Dostupno</th>
       <th>VPC (netto)</th>
-      {% if account.rabat and account.rabat_postotak %}<th>Rabat</th>{% endif %}
+      {% if show_rabat %}<th>Rabat</th>{% endif %}
       <th>Akcije</th>
     </tr>
   </thead>
@@ -103,7 +103,7 @@
       <td class="sku">{{ row.sku|default:'—' }}</td>
       <td class="available {% if not row.available %}sold-out{% endif %}">{% if row.available %}{{ row.available }}{% else %}Nije na stanju{% endif %}</td>
       <td class="netto">{% if row.discount_percent %}<span class="b2b-price-line"><span class="b2b-original-price"><del>{{ row.original_netto|floatformat:2 }}</del> <span class="b2b-original-currency"><del>KM</del></span></span><span class="b2b-sale-price">{{ row.netto|floatformat:2 }} KM</span></span>{% else %}{{ row.netto|floatformat:2 }} KM{% endif %}</td>
-      {% if account.rabat and account.rabat_postotak %}<td class="volume-discount">−{{ account.rabat_postotak|floatformat:-2 }}%</td>{% endif %}
+      {% if show_rabat %}<td class="volume-discount">{% if row.rabat_percent %}−{{ row.rabat_percent|floatformat:-2 }}%{% else %}—{% endif %}</td>{% endif %}
       <td>
         <form id="add-{{ forloop.counter }}" method="post" action="{% url 'b2b_cart_change' row.product.pk %}" class="add-form" data-max-quantity="{{ row.available }}" data-product-name="{{ row.product.naziv }}{% if row.variation %} — {{ row.variation.naziv }}{% endif %}">
           {% csrf_token %}
@@ -121,7 +121,7 @@
       </td>
     </tr>
     {% empty %}
-    <tr><td colspan="{% if account.rabat and account.rabat_postotak %}7{% else %}6{% endif %}" class="empty">Nema artikala za odabrane kriterije.</td></tr>
+    <tr><td colspan="{% if show_rabat %}7{% else %}6{% endif %}" class="empty">Nema artikala za odabrane kriterije.</td></tr>
     {% endfor %}
   </tbody>
 </table>

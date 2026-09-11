@@ -3326,7 +3326,7 @@ def magacin_narudzbe_stampa(request):
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
 def magacin_narudzbe_stampa_kolicine(request):
-    from .b2b_pricing import b2b_volume_discount_note, invoice_price_notes
+    from .b2b_pricing import b2b_volume_discount_notes, invoice_price_notes
     brojevi = [b.strip() for b in request.GET.getlist('b') if (b or '').strip()]
     brojevi = list(dict.fromkeys(brojevi))[:30]
     if not brojevi:
@@ -3365,7 +3365,7 @@ def magacin_narudzbe_stampa_kolicine(request):
         print_jobs.append({
             'order': order,
             'stavke': stavke,
-            'volume_note': b2b_volume_discount_note(order, order.stavke.all()),
+            'volume_notes': b2b_volume_discount_notes(order, order.stavke.all()),
         })
     return render(request, 'staff/magacin/stampa_kolicine.html', {
         'print_jobs': print_jobs,

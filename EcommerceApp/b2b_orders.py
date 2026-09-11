@@ -5,8 +5,8 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from .b2b_pricing import (
-    discounts_for, net_price, brand_divisors, price_snapshot, apply_volume_discount,
-    account_rabat_percent, order_rabat_percent,
+    discounts_for, net_price, brand_divisors, price_snapshot, rabat_totals,
+    account_brand_rabats, rabat_percent_for_product, volume_discount_for_netto,
 )
 from .models import (B2BAccount, B2BSubmission, Order, OrderItem, OrderStockHold,
                      Product, WarehouseStock, WarehouseMovement)
@@ -20,7 +20,8 @@ def gross(net):
 
 @transaction.atomic
 def submit_order(account, cart, token, details):
-    account = B2BAccount.objects.select_for_update().get(pk=account.pk, is_active=True)
+    account = B2BAccount.objects.select_for_update().prefetch_related('brand_rabats__brand').get(
+        pk=account.pk, is_active=True)
     existing = B2BSubmission.objects.filter(account=account, token=token).first()
     if existing:
         return existing
@@ -28,7 +29,7 @@ def submit_order(account, cart, token, details):
         raise MagacinError('Korpa je prazna.')
     products = {p.pk: p for p in Product.objects.select_for_update().filter(
         pk__in=[k.split(':')[0] for k in cart], aktivan=True, sakriven_do_stanja=False
-    ).filter(Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).order_by('pk').prefetch_related('varijacije')}
+    ).filter(Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).order_by('pk').select_related('brend').prefetch_related('varijacije')}
     discounts = discounts_for(products)
     divisors = brand_divisors()
     lines = []
@@ -45,19 +46,34 @@ def submit_order(account, cart, token, details):
             raise MagacinError(f'Nedovoljno dostupne količine: {product.naziv}.')
         price = net_price(product, variation, discounts, divisors)
         lines.append((product, variation, quantity, price, stocks))
+    rabats = account_brand_rabats(account)
     net_total = sum((price * qty for _, _, qty, price, _ in lines), Decimal('0.00'))
     line_gross = sum((gross(price) * qty for _, _, qty, price, _ in lines), Decimal('0.00'))
-    rabat_percent = account_rabat_percent(account)
-    net_after, volume_discount, total, _tax = apply_volume_discount(
-        net_total, line_gross, percent=rabat_percent)
+    rabat_lines = [(price, qty, rabat_percent_for_product(product, rabats)) for product, _v, qty, price, _s in lines]
+    net_after, volume_discount, total, _tax = rabat_totals(rabat_lines, line_gross)
     label = 'žiralno' if details['payment'] == 'ziralno' else 'gotovinski'
     details_list = [{'opis': f'Plaćanje: {label}', 'placanje': details['payment']}]
-    if rabat_percent > 0:
-        pct = format(rabat_percent.normalize(), 'f')
+    rabat_brands = []
+    for product, _v, qty, price, _s in lines:
+        percent = rabat_percent_for_product(product, rabats)
+        if percent <= 0:
+            continue
+        saving = volume_discount_for_netto(price * qty, percent)
+        if saving <= 0:
+            continue
+        brand_name = product.brend.naziv if product.brend_id else 'Brend'
+        rabat_brands.append({
+            'brand_id': product.brend_id, 'brand': brand_name,
+            'percent': str(percent), 'discount': str(saving),
+        })
+    if rabat_brands:
         details_list.append({
-            'opis': f'Rabat −{pct}%: −{volume_discount:.2f} KM netto',
+            'opis': '; '.join(
+                f"Rabat {row['brand']} −{format(Decimal(row['percent']).normalize(), 'f')}%: −{row['discount']} KM netto"
+                for row in rabat_brands
+            ),
             'rabat': True,
-            'rabat_percent': str(rabat_percent),
+            'rabat_brands': rabat_brands,
             'volume_discount': str(volume_discount),
         })
     order = Order.objects.create(ime_prezime=account.company, email='',
@@ -69,7 +85,10 @@ def submit_order(account, cart, token, details):
     submission = B2BSubmission.objects.create(account=account, order=order, token=token,
         payment=details['payment'], netto_total=net_after)
     for product, variation, quantity, price, stocks in lines:
-        pricing_snapshot = price_snapshot(product, variation, discounts, divisors)
+        pricing_snapshot = price_snapshot(
+            product, variation, discounts, divisors,
+            rabat_percent=rabat_percent_for_product(product, rabats),
+        )
         OrderItem.objects.create(narudzba=order, artikal=product, varijacija=variation,
             naziv=product.naziv, product_naziv=product.naziv,
             varijacija_naziv=variation.naziv if variation else '',
@@ -171,7 +190,7 @@ def finish_pick(order, user=None):
             tip=WarehouseMovement.Tip.PRODAJA, kolicina=qty, user=user,
             napomena=f'B2B picking #{locked.broj}', order=locked)
     gross_total = Decimal('0.00')
-    net_total = Decimal('0.00')
+    rabat_lines = []
     for item in items:
         qty = picked[item.pk]
         item.kolicina_pokupljeno = qty
@@ -179,11 +198,12 @@ def finish_pick(order, user=None):
         gross_total += item.cijena * qty
         snap = item.b2b_pricing_snapshot or {}
         if snap.get('netto'):
-            net_total += Decimal(str(snap['netto'])) * qty
+            unit = Decimal(str(snap['netto']))
         else:
-            net_total += (item.cijena / Decimal('1.17')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) * qty
-    net_after, volume_discount, total, _tax = apply_volume_discount(
-        net_total, gross_total, percent=order_rabat_percent(locked))
+            unit = (item.cijena / Decimal('1.17')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        percent = Decimal(str(snap.get('rabat_percent') or 0))
+        rabat_lines.append((unit, qty, percent))
+    net_after, volume_discount, total, _tax = rabat_totals(rabat_lines, gross_total)
     locked.medjuzbir = gross_total
     locked.popust = (gross_total - total).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
     locked.ukupno = total

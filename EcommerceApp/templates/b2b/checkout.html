@@ -1,6 +1,6 @@
 {% extends 'b2b/base.html' %}{% block content %}
 <main class="checkout-page"><a href="{% url 'b2b_cart' %}">← Nazad u korpu</a><h1>Završetak narudžbe</h1><p>{{ account.company }}</p>
-<div class="checkout-summary"><p>Ukupno netto: <strong>{{ netto_before|default:b2b_cart_total|floatformat:2 }} KM</strong></p>{% if volume_discount %}<p>Rabat (−{{ b2b_rabat_percent|default:account.rabat_postotak|floatformat:-2 }}%): <strong>−{{ volume_discount|floatformat:2 }} KM</strong></p><p>Netto nakon popusta: <strong>{{ b2b_cart_total|floatformat:2 }} KM</strong></p>{% endif %}<p>PDV 17%: <strong>{{ tax_total|floatformat:2 }} KM</strong></p><p>Ukupno sa PDV-om: <strong>{{ gross_total|floatformat:2 }} KM</strong></p></div>
+<div class="checkout-summary"><p>Ukupno netto: <strong>{{ netto_before|default:b2b_cart_total|floatformat:2 }} KM</strong></p>{% if volume_discount %}{% for line in b2b_rabat_lines %}<p>Rabat {{ line.brand }} (−{{ line.percent|floatformat:-2 }}%): <strong>−{{ line.discount|floatformat:2 }} KM</strong></p>{% endfor %}<p>Netto nakon popusta: <strong>{{ b2b_cart_total|floatformat:2 }} KM</strong></p>{% endif %}<p>PDV 17%: <strong>{{ tax_total|floatformat:2 }} KM</strong></p><p>Ukupno sa PDV-om: <strong>{{ gross_total|floatformat:2 }} KM</strong></p></div>
 <form method="post" data-b2b-checkout>{% csrf_token %}{{ form.token }}{{ form.token.errors }}
 <p>{{ form.napomena.label_tag }}{{ form.napomena }}{{ form.napomena.errors }}</p>
 <button type="submit" data-open-payment>Pošalji narudžbu u magacin</button>

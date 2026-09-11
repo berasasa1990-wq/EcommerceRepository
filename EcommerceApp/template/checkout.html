@@ -11,7 +11,7 @@
 
 {% block content %}
 <script src="{% static 'js/cart-stock.js' %}?v=20260907" defer></script>
-<section data-cart-stock-url="{% url 'cart_stock' %}" class="checkout-page"{% if meta_pixel_id and meta_initiate_checkout_event_id %} data-meta-initiate-checkout data-event-id="{{ meta_initiate_checkout_event_id }}" data-num-items="{{ cart_count|default:0 }}" data-value="{{ cart_total }}"{% endif %}>
+<section data-cart-stock-url="{% url 'cart_stock' %}" class="checkout-page"{% if meta_pixel_id and meta_initiate_checkout_event_id %} data-meta-initiate-checkout data-event-id="{{ meta_initiate_checkout_event_id }}" data-num-items="{{ meta_initiate_num_items|default:0 }}" data-value="{{ meta_initiate_value }}" data-content-ids="{{ meta_initiate_content_ids }}" data-contents="{{ meta_initiate_contents }}"{% endif %}>
     <h1>{{ seo_h1|default:"Narudžba" }}</h1>
     {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
     {% if not user.is_authenticated %}
@@ -80,12 +80,9 @@ document.addEventListener('DOMContentLoaded', function() {
 <script data-cfasync="false">
 (function () {
     var el = document.querySelector('[data-meta-initiate-checkout]');
-    if (!el || typeof fbq !== 'function') return;
-    fbq('track', 'InitiateCheckout', {
-        currency: 'BAM',
-        value: parseFloat(el.dataset.value, 10),
-        num_items: parseInt(el.dataset.numItems, 10) || 0
-    }, { eventID: el.dataset.eventId });
+    if (el && typeof window.trackMetaInitiateCheckout === 'function') {
+        window.trackMetaInitiateCheckout(el);
+    }
 })();
 </script>
 {% endif %}

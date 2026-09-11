@@ -5,7 +5,7 @@ from django.core.cache import cache
 from django.test import Client, TestCase, override_settings
 
 from .admin import B2BAccountForm
-from .models import B2BAccount, Category, Product, ProductVariation, WarehouseLocation, WarehouseStock
+from .models import B2BAccount, B2BAccountBrandRabat, Brand, Category, Product, ProductVariation, WarehouseLocation, WarehouseStock
 from .views_b2b import netto
 
 
@@ -95,17 +95,20 @@ class B2BTests(TestCase):
         from django.contrib.auth.hashers import check_password
         self.assertTrue(check_password('Different-secret-392!', account.password))
 
-    def test_admin_rabat_requires_percent(self):
+    def test_admin_rabat_is_per_brand(self):
         data = {
             'username': 'rabat-user', 'company': 'Rabat d.o.o.', 'is_active': True,
-            'new_password': 'Different-secret-392!', 'rabat': True,
+            'new_password': 'Different-secret-392!',
         }
-        self.assertFalse(B2BAccountForm(data=data).is_valid())
-        form = B2BAccountForm(data={**data, 'rabat_postotak': '5'})
+        form = B2BAccountForm(data=data)
         self.assertTrue(form.is_valid(), form.errors)
         account = form.save()
-        self.assertTrue(account.rabat)
-        self.assertEqual(account.rabat_postotak, Decimal('5'))
+        fox = Brand.objects.create(naziv='Fox')
+        korda = Brand.objects.create(naziv='Korda')
+        B2BAccountBrandRabat.objects.create(account=account, brand=fox, postotak=Decimal('5'))
+        B2BAccountBrandRabat.objects.create(account=account, brand=korda, postotak=Decimal('8'))
+        self.assertEqual(account.brand_rabats.count(), 2)
+        self.assertEqual(account.brand_rabats.get(brand=fox).postotak, Decimal('5'))
 
     def test_b2b_cart_add_update_remove_and_netto_total(self):
         self.login()
@@ -561,9 +564,10 @@ class B2BTests(TestCase):
         self.assertEqual(submission.order.ukupno, Decimal('198.90'))
 
     def test_rabat_applies_immediately_without_minimum(self):
-        self.account.rabat = True
-        self.account.rabat_postotak = Decimal('5')
-        self.account.save(update_fields=['rabat', 'rabat_postotak'])
+        fox = Brand.objects.create(naziv='Fox Carp')
+        self.product.brend = fox
+        self.product.save(update_fields=['brend'])
+        B2BAccountBrandRabat.objects.create(account=self.account, brand=fox, postotak=Decimal('5'))
         self.login()
         catalog = self.client.get('/veleprodaja')
         self.assertContains(catalog, 'Rabat')
@@ -575,7 +579,7 @@ class B2BTests(TestCase):
         self.assertEqual(cart.context['volume_discount'], Decimal('10.00'))
         self.assertEqual(cart.context['netto_after'], Decimal('190.00'))
         self.assertEqual(cart.context['gross_total'], Decimal('222.30'))
-        self.assertContains(cart, 'Rabat (−5%)')
+        self.assertContains(cart, 'Rabat Fox Carp (−5%)')
         checkout = self.client.get('/veleprodaja/zavrsi/')
         self.assertEqual(checkout.context['volume_discount'], Decimal('10.00'))
         self.assertEqual(checkout.context['gross_total'], Decimal('222.30'))
@@ -592,7 +596,7 @@ class B2BTests(TestCase):
         from django.urls import reverse
         printed = self.client.get(
             reverse('staff_magacin_narudzbe_stampa_kolicine'), {'b': submission.order.broj})
-        self.assertContains(printed, 'Ostvaren rabat −5%')
+        self.assertContains(printed, 'Ostvaren rabat Fox Carp −5%')
         self.assertContains(printed, '−10.00 KM netto')
         self.assertContains(printed, 'VPC netto 200.00 → 190.00 KM')
 
