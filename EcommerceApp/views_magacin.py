@@ -79,6 +79,7 @@ from .magacin import (
     remove_item_from_order,
     drop_missing_pick_line,
     clear_pick_location_stock,
+    _clearable_pick_locations,
     _location_for_pick_label,
     order_is_editable,
     mark_order_packed,
@@ -1053,7 +1054,7 @@ def magacin_artikal(request, pk):
                             to_location=to_location,
                             tip='transfer',
                             kolicina=_parse_qty(request.POST.get('kolicina')),
-                            napomena=request.POST.get('napomena') or 'Transfer',
+                            napomena=request.POST.get('napomena') or 'Prenos iz lokacije u lokaciju',
                             user=request.user,
                         )
                         messages.success(
@@ -2966,7 +2967,7 @@ def magacin_transferi(request):
                 to_location=int(request.POST.get('to_location_id') or 0),
                 tip=WarehouseMovement.Tip.TRANSFER,
                 kolicina=_parse_qty(request.POST.get('kolicina')),
-                napomena=request.POST.get('napomena') or '',
+                napomena=request.POST.get('napomena') or 'Prenos iz lokacije u lokaciju',
                 user=request.user,
             )
             messages.success(request, 'Transfer je evidentiran.')
@@ -3325,7 +3326,7 @@ def magacin_narudzbe_stampa(request):
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
 def magacin_narudzbe_stampa_kolicine(request):
-    from .b2b_pricing import invoice_price_notes
+    from .b2b_pricing import b2b_volume_discount_note, invoice_price_notes
     brojevi = [b.strip() for b in request.GET.getlist('b') if (b or '').strip()]
     brojevi = list(dict.fromkeys(brojevi))[:30]
     if not brojevi:
@@ -3364,6 +3365,7 @@ def magacin_narudzbe_stampa_kolicine(request):
         print_jobs.append({
             'order': order,
             'stavke': stavke,
+            'volume_note': b2b_volume_discount_note(order, order.stavke.all()),
         })
     return render(request, 'staff/magacin/stampa_kolicine.html', {
         'print_jobs': print_jobs,
@@ -3535,6 +3537,8 @@ def _trim_picks_to_qty(picks, qty):
 
 
 def _picks_from_pick_state(order):
+    from .magacin import _pick_line_loc_from_key
+
     state = order.pick_state if isinstance(getattr(order, 'pick_state', None), dict) else {}
     by_item = {}
     for key, row in state.items():
@@ -3547,28 +3551,39 @@ def _picks_from_pick_state(order):
         if got <= 0:
             continue
         item_id = row.get('item_id')
-        loc = ''
+        loc = (row.get('loc') or '').strip()
         if isinstance(key, str) and ':' in str(key):
-            raw_id, loc = str(key).split(':', 1)
+            raw_id = str(key).split(':', 1)[0]
             if not item_id:
                 try:
                     item_id = int(raw_id)
                 except (TypeError, ValueError):
                     item_id = None
+            if not loc:
+                loc = _pick_line_loc_from_key(key)
         try:
             item_id = int(item_id or 0)
         except (TypeError, ValueError):
             item_id = 0
         if not item_id:
             continue
-        loc = (loc or '').strip() or 'MP'
-        by_item.setdefault(item_id, []).append({
-            'location_name': loc,
-            'location_id': None,
-            'take': got,
-            'on_hand': got,
-        })
-    return by_item
+        loc = loc.strip()
+        if loc.casefold() == 'taken':
+            loc = ''
+        loc = loc or 'MP'
+        bucket = by_item.setdefault(item_id, {})
+        existing = bucket.get(loc)
+        if existing:
+            existing['take'] += got
+            existing['on_hand'] += got
+        else:
+            bucket[loc] = {
+                'location_name': loc,
+                'location_id': None,
+                'take': got,
+                'on_hand': got,
+            }
+    return {item_id: list(locs.values()) for item_id, locs in by_item.items()}
 
 
 def _build_picked_packing_lines(order):
@@ -4870,6 +4885,9 @@ def _location_sort_key(name):
 
 
 def _packing_location_groups(lines):
+    from .models import WarehouseLocation
+    from .magacin import is_maloprodaja_pick_location
+
     groups = {}
     mp_items = []
     mp_confirmed_items = []
@@ -4928,8 +4946,21 @@ def _packing_location_groups(lines):
             item['rb'] = index
         return items
 
+    loc_by_sifra = {
+        loc.sifra: loc
+        for loc in WarehouseLocation.objects.filter(sifra__in=list(groups))
+    } if groups else {}
+    warehouse_names = []
+    mp_names = []
+    for name in groups:
+        loc = loc_by_sifra.get(name)
+        if is_maloprodaja_pick_location(loc, name=name):
+            mp_names.append(name)
+        else:
+            warehouse_names.append(name)
     ordered = []
-    for index, name in enumerate(sorted(groups, key=_location_sort_key), start=1):
+    for name in sorted(warehouse_names, key=_location_sort_key) + sorted(mp_names, key=_location_sort_key):
+        index = len(ordered) + 1
         ordered.append({
             'label': name,
             'rb': index,
@@ -4965,6 +4996,7 @@ def _packing_location_groups(lines):
 
 def _pick_queue(location_groups):
     from .models import WarehouseLocation, WarehouseStock, OrderItem
+    from .magacin import is_ignored_stock_location, is_uncountable_stock_location
 
     loc_by_sifra = {
         loc.sifra: loc
@@ -4990,8 +5022,13 @@ def _pick_queue(location_groups):
             continue
         loc_obj = loc_by_sifra.get(loc['label'])
         loc_path = ''
-        if loc['label'] in {'MP', 'Provjeri u MP'}:
-            loc_path = 'Maloprodaja'
+        is_mp = loc['label'] in {'MP', 'Provjeri u MP'} or (
+            loc_obj is not None
+            and is_uncountable_stock_location(loc_obj)
+            and not is_ignored_stock_location(loc_obj)
+        )
+        if loc['label'] in {'MP', 'Provjeri u MP'} or is_mp:
+            loc_path = (loc_obj.naziv if loc_obj else '') or 'Maloprodaja'
         elif loc['label'] == 'Nije popisan':
             loc_path = 'Nije popisan'
         elif loc['label'] == 'Rezervni dio':
@@ -5027,6 +5064,7 @@ def _pick_queue(location_groups):
             if not need:
                 continue
             remaining_need[item_id] -= need
+            ordered = int(oi.kolicina) if oi else int(item.get('kolicina') or need)
             queue.append({
                 'key': f"{item_id}:{loc['label']}" if item_id else f"{loc['label']}-{item['line_id']}-{item['rb']}",
                 'i': index,
@@ -5042,9 +5080,10 @@ def _pick_queue(location_groups):
                 'brend': brend,
                 'kategorija': kategorija,
                 'need': need,
+                'ordered': ordered,
                 'on_hand': on_hand,
                 'codes': codes,
-                'is_mp': loc['label'] in {'MP', 'Provjeri u MP'},
+                'is_mp': is_mp,
                 'nije_popisan': loc['label'] == 'Nije popisan' or bool(item.get('nije_popisan')),
                 'rezervni': bool(item.get('rezervni') or loc['label'] == 'Rezervni dio'),
             })
@@ -5054,10 +5093,7 @@ def _pick_queue(location_groups):
 @transaction.atomic
 def confirm_short_pick(order, *, item_id, loc, got, user, clear_location=False):
     """Confirm physical shortage and rebuild the remainder, without an MP gate."""
-    from .magacin import (
-        _sell_qty_from_location, _location_for_pick_label,
-        recalculate_order_totals, _fresh_order_items,
-    )
+    from .magacin import _fresh_order_items
     locked = Order.objects.select_for_update().get(pk=order.pk)
     events = list(locked.pick_short_events or [])
     if any(e['item_id'] == item_id and e['loc'] == loc for e in events):
@@ -5068,11 +5104,12 @@ def confirm_short_pick(order, *, item_id, loc, got, user, clear_location=False):
     line = next((row for row in queue if row['item_id'] == item_id and row['loc'] == loc and not row.get('already_picked')), None)
     if line is None or got < 0 or got >= int(line['need']):
         raise MagacinError('Količina mora biti manja od tražene količine na trenutnoj lokaciji.')
-    if got > 0 or not clear_location:
+    if not clear_location:
         apply_order_pick(locked, [dict(line, got=got, done=True)], user=user)
         order.refresh_from_db()
         return
-    location = _location_for_pick_label(loc)
+    locations = _clearable_pick_locations(loc, item.artikal, item.varijacija)
+    location = locations[0] if locations else None
     if location is None and (loc != 'Nije popisan' or got):
         raise MagacinError('Artikal nema fizičku lokaciju koju je moguće isprazniti.')
     if hasattr(locked, 'b2b_submission'):
@@ -5080,10 +5117,6 @@ def confirm_short_pick(order, *, item_id, loc, got, user, clear_location=False):
         save_pick(locked, [dict(line, got=got, done=True)])
         order.refresh_from_db()
         return
-    if got:
-        sold = _sell_qty_from_location(locked, item.artikal, item.varijacija, location, got, user=user)
-        if sold != got:
-            raise MagacinError('Količina je promijenjena. Osvježi picking i provjeri stanje.')
     prior_got = sum(int(e.get('got') or 0) for e in events if e['item_id'] == item_id)
     confirmed_elsewhere = sum(int(row.get('got') or 0) for key, row in (locked.pick_state or {}).items()
         if isinstance(row, dict) and row.get('item_id') == item_id and row.get('done')
@@ -5098,27 +5131,40 @@ def confirm_short_pick(order, *, item_id, loc, got, user, clear_location=False):
     locked.pick_short_events = events
     locked.save(update_fields=['pick_short_events'])
     previous_state = dict(locked.pick_state or {})
+    remaining_to_find = max(0, original_need - prior_got - confirmed_elsewhere - got)
     if location is not None:
-        clear_pick_location_stock(locked, item, loc=loc, user=user, relocate_qty=int(line['need']) - got)
+        from .models import OrderStockHold
+        cleared_ids = {row.pk for row in locations}
+        other_reserved = 0
+        for hold in OrderStockHold.objects.filter(
+            narudzba=locked, product_id=item.artikal_id,
+            status=OrderStockHold.Status.REZERVISANO,
+        ).select_related('location'):
+            if hold.location_id in cleared_ids or is_ignored_stock_location(hold.location):
+                continue
+            other_reserved += max(0, int(hold.kolicina or 0))
+        clear_pick_location_stock(
+            locked, item, loc=loc, user=user,
+            relocate_qty=max(0, remaining_to_find - other_reserved),
+            keep_order_qty=True,
+            picked_qty=got,
+        )
     _fresh_order_items(locked)
     remaining_queue, _, _ = _order_pick_bundle(locked)
     remaining = sum(int(row['need']) for row in remaining_queue
                     if row['item_id'] == item_id and not row.get('already_picked'))
-    retained = min(original_need, prior_got + got + remaining)
-    event['missing'] = max(0, original_need - retained)
-    # Keep shortfalls as audit data, never as billable zero-stock order lines.
-    existing = OrderItem.objects.filter(pk=item_id, narudzba=locked).first()
-    if existing and retained < int(existing.kolicina):
-        if retained:
-            existing.kolicina = retained
-            existing.save(update_fields=['kolicina'])
-        else:
-            existing.delete()
-        recalculate_order_totals(locked)
-    if not OrderItem.objects.filter(narudzba=locked).exists() and locked.status != Order.Status.OTKAZANA:
-        cancel_order_stock(locked, user=user)
-        locked.medjuzbir = locked.dostava = locked.popust = locked.ukupno = Decimal('0.00')
-        locked.save(update_fields=['medjuzbir', 'dostava', 'popust', 'ukupno'])
+    if remaining == 0:
+        from .models import OrderStockHold
+        hold_left = 0
+        for hold in OrderStockHold.objects.filter(
+            narudzba=locked, product_id=item.artikal_id,
+            status=OrderStockHold.Status.REZERVISANO,
+        ).select_related('location'):
+            if is_ignored_stock_location(hold.location):
+                continue
+            hold_left += max(0, int(hold.kolicina or 0))
+        remaining = min(remaining_to_find, hold_left)
+    event['missing'] = max(0, original_need - prior_got - confirmed_elsewhere - got - remaining)
     state = dict(locked.pick_state or {})
     for key, row in previous_state.items():
         if isinstance(row, dict) and row.get('item_id') == item_id and row.get('done') and row.get('loc') != loc:
@@ -5167,7 +5213,12 @@ def _order_pick_bundle(order):
     for event in events:
         if event.get('got') and order.stavke.filter(pk=event['item_id']).exists():
             row = dict(event['queue_row'])
-            row.update(key=event['picked_key'], need=event['got'], already_picked=True)
+            row.update(
+                key=event['picked_key'],
+                need=event['got'],
+                already_picked=True,
+                ordered=event.get('need') or row.get('ordered') or event.get('got'),
+            )
             queue.append(row)
     return queue, groups, error
 
@@ -5380,13 +5431,16 @@ def _parse_pick_lines(raw):
 
 
 def _pick_line_loc(raw):
+    from .magacin import _pick_line_loc_from_key
+
     loc = str((raw or {}).get('loc') or '').strip()
+    if loc.lower().startswith('taken:'):
+        loc = loc[6:].strip()
+    if loc.casefold() == 'taken':
+        loc = ''
     if loc:
         return loc
-    key = str((raw or {}).get('key') or '')
-    if ':' in key:
-        return key.split(':', 1)[1].strip()
-    return ''
+    return _pick_line_loc_from_key((raw or {}).get('key'))
 
 
 def apply_order_pick(order, lines, *, finalize=False, user=None):
@@ -5480,16 +5534,25 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
     items = {item.pk: item for item in order.stavke.filter(ledger_excess_line__isnull=True)}
     if finalize:
         for item in items.values():
-            if item.pk not in picked_by_item:
+            if item.pk in picked_by_item:
+                qty = max(0, min(int(item.kolicina), int(picked_by_item.get(item.pk, 0))))
+            elif item.kolicina_pokupljeno is not None:
+                qty = max(0, min(int(item.kolicina), int(item.kolicina_pokupljeno or 0)))
+            else:
                 continue
-            qty = max(0, min(int(item.kolicina), int(picked_by_item.get(item.pk, 0))))
             if qty <= 0:
                 result = _drop_zero(item, '', int(item.kolicina or 0))
                 if result.get('cancelled'):
                     return state
                 continue
             item.kolicina_pokupljeno = qty
-            item.save(update_fields=['kolicina_pokupljeno'])
+            fields = ['kolicina_pokupljeno']
+            if qty < int(item.kolicina):
+                item.kolicina = qty
+                fields.append('kolicina')
+            item.save(update_fields=fields)
+        from .magacin import recalculate_order_totals
+        recalculate_order_totals(order)
     else:
         for item_id, qty in picked_by_item.items():
             item = items.get(item_id)
@@ -5979,24 +6042,37 @@ def magacin_pakuj_detail(request, broj):
         if action == 'pick_short':
             try:
                 got = _parse_qty(request.POST.get('got') or '0')
+                clear_location = request.POST.get('clear_location') == '1'
+                if clear_location:
+                    password = request.POST.get('lozinka') or ''
+                    if not _packing_reprint_password_ok(password):
+                        return JsonResponse({'ok': False, 'error': 'Pogrešna šifra.'}, status=403)
                 confirm_short_pick(order, item_id=int(request.POST.get('item_id') or 0),
                                    loc=(request.POST.get('loc') or '').strip(), got=got, user=request.user,
-                                   clear_location=request.POST.get('clear_location') == '1')
+                                   clear_location=clear_location)
             except Http404:
                 return JsonResponse({'ok': False, 'error': 'Stavka više nije na narudžbi. Osvježi picking.'}, status=404)
             except (MagacinError, ValueError, TypeError) as exc:
                 return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
             queue, _, _ = _order_pick_bundle(order)
             same_item = [row for row in queue if row['item_id'] == int(request.POST.get('item_id') or 0) and not row.get('already_picked')]
-            if got > 0 or request.POST.get('clear_location') != '1':
+            if request.POST.get('clear_location') != '1':
                 message = f'Potvrđeno {got} kom. za picking. Preostala zaliha na lokaciji je sačuvana.'
             elif same_item:
                 next_row = same_item[0]
-                message = f'Lokacija je očišćena. Pokupi još {next_row["need"]} kom. sa lokacije {next_row["loc"]}.'
+                message = (
+                    f'Potvrđeno {got} kom. Lokacija je očišćena. '
+                    f'Pokupi još {next_row["need"]} kom. sa lokacije {next_row["loc"]}.'
+                )
             else:
                 picked = OrderItem.objects.filter(pk=request.POST.get('item_id'), narudzba=order).first()
-                quantity_on_invoice = picked.kolicina_faktura if picked else 0
-                message = f'Lokacija je očišćena. Nema preostale dostupne količine; na računu ostaje {quantity_on_invoice} kom.'
+                ordered_qty = int(picked.kolicina) if picked else 0
+                picked_qty = int(picked.kolicina_pokupljeno or 0) if picked else 0
+                missing_qty = max(0, ordered_qty - picked_qty)
+                message = (
+                    f'Lokacija je očišćena. Nema više robe na lokacijama. '
+                    f'Poručeno: {ordered_qty}. Pokupljeno: {picked_qty}. Nedostaje: {missing_qty}.'
+                )
             invalidate_magacin_nav_counts()
             return JsonResponse({'ok': True, 'queue': queue, 'state': order.pick_state,
                                  'shortages': [e for e in order.pick_short_events if e.get('missing')],
@@ -6146,6 +6222,18 @@ def magacin_pakuj_detail(request, broj):
         .first()
         if prenos_item else None
     )
+    prenos_available = 0
+    if prenos_item and prenos_hold:
+        stock = WarehouseStock.objects.filter(
+            product_id=prenos_item.artikal_id,
+            variation_id=prenos_item.varijacija_id,
+            location_id=prenos_hold.location_id,
+        ).first()
+        hold_qty = int(prenos_hold.kolicina or 0)
+        if stock:
+            prenos_available = max(0, int(stock.dostupno) + hold_qty)
+        else:
+            prenos_available = max(0, hold_qty)
     context = _magacin_context(request, section='pakuj', page_title=f'Pick #{order.broj} — Magacin')
     context.update({
         'order': order,
@@ -6153,12 +6241,19 @@ def magacin_pakuj_detail(request, broj):
         'pick_queue_json': json.dumps(queue, ensure_ascii=False).replace('<', '\\u003c'),
         'pick_state_json': json.dumps(order.pick_state or {}, ensure_ascii=False).replace('<', '\\u003c'),
         'pick_total': len(queue),
+        'pick_ordered': sum(int(row.kolicina or 0) for row in order.stavke.filter(ledger_excess_line__isnull=True)),
+        'pick_picked': sum(
+            int(row.kolicina_pokupljeno or 0)
+            for row in order.stavke.filter(ledger_excess_line__isnull=True)
+            if row.kolicina_pokupljeno is not None
+        ),
         'odoo_error': odoo_error,
         'pick_fullscreen': True,
         'mp_count': mp_count,
         'is_prenos_mp': prenos_mp,
         'prenos_item': prenos_item,
         'prenos_hold': prenos_hold,
+        'prenos_available': prenos_available,
         'prenos_items': prenos_items,
         'prenos_codes_json': json.dumps(_prenos_scan_codes(prenos_item), ensure_ascii=False).replace('<', '\\u003c'),
         'can_edit_order': order_is_editable(order),

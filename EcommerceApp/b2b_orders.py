@@ -4,7 +4,10 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
-from .b2b_pricing import discounts_for, net_price, brand_divisors, price_snapshot
+from .b2b_pricing import (
+    discounts_for, net_price, brand_divisors, price_snapshot, apply_volume_discount,
+    account_rabat_percent, order_rabat_percent,
+)
 from .models import (B2BAccount, B2BSubmission, Order, OrderItem, OrderStockHold,
                      Product, WarehouseStock, WarehouseMovement)
 from .magacin import (MagacinError, ignored_location_q, apply_movement,
@@ -43,16 +46,28 @@ def submit_order(account, cart, token, details):
         price = net_price(product, variation, discounts, divisors)
         lines.append((product, variation, quantity, price, stocks))
     net_total = sum((price * qty for _, _, qty, price, _ in lines), Decimal('0.00'))
-    total = sum((gross(price) * qty for _, _, qty, price, _ in lines), Decimal('0.00'))
+    line_gross = sum((gross(price) * qty for _, _, qty, price, _ in lines), Decimal('0.00'))
+    rabat_percent = account_rabat_percent(account)
+    net_after, volume_discount, total, _tax = apply_volume_discount(
+        net_total, line_gross, percent=rabat_percent)
     label = 'žiralno' if details['payment'] == 'ziralno' else 'gotovinski'
+    details_list = [{'opis': f'Plaćanje: {label}', 'placanje': details['payment']}]
+    if rabat_percent > 0:
+        pct = format(rabat_percent.normalize(), 'f')
+        details_list.append({
+            'opis': f'Rabat −{pct}%: −{volume_discount:.2f} KM netto',
+            'rabat': True,
+            'rabat_percent': str(rabat_percent),
+            'volume_discount': str(volume_discount),
+        })
     order = Order.objects.create(ime_prezime=account.company, email='',
         telefon='', adresa='', grad='',
         napomena=f'VP narudžba\nB2B: {account.username}\nPlaćanje: {label}\n{details.get("napomena", "")}',
-        medjuzbir=total, ukupno=total, izvor=Order.Izvor.MAGACIN,
+        medjuzbir=line_gross, popust=line_gross - total, ukupno=total, izvor=Order.Izvor.MAGACIN,
         lager_status=Order.LagerStatus.REZERVISANO,
-        popust_detalji=[{'opis': f'Plaćanje: {label}', 'placanje': details['payment']}])
+        popust_detalji=details_list)
     submission = B2BSubmission.objects.create(account=account, order=order, token=token,
-        payment=details['payment'], netto_total=net_total)
+        payment=details['payment'], netto_total=net_after)
     for product, variation, quantity, price, stocks in lines:
         pricing_snapshot = price_snapshot(product, variation, discounts, divisors)
         OrderItem.objects.create(narudzba=order, artikal=product, varijacija=variation,
@@ -155,17 +170,32 @@ def finish_pick(order, user=None):
         apply_movement(product=product_id, variation=variation_id, location=location_id,
             tip=WarehouseMovement.Tip.PRODAJA, kolicina=qty, user=user,
             napomena=f'B2B picking #{locked.broj}', order=locked)
-    total = Decimal('0.00')
+    gross_total = Decimal('0.00')
+    net_total = Decimal('0.00')
     for item in items:
-        item.kolicina_pokupljeno = picked[item.pk]
+        qty = picked[item.pk]
+        item.kolicina_pokupljeno = qty
         item.save(update_fields=['kolicina_pokupljeno'])
-        total += item.cijena * picked[item.pk]
-    locked.medjuzbir = locked.ukupno = total
+        gross_total += item.cijena * qty
+        snap = item.b2b_pricing_snapshot or {}
+        if snap.get('netto'):
+            net_total += Decimal(str(snap['netto'])) * qty
+        else:
+            net_total += (item.cijena / Decimal('1.17')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) * qty
+    net_after, volume_discount, total, _tax = apply_volume_discount(
+        net_total, gross_total, percent=order_rabat_percent(locked))
+    locked.medjuzbir = gross_total
+    locked.popust = (gross_total - total).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    locked.ukupno = total
     locked.lager_status = Order.LagerStatus.VALIDIRANO
     locked.status = Order.Status.ZAVRSENA
     locked.zapakovana = True
     locked.zapakovana_at = timezone.now()
-    locked.save(update_fields=['medjuzbir', 'ukupno', 'lager_status', 'status', 'zapakovana', 'zapakovana_at'])
+    locked.save(update_fields=['medjuzbir', 'popust', 'ukupno', 'lager_status', 'status', 'zapakovana', 'zapakovana_at'])
+    submission = B2BSubmission.objects.filter(order_id=locked.pk).first()
+    if submission is not None and submission.netto_total != net_after:
+        submission.netto_total = net_after
+        submission.save(update_fields=['netto_total'])
     order.refresh_from_db()
     from .views_magacin import invalidate_magacin_nav_counts
     transaction.on_commit(invalidate_magacin_nav_counts)

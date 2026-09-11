@@ -1,4 +1,7 @@
 {% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-prenos-pick{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/prenos-mobile.css' %}?v=20260910-4">{% endblock %}
 
 {% block magacin_content %}
 {% with item=prenos_item hold=prenos_hold %}
@@ -11,6 +14,7 @@
         <a class="pk-bar-back" href="{% url 'staff_magacin_pakuj' %}">←</a>
         <div class="pk-bar-title">
             <strong>Prenos u MP</strong>
+            <span>#{{ order.broj }}</span>
         </div>
         <button type="button" class="pk-bar-scan" id="pkPrenosScanCam" data-mg-scan-target="pkPrenosScan" data-mg-scan-title="Skeniraj artikal" title="Skener" aria-label="Skener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
@@ -22,30 +26,63 @@
     {% endif %}
 
     <section class="pk-prenos-screen">
-        <p class="pk-prenos-kicker">Lokacija</p>
-        <p class="pk-prenos-loc">{{ hold.location.sifra|default:order.adresa }}</p>
-        <p class="pk-prenos-kicker">Artikal</p>
-        <p class="pk-prenos-name">{{ item.puni_naziv }}</p>
-        <p class="pk-prenos-sifra">{% if item.sifra %}{{ item.sifra }}{% elif item.artikal.sifra %}{{ item.artikal.sifra }}{% else %}—{% endif %}</p>
-        <p class="pk-prenos-kicker">Količina</p>
-        <p class="pk-prenos-qty" id="pkPrenosQtyView">{{ item.kolicina }}</p>
-        <p class="pk-prenos-qty-of" id="pkPrenosQtyOf">od {{ item.kolicina }}</p>
-        <div class="pk-prenos-step">
-            <button type="button" id="pkPrenosMinus" aria-label="Manje">−</button>
-            <input type="number" id="pkPrenosGot" min="1" max="{{ item.kolicina|default:1 }}" step="1" value="{{ item.kolicina|default:1 }}" inputmode="numeric" aria-label="Količina za prenos">
-            <button type="button" id="pkPrenosPlus" aria-label="Više">+</button>
+        <article class="prenos-product-card">
+            <div class="prenos-product-image">
+                {% if item.varijacija.slika %}<img src="{{ item.varijacija.slika.url }}" alt="{{ item.puni_naziv }}">
+                {% elif item.artikal.prikazna_slika %}<img src="{{ item.artikal.prikazna_slika.url }}" alt="{{ item.puni_naziv }}">
+                {% else %}<span>Bez slike</span>{% endif %}
+            </div>
+            <div class="prenos-product-info">
+                <p class="pk-prenos-kicker">Lokacija</p>
+                <p class="pk-prenos-loc">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                    {{ hold.location.sifra|default:order.adresa }}
+                </p>
+                <p class="pk-prenos-kicker">Artikal</p>
+                <p class="pk-prenos-name">{{ item.puni_naziv }}</p>
+                <p class="prenos-sku-label">Šifra artikla</p>
+                <p class="pk-prenos-sifra">{% if item.sifra %}{{ item.sifra }}{% elif item.artikal.sifra %}{{ item.artikal.sifra }}{% else %}—{% endif %}</p>
+            </div>
+        </article>
+
+        <div class="prenos-quantity-card">
+            <div class="prenos-quantity-heading">
+                <p class="pk-prenos-kicker">Količina za prenos</p>
+                <p>Dostupno na lokaciji: <strong>{{ prenos_available }}</strong></p>
+            </div>
+            <p class="pk-prenos-qty" id="pkPrenosQtyView" hidden>{{ item.kolicina }}</p>
+            <div class="pk-prenos-step">
+                <button type="button" id="pkPrenosMinus" aria-label="Manje">−</button>
+                <input type="number" id="pkPrenosGot" min="1" max="{{ item.kolicina|default:1 }}" step="1" value="{{ item.kolicina|default:1 }}" inputmode="numeric" aria-label="Količina za prenos">
+                <button type="button" id="pkPrenosPlus" aria-label="Više">+</button>
+            </div>
+            <p class="pk-prenos-qty-of" id="pkPrenosQtyOf">od {{ item.kolicina }}</p>
+            <p class="pk-msg" id="pkPrenosMsg" hidden></p>
+            <form method="post" class="pk-prenos-form" id="pkPrenosForm">
+                {% csrf_token %}
+                <input type="hidden" name="pick_json" id="pkPrenosPickJson" value="">
+                <button type="submit" name="action" value="validiraj" class="pk-prenos-valid" id="pkPrenosValid">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 5h12v12H2zM14 9h4l4 4v4h-8"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+                    Validatuj i prenesi u MP
+                </button>
+            </form>
+            <form method="post" class="pk-prenos-form" id="pkPrenosCancelForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="otkazi">
+                <button type="submit" class="pk-prenos-cancel">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+                    Otkaži prenos
+                </button>
+            </form>
         </div>
-        <p class="pk-msg" id="pkPrenosMsg" hidden></p>
-        <form method="post" class="pk-prenos-form" id="pkPrenosForm">
-            {% csrf_token %}
-            <input type="hidden" name="pick_json" id="pkPrenosPickJson" value="">
-            <button type="submit" name="action" value="validiraj" class="pk-prenos-valid" id="pkPrenosValid">Validatuj</button>
-        </form>
-        <form method="post" class="pk-prenos-form" id="pkPrenosCancelForm">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="otkazi">
-            <button type="submit" class="pk-prenos-cancel">Otkaži prenos</button>
-        </form>
+
+        <aside class="prenos-note">
+            <span class="prenos-info-icon" aria-hidden="true">i</span>
+            <div>
+                <strong>Napomena:</strong>
+                <p>Nakon validacije količina će biti prenesena sa lokacije {{ hold.location.sifra|default:order.adresa }} na MP.</p>
+            </div>
+        </aside>
         <button type="button" class="pk-prenos-clear" id="pkPrenosClear">Očisti lokaciju</button>
         <input type="text" id="pkPrenosScan" class="pk-scan-hidden" inputmode="none" autocomplete="off" aria-label="Barkod ili šifra">
     </section>

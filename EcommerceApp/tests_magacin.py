@@ -4591,6 +4591,10 @@ class MagacinViewTests(TestCase):
         by_broj = self.client.get(reverse('staff_magacin_izvjestaji'), {'narudzba': order.broj})
         self.assertContains(by_broj, reverse('staff_order_detail', args=[order.broj]))
 
+    @override_settings(STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    })
     def test_transfer_insert_and_move(self):
         self.client.force_login(self.user)
         dest = WarehouseLocation.objects.create(sifra='T-2', naziv='Druga loc')
@@ -4641,6 +4645,8 @@ class MagacinViewTests(TestCase):
         there = WarehouseStock.objects.get(product=self.product, location=dest, variation__isnull=True)
         self.assertEqual(here.kolicina, 9)
         self.assertEqual(there.kolicina, 4)
+        move = WarehouseMovement.objects.filter(tip='transfer', product=self.product).latest('id')
+        self.assertEqual(move.napomena, 'Prenos iz lokacije u lokaciju')
 
     def test_staff_cannot_open_magacin(self):
         staff = User.objects.create_user('staff', 'staff@example.com', 'pass', is_staff=True)
@@ -4785,6 +4791,10 @@ class MagacinViewTests(TestCase):
             3,
         )
 
+    @override_settings(STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    })
     def test_prenos_mp_opens_picking_and_validate_deducts(self):
         self.client.force_login(self.user)
         src = WarehouseLocation.objects.get(sifra='T-1')
@@ -4821,7 +4831,14 @@ class MagacinViewTests(TestCase):
         self.assertContains(pick, 'Količina')
         self.assertContains(pick, 'id="pkPrenosScanCam"')
         self.assertContains(pick, 'aria-label="Skener"')
-        self.assertContains(pick, 'Ukloni iz lokacije')
+        self.assertContains(pick, 'Očisti lokaciju')
+        self.assertContains(pick, 'Validatuj i prenesi u MP')
+        self.assertContains(pick, 'Dostupno na lokaciji:')
+        self.assertContains(pick, 'prenos-product-card')
+        self.assertContains(pick, 'prenos-quantity-card')
+        self.assertContains(pick, 'prenos-note')
+        self.assertContains(pick, 'css/prenos-mobile.css')
+        self.assertEqual(pick.context['prenos_available'], 8)
         self.assertContains(pick, 'Otkaži prenos')
         self.assertContains(pick, 'id="pkPrenosGot"')
         self.assertContains(pick, 'Test braid')
@@ -4850,7 +4867,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(listing2, reverse('staff_magacin_pakuj_detail', args=[order.broj]))
         self.assertContains(listing2, '2 stavki')
         self.assertNotContains(pick, 'Odnio kod Slobe')
-        self.assertNotContains(pick, 'Provjera')
+        self.assertNotContains(pick, 'Provjera MP')
         self.assertNotContains(pick, 'Skeniraj narudžbu')
         validated = self.client.post(reverse('staff_magacin_pakuj_detail', args=[order.broj]), {
             'action': 'validiraj',

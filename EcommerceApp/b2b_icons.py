@@ -5,7 +5,7 @@ import unicodedata
 def category_icon_name(name):
     name = unicodedata.normalize('NFKD', name.casefold()).encode('ascii', 'ignore').decode()
     for words, icon in [
-        (('stap', 'prut'), 'rod'), (('masin', 'rol'), 'reel'),
+        (('igl', 'alat'), 'pin'), (('stap', 'prut'), 'rod'), (('masin', 'rol'), 'reel'),
         (('najlon', 'strun', 'konac'), 'line'), (('varalic', 'vobler', 'silikon'), 'lure'),
         (('udic', 'sitni', 'predvez'), 'hook'), (('feeder', 'hranilic'), 'feeder'),
         (('kutij', 'torb', 'ruksak', 'futrol'), 'bag'), (('mam', 'boil', 'pelet', 'hran'), 'bait'),

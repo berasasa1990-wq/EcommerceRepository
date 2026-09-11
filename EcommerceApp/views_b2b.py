@@ -12,11 +12,15 @@ from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q, Exists, OuterRef, F, Value, FloatField, Case, When
 from django.db.models.functions import Coalesce, Cast
 from django.shortcuts import redirect, render
+from django.templatetags.static import static
 from django.utils.crypto import constant_time_compare, salted_hmac
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_POST
 
-from .b2b_pricing import discounts_for, net_price, brand_divisors, base_net
+from .b2b_icons import category_icon_name
+from .b2b_pricing import (
+    discounts_for, net_price, brand_divisors, base_net, apply_volume_discount, account_rabat_percent,
+)
 from .magacin import ignored_location_q
 from .models import B2BAccount, B2BSettings, Brand, Category, Product, WarehouseLocation, WarehouseStock
 
@@ -67,12 +71,17 @@ def catalog(request):
                 form.add_error(None, 'Pogrešno korisničko ime ili šifra.')
         response = render(request, 'b2b/login.html', {'form': form})
     else:
-        b2b_settings = B2BSettings.objects.prefetch_related('banners').first()
+        b2b_settings = B2BSettings.objects.prefetch_related('banners', 'category_icons').first()
         banners = []
+        icon_uploads = {}
         if b2b_settings:
             if b2b_settings.banner:
                 banners.append({'image': b2b_settings.banner, 'alt': b2b_settings.banner_alt, 'link': b2b_settings.banner_link})
             banners.extend({'image': b.image, 'alt': b.alt, 'link': b.link} for b in b2b_settings.banners.all() if b.active and b.image)
+            icon_uploads = {
+                icon.category_id: icon.image.url
+                for icon in b2b_settings.category_icons.all() if icon.image
+            }
         categories = list(Category.objects.filter(aktivan=True))
         children = {}
         ids = {c.pk for c in categories}
@@ -80,17 +89,23 @@ def catalog(request):
             parent = category.roditelj_id if category.roditelj_id in ids else None
             children.setdefault(parent, []).append(category)
         selected = next((c for c in categories if c.slug == request.GET.get('kategorija')), None)
+        def category_icon(category):
+            return icon_uploads.get(category.pk) or static(
+                f'img/b2b-icons/{category_icon_name(category.naziv)}.svg'
+            )
         def build_navigation(parent):
             nodes = []
             for category in children.get(parent, []):
                 descendants = build_navigation(category.pk)
                 current = bool(selected and selected.pk == category.pk)
                 nodes.append({'category': category, 'children': descendants, 'current': current,
-                              'expanded': current or any(node['expanded'] for node in descendants)})
+                              'expanded': current or any(node['expanded'] for node in descendants),
+                              'icon': category_icon(category)})
             return nodes
         navigation = build_navigation(None)
         products = Product.objects.filter(aktivan=True, sakriven_do_stanja=False).filter(
             Q(kategorija_id__in=ids) | Q(kategorija__isnull=True))
+        brands = Brand.objects.filter(artikli__in=products).distinct().order_by('naziv')
         collection = request.GET.get('ponuda', '')
         collection_labels = {'noviteti': 'NOVITETI', 'akcijska': 'AKCIJSKA PONUDA'}
         if collection not in collection_labels:
@@ -114,7 +129,6 @@ def catalog(request):
         if query:
             products = products.filter(Q(naziv__icontains=query) | Q(sifra__icontains=query)
                                        | Q(varijacije__naziv__icontains=query) | Q(varijacije__sifra__icontains=query) | Q(brend__naziv__icontains=query)).distinct()
-        brands = Brand.objects.filter(artikli__in=products).distinct().order_by('naziv')
         brand_slug = request.GET.get('brend', '')
         if brand_slug:
             products = products.filter(brend__slug=brand_slug)
@@ -158,6 +172,7 @@ def catalog(request):
             variation = next((v for v in product.varijacije.all() if v.pk == catalog_row['b2b_variant_id']), None)
             stock = {(s.variation_id, s.location_id): s for s in product.magacin_zalihe.all()}
             mpc = variation.bazna_cijena if variation else product.cijena
+            site_price = variation.prikazna_cijena if variation else product.prikazna_cijena
             quantities = []
             for location in locations:
                 entry = stock.get((variation.pk if variation else None, location.pk))
@@ -166,7 +181,7 @@ def catalog(request):
             rows.append({'product': product, 'variation': variation,
                          'sku': variation.sifra if variation else product.sifra,
                          'image': (variation.slika if variation and variation.slika else product.prikazna_slika),
-                         'mpc': mpc, 'original_netto': base_net(mpc, divisors.get(product.brend_id, Decimal('1.38'))), 'netto': net_price(product, variation, discounts, divisors),
+                         'mpc': site_price, 'original_netto': base_net(mpc, divisors.get(product.brend_id, Decimal('1.38'))), 'netto': net_price(product, variation, discounts, divisors),
                          'discount_percent': discounts.get(product.pk, 0), 'quantities': quantities,
                          'available': sum(q['available'] for q in quantities)})
         params = request.GET.copy()
@@ -175,7 +190,7 @@ def catalog(request):
             'collection': collection, 'collection_label': collection_labels.get(collection, ''),
             'brands': brands, 'brand_slug': brand_slug, 'sort': sort, 'per_page': per_page, 'in_stock': in_stock,
             'page_links': page.paginator.get_elided_page_range(page.number, on_each_side=2, on_ends=1),
-            **cart_summary(request), 'selected': selected, 'q': query, 'page': page, 'rows': rows, 'params': params.urlencode()})
+            **cart_summary(request, account), 'selected': selected, 'q': query, 'page': page, 'rows': rows, 'params': params.urlencode()})
     response['X-Robots-Tag'] = 'noindex, nofollow'
     return response
 
@@ -239,7 +254,7 @@ def cart_change(request, product_id):
         request.session.pop('b2b_checkout_token', None)
         request.session['b2b_cart'] = cart
     if ajax:
-        return JsonResponse({'ok': ok, 'message': message, **cart_summary(request)}, status=200 if ok else 409)
+        return JsonResponse({'ok': ok, 'message': message, **cart_summary(request, current_account(request))}, status=200 if ok else 409)
     if ok:
         messages.success(request, message)
     else:
@@ -286,18 +301,24 @@ def cart_view(request):
         request.session['b2b_cart'] = {k: v for k, v in cart.items() if k not in stale}
         messages.info(request, 'Artikli koji više nisu u ponudi uklonjeni su iz korpe.')
     from .b2b_orders import gross
-    gross_total = sum((gross(row['netto']) * row['quantity'] for row in rows), Decimal('0.00'))
+    line_gross = sum((gross(row['netto']) * row['quantity'] for row in rows), Decimal('0.00'))
+    netto_after, volume_discount, gross_total, tax_total = apply_volume_discount(
+        total, line_gross, percent=account_rabat_percent(account))
     response = render(request, 'b2b/cart.html', {'account': account, 'rows': rows, 'total': total,
-        'gross_total': gross_total, 'tax_total': gross_total - total, **cart_summary(request)})
+        'netto_after': netto_after, 'volume_discount': volume_discount,
+        'gross_total': gross_total, 'tax_total': tax_total, **cart_summary(request, account)})
     response['X-Robots-Tag'] = 'noindex, nofollow'
     return response
 
 
 
-def cart_summary(request):
+def cart_summary(request, account=None):
+    from .b2b_orders import gross
+    account = account or current_account(request)
     cart = request.session.get('b2b_cart', {})
     count = 0
     total = Decimal('0.00')
+    line_gross = Decimal('0.00')
     products = Product.objects.filter(pk__in=[k.split(':')[0] for k in cart], aktivan=True,
         sakriven_do_stanja=False).filter(Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).prefetch_related('varijacije')
     discounts = discounts_for(p.pk for p in products)
@@ -307,8 +328,21 @@ def cart_summary(request):
         for variation in variations or [None]:
             quantity = cart.get(f'{product.pk}:{variation.pk if variation else 0}', 0)
             count += quantity
-            total += net_price(product, variation, discounts, divisors) * quantity
-    return {'b2b_cart_count': count, 'b2b_cart_total': total}
+            price = net_price(product, variation, discounts, divisors)
+            total += price * quantity
+            line_gross += gross(price) * quantity
+    rabat_percent = account_rabat_percent(account)
+    netto_after, volume_discount, gross_total, tax_total = apply_volume_discount(
+        total, line_gross, percent=rabat_percent)
+    return {
+        'b2b_cart_count': count,
+        'b2b_cart_total': netto_after,
+        'b2b_cart_netto': total,
+        'b2b_volume_discount': volume_discount,
+        'b2b_cart_gross': gross_total,
+        'b2b_cart_tax': tax_total,
+        'b2b_rabat_percent': rabat_percent,
+    }
 
 
 class B2BCheckoutForm(forms.Form):
@@ -349,21 +383,12 @@ def checkout(request):
                 request.session.pop('b2b_cart', None)
                 request.session.pop('b2b_checkout_token', None)
                 return redirect('b2b_order', pk=submission.pk)
-    summary = cart_summary(request)
+    summary = cart_summary(request, account)
     if not summary['b2b_cart_count'] and request.method == 'GET':
         return redirect('b2b_cart')
-    # Warehouse order lines store gross prices, following the existing invoice convention.
-    from .b2b_orders import gross
-    cart = request.session.get('b2b_cart', {})
-    total = Decimal('0.00')
-    discounts = discounts_for(k.split(':')[0] for k in cart)
-    divisors = brand_divisors()
-    for product in Product.objects.filter(pk__in=[k.split(':')[0] for k in cart]).prefetch_related('varijacije'):
-        for variation in list(product.varijacije.all()) or [None]:
-            qty = cart.get(f'{product.pk}:{variation.pk if variation else 0}', 0)
-            total += gross(net_price(product, variation, discounts, divisors)) * qty
     response = render(request, 'b2b/checkout.html', {'account': account, 'form': form,
-        **summary, 'gross_total': total, 'tax_total': total - summary['b2b_cart_total']})
+        **summary, 'gross_total': summary['b2b_cart_gross'], 'tax_total': summary['b2b_cart_tax'],
+        'volume_discount': summary['b2b_volume_discount'], 'netto_before': summary['b2b_cart_netto']})
     response['X-Robots-Tag'] = 'noindex, nofollow'
     return response
 
@@ -377,7 +402,7 @@ def order_confirmation(request, pk):
         return redirect('b2b_catalog')
     submission = get_object_or_404(B2BSubmission.objects.select_related('order'), pk=pk, account=account)
     response = render(request, 'b2b/order.html', {'account': account, 'submission': submission,
-        **cart_summary(request)})
+        **cart_summary(request, account)})
     response['X-Robots-Tag'] = 'noindex, nofollow'
     return response
 

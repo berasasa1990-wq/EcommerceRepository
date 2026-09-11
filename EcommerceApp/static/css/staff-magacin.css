@@ -2364,6 +2364,21 @@ body.is-vp #mgScanModal .mg-btn {
     color: var(--mg-label);
     font-size: 12px;
 }
+.mg-hist-picked {
+    color: #c62828;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.mg-hist-missing {
+    color: #e67e22;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.mg-hist-added {
+    color: #188139;
+    font-weight: 700;
+    white-space: nowrap;
+}
 .mg-count { color: var(--mg-label); font-size: 13px; }
 .mg-pick-short {
     display: block;
@@ -3072,7 +3087,14 @@ tr.is-mp-lock {
 .mg-uvoz-review td .mg-muted { font-size: 12px; margin-top: 2px; }
 
 .magacin-page.is-pick {
+    --promo-height: 0px;
+    --header-nav-height: 0px;
+    --header-top-height: 0px;
+    --site-chrome-top: 0px;
     background: #eef0f3;
+}
+.magacin-page.is-pick .site-chrome-backdrop {
+    display: none !important;
 }
 .magacin-page.is-pick .header,
 .magacin-page.is-pick .promo-bar,

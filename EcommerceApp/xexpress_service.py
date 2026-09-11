@@ -570,6 +570,10 @@ def create_shipment(order) -> dict:
             f'Narudžba #{order.broj} je već poslana u X-Express (šifra {existing}).'
         )
 
+    from .magacin import sync_webshop_charges_to_picked
+    sync_webshop_charges_to_picked(order)
+    order.refresh_from_db()
+
     username, password = _credentials()
     payload = [build_shipment_payload(order)]
     url = _api_url()

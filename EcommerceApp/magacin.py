@@ -245,6 +245,21 @@ def is_uncountable_stock_location(location=None, *, name='', path='', sifra=''):
     return any(key in text for key in _UNCOUNTABLE_LOCATION_KEYWORDS)
 
 
+def is_maloprodaja_pick_location(location=None, *, name=''):
+    """Physical retail location offered last in picking, after warehouse shelves."""
+    text = (name or '').strip()
+    if text in {'MP', 'Provjeri u MP'} or 'maloprodaja' in text.casefold():
+        return not is_ignored_stock_location(location, name=text, sifra=text)
+    if location is None:
+        return False
+    return is_uncountable_stock_location(location) and not is_ignored_stock_location(location)
+
+
+def maloprodaja_last_sort_key(name='', location=None):
+    label = name or getattr(location, 'sifra', '') or ''
+    return (1 if is_maloprodaja_pick_location(location, name=label) else 0, label.casefold())
+
+
 def maloprodaja_locations():
     return WarehouseLocation.objects.filter(aktivan=True).filter(
         _location_keyword_q(('maloprodaja',))
@@ -549,6 +564,24 @@ def order_location_rows(product, variation=None):
 
 NIJE_POPISAN_LABEL = 'Nije popisan'
 VIRTUAL_PICK_LOCS = frozenset({'MP', 'Provjeri u MP', 'Rezervni dio', NIJE_POPISAN_LABEL})
+
+PICK_REASON_SALE = 'Picking narudžbe'
+PICK_REASON_EMPTY = 'Picking - fizički nedostatak na lokaciji'
+PICK_REASON_PARTIAL = 'Picking - djelimično pronađena količina'
+
+
+def picking_stock_note(order, reason=None, *, previous, new, picked=0, cleared=False):
+    """Jedna rečenica šta je radnik uradio na lokaciji."""
+    previous = max(0, int(previous or 0))
+    new = max(0, int(new or 0))
+    picked = max(0, int(picked or 0))
+    if cleared and picked <= 0:
+        text = f'Stanje {previous} → nije pronađeno → očišćena lok. stanje 0'
+    elif cleared:
+        text = f'Stanje {previous} → pokupljeno djelimično {picked} → očišćena lok. stanje 0'
+    else:
+        text = f'Stanje {previous} → pokupljeno {picked} → stanje {new}'
+    return text[:300]
 
 
 def _keeps_site_without_locations(product):
@@ -5411,11 +5444,12 @@ def deduct_web_order_stock(order):
     order.lager_status = locked.lager_status
 
 
-def deduct_for_order(product, qty, *, variation=None, user=None, napomena='', web_order=None):
+def deduct_for_order(product, qty, *, variation=None, user=None, napomena='', web_order=None, order=None):
     """Skini slobodnu količinu (bez rezervisanog). Vraća koliko nije skinuto."""
     remaining = max(0, _int(qty))
     if remaining <= 0:
         return 0
+    history_order = order if order is not None else web_order
     rows, _ = order_location_rows(product, variation)
     for row in rows:
         if remaining <= 0:
@@ -5424,14 +5458,22 @@ def deduct_for_order(product, qty, *, variation=None, user=None, napomena='', we
         if take <= 0:
             continue
         _stock, hold_variation = _stock_row_for_sale(product, variation, row['location'])
+        previous = int(_stock.kolicina or 0)
+        note = napomena or 'Ručna narudžba'
+        if history_order is not None and (not napomena or napomena.startswith('Validacija #')):
+            note = picking_stock_note(
+                history_order, PICK_REASON_SALE,
+                previous=previous, new=max(0, previous - take), picked=take,
+            )
         apply_movement(
             product=product,
             variation=hold_variation,
             location=row['location'],
             tip=WarehouseMovement.Tip.PRODAJA,
             kolicina=take,
-            napomena=napomena or 'Ručna narudžba',
+            napomena=note,
             user=user,
+            order=history_order,
         )
         if web_order is not None:
             OrderStockHold.objects.create(narudzba=web_order, product=product, variation=hold_variation,
@@ -5571,6 +5613,33 @@ def _fresh_order_items(order):
         order._prefetched_objects_cache.pop('stavke', None)
         order._prefetched_objects_cache.pop('magacin_holds', None)
     return list(OrderItem.objects.filter(narudzba_id=order.pk))
+
+
+def sync_webshop_charges_to_picked(order):
+    """Webshop: naplata i otkup prate pokupljenu količinu, ne originalnu narudžbu."""
+    if getattr(order, 'izvor', '') != Order.Izvor.WEBSHOP:
+        return order
+    if is_prenos_mp_order(order) or is_vp_order(order):
+        return order
+    items = _fresh_order_items(order)
+    if not any(item.kolicina_pokupljeno is not None for item in items):
+        return order
+    for item in items:
+        if item.kolicina_pokupljeno is None:
+            continue
+        picked = max(0, int(item.kolicina_pokupljeno or 0))
+        if picked <= 0:
+            item.delete()
+            continue
+        if picked != int(item.kolicina or 0):
+            item.kolicina = picked
+            item.save(update_fields=['kolicina'])
+    if not OrderItem.objects.filter(narudzba_id=order.pk).exists():
+        order.medjuzbir = order.dostava = order.popust = order.ukupno = Decimal('0.00')
+        order.save(update_fields=['medjuzbir', 'dostava', 'popust', 'ukupno'])
+        return order
+    recalculate_order_totals(order)
+    return order
 
 
 def recalculate_order_totals(order):
@@ -5942,12 +6011,16 @@ def drop_missing_pick_line(order, item, *, loc, qty, user=None):
 
 
 @transaction.atomic
-def clear_pick_location_stock(order, item, *, loc, user=None, relocate_qty=None):
+def clear_pick_location_stock(
+    order, item, *, loc, user=None, relocate_qty=None,
+    keep_order_qty=False, picked_qty=0,
+):
     """Usputni popis: količine ovog artikla na toj lokaciji na 0.
 
     Druge lokacije se ne diraju. Sa sajta ide tek ako UKUPNO (sve lokacije + MP) padne na 0.
     Rezervacija se prebaci ako ima zalihe drugdje. Bez preostale zalihe,
     na narudžbi ostaje samo već pokupljena količina; prazna stavka se uklanja.
+    keep_order_qty: picking je potvrdio fizičko stanje — ne smanjuj naručenu količinu ovdje.
     """
     _assert_order_open(order)
     if item.narudzba_id != order.pk:
@@ -5955,36 +6028,59 @@ def clear_pick_location_stock(order, item, *, loc, user=None, relocate_qty=None)
     loc = (loc or '').strip()
     product = item.artikal
     variation = item.varijacija
-    if loc in VIRTUAL_PICK_LOCS or product is None:
+    if loc in {'Rezervni dio', NIJE_POPISAN_LABEL} or product is None:
         raise MagacinError('Ova lokacija se ne čisti s pickinga.')
-    location = _location_for_pick_label(loc)
-    if location is None:
-        raise MagacinError('Lokacija nije pronađena.')
-    if is_ignored_stock_location(location) or is_uncountable_stock_location(location):
-        raise MagacinError('Ova lokacija se ne čisti s pickinga.')
+    locations = _clearable_pick_locations(loc, product, variation)
+    if not locations:
+        raise MagacinError('Artikal nema fizičku lokaciju koju je moguće isprazniti.')
 
+    picked = max(0, int(picked_qty or 0))
+    reason = (
+        PICK_REASON_PARTIAL if picked else PICK_REASON_EMPTY
+    ) if keep_order_qty else None
     note = f'Usputni popis — očisti lokaciju picking #{order.broj}'
-    stock, sell_variation = _stock_row_for_sale(product, variation, location)
-    cleared = max(0, int(stock.kolicina or 0))
-    if cleared or int(stock.rezervisano or 0):
-        try:
-            apply_movement(
-                product=product,
-                variation=sell_variation,
-                location=location,
-                tip=WarehouseMovement.Tip.KOREKCIJA,
-                kolicina=0,
-                napomena=note,
-                user=user,
+    cleared = 0
+    sell_variation = variation
+    for location in locations:
+        stock, sell_variation = _stock_row_for_sale(product, variation, location)
+        previous = max(0, int(stock.kolicina or 0))
+        cleared += previous
+        if previous or int(stock.rezervisano or 0):
+            loc_note = (
+                picking_stock_note(
+                    order, reason, previous=previous, new=0, picked=picked, cleared=True,
+                )
+                if reason else note
             )
-        except MagacinError:
-            stock = get_or_create_stock(
-                product=product, variation=sell_variation, location=location,
-            )
-            stock.kolicina = 0
-            stock.rezervisano = 0
-            stock.save(update_fields=['kolicina', 'rezervisano', 'azurirano'])
-            refresh_catalog_qty(product)
+            try:
+                apply_movement(
+                    product=product,
+                    variation=sell_variation,
+                    location=location,
+                    tip=WarehouseMovement.Tip.KOREKCIJA,
+                    kolicina=0,
+                    napomena=loc_note,
+                    user=user,
+                    order=order,
+                )
+            except MagacinError:
+                stock = get_or_create_stock(
+                    product=product, variation=sell_variation, location=location,
+                )
+                stock.kolicina = 0
+                stock.rezervisano = 0
+                stock.save(update_fields=['kolicina', 'rezervisano', 'azurirano'])
+                WarehouseMovement.objects.create(
+                    order=order,
+                    product=product,
+                    variation=sell_variation,
+                    location=location,
+                    tip=WarehouseMovement.Tip.KOREKCIJA,
+                    kolicina=-previous,
+                    napomena=loc_note[:300],
+                    korisnik=user if getattr(user, 'is_authenticated', False) else None,
+                )
+                refresh_catalog_qty(product)
 
     hold_q = Q(**_hold_variation_filter(variation))
     if sell_variation != variation:
@@ -5993,7 +6089,7 @@ def clear_pick_location_stock(order, item, *, loc, user=None, relocate_qty=None)
         OrderStockHold.objects.select_for_update().filter(
             hold_q,
             product=product,
-            location=location,
+            location__in=locations,
             status=OrderStockHold.Status.REZERVISANO,
         )
     )
@@ -6015,7 +6111,7 @@ def clear_pick_location_stock(order, item, *, loc, user=None, relocate_qty=None)
             variation=variation,
             user=user,
             napomena=f'Usputni popis prebacivanje #{order.broj}',
-            exact=True,
+            exact=False,
         )
         relocated = this_qty - leftover
 
@@ -6023,7 +6119,11 @@ def clear_pick_location_stock(order, item, *, loc, user=None, relocate_qty=None)
     _clear_pick_state_for_item(order, item.pk)
     removed = False
     cancelled = False
-    if not is_prenos_mp_order(order) and display_stock_totals(product, variation)['na_stanju'] <= 0:
+    if (
+        not keep_order_qty
+        and not is_prenos_mp_order(order)
+        and display_stock_totals(product, variation)['na_stanju'] <= 0
+    ):
         # A confirmed empty item must disappear at the source, so every invoice,
         # packing list and print template sees the same corrected order.
         picked = max(0, int(item.kolicina_pokupljeno or 0))
@@ -6276,10 +6376,16 @@ _PICK_SKIP_LOCS = {
 
 
 def _pick_location_skipped(label):
+    """Virtual pick labels that are not deducted as warehouse stock.
+
+    Physical maloprodaja shelves are pickable and must be deducted.
+    """
     text = (label or '').strip().casefold()
     if not text or text in _PICK_SKIP_LOCS:
         return True
-    return is_uncountable_stock_location(name=label, sifra=label, path=label)
+    if 'maloprodaja' in text:
+        return False
+    return is_ignored_stock_location(name=label, sifra=label, path=label)
 
 
 def _location_for_pick_label(label):
@@ -6293,6 +6399,59 @@ def _location_for_pick_label(label):
     if loc is not None:
         return loc
     return WarehouseLocation.objects.filter(odoo_location_path__iexact=text).first()
+
+
+def _is_maloprodaja_pick_label(label):
+    text = (label or '').strip().casefold()
+    return text in {'mp', 'provjeri u mp'} or 'maloprodaja' in text
+
+
+def _clearable_pick_locations(loc, product=None, variation=None):
+    """Physical shelves that picking may empty, including maloprodaja.
+
+    Prenos u MP remains a transfer bucket and is never cleared here.
+    """
+    loc = (loc or '').strip()
+    if not loc or loc in {'Rezervni dio', NIJE_POPISAN_LABEL}:
+        return []
+    if is_ignored_stock_location(name=loc, sifra=loc, path=loc):
+        return []
+    if _is_maloprodaja_pick_label(loc):
+        found = []
+        seen = set()
+        mp_qs = maloprodaja_locations()
+        if product is not None:
+            for row in maloprodaja_location_rows(product, variation):
+                location = row['location']
+                if location.pk not in seen:
+                    seen.add(location.pk)
+                    found.append(location)
+            extra = (
+                WarehouseStock.objects.filter(product=product, location__in=mp_qs)
+                .filter(Q(kolicina__gt=0) | Q(rezervisano__gt=0))
+                .select_related('location')
+            )
+            if variation is not None:
+                extra = extra.filter(Q(variation=variation) | Q(variation__isnull=True) | Q(variation_key=0))
+            for stock in extra:
+                if stock.location_id not in seen:
+                    seen.add(stock.location_id)
+                    found.append(stock.location)
+        if not found:
+            dest = default_maloprodaja_location(product)
+            if dest is not None:
+                found = [dest]
+        return found
+    location = _location_for_pick_label(loc)
+    if location is None:
+        location = (
+            WarehouseLocation.objects.filter(sifra__iexact=loc).first()
+            or WarehouseLocation.objects.filter(naziv__iexact=loc).first()
+            or WarehouseLocation.objects.filter(odoo_location_path__iexact=loc).first()
+        )
+    if location is None or is_ignored_stock_location(location):
+        return []
+    return [location]
 
 
 def _iter_pick_deduct_rows(order):
@@ -6340,9 +6499,14 @@ def _iter_pick_deduct_rows(order):
 
 def _pick_line_loc_from_key(key):
     text = str(key or '')
-    if ':' in text:
-        return text.split(':', 1)[1].strip()
-    return ''
+    if ':' not in text:
+        return ''
+    rest = text.split(':', 1)[1].strip()
+    if rest.lower().startswith('taken:'):
+        rest = rest[6:].strip()
+    elif rest.casefold() == 'taken':
+        rest = ''
+    return rest
 
 
 def _stock_row_for_sale(product, variation, location):
@@ -6377,7 +6541,13 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
     if prenos_mp:
         napomena = f'Prenos u MP #{order.broj}'
 
-    def _apply_take(move_product, move_variation, move_location, take, *, from_reservation):
+    def _apply_take(move_product, move_variation, move_location, take, *, from_reservation, previous):
+        note = napomena
+        if not prenos_mp:
+            note = picking_stock_note(
+                order, PICK_REASON_SALE,
+                previous=previous, new=max(0, int(previous) - take), picked=take,
+            )
         kwargs = {
             'product': move_product,
             'order': order,
@@ -6385,7 +6555,7 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
             'location': move_location,
             'tip': WarehouseMovement.Tip.PRODAJA,
             'kolicina': take,
-            'napomena': napomena,
+            'napomena': note,
             'user': user,
             'from_reservation': from_reservation,
         }
@@ -6419,6 +6589,7 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
             _apply_take(
                 hold.product, move_variation, hold.location, take,
                 from_reservation=from_reservation,
+                previous=int(stock.kolicina or 0),
             )
         except MagacinError:
             if prenos_mp:
@@ -6441,6 +6612,7 @@ def _sell_qty_from_location(order, product, variation, location, qty, *, user=No
                 _apply_take(
                     product, move_variation, location, take,
                     from_reservation=from_reservation,
+                    previous=int(stock.kolicina or 0),
                 )
                 remaining -= take
                 sold += take
@@ -6561,6 +6733,9 @@ def validate_order_stock(order, *, user=None):
     if hasattr(order, "b2b_submission"):
         from .b2b_orders import finish_pick
         return finish_pick(order, user=user)
+    if order.izvor == Order.Izvor.WEBSHOP:
+        sync_webshop_charges_to_picked(order)
+        order.refresh_from_db()
     if order.lager_status == Order.LagerStatus.VALIDIRANO:
         from .warehouse_ledger import settle_replacement, settle_invoiced_excess, settle_picked_missing
         settle_replacement(order, user=user)
@@ -6611,6 +6786,7 @@ def validate_order_stock(order, *, user=None):
                 variation=variation,
                 user=user,
                 napomena=f'Validacija #{order.broj}',
+                order=order,
             )
             needed[(product_id, variation_id)] = leftover
 

@@ -85,6 +85,9 @@ const showCartMessage = (message, error = false) => {
   b2bToastTimer = setTimeout(() => { toast.hidden = true; }, error ? 8000 : 3500);
 };
 const quantityDialog = document.querySelector('.b2b-quantity-dialog');
+const addButton = (form) => form.querySelector('.add-to-cart, button[type="submit"]');
+const rowQuantity = (form) => form.closest('tr')?.querySelector('input[name="quantity"]')
+  || form.querySelector('input[name="quantity"]');
 const askQuantity = (form) => new Promise((resolve) => {
   const input = quantityDialog.querySelector('input');
   input.value = '1';
@@ -93,7 +96,7 @@ const askQuantity = (form) => new Promise((resolve) => {
   quantityDialog.returnValue = '';
   quantityDialog.addEventListener('close', () => {
     const value = quantityDialog.returnValue;
-    form.querySelector('button').focus({ preventScroll: true });
+    addButton(form)?.focus({ preventScroll: true });
     resolve(value ? Number(value) : null);
   }, { once: true });
   quantityDialog.showModal();
@@ -112,14 +115,15 @@ document.querySelectorAll('.add-form').forEach((form) => {
     event.preventDefault();
     if (form.dataset.pending === 'true') return;
     form.dataset.pending = 'true';
-    const quantity = await askQuantity(form);
-    if (quantity === null) { delete form.dataset.pending; return; }
+    const qtyInput = rowQuantity(form);
+    const quantity = qtyInput ? Math.max(1, Number(qtyInput.value || 1)) : await askQuantity(form);
+    if (quantity === null || Number.isNaN(quantity)) { delete form.dataset.pending; return; }
     const data = new FormData(form);
     data.set('quantity', String(quantity));
-    const button = form.querySelector('button[type="submit"], button:not([type])');
+    const button = addButton(form);
     form.dataset.pending = 'true';
     form.setAttribute('aria-busy', 'true');
-    button.setAttribute('aria-disabled', 'true');
+    if (button) button.setAttribute('aria-disabled', 'true');
     b2bCartQueue = b2bCartQueue.then(async () => {
       try {
         const response = await fetch(form.action, {
@@ -141,7 +145,7 @@ document.querySelectorAll('.add-form').forEach((form) => {
       } finally {
         delete form.dataset.pending;
         form.removeAttribute('aria-busy');
-        button.removeAttribute('aria-disabled');
+        if (button) button.removeAttribute('aria-disabled');
       }
     });
   });

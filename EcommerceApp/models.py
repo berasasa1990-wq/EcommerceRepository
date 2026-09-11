@@ -6524,6 +6524,14 @@ class B2BAccount(models.Model):
     company = models.CharField('Firma / kupac', max_length=200)
     password = models.CharField('Šifra (hash)', max_length=128, editable=False)
     is_active = models.BooleanField('Aktivan', default=True)
+    rabat = models.BooleanField(
+        'Rabat', default=False,
+        help_text='Uključite i unesite postotak. Kupac odmah vidi rabat i ostvaruje ga na cijeli račun.',
+    )
+    rabat_postotak = models.DecimalField(
+        'Rabat (%)', max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text='Npr. 5 za −5%. Prikazuje se i odbija odmah, bez minimalnog iznosa.',
+    )
 
     class Meta:
         verbose_name = 'B2B korisnik'

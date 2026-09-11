@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.test import TestCase
 from .models import Product, ProductVariation, Order, OrderItem, WarehouseLocation, WarehouseStock, WarehouseMovement
 from .magacin import apply_movement, deduct_web_order_stock, validate_order_stock, MagacinError
@@ -100,3 +102,78 @@ class WebStockTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn('/narudzba/uspjeh/', response.url)
         email.assert_called_once()
+
+    def test_partial_pick_reduces_webshop_total_and_xexpress_otkup(self):
+        from .xexpress_service import _shipment_amounts
+
+        apply_movement(product=self.product, location=self.location, tip='prijem', kolicina=10)
+        item = self.order.stavke.get()
+        item.kolicina = 10
+        item.cijena = Decimal('10.00')
+        item.save(update_fields=['kolicina', 'cijena'])
+        self.order.medjuzbir = Decimal('100.00')
+        self.order.dostava = Decimal('7.00')
+        self.order.popust = Decimal('0.00')
+        self.order.ukupno = Decimal('107.00')
+        self.order.izvor = Order.Izvor.WEBSHOP
+        self.order.save(update_fields=['medjuzbir', 'dostava', 'popust', 'ukupno', 'izvor'])
+        deduct_web_order_stock(self.order)
+        item.kolicina_pokupljeno = 8
+        item.save(update_fields=['kolicina_pokupljeno'])
+        validate_order_stock(self.order)
+        self.order.refresh_from_db()
+        item.refresh_from_db()
+        self.assertEqual(item.kolicina, 8)
+        self.assertEqual(self.order.medjuzbir, Decimal('80.00'))
+        self.assertEqual(self.order.dostava, Decimal('7.00'))
+        self.assertEqual(self.order.ukupno, Decimal('87.00'))
+        declared, pouz, otkup = _shipment_amounts(self.order)
+        self.assertEqual(declared, 87.0)
+        self.assertTrue(pouz)
+        self.assertEqual(otkup, 87.0)
+
+    def test_xexpress_uses_picked_qty_even_if_order_total_was_not_updated(self):
+        from unittest.mock import Mock, patch
+
+        from django.test import override_settings
+
+        from .xexpress_service import create_shipment
+
+        apply_movement(product=self.product, location=self.location, tip='prijem', kolicina=10)
+        item = self.order.stavke.get()
+        item.kolicina = 10
+        item.cijena = Decimal('10.00')
+        item.kolicina_pokupljeno = 8
+        item.save(update_fields=['kolicina', 'cijena', 'kolicina_pokupljeno'])
+        self.order.medjuzbir = Decimal('100.00')
+        self.order.dostava = Decimal('0.00')
+        self.order.ukupno = Decimal('100.00')
+        self.order.izvor = Order.Izvor.WEBSHOP
+        self.order.adresa = 'Ulica 1'
+        self.order.grad = 'Sarajevo'
+        self.order.telefon = '061000000'
+        self.order.save()
+        deduct_web_order_stock(self.order)
+        fake = Mock()
+        fake.status_code = 200
+        fake.content = b'[{"sifra":"XE-PICK8"}]'
+        fake.json.return_value = [{'sifra': 'XE-PICK8'}]
+        missing_loc = Mock()
+        missing_loc.status_code = 200
+        missing_loc.content = b'[{"rb":0,"naziv":"Glavna adresa"}]'
+        missing_loc.json.return_value = [{'rb': 0, 'naziv': 'Glavna adresa'}]
+        with override_settings(
+            XEXPRESS_USERNAME='xe-user',
+            XEXPRESS_PASSWORD='xe-pass',
+            XEXPRESS_LOKACIJA=0,
+            XEXPRESS_REZERVACIJA=True,
+        ):
+            with patch('EcommerceApp.xexpress_service.requests.post', return_value=fake) as mocked:
+                with patch('EcommerceApp.xexpress_service.requests.get', return_value=missing_loc):
+                    create_shipment(self.order)
+        body = mocked.call_args.kwargs.get('json') or mocked.call_args[1].get('json')
+        self.assertEqual(body[0]['vrednostPosiljke'], 80.0)
+        self.assertEqual(body[0]['iznosOtkupnine'], 80.0)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.ukupno, Decimal('80.00'))
+        self.assertEqual(self.order.stavke.get().kolicina, 8)

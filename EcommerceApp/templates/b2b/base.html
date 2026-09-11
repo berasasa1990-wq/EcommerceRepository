@@ -1,5 +1,87 @@
 {% load static %}<!doctype html>
-<html lang="bs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>B2B veleprodaja | Carpologija BH</title><link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20260909-27"><script src="{% static 'js/b2b.js' %}?v=20260909-27" defer></script><link rel="stylesheet" href="{% static 'css/touch-navigation.css' %}?v=20260909"></head>
-<body{% if account %} class="b2b-has-cart-bar"{% endif %}><header class="masthead"><a class="brand-logo" href="{% url 'b2b_catalog' %}"><img src="{% static 'img/carpologija-nav-logo-dark.jpg' %}" alt="Carpologija BH · Oprema za ribolov"></a><div class="b2b-mark"><strong>B2B</strong><span>VELEPRODAJA</span></div><p class="partner-line">POUZDAN PARTNER<br>ZA VAŠ POSAO</p><div class="header-benefit"><span>♧</span><div><strong>Oprema za ribolov</strong><small>Za poslovne partnere</small></div></div><div class="header-benefit"><span>◇</span><div><strong>Vaš B2B katalog</strong><small>Cijene i dostupnost na jednom mjestu</small></div></div>{% if site_settings.kontakt_telefon %}<div class="header-benefit"><span>☎</span><div><strong>{{ site_settings.kontakt_telefon }}</strong><small>Veleprodajna podrška</small></div></div>{% endif %}</header>
-{% if account %}<div class="toolbar"><a class="category-button" href="{% url 'b2b_catalog' %}">☷ <strong>Kategorije</strong></a><form class="global-search" action="{% url 'b2b_catalog' %}#catalog-filters" method="get">{% if collection %}<input type="hidden" name="ponuda" value="{{ collection }}">{% endif %}<input name="q" value="{{ q }}" aria-label="Pretraži artikle" placeholder="Pretraži artikle, šifre, brendove…"><button aria-label="Pretraži">⌕</button></form><details class="account-menu"><summary><span>♙</span><div><small>Vaš račun</small><strong>{{ account.company }}</strong></div><span>⌄</span></summary><form method="post" action="{% url 'b2b_logout' %}">{% csrf_token %}<button>Odjava</button></form></details></div>{% endif %}
-{% if account and messages %}<div class="notices" role="status">{% for message in messages %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}<div class="b2b-cart-toast" role="status" aria-live="polite" hidden></div>{% block content %}{% endblock %}{% if account %}<nav class="b2b-bottom-bar" aria-label="B2B ponude i korpa"><a class="b2b-collection-button b2b-new-button" href="{% url 'b2b_catalog' %}?ponuda=noviteti#catalog-filters" {% if collection == 'noviteti' %}aria-current="page"{% endif %}>NOVITETI</a><a class="b2b-collection-button b2b-sale-button" href="{% url 'b2b_catalog' %}?ponuda=akcijska#catalog-filters" {% if collection == 'akcijska' %}aria-current="page"{% endif %}>AKCIJSKA PONUDA</a><a class="cart-link" href="{% url 'b2b_cart' %}"><span><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 3h3l3 13h11l3-10H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg></span><div><strong>Korpa</strong><small data-b2b-cart-total>{{ b2b_cart_total|default:'0'|floatformat:2 }} KM</small></div><b data-b2b-cart-count>{{ b2b_cart_count|default:0 }}</b></a></nav>{% endif %}{% if account %}<dialog class="b2b-quantity-dialog" aria-labelledby="quantity-title"><form><h2 id="quantity-title">Koliko komada?</h2><p data-quantity-product></p><label for="b2b-quantity-input">Broj komada</label><input id="b2b-quantity-input" type="number" min="1" step="1" value="1" required inputmode="numeric" autofocus><div class="quantity-dialog-actions"><button type="button" data-quantity-cancel>Odustani</button><button type="submit">Dodaj u korpu</button></div></form></dialog><dialog class="b2b-image-dialog" aria-label="Uvećana slika artikla"><button type="button" class="b2b-image-close" aria-label="Zatvori uvećanu sliku" autofocus>×</button><img class="b2b-image-full" alt=""><p class="b2b-image-caption"></p></dialog>{% endif %}</body></html>
+<html lang="bs"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>B2B veleprodaja | Carpologija BH</title>
+<link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20260911rabatPct">
+<script src="{% static 'js/b2b.js' %}?v=20260910noQtyCol" defer></script>
+<link rel="stylesheet" href="{% static 'css/touch-navigation.css' %}?v=20260909">
+</head>
+<body class="{% if account %}b2b-has-cart-bar{% endif %}{% block body_class %}{% endblock %}">
+<header class="masthead">
+  <a class="brand-logo" href="{% url 'b2b_catalog' %}"><img src="{% static 'img/carpologija-nav-logo-dark.jpg' %}" alt="Carpologija BH · Oprema za ribolov"></a>
+  <div class="b2b-mark"><strong>B2B</strong><span>VELEPRODAJA</span></div>
+  <p class="partner-line">POUZDAN PARTNER<br>ZA VAŠ POSAO</p>
+  <div class="header-benefit">
+    <span class="header-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.4"/><path d="M4 19c.6-3.2 2.6-5 5-5s4.4 1.8 5 5M14 14.2c2 .2 3.6 1.6 4.2 4.8"/></svg></span>
+    <div><strong>Oprema za ribolov</strong><small>Za poslovne partnere</small></div>
+  </div>
+  <div class="header-benefit">
+    <span class="header-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3.2 20.5 12 12 20.8 3.5 12z"/></svg></span>
+    <div><strong>Vaš B2B katalog</strong><small>Cijene i dostupnost na jednom mjestu</small></div>
+  </div>
+  {% if site_settings.kontakt_telefon %}
+  <div class="header-benefit">
+    <span class="header-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6.6 3.8h3.2l1.2 4.2-2 1.2a12.6 12.6 0 0 0 5.8 5.8l1.2-2 4.2 1.2v3.2c0 .8-.6 1.6-1.4 1.6C10.6 19 5 13.4 5 5.2c0-.8.8-1.4 1.6-1.4z"/></svg></span>
+    <div><strong>{{ site_settings.kontakt_telefon }}</strong><small>Veleprodajna podrška</small></div>
+  </div>
+  {% endif %}
+</header>
+{% if account and messages %}<div class="notices" role="status">{% for message in messages %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}
+<div class="b2b-cart-toast" role="status" aria-live="polite" hidden></div>
+{% if account %}
+<div class="b2b-workspace">
+{% block sidebar %}{% endblock %}
+<div class="b2b-main">
+<div class="toolbar">
+  <form class="global-search" action="{% url 'b2b_catalog' %}#catalog-filters" method="get">
+    {% if collection %}<input type="hidden" name="ponuda" value="{{ collection }}">{% endif %}
+    <span class="search-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg></span>
+    <input name="q" value="{{ q }}" aria-label="Pretraži artikle" placeholder="Pretraži artikle, šifre, brendove…">
+    <button type="submit">Traži</button>
+  </form>
+  <details class="account-menu">
+    <summary>
+      <span class="account-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1-3.6 3.4-5.4 7-5.4s6 1.8 7 5.4"/></svg></span>
+      <div><small>Vaš račun</small><strong>{{ account.company }}</strong></div>
+      <span class="account-caret" aria-hidden="true">⌄</span>
+    </summary>
+    <form method="post" action="{% url 'b2b_logout' %}">{% csrf_token %}<button type="submit">Odjava</button></form>
+  </details>
+</div>
+{% endif %}
+{% block content %}{% endblock %}
+{% if account %}
+</div>
+</div>
+{% endif %}
+{% if account %}
+<nav class="b2b-bottom-bar" aria-label="B2B ponude i korpa">
+  <a class="b2b-collection-button b2b-new-button" href="{% url 'b2b_catalog' %}?ponuda=noviteti#catalog-filters" {% if collection == 'noviteti' %}aria-current="page"{% endif %}>NOVITETI</a>
+  <a class="b2b-collection-button b2b-sale-button" href="{% url 'b2b_catalog' %}?ponuda=akcijska#catalog-filters" {% if collection == 'akcijska' %}aria-current="page"{% endif %}>AKCIJSKA PONUDA</a>
+  <a class="cart-link" href="{% url 'b2b_cart' %}">
+    <span><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 3h3l3 13h11l3-10H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg></span>
+    <div><strong>Korpa</strong><small data-b2b-cart-total>{{ b2b_cart_total|default:'0'|floatformat:2 }} KM</small></div>
+    <b data-b2b-cart-count>{{ b2b_cart_count|default:0 }}</b>
+  </a>
+</nav>
+<dialog class="b2b-quantity-dialog" aria-labelledby="quantity-title">
+  <form>
+    <h2 id="quantity-title">Koliko komada?</h2>
+    <p data-quantity-product></p>
+    <label for="b2b-quantity-input">Broj komada</label>
+    <input id="b2b-quantity-input" type="number" min="1" step="1" value="1" required inputmode="numeric" autofocus>
+    <div class="quantity-dialog-actions">
+      <button type="button" data-quantity-cancel>Odustani</button>
+      <button type="submit">Dodaj u korpu</button>
+    </div>
+  </form>
+</dialog>
+<dialog class="b2b-image-dialog" aria-label="Uvećana slika artikla">
+  <button type="button" class="b2b-image-close" aria-label="Zatvori uvećanu sliku" autofocus>×</button>
+  <img class="b2b-image-full" alt="">
+  <p class="b2b-image-caption"></p>
+</dialog>
+{% endif %}
+</body></html>

@@ -1,7 +1,29 @@
 """Physical stock history, with order and location details preserved at movement time."""
 import re
 
-ORDER_NOTE = re.compile(r'(?:Validacija|Web narudžba|B2B picking|Prenos u MP|Prodaja|picking)\s*#(\d+)', re.I)
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
+
+ORDER_NOTE = re.compile(
+    r'(?:Validacija|Web narudžba|B2B picking|Prenos u MP|Prodaja|'
+    r'Picking(?: narudžbe| - [^#]+)?)\s*#(\d+)',
+    re.I,
+)
+NOTE_HIGHLIGHTS = (
+    (re.compile(r'(pokupljeno djelimično \d+|pokupljeno \d+)', re.IGNORECASE), 'mg-hist-picked'),
+    (re.compile(r'(nije pronađeno)', re.IGNORECASE), 'mg-hist-missing'),
+    (re.compile(r'(ubaci u lokaciju|dodano na lokaciju)', re.IGNORECASE), 'mg-hist-added'),
+)
+
+
+def highlight_pick_qty_note(note):
+    text = (note or '').strip()
+    if not text:
+        return '—'
+    html = escape(text)
+    for pattern, css in NOTE_HIGHLIGHTS:
+        html = pattern.sub(rf'<strong class="{css}">\1</strong>', html)
+    return mark_safe(html)
 
 
 def location_label(location):
@@ -57,4 +79,10 @@ def attach_history(movements):
         else:
             movement.history_type = 'Dodavanje u lokaciju' if movement.kolicina > 0 else 'Skidanje sa lokacije'
             movement.history_quantity = f'{movement.kolicina:+d}'
+        note = (movement.napomena or '').strip()
+        if movement.history_type == 'Transfer iz lokacije u lokaciju' and (
+            not note or note.casefold() == 'transfer'
+        ):
+            note = 'Prenos iz lokacije u lokaciju'
+        movement.history_note = highlight_pick_qty_note(note)
     return movements

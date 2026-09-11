@@ -21,7 +21,7 @@ from django.contrib.auth.models import User
 from django.db import DatabaseError, transaction
 from django.db.models import Case, Count, Exists, F, IntegerField, Max, OuterRef, Prefetch, Q, Value, When
 from django.utils import timezone
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.html import escape, mark_safe, strip_tags
@@ -31,6 +31,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.middleware.csrf import get_token
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
@@ -2536,6 +2537,22 @@ def newsletter_subscribe(request):
         'ok': True,
         'message': 'Već ste prijavljeni na newsletter. Hvala!',
     })
+
+
+FACEBOOK_DOMAIN_VERIFICATION = 'xvfl8evgib41rm02m6jdtd7tvruqy0'
+
+
+@require_GET
+@never_cache
+def facebook_domain_verification(request):
+    body = (
+        '<!DOCTYPE html>\n<html lang="en">\n<head>\n'
+        f'<meta name="facebook-domain-verification" content="{FACEBOOK_DOMAIN_VERIFICATION}" />\n'
+        '</head>\n<body>\n'
+        f'{FACEBOOK_DOMAIN_VERIFICATION}\n'
+        '</body>\n</html>\n'
+    )
+    return HttpResponse(body, content_type='text/html; charset=utf-8')
 
 
 def home(request):
@@ -5910,9 +5927,30 @@ def _allocate_packing_locations(needed_qty, stock_locations):
     return picks, remaining
 
 
-def _magacin_stock_picks(items, *, exact_items=None):
+def _short_picked_qty_by_item(order):
+    """Količine već potvrđene (i skinute) short-pickom, po stavci."""
+    totals = {}
+    for event in (getattr(order, 'pick_short_events', None) or []):
+        try:
+            item_id = int(event.get('item_id') or 0)
+            got = int(event.get('got') or 0)
+        except (TypeError, ValueError):
+            continue
+        if item_id and got:
+            totals[item_id] = totals.get(item_id, 0) + got
+    return totals
+
+
+def _item_remaining_pick_qty(item, already_picked=None):
+    taken = 0
+    if already_picked:
+        taken = int(already_picked.get(item.pk, 0) or 0)
+    return max(0, int(item.kolicina or 0) - taken)
+
+
+def _magacin_stock_picks(items, *, exact_items=None, already_picked=None):
     """Picks iz lokalnog Magacin stanja kad nema rezervacije (npr. webshop)."""
-    from .magacin import is_ignored_stock_location
+    from .magacin import is_ignored_stock_location, maloprodaja_last_sort_key
     from .models import WarehouseStock
     stocks = {}
     for stock in WarehouseStock.objects.filter(product_id__in={item.artikal_id for item in items if item.artikal_id},
@@ -5927,8 +5965,12 @@ def _magacin_stock_picks(items, *, exact_items=None):
     for item in items:
         if not item.artikal_id:
             continue
-        rows = stocks.get((item.artikal_id, item.varijacija_id), [])
-        remaining = int(item.kolicina or 0)
+        rows = list(stocks.get((item.artikal_id, item.varijacija_id), []))
+        if not rows:
+            rows = list(stocks.get((item.artikal_id, None), []))
+        rows.sort(key=lambda row: maloprodaja_last_sort_key(
+            row['location'].sifra or '', row['location']))
+        remaining = _item_remaining_pick_qty(item, already_picked)
         picks = []
         for row in rows:
             if remaining <= 0:
@@ -5955,7 +5997,7 @@ def _magacin_stock_picks(items, *, exact_items=None):
 def _magacin_hold_picks(order, items):
     """Picks iz lokalnih Magacin rezervacija (rezervisano / validirano)."""
     from .models import OrderStockHold, WarehouseStock
-    from .magacin import is_ignored_stock_location
+    from .magacin import is_ignored_stock_location, maloprodaja_last_sort_key
     holds = list(
         order.magacin_holds.exclude(status=OrderStockHold.Status.OTKAZANO)
         .select_related('location', 'product', 'variation')
@@ -5964,9 +6006,13 @@ def _magacin_hold_picks(order, items):
         return {}
 
     capacity = {}
+    loc_capacity = {}
     for stock in WarehouseStock.objects.filter(product_id__in={h.product_id for h in holds}, location_id__in={h.location_id for h in holds}):
         key = (stock.product_id, stock.variation_id, stock.location_id)
-        capacity[key] = capacity.get(key, 0) + max(0, int(stock.kolicina or 0))
+        qty = max(0, int(stock.kolicina or 0))
+        capacity[key] = capacity.get(key, 0) + qty
+        loc_key = (stock.product_id, stock.location_id)
+        loc_capacity[loc_key] = loc_capacity.get(loc_key, 0) + qty
     buckets = []
     for hold in holds:
         key = (hold.product_id, hold.variation_id, hold.location_id)
@@ -5978,10 +6024,26 @@ def _magacin_hold_picks(order, items):
         if hold.status == OrderStockHold.Status.REZERVISANO:
             if not hold.location.aktivan or is_ignored_stock_location(hold.location):
                 continue
-            qty = min(qty, capacity.get(key, 0))
-            capacity[key] = max(0, capacity.get(key, 0) - qty)
+            loc_cap = capacity.get(key, 0) or loc_capacity.get((hold.product_id, hold.location_id), 0)
+            qty = min(qty, loc_cap)
+            used = min(qty, capacity.get(key, 0))
+            if used:
+                capacity[key] = max(0, capacity.get(key, 0) - used)
+            loc_capacity[(hold.product_id, hold.location_id)] = max(
+                0, loc_capacity.get((hold.product_id, hold.location_id), 0) - qty)
         buckets.append({'product_id':hold.product_id, 'variation_id':hold.variation_id,
                         'left':qty, 'location':hold.location})
+    merged = {}
+    for bucket in buckets:
+        key = (bucket['product_id'], bucket['location'].pk)
+        existing = merged.get(key)
+        if existing is None:
+            merged[key] = bucket
+        else:
+            existing['left'] += bucket['left']
+    buckets = list(merged.values())
+    buckets.sort(key=lambda bucket: maloprodaja_last_sort_key(
+        bucket['location'].sifra or '', bucket['location']))
 
     def consume(item, variation_id, need):
         picks = []
@@ -5990,7 +6052,11 @@ def _magacin_hold_picks(order, items):
                 break
             if bucket['product_id'] != item.artikal_id:
                 continue
-            if bucket['variation_id'] != variation_id:
+            if (
+                bucket['variation_id'] != variation_id
+                and bucket['variation_id'] is not None
+                and variation_id is not None
+            ):
                 continue
             take = min(bucket['left'], need)
             if take <= 0:
@@ -6007,15 +6073,18 @@ def _magacin_hold_picks(order, items):
             need -= take
         return picks, need
 
+    already = _short_picked_qty_by_item(order)
     picks_by_item = {}
     for item in items:
         if not item.artikal_id:
             continue
-        need = int(item.kolicina or 0)
+        need = _item_remaining_pick_qty(item, already)
         picks, need = consume(item, item.varijacija_id, need)
+        if not picks and item.varijacija_id:
+            picks, need = consume(item, None, _item_remaining_pick_qty(item, already))
         if not picks:
             continue
-        picks = sorted(picks, key=lambda p: (p.get('location_name') or '').casefold())
+        picks.sort(key=lambda p: maloprodaja_last_sort_key(p.get('location_name') or ''))
         picks_by_item[item.pk] = (picks, max(0, need))
     return picks_by_item
 
@@ -6051,13 +6120,67 @@ def _mp_found_qty(pick_state, item_id, default):
         return default
 
 
+def _fill_remaining_physical_picks(order, item, picks, shortfall):
+    """Fill leftover need from remaining physical stock, including maloprodaja.
+
+    Stock reserved for this same order is pickable — after a location is
+    wiped, that reservation often sits on MP with dostupno=0.
+    """
+    from .magacin import is_ignored_stock_location, order_location_rows
+    from .models import OrderStockHold
+
+    leftover = max(0, int(shortfall or 0))
+    if leftover <= 0 or not getattr(item, 'artikal_id', None):
+        return list(picks or []), leftover
+    used = {
+        value
+        for pick in (picks or [])
+        for value in (pick.get('location_id'), pick.get('location_name'))
+        if value not in (None, '')
+    }
+    own = {}
+    for hold in order.magacin_holds.filter(
+        product_id=item.artikal_id,
+        status=OrderStockHold.Status.REZERVISANO,
+    ).select_related('location'):
+        if item.varijacija_id and hold.variation_id not in (item.varijacija_id, None):
+            continue
+        if is_ignored_stock_location(hold.location):
+            continue
+        own[hold.location_id] = own.get(hold.location_id, 0) + max(0, int(hold.kolicina or 0))
+    rows, _ = order_location_rows(item.artikal, item.varijacija)
+    out = list(picks or [])
+    for row in rows:
+        if leftover <= 0:
+            break
+        loc = row['location']
+        if loc.pk in used or (loc.sifra or '') in used:
+            continue
+        pickable = max(0, int(row.get('dostupno') or 0)) + own.get(loc.pk, 0)
+        take = min(leftover, pickable)
+        if take <= 0:
+            continue
+        out.append({
+            'location_name': loc.sifra or loc.naziv or 'MP',
+            'location_id': loc.pk,
+            'take': take,
+            'on_hand': int(row.get('kolicina') or take),
+            'location_path': loc.odoo_location_path or loc.naziv or '',
+        })
+        leftover -= take
+        used.add(loc.pk)
+        if loc.sifra:
+            used.add(loc.sifra)
+    return out, leftover
+
+
 def _build_order_packing_lines(order):
     """
     Stavke pakovanja: prvo Magacin rezervacije, inače Odoo lokacije.
     Lokacije se čiste abecedno; količina se uzima redom s prvih lokacija.
     """
     from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
-    from .magacin import NIJE_POPISAN_LABEL, order_has_nije_popisan
+    from .magacin import NIJE_POPISAN_LABEL, maloprodaja_last_sort_key, order_has_nije_popisan
 
     items = list(
         order.stavke.filter(ledger_excess_line__isnull=True).select_related('artikal', 'artikal__brend', 'artikal__kategorija', 'varijacija').all()
@@ -6067,14 +6190,19 @@ def _build_order_packing_lines(order):
     stock_by_product = {}
     template_variants = {}
     exact_items = {e.get("item_id") for e in (order.pick_short_events or [])}
+    already_picked = _short_picked_qty_by_item(order)
     magacin_picks = _magacin_hold_picks(order, items)
     if len(magacin_picks) < len(items):
-        for pk, val in _magacin_stock_picks([item for item in items if item.pk not in magacin_picks], exact_items=exact_items).items():
+        for pk, val in _magacin_stock_picks(
+            [item for item in items if item.pk not in magacin_picks],
+            exact_items=exact_items,
+            already_picked=already_picked,
+        ).items():
             magacin_picks.setdefault(pk, val)
     for item in items:
         if item.artikal_id:
             # Never replace missing physical stock with a remote/parent location.
-            magacin_picks.setdefault(item.pk, ([], int(item.kolicina or 0)))
+            magacin_picks.setdefault(item.pk, ([], _item_remaining_pick_qty(item, already_picked)))
     mp_confirmed = _mp_confirmed_item_ids(order)
     pick_state = order.pick_state if isinstance(getattr(order, 'pick_state', None), dict) else {}
 
@@ -6148,6 +6276,8 @@ def _build_order_packing_lines(order):
             picks, shortfall = [], int(item.kolicina or 0)
         else:
             picks, shortfall = _allocate_packing_locations(item.kolicina, stock_locations)
+        if shortfall > 0 and item.artikal_id:
+            picks, shortfall = _fill_remaining_physical_picks(order, item, picks, shortfall)
         if item.pk in mp_confirmed and shortfall > 0:
             picks = list(picks or [])
             mp_take = _mp_found_qty(pick_state, item.pk, shortfall)
@@ -6173,7 +6303,8 @@ def _build_order_packing_lines(order):
             picks = sorted(
                 picks,
                 key=lambda p: (
-                    1 if (p.get('location_name') or '') in {'MP', 'Provjeri u MP', 'Nije popisan'} else 0,
+                    2 if (p.get('location_name') or '') == 'Nije popisan' else
+                    1 if maloprodaja_last_sort_key(p.get('location_name') or '')[0] else 0,
                     (p.get('location_name') or '').casefold(),
                 ),
             )

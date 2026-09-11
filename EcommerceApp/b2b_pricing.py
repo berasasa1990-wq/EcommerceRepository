@@ -1,6 +1,39 @@
 from decimal import Decimal, ROUND_HALF_UP
 from .models import B2BOfferItem, B2BBrandPricing
 
+def account_rabat_percent(account):
+    if not account or not getattr(account, 'rabat', False):
+        return Decimal('0')
+    percent = getattr(account, 'rabat_postotak', None)
+    if percent is None or percent <= 0:
+        return Decimal('0')
+    return Decimal(str(percent))
+
+
+def volume_discount_for_netto(netto_total, percent=None):
+    """Immediate rabat off VPC netto, no minimum."""
+    percent = Decimal(str(percent or 0))
+    netto_total = Decimal(str(netto_total or 0))
+    if percent <= 0:
+        return Decimal('0.00')
+    return (netto_total * percent / Decimal('100')).quantize(
+        Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+
+def apply_volume_discount(netto_total, line_gross=None, percent=None):
+    """Return (netto_after, discount, gross_after, tax)."""
+    netto_total = Decimal(str(netto_total or 0)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    discount = volume_discount_for_netto(netto_total, percent)
+    netto_after = (netto_total - discount).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    if discount:
+        gross_after = (netto_after * Decimal('1.17')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    elif line_gross is not None:
+        gross_after = Decimal(str(line_gross)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    else:
+        gross_after = (netto_after * Decimal('1.17')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    tax = (gross_after - netto_after).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    return netto_after, discount, gross_after, tax
+
 
 def discounts_for(product_ids):
     return dict(B2BOfferItem.objects.filter(settings_id=1, product_id__in=product_ids).values_list('product_id', 'discount_percent'))
@@ -47,6 +80,51 @@ def invoice_price_notes(item, quantity):
     elif item.popust_postotak and item.popust_postotak > 0:
         notes.append(f'Sniženje −{item.popust_postotak.normalize():f}%.')
     return notes
+
+
+def order_rabat_percent(order):
+    for row in (getattr(order, 'popust_detalji', None) or []):
+        if row.get('rabat'):
+            return Decimal(str(row.get('rabat_percent') or 0))
+    from .models import B2BSubmission
+    submission = B2BSubmission.objects.filter(order_id=order.pk).select_related('account').first()
+    return account_rabat_percent(submission.account) if submission else Decimal('0')
+
+
+def order_has_rabat(order):
+    return order_rabat_percent(order) > 0
+
+
+def b2b_volume_discount_note(order, items=None):
+    """Print note when B2B rabat was applied, using billed qty."""
+    percent = order_rabat_percent(order)
+    if percent <= 0:
+        return ''
+    items = list(items if items is not None else order.stavke.all())
+    net_total = Decimal('0.00')
+    has_b2b = False
+    for item in items:
+        snap = item.b2b_pricing_snapshot or {}
+        if snap:
+            has_b2b = True
+        qty = int(item.kolicina_faktura or 0)
+        if qty <= 0:
+            continue
+        if snap.get('netto'):
+            net_total += Decimal(str(snap['netto'])) * qty
+        elif snap:
+            net_total += (Decimal(str(item.cijena or 0)) / Decimal('1.17')).quantize(
+                Decimal('0.01'), rounding=ROUND_HALF_UP) * qty
+    if not has_b2b:
+        return ''
+    netto_after, discount, _gross, _tax = apply_volume_discount(net_total, percent=percent)
+    if discount <= 0:
+        return ''
+    pct = format(percent.normalize(), 'f')
+    return (
+        f'Ostvaren rabat −{pct}%: −{discount:.2f} KM netto '
+        f'(VPC netto {net_total:.2f} → {netto_after:.2f} KM).'
+    )
 
 
 def price_snapshot(product, variation, discounts, divisors):

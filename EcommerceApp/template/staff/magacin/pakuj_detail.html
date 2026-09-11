@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block magacin_content %}
-<div class="pk-app pk-list pk-reference" id="pkPickApp" data-broj="{{ order.broj }}"{% if is_prenos_mp %} data-prenos-mp="1"{% endif %}{% if is_vp_order %} data-vp="1"{% endif %}>
+<div class="pk-app pk-list pk-reference" id="pkPickApp" data-broj="{{ order.broj }}" data-ordered="{{ pick_ordered|default:0 }}" data-picked="{{ pick_picked|default:0 }}"{% if is_prenos_mp %} data-prenos-mp="1"{% endif %}{% if is_vp_order %} data-vp="1"{% endif %}>
     <script type="application/json" id="pkQueue">{{ pick_queue_json|safe }}</script>
     <script type="application/json" id="pkState">{{ pick_state_json|safe }}</script>
 
@@ -44,16 +44,16 @@
                 <div class="pk-meta-row">
                     <span>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-                        Narudžba
+                        {% if is_prenos_mp %}Prenos u MP{% else %}Narudžba{% endif %}
                     </span>
                     <strong>RN-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</strong>
                 </div>
                 <div class="pk-meta-row">
                     <span>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        Kupac
+                        {% if is_prenos_mp %}Stavke{% else %}Kupac{% endif %}
                     </span>
-                    <strong>{{ order.ime_prezime }}</strong>
+                    <strong>{% if is_prenos_mp %}{{ prenos_items|length }} stavki{% else %}{{ order.ime_prezime }}{% endif %}</strong>
                 </div>
                 {% if order.loyalty_popust_info %}
                 <div class="pk-meta-row">
@@ -98,7 +98,7 @@
 
             <input type="text" id="pkScanInput" class="pk-scan-hidden" inputmode="none" autocomplete="off" aria-label="Barkod ili šifra">
             <p class="pk-msg" id="pkMsg" hidden></p>
-            <p class="pk-bar-prog" id="pkProgress" hidden>0/{{ pick_total }}</p>
+            <p class="pk-bar-prog" id="pkProgress">0/{{ pick_ordered|default:pick_total }} pokupljeno</p>
             <button type="button" id="pkTakeLess" hidden>Pokupi manje</button>
             <button type="button" id="pkTakeAll" hidden>Pokupi sve</button>
             <button type="button" id="pkMinus" hidden>−</button>

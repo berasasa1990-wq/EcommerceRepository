@@ -4064,7 +4064,19 @@ class B2BAccountForm(forms.ModelForm):
 
     class Meta:
         model = B2BAccount
-        fields = ['username', 'company', 'is_active']
+        fields = ['username', 'company', 'is_active', 'rabat', 'rabat_postotak']
+
+    def clean(self):
+        cleaned = super().clean()
+        rabat = cleaned.get('rabat')
+        percent = cleaned.get('rabat_postotak')
+        if rabat and (percent is None or percent <= 0):
+            self.add_error('rabat_postotak', 'Unesite iznos rabata (npr. 5 za −5%).')
+        elif percent is not None and percent > 100:
+            self.add_error('rabat_postotak', 'Rabat ne može biti veći od 100%.')
+        if not rabat:
+            cleaned['rabat_postotak'] = None
+        return cleaned
 
     def clean_new_password(self):
         password = self.cleaned_data.get('new_password')
@@ -4086,8 +4098,8 @@ class B2BAccountForm(forms.ModelForm):
 @admin.register(B2BAccount)
 class B2BAccountAdmin(admin.ModelAdmin):
     form = B2BAccountForm
-    list_display = ['username', 'company', 'is_active']
-    list_filter = ['is_active']
+    list_display = ['username', 'company', 'is_active', 'rabat', 'rabat_postotak']
+    list_filter = ['is_active', 'rabat']
     search_fields = ['username', 'company']
 
 

@@ -8,7 +8,7 @@
 <td data-label="Na lokaciju">{% if m.history_destination_short %}{{ m.history_destination_short }} <strong style="color:#188139;white-space:nowrap">+{{ m.history_amount }}</strong>{% else %}—{% endif %}</td>
 <td data-label="Kupac">{% if m.history_customer %}{{ m.history_customer }}{% elif m.tip == 'prodaja' %}Nije evidentiran{% else %}—{% endif %}</td>
 <td data-label="Narudžba">{% if m.history_order_link %}<a href="{% url 'staff_order_detail' m.history_order_link %}">#{{ m.history_order_number }}</a>{% elif m.history_order_number %}#{{ m.history_order_number }}{% else %}—{% endif %}</td>
-<td data-label="Napomena">{{ m.napomena|default:'—' }}</td>
+<td data-label="Napomena">{% if m.history_note %}{{ m.history_note }}{% else %}{{ m.napomena|default:'—' }}{% endif %}</td>
 <td data-label="Korisnik">{{ m.korisnik.get_username|default:'—' }}</td>
 </tr>{% empty %}<tr><td colspan="8" class="mg-muted">Nema promjena količine na lokacijama.</td></tr>{% endfor %}</tbody>
 </table></div>

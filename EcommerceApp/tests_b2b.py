@@ -95,6 +95,18 @@ class B2BTests(TestCase):
         from django.contrib.auth.hashers import check_password
         self.assertTrue(check_password('Different-secret-392!', account.password))
 
+    def test_admin_rabat_requires_percent(self):
+        data = {
+            'username': 'rabat-user', 'company': 'Rabat d.o.o.', 'is_active': True,
+            'new_password': 'Different-secret-392!', 'rabat': True,
+        }
+        self.assertFalse(B2BAccountForm(data=data).is_valid())
+        form = B2BAccountForm(data={**data, 'rabat_postotak': '5'})
+        self.assertTrue(form.is_valid(), form.errors)
+        account = form.save()
+        self.assertTrue(account.rabat)
+        self.assertEqual(account.rabat_postotak, Decimal('5'))
+
     def test_b2b_cart_add_update_remove_and_netto_total(self):
         self.login()
         url = f'/veleprodaja/korpa/{self.product.pk}/'
@@ -143,8 +155,31 @@ class B2BTests(TestCase):
         self.assertEqual(response.context['rows'][0]['available'], 9)
         self.assertContains(response, 'Dodaj u korpu')
         self.assertNotContains(response, 'MPC')
-        self.assertContains(response, 'Šifra:')
+        self.assertNotContains(response, 'Preko 1500 KM')
+        self.assertNotContains(response, '>Rabat<')
+        self.assertNotContains(response, '−5%')
+        self.assertContains(response, 'Šifra')
         self.assertNotContains(response, self.location.label)
+
+    def test_catalog_lists_every_brand_used_on_articles(self):
+        from .models import Brand
+        visible = Brand.objects.create(naziv='Fox Carp')
+        other = Brand.objects.create(naziv='Korda')
+        unused = Brand.objects.create(naziv='Bez artikala')
+        extra_cat = Category.objects.create(naziv='Mamci', aktivan=True)
+        Product.objects.filter(pk=self.product.pk).update(brend=visible)
+        Product.objects.create(
+            naziv='Korda artikal', cijena=Decimal('10'), kategorija=extra_cat, brend=other,
+            aktivan=True, sakriven_do_stanja=False,
+        )
+        self.login()
+        response = self.client.get('/veleprodaja', {'kategorija': self.root.slug})
+        names = [b.naziv for b in response.context['brands']]
+        self.assertIn('Fox Carp', names)
+        self.assertIn('Korda', names)
+        self.assertNotIn('Bez artikala', names)
+        self.assertContains(response, 'Fox Carp')
+        self.assertContains(response, 'Korda')
 
     def test_reference_layout_filters_and_cart_summary(self):
         from .models import Brand
@@ -158,6 +193,7 @@ class B2BTests(TestCase):
         self.assertContains(response, 'product-table')
         self.assertContains(response, 'b2b-quantity-dialog')
         self.assertNotContains(response, '<th>Količina</th>')
+        self.assertNotContains(response, 'quantity-stepper')
         response = self.client.get('/veleprodaja', {'q': brand.naziv})
         self.assertEqual(len(response.context['rows']), 1)
         response = self.client.get('/veleprodaja', {'stanje': '1'})
@@ -207,7 +243,7 @@ class B2BTests(TestCase):
             response = self.client.get('/veleprodaja')
             self.assertContains(response, settings.banner.url)
             self.assertContains(response, 'Naš B2B banner')
-            self.assertNotContains(response, icon.image.url)
+            self.assertContains(response, icon.image.url)
             self.assertNotContains(response, '<br>BIZNIS</strong>')
             settings.banner = ''
             settings.save()
@@ -218,10 +254,11 @@ class B2BTests(TestCase):
         self.assertEqual(category_icon_name('Štapovi'), 'rod')
         self.assertEqual(category_icon_name('Mašinice'), 'reel')
         self.assertEqual(category_icon_name('Odjeća i obuća'), 'clothing')
+        self.assertEqual(category_icon_name('Igle i Alati'), 'pin')
         self.login()
         response = self.client.get('/veleprodaja')
-        self.assertNotContains(response, 'img/b2b-icons/rod.svg')
-        self.assertNotContains(response, 'img/b2b-icons/feeder.svg')
+        self.assertContains(response, 'img/b2b-icons/rod.svg')
+        self.assertContains(response, 'img/b2b-icons/feeder.svg')
         self.assertContains(response, 'img/b2b-icons/gear.svg')
 
     def checkout_order(self, quantity=2, payment='ziralno'):
@@ -383,15 +420,16 @@ class B2BTests(TestCase):
         self.assertEqual(response.status_code, 401)
         self.assertFalse(response.json()['ok'])
 
-    def test_category_tree_expands_selected_ancestors_without_icons(self):
+    def test_category_tree_expands_selected_ancestors_with_icons(self):
         self.login()
         response = self.client.get('/veleprodaja')
         root = next(n for n in response.context['navigation'] if n['category'] == self.root)
         self.assertFalse(root['expanded'])
         self.assertEqual(root['children'][0]['category'], self.child)
+        self.assertTrue(root['icon'].endswith('img/b2b-icons/rod.svg'))
         self.assertContains(response, '<details class="category-branch"')
         self.assertContains(response, 'Svi artikli iz kategorije')
-        self.assertContains(response, 'class="category-icon"', count=1)
+        self.assertContains(response, 'class="category-icon"', count=4)
         response = self.client.get('/veleprodaja', {'kategorija': self.child.slug})
         root = next(n for n in response.context['navigation'] if n['category'] == self.root)
         self.assertTrue(root['expanded'])
@@ -509,7 +547,6 @@ class B2BTests(TestCase):
         self.login()
         response = self.client.get('/veleprodaja', {'ponuda': 'akcijska'})
         self.assertEqual(response.context['rows'][0]['netto'], Decimal('85.00'))
-        self.assertContains(response, '−15%')
         self.client.post(f'/veleprodaja/korpa/{self.product.pk}/', {'quantity': 2})
         response = self.client.get('/veleprodaja/korpa/')
         self.assertEqual(response.context['total'], Decimal('170.00'))
@@ -522,6 +559,51 @@ class B2BTests(TestCase):
         submission = B2BSubmission.objects.get()
         self.assertEqual(submission.netto_total, Decimal('170.00'))
         self.assertEqual(submission.order.ukupno, Decimal('198.90'))
+
+    def test_rabat_applies_immediately_without_minimum(self):
+        self.account.rabat = True
+        self.account.rabat_postotak = Decimal('5')
+        self.account.save(update_fields=['rabat', 'rabat_postotak'])
+        self.login()
+        catalog = self.client.get('/veleprodaja')
+        self.assertContains(catalog, 'Rabat')
+        self.assertContains(catalog, '−5%')
+        self.assertNotContains(catalog, 'Preko 1500 KM')
+        self.client.post(f'/veleprodaja/korpa/{self.product.pk}/', {'quantity': 2})
+        cart = self.client.get('/veleprodaja/korpa/')
+        self.assertEqual(cart.context['total'], Decimal('200.00'))
+        self.assertEqual(cart.context['volume_discount'], Decimal('10.00'))
+        self.assertEqual(cart.context['netto_after'], Decimal('190.00'))
+        self.assertEqual(cart.context['gross_total'], Decimal('222.30'))
+        self.assertContains(cart, 'Rabat (−5%)')
+        checkout = self.client.get('/veleprodaja/zavrsi/')
+        self.assertEqual(checkout.context['volume_discount'], Decimal('10.00'))
+        self.assertEqual(checkout.context['gross_total'], Decimal('222.30'))
+        token = checkout.context['form']['token'].value()
+        self.client.post('/veleprodaja/zavrsi/', {'token': token, 'payment': 'ziralno'})
+        from .models import B2BSubmission
+        submission = B2BSubmission.objects.get()
+        self.assertEqual(submission.netto_total, Decimal('190.00'))
+        self.assertEqual(submission.order.ukupno, Decimal('222.30'))
+        self.assertGreater(submission.order.popust, 0)
+        admin_user = get_user_model().objects.create_superuser(
+            'vol-print-admin', 'volprint@example.com', 'secret-723!')
+        self.client.force_login(admin_user)
+        from django.urls import reverse
+        printed = self.client.get(
+            reverse('staff_magacin_narudzbe_stampa_kolicine'), {'b': submission.order.broj})
+        self.assertContains(printed, 'Ostvaren rabat −5%')
+        self.assertContains(printed, '−10.00 KM netto')
+        self.assertContains(printed, 'VPC netto 200.00 → 190.00 KM')
+
+    def test_volume_discount_skipped_without_account_rabat(self):
+        self.login()
+        self.client.post(f'/veleprodaja/korpa/{self.product.pk}/', {'quantity': 2})
+        cart = self.client.get('/veleprodaja/korpa/')
+        self.assertEqual(cart.context['total'], Decimal('200.00'))
+        self.assertEqual(cart.context['volume_discount'], Decimal('0.00'))
+        self.assertEqual(cart.context['gross_total'], Decimal('234.00'))
+        self.assertNotContains(cart, 'Rabat (−5%)')
 
     def test_admin_autocomplete_excludes_selected_and_discount_validation(self):
         from django.core.exceptions import ValidationError

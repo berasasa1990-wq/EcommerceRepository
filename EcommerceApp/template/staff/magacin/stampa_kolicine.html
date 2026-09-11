@@ -85,6 +85,14 @@
         td.sifra, th.sifra { width: 28%; white-space: nowrap; font-weight: 700; letter-spacing: .02em; }
         td.qty, th.qty { text-align: right; width: 72px; font-weight: 700; font-size: 13px; }
         .price-note { font-size: 10px; line-height: 1.4; margin-top: 4px; font-weight: 600; color: #222; }
+        .volume-note {
+            margin: 14px 0 0;
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.4;
+        }
         tr { break-inside: avoid; }
         @media print {
             html, body {
@@ -148,6 +156,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% if job.volume_note %}<p class="volume-note">{{ job.volume_note }}</p>{% endif %}
     </section>
     {% endfor %}
 </body>

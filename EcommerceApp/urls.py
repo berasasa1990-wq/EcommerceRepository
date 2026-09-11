@@ -85,6 +85,11 @@ urlpatterns = [
     path('facebook-feed.xml', views_feed.facebook_feed, name='facebook_feed'),
 
     path('priprema-pristup/', views_site_prep.site_prep_unlock, name='site_prep_unlock'),
+    path(
+        f'{views.FACEBOOK_DOMAIN_VERIFICATION}.html',
+        views.facebook_domain_verification,
+        name='facebook_domain_verification',
+    ),
     path('', views.home, name='home'),
     path('api/newsletter/', views.newsletter_subscribe, name='newsletter_subscribe'),
     path('o-nama/', views.about_us, name='about_us'),

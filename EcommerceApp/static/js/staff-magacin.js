@@ -3717,13 +3717,45 @@ function initArticleScanner() {
             .replace(/"/g, '&quot;');
     }
 
+    function pickQtySummary() {
+        var byItem = {};
+        queue.forEach(function (item) {
+            var id = String(item.item_id || item.key);
+            if (!byItem[id]) {
+                byItem[id] = { naziv: item.naziv || '', ordered: item.ordered || 0, picked: 0 };
+            }
+            if (item.ordered && item.ordered > byItem[id].ordered) {
+                byItem[id].ordered = item.ordered;
+            }
+            byItem[id].picked += itemState(item).got || 0;
+        });
+        var ordered = 0;
+        var picked = 0;
+        Object.keys(byItem).forEach(function (id) {
+            var row = byItem[id];
+            row.picked = Math.min(row.picked, row.ordered || row.picked);
+            ordered += row.ordered || 0;
+            picked += row.picked;
+        });
+        if (!ordered) {
+            ordered = parseInt(root.getAttribute('data-ordered'), 10) || 0;
+            picked = parseInt(root.getAttribute('data-picked'), 10) || picked;
+        }
+        return {
+            ordered: ordered,
+            picked: picked,
+            missing: Math.max(0, ordered - picked),
+        };
+    }
     function totals() {
-        var need = 0;
+        var summary = pickQtySummary();
+        var need = summary.ordered;
         var got = 0;
         queue.forEach(function (item) {
-            need += item.need || 0;
             got += itemState(item).got || 0;
+            if (!need) need += item.need || 0;
         });
+        if (summary.ordered) got = summary.picked;
         return { need: need, got: got, items: queue.length, done: doneCount() };
     }
 
@@ -3732,15 +3764,15 @@ function initArticleScanner() {
         if (Object.prototype.hasOwnProperty.call(draftQuantities, item.key)) {
             st = { got: draftQuantities[item.key], done: false };
         }
-        var loc = item.is_mp ? 'MP' : (item.loc || '—');
-        var locPath = item.is_mp ? 'Maloprodaja' : (item.loc_path || '');
+        var loc = item.loc || (item.is_mp ? 'MP' : '—');
+        var locPath = item.is_mp ? (item.loc_path || 'Maloprodaja') : (item.loc_path || '');
         var sku = item.sifra || item.barkod || '—';
         var art = document.createElement('article');
         art.className = 'pk-item' + (st.done ? ' is-done' : '') + (isNow ? ' is-now' : '') + (item.rezervni ? ' is-spare' : '');
         art.innerHTML =
             (item.rezervni ? '<div class="pk-spare-tag">REZERVNI DIO</div>' : '') +
             (isNow
-                ? '<div class="pk-now-go"><span>' + ((item.rezervni && loc === 'Rezervni dio') ? 'Rezervni dio' : 'Uzmi sa lokacije') + '</span><b>' + escapeHtml(loc) + '</b><small>' + escapeHtml(locPath || ((item.rezervni && loc === 'Rezervni dio') ? 'Slanje rezervnog dijela' : 'Magacin')) + '</small></div>'
+                ? '<div class="pk-now-go"><span>' + ((item.rezervni && loc === 'Rezervni dio') ? 'Rezervni dio' : (item.is_mp ? 'Uzmi iz maloprodaje' : 'Uzmi sa lokacije')) + '</span><b>' + escapeHtml(loc) + '</b><small>' + escapeHtml(locPath || ((item.rezervni && loc === 'Rezervni dio') ? 'Slanje rezervnog dijela' : (item.is_mp ? 'Maloprodaja' : 'Magacin'))) + '</small></div>'
                 : '') +
             '<div class="pk-item-step">' +
                 '<button type="button" data-pk-minus aria-label="Manje">−</button>' +
@@ -3863,7 +3895,19 @@ function initArticleScanner() {
                     : ('Stavka ' + (focusIdx + 1) + ' / ' + queue.length);
             }
         }
-        if (els.openEmpty) els.openEmpty.hidden = !(remaining === 0 && doneN > 0 && !editingKey);
+        if (els.openEmpty) {
+            var summary = pickQtySummary();
+            if (remaining === 0 && !editingKey && summary.missing > 0) {
+                els.openEmpty.hidden = false;
+                els.openEmpty.textContent = 'Poručeno: ' + summary.ordered
+                    + '. Pokupljeno: ' + summary.picked
+                    + '. Nedostaje: ' + summary.missing
+                    + '. Nema više robe na lokacijama — završi picking sa pokupljenom količinom.';
+            } else {
+                els.openEmpty.hidden = !(remaining === 0 && doneN > 0 && !editingKey);
+                els.openEmpty.textContent = 'Sve stavke su odvojene.';
+            }
+        }
     }
 
     function syncPickView() {
@@ -3889,7 +3933,10 @@ function initArticleScanner() {
         var finished = doneCount();
         var tot = totals();
         var pct = tot.need > 0 ? Math.round((tot.got / tot.need) * 100) : 0;
-        if (els.progress) els.progress.textContent = finished + '/' + queue.length;
+        if (els.progress) {
+            els.progress.hidden = false;
+            els.progress.textContent = tot.got + '/' + tot.need + ' pokupljeno';
+        }
         if (els.todoN) els.todoN.textContent = String(queue.length - finished);
         if (els.doneN) els.doneN.textContent = String(finished);
         if (els.valid) els.valid.disabled = false;
@@ -3989,56 +4036,61 @@ function initArticleScanner() {
     }
     var shortPending = false;
     function confirmShortQuantity(item, got) {
-        if (got > 0 || isPrenosMp) { setGot(item, got, true); return; }
-        if (!window.confirm('Pokupljeno je 0 komada. Želiš li očistiti lager ovog artikla na lokaciji ' + item.loc + '?')) {
-            setGot(item, 0, true);
+        if (got >= item.need || isPrenosMp) { setGot(item, got, true); return; }
+        var confirmText = got
+            ? ('Pokupljeno je ' + got + ' od ' + item.need + ' na lokaciji ' + item.loc
+                + '. Očistiti tu lokaciju i potražiti ostatak na drugim lokacijama?')
+            : ('Pokupljeno je 0 komada na lokaciji ' + item.loc + '. Potvrditi količinu 0?');
+        if (!window.confirm(confirmText)) {
             return;
         }
-        if (shortPending) return;
-        shortPending = true;
-        window.clearTimeout(saveTimer);
-        root.inert = true;
-        var body = new URLSearchParams();
-        var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
-        body.set('action', 'pick_short');
-        body.set('clear_location', '1');
-        body.set('item_id', item.item_id);
-        body.set('loc', item.loc);
-        body.set('got', got);
-        if (csrf) body.set('csrfmiddlewaretoken', csrf.value);
-        // Persist other confirmed lines before the stock correction starts.
-        Promise.resolve(saveServer()).then(function () {
-            return fetch(window.location.pathname, { method: 'POST', body: body,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
-        }).then(function (response) {
-            return response.json().catch(function () {
-                throw Error('Server nije vratio ispravan odgovor. Osvježi picking i provjeri količinu prije ponovne potvrde.');
-            });
-        }).then(function (data) {
-            if (data.terminal && data.redirect) {
-                leavingPicking = true;
-                window.location.assign(data.redirect);
+        function postZeroPick(password) {
+            if (shortPending) return;
+            if (!password) {
+                draftQuantities[item.key] = got;
+                render();
+                showMsg('Unesi lozinku da očistiš ' + item.loc + ' i nastaviš na sljedeću lokaciju.');
                 return;
             }
-            if (!data.ok || !Array.isArray(data.queue)) throw Error(data.error || 'Količina nije potvrđena.');
-            queue = data.queue;
-            state = data.state || {};
-            draftQuantities = {};
-            editingKey = '';
-            current = -1;
-            queue.forEach(function (line, index) {
-                if (line.already_picked) state[line.key] = {got: line.need, done: true, item_id: line.item_id};
-                if (!state[line.key]) state[line.key] = {got: 0, done: false, item_id: line.item_id};
-                if (String(line.item_id) === String(item.item_id) && !itemState(line).done && current < 0) current = index;
-            });
-            if (current < 0) current = firstOpenIndex();
-            persist();
-            setPickView('now', true);
-            renderShortages(data.shortages);
-            showMsg(data.message, true);
-        }).catch(function (error) {
-            window.alert(error.message || 'Količina nije potvrđena. Pokušaj ponovo.');
-        }).finally(function () { shortPending = false; root.inert = false; });
+            shortPending = true;
+            window.clearTimeout(saveTimer);
+            root.inert = true;
+            var body = new URLSearchParams();
+            var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
+            body.set('action', 'pick_short');
+            body.set('clear_location', '1');
+            body.set('item_id', item.item_id);
+            body.set('loc', item.loc);
+            body.set('got', got);
+            body.set('lozinka', password);
+            if (csrf) body.set('csrfmiddlewaretoken', csrf.value);
+            Promise.resolve(saveServer()).then(function () {
+                return fetch(window.location.pathname, { method: 'POST', body: body,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+            }).then(function (response) {
+                return response.json().catch(function () {
+                    throw Error('Server nije vratio ispravan odgovor. Osvježi picking i provjeri količinu prije ponovne potvrde.');
+                });
+            }).then(function (data) {
+                if (data.terminal && data.redirect) {
+                    leavingPicking = true;
+                    window.location.assign(data.redirect);
+                    return;
+                }
+                if (!data.ok) throw Error(data.error || 'Količina nije potvrđena.');
+                try { window.localStorage.removeItem(storageKey); } catch (err) {}
+                leavingPicking = true;
+                window.location.reload();
+            }).catch(function (error) {
+                window.alert(error.message || 'Količina nije potvrđena. Pokušaj ponovo.');
+            }).finally(function () { shortPending = false; root.inert = false; });
+        }
+        var askPassword = window.mgPrenosClearPassword;
+        if (typeof askPassword === 'function') {
+            askPassword(item.loc).then(postZeroPick);
+            return;
+        }
+        postZeroPick(window.prompt('Lozinka za čišćenje lokacije ' + item.loc) || '');
     }
 
     function dropMissing(item) {
@@ -4286,11 +4338,14 @@ function initArticleScanner() {
             var msg = isPrenosMp
                 ? 'Želiš li validatovati prenos u MP #' + broj + '? Skida se sa stanja.'
                 : 'Želiš li završiti picking #' + broj + '?';
-            var hasZero = queue.some(function (item) {
-                return (itemState(item).got || 0) === 0 && (item.need || 0) > 0;
-            });
-            if (!isPrenosMp && (hasZero || (queue.length && doneCount() < queue.length))) {
-                msg = 'Artikli s 0 kom se skidaju s narudžbe. Završiti picking #' + broj + '?';
+            if (!isPrenosMp) {
+                var summary = pickQtySummary();
+                if (summary.missing > 0) {
+                    msg = 'Poručeno: ' + summary.ordered
+                        + '\nPokupljeno: ' + summary.picked
+                        + '\nNedostaje: ' + summary.missing
+                        + '\n\nZavršiti narudžbu #' + broj + ' sa manjom količinom?';
+                }
             }
             if (!window.confirm(msg)) {
                 event.preventDefault();
