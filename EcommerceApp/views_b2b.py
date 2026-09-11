@@ -437,6 +437,10 @@ def checkout(request):
                     form.cleaned_data['token'], form.cleaned_data)
             except MagacinError as exc:
                 form.add_error(None, str(exc))
+            except Exception:
+                import logging
+                logging.getLogger(__name__).exception('B2B checkout failed')
+                form.add_error(None, 'Narudžba se nije mogla poslati. Pokušajte ponovo ili kontaktirajte podršku.')
             else:
                 request.session.pop('b2b_cart', None)
                 request.session.pop('b2b_checkout_token', None)

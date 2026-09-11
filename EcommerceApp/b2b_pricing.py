@@ -81,8 +81,19 @@ def base_net(mpc, divisor=Decimal('1.38')):
     return (mpc / divisor / Decimal('1.17')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
+def _product_brand_name(product):
+    try:
+        brand = product.brend
+    except Exception:
+        return ''
+    return (getattr(brand, 'naziv', None) or '') if brand else ''
+
+
 def net_price(product, variation, discounts, divisors):
-    base = base_net(variation.bazna_cijena if variation else product.cijena, divisors.get(product.brend_id, Decimal('1.38')))
+    raw = variation.bazna_cijena if variation else product.cijena
+    if raw is None:
+        raw = Decimal('0')
+    base = base_net(raw, divisors.get(product.brend_id, Decimal('1.38')))
     percent = discounts.get(product.pk, Decimal('0'))
     return (base * (Decimal('1') - percent / Decimal('100'))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
@@ -177,15 +188,18 @@ def b2b_volume_discount_notes(order, items=None):
 
 def price_snapshot(product, variation, discounts, divisors, rabat_percent=None):
     mpc = variation.bazna_cijena if variation else product.cijena
+    if mpc is None:
+        mpc = Decimal('0')
     divisor = divisors.get(product.brend_id, Decimal('1.38'))
     percent = Decimal(str(rabat_percent or 0))
+    brand_name = _product_brand_name(product)
     return {
         'mpc': str(mpc), 'divisor': str(divisor),
-        'brand_override': product.brend_id in divisors,
-        'brand': product.brend.naziv if product.brend_id else '',
+        'brand_override': bool(product.brend_id in divisors),
+        'brand': brand_name,
         'original_netto': str(base_net(mpc, divisor)),
         'netto': str(net_price(product, variation, discounts, divisors)),
-        'discount_percent': str(discounts.get(product.pk, 0)),
+        'discount_percent': str(discounts.get(product.pk, 0) or 0),
         'rabat_percent': str(percent),
-        'rabat_brand': product.brend.naziv if percent > 0 and product.brend_id else '',
+        'rabat_brand': brand_name if percent > 0 else '',
     }

@@ -7,6 +7,7 @@ from django.utils import timezone
 from .b2b_pricing import (
     discounts_for, net_price, brand_divisors, price_snapshot, rabat_totals,
     account_brand_rabats, rabat_percent_for_product, volume_discount_for_netto,
+    _product_brand_name,
 )
 from .models import (B2BAccount, B2BSubmission, Order, OrderItem, OrderStockHold,
                      Product, WarehouseStock, WarehouseMovement)
@@ -18,23 +19,34 @@ def gross(net):
     return (net * Decimal('1.17')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
+def _cart_line_key(key):
+    try:
+        product_id, variation_id = str(key).split(':', 1)
+        return int(product_id), int(variation_id)
+    except (TypeError, ValueError):
+        raise MagacinError('Artikal više nije dostupan. Provjerite korpu.')
+
+
 @transaction.atomic
 def submit_order(account, cart, token, details):
-    account = B2BAccount.objects.select_for_update().prefetch_related('brand_rabats__brand').get(
-        pk=account.pk, is_active=True)
+    account = B2BAccount.objects.select_for_update().get(pk=account.pk, is_active=True)
     existing = B2BSubmission.objects.filter(account=account, token=token).first()
     if existing:
         return existing
     if not cart:
         raise MagacinError('Korpa je prazna.')
+    product_ids = []
+    for key in cart:
+        product_id, _variation_id = _cart_line_key(key)
+        product_ids.append(product_id)
     products = {p.pk: p for p in Product.objects.select_for_update().filter(
-        pk__in=[k.split(':')[0] for k in cart], aktivan=True, sakriven_do_stanja=False
-    ).filter(Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).order_by('pk').select_related('brend').prefetch_related('varijacije')}
-    discounts = discounts_for(products)
+        pk__in=product_ids, aktivan=True, sakriven_do_stanja=False
+    ).filter(Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).order_by('pk').select_related('brend')}
+    discounts = discounts_for(products.keys())
     divisors = brand_divisors()
     lines = []
     for key, quantity in cart.items():
-        product_id, variation_id = map(int, key.split(':'))
+        product_id, variation_id = _cart_line_key(key)
         product = products.get(product_id)
         variations = {v.pk: v for v in product.varijacije.all()} if product else {}
         variation = variations.get(variation_id)
@@ -61,7 +73,7 @@ def submit_order(account, cart, token, details):
         saving = volume_discount_for_netto(price * qty, percent)
         if saving <= 0:
             continue
-        brand_name = product.brend.naziv if product.brend_id else 'Brend'
+        brand_name = _product_brand_name(product) or 'Brend'
         rabat_brands.append({
             'brand_id': product.brend_id, 'brand': brand_name,
             'percent': str(percent), 'discount': str(saving),
@@ -76,9 +88,10 @@ def submit_order(account, cart, token, details):
             'rabat_brands': rabat_brands,
             'volume_discount': str(volume_discount),
         })
-    order = Order.objects.create(ime_prezime=account.company, email='',
-        telefon='', adresa='', grad='',
-        napomena=f'VP narudžba\nB2B: {account.username}\nPlaćanje: {label}\n{details.get("napomena", "")}',
+    order = Order.objects.create(ime_prezime=account.company or account.username,
+        email=f'b2b-{account.pk}@b2b.local',
+        telefon='-', adresa='B2B', grad='B2B',
+        napomena=f'VP narudžba\nB2B: {account.username}\nPlaćanje: {label}\n{details.get("napomena") or ""}',
         medjuzbir=line_gross, popust=line_gross - total, ukupno=total, izvor=Order.Izvor.MAGACIN,
         lager_status=Order.LagerStatus.REZERVISANO,
         popust_detalji=details_list)
