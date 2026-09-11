@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>B2B veleprodaja | Carpologija BH</title>
-<link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20260912brandLine">
+<link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20260911cartBelow">
 <script src="{% static 'js/b2b.js' %}?v=20260912headCart" defer></script>
 <link rel="stylesheet" href="{% static 'css/touch-navigation.css' %}?v=20260909">
 </head>
@@ -80,6 +80,11 @@
   </div>
   <a class="b2b-collection-button b2b-new-button" href="{% url 'b2b_catalog' %}?ponuda=noviteti#catalog-filters" {% if collection == 'noviteti' %}aria-current="page"{% endif %}>NOVITETI</a>
   <a class="b2b-collection-button b2b-sale-button" href="{% url 'b2b_catalog' %}?ponuda=akcijska#catalog-filters" {% if collection == 'akcijska' %}aria-current="page"{% endif %}>AKCIJSKA PONUDA</a>
+  <a class="cart-link" href="{% url 'b2b_cart' %}">
+    <svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 3h3l3 13h11l3-10H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg>
+    <div><strong>Korpa</strong><small data-b2b-cart-total>{{ b2b_cart_total|default:'0'|floatformat:2 }} KM</small></div>
+    <b data-b2b-cart-count>{{ b2b_cart_count|default:0 }}</b>
+  </a>
 </nav>
 <dialog class="b2b-quantity-dialog" aria-labelledby="quantity-title">
   <form>

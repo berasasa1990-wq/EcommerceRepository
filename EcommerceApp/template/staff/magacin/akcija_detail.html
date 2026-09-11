@@ -1,0 +1,78 @@
+{% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-levels-reference{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-levels-reference.css' %}?v=20260911-akcija">
+{% endblock %}
+
+{% block magacin_content %}
+<div class="mg-orders-page mg-nivelacije-page">
+<div class="mg-page-head">
+    <div>
+        <h1>Akcija {{ akcija.broj }}</h1>
+        <p class="mg-count">
+            Nivelacija {{ akcija.broj_nivelacije }}
+            · −{{ akcija.popust_postotak }}%
+            · {{ stavke|length }} artikala
+            · {{ akcija.kreiran|date:"d.m.Y. H:i" }}
+            {% if akcija.akcija_do %} · važi do {{ akcija.akcija_do|date:"d.m.Y." }}{% endif %}
+        </p>
+    </div>
+    <div class="mg-toolbar-actions">
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_nivelacije_akcija_nova' %}">← Akcije</a>
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_nivelacije_akcija_stampa' akcija.pk %}" target="_blank" rel="noopener">Štampaj akciju</a>
+        <a class="mg-btn mg-btn-pill mg-btn-primary" href="{% url 'staff_magacin_nivelacije_akcija_etikete' akcija.pk %}" target="_blank" rel="noopener">Štampaj etikete</a>
+    </div>
+</div>
+
+{% if messages %}
+<div class="flash-messages">
+    {% for message in messages %}
+    <p class="flash-message flash-message--{{ message.tags }}">{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<section class="mg-card mg-orders-card">
+    <form method="get" action="{% url 'staff_magacin_nivelacije_akcija_etikete' akcija.pk %}" target="_blank" rel="noopener" class="ak-etikete-form">
+        {% include 'staff/magacin/partials/stampa_papir.html' %}
+        <button type="submit" class="mg-btn mg-btn-primary">Štampaj etikete (stara prekrižena / nova)</button>
+    </form>
+    <div class="mg-table-wrap">
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>ARTIKAL</th>
+                    <th>ŠIFRA</th>
+                    <th class="num">STARA</th>
+                    <th class="num">NOVA</th>
+                    <th>POPUST</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in stavke %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        {% if row.product %}
+                        <a href="{% url 'staff_magacin_artikal' row.product.pk %}"><strong>{{ row.naziv }}</strong></a>
+                        {% else %}
+                        <strong>{{ row.naziv }}</strong>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.sifra|default:"—" }}</td>
+                    <td class="num"><span class="ak-old">{{ row.stara_cijena }} KM</span></td>
+                    <td class="num"><span class="ak-new">{{ row.nova_cijena }} KM</span></td>
+                    <td>−{{ row.popust_postotak }}%</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6">Nema stavki.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+</div>
+{% endblock %}

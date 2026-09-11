@@ -1,0 +1,399 @@
+{% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-levels-reference{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-levels-reference.css' %}?v=20260911-akcija">
+{% endblock %}
+
+{% block magacin_content %}
+<div class="mg-orders-page mg-nivelacije-page ak-page" data-lookup="{{ lookup_url }}" id="akApp">
+<div class="mg-page-head">
+    <div>
+        <h1>
+            <span class="mg-orders-title-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+            Pravljenje akcije
+        </h1>
+        <p class="mg-count">Unesi artikle, pa na kraju bulk popust i broj nivelacije. Potvrda upisuje % na artikle.</p>
+    </div>
+    <div class="mg-toolbar-actions">
+        <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_nivelacije' %}">← Nivelacije</a>
+    </div>
+</div>
+
+{% if messages %}
+<div class="flash-messages">
+    {% for message in messages %}
+    <p class="flash-message flash-message--{{ message.tags }}">{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<section class="mg-card sc-card sc-card-wide">
+    <label class="sc-label" for="akQuery">Dodaj artikal</label>
+    <div class="sc-entry">
+        <div class="sc-search" id="akSearch">
+            <input type="search" id="akQuery" placeholder="Kucaj naziv, šifru ili barkod…" autocomplete="off" autofocus>
+            <ul class="sc-suggest" id="akSuggest" hidden></ul>
+        </div>
+        <button type="button" class="mg-btn mg-btn-pill" id="akCatalogBtn" aria-pressed="false">Katalog</button>
+        <button type="button" class="vp-scan-btn" data-mg-scan-target="akQuery" data-mg-scan-title="Skeniraj artikal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
+            Skeniraj
+        </button>
+    </div>
+    <div id="akCatalog" class="mg-catalog" hidden></div>
+
+    <form method="post" id="akForm">
+        {% csrf_token %}
+        <div id="akStavke"></div>
+        <ul class="sc-list" id="akList"></ul>
+        <p class="sc-empty" id="akEmpty">Još nema artikala.</p>
+
+        <div class="ak-confirm">
+            <div class="mg-form-grid ak-confirm-grid">
+                <div class="mg-field">
+                    <label for="akPct">Bulk popust (%)</label>
+                    <input id="akPct" name="popust_postotak" inputmode="decimal" required placeholder="npr. 20" value="{{ form_popust }}">
+                </div>
+                <div class="mg-field">
+                    <label for="akBroj">Broj nivelacije</label>
+                    <input id="akBroj" name="broj_nivelacije" required maxlength="40" placeholder="npr. 142" value="{{ form_broj }}">
+                </div>
+                <div class="mg-field">
+                    <label for="akDo">Akcija važi do (opcionalno)</label>
+                    <input id="akDo" name="akcija_do" type="date" value="{{ form_do }}">
+                </div>
+            </div>
+            <button type="submit" class="mg-btn mg-btn-primary" id="akSubmit" disabled>Potvrdi akciju</button>
+        </div>
+    </form>
+</section>
+
+{% if akcije %}
+<section class="mg-card">
+    <h2 class="mg-h">Prethodne akcije</h2>
+    <div class="mg-table-wrap">
+        <table class="mg-table">
+            <thead>
+                <tr>
+                    <th>AKCIJA</th>
+                    <th>NIVELACIJA</th>
+                    <th>POPUST</th>
+                    <th>ARTIKALA</th>
+                    <th>DATUM</th>
+                    <th class="mg-more-col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in akcije %}
+                <tr class="is-clickable" onclick="location.href='{% url 'staff_magacin_nivelacije_akcija_detail' row.pk %}'">
+                    <td><strong class="mg-order-rn">{{ row.broj }}</strong></td>
+                    <td>{{ row.broj_nivelacije }}</td>
+                    <td>−{{ row.popust_postotak }}%</td>
+                    <td>{{ row.stavki }}</td>
+                    <td>{{ row.kreiran|date:"d.m.Y. H:i" }}</td>
+                    <td class="mg-more-col">
+                        <span class="mg-row-more" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 6l6 6-6 6"/></svg>
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+</div>
+{{ posted_items|json_script:"akPostedItems" }}
+{% endblock %}
+
+{% block magacin_js %}
+<script>
+(function () {
+    var root = document.getElementById('akApp');
+    if (!root) return;
+    var lookup = root.getAttribute('data-lookup') || '';
+    var query = document.getElementById('akQuery');
+    var suggest = document.getElementById('akSuggest');
+    var catalog = document.getElementById('akCatalog');
+    var catalogBtn = document.getElementById('akCatalogBtn');
+    var listEl = document.getElementById('akList');
+    var emptyEl = document.getElementById('akEmpty');
+    var stavkeEl = document.getElementById('akStavke');
+    var submitBtn = document.getElementById('akSubmit');
+    var pctInput = document.getElementById('akPct');
+    var brojInput = document.getElementById('akBroj');
+    var form = document.getElementById('akForm');
+    var timer = null;
+    var lastRows = [];
+    var seen = {};
+
+    function formatCijena(value) {
+        if (value == null || value === '') return '';
+        var n = Number(value);
+        if (isNaN(n)) return String(value).replace('.', ',');
+        return n.toFixed(2).replace('.', ',') + ' KM';
+    }
+
+    function parsePct() {
+        var raw = (pctInput.value || '').trim().replace(',', '.');
+        var n = Number(raw);
+        if (!raw || isNaN(n) || n <= 0 || n >= 100) return null;
+        return n;
+    }
+
+    function newPrice(oldVal, pct) {
+        var n = Number(oldVal);
+        if (isNaN(n) || pct == null) return '';
+        return (n * (1 - pct / 100)).toFixed(2).replace('.', ',') + ' KM';
+    }
+
+    function flatten(results) {
+        var rows = [];
+        (results || []).forEach(function (p) {
+            var vars = p.varijacije || [];
+            if (vars.length) {
+                vars.forEach(function (v) {
+                    rows.push({
+                        product_id: p.id,
+                        variation_id: v.id,
+                        naziv: p.naziv + (v.naziv ? ' — ' + v.naziv : ''),
+                        sifra: v.sifra || p.sifra || '',
+                        cijena: v.cijena
+                    });
+                });
+            } else {
+                rows.push({
+                    product_id: p.id,
+                    variation_id: '',
+                    naziv: p.naziv,
+                    sifra: p.sifra || '',
+                    cijena: p.cijena
+                });
+            }
+        });
+        return rows;
+    }
+
+    function token(row) {
+        return row.variation_id ? (row.product_id + ':' + row.variation_id) : String(row.product_id);
+    }
+
+    function hideSuggest() {
+        if (!suggest) return;
+        suggest.hidden = true;
+        suggest.innerHTML = '';
+    }
+
+    function catalogOpen() {
+        return !!(catalog && !catalog.hidden);
+    }
+
+    function refresh() {
+        var keys = Object.keys(seen);
+        emptyEl.hidden = keys.length > 0;
+        stavkeEl.innerHTML = '';
+        keys.forEach(function (key) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'stavka';
+            input.value = key;
+            stavkeEl.appendChild(input);
+        });
+        var pct = parsePct();
+        var broj = (brojInput.value || '').trim();
+        submitBtn.disabled = keys.length === 0 || pct == null || !broj;
+        if (listEl) {
+            Array.prototype.forEach.call(listEl.querySelectorAll('li[data-key]'), function (li) {
+                var row = seen[li.dataset.key];
+                if (!row) return;
+                var nova = li.querySelector('[data-nova]');
+                if (nova) nova.textContent = pct == null ? '—' : newPrice(row.cijena, pct);
+            });
+        }
+        if (catalogOpen()) renderCatalog(lastRows);
+    }
+
+    function showRows(rows) {
+        suggest.innerHTML = '';
+        if (!rows.length) {
+            var empty = document.createElement('li');
+            empty.className = 'is-empty';
+            empty.textContent = 'Nema rezultata.';
+            suggest.appendChild(empty);
+            suggest.hidden = false;
+            return;
+        }
+        rows.forEach(function (row) {
+            var li = document.createElement('li');
+            li.innerHTML = '<span class="sc-name"></span><span class="sc-meta"></span>';
+            li.querySelector('.sc-name').textContent = row.naziv;
+            li.querySelector('.sc-meta').textContent = (row.sifra ? row.sifra + ' · ' : '') + formatCijena(row.cijena);
+            li.addEventListener('mousedown', function (ev) {
+                ev.preventDefault();
+                addRow(row);
+            });
+            suggest.appendChild(li);
+        });
+        suggest.hidden = false;
+    }
+
+    function search(q) {
+        var useCatalog = catalogOpen();
+        if (!useCatalog && (!q || q.length < 1)) { hideSuggest(); return; }
+        var url = lookup + (lookup.indexOf('?') >= 0 ? '&' : '?') + 'q=' + encodeURIComponent(q || '') + '&bez_zalihe=1&limit=' + (useCatalog ? '80' : '20');
+        fetch(url, { credentials: 'same-origin' }).then(function (res) { return res.json(); }).then(function (data) {
+            if (query.value.trim() !== (q || '')) return;
+            var rows = flatten(data.results || []);
+            if (useCatalog) renderCatalog(rows);
+            else showRows(rows);
+        }).catch(function () {
+            if (useCatalog) renderCatalog([]);
+            else hideSuggest();
+        });
+    }
+
+    function renderCatalog(rows) {
+        if (!catalog) return;
+        lastRows = rows || [];
+        catalog.innerHTML = '';
+        if (!lastRows.length) {
+            catalog.innerHTML = '<p class="mg-empty">Ukucaj naziv, šifru ili barkod — izlistaće se artikli.</p>';
+            return;
+        }
+        lastRows.forEach(function (row) {
+            var key = token(row);
+            var added = !!seen[key];
+            var card = document.createElement('article');
+            card.className = 'mg-catalog-item' + (added ? ' is-added' : '');
+            card.innerHTML =
+                '<strong></strong>' +
+                '<p class="mg-catalog-meta"></p>' +
+                '<div class="mg-catalog-qty">' +
+                '<button type="button" class="mg-btn" data-cat-minus aria-label="Ukloni">−</button>' +
+                '<em data-cat-qty></em>' +
+                '<button type="button" class="mg-btn" data-cat-plus aria-label="Dodaj">+</button>' +
+                '</div>';
+            card.querySelector('strong').textContent = row.naziv || '';
+            card.querySelector('.mg-catalog-meta').textContent = [row.sifra, formatCijena(row.cijena)].filter(Boolean).join(' · ');
+            card.querySelector('[data-cat-qty]').textContent = added ? '1' : '0';
+            card.querySelector('[data-cat-minus]').disabled = !added;
+            card.querySelector('[data-cat-plus]').disabled = added;
+            card.querySelector('[data-cat-minus]').addEventListener('click', function (ev) {
+                ev.preventDefault();
+                removeRow(key);
+            });
+            card.querySelector('[data-cat-plus]').addEventListener('click', function (ev) {
+                ev.preventDefault();
+                addRow(row);
+            });
+            catalog.appendChild(card);
+        });
+    }
+
+    function setCatalog(on) {
+        if (!catalog || !catalogBtn) return;
+        catalog.hidden = !on;
+        catalogBtn.classList.toggle('is-on', on);
+        catalogBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        hideSuggest();
+        if (on) search(query.value.trim());
+    }
+
+    if (catalogBtn) {
+        catalogBtn.addEventListener('click', function () {
+            setCatalog(catalog.hidden);
+        });
+    }
+
+    query.addEventListener('input', function () {
+        var q = query.value.trim();
+        clearTimeout(timer);
+        timer = setTimeout(function () { search(q); }, 180);
+    });
+    query.addEventListener('blur', function () {
+        setTimeout(hideSuggest, 180);
+    });
+    query.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') {
+            ev.preventDefault();
+            var first = suggest && !suggest.hidden ? suggest.querySelector('li:not(.is-empty)') : null;
+            if (first) first.dispatchEvent(new Event('mousedown'));
+        }
+    });
+
+    function removeRow(key) {
+        if (!seen[key]) return;
+        delete seen[key];
+        if (listEl) {
+            var li = listEl.querySelector('li[data-key="' + CSS.escape(key) + '"]');
+            if (li) li.remove();
+        }
+        refresh();
+    }
+
+    function addRow(row) {
+        var key = token(row);
+        if (seen[key]) {
+            query.value = '';
+            hideSuggest();
+            return;
+        }
+        seen[key] = row;
+        if (listEl) {
+            var li = document.createElement('li');
+            li.dataset.key = key;
+            li.innerHTML =
+                '<div><strong></strong><span class="ak-meta"></span></div>' +
+                '<div class="ak-prices"><span class="ak-old"></span><span data-nova class="ak-new">—</span></div>' +
+                '<button type="button" class="mg-btn">Ukloni</button>';
+            li.querySelector('strong').textContent = row.naziv;
+            li.querySelector('.ak-meta').textContent = row.sifra || '';
+            li.querySelector('.ak-old').textContent = formatCijena(row.cijena);
+            li.querySelector('button').addEventListener('click', function () {
+                removeRow(key);
+            });
+            listEl.appendChild(li);
+        }
+        query.value = '';
+        hideSuggest();
+        if (!catalogOpen()) query.focus();
+        refresh();
+    }
+
+    pctInput.addEventListener('input', refresh);
+    brojInput.addEventListener('input', refresh);
+
+    form.addEventListener('submit', function (ev) {
+        refresh();
+        if (submitBtn.disabled) {
+            ev.preventDefault();
+            if (!Object.keys(seen).length) query.focus();
+            else if (parsePct() == null) pctInput.focus();
+            else brojInput.focus();
+        }
+    });
+
+    var postedNode = document.getElementById('akPostedItems');
+    if (postedNode) {
+        try {
+            var posted = JSON.parse(postedNode.textContent || '[]');
+            (posted || []).forEach(function (row) {
+                addRow({
+                    product_id: row.product_id,
+                    variation_id: row.variation_id || '',
+                    naziv: row.naziv,
+                    sifra: row.sifra,
+                    cijena: row.cijena
+                });
+            });
+        } catch (err) {}
+    }
+    refresh();
+})();
+</script>
+{% endblock %}

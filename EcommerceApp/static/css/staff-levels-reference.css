@@ -48,3 +48,16 @@ body.magacin-page.is-levels-reference .mg-nivelacije-group{border-radius:0;backg
 body.magacin-page.is-levels-reference .mg-nivelacije-date{font-size:13px;color:#505b6c}
 body.magacin-page.is-levels-reference .pk-tab-n{border-radius:0;background:#e6e9ed;color:#35445d}
 @media(max-width:600px){body.magacin-page.is-levels-reference .mg-orders-page .mg-page-head h1{font-size:20px}}
+
+body.magacin-page.is-levels-reference .ak-old{text-decoration:line-through;color:#5b6573}
+body.magacin-page.is-levels-reference .ak-new{font-weight:800;color:#b42318}
+body.magacin-page.is-levels-reference .ak-confirm{margin-top:16px;padding-top:14px;border-top:1px solid #c2c7cf}
+body.magacin-page.is-levels-reference .ak-confirm-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+body.magacin-page.is-levels-reference .ak-confirm .mg-btn-primary{min-height:46px}
+body.magacin-page.is-levels-reference .ak-prices{display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:7.5em}
+body.magacin-page.is-levels-reference .sc-list li{align-items:flex-start}
+body.magacin-page.is-levels-reference .ak-etikete-form{margin:0 0 12px;padding:10px;border:1px solid #b6b8bd;background:var(--ord-panel)}
+@media(max-width:720px){
+    body.magacin-page.is-levels-reference .ak-confirm-grid{grid-template-columns:1fr}
+    body.magacin-page.is-levels-reference .ak-prices{align-items:flex-start}
+}

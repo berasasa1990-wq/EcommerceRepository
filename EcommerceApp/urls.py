@@ -341,6 +341,26 @@ urlpatterns = [
     ),
     path('nalog/magacin/uvoz/<int:pk>/', views_magacin.magacin_uvoz_detail, name='staff_magacin_uvoz_detail'),
     path(
+        'nalog/magacin/nivelacije/akcija/nova/',
+        views_magacin.magacin_nivelacije_akcija_nova,
+        name='staff_magacin_nivelacije_akcija_nova',
+    ),
+    path(
+        'nalog/magacin/nivelacije/akcija/<int:pk>/stampa/',
+        views_magacin.magacin_nivelacije_akcija_stampa,
+        name='staff_magacin_nivelacije_akcija_stampa',
+    ),
+    path(
+        'nalog/magacin/nivelacije/akcija/<int:pk>/etikete/',
+        views_magacin.magacin_nivelacije_akcija_etikete,
+        name='staff_magacin_nivelacije_akcija_etikete',
+    ),
+    path(
+        'nalog/magacin/nivelacije/akcija/<int:pk>/',
+        views_magacin.magacin_nivelacije_akcija_detail,
+        name='staff_magacin_nivelacije_akcija_detail',
+    ),
+    path(
         'nalog/magacin/nivelacije/stampa/',
         views_magacin.magacin_nivelacije_stampa,
         name='staff_magacin_nivelacije_stampa',

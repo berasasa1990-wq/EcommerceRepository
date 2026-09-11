@@ -6359,6 +6359,76 @@ class NivelacijaOznaka(models.Model):
         return f'{self.kljuc} @ {self.uvoz_id}'
 
 
+class MagacinAkcija(models.Model):
+    """Nivelacija akcije: artikli, bulk popust i broj nivelacije sa kase."""
+
+    broj = models.CharField(max_length=20, unique=True, editable=False)
+    broj_nivelacije = models.CharField(
+        max_length=40,
+        verbose_name='Broj nivelacije',
+    )
+    popust_postotak = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        verbose_name='Popust (%)',
+    )
+    akcija_do = models.DateField(null=True, blank=True, verbose_name='Akcija važi do')
+    kreiran = models.DateTimeField(auto_now_add=True)
+    kreirao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='magacin_akcije',
+    )
+
+    class Meta:
+        verbose_name = 'Magacin akcija'
+        verbose_name_plural = 'Magacin akcije'
+        ordering = ['-kreiran', '-id']
+
+    def __str__(self):
+        return f'Akcija {self.broj}'
+
+    def save(self, *args, **kwargs):
+        if not self.broj:
+            last = MagacinAkcija.objects.order_by('-id').values_list('id', flat=True).first() or 0
+            self.broj = f'A-{int(last) + 1:04d}'
+        super().save(*args, **kwargs)
+
+
+class MagacinAkcijaStavka(models.Model):
+    akcija = models.ForeignKey(MagacinAkcija, on_delete=models.CASCADE, related_name='stavke')
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='akcija_stavke',
+    )
+    variation = models.ForeignKey(
+        'ProductVariation',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='akcija_stavke',
+    )
+    naziv = models.CharField(max_length=300)
+    sifra = models.CharField(max_length=SIFRA_MAX_LENGTH, blank=True)
+    stara_cijena = models.DecimalField(max_digits=10, decimal_places=2)
+    nova_cijena = models.DecimalField(max_digits=10, decimal_places=2)
+    popust_postotak = models.DecimalField(max_digits=5, decimal_places=2)
+    redoslijed = models.PositiveIntegerField(default=0)
+    kreiran = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Stavka akcije'
+        verbose_name_plural = 'Stavke akcije'
+        ordering = ['redoslijed', 'id']
+
+    def __str__(self):
+        return self.naziv
+
+
 class WarehouseSyncLog(models.Model):
     class Status(models.TextChoices):
         USPJEH = 'uspjeh', 'Uspješna'

@@ -134,6 +134,7 @@ from .magacin import (
 from .models import (
     BARKOD_MAX_LENGTH,
     SIFRA_MAX_LENGTH,
+    _izracunaj_akcijsku_od_postotka,
     Brand,
     Category,
     Order,
@@ -148,6 +149,8 @@ from .models import (
     Uvoz,
     UvozStavka,
     NivelacijaOznaka,
+    MagacinAkcija,
+    MagacinAkcijaStavka,
     MagacinPopis,
     MagacinPopisStavka,
     MagacinMpDnevnoSkidanje,
@@ -6957,6 +6960,321 @@ def magacin_nivelacije_stampa(request):
         'print_mode': True,
         'printed_at': timezone.localtime(),
     })
+
+
+def _parse_akcija_pct(raw):
+    text = str(raw or '').strip().replace(',', '.')
+    if not text:
+        raise MagacinError('Unesi popust %.')
+    try:
+        pct = Decimal(text)
+    except (InvalidOperation, ValueError, TypeError):
+        raise MagacinError('Popust % nije validan broj.')
+    if pct <= 0 or pct >= 100:
+        raise MagacinError('Popust mora biti između 0 i 100 %.')
+    return pct.quantize(Decimal('0.01'))
+
+
+def _akcija_money_label(value):
+    if value is None:
+        return ''
+    amount = Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    return format(amount, '.2f').replace('.', ',')
+
+
+def _akcija_parse_do(raw):
+    text = str(raw or '').strip()
+    if not text:
+        return None
+    try:
+        return date.fromisoformat(text)
+    except ValueError as exc:
+        raise MagacinError('Datum trajanja akcije nije ispravan.') from exc
+
+
+def _akcija_collect_items(raw_tokens):
+    items = []
+    seen = set()
+    for raw in raw_tokens:
+        product, variation = _etiketa_resolve_token(raw)
+        if product is None:
+            continue
+        key = (product.pk, variation.pk if variation else 0)
+        if key in seen:
+            continue
+        seen.add(key)
+        items.append((product, variation))
+    return items
+
+
+def _akcija_apply_product_discount(product, pct, akcija_do):
+    product.akcija_postotak = pct
+    product.akcijska_cijena = None
+    product.akcija_do = akcija_do
+    product.save()
+    for variation in product.varijacije.all():
+        if variation.akcija_postotak or variation.akcijska_cijena:
+            variation.akcija_postotak = None
+            variation.akcijska_cijena = None
+            variation.save(update_fields=['akcija_postotak', 'akcijska_cijena'])
+    product.refresh_from_db()
+    return product
+
+
+def _akcija_line_prices(product, variation, pct):
+    if variation is not None:
+        stara = variation.bazna_cijena
+        naziv = (product.naziv or '').strip()
+        var_name = (variation.naziv or '').strip()
+        if var_name:
+            naziv = f'{naziv} — {var_name}' if naziv else var_name
+        sifra = (variation.sifra or product.sifra or '').strip()
+    else:
+        stara = product.cijena
+        naziv = (product.naziv or '').strip()
+        sifra = (product.sifra or '').strip()
+    nova = _izracunaj_akcijsku_od_postotka(stara, pct)
+    if nova is None:
+        raise MagacinError(f'Nije moguće izračunati akciju za „{naziv}”.')
+    return {
+        'naziv': naziv[:300],
+        'sifra': sifra,
+        'stara_cijena': Decimal(stara).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+        'nova_cijena': nova,
+    }
+
+
+def _akcija_etiketa_payload(stavka, request=None):
+    product = stavka.product
+    variation = stavka.variation
+    barkod = ''
+    product_url = ''
+    if product:
+        barkod = _artikal_barkod_value(product, variation) or (stavka.sifra or '').strip()
+        product_url = _artikal_site_url(product, request)
+    elif stavka.sifra:
+        barkod = stavka.sifra
+    return {
+        'naziv': stavka.naziv,
+        'sifra': stavka.sifra,
+        'stara_label': _akcija_money_label(stavka.stara_cijena),
+        'nova_label': _akcija_money_label(stavka.nova_cijena),
+        'popust_label': _akcija_money_label(stavka.popust_postotak).rstrip('0').rstrip(','),
+        'barkod': barkod,
+        'barcode_src': _etiketa_barcode_data_uri(barkod) if barkod else '',
+        'product_url': product_url,
+        'qr_src': _etiketa_qr_data_uri(product_url) if product_url else '',
+        'cijena_label': _akcija_money_label(stavka.nova_cijena),
+    }
+
+
+def _zebra_akcija_zpl(payload):
+    naziv = _zpl_text(payload.get('naziv'), 60)
+    sifra = _zpl_text(payload.get('sifra'), 24) or '-'
+    barkod = _zpl_text(payload.get('barkod'), 40)
+    stara = _zpl_text(payload.get('stara_label'), 12) or '-'
+    nova = _zpl_text(payload.get('nova_label'), 12) or '-'
+    popust = _zpl_text(payload.get('popust_label'), 8)
+    product_url = _zpl_text(payload.get('product_url'), 180)
+    width = int((ZEBRA_BARCODE_WIDTH_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
+    height = int((ZEBRA_BARCODE_HEIGHT_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
+    top = int((ZEBRA_BARCODE_TOP_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
+    left = 28
+    qr_size = 148
+    qr_x = width - qr_size - 12
+    text_w = max(180, qr_x - left - 16)
+    lines = [
+        '^XA',
+        '^MNY',
+        f'^PW{width}',
+        f'^LL{height}',
+        f'^LT{top}',
+        '^LH0,0',
+        '^PON',
+        '^FWN',
+        f'^FO{left},2^A0N,20,20^FB{text_w},2,0,L^FD{naziv}^FS',
+        f'^FO{left},44^A0N,18,18^FDSIFRA: {sifra}^FS',
+    ]
+    bar_y = 64
+    if barkod:
+        lines.append(f'^FO{left},{bar_y}^BY2,2.0,40^BCN,40,N,N,N^FD{barkod}^FS')
+        lines.append(f'^FO{left},{bar_y + 42}^A0N,16,16^FD{barkod}^FS')
+        price_y = bar_y + 60
+    else:
+        price_y = 70
+    if popust:
+        lines.append(f'^FO{left},{price_y}^A0N,18,18^FDAKCIJA -{popust}%^FS')
+        price_y += 20
+    lines.append(f'^FO{left},{price_y}^A0N,20,20^FD{stara} KM^FS')
+    strike_w = max(70, min(220, 14 * max(1, len(stara) + 3)))
+    lines.append(f'^FO{left},{price_y + 10}^GB{strike_w},3,3^FS')
+    lines.append(f'^FO{left},{price_y + 28}^A0N,40,40^FD{nova}^FS')
+    nova_w = max(48, min(220, 18 * max(1, len(nova))))
+    lines.append(f'^FO{left + nova_w},{price_y + 46}^A0N,20,20^FDKM^FS')
+    if product_url:
+        lines.append(f'^FO{qr_x},28^BQN,2,4^FDQA,{product_url}^FS')
+    lines.append('^XZ')
+    return '\n'.join(lines) + '\n'
+
+
+def _render_akcija_etiketa_print(request, akcija, papir='a4'):
+    stavke = list(akcija.stavke.select_related('product', 'variation'))
+    if not stavke:
+        messages.error(request, 'Nema artikala za štampu.')
+        return redirect('staff_magacin_nivelacije_akcija_detail', pk=akcija.pk)
+    items = [_akcija_etiketa_payload(row, request=request) for row in stavke]
+    kind = _papir_kind(papir)
+    if kind == 'zebra':
+        return render(request, 'staff/magacin/akcija_etiketa_zebra.html', {
+            'akcija': akcija,
+            'items': items,
+            'etiketa_count': len(items),
+            'zpl': ''.join(_zebra_akcija_zpl(row) for row in items),
+            'label_width': str(ZEBRA_BARCODE_WIDTH_IN),
+            'label_height': str(ZEBRA_BARCODE_HEIGHT_IN),
+            'label_top': str(ZEBRA_BARCODE_TOP_IN),
+        })
+    return render(request, 'staff/magacin/akcija_etiketa.html', {
+        'akcija': akcija,
+        'sheets': _etiketa_sheets(items),
+        'etiketa_count': len(items),
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+def magacin_nivelacije_akcija_nova(request):
+    akcije = list(
+        MagacinAkcija.objects.select_related('kreirao').annotate(stavki=Count('stavke'))[:40]
+    )
+    if request.method == 'POST':
+        try:
+            pct = _parse_akcija_pct(request.POST.get('popust_postotak'))
+            broj_nivelacije = (request.POST.get('broj_nivelacije') or '').strip()[:40]
+            if not broj_nivelacije:
+                raise MagacinError('Unesi broj nivelacije.')
+            akcija_do = _akcija_parse_do(request.POST.get('akcija_do'))
+            lines = _akcija_collect_items(request.POST.getlist('stavka'))
+            if not lines:
+                raise MagacinError('Unesi barem jedan artikal.')
+            with transaction.atomic():
+                akcija = MagacinAkcija(
+                    broj_nivelacije=broj_nivelacije,
+                    popust_postotak=pct,
+                    akcija_do=akcija_do,
+                    kreirao=request.user,
+                )
+                akcija.save()
+                applied = set()
+                for index, (product, variation) in enumerate(lines):
+                    if product.pk not in applied:
+                        _akcija_apply_product_discount(product, pct, akcija_do)
+                        applied.add(product.pk)
+                    prices = _akcija_line_prices(product, variation, pct)
+                    MagacinAkcijaStavka.objects.create(
+                        akcija=akcija,
+                        product=product,
+                        variation=variation,
+                        naziv=prices['naziv'],
+                        sifra=prices['sifra'],
+                        stara_cijena=prices['stara_cijena'],
+                        nova_cijena=prices['nova_cijena'],
+                        popust_postotak=pct,
+                        redoslijed=index,
+                    )
+            messages.success(
+                request,
+                f'Akcija {akcija.broj}: −{pct}% na {len(lines)} artikala (nivelacija {broj_nivelacije}).',
+            )
+            return redirect('staff_magacin_nivelacije_akcija_detail', pk=akcija.pk)
+        except MagacinError as exc:
+            messages.error(request, str(exc))
+
+    posted_items = []
+    if request.method == 'POST':
+        for product, variation in _akcija_collect_items(request.POST.getlist('stavka')):
+            if variation is not None:
+                naziv = (product.naziv or '').strip()
+                var_name = (variation.naziv or '').strip()
+                if var_name:
+                    naziv = f'{naziv} — {var_name}' if naziv else var_name
+                sifra = (variation.sifra or product.sifra or '').strip()
+                cijena = variation.bazna_cijena
+                token = f'{product.pk}:{variation.pk}'
+            else:
+                naziv = (product.naziv or '').strip()
+                sifra = (product.sifra or '').strip()
+                cijena = product.cijena
+                token = str(product.pk)
+            posted_items.append({
+                'token': token,
+                'product_id': product.pk,
+                'variation_id': variation.pk if variation else '',
+                'naziv': naziv,
+                'sifra': sifra,
+                'cijena': str(cijena),
+            })
+
+    context = _magacin_context(
+        request,
+        section='nivelacije',
+        page_title='Pravljenje akcije — Nivelacije',
+        hide_top_search=True,
+    )
+    context.update({
+        'lookup_url': reverse('staff_magacin_artikli_lookup'),
+        'akcije': akcije,
+        'posted_items': posted_items,
+        'form_popust': request.POST.get('popust_postotak') or '',
+        'form_broj': request.POST.get('broj_nivelacije') or '',
+        'form_do': request.POST.get('akcija_do') or '',
+    })
+    return render(request, 'staff/magacin/akcija.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+def magacin_nivelacije_akcija_detail(request, pk):
+    akcija = get_object_or_404(
+        MagacinAkcija.objects.select_related('kreirao').prefetch_related('stavke'),
+        pk=pk,
+    )
+    context = _magacin_context(
+        request,
+        section='nivelacije',
+        page_title=f'Akcija {akcija.broj} — Nivelacije',
+        hide_top_search=True,
+    )
+    context.update({
+        'akcija': akcija,
+        'stavke': list(akcija.stavke.all()),
+    })
+    return render(request, 'staff/magacin/akcija_detail.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+def magacin_nivelacije_akcija_stampa(request, pk):
+    akcija = get_object_or_404(
+        MagacinAkcija.objects.prefetch_related('stavke'),
+        pk=pk,
+    )
+    return render(request, 'staff/magacin/akcija_print.html', {
+        'akcija': akcija,
+        'stavke': list(akcija.stavke.all()),
+        'printed_at': timezone.localtime(),
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+def magacin_nivelacije_akcija_etikete(request, pk):
+    akcija = get_object_or_404(
+        MagacinAkcija.objects.prefetch_related('stavke__product', 'stavke__variation'),
+        pk=pk,
+    )
+    papir = request.GET.get('papir') or request.POST.get('papir') or 'a4'
+    return _render_akcija_etiketa_print(request, akcija, papir=papir)
 
 
 @login_required(login_url='login')

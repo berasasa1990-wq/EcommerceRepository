@@ -59,6 +59,8 @@ from .models import (
     MagacinPopis,
     MagacinPonuda,
     MagacinPonudaStavka,
+    MagacinAkcija,
+    MagacinAkcijaStavka,
     MagacinVpNarudzba,
     Order,
     OrderItem,
@@ -2575,6 +2577,110 @@ class MagacinViewTests(TestCase):
         ):
             response = self.client.get(reverse(name))
             self.assertEqual(response.status_code, 200, name)
+
+    @override_settings(STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    })
+    def test_pravljenje_akcije_applies_discount_and_prints(self):
+        self.client.force_login(self.user)
+        nivelacije = self.client.get(reverse('staff_magacin_nivelacije'))
+        self.assertContains(nivelacije, 'Pravljenje akcije')
+        self.assertContains(nivelacije, reverse('staff_magacin_nivelacije_akcija_nova'))
+
+        page = self.client.get(reverse('staff_magacin_nivelacije_akcija_nova'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Bulk popust')
+        self.assertContains(page, 'Broj nivelacije')
+        self.assertContains(page, 'Potvrdi akciju')
+
+        missing = self.client.post(reverse('staff_magacin_nivelacije_akcija_nova'), {
+            'popust_postotak': '20',
+            'broj_nivelacije': '142',
+        })
+        self.assertEqual(missing.status_code, 200)
+        self.assertContains(missing, 'Unesi barem jedan artikal')
+        self.assertFalse(MagacinAkcija.objects.exists())
+
+        other = Product.objects.create(
+            naziv='Akcijski štap', sifra='AKC-2', cijena=Decimal('50.00'),
+            stanje=2, na_stanju=True, magacin_sync_at=timezone.now(),
+        )
+        created = self.client.post(reverse('staff_magacin_nivelacije_akcija_nova'), {
+            'popust_postotak': '20',
+            'broj_nivelacije': '142',
+            'akcija_do': '2026-12-31',
+            'stavka': [str(self.product.pk), str(other.pk)],
+        })
+        self.assertEqual(created.status_code, 302)
+        akcija = MagacinAkcija.objects.get()
+        self.assertEqual(akcija.broj_nivelacije, '142')
+        self.assertEqual(akcija.popust_postotak, Decimal('20.00'))
+        self.assertEqual(akcija.akcija_do, date(2026, 12, 31))
+        self.assertEqual(akcija.stavke.count(), 2)
+        self.assertEqual(MagacinAkcijaStavka.objects.filter(akcija=akcija).count(), 2)
+        self.assertEqual(created['Location'], reverse(
+            'staff_magacin_nivelacije_akcija_detail', args=[akcija.pk],
+        ))
+
+        self.product.refresh_from_db()
+        other.refresh_from_db()
+        self.assertEqual(self.product.akcija_postotak, Decimal('20.00'))
+        self.assertEqual(self.product.akcijska_cijena, Decimal('8.00'))
+        self.assertEqual(other.akcija_postotak, Decimal('20.00'))
+        self.assertEqual(other.akcijska_cijena, Decimal('40.00'))
+
+        detail = self.client.get(reverse(
+            'staff_magacin_nivelacije_akcija_detail', args=[akcija.pk],
+        ))
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, 'Test braid')
+        self.assertContains(detail, 'Akcijski štap')
+        self.assertContains(detail, 'ak-old')
+        self.assertContains(detail, '10.00 KM')
+        self.assertContains(detail, '8.00 KM')
+        self.assertContains(detail, reverse(
+            'staff_magacin_nivelacije_akcija_stampa', args=[akcija.pk],
+        ))
+        self.assertContains(detail, reverse(
+            'staff_magacin_nivelacije_akcija_etikete', args=[akcija.pk],
+        ))
+
+        printed = self.client.get(reverse(
+            'staff_magacin_nivelacije_akcija_stampa', args=[akcija.pk],
+        ))
+        self.assertEqual(printed.status_code, 200)
+        self.assertContains(printed, 'text-decoration: line-through')
+        self.assertContains(printed, '10.00 KM')
+        self.assertContains(printed, '8.00 KM')
+        self.assertContains(printed, 'Nivelacija 142')
+        self.assertContains(printed, 'window.print()')
+
+        etikete = self.client.get(reverse(
+            'staff_magacin_nivelacije_akcija_etikete', args=[akcija.pk],
+        ))
+        self.assertEqual(etikete.status_code, 200)
+        self.assertContains(etikete, 'text-decoration: line-through')
+        self.assertContains(etikete, '10,00 KM')
+        self.assertContains(etikete, '8,00')
+        self.assertContains(etikete, '−20%')
+        self.assertContains(etikete, 'class="barcode"')
+        self.assertContains(etikete, 'data:image/png;base64,')
+        self.assertContains(etikete, 'TST-1')
+        self.assertContains(etikete, 'window.print()')
+
+        zebra = self.client.get(
+            reverse('staff_magacin_nivelacije_akcija_etikete', args=[akcija.pk]),
+            {'papir': 'zebra'},
+        )
+        self.assertEqual(zebra.status_code, 200)
+        self.assertContains(zebra, 'text-decoration: line-through')
+        self.assertContains(zebra, 'class="barcode"')
+        self.assertContains(zebra, 'data:image/png;base64,')
+        self.assertContains(zebra, '^BCN')
+        self.assertContains(zebra, '^GB')
+        self.assertContains(zebra, 'FDAKCIJA')
+        self.assertContains(zebra, '−20%')
 
     def test_fali_na_sajtu_lists_warehouse_only_and_prenos_mp(self):
         self.client.force_login(self.user)

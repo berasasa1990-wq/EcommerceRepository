@@ -3,7 +3,7 @@
 {% block body_class %}{{ block.super }} is-levels-reference{% endblock %}
 {% block extra_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'css/staff-levels-reference.css' %}?v=20260906-1">
+<link rel="stylesheet" href="{% static 'css/staff-levels-reference.css' %}?v=20260911-akcija">
 {% endblock %}
 
 {% block magacin_content %}
@@ -33,6 +33,10 @@
         {% if done_uvoz %}
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_nivelacije' %}?izmjenjene=1{% if magacin_search %}&amp;pretraga={{ magacin_search|urlencode }}{% endif %}">← Izmjenjene</a>
         {% endif %}
+        <a class="mg-btn mg-btn-pill mg-btn-primary" href="{% url 'staff_magacin_nivelacije_akcija_nova' %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Pravljenje akcije
+        </a>
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_nivelacije_stampa' %}{% if done_uvoz %}?uvoz={{ done_uvoz.pk }}{% if magacin_search %}&amp;pretraga={{ magacin_search|urlencode }}{% endif %}{% elif show_done %}?izmjenjene=1{% if magacin_search %}&amp;pretraga={{ magacin_search|urlencode }}{% endif %}{% elif magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
             Štampaj izmjene

@@ -78,7 +78,7 @@ small,.muted{color:var(--muted)}
 .b2b-mark span{font-size:11px;margin-top:3px;letter-spacing:.08em}
 .masthead-cart{
   position:relative;
-  display:flex;
+  display:none;
   align-items:center;
   gap:8px;
   flex-shrink:0;
@@ -925,6 +925,8 @@ html:has(.b2b-image-dialog[open]){overflow:hidden}
     box-shadow:0 -4px 16px #0002;
   }
   .b2b-collection-button,.cart-link{flex:1;min-width:0;min-height:44px;justify-content:center}
+  .masthead-cart{display:flex}
+  .b2b-bottom-bar .cart-link{display:none}
   .cart-link{padding:6px 10px}
   .b2b-has-cart-bar{padding-bottom:calc(118px + env(safe-area-inset-bottom,0px))}
   .b2b-has-cart-bar .b2b-cart-toast{bottom:calc(128px + env(safe-area-inset-bottom,0px))}
