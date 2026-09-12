@@ -1361,10 +1361,10 @@ def _zebra_price_zpl(payload):
     width = int((ZEBRA_PRICE_WIDTH_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
     height = int((ZEBRA_BARCODE_HEIGHT_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
     top = int((ZEBRA_BARCODE_TOP_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
-    left = 28
-    qr_size = 148
-    qr_x = width - qr_size - 12
-    text_w = max(180, qr_x - left - 16)
+    left = 12
+    qr_size = 84
+    qr_x = width - qr_size - 4
+    text_w = max(120, qr_x - left - 8)
     lines = [
         '^XA',
         '^MNY',
@@ -1374,17 +1374,17 @@ def _zebra_price_zpl(payload):
         '^LH0,0',
         '^PON',
         '^FWN',
-        f'^FO{left},2^A0N,22,22^FB{text_w},2,0,L^FD{naziv}^FS',
-        f'^FO{left},50^A0N,20,20^FDSIFRA: {sifra}^FS',
+        f'^FO{left},2^A0N,16,16^FB{text_w},2,0,L^FD{naziv}^FS',
+        f'^FO{left},40^A0N,14,14^FDSIFRA: {sifra}^FS',
     ]
     if barkod:
-        lines.append(f'^FO{left},74^BY2,2.0,48^BCN,48,N,N,N^FD{barkod}^FS')
-        lines.append(f'^FO{left},128^A0N,16,16^FD{barkod}^FS')
-    lines.append(f'^FO{left},154^A0N,40,40^FD{cijena}^FS')
-    cijena_w = max(48, min(220, 18 * max(1, len(cijena))))
-    lines.append(f'^FO{left + cijena_w},172^A0N,22,22^FDKM^FS')
+        lines.append(f'^FO{left},58^BY1.2,2.0,32^BCN,32,N,N,N^FD{barkod}^FS')
+        lines.append(f'^FO{left},92^A0N,12,12^FD{barkod}^FS')
+    lines.append(f'^FO{left},112^A0N,24,24^FD{cijena}^FS')
+    cijena_w = max(32, min(140, 11 * max(1, len(cijena))))
+    lines.append(f'^FO{left + cijena_w},124^A0N,14,14^FDKM^FS')
     if product_url:
-        lines.append(f'^FO{qr_x},28^BQN,2,4^FDQA,{product_url}^FS')
+        lines.append(f'^FO{qr_x},18^BQN,2,2^FDQA,{product_url}^FS')
     lines.append('^XZ')
     return '\n'.join(lines) + '\n'
 
@@ -1427,7 +1427,7 @@ def _stampa_cijena_context(request, *, mode='izbor'):
         'mode': mode,
         'lookup_url': reverse('staff_magacin_artikli_lookup'),
         'print_url': reverse('staff_magacin_stampa_cijena_print'),
-        'zebra_size': '3" × 1,224"',
+        'zebra_size': '2" × 1,224"',
     })
     return context
 
@@ -1453,7 +1453,7 @@ def _render_etiketa_print(request, items, papir='a4'):
 
 
 ZEBRA_BARCODE_WIDTH_IN = Decimal('3.559')
-ZEBRA_PRICE_WIDTH_IN = Decimal('3')
+ZEBRA_PRICE_WIDTH_IN = Decimal('2')
 ZEBRA_BARCODE_HEIGHT_IN = Decimal('1.224')
 ZEBRA_BARCODE_TOP_IN = Decimal('0.100')
 ZEBRA_BARCODE_DPI = 203
