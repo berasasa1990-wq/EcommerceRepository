@@ -4,7 +4,13 @@ from . import tests_ledger as helpers
 from .models import WarehouseLocation, WarehouseStock
 
 
-@override_settings(ALLOWED_HOSTS=['testserver'])
+@override_settings(
+    ALLOWED_HOSTS=['testserver'],
+    STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    },
+)
 class LocationActionTests(TestCase):
     setUp = helpers.WarehouseLedgerTests.setUp
 
@@ -39,3 +45,19 @@ class LocationActionTests(TestCase):
         self.stock.refresh_from_db()
         self.assertEqual(self.stock.kolicina, 10)
         self.assertFalse(WarehouseStock.objects.filter(location=destination).exists())
+
+    def test_success_toasts_do_not_leak_to_webshop(self):
+        response = self.post_action('skini', 2)
+        self.assertEqual(response.status_code, 302)
+        magacin_page = self.client.get(response['Location'])
+        self.assertEqual(magacin_page.status_code, 200)
+        self.assertNotContains(magacin_page, 'flash-message--success')
+        shop = self.client.get(reverse('home'))
+        self.assertNotContains(shop, 'Skinuto')
+        self.assertNotContains(shop, 'flash-message--success')
+
+    def test_queued_staff_toasts_stay_off_the_webshop(self):
+        self.post_action('skini', 2)
+        shop = self.client.get(reverse('home'))
+        self.assertNotContains(shop, 'Skinuto')
+        self.assertNotContains(shop, 'flash-message--success')

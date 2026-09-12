@@ -1,0 +1,11 @@
+<button
+    type="button"
+    class="{{ btn_class|default:'product-card-add-btn product-card-add-btn--notify' }}"
+    data-stock-notify
+    data-product-id="{{ product.pk }}"
+    data-product-name="{{ product.naziv }}"
+    data-notify-url="{% url 'stock_notify' product.slug %}"
+    aria-label="Obavijesti kada bude na stanju — {{ product.naziv }}"
+>
+    <span data-stock-notify-label>Obavijesti kada bude na stanju</span>
+</button>

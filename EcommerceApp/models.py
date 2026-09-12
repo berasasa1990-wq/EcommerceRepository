@@ -3621,6 +3621,44 @@ class Product(models.Model):
         return self.naziv
 
 
+class StockNotify(models.Model):
+    """Kupac želi email kad artikal ponovo bude na stanju."""
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='stock_notifies',
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='stock_notifies',
+    )
+    email = models.EmailField()
+    kreiran = models.DateTimeField(auto_now_add=True)
+    notified_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Obavijest o stanju'
+        verbose_name_plural = 'Obavijesti o stanju'
+        indexes = [
+            models.Index(fields=['product', 'notified_at']),
+            models.Index(fields=['email']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['product', 'email'],
+                condition=models.Q(notified_at__isnull=True),
+                name='uniq_stock_notify_pending_email',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.email} → {self.product_id}'
+
+
 class ProductImage(models.Model):
     product = models.ForeignKey(
         Product,

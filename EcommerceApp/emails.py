@@ -5,6 +5,8 @@ from email.utils import formataddr
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+from django.templatetags.static import static
+from django.urls import reverse
 from django.utils import timezone
 
 from .models import (
@@ -466,6 +468,106 @@ def send_live_offer_email(*, to_email, visitor_name='', offer=None):
     )
     mail.send(fail_silently=False)
     logger.info('Live offer email poslan na %s', to_email)
+
+
+def _absolute_url(site_url, path):
+    path = path or ''
+    if path.startswith('http://') or path.startswith('https://'):
+        return path
+    if path and not path.startswith('/'):
+        path = f'/{path}'
+    return f'{site_url}{path}'
+
+
+def _absolute_static(site_url, static_path):
+    return _absolute_url(site_url, static(static_path))
+
+
+def stock_back_email_context(*, product, to_email=''):
+    """Kontekst za HTML obavijest da je artikal ponovo na stanju."""
+    from .stock_notify import email_action_token
+
+    site_url = (settings.SITE_URL or '').rstrip('/')
+    product_url = _absolute_url(site_url, product.get_absolute_url() or '')
+    image_url = ''
+    try:
+        img = product.prikazna_slika
+        if img:
+            image_url = img.url or ''
+    except Exception:
+        image_url = ''
+    image_url = _absolute_url(site_url, image_url) if image_url else ''
+    cijena = product.prikazna_cijena
+    cijena_label = ''
+    if cijena is not None:
+        cijena_label = format(Decimal(cijena).quantize(Decimal('0.01')), '.2f').replace('.', ',')
+    stara_label = ''
+    try:
+        if product.katalog_na_akciji and product.katalog_bazna_cijena:
+            stara = Decimal(product.katalog_bazna_cijena).quantize(Decimal('0.01'))
+            if cijena is not None and stara > Decimal(cijena):
+                stara_label = format(stara, '.2f').replace('.', ',')
+    except Exception:
+        stara_label = ''
+    brand = getattr(product, 'brend', None)
+    brand_name = (getattr(brand, 'naziv', None) or '').strip()
+    site_settings = SiteSettings.load()
+    token = email_action_token(to_email, product.pk) if to_email else ''
+    unsubscribe_url = ''
+    if token:
+        unsubscribe_url = _absolute_url(site_url, reverse('stock_notify_unsubscribe', args=[token]))
+    return {
+        'product': product,
+        'product_url': product_url,
+        'image_url': image_url,
+        'cijena_label': cijena_label,
+        'stara_label': stara_label,
+        'brand_name': brand_name,
+        'sifra': (product.sifra or '').strip(),
+        'site_url': site_url,
+        'bistro_url': _absolute_static(site_url, 'img/emails/stock-bistro.png'),
+        'facebook_url': (site_settings.seo_facebook_url or '').strip(),
+        'instagram_url': (site_settings.seo_instagram_url or '').strip(),
+        'unsubscribe_url': unsubscribe_url,
+        'year': timezone.localtime().year,
+    }
+
+
+def send_stock_back_email(*, to_email, product):
+    """Kupcu: artikal je ponovo na stanju."""
+    try:
+        _ensure_email_configured()
+    except EmailNotConfiguredError:
+        logger.warning('Obavijest o stanju preskočena — email nije konfigurisan.')
+        return
+
+    to_email = (to_email or '').strip()
+    if not to_email or '@' not in to_email:
+        return
+
+    ctx = stock_back_email_context(product=product, to_email=to_email)
+    subject = f'{product.naziv} je ponovo na stanju — opremazaribolov.ba'
+    text = '\n'.join([
+        f'{product.naziv} je ponovo na stanju.',
+        '',
+        f'Cijena: {ctx["cijena_label"]} KM' if ctx['cijena_label'] else '',
+        f'Pogledaj artikal: {ctx["product_url"]}',
+        '',
+        'Lijep pozdrav,',
+        'opremazaribolov.ba',
+    ])
+    mail = EmailMultiAlternatives(
+        subject=subject,
+        body=text,
+        from_email=_from_email(),
+        to=[to_email],
+    )
+    mail.attach_alternative(
+        render_to_string('emails/stock_back.html', ctx),
+        'text/html',
+    )
+    mail.send(fail_silently=False)
+    logger.info('Obavijest o stanju poslana na %s za artikal %s', to_email, product.pk)
 
 
 def send_order_emails(order):

@@ -155,8 +155,8 @@
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260908sethoverorange" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260908sethoverorange">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260912stockNotify" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260912stockNotify">
     <link rel="stylesheet" href="{% static 'css/menu-color.v20260909.css' %}">
     <link rel="stylesheet" href="{% static 'css/site-logo-compact.v20260912.css' %}">
     <link rel="stylesheet" href="{% static 'css/mobile-header-actions.v20260909.css' %}">
@@ -257,7 +257,7 @@
     </script>
     {% endif %}
 </head>
-<body data-menu-color="{{ site_settings.boja_menija|default:'white' }}" class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
+<body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
     <div class="site-chrome-backdrop" aria-hidden="true"></div>
 
@@ -657,7 +657,10 @@
     {% if messages %}
     <div class="flash-messages">
         {% for message in messages %}
+        {# Staff magacin success toasts stay off the public shop. #}
+        {% if not user.is_staff and not user.is_superuser or request.path|slice:':7' == '/nalog/' or 'success' not in message.tags %}
         <p class="flash-message flash-message--{{ message.tags }}">{{ message }}</p>
+        {% endif %}
         {% endfor %}
     </div>
     {% endif %}
@@ -688,6 +691,7 @@
     {% include 'partials/public_online_visitors.html' %}
     {% endif %}
     {% include 'partials/catalog_variation_modal.html' %}
+    {% include 'partials/stock_notify_popup.html' %}
 
     <button type="button" class="scroll-top-btn" id="scrollTopBtn" aria-label="Na vrh stranice">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -703,6 +707,7 @@
     {% endif %}
     {% block structured_data %}{% endblock %}
     <script src="{% static 'js/main.min.js' %}?v=20260901fast" defer></script>
+    <script src="{% static 'js/stock-notify.js' %}?v=20260912stock" defer></script>
     {% if site_settings.savjetnik_aktivan %}
     <script>idleLoadScript("{% static 'js/fishing-advisor.js' %}?v=20260716v4");</script>
     {% endif %}

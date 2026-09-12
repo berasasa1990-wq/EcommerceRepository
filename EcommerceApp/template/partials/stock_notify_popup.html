@@ -1,0 +1,19 @@
+<div class="stock-notify-overlay" id="stockNotifyOverlay" hidden>
+    <div class="stock-notify-backdrop" data-stock-notify-close></div>
+    <div class="stock-notify-panel" role="dialog" aria-modal="true" aria-labelledby="stockNotifyTitle">
+        <button type="button" class="stock-notify-close" data-stock-notify-close aria-label="Zatvori">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+        <h2 id="stockNotifyTitle" class="stock-notify-title">Obavijesti me</h2>
+        <p class="stock-notify-lead">Unesi email i javit ćemo ti čim <strong id="stockNotifyProductName">artikal</strong> bude na stanju.</p>
+        <form id="stockNotifyForm" novalidate>
+            <label class="stock-notify-field" for="stockNotifyEmail">Email</label>
+            <input id="stockNotifyEmail" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="npr. ime@email.com">
+            <p class="stock-notify-error" id="stockNotifyError" hidden></p>
+            <button type="submit" class="btn btn-primary stock-notify-submit" id="stockNotifySubmit">Obavijesti me</button>
+        </form>
+    </div>
+</div>

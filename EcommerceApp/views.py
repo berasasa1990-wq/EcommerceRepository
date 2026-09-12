@@ -3474,6 +3474,75 @@ def _product_page_flash_offer(product):
 
 
 @require_POST
+def stock_notify(request, slug):
+    product = get_object_or_404(
+        Product.objects.filter(aktivan=True, sakriven_do_stanja=False),
+        slug=slug,
+    )
+    user = request.user if request.user.is_authenticated else None
+    email = ''
+    if user:
+        email = (user.email or '').strip()
+    if not email:
+        email = (request.POST.get('email') or '').strip()
+    from .stock_notify import subscribe
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
+    try:
+        status = subscribe(product=product, email=email, user=user if email else None)
+    except DjangoValidationError:
+        return JsonResponse({'ok': False, 'error': 'Unesi ispravan email.'}, status=400)
+    if status == 'in_stock':
+        return JsonResponse({
+            'ok': False,
+            'in_stock': True,
+            'error': 'Artikal je već na stanju.',
+        }, status=400)
+    if status == 'exists':
+        message = 'Već si na listi. Javit ćemo ti čim artikal bude na stanju.'
+    else:
+        message = 'Javit ćemo ti na email čim artikal bude na stanju.'
+    return JsonResponse({'ok': True, 'message': message})
+
+
+@require_GET
+def stock_back_preview(request, token):
+    from django.core.signing import BadSignature, SignatureExpired
+    from .emails import stock_back_email_context
+    from .stock_notify import parse_email_action_token
+
+    try:
+        email, product_id = parse_email_action_token(token)
+    except (BadSignature, SignatureExpired, TypeError, ValueError, KeyError):
+        raise Http404('Obavijest nije pronađena.')
+    product = get_object_or_404(
+        Product.objects.filter(aktivan=True).select_related('brend'),
+        pk=product_id,
+    )
+    html = render_to_string(
+        'emails/stock_back.html',
+        stock_back_email_context(product=product, to_email=email),
+    )
+    return HttpResponse(html)
+
+
+@require_GET
+def stock_notify_unsubscribe(request, token):
+    from django.core.signing import BadSignature, SignatureExpired
+    from .stock_notify import parse_email_action_token, unsubscribe_email
+
+    try:
+        email, _product_id = parse_email_action_token(token)
+    except (BadSignature, SignatureExpired, TypeError, ValueError, KeyError):
+        raise Http404('Link za odjavu nije važeći.')
+    removed = unsubscribe_email(email)
+    return render(request, 'emails/stock_unsubscribed.html', {
+        'email': email,
+        'removed': removed,
+    })
+
+
+@require_POST
 def add_to_cart(request, slug):
     # Fetch product allowing sold-out (we validate stock below)
     product = get_object_or_404(

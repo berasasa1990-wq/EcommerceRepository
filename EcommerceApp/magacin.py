@@ -654,6 +654,7 @@ def refresh_catalog_qty(product):
     catalog_qty = max(0, _int(display_stock_totals(product)['dostupno']))
     in_stock = catalog_qty > 0
     clear_mp_without_location(product)
+    was_out = not product.na_stanju
 
     update_fields = []
     if maybe_unhide_on_restock(product, now_in_stock=in_stock, new_qty=catalog_qty):
@@ -666,6 +667,14 @@ def refresh_catalog_qty(product):
         update_fields.append('na_stanju')
     if update_fields:
         product.save(update_fields=update_fields)
+    if in_stock and was_out:
+        product_id = product.pk
+
+        def _notify_stock():
+            from .stock_notify import notify_back_in_stock
+            notify_back_in_stock(product_id)
+
+        transaction.on_commit(_notify_stock)
     return catalog_qty
 
 

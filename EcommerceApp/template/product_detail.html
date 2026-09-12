@@ -497,9 +497,7 @@
             {% if not product.varijacije.count %}
             {% if not product.na_stanju %}
             <div class="product-detail-purchase">
-                <button type="button" class="btn btn-primary btn-add-to-bag btn-add-to-bag--sold" disabled>
-                    Rasprodato
-                </button>
+                {% include 'partials/stock_notify_button.html' with product=product btn_class='btn btn-primary btn-add-to-bag btn-add-to-bag--notify' %}
             </div>
             {% else %}
             <form method="post" action="{% url 'add_to_cart' product.slug %}" class="add-to-cart-form" id="mainAddToCartForm">
@@ -534,6 +532,10 @@
                 {% endif %}
             </form>
             {% endif %}
+            {% elif not product_available %}
+            <div class="product-detail-purchase">
+                {% include 'partials/stock_notify_button.html' with product=product btn_class='btn btn-primary btn-add-to-bag btn-add-to-bag--notify' %}
+            </div>
             {% endif %}
 
                 {% if conversion_boost.free_shipping_hint %}

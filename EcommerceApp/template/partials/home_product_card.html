@@ -78,9 +78,7 @@
                 <span>{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}</span>
             </button>
             {% else %}
-            <button type="button" class="product-card-add-btn hm-cart-btn product-card-add-btn--sold" disabled aria-label="Rasprodato — {{ product.naziv }}">
-                <span>Rasprodato</span>
-            </button>
+            {% include 'partials/stock_notify_button.html' with product=product btn_class='product-card-add-btn hm-cart-btn product-card-add-btn--notify' %}
             {% endif %}
         </div>
     </div>
