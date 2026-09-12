@@ -62,16 +62,16 @@
             flex-direction: column;
         }
         .label-qr {
-            flex: 0 0 0.42in;
-            width: 0.42in;
+            flex: 0 0 0.52in;
+            width: 0.52in;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         .label-qr img {
             display: block;
-            width: 0.38in;
-            height: 0.38in;
+            width: 0.50in;
+            height: 0.50in;
             object-fit: contain;
         }
         .naziv {
@@ -109,15 +109,15 @@
             align-items: stretch;
             justify-content: center;
             min-height: 0;
+            width: max-content;
             max-width: 100%;
         }
         .barcode img {
             display: block;
             width: 100%;
-            max-width: 1.15in;
-            height: 0.22in;
-            object-fit: contain;
-            object-position: left center;
+            height: 0.28in;
+            object-fit: fill;
+            object-position: center;
         }
         .barcode span {
             display: block;
@@ -125,6 +125,7 @@
             font-size: 7.5pt;
             font-weight: 800;
             letter-spacing: .06em;
+            white-space: nowrap;
         }
         .cijena-row {
             display: flex;

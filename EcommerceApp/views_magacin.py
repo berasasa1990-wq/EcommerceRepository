@@ -1216,7 +1216,7 @@ ETIKETA_A4_ROWS = 7
 ETIKETA_A4_COUNT = ETIKETA_A4_COLS * ETIKETA_A4_ROWS
 
 
-def _etiketa_barcode_data_uri(code):
+def _etiketa_barcode_data_uri(code, *, quiet_zone=1.2):
     raw = (code or '').strip()
     if not raw:
         return ''
@@ -1232,7 +1232,7 @@ def _etiketa_barcode_data_uri(code):
             options={
                 'module_width': 0.38,
                 'module_height': 22.0,
-                'quiet_zone': 1.2,
+                'quiet_zone': float(quiet_zone),
                 'font_size': 0,
                 'text_distance': 1,
                 'write_text': False,
@@ -1362,7 +1362,7 @@ def _zebra_price_zpl(payload):
     height = int((ZEBRA_BARCODE_HEIGHT_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
     top = int((ZEBRA_BARCODE_TOP_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
     left = 12
-    qr_size = 84
+    qr_size = 108
     qr_x = width - qr_size - 4
     text_w = max(120, qr_x - left - 8)
     lines = [
@@ -1378,13 +1378,22 @@ def _zebra_price_zpl(payload):
         f'^FO{left},40^A0N,14,14^FDSIFRA: {sifra}^FS',
     ]
     if barkod:
-        lines.append(f'^FO{left},58^BY1.2,2.0,32^BCN,32,N,N,N^FD{barkod}^FS')
-        lines.append(f'^FO{left},92^A0N,12,12^FD{barkod}^FS')
-    lines.append(f'^FO{left},112^A0N,24,24^FD{cijena}^FS')
+        modules = 11 * (len(barkod) + 3) + 13
+        text_w = max(48, len(barkod) * 8)
+        avail = max(80, qr_x - left - 6)
+        by = (Decimal(max(text_w, 1)) / Decimal(max(modules, 1))).quantize(Decimal('0.1'))
+        by = max(Decimal('1.6'), min(Decimal('2.4'), by))
+        by_cap = (Decimal(avail) / Decimal(max(modules, 1))).quantize(Decimal('0.1'))
+        if by_cap >= Decimal('1.0'):
+            by = min(by, by_cap)
+        bar_w = min(avail, int((by * modules).quantize(Decimal('1'))))
+        lines.append(f'^FO{left},56^BY{by},2.2,40^BCN,40,N,N,N^FD{barkod}^FS')
+        lines.append(f'^FO{left},98^A0N,13,13^FB{bar_w},1,0,C^FD{barkod}^FS')
+    lines.append(f'^FO{left},118^A0N,24,24^FD{cijena}^FS')
     cijena_w = max(32, min(140, 11 * max(1, len(cijena))))
-    lines.append(f'^FO{left + cijena_w},124^A0N,14,14^FDKM^FS')
+    lines.append(f'^FO{left + cijena_w},130^A0N,14,14^FDKM^FS')
     if product_url:
-        lines.append(f'^FO{qr_x},18^BQN,2,2^FDQA,{product_url}^FS')
+        lines.append(f'^FO{qr_x},14^BQN,2,3^FDQA,{product_url}^FS')
     lines.append('^XZ')
     return '\n'.join(lines) + '\n'
 
@@ -1438,6 +1447,10 @@ def _render_etiketa_print(request, items, papir='a4'):
         return redirect('staff_magacin_stampa_cijena')
     kind = _papir_kind(papir)
     if kind == 'zebra':
+        for row in items:
+            code = (row.get('barkod') or '').strip()
+            if code:
+                row['barcode_src'] = _etiketa_barcode_data_uri(code, quiet_zone=0.2)
         return render(request, 'staff/magacin/artikal_etiketa_zebra.html', {
             'items': items,
             'etiketa_count': len(items),
