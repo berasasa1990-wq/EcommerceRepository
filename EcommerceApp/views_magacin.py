@@ -1358,7 +1358,7 @@ def _zebra_price_zpl(payload):
     barkod = _zpl_text(payload.get('barkod'), 40)
     cijena = _zpl_text(payload.get('cijena_label'), 12) or '-'
     product_url = _zpl_text(payload.get('product_url'), 180)
-    width = int((ZEBRA_BARCODE_WIDTH_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
+    width = int((ZEBRA_PRICE_WIDTH_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
     height = int((ZEBRA_BARCODE_HEIGHT_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
     top = int((ZEBRA_BARCODE_TOP_IN * ZEBRA_BARCODE_DPI).quantize(Decimal('1')))
     left = 28
@@ -1427,6 +1427,7 @@ def _stampa_cijena_context(request, *, mode='izbor'):
         'mode': mode,
         'lookup_url': reverse('staff_magacin_artikli_lookup'),
         'print_url': reverse('staff_magacin_stampa_cijena_print'),
+        'zebra_size': '3" × 1,224"',
     })
     return context
 
@@ -1441,7 +1442,7 @@ def _render_etiketa_print(request, items, papir='a4'):
             'items': items,
             'etiketa_count': len(items),
             'zpl': ''.join(_zebra_price_zpl(row) for row in items),
-            'label_width': str(ZEBRA_BARCODE_WIDTH_IN),
+            'label_width': str(ZEBRA_PRICE_WIDTH_IN),
             'label_height': str(ZEBRA_BARCODE_HEIGHT_IN),
             'label_top': str(ZEBRA_BARCODE_TOP_IN),
         })
@@ -1452,6 +1453,7 @@ def _render_etiketa_print(request, items, papir='a4'):
 
 
 ZEBRA_BARCODE_WIDTH_IN = Decimal('3.559')
+ZEBRA_PRICE_WIDTH_IN = Decimal('3')
 ZEBRA_BARCODE_HEIGHT_IN = Decimal('1.224')
 ZEBRA_BARCODE_TOP_IN = Decimal('0.100')
 ZEBRA_BARCODE_DPI = 203

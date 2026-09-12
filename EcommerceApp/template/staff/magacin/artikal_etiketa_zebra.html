@@ -160,7 +160,7 @@
 <body>
     <div class="bar">
         <button type="button" id="zebraPrintBtn">Štampaj na Zebra</button>
-        <span>Zebra · 3,559" × 1,224" · Label with gaps · rotacija 0 · top 0,1" · left 0" · {{ etiketa_count }} etiketa</span>
+        <span>Zebra · {{ label_width }}" × {{ label_height }}" · Label with gaps · rotacija 0 · top 0,1" · left 0" · {{ etiketa_count }} etiketa</span>
     </div>
     {% for e in items %}
     <article class="label">
