@@ -57,10 +57,6 @@ html.categories-dialog-open, .categories-dialog-open body { overflow: hidden; }
 .mobile-categories-dialog__head img { display: block; max-width: 100%; width: 140px; height: 42px; object-fit: contain; object-position: left; }
 .mobile-categories-dialog__head h2 { margin: 0; font-size: 20px; letter-spacing: -.5px; }
 .mobile-categories-dialog__head button { border: 0; background: none; color: #30313a; font-size: 34px; line-height: 1; padding: 0; min-height: 40px; }
-.mobile-categories-search { display: flex; flex-shrink: 0; min-height: 40px; border: 1px solid #e0e1e6; border-radius: 12px; background: #f5f5f7; margin-bottom: 10px; }
-.mobile-categories-search button { display: grid; place-items: center; width: 38px; flex-shrink: 0; border: 0; background: none; color: #252731; }
-.mobile-categories-search svg { width: 22px; height: 22px; }
-.mobile-categories-search input { width: 100%; min-width: 0; border: 0; background: none; padding: 6px 8px 6px 0; font: inherit; font-size: 12px; color: #333; }
 .mobile-categories-dialog__scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 12px; }
 .mobile-category-entry { border-top: 1px solid #e7e8ec; }
 .mobile-category-entry[hidden] { display: none; }

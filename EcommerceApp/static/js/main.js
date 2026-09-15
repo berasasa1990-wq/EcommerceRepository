@@ -59,15 +59,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const headerSearch = document.getElementById('headerSearch');
     const searchClose = document.getElementById('searchClose');
 
-    // Offset ispod fiksnog headera (baneri, filteri, sticky sidebar)
-    if (typeof window.syncSiteChromeOffset === 'function') {
-        window.syncSiteChromeOffset();
-        window.addEventListener('resize', () => window.syncSiteChromeOffset(), { passive: true });
+    if (header) {
+        const updateHeader = () => header.classList.toggle('scrolled', window.scrollY > 10);
+        updateHeader();
+        window.addEventListener('scroll', updateHeader, { passive: true });
     }
-
-    window.addEventListener('scroll', () => {
-        header.classList.toggle('scrolled', window.scrollY > 10);
-    });
 
     const megaMenuPanel = document.getElementById('megaMenuPanel');
     const megaItems = document.querySelectorAll('[data-nav-item].has-mega-menu');

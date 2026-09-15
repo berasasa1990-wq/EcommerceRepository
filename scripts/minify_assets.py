@@ -30,7 +30,17 @@ def build_style_min():
     print('fonts.css + style.css -> style.min.css')
 
 
+CSS_BUNDLES = {'header-base.min.css': ['menu-color.v20260909.css', 'site-logo-compact.v20260912.css', 'mobile-header-actions.v20260909.css'], 'navigation.min.css': ['touch-navigation.css', 'wholesale-nav.css'], 'storefront-extras.min.css': ['search-popup-compact.css', 'newsletter-gray.css']}
+
+def build_css_bundles():
+    for output, sources in CSS_BUNDLES.items():
+        content = '\n'.join((STATIC / 'css' / name).read_text(encoding='utf-8') for name in sources)
+        (STATIC / 'css' / output).write_text(rcssmin.cssmin(content), encoding='utf-8')
+        print(f"{', '.join(sources)} -> {output}")
+
+
 def main():
+    build_css_bundles()
     build_style_min()
     for src, dest in PAIRS:
         if not src.exists():

@@ -3509,6 +3509,9 @@ class LiveVisitorAdmin(admin.ModelAdmin):
 
 @admin.register(StaffSiteEvent)
 class StaffSiteEventAdmin(admin.ModelAdmin):
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser and super().has_delete_permission(request, obj)
+
     list_display = ('tip', 'naslov', 'ime', 'email', 'grad', 'kreirano')
     list_filter = ('tip', 'kreirano')
     search_fields = ('naslov', 'poruka', 'ime', 'email', 'grad', 'session_key')
@@ -3577,6 +3580,9 @@ class WarehouseStockAdmin(admin.ModelAdmin):
 
 @admin.register(WarehouseMovement)
 class WarehouseMovementAdmin(admin.ModelAdmin):
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser and super().has_delete_permission(request, obj)
+
     list_display = ('kreiran', 'product', 'tip', 'location', 'to_location', 'kolicina')
     list_filter = ('tip', 'kreiran')
     search_fields = ('product__naziv', 'product__sifra', 'napomena')
@@ -3586,6 +3592,9 @@ class WarehouseMovementAdmin(admin.ModelAdmin):
 
 @admin.register(WarehouseSyncLog)
 class WarehouseSyncLogAdmin(admin.ModelAdmin):
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser and super().has_delete_permission(request, obj)
+
     list_display = ('started_at', 'status', 'izvor', 'artikala', 'trajanje_sekundi')
     list_filter = ('status',)
     readonly_fields = (

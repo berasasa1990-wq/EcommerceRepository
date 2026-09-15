@@ -29,10 +29,12 @@
 </article>
 </div>
 <small>{{ record.last_seen|date:'d.m.Y. H:i' }}{% if record.reported_by %} · {{ record.reported_by.get_username }}{% endif %}{% if not record.existing_duplicate %} · Broj pokušaja: {{ record.attempts }}{% endif %}</small>
+{% if user.is_superuser %}
 <form method="post" action="{% url 'staff_magacin_dupli_barkod_obrisi' record.pk %}" style="margin-top:12px">
 {% csrf_token %}<input type="hidden" name="q" value="{{ barcode_query }}"><input type="hidden" name="page" value="{{ page.number }}">
 <button type="submit" class="mg-btn mg-btn-danger">Obriši evidenciju</button>
 </form>
+{% endif %}
 </section>
 {% empty %}<div class="mg-card">Nema evidentiranih duplih barkodova{% if barcode_query %} za ovu pretragu{% endif %}.</div>{% endfor %}
 {% if page.has_other_pages %}<nav class="mg-pager">{% if page.has_previous %}<a href="?page={{ page.previous_page_number }}&amp;q={{ barcode_query|urlencode }}">← Prethodna</a>{% endif %}<span>{{ page.number }} / {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a href="?page={{ page.next_page_number }}&amp;q={{ barcode_query|urlencode }}">Sljedeća →</a>{% endif %}</nav>{% endif %}

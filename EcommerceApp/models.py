@@ -6308,7 +6308,7 @@ class WarehouseMovement(models.Model):
         SYNC = 'sync', 'Sinhronizacija'
 
     product = models.ForeignKey(
-        Product, on_delete=models.CASCADE, related_name='magacin_kretanja',
+        Product, on_delete=models.PROTECT, related_name='magacin_kretanja',
     )
     variation = models.ForeignKey(
         ProductVariation,

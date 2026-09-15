@@ -33346,3 +33346,17 @@ body.page-account main {
     text-decoration: underline;
     text-underline-offset: 4px;
 }
+
+/* Fixed storefront chrome reserves its measured height in document flow. */
+body .site-chrome-sticky {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+}
+.site-chrome-spacer {
+    height: var(--site-chrome-height, var(--site-chrome-top));
+    flex: 0 0 auto;
+}
+html { scroll-padding-top: var(--site-chrome-top); }

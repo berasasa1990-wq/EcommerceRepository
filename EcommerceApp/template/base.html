@@ -75,7 +75,7 @@
     <link rel="dns-prefetch" href="https://www.google-analytics.com">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
     <style>@media(max-width:1024px){.desktop-category-extra,.desktop-category-nav,.desktop-sale-link,.reference-header-heart{display:none!important}}</style>
-    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20260915-search-title-3-lines" media="(min-width: 1025px)">
+    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20260915-categories-one-row" media="(min-width: 1025px)">
 
     {% if meta_pixel_id %}
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin>
@@ -158,20 +158,16 @@
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260915-feature-cleanup" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260915-feature-cleanup">
-    <link rel="stylesheet" href="{% static 'css/menu-color.v20260909.css' %}">
-    <link rel="stylesheet" href="{% static 'css/site-logo-compact.v20260912.css' %}">
-    <link rel="stylesheet" href="{% static 'css/mobile-header-actions.v20260909.css' %}">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260915-performance" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260915-performance">
+    <link rel="stylesheet" href="{% static 'css/header-base.min.css' %}?v=20260915-performance">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
     <style id="site-orange">:root{--ozr-orange:#FF5A00;--ozr-orange-hover:#E04F00;--btn-cart:#FF5A00;--btn-cart-hover:#E04F00;--btn-banner:#FF5A00;--btn-banner-hover:#E04F00;}.header{border-bottom:2px solid var(--ozr-orange,#FF5A00);}.home-products--akcija,.home-brand-strip-section--mockup{border-top:2px solid var(--ozr-orange,#FF5A00)!important;}</style>
-    <link rel="stylesheet" href="{% static 'css/touch-navigation.css' %}?v=20260909">
-    <link rel="stylesheet" href="{% static 'css/wholesale-nav.css' %}?v=20260909-2">
+    <link rel="stylesheet" href="{% static 'css/navigation.min.css' %}?v=20260915-performance">
     {% block extra_css %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/search-popup-compact.css' %}?v=20260915-compact-list">
-    <link rel="stylesheet" href="{% static 'css/newsletter-gray.css' %}?v=20260915-newsletter-image">
+    <link rel="stylesheet" href="{% static 'css/storefront-extras.min.css' %}?v=20260915-performance">
     {% if user.is_superuser %}
     <style>
         body #header .logo-brand:has(.logo-admin-panel) {
@@ -209,8 +205,8 @@
         body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
     </style>
     {% endif %}
-    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20260915-sticky-header-hero">
-    <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20260914-smaller-header-icons">
+    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20260915-category-no-search">
+    <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20260915-menu-no-search">
 
     {% if meta_pixel_id %}
     <!-- Meta Pixel — učitava se nakon prvog rendera da ne koči LCP -->
@@ -617,106 +613,45 @@
     </header>
     </div>
 
-    {# Visine promo + header — logo/meni NIKAD ispod „Besplatna dostava” trake #}
+    <div class="site-chrome-spacer" aria-hidden="true"></div>
     <script>
     (function () {
-        function isVisible(el) {
-            if (!el) return false;
-            var st = window.getComputedStyle(el);
-            return st.display !== 'none' && st.visibility !== 'hidden' && st.opacity !== '0';
+        var root = document.documentElement;
+        var chrome = document.querySelector('.site-chrome-sticky');
+        var promo = chrome.querySelector('.promo-bar');
+        var header = document.getElementById('header');
+        var pending = false;
+        function setHeight(name, height) {
+            var value = Math.ceil(height) + 'px';
+            if (root.style.getPropertyValue(name) !== value) root.style.setProperty(name, value);
         }
-        function syncSiteChromeOffset() {
-            var root = document.documentElement;
-            var promo = document.querySelector('.promo-bar');
-            var header = document.getElementById('header');
-            var shell = header ? header.querySelector('.header-shell') : null;
-            var primary = header ? header.querySelector('.header-row--primary') : null;
-            var categories = header ? header.querySelector('.header-row--categories') : null;
-
-            // Edit banner uklonjen — ne pomiči header
-            var staffH = 0;
-            root.style.setProperty('--staff-edit-banner-height', '0px');
-
-            // Prirodna visina promo trake (scrollHeight hvata wrap teksta)
-            var promoH = 36;
-            if (isVisible(promo)) {
-                promoH = Math.max(32, Math.round(promo.scrollHeight || promo.offsetHeight) || 36);
-            }
-            root.style.setProperty('--promo-height', promoH + 'px');
-
-            // Reflow da header.top koristi novi --promo-height
-            void (header && header.offsetHeight);
-
-            var headerH = 56;
-            if (isVisible(header)) {
-                // Cijeli shell (logo red + kategorije) — bez mega-menu panela
-                // Prije se mjerio samo primary → baner je ulazio ispod nav reda i izgledao isječen
-                if (shell) {
-                    headerH = Math.max(48, Math.round(shell.getBoundingClientRect().height) || shell.offsetHeight || 56);
-                } else if (primary) {
-                    var primaryH = Math.round(primary.offsetHeight) || 56;
-                    var catH = (categories && isVisible(categories))
-                        ? (Math.round(categories.offsetHeight) || 0)
-                        : 0;
-                    headerH = Math.max(48, primaryH + catH);
-                } else {
-                    headerH = Math.max(48, Math.round(header.offsetHeight) || 56);
-                }
-            }
-            root.style.setProperty('--header-height', headerH + 'px');
-
-            var total = staffH + promoH + headerH;
-            root.style.setProperty('--site-chrome-top', (total + 2) + 'px');
-
-            // Ako header i dalje preklapa promo (bug), forsiraj top iz mjerenja
-            if (header && promo && isVisible(promo)) {
-                var promoBottom = Math.round(promo.getBoundingClientRect().bottom);
-                var headerTop = Math.round(header.getBoundingClientRect().top);
-                if (headerTop < promoBottom - 1) {
-                    root.style.setProperty(
-                        '--promo-height',
-                        Math.max(promoH, promoBottom - staffH) + 'px'
-                    );
-                    void header.offsetHeight;
-                    if (shell) {
-                        headerH = Math.max(48, Math.round(shell.getBoundingClientRect().height) || headerH);
-                        root.style.setProperty('--header-height', headerH + 'px');
-                    } else if (primary) {
-                        headerH = Math.max(48, Math.round(primary.offsetHeight) || headerH);
-                        root.style.setProperty('--header-height', headerH + 'px');
-                    }
-                    total = staffH + Math.max(promoH, promoBottom - staffH) + headerH;
-                    root.style.setProperty('--site-chrome-top', (total + 2) + 'px');
-                }
-            }
+        function measure() {
+            pending = false;
+            // Read all geometry before writing CSS: one layout pass.
+            var promoH = promo.getBoundingClientRect().height;
+            var headerH = header.getBoundingClientRect().height;
+            var totalH = chrome.getBoundingClientRect().height;
+            setHeight('--promo-height', promoH);
+            setHeight('--header-height', headerH);
+            setHeight('--site-chrome-height', totalH);
+            setHeight('--site-chrome-top', totalH + 2);
         }
-        window.syncSiteChromeOffset = syncSiteChromeOffset;
-        syncSiteChromeOffset();
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', syncSiteChromeOffset);
+        function schedule() {
+            if (pending) return;
+            pending = true;
+            requestAnimationFrame(measure);
         }
-        window.addEventListener('load', function () {
-            syncSiteChromeOffset();
-            // Fontovi/logo učitani — još jednom
-            setTimeout(syncSiteChromeOffset, 100);
-            setTimeout(syncSiteChromeOffset, 400);
-        });
-        window.addEventListener('resize', syncSiteChromeOffset);
+        window.syncSiteChromeOffset = schedule;
+        measure();
+        window.addEventListener('resize', schedule, { passive: true });
+        window.addEventListener('load', schedule, { once: true });
         if (window.ResizeObserver) {
-            try {
-                var ro = new ResizeObserver(function () { syncSiteChromeOffset(); });
-                var h = document.getElementById('header');
-                var p = document.querySelector('.promo-bar');
-                var shellEl = h && h.querySelector('.header-shell');
-                var primary = h && h.querySelector('.header-row--primary');
-                var cats = h && h.querySelector('.header-row--categories');
-                if (h) ro.observe(h);
-                if (p) ro.observe(p);
-                if (shellEl) ro.observe(shellEl);
-                if (primary) ro.observe(primary);
-                if (cats) ro.observe(cats);
-            } catch (e) {}
+            var observer = new ResizeObserver(schedule);
+            observer.observe(chrome);
+            observer.observe(promo);
+            observer.observe(header);
         }
+        if (document.fonts) document.fonts.ready.then(schedule);
     })();
     </script>
 
@@ -768,7 +703,7 @@
     <script type="application/ld+json">{{ website_json_ld|safe }}</script>
     {% endif %}
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260915-feature-cleanup" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260915-performance" defer></script>
     <script src="{% static 'js/desktop-reference.js' %}?v=20260914-dropdowns" defer></script>
     <script src="{% static 'js/stock-notify.js' %}?v=20260914-follow-email" defer></script>
     {% if site_settings.javno_online_posjetioci %}

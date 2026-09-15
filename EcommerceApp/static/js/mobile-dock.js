@@ -77,16 +77,6 @@
     categories?.querySelectorAll('[data-category-entry]').forEach(entry => entry.addEventListener('toggle', () => {
         if (entry.open) categories.querySelectorAll('[data-category-entry]').forEach(other => { if (other !== entry) other.open = false; });
     }));
-    const categorySearch = categories?.querySelector('input[type="search"]');
-    categorySearch?.addEventListener('input', () => {
-        const query = categorySearch.value.trim().toLocaleLowerCase();
-        let count = 0;
-        categories.querySelectorAll('[data-category-entry]').forEach(entry => {
-            entry.hidden = !entry.textContent.toLocaleLowerCase().includes(query);
-            if (!entry.hidden) count++;
-        });
-        categories.querySelector('[data-categories-empty]').hidden = count > 0;
-    });
     window.matchMedia('(max-width: 1024px)').addEventListener('change', event => { if (!event.matches) closeCategories(); });
     document.addEventListener('click', event => {
         if (event.target.closest('[data-mobile-home-menu]')) openCategories();

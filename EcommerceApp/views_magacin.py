@@ -9049,6 +9049,9 @@ def magacin_barkod_provjera(request):
 @user_passes_test(warehouse_user_required)
 @require_POST
 def magacin_dupli_barkod_obrisi(request, pk):
+    from django.http import HttpResponseForbidden
+    if not request.user.is_superuser:
+        return HttpResponseForbidden('Samo superuser može obrisati evidenciju.')
     from .models import BarcodeConflict
     record = get_object_or_404(BarcodeConflict, pk=pk)
     record.delete()

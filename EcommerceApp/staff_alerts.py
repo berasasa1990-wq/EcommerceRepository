@@ -1,14 +1,12 @@
 """Live obavijesti za superusere dok su na sajtu."""
 from __future__ import annotations
 
-import random
 from datetime import timedelta
 
 from django.utils import timezone
 
 from .models import StaffSiteEvent
 
-RETENTION_HOURS = 24
 MAX_EVENTS_RETURN = 20
 
 
@@ -44,8 +42,6 @@ def push_staff_event(
         grad=(grad or '')[:100],
         session_key=(session_key or '')[:40],
     )
-    if random.random() < 0.05:
-        cleanup_staff_events()
     return event
 
 
@@ -145,8 +141,8 @@ def count_new_online_orders():
 
 
 def cleanup_staff_events():
-    cutoff = timezone.now() - timedelta(hours=RETENTION_HOURS)
-    return StaffSiteEvent.objects.filter(kreirano__lt=cutoff).delete()[0]
+    """Compatibility hook: evidence is retained until explicitly deleted by an administrator."""
+    return 0
 
 
 def _online_session_keys():

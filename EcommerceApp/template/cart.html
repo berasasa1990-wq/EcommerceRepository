@@ -12,7 +12,7 @@
 {% block body_class %}is-cart-page{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20260915-sticky-header">
+<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20260915-shipping-below-checkout">
 {% endblock %}
 
 {% block content %}
@@ -46,7 +46,6 @@
         🎁 Online nagrada: {{ online_gift_reward_label }} — primjenjuje se na ovoj narudžbi
     </div>
     {% endif %}
-    <div class="cart-shipping-desktop">{% include 'partials/cart_free_shipping_bar.html' with summary=summary %}</div>
     <div class="cart-layout">
         <div class="cart-main">
             {% include 'partials/upsell_cart_banner.html' with position='banner_iznad' upsell_offers=upsell_banners_above %}
@@ -155,7 +154,6 @@
         </div>
 
         <aside class="cart-summary">
-            <div class="cart-mobile-only cart-shipping-mobile">{% include 'partials/cart_free_shipping_bar.html' with summary=summary %}</div>
             {% include 'partials/coupon_form.html' with coupon_next='cart' %}
             <div class="cart-review">
                 <h2>Pregled narudžbe</h2>
@@ -167,6 +165,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
                 </span>
             </div>
+            <div class="cart-shipping-mobile">{% include 'partials/cart_free_shipping_bar.html' with summary=summary %}</div>
             <p class="cart-secure-note">Sigurna kupovina i plaćanje pouzećem</p><a class="cart-mobile-only cart-bottom-continue" href="{% url 'home' %}">Nastavi kupovinu</a>
             {% include 'partials/upsell_cart_banner.html' with position='banner_ispod' upsell_offers=upsell_banners_below %}
         </aside>

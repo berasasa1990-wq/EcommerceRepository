@@ -54,6 +54,9 @@ def obrisi_artikal_iz_baze(product):
 
     if product is None or not getattr(product, 'pk', None):
         raise MagacinError('Artikal nije pronađen.')
+    if product.magacin_kretanja.exists():
+        raise MagacinError('Artikal ima sačuvanu istoriju kretanja i ne može se obrisati. '
+                           'Evidenciju može ručno obrisati samo superuser.')
     try:
         with transaction.atomic():
             if getattr(product, 'slika', None):

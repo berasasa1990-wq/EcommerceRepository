@@ -4,10 +4,6 @@
         <h2 id="mobileCategoriesTitle">Kategorije</h2>
         <button type="button" data-categories-close aria-label="Zatvori kategorije">×</button>
     </div>
-    <form class="mobile-categories-search" action="{% url 'home' %}" method="get">
-        <button type="submit" aria-label="Pretraži proizvode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg></button>
-        <input type="search" name="q" placeholder="Pretraži kategorije i proizvode" aria-label="Pretraži kategorije i proizvode" autocomplete="off">
-    </form>
     <div class="mobile-categories-dialog__scroll">
         {% for cat in nav_categories %}
         <details class="mobile-category-entry" data-category-entry>
@@ -21,7 +17,6 @@
             </div>
         </details>
         {% endfor %}
-        <p data-categories-empty hidden>Nema kategorija za ovu pretragu. Pritisnite lupu za pretragu proizvoda.</p>
         <a class="mobile-categories-extra" href="{% url 'home' %}#brendovi"><span aria-hidden="true">◇</span> Svi brendovi <span aria-hidden="true">›</span></a>
         <a class="mobile-categories-extra mobile-categories-extra--sale" href="{% url 'home' %}?akcija=1"><span aria-hidden="true">%</span> Akcijska ponuda <span aria-hidden="true">›</span></a>
     </div>

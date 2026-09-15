@@ -716,3 +716,21 @@
         object-fit: contain;
     }
 }
+
+/* Mobile product listings: show products without the filter controls. */
+@media (max-width: 1024px) {
+    .product-catalog .catalog-desktop-filter,
+    .product-catalog .catalog-sidebar {
+        display: none !important;
+    }
+}
+
+/* Category pages keep the header compact without search controls. */
+body.category-hide-search #header .header-search,
+body.category-hide-search #header [data-mobile-home-search] {
+    display: none !important;
+}
+body.category-hide-search #header .header-row--primary {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-areas: 'logo actions' !important;
+}

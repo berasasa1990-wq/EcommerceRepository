@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block body_class %}catalog-header-reference{% endblock %}
+{% block body_class %}catalog-header-reference category-hide-search{% endblock %}
 
 {% block page_title %}
 <title>{{ seo_title }}</title>
@@ -17,7 +17,6 @@
             <p class="subcategory-subtitle">Odaberite podkategoriju</p>
         </div>
 
-        {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
         <div class="subcategory-grid">
             {% for sub in subcategories %}
@@ -37,6 +36,9 @@
             </a>
         </div>
 
+        {% if seo_tekst_iznad != seo_tekst_ispod %}
+            {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='below' %}
+        {% endif %}
         {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
     </div>
 </section>
