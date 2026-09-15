@@ -455,23 +455,119 @@ def _pronadji_korisnika_po_telefonu(telefon):
     return None
 
 
-def telefon_vec_registrovan(telefon, *, exclude_user_id=None):
-    user = _pronadji_korisnika_po_telefonu(telefon)
-    if not user:
-        return False
-    if exclude_user_id and user.pk == exclude_user_id:
-        return False
-    return True
+def korisnici_sa_telefonom(telefon):
+    key = ba_mobile_e164(telefon) or _to_e164_digits(telefon)
+    if not key or len(key) < 10:
+        return []
+    return [profile.user for profile in UserProfile.objects.select_related('user').exclude(telefon='')
+            if (ba_mobile_e164(profile.telefon) or _to_e164_digits(profile.telefon)) == key]
 
 
-def email_vec_registrovan(email, *, exclude_user_id=None):
+def rucni_loyalty_nalog(user):
+    """Nalog otvoren iz loyalty sistema (nije registracija na sajtu)."""
+    return bool(
+        user
+        and not user.is_staff
+        and not user.is_superuser
+        and str(user.username).startswith('loy_')
+    )
+
+
+def rucna_loyalty_kartica_korisnika(user):
+    return rucni_loyalty_nalog(user) and LoyaltyCard.objects.filter(user=user).exists()
+
+
+def telefon_vec_registrovan(telefon, *, exclude_user_id=None, allow_manual_loyalty=False):
+    for user in korisnici_sa_telefonom(telefon):
+        if user.pk == exclude_user_id:
+            continue
+        if allow_manual_loyalty and rucni_loyalty_nalog(user):
+            continue
+        return True
+    return False
+
+
+def telefon_na_rucnoj_loyalty(telefon, *, exclude_user_id=None):
+    """True samo ako je broj već na ručno izdatoj (loy_*) kartici."""
+    for user in korisnici_sa_telefonom(telefon):
+        if user.pk == exclude_user_id:
+            continue
+        if rucna_loyalty_kartica_korisnika(user) or rucni_loyalty_nalog(user):
+            return True
+    return False
+
+
+def email_na_rucnoj_loyalty(email, *, exclude_user_id=None):
     email = normalizuj_email(email)
     if not email:
         return False
     qs = User.objects.filter(email__iexact=email)
     if exclude_user_id:
         qs = qs.exclude(pk=exclude_user_id)
-    return qs.exists()
+    return any(rucni_loyalty_nalog(other) for other in qs)
+
+
+def pronadji_loyalty_karticu_po_telefonu(telefon):
+    """Postojeća kartica za broj: prvo ručna loy_*, inače kartica naloga na sajtu."""
+    rucna = None
+    sajt = None
+    for user in korisnici_sa_telefonom(telefon):
+        card = LoyaltyCard.objects.filter(user=user).first()
+        if not card:
+            continue
+        if rucna_loyalty_kartica_korisnika(user) or rucni_loyalty_nalog(user):
+            rucna = rucna or card
+        else:
+            sajt = sajt or card
+    return rucna or sajt
+
+
+def rucne_loyalty_kartice_za_nalog(user):
+    """Ručno izdate loyalty kartice (loy_* nalog) koje se poklapaju s telefonom i/ili emailom kupca."""
+    if not user or not getattr(user, 'pk', None):
+        return []
+    found = {}
+
+    def _dodaj(other):
+        if not other or other.pk == user.pk:
+            return
+        if not rucna_loyalty_kartica_korisnika(other):
+            return
+        card = LoyaltyCard.objects.filter(user=other).first()
+        if card:
+            found[card.pk] = card
+
+    profile = getattr(user, 'profil', None)
+    telefon = (profile.telefon if profile else '') or ''
+    if telefon:
+        for other in korisnici_sa_telefonom(telefon):
+            _dodaj(other)
+
+    email = normalizuj_email(getattr(user, 'email', '') or '')
+    if email:
+        others = User.objects.filter(email__iexact=email, is_active=True).exclude(pk=user.pk)
+        for other in others:
+            _dodaj(other)
+    return list(found.values())
+
+
+def potrebna_loyalty_veza(user):
+    return bool(rucne_loyalty_kartice_za_nalog(user))
+
+
+def email_vec_registrovan(email, *, exclude_user_id=None, allow_manual_loyalty=False):
+    email = normalizuj_email(email)
+    if not email:
+        return False
+    qs = User.objects.filter(email__iexact=email)
+    if exclude_user_id:
+        qs = qs.exclude(pk=exclude_user_id)
+    if not allow_manual_loyalty:
+        return qs.exists()
+    for other in qs:
+        if not rucni_loyalty_nalog(other):
+            return True
+    return False
 
 
 def _to_e164_digits(telefon):
@@ -1122,18 +1218,15 @@ def izdaj_loyalty_karticu(ime, prezime, telefon, email='', *, strani=False):
 
     telefon_local, e164 = validiraj_loyalty_telefon(telefon, strani=strani)
 
-    # Duplikati: 065… == +38765… == 0038765…
-    if telefon_vec_registrovan(telefon_local) or telefon_vec_registrovan(e164):
+    # Duplikat samo u loyalty sistemu (loy_*). Nalog na sajtu s istim
+    # telefonom/emailom je dozvoljen — kupac kasnije spoji Sync-om.
+    if telefon_na_rucnoj_loyalty(telefon_local) or telefon_na_rucnoj_loyalty(e164):
         raise ValueError('Ovaj broj telefona je već registrovan — isti telefon nije dozvoljen.')
     if email:
-        if email_vec_registrovan(email):
+        if email_na_rucnoj_loyalty(email):
             raise ValueError(
                 'Ovaj email je već registrovan na loyalty karticu — '
                 'dupli email nije dozvoljen.'
-            )
-        if User.objects.filter(username__iexact=email).exists():
-            raise ValueError(
-                'Ovaj email je već u upotrebi — dupli email nije dozvoljen.'
             )
 
     digits = e164 or _normalizuj_telefon(telefon_local) or secrets.token_hex(4)
@@ -1938,3 +2031,276 @@ def generisi_loyalty_card_image(card, *, cardholder_name=None, fmt='JPEG'):
     else:
         img.save(buffer, format='PNG', optimize=True)
     return buffer.getvalue()
+
+
+def _odaberi_kanonsku_loyalty_karticu(cards):
+    return sorted(
+        cards,
+        key=lambda card: (
+            -(card.ukupna_potrosnja or Decimal('0')),
+            card.kreirana,
+            card.pk,
+        ),
+    )[0]
+
+
+def _deaktiviraj_loyalty_izvor(source):
+    source.is_active = False
+    source.email = ''
+    source.save(update_fields=['is_active', 'email'])
+
+
+def _prebaci_narudzbe_loyalty_korisnika(source, target):
+    guest_ids = list(
+        _orders_for_loyalty_user(source).filter(korisnik__isnull=True).values_list('pk', flat=True)
+    )
+    if guest_ids:
+        Order.objects.filter(pk__in=guest_ids).update(korisnik=target)
+    Order.objects.filter(korisnik=source).update(korisnik=target)
+
+
+def _spoji_rucnu_karticu_u(source_card, dest_card):
+    """Spoji jednu ručno izdatu karticu u drugu (kupovine, narudžbe, kupon)."""
+    if source_card.pk == dest_card.pk:
+        return dest_card
+    source = User.objects.select_for_update().get(pk=source_card.user_id)
+    dest = User.objects.select_for_update().get(pk=dest_card.user_id)
+    LoyaltyPurchase.objects.filter(kartica=source_card).update(kartica=dest_card)
+    Coupon.objects.filter(loyalty_kartica=source_card).update(loyalty_kartica=None, aktivan=False)
+    _prebaci_narudzbe_loyalty_korisnika(source, dest)
+    source_card.delete()
+    _deaktiviraj_loyalty_izvor(source)
+    return dest_card
+
+
+def _prebaci_rucnu_karticu_na_nalog(card, target):
+    """Prebaci ručno izdatu karticu na registrovani nalog i objedini potrošnju."""
+    card = LoyaltyCard.objects.select_for_update().select_related('user').get(pk=card.pk)
+    target = User.objects.select_for_update().get(pk=target.pk)
+    source = User.objects.select_for_update().get(pk=card.user_id)
+    if source.pk == target.pk:
+        return card, card.kod, source.pk
+    if not source.username.startswith('loy_') or source.is_staff or source.is_superuser:
+        raise ValueError('Možete povezati samo ručno izdatu karticu koja nije vezana za registrovani nalog.')
+    previous = (
+        LoyaltyCard.objects.select_for_update()
+        .filter(user=target)
+        .exclude(pk=card.pk)
+        .first()
+    )
+    previous_code = previous.kod if previous else ''
+    if previous:
+        LoyaltyPurchase.objects.filter(kartica=previous).update(kartica=card)
+        Coupon.objects.filter(loyalty_kartica=previous).update(loyalty_kartica=None, aktivan=False)
+        previous.delete()
+    _prebaci_narudzbe_loyalty_korisnika(source, target)
+    card.user = target
+    card.save(update_fields=['user', 'azurirana'])
+    preracunaj_potrosnju_kartice(card)
+    _deaktiviraj_loyalty_izvor(source)
+    return card, previous_code, source.pk
+
+
+def loyalty_sync_pregled(user):
+    """Podaci za Sync dugme na nalogu: poklopljena kartica iz loyalty sistema."""
+    cards = rucne_loyalty_kartice_za_nalog(user)
+    if not cards:
+        return None
+    canonical = _odaberi_kanonsku_loyalty_karticu(cards)
+    reasons = set()
+    profile = getattr(user, 'profil', None)
+    phone_key = ba_mobile_e164((profile.telefon if profile else '') or '') or _to_e164_digits(
+        (profile.telefon if profile else '') or ''
+    )
+    email = normalizuj_email(getattr(user, 'email', '') or '')
+    for card in cards:
+        other = card.user
+        other_profile = getattr(other, 'profil', None)
+        other_phone = (other_profile.telefon if other_profile else '') or ''
+        other_key = ba_mobile_e164(other_phone) or _to_e164_digits(other_phone)
+        if phone_key and other_key and phone_key == other_key:
+            reasons.add('telefon')
+        if email and normalizuj_email(other.email) == email:
+            reasons.add('email')
+    site_card = LoyaltyCard.objects.filter(user=user).first()
+    return {
+        'kartice': cards,
+        'kartica': canonical,
+        'razlozi': sorted(reasons),
+        'store_spend': canonical.ukupna_potrosnja or Decimal('0'),
+        'site_spend': (site_card.ukupna_potrosnja if site_card else Decimal('0')) or Decimal('0'),
+    }
+
+
+def sinhronizuj_loyalty_sa_nalogom(user):
+    """Kupac spaja ručno izdate kartice s nalogom: loyalty kartica postaje kartica naloga."""
+    from django.db import transaction
+    from django.contrib.admin.models import LogEntry, CHANGE
+    from django.contrib.contenttypes.models import ContentType
+
+    if not user or not user.is_active or user.is_staff or user.is_superuser or user.username.startswith('loy_'):
+        raise ValueError('Sync je dostupan samo registrovanom kupcu.')
+    matches = rucne_loyalty_kartice_za_nalog(user)
+    if not matches:
+        raise ValueError('Nema loyalty kartice za povezivanje.')
+    with transaction.atomic():
+        target = User.objects.select_for_update().get(pk=user.pk)
+        locked = list(
+            LoyaltyCard.objects.select_for_update()
+            .select_related('user')
+            .filter(pk__in=[card.pk for card in matches])
+        )
+        if not locked:
+            raise ValueError('Nema loyalty kartice za povezivanje.')
+        canonical = _odaberi_kanonsku_loyalty_karticu(locked)
+        for extra in locked:
+            if extra.pk == canonical.pk:
+                continue
+            _spoji_rucnu_karticu_u(extra, canonical)
+        card, previous_code, source_pk = _prebaci_rucnu_karticu_na_nalog(canonical, target)
+        LogEntry.objects.create(
+            user_id=target.pk,
+            content_type_id=ContentType.objects.get_for_model(card).pk,
+            object_id=card.pk,
+            object_repr=str(card),
+            action_flag=CHANGE,
+            change_message=(
+                f'Kupac je sinhronizovao loyalty karticu {card.kod}: '
+                f'korisnik {source_pk} → {target.pk}; prethodni online kod: {previous_code}.'
+            ),
+        )
+        return card
+
+
+def povezi_rucnu_karticu_sa_nalogom(kod, email, *, actor, target_user_id=None):
+    """Transfer an issued card to a registered customer, retaining purchase records."""
+    from django.db import transaction
+    from django.contrib.admin.models import LogEntry, CHANGE
+    from django.contrib.contenttypes.models import ContentType
+
+    if not actor.is_active or not actor.is_superuser:
+        raise ValueError('Povezivanje je dostupno samo superuseru.')
+    with transaction.atomic():
+        targets_qs = User.objects.select_for_update().filter(
+            is_active=True, is_staff=False, is_superuser=False,
+        ).exclude(username__startswith='loy_')
+        if target_user_id is not None:
+            try:
+                target_user_id = int(target_user_id)
+            except (TypeError, ValueError):
+                raise ValueError('Odaberite nalog kupca iz pretrage.')
+            targets_qs = targets_qs.filter(pk=target_user_id)
+        else:
+            targets_qs = targets_qs.filter(email__iexact=email.strip())
+        targets = list(targets_qs[:2])
+        if len(targets) != 1 or targets[0].username.startswith('loy_'):
+            raise ValueError('Unesite jedinstvenu email adresu registrovanog kupca.')
+        target = targets[0]
+        card = LoyaltyCard.objects.select_for_update().filter(kod=kod.strip()).first()
+        if not card:
+            raise ValueError('Kartica s tim brojem nije pronađena.')
+        source = User.objects.select_for_update().get(pk=card.user_id)
+        if source.pk == target.pk:
+            raise ValueError('Kartica je već povezana s ovim nalogom.')
+        if not source.username.startswith('loy_') or source.is_staff or source.is_superuser:
+            raise ValueError('Možete povezati samo ručno izdatu karticu koja nije vezana za registrovani nalog.')
+        card, previous_code, source_pk = _prebaci_rucnu_karticu_na_nalog(card, target)
+        LogEntry.objects.create(
+            user_id=actor.pk,
+            content_type_id=ContentType.objects.get_for_model(card).pk,
+            object_id=card.pk,
+            object_repr=str(card),
+            action_flag=CHANGE,
+            change_message=f'Kartica povezana: korisnik {source_pk} → {target.pk}; prethodni online kod: {previous_code}.',
+        )
+        return card
+
+
+def loyalty_merge_candidates(selected_card, query):
+    """Find the complementary store card or registered account for staff review."""
+    query = (query or '').strip()[:100]
+    if not query:
+        return []
+    users = User.objects.filter(
+        is_active=True, is_staff=False, is_superuser=False,
+    ).exclude(pk=selected_card.user_id).select_related('profil', 'loyalty_kartica')
+    manual_selected = rucni_loyalty_nalog(selected_card.user)
+    if manual_selected:
+        users = users.exclude(username__startswith='loy_')
+    else:
+        users = users.filter(username__startswith='loy_', loyalty_kartica__isnull=False)
+    for term in query.split():
+        users = users.filter(
+            Q(first_name__icontains=term) | Q(last_name__icontains=term)
+            | Q(email__icontains=term) | Q(profil__telefon__icontains=term)
+            | Q(loyalty_kartica__kod__icontains=term)
+            | Q(loyalty_kartica__barkod__icontains=term)
+        )
+    results = []
+    for other in users.order_by('first_name', 'pk')[:20]:
+        other_card = getattr(other, 'loyalty_kartica', None)
+        physical = selected_card if manual_selected else other_card
+        customer = other if manual_selected else selected_card.user
+        online_card = other_card if manual_selected else selected_card
+        card_ids = [physical.pk] + ([online_card.pk] if online_card else [])
+        manual_total = LoyaltyPurchase.objects.filter(kartica_id__in=card_ids).aggregate(total=Sum('iznos'))['total'] or Decimal('0')
+        order_ids = _orders_for_loyalty_user(physical.user).values_list('pk', flat=True)
+        online_ids = _orders_for_loyalty_user(customer).values_list('pk', flat=True)
+        online_total = Order.objects.filter(Q(pk__in=order_ids) | Q(pk__in=online_ids)).aggregate(total=Sum('ukupno'))['total'] or Decimal('0')
+        results.append({
+            'combined_spend': manual_total + online_total,
+            'physical': physical, 'customer': customer, 'online_card': online_card,
+            'other': other, 'other_card': other_card,
+        })
+    return results
+
+
+def loyalty_sync_pairs():
+    """Match active store cards to web registrations by exact normalized contact."""
+    email_cards, phone_cards = {}, {}
+    cards = LoyaltyCard.objects.filter(
+        user__is_active=True, user__is_staff=False, user__is_superuser=False,
+        user__username__startswith='loy_',
+    ).select_related('user', 'user__profil')
+    for card in cards:
+        email, phone = _loyalty_contact_keys(card.user)
+        if email:
+            email_cards.setdefault(email, []).append(card)
+        if phone:
+            phone_cards.setdefault(phone, []).append(card)
+    pairs = []
+    customers = User.objects.filter(is_active=True, is_staff=False, is_superuser=False).exclude(
+        username__startswith='loy_',
+    ).select_related('profil', 'loyalty_kartica').order_by('-date_joined', '-pk')
+    for customer in customers:
+        email, phone = _loyalty_contact_keys(customer)
+        matches = {}
+        for reason, matching_cards in [('email', email_cards.get(email, [])), ('telefon', phone_cards.get(phone, []))]:
+            for card in matching_cards:
+                match = matches.setdefault(card.pk, {'physical': card, 'customer': customer, 'reasons': []})
+                match['reasons'].append(reason)
+        pairs.extend(matches.values())
+    return pairs
+
+
+def _loyalty_contact_keys(user):
+    profile = getattr(user, 'profil', None)
+    return normalizuj_email(user.email or ''), _to_e164_digits(profile.telefon if profile else '')
+
+
+def loyalty_sync_pair_details(pair):
+    physical, customer = pair['physical'], pair['customer']
+    online_card = getattr(customer, 'loyalty_kartica', None)
+    store_purchases = list(physical.evidentirane_kupovine.order_by('-kreirano'))
+    web_purchases = list(online_card.evidentirane_kupovine.order_by('-kreirano')) if online_card else []
+    store_orders = list(_orders_for_loyalty_user(physical.user).order_by('-kreirana'))
+    web_orders = list(_orders_for_loyalty_user(customer).order_by('-kreirana'))
+    unique_orders = {order.pk: order for order in store_orders + web_orders}
+    manual_total = sum((purchase.iznos for purchase in store_purchases + web_purchases), Decimal('0'))
+    return {
+        **pair, 'online_card': online_card,
+        'store_purchases': store_purchases, 'web_purchases': web_purchases,
+        'store_orders': store_orders, 'web_orders': web_orders,
+        'combined_spend': manual_total + sum((order.ukupno for order in unique_orders.values()), Decimal('0')),
+        'purchase_count': len(store_purchases) + len(web_purchases) + len(unique_orders),
+    }

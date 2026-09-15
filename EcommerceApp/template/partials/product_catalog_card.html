@@ -1,5 +1,6 @@
+{% load ecommerce_extras %}
 <article
-    class="product-card product-card--catalog{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if product.katalog_na_akciji %} product-card--on-sale{% endif %}"
+    class="product-card product-card--catalog{% if home_reference_card %} product-card--home-reference{% endif %}{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if product.katalog_na_akciji %} product-card--on-sale{% endif %}"
     data-product-card
     data-product-id="{{ product.pk }}"
     {% if product.slika %}data-image-key="{{ product.slika.name }}"{% endif %}
@@ -15,6 +16,14 @@
     <span class="product-card-corner-badge product-card-corner-badge--sale is-pulse" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
     {% elif product.je_hit or home_section_badge == 'hit' %}
     <span class="product-card-corner-badge product-card-corner-badge--hit" aria-label="Izdvojeno">HIT</span>
+    {% endif %}
+    {% if home_reference_card %}
+    {% if product.katalog_na_akciji and product.katalog_akcija_postotak %}
+    <span class="home-card-sale-percent">-{{ product.katalog_akcija_postotak }}%</span>
+    {% endif %}
+    <span class="home-card-heart" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+    </span>
     {% endif %}
     <div class="product-card__top">
         <div class="product-card__media">
@@ -35,7 +44,10 @@
         </div>
 
         <div class="product-card__body">
+            <span class="home-card-brand">{% if product.brend %}{{ product.brend.naziv }}{% endif %}</span>
+            {% if not home_reference_card %}
             <p class="product-card__pack"{% if product.pakovanje_cijena_hint %} title="{{ product.pakovanje_cijena_hint }}"{% endif %}>{% if product.je_pakovanje %}{{ product.pakovanje_label|default:"Pakovanje" }}{% else %}&nbsp;{% endif %}</p>
+            {% endif %}
             <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card__title" data-product-name{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>{{ product.naziv }}</a>
             {% include 'partials/product_staff_missing.html' with product=product %}
 
@@ -71,14 +83,12 @@
         <div class="product-card__price-row">
             <div class="product-card__price-block">
                 {% if card_variations|length > 1 %}
-                {% include 'partials/product_card_dwell_price.html' with product=product show_od_prefix=True %}
+                {% include 'partials/product_card_price.html' with product=product show_od_prefix=True %}
                 {% else %}
-                {% include 'partials/product_card_dwell_price.html' with product=product %}
+                {% include 'partials/product_card_price.html' with product=product %}
                 {% endif %}
-            </div>
-            <div class="product-card__brand-row{% if hide_brand %} product-card__brand-row--hidden{% endif %}">
-                {% if not hide_brand and product.brend %}
-                {% include 'partials/brand_display.html' with brand=product.brend %}
+                {% if home_reference_card %}
+                <p class="home-card-stock{% if not product.na_stanju %} home-card-stock--out{% endif %}"><span aria-hidden="true"></span>{% if product.na_stanju %}Na stanju{% else %}Nije na stanju{% endif %}</p>
                 {% endif %}
             </div>
         </div>
@@ -101,11 +111,10 @@
                 {% endfor %}
             {% endif %}
         >
-            <svg class="product-card-add-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
-                <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
-                <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
-            </svg>
+            <svg class="product-card-add-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="5" y="7" width="14" height="15" rx="2"/>
+                    <path d="M9 7V5a3 3 0 0 1 6 0v2"/>
+                </svg>
             <span>{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}</span>
         </button>
         {% else %}

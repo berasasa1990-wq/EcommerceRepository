@@ -183,6 +183,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
             <nav class="loy-tabs">
                 <a href="{% url 'staff_loyalty_system' %}" class="{% if desk_tab != 'novi' %}is-on{% endif %}">Pretraga članova</a>
                 <a href="?tab=novi" class="{% if desk_tab == 'novi' %}is-on{% endif %}">Novi član</a>
+                {% if user.is_superuser %}<a href="{% url 'staff_loyalty_sync' %}" style="margin-left:auto;color:#16a34a">Sync kartica</a>{% endif %}
             </nav>
 
             {% if desk_tab == 'novi' %}

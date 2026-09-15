@@ -469,13 +469,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function submitAddToCartForm(form, extraFields = {}) {
         const submitBtn = form.querySelector('[type="submit"]');
+        const submitButtons = form.querySelectorAll('[type="submit"]');
         const body = new URLSearchParams(new FormData(form));
         body.set('stay', '1');
         Object.entries(extraFields).forEach(([key, value]) => {
             body.set(key, value);
         });
 
-        if (submitBtn) submitBtn.disabled = true;
+        submitButtons.forEach(button => { button.disabled = true; });
         try {
             const response = await fetch(form.action, {
                 method: 'POST',
@@ -518,6 +519,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             updateCartBadge(data.cart_count);
+            if (form.dataset.buyNowTarget) {
+                const target = new URL(form.dataset.buyNowTarget, location.origin);
+                if (target.origin === location.origin) { window.location.assign(target.href); return; }
+            }
             showCartToast(data.message);
             if (data.upsell_html && typeof window.handleUpsellResponse === 'function') {
                 window.handleUpsellResponse(data.upsell_html);
@@ -528,13 +533,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             showCartToast(err.message || 'Dodavanje u korpu nije uspjelo.');
         } finally {
-            if (submitBtn) submitBtn.disabled = false;
+            submitButtons.forEach(button => { button.disabled = false; });
         }
     }
 
     document.querySelectorAll('form.add-to-cart-form, form.product-detail-variation-form, form.product-other-options-form, form.pd-bundle__form, form.pd-flash__form, form.pd-qtydeal__form').forEach((form) => {
         form.addEventListener('submit', (event) => {
             event.preventDefault();
+            form.dataset.buyNowTarget = event.submitter?.dataset.buyNow || '';
             submitAddToCartForm(form);
         });
     });
@@ -613,104 +619,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         syncButtons();
     });
-
-    /* AI dwell: flash samo dok traje u sesiji — isteklo = nema obnove na refresh */
-    (function initDwellFlashPrice() {
-        const cfgEl = document.getElementById('dwellFlashConfigData');
-        if (!cfgEl) return;
-        let cfg;
-        try {
-            cfg = JSON.parse(cfgEl.textContent || '{}');
-        } catch (e) {
-            return;
-        }
-        // active=true samo kad server ima stvarni aktivni flash
-        if (!cfg || !cfg.active || !cfg.product_id || !cfg.flash) return;
-
-        const flashBox = document.getElementById('pdDwellFlash');
-        const countdownEl = document.getElementById('pdDwellCountdown');
-        const wasEl = document.getElementById('pdDwellWas');
-        const nowEl = document.getElementById('pdDwellNow');
-        const badgeEl = document.getElementById('pdDwellBadge');
-        const detailPrice = document.getElementById('detailPrice');
-        if (!flashBox || !countdownEl) return;
-
-        const flashSec = Math.max(30, parseInt(cfg.flash_seconds || 120, 10) || 120);
-        let tickTimer = null;
-
-        function fmt(sec) {
-            sec = Math.max(0, Math.floor(sec));
-            const m = Math.floor(sec / 60);
-            const s = sec % 60;
-            return m + ':' + String(s).padStart(2, '0');
-        }
-
-        function formatKm(val) {
-            const n = Number(val);
-            if (!Number.isFinite(n)) return String(val) + ' KM';
-            return n.toFixed(2).replace('.', ',') + ' KM';
-        }
-
-        function hideFlash() {
-            flashBox.hidden = true;
-            flashBox.classList.remove('is-active');
-            if (detailPrice) detailPrice.hidden = false;
-            if (tickTimer) {
-                clearInterval(tickTimer);
-                tickTimer = null;
-            }
-            document.body.classList.remove('pd-dwell-flash-on');
-        }
-
-        function showFlash(data) {
-            const base = data.base || cfg.base_price;
-            const sale = data.sale;
-            const pct = data.percent || cfg.percent || 10;
-            let remaining = parseInt(data.remaining_seconds || 0, 10) || 0;
-            if (remaining <= 0) {
-                hideFlash();
-                return;
-            }
-
-            if (wasEl) {
-                wasEl.textContent = formatKm(base);
-            }
-            if (nowEl) {
-                nowEl.textContent = formatKm(sale);
-            }
-            if (badgeEl) {
-                badgeEl.textContent = '−' + pct + '%';
-            }
-            if (detailPrice) detailPrice.hidden = true;
-            flashBox.hidden = false;
-            flashBox.classList.add('is-active');
-            document.body.classList.add('pd-dwell-flash-on');
-            countdownEl.textContent = fmt(remaining);
-
-            if (tickTimer) clearInterval(tickTimer);
-            tickTimer = setInterval(function () {
-                remaining -= 1;
-                if (remaining <= 0) {
-                    hideFlash();
-                    return;
-                }
-                countdownEl.textContent = fmt(remaining);
-            }, 1000);
-        }
-
-        // Samo server-side flash (već u sesiji) — bez re-aktivacije / preview fallbacka
-        const rem = parseInt(cfg.flash.remaining_seconds || 0, 10) || 0;
-        if (rem > 0 && cfg.flash.sale) {
-            showFlash({
-                base: cfg.flash.base || cfg.base_price,
-                sale: cfg.flash.sale,
-                percent: cfg.flash.percent || cfg.percent,
-                remaining_seconds: rem,
-            });
-        } else {
-            hideFlash();
-        }
-    })();
 
     (function initAkcijskaPonuda() {
         document.querySelectorAll('.pd-flash').forEach((root) => {

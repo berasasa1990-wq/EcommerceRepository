@@ -20,6 +20,7 @@
                 {% endif %}
             </div>
             {% elif catalog_title %}
+            {% if filter_params.akcija %}<div class="sale-catalog-heading">{% endif %}
             <nav class="shop-breadcrumb" aria-label="Putanja">
                 <a href="{% url 'home' %}">Početna</a>
                 {% if filter_params.brend %}
@@ -45,10 +46,13 @@
                 <h1>{{ seo_h1|default:catalog_title }}</h1>
                 {% if catalog_subtitle %}<p>{{ catalog_subtitle }}</p>{% endif %}
             </div>
+            {% if filter_params.akcija %}</div>{% endif %}
             {% endif %}
 
             {% if not category %}
+            {% if filter_params.akcija %}<div class="sale-catalog-intro">{% endif %}
             {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
+            {% if filter_params.akcija %}</div>{% endif %}
             {% endif %}
             {% include 'partials/catalog_mobile_filter.html' %}
 
@@ -59,7 +63,7 @@
             {% if products %}
             <div class="product-grid product-grid--catalog">
                 {% for product in products %}
-                {% include 'partials/product_catalog_card.html' with product=product hide_variations=hide_variations hide_brand=hide_brand show_akcija_expiry=show_akcija_expiry image_sizes='(max-width: 768px) 50vw, 20vw' %}
+                {% include 'partials/product_catalog_card.html' with product=product home_reference_card=True hide_variations=True hide_brand=hide_brand show_akcija_expiry=show_akcija_expiry image_sizes='(max-width: 768px) 50vw, 20vw' %}
                 {% endfor %}
             </div>
             {% else %}

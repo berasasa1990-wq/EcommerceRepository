@@ -1,0 +1,17 @@
+{% load static %}
+<dialog id="mobileSearchDialog" class="mobile-search-dialog" aria-label="Pretraga proizvoda">
+    <div class="mobile-search-head"><button type="button" data-search-cancel aria-label="Nazad">‹</button><a href="{% url 'home' %}">{% if site_settings.logo %}<img src="{{ site_settings.logo.url }}" alt="Početna" width="180" height="50">{% endif %}</a><a href="{% url 'cart' %}" aria-label="Korpa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="7" width="14" height="15" rx="2"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg></a></div>
+    <form class="mobile-search-form" action="{% url 'home' %}" method="get">
+        <div><button type="submit" aria-label="Pretraži"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg></button><input name="q" type="search" autocomplete="off" placeholder="Pretraži proizvode" aria-label="Pretraži proizvode"><button type="button" data-search-clear aria-label="Obriši pretragu">×</button></div>
+        <button type="button" data-search-cancel>Otkaži</button>
+    </form>
+    <p class="mobile-search-hint">Pretražujemo naziv, šifru, brend i kategoriju</p>
+    <div class="mobile-search-scroll">
+        <h2>Rezultati pretrage</h2><p data-search-status role="status" aria-live="polite">Unesite najmanje dva znaka.</p>
+        <div data-search-results></div>
+        <a class="mobile-search-all" data-search-all hidden>Prikaži sve rezultate ›</a>
+        <section data-search-related hidden><h3>Povezane kategorije</h3><div></div></section>
+        <p class="mobile-search-tip">Niste pronašli proizvod? Pretražite po šifri artikla.</p>
+    </div>
+</dialog>
+<script src="{% static 'js/mobile-search.js' %}?v=20260915-open-on-every-click" defer></script>

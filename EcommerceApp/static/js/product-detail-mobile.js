@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const main = document.getElementById('mainProductImage');
     const thumbnails = [...document.querySelectorAll('#productThumbnails .product-thumbnail')];
     if (!gallery || main?.tagName !== 'IMG' || thumbnails.length < 2) return;
-    document.querySelectorAll('.pd-gallery-bar [data-gallery-step]').forEach((button) => {
+    document.querySelectorAll('[data-gallery-step]').forEach((button) => {
         button.hidden = false;
         button.addEventListener('dblclick', (event) => event.preventDefault());
         // Handle each tap ourselves on Safari; cancel its double-tap zoom gesture

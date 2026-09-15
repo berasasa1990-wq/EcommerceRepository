@@ -12,7 +12,7 @@
 {% block body_class %}is-cart-page{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20260904cartWhite">
+<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20260915-sticky-header">
 {% endblock %}
 
 {% block content %}
@@ -23,7 +23,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6L5 3H2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg>
             </span>
             <div>
-                <h1>{{ seo_h1|default:"Korpa" }}</h1>
+                <h1><span class="cart-desktop-title">{{ seo_h1|default:"Korpa" }}</span><span class="cart-mobile-only">Vaša korpa<span class="cart-title-dot">.</span></span></h1><p class="cart-mobile-only cart-intro">Provjerite proizvode prije narudžbe.</p>
                 {% if cart_items %}
                 <p class="cart-head-count">
                     {% with n=cart_items|length %}
@@ -46,7 +46,7 @@
         🎁 Online nagrada: {{ online_gift_reward_label }} — primjenjuje se na ovoj narudžbi
     </div>
     {% endif %}
-    {% include 'partials/cart_free_shipping_bar.html' with summary=summary %}
+    <div class="cart-shipping-desktop">{% include 'partials/cart_free_shipping_bar.html' with summary=summary %}</div>
     <div class="cart-layout">
         <div class="cart-main">
             {% include 'partials/upsell_cart_banner.html' with position='banner_iznad' upsell_offers=upsell_banners_above %}
@@ -67,6 +67,7 @@
                         {% endif %}
                     </div>
                     <div class="cart-item-info">
+                        {% if item.brand %}<p class="cart-mobile-only cart-item-brand">{{ item.brand }}</p>{% endif %}
                         <h3 class="cart-item-title">
                             {% include 'partials/cart_item_name.html' with item=item %}
                         </h3>
@@ -154,18 +155,19 @@
         </div>
 
         <aside class="cart-summary">
+            <div class="cart-mobile-only cart-shipping-mobile">{% include 'partials/cart_free_shipping_bar.html' with summary=summary %}</div>
             {% include 'partials/coupon_form.html' with coupon_next='cart' %}
             <div class="cart-review">
                 <h2>Pregled narudžbe</h2>
-                {% include 'partials/order_totals.html' with summary=summary %}
+                {% include 'partials/order_totals.html' with summary=summary %}<p class="cart-mobile-only cart-tax-note">PDV je uključen u cijenu.</p>
             </div>
             <div class="cart-summary-actions">
-                <a href="{% url 'checkout' %}" class="btn btn-primary btn-add-to-bag btn-cart-checkout" aria-disabled="{{ cart_has_sold_out|yesno:'true,false' }}">Nastavi na narudžbu <span aria-hidden="true">›</span></a>
+                <a href="{% url 'checkout' %}" class="btn btn-primary btn-add-to-bag btn-cart-checkout" aria-disabled="{{ cart_has_sold_out|yesno:'true,false' }}">Nastavi na plaćanje</a>
                 <span class="cart-checkout-lock" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
                 </span>
             </div>
-            <p class="cart-secure-note">Vaši podaci su sigurni i zaštićeni.</p>
+            <p class="cart-secure-note">Sigurna kupovina i plaćanje pouzećem</p><a class="cart-mobile-only cart-bottom-continue" href="{% url 'home' %}">Nastavi kupovinu</a>
             {% include 'partials/upsell_cart_banner.html' with position='banner_ispod' upsell_offers=upsell_banners_below %}
         </aside>
     </div>
@@ -178,6 +180,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/cart-qty.js' %}?v=20260904cartWhite" defer></script>
+<script src="{% static 'js/cart-qty.js' %}?v=20260914cartLoyaltyGray" defer></script>
 <script src="{% static 'js/cart-stock.js' %}?v=20260907" defer></script>
 {% endblock %}

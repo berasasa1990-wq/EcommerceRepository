@@ -47,9 +47,10 @@
         if (!btn) return;
         btn.classList.add('is-subscribed');
         btn.disabled = true;
+        btn.setAttribute('aria-label', 'Pratite email');
         var label = btn.querySelector('[data-stock-notify-label]');
-        if (label) label.textContent = 'Javit ćemo ti na email';
-        else btn.textContent = 'Javit ćemo ti na email';
+        if (label) label.textContent = 'Pratite email';
+        else btn.textContent = 'Pratite email';
         if (message) btn.setAttribute('title', message);
     }
 

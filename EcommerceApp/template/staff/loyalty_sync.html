@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Sync kartica — Loyalty sistem{% endblock %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block body_class %}staff-shell-page{% endblock %}
+{% block extra_css %}
+<style>
+.loyalty-sync-page{max-width:1440px;margin:auto;padding:24px;color:#17212b}
+.loyalty-sync-nav{display:flex;gap:24px;align-items:center;border-bottom:1px solid #ddd;padding-bottom:16px;flex-wrap:wrap}
+.loyalty-sync-nav a{color:inherit;text-decoration:none;font-weight:600}
+.loyalty-sync-nav .active{margin-left:auto;color:#15803d}
+.loyalty-sync-pair{background:#fff;border:1px solid #e0e4e8;border-radius:16px;padding:20px;margin:20px 0}
+.loyalty-sync-pair h2{font-size:18px;margin:0 0 16px}
+.loyalty-sync-columns{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.loyalty-sync-side{padding:18px;background:#f5f7f8;border-radius:12px;min-width:0;overflow-wrap:anywhere}
+.loyalty-sync-side h3{margin:0 0 12px;font-size:18px}
+.loyalty-sync-side p{margin:8px 0}
+.loyalty-sync-side ul{padding-left:20px;font-size:14px;line-height:1.7}
+.loyalty-sync-side details{margin-top:16px}
+.loyalty-sync-side summary{cursor:pointer;font-weight:600}
+.loyalty-sync-action{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:20px}
+.loyalty-sync-action button{border:0;background:#15803d;color:#fff;border-radius:10px;padding:12px 28px;font:inherit;font-weight:700;cursor:pointer}
+.loyalty-sync-pagination{display:flex;gap:20px;justify-content:center}
+@media(max-width:700px){.loyalty-sync-page{padding:16px}.loyalty-sync-columns{grid-template-columns:1fr}.loyalty-sync-action{align-items:flex-start;flex-direction:column}}
+</style>
+{% endblock %}
+{% block content %}
+<section class="loyalty-sync-page">
+    <nav class="loyalty-sync-nav" aria-label="Loyalty sistem">
+        <a href="{% url 'staff_loyalty_system' %}">Pretraga članova</a>
+        <a href="{% url 'staff_loyalty_system' %}?tab=novi">Novi član</a>
+        <a href="{% url 'staff_loyalty_sync' %}" class="active" aria-current="page">Sync kartica</a>
+    </nav>
+    <h1>Sync kartica</h1>
+    <p>Nalozi sa sajta i kartice iz radnje s istim telefonom ili emailom. Pronađeno parova: <strong>{{ sync_page.paginator.count }}</strong>.</p>
+    <p>Provjerite podatke kupca prije spajanja. Ostaje broj kartice iz radnje, uz postojeću prijavu na sajt i sve kupovine.</p>
+    {% for pair in sync_pairs %}
+    <article class="loyalty-sync-pair">
+        <h2>Poklapanje: {{ pair.reasons|join:' i ' }}</h2>
+        <div class="loyalty-sync-columns">
+            <section class="loyalty-sync-side">
+                <h3>Nalog sa sajta</h3>
+                <p><strong>{{ pair.customer.get_full_name|default:pair.customer.email }}</strong></p>
+                <p>Email: {{ pair.customer.email|default:'—' }}<br>Telefon: {{ pair.customer.profil.telefon|default:'—' }}</p>
+                <p>Registracija: {{ pair.customer.date_joined|date:'d.m.Y.' }}</p>
+                <p>Kartica: {% if pair.online_card %}<a href="{% url 'staff_loyalty_member' pair.online_card.kod %}">{{ pair.online_card.kod }}</a>{% else %}Još nije kreirana{% endif %}</p>
+                {% include 'partials/loyalty_sync_purchases.html' with orders=pair.web_orders purchases=pair.web_purchases %}
+            </section>
+            <section class="loyalty-sync-side">
+                <h3>Kartica iz loyalty sistema</h3>
+                <p><strong>{{ pair.physical.user.get_full_name|default:pair.physical.user.email }}</strong></p>
+                <p>Email: {{ pair.physical.user.email|default:'—' }}<br>Telefon: {{ pair.physical.user.profil.telefon|default:'—' }}</p>
+                <p>Kartica koja ostaje: <a href="{% url 'staff_loyalty_member' pair.physical.kod %}"><strong>{{ pair.physical.kod }}</strong></a></p>
+                {% include 'partials/loyalty_sync_purchases.html' with orders=pair.store_orders purchases=pair.store_purchases %}
+            </section>
+        </div>
+        <div class="loyalty-sync-action">
+            <div><strong>Zajedno: {{ pair.combined_spend|floatformat:2 }} KM · {{ pair.purchase_count }} kupovina</strong>
+                <p>Narudžbe koje se vide na obje strane računaju se jednom. Otkazane narudžbe ne ulaze u potrošnju.</p></div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="card_id" value="{{ pair.physical.pk }}">
+                <input type="hidden" name="customer_id" value="{{ pair.customer.pk }}">
+                <button type="submit">Sync</button>
+            </form>
+        </div>
+    </article>
+    {% empty %}<div class="loyalty-sync-pair"><h2>Nema kartica za spajanje</h2><p>Kada se registruje kupac s istim telefonom ili emailom kao na kartici iz radnje, par će se pojaviti ovdje.</p></div>{% endfor %}
+    {% if sync_page.has_other_pages %}<nav class="loyalty-sync-pagination" aria-label="Stranice">
+        {% if sync_page.has_previous %}<a href="?page={{ sync_page.previous_page_number }}">Prethodna</a>{% endif %}
+        <span>{{ sync_page.number }} / {{ sync_page.paginator.num_pages }}</span>
+        {% if sync_page.has_next %}<a href="?page={{ sync_page.next_page_number }}">Sljedeća</a>{% endif %}
+    </nav>{% endif %}
+</section>
+{% endblock %}

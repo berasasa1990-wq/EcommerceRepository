@@ -11,7 +11,7 @@
                 </div>
                 <div class="product-grid product-grid--catalog product-grid--category-showcase">
                     {% for product in section.products %}
-                    {% include 'partials/product_catalog_card.html' with product=product hide_variations=True %}
+                    {% include 'partials/product_catalog_card.html' with product=product home_reference_card=True hide_variations=True %}
                     {% endfor %}
                 </div>
                 <div class="home-category-showcase-footer">

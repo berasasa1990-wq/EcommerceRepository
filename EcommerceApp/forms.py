@@ -19,36 +19,8 @@ from .models import (
     Tag,
 )
 
-# Polja iz SiteSettings koja se uređuju na tipu „AI prodaja / AI dwell”
-AI_SETTINGS_FIELD_NAMES = (
-    'browse_interest_popup_aktivan', 'browse_interest_mode',
-    'browse_interest_source', 'browse_interest_popust',
-)
 
 
-def _make_ai_settings_formfield(name):
-    """Form field iz SiteSettings — deklarisan na AkcijaAdminForm (nije model Akcija)."""
-    model_field = SiteSettings._meta.get_field(name)
-    form_field = model_field.formfield()
-    if form_field is None:
-        form_field = forms.CharField(required=False, label=name)
-    if name in ('browse_interest_popust', 'product_dwell_popust'):
-        form_field = FlexibleDecimalField(
-            required=False, min_value=0, max_value=50, max_digits=5,
-            decimal_places=2, label=form_field.label, help_text=form_field.help_text,
-        )
-    form_field.required = name in ('browse_interest_mode', 'browse_interest_source')
-    if name in ('browse_interest_mode', 'browse_interest_source'):
-        form_field.widget = forms.RadioSelect(choices=model_field.choices)
-    if name.startswith('product_dwell_boja_'):
-        form_field.widget = forms.TextInput(attrs={
-            'type': 'color',
-            'style': (
-                'width:3.5rem;height:2.2rem;padding:2px;'
-                'cursor:pointer;vertical-align:middle;'
-            ),
-        })
-    return form_field
 
 
 def _parse_flexible_number(value, *, field_label='Broj'):
@@ -155,7 +127,6 @@ class AkcijaQtyTierForm(forms.ModelForm):
 class AkcijaAdminForm(forms.ModelForm):
     """
     Za „Kupi više”: jednostavna polja količina → %.
-    Za „AI prodaja / AI dwell”: sva polja iz SiteSettings (kao stari zasebni meni).
     """
 
     popust_postotak = FlexibleDecimalField(
@@ -215,68 +186,44 @@ class AkcijaAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Jasne labele — artikle uvijek smiješ mijenjati (edit postojeće akcije)
         tip = (self.data.get('tip') if self.is_bound else self.initial.get('tip')) or getattr(self.instance, 'tip', None)
-        # Deklarisana polja Django zadržava čak i kada nisu u ModelForm.Meta.fields.
-        # Ne smiju validirati druge tipove niti blokirati čuvanje skrivenom greškom.
         if self.is_bound:
-            if tip in (Akcija.Tip.AI_PRODAJA, Akcija.Tip.QTY_DEAL):
+            if tip in (Akcija.Tip.QTY_DEAL,):
                 self.fields.pop('popust_postotak', None)
-            if tip != Akcija.Tip.AI_PRODAJA:
-                for name in AI_SETTINGS_FIELD_NAMES:
-                    self.fields.pop(name, None)
             if tip != Akcija.Tip.QTY_DEAL:
                 for quantity in range(2, 7):
                     self.fields.pop(f'qty_{quantity}_popust', None)
-        # Nikad ne zaključavaj polja artikala / popusta (ni na postojećem redu)
         for _lock_name in ('artikal', 'gratis_artikal', 'popust_postotak', 'tip'):
             if _lock_name in self.fields:
                 self.fields[_lock_name].disabled = False
         if 'artikal' in self.fields:
             self.fields['artikal'].required = False
             self.fields['artikal'].label = '1. Trigger artikal'
-            self.fields['artikal'].help_text = (
-                'Možeš promijeniti bez brisanja akcije — pretraži i odaberi drugi, pa Sačuvaj. '
-                '+ Ponuda: kad kupac doda OVAJ artikal u korpu, iskače popup. '
-                'Kupi više: artikal na koji važi količinski %. '
-                'Bundle: samo ako je trigger „odabrani trigger artikal”.'
-            )
+            self.fields['artikal'].help_text = 'Možeš promijeniti bez brisanja akcije — pretraži i odaberi drugi, pa Sačuvaj. + Ponuda: kad kupac doda OVAJ artikal u korpu, iskače popup. Kupi više: artikal na koji važi količinski %. Bundle: samo ako je trigger „odabrani trigger artikal”.'
             if tip == Akcija.Tip.PONUDA:
                 self.fields['artikal'].label = '1. Trigger (dodaj u korpu → popup)'
         if 'popust_postotak' in self.fields:
             self.fields['popust_postotak'].required = False
             self.fields['popust_postotak'].label = '2. Popust (%) — opcionalno'
-            self.fields['popust_postotak'].help_text = (
-                '+ Ponuda: % snizenja na DRUGI (ponuda) artikal kad kupac kaže DA. '
-                'Prazno = redovna cijena (bez popusta). '
-                'Bundle: % na set (ako linija nema svoj %).'
-            )
+            self.fields['popust_postotak'].help_text = '+ Ponuda: % snizenja na DRUGI (ponuda) artikal kad kupac kaže DA. Prazno = redovna cijena (bez popusta). Bundle: % na set (ako linija nema svoj %).'
             if tip == Akcija.Tip.PONUDA:
                 self.fields['popust_postotak'].label = '2. Popust % na ponudu (opcionalno)'
         if 'gratis_artikal' in self.fields:
             self.fields['gratis_artikal'].required = False
             self.fields['gratis_artikal'].label = '3. Ponuda artikal (popup)'
-            self.fields['gratis_artikal'].help_text = (
-                'Možeš promijeniti bez brisanja akcije. '
-                '+ Ponuda: artikal koji se nudi u popupu nakon dodavanja triggera '
-                '(s % iz polja 2, ili bez %). Mora biti na stanju da se popup prikaže.'
-            )
+            self.fields['gratis_artikal'].help_text = 'Možeš promijeniti bez brisanja akcije. + Ponuda: artikal koji se nudi u popupu nakon dodavanja triggera (s % iz polja 2, ili bez %). Mora biti na stanju da se popup prikaže.'
             if tip == Akcija.Tip.PONUDA:
                 self.fields['gratis_artikal'].label = '3. Artikal u ponudi (sa ili bez %)'
         if tip == Akcija.Tip.AKCIJSKA:
             if 'popust_postotak' in self.fields:
                 self.fields['popust_postotak'].label = 'Popust (%) na ponudu'
-                self.fields['popust_postotak'].help_text = (
-                    '% za artikle u tabeli ispod. Linija može imati svoj %. Prazno = bez dodatnog %.'
-                )
+                self.fields['popust_postotak'].help_text = '% za artikle u tabeli ispod. Linija može imati svoj %. Prazno = bez dodatnog %.'
             if 'trajanje_sati' in self.fields:
                 self.fields['trajanje_sati'].help_text = 'Koliko sati ponuda traje od početka.'
             if 'pocetak' in self.fields:
                 self.fields['pocetak'].help_text = 'Prazno = vrijeme spremanja.'
-
-        # Učitaj postojeće tierove u polja 2–6
         instance = getattr(self, 'instance', None)
-        if instance and instance.pk and getattr(instance, 'tip', None) == Akcija.Tip.QTY_DEAL:
+        if instance and instance.pk and (getattr(instance, 'tip', None) == Akcija.Tip.QTY_DEAL):
             for tier in instance.qty_tiers.all():
                 try:
                     q = int(tier.quantity)
@@ -287,61 +234,6 @@ class AkcijaAdminForm(forms.ModelForm):
                     if field_name in self.fields and tier.popust_postotak is not None:
                         self.fields[field_name].initial = tier.popust_postotak
 
-        # AI postavke — initial iz SiteSettings (polja su deklarisana na klasi)
-        try:
-            site = SiteSettings.load()
-        except Exception:
-            site = None
-        if site is not None:
-            for name in AI_SETTINGS_FIELD_NAMES:
-                if name not in self.fields:
-                    continue
-                val = getattr(site, name, None)
-                # None na % poljima → prikaži efektivni default (10) da admin vidi stvarno ponašanje
-                if name in ('browse_interest_popust', 'product_dwell_popust') and val is None:
-                    val = Decimal('10.00')
-                self.fields[name].initial = val
-
-        # Jasne labele za AI popup / popust (0 = bez snizenja)
-        if 'browse_interest_popup_aktivan' in self.fields:
-            self.fields['browse_interest_popup_aktivan'].label = (
-                'Prikazuj AI ponude kupcima'
-            )
-            self.fields['browse_interest_popup_aktivan'].help_text = (
-                'Uključeno: Prikazuje jedan artikal po ponudi, redom bez ponavljanja. '
-                'Isključeno: nema automatskog popupa.'
-            )
-        if 'browse_interest_popust' in self.fields:
-            f = self.fields['browse_interest_popust']
-            f.label = 'Popust na ponuđeni artikal (%)'
-            f.help_text = (
-                '0 = ponuda BEZ popusta (samo preporuka, redovna cijena). '
-                'Npr. 5, 10, 15 = sniženje. Max 50.'
-            )
-            f.required = False
-            if hasattr(f, 'min_value'):
-                f.min_value = Decimal('0')
-            if hasattr(f, 'max_value'):
-                f.max_value = Decimal('50')
-    def save_ai_settings(self):
-        """Snimi AI polja u SiteSettings (singleton)."""
-        if not hasattr(self, 'cleaned_data'):
-            return None
-        site = SiteSettings.load()
-        changed = []
-        for name in AI_SETTINGS_FIELD_NAMES:
-            if name not in self.cleaned_data:
-                continue
-            val = self.cleaned_data.get(name)
-            setattr(site, name, val)
-            changed.append(name)
-        site.product_dwell_popup_aktivan = False
-        changed.append('product_dwell_popup_aktivan')
-        if site.browse_interest_mode == 'no_discount':
-            site.browse_interest_popust = Decimal('0')
-        if changed:
-            site.save(update_fields=changed)
-        return site
 
     def qty_deal_tiers_from_form(self):
         """Lista (quantity, popust) iz jednostavnih polja."""
@@ -373,27 +265,15 @@ class AkcijaAdminForm(forms.ModelForm):
         artikal = self.cleaned_data.get('artikal')
         tip = self.cleaned_data.get('tip') or getattr(self.instance, 'tip', None)
         if tip == Akcija.Tip.BUNDLE:
-            # Uslov zavisi od bundle_trigger koji se čisti poslije artikla.
-            # Provjera pripada clean(), nakon što su oba polja dostupna.
-            if artikal and not artikal.aktivan and not self._allow_inactive_if_current(
-                artikal, field_name='artikal',
-            ):
+            if artikal and (not artikal.aktivan) and (not self._allow_inactive_if_current(artikal, field_name='artikal')):
                 raise forms.ValidationError('Artikal mora biti aktivan na sajtu.')
             return artikal
-        if tip == Akcija.Tip.QTY_DEAL and not artikal:
+        if tip == Akcija.Tip.QTY_DEAL and (not artikal):
             raise forms.ValidationError('Odaberite artikal (možeš ga kasnije zamijeniti).')
-        if tip == Akcija.Tip.PONUDA and not artikal:
-            raise forms.ValidationError(
-                'Odaberite trigger artikal — kad se doda u korpu, iskače ponuda.'
-            )
-        if tip == Akcija.Tip.AI_PRODAJA:
-            return artikal
-        if artikal and not artikal.aktivan and not self._allow_inactive_if_current(
-            artikal, field_name='artikal',
-        ):
-            raise forms.ValidationError(
-                'Artikal mora biti aktivan, ili zadrži postojeći odabir.'
-            )
+        if tip == Akcija.Tip.PONUDA and (not artikal):
+            raise forms.ValidationError('Odaberite trigger artikal — kad se doda u korpu, iskače ponuda.')
+        if artikal and (not artikal.aktivan) and (not self._allow_inactive_if_current(artikal, field_name='artikal')):
+            raise forms.ValidationError('Artikal mora biti aktivan, ili zadrži postojeći odabir.')
         return artikal
 
     def clean_gratis_artikal(self):
@@ -421,33 +301,18 @@ class AkcijaAdminForm(forms.ModelForm):
         tip = cleaned.get('tip') or getattr(self.instance, 'tip', None)
         if not tip:
             return cleaned
-
         if tip not in Akcija.ACTIVE_TIPS:
-            self.add_error(
-                'tip',
-                'Dozvoljeni tipovi: Pop-up bundle, Kupi više, + Ponuda, Akcijska ponuda, AI prodaja / AI dwell.',
-            )
+            self.add_error('tip', 'Dozvoljeni tipovi: Pop-up bundle, Kupi više, + Ponuda, Akcijska ponuda.')
             return cleaned
-
-        if tip == Akcija.Tip.AI_PRODAJA:
-            if cleaned.get('browse_interest_mode') == 'no_discount':
-                cleaned['browse_interest_popust'] = Decimal('0')
-            elif cleaned.get('browse_interest_popust') is None:
-                cleaned['browse_interest_popust'] = Decimal('0')
-            return cleaned
-
         if tip == Akcija.Tip.BUNDLE:
-            # % na setu nije obavezan ako linije imaju svoj % (validacija u inline)
             trigger = cleaned.get('bundle_trigger') or Akcija.BundleTrigger.DELAY
-            if trigger == Akcija.BundleTrigger.TRIGGER_PRODUCT and not cleaned.get('artikal'):
+            if trigger == Akcija.BundleTrigger.TRIGGER_PRODUCT and (not cleaned.get('artikal')):
                 self.add_error('artikal', 'Odaberite trigger artikal.')
-            if trigger == Akcija.BundleTrigger.CATEGORY and not cleaned.get('kategorija'):
+            if trigger == Akcija.BundleTrigger.CATEGORY and (not cleaned.get('kategorija')):
                 self.add_error('kategorija', 'Odaberite trigger kategoriju.')
-
         if tip == Akcija.Tip.AKCIJSKA:
             if not cleaned.get('trajanje_sati'):
                 self.add_error('trajanje_sati', 'Unesite trajanje akcijske ponude u satima.')
-
         elif tip == Akcija.Tip.QTY_DEAL:
             if not cleaned.get('artikal'):
                 self.add_error('artikal', 'Odaberite artikal za količinski popust.')
@@ -457,27 +322,16 @@ class AkcijaAdminForm(forms.ModelForm):
                 if pct is not None and pct != '':
                     tiers.append(q)
             if not tiers:
-                self.add_error(
-                    'qty_2_popust',
-                    'Unesi barem jedan popust — npr. kod „Kupi 2 komada” upiši 10, '
-                    'ili kod „Kupi 3 komada” upiši 20.',
-                )
-
+                self.add_error('qty_2_popust', 'Unesi barem jedan popust — npr. kod „Kupi 2 komada” upiši 10, ili kod „Kupi 3 komada” upiši 20.')
         elif tip == Akcija.Tip.PONUDA:
             if not cleaned.get('artikal'):
-                self.add_error(
-                    'artikal',
-                    'Odaberite trigger artikal (popup samo pri dodavanju u korpu).',
-                )
+                self.add_error('artikal', 'Odaberite trigger artikal (popup samo pri dodavanju u korpu).')
             if not cleaned.get('gratis_artikal'):
                 self.add_error('gratis_artikal', 'Odaberite artikal u ponudi.')
             trigger = cleaned.get('artikal')
             offer = cleaned.get('gratis_artikal')
-            if trigger and offer and trigger.pk == offer.pk:
-                self.add_error(
-                    'gratis_artikal',
-                    'Ponuda artikal mora biti drugačiji od trigger artikla.',
-                )
+            if trigger and offer and (trigger.pk == offer.pk):
+                self.add_error('gratis_artikal', 'Ponuda artikal mora biti drugačiji od trigger artikla.')
             pct = cleaned.get('popust_postotak')
             if pct is not None and pct != '':
                 try:
@@ -488,7 +342,6 @@ class AkcijaAdminForm(forms.ModelForm):
                     self.add_error('popust_postotak', 'Popust mora biti veći od 0, ili ostavi prazno.')
                 elif pct_dec is not None and pct_dec > 100:
                     self.add_error('popust_postotak', 'Popust ne može biti preko 100%.')
-
         return cleaned
 
     def save_qty_deal_tiers(self, akcija):
@@ -537,14 +390,7 @@ class AkcijaAdminForm(forms.ModelForm):
             )
 
 
-# Deklariši AI polja na klasi (base_fields) — inače admin fieldsets → FieldError
-for _ai_fname in AI_SETTINGS_FIELD_NAMES:
-    try:
-        _ai_ff = _make_ai_settings_formfield(_ai_fname)
-    except Exception:
-        continue
-    AkcijaAdminForm.base_fields[_ai_fname] = _ai_ff
-    AkcijaAdminForm.declared_fields[_ai_fname] = _ai_ff
+
 
 
 class PopupAdminForm(forms.ModelForm):
@@ -685,8 +531,12 @@ class RegisterForm(forms.Form):
         _configure_turnstile_field(self)
 
     def clean_email(self):
+        from .loyalty import email_vec_registrovan
+
         email = self.cleaned_data['email'].strip().lower()
-        if User.objects.filter(username=email).exists() or User.objects.filter(email=email).exists():
+        if User.objects.filter(username__iexact=email).exists():
+            raise forms.ValidationError('Korisnik s ovim emailom već postoji.')
+        if email_vec_registrovan(email, allow_manual_loyalty=True):
             raise forms.ValidationError('Korisnik s ovim emailom već postoji.')
         return email
 
@@ -698,7 +548,7 @@ class RegisterForm(forms.Form):
             local, _e164 = validiraj_ba_mobilni(raw, required=False)
         except ValueError as exc:
             raise forms.ValidationError(str(exc)) from exc
-        if local and telefon_vec_registrovan(local):
+        if local and telefon_vec_registrovan(local, allow_manual_loyalty=True):
             raise forms.ValidationError('Ovaj broj telefona je već registrovan — isti telefon nije dozvoljen.')
         return local
 
@@ -803,14 +653,14 @@ class LoyaltyIssueForm(forms.Form):
     )
 
     def clean_telefon(self):
-        from .loyalty import telefon_vec_registrovan, validiraj_ba_mobilni
+        from .loyalty import telefon_na_rucnoj_loyalty, validiraj_ba_mobilni
 
         telefon = self.cleaned_data.get('telefon', '')
         try:
             local, _e164 = validiraj_ba_mobilni(telefon)
         except ValueError as exc:
             raise forms.ValidationError(str(exc)) from exc
-        if telefon_vec_registrovan(local):
+        if telefon_na_rucnoj_loyalty(local):
             raise forms.ValidationError(
                 'Ovaj broj telefona je već registrovan — isti telefon nije dozvoljen.'
             )
@@ -818,12 +668,12 @@ class LoyaltyIssueForm(forms.Form):
         return local
 
     def clean_email(self):
-        from .loyalty import email_vec_registrovan
+        from .loyalty import email_na_rucnoj_loyalty
 
         email = (self.cleaned_data.get('email') or '').strip().lower()
         if not email:
             return ''
-        if email_vec_registrovan(email):
+        if email_na_rucnoj_loyalty(email):
             raise forms.ValidationError(
                 'Ovaj email je već registrovan na loyalty karticu — '
                 'dupli email nije dozvoljen.'
@@ -832,16 +682,16 @@ class LoyaltyIssueForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
-        from .loyalty import email_vec_registrovan, telefon_vec_registrovan
+        from .loyalty import email_na_rucnoj_loyalty, telefon_na_rucnoj_loyalty
 
         telefon = (cleaned.get('telefon') or '').strip()
         email = (cleaned.get('email') or '').strip().lower()
-        if telefon and telefon_vec_registrovan(telefon):
+        if telefon and telefon_na_rucnoj_loyalty(telefon):
             self.add_error(
                 'telefon',
                 'Ovaj broj telefona je već registrovan — isti telefon nije dozvoljen.',
             )
-        if email and email_vec_registrovan(email):
+        if email and email_na_rucnoj_loyalty(email):
             self.add_error(
                 'email',
                 'Ovaj email je već registrovan — dupli email nije dozvoljen.',
@@ -903,7 +753,11 @@ class ProfileForm(forms.Form):
             local, _e164 = validiraj_ba_mobilni(raw, required=False)
         except ValueError as exc:
             raise forms.ValidationError(str(exc)) from exc
-        if local and telefon_vec_registrovan(local, exclude_user_id=self.exclude_user_id):
+        if local and telefon_vec_registrovan(
+            local,
+            exclude_user_id=self.exclude_user_id,
+            allow_manual_loyalty=True,
+        ):
             raise forms.ValidationError(
                 'Ovaj broj telefona je već registrovan — isti telefon nije dozvoljen.'
             )
@@ -989,7 +843,7 @@ class StaffLoyaltyProfileForm(forms.Form):
         return email
 
     def clean_telefon(self):
-        from .loyalty import telefon_vec_registrovan, validiraj_ba_mobilni
+        from .loyalty import telefon_na_rucnoj_loyalty, validiraj_ba_mobilni
 
         telefon = self.cleaned_data.get('telefon') or ''
         if not telefon:
@@ -998,7 +852,7 @@ class StaffLoyaltyProfileForm(forms.Form):
             local, _e164 = validiraj_ba_mobilni(telefon)
         except ValueError as exc:
             raise forms.ValidationError(str(exc)) from exc
-        if telefon_vec_registrovan(local, exclude_user_id=self.exclude_user_id):
+        if telefon_na_rucnoj_loyalty(local, exclude_user_id=self.exclude_user_id):
             raise forms.ValidationError(
                 'Ovaj broj telefona je već registrovan — isti telefon nije dozvoljen.'
             )
@@ -1242,4 +1096,17 @@ class BulkAssignTagsForm(forms.Form):
         widget=forms.CheckboxSelectMultiple,
         required=True,
         help_text='Odabrani tagovi će biti dodani postojećim tagovima artikala (ne zamjenjuju ih).',
+    )
+
+
+class OrderComplaintForm(forms.Form):
+    item_id = forms.IntegerField(min_value=1, widget=forms.HiddenInput)
+    opis = forms.CharField(
+        label='Šta je problem s artiklom?', min_length=5, max_length=5000,
+        widget=forms.Textarea(attrs={'rows': 5, 'placeholder': 'Opišite problem s ovim artiklom…'}),
+        error_messages={
+            'required': 'Upišite opis problema.',
+            'min_length': 'Opišite problem u najmanje 5 znakova.',
+            'max_length': 'Opis može imati najviše 5000 znakova.',
+        },
     )

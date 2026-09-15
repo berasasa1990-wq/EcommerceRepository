@@ -387,6 +387,38 @@ body.loy-full main{padding-top:28px!important;max-width:none}
         </div>
 
         <aside class="lm-side">
+            {% if user.is_superuser %}
+            <div class="lm-card" id="spajanje-naloga">
+                <h3>Spoji loyalty naloge</h3>
+                <p>Pronađi drugi zapis istog kupca po imenu, emailu, telefonu ili broju kartice. Kartica iz radnje ostaje važeća i povezuje se s nalogom za prijavu.</p>
+                <form method="get" action="#spajanje-naloga" class="lm-form">
+                    <label for="mergeSearch">Pronađi drugi nalog kupca</label>
+                    <input class="form-input" id="mergeSearch" name="merge_q" value="{{ merge_query }}" maxlength="100" required placeholder="Ime, email, telefon ili kartica">
+                    <button class="lm-btn" type="submit">Pronađi nalog</button>
+                </form>
+                {% for match in merge_candidates %}
+                <div style="border-top:1px solid #e5e7eb;margin-top:16px;padding-top:16px">
+                    <strong>{{ match.other.get_full_name|default:match.other.email }}</strong>
+                    <p>{{ match.other.email }} · {{ match.other.profil.telefon|default:'Bez telefona' }}</p>
+                    <p>Kartica koja ostaje: <strong>{{ match.physical.kod }}</strong><br>
+                    Nalog za prijavu: <strong>{{ match.customer.email }}</strong><br>
+                    {% if match.online_card %}Online kartica koja se uklanja: {{ match.online_card.kod }}<br>{% endif %}
+                    Objedinjena potrošnja: <strong>{{ match.combined_spend|floatformat:2 }} KM</strong></p>
+                    <form method="post" class="lm-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="povezi_nalog">
+                        <input type="hidden" name="broj_kartice" value="{{ match.physical.kod }}">
+                        <input type="hidden" name="target_user_id" value="{{ match.customer.pk }}">
+                        <label><input type="checkbox" required> Provjerio/la sam da oba zapisa pripadaju istom kupcu.</label>
+                        <button class="lm-btn" type="submit">Spoji na karticu {{ match.physical.kod }}</button>
+                    </form>
+                </div>
+                {% empty %}
+                    {% if merge_query %}<p>Nema odgovarajućeg drugog naloga. Probaj email, dio telefona ili broj kartice.</p>{% endif %}
+                {% endfor %}
+                <p>Kupovine se sabiraju bez ponavljanja iste narudžbe. Nalog za prijavu i lozinka ostaju sačuvani; stari zapis iz radnje se deaktivira.</p>
+            </div>
+            {% endif %}
             <div class="lm-card lm-sharing">
                 <h3>Pošalji karticu</h3>
                 <p style="margin:0 0 12px;color:#6b7280;font-size:13px">Pošaljite digitalnu karticu putem Viber ili WhatsApp.</p>

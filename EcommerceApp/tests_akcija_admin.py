@@ -68,7 +68,7 @@ class AkcijaAdminSaveTests(TestCase):
     def test_switch_existing_ponuda_to_bundle(self):
         obj = self.save({'tip': 'ponuda', 'artikal': self.products[0].pk, 'gratis_artikal': self.products[1].pk})
         response = self.client.get(reverse('admin:EcommerceApp_akcija_change', args=[obj.pk]))
-        for name in ['bundle_lines-TOTAL_FORMS', 'id_qty_2_popust', 'id_browse_interest_mode']:
+        for name in ['bundle_lines-TOTAL_FORMS', 'id_qty_2_popust']:
             self.assertContains(response, name)
         obj = self.save(self.bundle_data(), obj)
         self.assertEqual(obj.tip, 'bundle')

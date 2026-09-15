@@ -1,0 +1,26 @@
+{% load static %}
+{# Mobile shortcuts reuse the existing category, search, account and cart flows. #}
+<section class="mobile-home-categories" id="mobileHomeCategories" aria-label="Kategorije">
+    <div class="mobile-home-heading"><h2>Kategorije</h2><button type="button" data-mobile-home-menu>Pogledaj sve <span aria-hidden="true">›</span></button></div>
+    <div class="mobile-home-category-grid">
+        {% for cat in nav_categories|slice:':4' %}
+        <a href="{{ cat.get_absolute_url }}">
+            {% if cat.ikonica_pocetna %}
+            <img class="mobile-home-category-icon" src="{{ cat.ikonica_pocetna.url }}" alt="" width="256" height="256" loading="lazy" decoding="async">
+            {% else %}
+            {% include 'partials/nav_category_icon.html' with naziv=cat.naziv slug=cat.slug %}
+            {% endif %}
+            <span>{{ cat.naziv }}</span>
+        </a>
+        {% endfor %}
+        {% for cat in nav_categories|slice:'4:9' %}
+        <a class="desktop-category-extra" href="{{ cat.get_absolute_url }}" hidden>
+            {% if cat.ikonica_pocetna %}<img class="mobile-home-category-icon" src="{{ cat.ikonica_pocetna.url }}" alt="" width="256" height="256" loading="lazy">{% else %}{% include 'partials/nav_category_icon.html' with naziv=cat.naziv slug=cat.slug %}{% endif %}
+            <span>{{ cat.naziv }}</span>
+        </a>
+        {% endfor %}
+        <a class="desktop-category-extra" href="{% url 'brands_list' %}" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M3 3h9l9 9-9 9-9-9Z"/><circle cx="8" cy="8" r="1.5"/></svg><span>Brendovi</span></a>
+    </div>
+</section>
+
+<script src="{% static 'js/home-mobile-reference.js' %}?v=20260914-dock" defer></script>

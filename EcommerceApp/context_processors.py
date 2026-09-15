@@ -8,10 +8,9 @@ from .cart import Cart
 from .cart_exit_popup import get_cart_abandon_exit_context, get_cart_exit_popup_context
 from .cart_recovery import get_active_cart_recovery_alert
 from .social_proof import build_social_proof_context
-from .live_visitor_offer import build_live_visitor_offer_context
 from .category_visibility import filter_categories_with_products, get_category_ids_with_products
 from .models import Akcija, Category, SiteSettings
-from .online_gift import active_reward_label, build_online_gift_context
+from .online_gift import active_reward_label
 from .upsell import get_active_upsell_offer
 
 _CONTACT_MESSAGE = 'Zdravo, imam pitanje sa opremazaribolov.ba'
@@ -164,8 +163,6 @@ def nav_categories(request):
             'cart_recovery_alert': None,
             'cart_abandon_exit': None,
             'cart_exit_popup': None,
-            'live_visitor_offer': None,
-            'online_gift': None,
             'online_gift_reward_label': None,
             'search_query': '',
             'contact_phone': '',
@@ -175,17 +172,7 @@ def nav_categories(request):
             'contact_messenger_url': '',
             'theme_ui': {},
             'social_proof': None,
-            'dwell_flash_by_id': {},
-            'dwell_catalog_by_id': {},
-            'dwell_ui': {
-                'active': False,
-                'tag_text': 'Ograničena ponuda',
-                'timer_label': 'Ističe za',
-                'catalog_label': '',
-                'flash_seconds': 120,
-                'sale_pulse': True,
-                'css_vars': '',
-            },
+
             'staff_edit_mode': False,
             'organization_json_ld': '',
             'website_json_ld': '',
@@ -247,21 +234,8 @@ def nav_categories(request):
 
     cart_abandon_exit = None
     cart_exit_popup = None
-    dwell_flash_by_id = {}
-    dwell_catalog_by_id = {}
-    dwell_ui = {
-        'active': False,
-        'tag_text': 'Ograničena ponuda',
-        'timer_label': 'Ističe za',
-        'catalog_label': '',
-        'flash_seconds': 120,
-        'sale_pulse': True,
-        'css_vars': '',
-    }
     active_upsell = None
     cart_recovery = None
-    live_offer = None
-    online_gift = None
     gift_label = None
     social_proof = None
 
@@ -269,21 +243,8 @@ def nav_categories(request):
     cart_exit_popup = (
         None if cart_abandon_exit else get_cart_exit_popup_context(request, cart)
     )
-    try:
-        from .live_visitor_offer import (
-            get_all_active_dwell_flashes,
-            get_dwell_catalog_map,
-            get_dwell_ui,
-        )
-        dwell_flash_by_id = get_all_active_dwell_flashes(request)
-        dwell_catalog_by_id = get_dwell_catalog_map(request)
-        dwell_ui = get_dwell_ui()
-    except Exception:
-        pass
     active_upsell = get_active_upsell_offer(request)
     cart_recovery = get_active_cart_recovery_alert(request, cart)
-    live_offer = build_live_visitor_offer_context(request)
-    online_gift = build_online_gift_context(request)
     gift_label = active_reward_label(request)
     social_proof = build_social_proof_context(request)
 
@@ -324,8 +285,6 @@ def nav_categories(request):
         'cart_recovery_alert': cart_recovery,
         'cart_abandon_exit': cart_abandon_exit,
         'cart_exit_popup': cart_exit_popup,
-        'live_visitor_offer': live_offer,
-        'online_gift': online_gift,
         'online_gift_reward_label': gift_label,
         'search_query': (
             ''
@@ -339,9 +298,6 @@ def nav_categories(request):
         'contact_messenger_url': contact_messenger_url,
         'theme_ui': theme_ui,
         'social_proof': social_proof,
-        'dwell_flash_by_id': dwell_flash_by_id,
-        'dwell_catalog_by_id': dwell_catalog_by_id,
-        'dwell_ui': dwell_ui,
         'staff_edit_mode': staff_edit_mode,
         'organization_json_ld': organization_json_ld,
         'website_json_ld': website_json_ld,

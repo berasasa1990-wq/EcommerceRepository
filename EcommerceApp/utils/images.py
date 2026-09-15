@@ -23,16 +23,16 @@ MAX_VLOG_AVIF_BYTES = 48 * 1024
 VLOG_MAX_DIMENSION = 800
 VLOG_RESPONSIVE_WIDTHS = (400, 640, 800)
 BANNER_MAX_WIDTH = 1920
-HERO_BANNER_MAX_WIDTH = 1920
-# Viši hero (mockup) — cijela upload slika se bolje vidi (ranije 420, sada 640)
-HERO_BANNER_MAX_HEIGHT = 640
-HERO_BANNER_RESPONSIVE_WIDTHS = (640, 960, 1280, 1600)
+HERO_BANNER_MAX_WIDTH = 2172
+HERO_BANNER_MAX_HEIGHT = 724
+HERO_BANNER_RESPONSIVE_WIDTHS = (640, 960, 1280, 1600, 2172)
 MAX_BANNER_UPLOAD_BYTES = 72 * 1024
 HERO_JPEG_VARIANT_MAX_BYTES = {
     640: 36 * 1024,
     960: 48 * 1024,
     1280: 60 * 1024,
     1600: MAX_BANNER_UPLOAD_BYTES,
+    2172: 96 * 1024,
 }
 MAX_GRID_BANNER_AVIF_BYTES = MAX_BANNER_UPLOAD_BYTES
 GRID_BANNER_MAX_DIMENSION = 360
@@ -71,7 +71,7 @@ BANNER_WIDE_VARIANT_MAX_BYTES = {
     1200: MAX_BANNER_UPLOAD_BYTES,
 }
 
-# Mobilni hero: 1080×1350 (4:5) — isti okvir kao CSS na telefonu
+# Mobilni hero: ograniči rezoluciju, ali sačuvaj originalni omjer slike.
 HERO_MOBILE_MAX_WIDTH = 1080
 HERO_MOBILE_MAX_HEIGHT = 1350
 MAX_HERO_MOBILE_BYTES = 160 * 1024  # ~160 KB
@@ -92,7 +92,7 @@ BANNER_AVIF_SETTINGS = {
         'max_bytes': MAX_HERO_MOBILE_BYTES,
         'max_width': HERO_MOBILE_MAX_WIDTH,
         'max_height': HERO_MOBILE_MAX_HEIGHT,
-        'crop': True,
+        'crop': False,
     },
     'featured': {
         'max_bytes': MAX_FEATURED_BANNER_AVIF_BYTES,
@@ -2037,30 +2037,6 @@ PROMO_CARD_IMAGE_MAX = (200, 200)
 CHAT_AVATAR_SIZE = (256, 256)
 
 
-def process_chat_avatar(image_field):
-    """Chat balon / header avatar — kvadrat max 256×256, PNG."""
-    img = Image.open(image_field)
-    img = ImageOps.exif_transpose(img)
-    if img.mode in ('RGBA', 'LA'):
-        img = img.convert('RGBA')
-    elif img.mode == 'P':
-        img = img.convert('RGBA' if 'transparency' in img.info else 'RGB')
-    else:
-        img = img.convert('RGB')
-    # Centrirani crop na kvadrat pa thumbnail
-    w, h = img.size
-    side = min(w, h)
-    left = (w - side) // 2
-    top = (h - side) // 2
-    img = img.crop((left, top, left + side, top + side))
-    img = img.resize(CHAT_AVATAR_SIZE, Image.Resampling.LANCZOS)
-    buffer = BytesIO()
-    img.save(buffer, format='PNG', compress_level=4)
-    buffer.seek(0)
-    name = _png_filename(
-        image_field.name if hasattr(image_field, 'name') else 'chat-avatar.png',
-    )
-    return ContentFile(buffer.read(), name=name)
 
 
 def process_promo_card_image(image_field):

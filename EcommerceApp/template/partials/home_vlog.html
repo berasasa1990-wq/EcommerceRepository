@@ -1,3 +1,4 @@
+{% load static %}
 {% if home_vlogs or site_settings.prikazi_newsletter %}
 <section class="home-vlog home-vlog--mockup" id="vlog">
     <div class="home-vlog__wrap">
@@ -49,32 +50,14 @@
             {% endif %}
 
             {% if site_settings.prikazi_newsletter %}
-            <aside class="home-newsletter" aria-label="Newsletter">
-                <h3 class="home-newsletter__title"
-                    data-site-edit="newsletter_naslov"
-                    data-site-edit-placeholder="Prijavi se na newsletter">{% if site_settings.newsletter_naslov %}{{ site_settings.newsletter_naslov }}{% endif %}</h3>
-                <p class="home-newsletter__sub"
-                   data-site-edit="newsletter_podnaslov"
-                   data-site-edit-placeholder="Podnaslov">{% if site_settings.newsletter_podnaslov %}{{ site_settings.newsletter_podnaslov }}{% endif %}</p>
+            <aside class="home-newsletter home-newsletter--image" aria-label="Prijavi se na naš newsletter">
+                <img class="home-newsletter__banner" src="{% static 'img/newsletter-banner-final.png' %}" width="2162" height="727" alt="Budi uvijek u toku. Prijavi se na naš newsletter za nove proizvode, akcije, savjete za ribolov i posebne ponude. Možeš se odjaviti u bilo kojem trenutku." loading="lazy" decoding="async">
                 <form class="home-newsletter__form" id="homeNewsletterForm" action="{% url 'newsletter_subscribe' %}" method="post" novalidate>
                     {% csrf_token %}
-                    <label class="visually-hidden" for="homeNewsletterEmail">E-mail</label>
-                    <input
-                        type="email"
-                        id="homeNewsletterEmail"
-                        name="email"
-                        class="home-newsletter__input"
-                        required
-                        autocomplete="email"
-                        placeholder="{% if site_settings.newsletter_placeholder %}{{ site_settings.newsletter_placeholder }}{% else %}Unesite e-mail adresu{% endif %}"
-                    >
-                    <button type="submit" class="home-newsletter__btn">
-                        {% if site_settings.newsletter_dugme %}{{ site_settings.newsletter_dugme }}{% else %}Prijavi se{% endif %}
-                    </button>
+                    <label class="visually-hidden" for="homeNewsletterEmail">Tvoja email adresa</label>
+                    <input type="email" id="homeNewsletterEmail" name="email" class="home-newsletter__input" required autocomplete="email" placeholder="Unesi svoju e-mail adresu">
+                    <button type="submit" class="home-newsletter__btn">Prijavi se <span aria-hidden="true">→</span></button>
                 </form>
-                <p class="home-newsletter__note"
-                   data-site-edit="newsletter_napomena"
-                   data-site-edit-placeholder="Napomena">{% if site_settings.newsletter_napomena %}{{ site_settings.newsletter_napomena }}{% endif %}</p>
                 <p class="home-newsletter__msg" id="homeNewsletterMsg" hidden role="status"></p>
             </aside>
             {% endif %}

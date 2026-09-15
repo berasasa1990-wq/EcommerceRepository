@@ -2,7 +2,8 @@
 <form class="catalog-desktop-filter" method="get" action="{{ filter_action }}">
     {% if filter_params.q %}<input type="hidden" name="q" value="{{ filter_params.q }}">{% endif %}
     {% if filter_params.akcija %}<input type="hidden" name="akcija" value="{{ filter_params.akcija }}">{% endif %}
-    {% if filter_params.noviteti %}<input type="hidden" name="noviteti" value="{{ filter_params.noviteti }}">{% endif %}
+    {% if filter_params.izdvojeno %}<input type="hidden" name="izdvojeno" value="{{ filter_params.izdvojeno }}">{% endif %}
+        {% if filter_params.noviteti %}<input type="hidden" name="noviteti" value="{{ filter_params.noviteti }}">{% endif %}
     {% if filter_params.brend %}<input type="hidden" name="brend" value="{{ filter_params.brend }}">{% endif %}
     {% if filter_params.kategorija and hide_category_filter %}<input type="hidden" name="kategorija" value="{{ filter_params.kategorija }}">{% endif %}
     {% if filter_params.velicina %}<input type="hidden" name="velicina" value="{{ filter_params.velicina }}">{% endif %}

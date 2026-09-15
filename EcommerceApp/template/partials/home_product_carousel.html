@@ -10,11 +10,11 @@
     <div class="home-product-carousel__viewport">
         <div class="home-product-carousel__track">
             {% for product in products %}
-            <div class="home-product-carousel__slide">
+            <div class="home-product-carousel__slide{% if product.pk in desktop_extra_ids %} home-product-carousel__slide--desktop-extra{% endif %}">
                 {% if eager_first_image and forloop.first %}
-                {% include 'partials/product_catalog_card.html' with product=product hide_variations=True hide_brand=hide_brand home_section_badge=home_section_badge image_loading='eager' image_sizes='(max-width: 768px) 50vw, 20vw' %}
+                {% include 'partials/product_catalog_card.html' with product=product home_reference_card=True hide_variations=True hide_brand=hide_brand home_section_badge=home_section_badge image_loading='eager' image_sizes='(max-width: 768px) 50vw, 20vw' %}
                 {% else %}
-                {% include 'partials/product_catalog_card.html' with product=product hide_variations=True hide_brand=hide_brand home_section_badge=home_section_badge image_sizes='(max-width: 768px) 50vw, 20vw' %}
+                {% include 'partials/product_catalog_card.html' with product=product home_reference_card=True hide_variations=True hide_brand=hide_brand home_section_badge=home_section_badge image_sizes='(max-width: 768px) 50vw, 20vw' %}
                 {% endif %}
             </div>
             {% endfor %}

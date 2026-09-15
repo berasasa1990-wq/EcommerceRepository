@@ -24,6 +24,6 @@
     <p class="product-sale-expiry">Akcija ističe {{ product.prikaz_akcija_istice|date:"d.m.Y." }}</p>
     {% endif %}
     <div class="product-info__price-row{% if product.pakovanje_uz_cijenu_kartica %} product-info__price-row--pack{% endif %}">
-        {% include 'partials/product_card_dwell_price.html' with product=product %}
+        {% include 'partials/product_card_price.html' with product=product %}
     </div>
 </div>

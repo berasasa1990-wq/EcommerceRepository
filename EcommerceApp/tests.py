@@ -256,16 +256,23 @@ class LoyaltyAdminSearchTests(TestCase):
         )
         self.assertEqual(user.profil.telefon, '00381641234567')
         self.assertIn('381641234567', viber_chat_url(user.profil.telefon, 'test'))
+        store_card, store_user = izdaj_loyalty_karticu('Drugi', 'Kupac', '065123456')
+        self.assertTrue(store_user.username.startswith('loy_'))
+        self.assertNotEqual(store_card.user_id, self.user.pk)
         with self.assertRaises(ValueError):
-            izdaj_loyalty_karticu('Drugi', 'Kupac', '065123456')
-        dup = self.client.post('/nalog/loyalty/', {
+            izdaj_loyalty_karticu('Treci', 'Kupac', '065999888')
+        open_existing = self.client.post('/nalog/loyalty/', {
             'action': 'open_card', 'channel': 'admin',
             'telefon': '065123456', 'ime': 'Drugi', 'prezime': 'Kupac',
         })
+        self.assertEqual(open_existing.status_code, 302)
+        self.assertIn('/nalog/loyalty/clan/', open_existing['Location'])
+        dup = self.client.post('/nalog/loyalty/', {
+            'action': 'open_card', 'channel': 'admin',
+            'telefon': '065999888', 'ime': 'Treci', 'prezime': 'Kupac',
+        })
         self.assertEqual(dup.status_code, 302)
-        self.assertNotIn('/nalog/loyalty/clan/482731/', dup['Location'])
-        follow = self.client.get(dup['Location'])
-        self.assertContains(follow, 'već registrovan')
+        self.assertIn('/nalog/loyalty/clan/' + new_kod + '/', dup['Location'])
 
     def test_viber_chat_url_prefills_draft(self):
         from urllib.parse import parse_qs, unquote_plus, urlparse
@@ -1448,18 +1455,6 @@ class CartIconThemeTests(TestCase):
         self.assertIn('--cart-icon-hover:#222222', css)
 
 
-class OnlineGiftAuthPathTests(SimpleTestCase):
-    def test_login_and_register_hide_registration_popup(self):
-        from django.test import RequestFactory
-
-        from .online_gift import _blocked_staff_path
-
-        rf = RequestFactory()
-        self.assertTrue(_blocked_staff_path(rf.get('/prijava/')))
-        self.assertTrue(_blocked_staff_path(rf.get('/prijava/?next=/')))
-        self.assertTrue(_blocked_staff_path(rf.get('/registracija/')))
-        self.assertFalse(_blocked_staff_path(rf.get('/')))
-        self.assertFalse(_blocked_staff_path(rf.get('/kategorija/spin/')))
 
 
 class LoyaltyPopupRegistrationCouponTests(TestCase):

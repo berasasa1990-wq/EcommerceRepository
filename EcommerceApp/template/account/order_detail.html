@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/account-mobile.css' %}?v=20260915-account-tracking">{% endblock %}
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
@@ -14,10 +16,12 @@
             <h1>Narudžba #{{ order.broj }}</h1>
             <p class="account-order-meta">
                 {{ order.kreirana|date:"d.m.Y. H:i" }}
-                · <span class="order-status order-status--{{ order.status }}">{{ order.get_status_label }}</span>
+                · <span class="order-status order-status--{{ order.status }}">{{ order.get_status_display }}</span>
             </p>
         </div>
     </div>
+
+    {% include 'partials/account_order_tracking.html' %}
 
     <div class="account-order-grid">
         <div class="account-order-panel">

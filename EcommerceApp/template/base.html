@@ -74,6 +74,9 @@
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.google-analytics.com">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+    <style>@media(max-width:1024px){.desktop-category-extra,.desktop-category-nav,.desktop-sale-link,.reference-header-heart{display:none!important}}</style>
+    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20260915-search-title-3-lines" media="(min-width: 1025px)">
+
     {% if meta_pixel_id %}
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin>
     <link rel="dns-prefetch" href="https://www.facebook.com">
@@ -155,8 +158,8 @@
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260912stockNotify" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260912stockNotify">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260915-feature-cleanup" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260915-feature-cleanup">
     <link rel="stylesheet" href="{% static 'css/menu-color.v20260909.css' %}">
     <link rel="stylesheet" href="{% static 'css/site-logo-compact.v20260912.css' %}">
     <link rel="stylesheet" href="{% static 'css/mobile-header-actions.v20260909.css' %}">
@@ -164,12 +167,50 @@
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
     <style id="site-orange">:root{--ozr-orange:#FF5A00;--ozr-orange-hover:#E04F00;--btn-cart:#FF5A00;--btn-cart-hover:#E04F00;--btn-banner:#FF5A00;--btn-banner-hover:#E04F00;}.header{border-bottom:2px solid var(--ozr-orange,#FF5A00);}.home-products--akcija,.home-brand-strip-section--mockup{border-top:2px solid var(--ozr-orange,#FF5A00)!important;}</style>
-    {% if dwell_ui and dwell_ui.css_vars %}
-    <style id="ai-dwell-theme">:root{ {{ dwell_ui.css_vars }} }</style>
-    {% endif %}
     <link rel="stylesheet" href="{% static 'css/touch-navigation.css' %}?v=20260909">
     <link rel="stylesheet" href="{% static 'css/wholesale-nav.css' %}?v=20260909-2">
     {% block extra_css %}{% endblock %}
+    <link rel="stylesheet" href="{% static 'css/search-popup-compact.css' %}?v=20260915-compact-list">
+    <link rel="stylesheet" href="{% static 'css/newsletter-gray.css' %}?v=20260915-newsletter-image">
+    {% if user.is_superuser %}
+    <style>
+        body #header .logo-brand:has(.logo-admin-panel) {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        body #header .logo-brand:has(.logo-admin-panel) > .logo {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        body #header .logo-brand:has(.logo-admin-panel) .logo-image {
+            max-width: 100%;
+        }
+        body #header .logo-admin-panel {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            min-height: 36px;
+            padding: 7px 10px;
+            border: 1px solid #dedfe4;
+            border-radius: 8px;
+            background: #f5f5f7;
+            color: #111;
+            font-size: 12px;
+            font-weight: 650;
+            line-height: 1.2;
+            text-align: center;
+            text-decoration: none;
+        }
+        body #header .logo-admin-panel:hover { border-color: #ff5a00; color: #ff5a00; }
+        body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
+    </style>
+    {% endif %}
+    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20260915-sticky-header-hero">
+    <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20260914-smaller-header-icons">
 
     {% if meta_pixel_id %}
     <!-- Meta Pixel — učitava se nakon prvog rendera da ne koči LCP -->
@@ -261,6 +302,7 @@
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
     <div class="site-chrome-backdrop" aria-hidden="true"></div>
 
+    <div class="site-chrome-sticky">
     <div class="promo-bar">
         <p>
             <span data-site-edit="promo_bar_tekst" data-site-edit-placeholder="Promo tekst">{% if site_settings.promo_bar_tekst %}{{ site_settings.promo_bar_tekst }}{% endif %}</span>
@@ -308,7 +350,9 @@
                         </span>
                         {% endif %}
                     </a>
-
+                    {% if user.is_superuser %}
+                    <a href="{% url 'staff_admin_panel' %}" class="logo-admin-panel">Admin<br>panel</a>
+                    {% endif %}
                 </div>
 
                 <div class="header-search" id="headerSearch">
@@ -322,7 +366,8 @@
                         <div class="search-combobox" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-haspopup="listbox">
                             <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, šifri, brandu ili tagu..." autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
                         </div>
-                        <button type="submit" class="header-search-submit">
+                        <button type="submit" class="header-search-submit" aria-label="Pretraži proizvode">
+                            <svg class="header-search-submit-icon" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/></svg>
                             <span class="header-search-submit-label">TRAŽI</span>
                         </button>
                         <button type="button" class="search-close" id="searchClose" aria-label="Zatvori pretragu">
@@ -336,6 +381,7 @@
                 </div>
 
                 <div class="nav-actions">
+                    <button type="button" class="nav-action-link reference-header-search" data-mobile-home-search aria-label="Pretraga"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.8"/><path d="m16.2 16.2 5.4 5.4"/></svg></button>
                     {% if contact_phone %}
                     <a href="tel:{{ contact_phone_digits|default:contact_phone }}" class="nav-action-link header-phone" aria-label="Telefon {{ contact_phone }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -351,28 +397,30 @@
                     {% if user.is_authenticated %}
                     <a href="{% url 'account' %}" class="nav-action-link account-btn" aria-label="Nalog">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
+                            <path d="M4 21v-1a8 7 0 0 1 16 0v1Z"/>
+                            <circle cx="12" cy="6" r="4"/>
                         </svg>
                         <span class="nav-action-label">Nalog</span>
                     </a>
                     {% else %}
                     <a href="{% url 'login' %}" class="nav-action-link account-btn" aria-label="Prijava">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
+                            <path d="M4 21v-1a8 7 0 0 1 16 0v1Z"/>
+                            <circle cx="12" cy="6" r="4"/>
                         </svg>
                         <span class="nav-action-label">Nalog</span>
                     </a>
                     {% endif %}
+                    <button type="button" class="nav-action-link reference-header-heart" data-mobile-favorites aria-label="Omiljeno">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+                    </button>
                     <div class="nav-cart-stack">
                     <a href="{% url 'cart' %}" class="nav-action-link cart-btn{% if cart_count %} cart-btn--has-items{% endif %}" aria-label="Korpa" data-cart-count="{{ cart_count|default:0 }}">
                         <span class="nav-action-icon">
-                            <svg class="cart-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
-                                <circle cx="9" cy="20" r="1.75" fill="currentColor" stroke="none"/>
-                                <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none"/>
-                            </svg>
+                            <svg class="cart-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M5 7h14l1.6 13.2a1.5 1.5 0 0 1-1.5 1.8H4.9a1.5 1.5 0 0 1-1.5-1.8Z"/>
+                    <path d="M9 9V5a3 3 0 0 1 6 0v4"/>
+                </svg>
                             <span class="cart-badge">{{ cart_count|default:0 }}</span>
                         </span>
                         <span class="nav-action-label">Korpa</span>
@@ -389,9 +437,27 @@
                     </form>
                     {% endif %}
                     </div>
+                    <a class="desktop-sale-link" href="{% url 'home' %}?akcija=1#product-showcase" hidden>Akcijska ponuda</a>
+                    <button type="button" class="nav-action-link reference-header-menu" data-mobile-home-menu aria-label="Otvori kategorije"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg></button>
                 </div>
             </div>
 
+            <nav class="desktop-category-nav" aria-label="Kategorije proizvoda" hidden>
+                {% for nav_cat in nav_categories %}
+                {% if nav_cat.podkategorije.all %}
+                <details class="desktop-category-dropdown">
+                    <summary>{{ nav_cat.naziv }} <span aria-hidden="true">⌄</span></summary>
+                    <div class="desktop-category-dropdown__panel">
+                        <a class="desktop-category-dropdown__all" href="{{ nav_cat.get_absolute_url }}?all=1">Sve {{ nav_cat.naziv|lower }}</a>
+                        {% for sub in nav_cat.podkategorije.all %}
+                        <a href="{{ sub.get_absolute_url }}">{{ sub.naziv }}</a>
+                        {% endfor %}
+                    </div>
+                </details>
+                {% else %}<a href="{{ nav_cat.get_absolute_url }}">{{ nav_cat.naziv }}</a>{% endif %}
+                {% endfor %}
+                <a href="{% url 'brands_list' %}">Brendovi</a>
+            </nav>
             <nav class="header-row header-row--categories" aria-label="Kategorije">
                 <div class="cats-dropdown{% if cats_sidebar_open %} is-open cats-dropdown--locked{% endif %}" id="catsDropdown">
                     <button type="button" class="cats-dropdown__btn" id="catsDropdownBtn" aria-expanded="{% if cats_sidebar_open %}true{% else %}false{% endif %}" aria-controls="catsDropdownPanel"{% if cats_sidebar_open %} aria-disabled="true"{% endif %}>
@@ -549,6 +615,7 @@
             {% endfor %}
         </div>
     </header>
+    </div>
 
     {# Visine promo + header — logo/meni NIKAD ispod „Besplatna dostava” trake #}
     <script>
@@ -675,18 +742,13 @@
     {% include 'partials/cart_recovery_popup.html' %}
     {% include 'partials/cart_abandon_exit_popup.html' %}
     {% include 'partials/cart_exit_popup.html' %}
-    {% include 'partials/live_visitor_offer_popup.html' %}
     {% include 'partials/gratis_offer_modal.html' %}
     {% include 'partials/qty_deal_offer_modal.html' %}
-    {% include 'partials/online_gift.html' %}
     {% include 'partials/social_proof_toast.html' %}
 
+    {% include 'partials/mobile_dock.html' %}
     {% include 'partials/footer.html' %}
     {% include 'partials/contact_float.html' %}
-    {# Ribolovački savjetnik — uključuje se u Podešavanjima #}
-    {% if site_settings.savjetnik_aktivan %}
-    {% include 'partials/fishing_advisor.html' %}
-    {% endif %}
     {% if site_settings.javno_online_posjetioci %}
     {% include 'partials/public_online_visitors.html' %}
     {% endif %}
@@ -706,19 +768,14 @@
     <script type="application/ld+json">{{ website_json_ld|safe }}</script>
     {% endif %}
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260901fast" defer></script>
-    <script src="{% static 'js/stock-notify.js' %}?v=20260912stock" defer></script>
-    {% if site_settings.savjetnik_aktivan %}
-    <script>idleLoadScript("{% static 'js/fishing-advisor.js' %}?v=20260716v4");</script>
-    {% endif %}
+    <script src="{% static 'js/main.min.js' %}?v=20260915-feature-cleanup" defer></script>
+    <script src="{% static 'js/desktop-reference.js' %}?v=20260914-dropdowns" defer></script>
+    <script src="{% static 'js/stock-notify.js' %}?v=20260914-follow-email" defer></script>
     {% if site_settings.javno_online_posjetioci %}
     <script>idleLoadScript("{% static 'js/public-online-visitors.js' %}?v=20260716v1");</script>
     {% endif %}
     {% if not user.is_authenticated or not user.is_superuser %}
     <script>idleLoadScript("{% static 'js/almost-cart.js' %}?v=20260712v3");</script>
-    {% endif %}
-    {% if online_gift %}
-    <script>idleLoadScript("{% static 'js/online-gift.js' %}?v=20260901cart");</script>
     {% endif %}
     {# Live praćenje svih osim superusera — incognito / gost / registrovan #}
     {% if not user.is_authenticated or not user.is_superuser %}

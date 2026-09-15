@@ -5,7 +5,6 @@
     var QTY_DEAL_TIP = 'qty_deal';
     var PONUDA_TIP = 'ponuda';
     var AKCIJSKA_TIP = 'akcijska';
-    var AI_PRODAJA_TIP = 'ai_prodaja';
 
     /** Polja dozvoljena po tipu (sve ostalo se sakriva). */
     var FIELDS_BY_TIP = {};
@@ -61,10 +60,6 @@
         popust_postotak: 1,
         gratis_artikal: 1,
     };
-    FIELDS_BY_TIP[AI_PRODAJA_TIP] = {
-        naziv: 1, tip: 1, browse_interest_popup_aktivan: 1,
-        browse_interest_mode: 1, browse_interest_source: 1, browse_interest_popust: 1,
-    };
 
     function update() {
         var $form = $('#akcija_form');
@@ -89,8 +84,7 @@
         $form.find('.inline-group').each(function () {
             this.hidden = !(
                 (tip === BUNDLE_TIP && $(this).find('.akcija-inline-bundle-lines').addBack('.akcija-inline-bundle-lines').length) ||
-                (tip === AKCIJSKA_TIP && $(this).find('.akcija-inline-flash-lines').addBack('.akcija-inline-flash-lines').length) ||
-                (tip === AI_PRODAJA_TIP && $(this).find('.akcija-inline-dwell-items').addBack('.akcija-inline-dwell-items').length)
+                (tip === AKCIJSKA_TIP && $(this).find('.akcija-inline-flash-lines').addBack('.akcija-inline-flash-lines').length)
             );
         });
         // Browser ne smije zaustaviti slanje zbog nevidljivih obaveznih polja.

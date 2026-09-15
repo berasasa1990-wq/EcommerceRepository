@@ -1,0 +1,14 @@
+{% if site_settings.loyalty_banner_desktop %}
+<section class="home-loyalty-banner home-loyalty-banner--uploaded home-desktop-banner-only home-featured-desktop-banner" aria-label="Loyalty Card">
+    <a href="{% if site_settings.loyalty_banner_href %}{{ site_settings.loyalty_banner_href }}{% elif user.is_authenticated %}{% url 'account' %}{% else %}{% url 'register' %}{% endif %}">
+        <img src="{{ site_settings.loyalty_banner_desktop.url }}" alt="Loyalty Card" width="1920" height="500" loading="lazy" decoding="async">
+    </a>
+</section>
+{% endif %}
+{% if site_settings.loyalty_banner_slika %}
+<section class="home-loyalty-banner home-loyalty-banner--uploaded home-banner-mobile-replaced" aria-label="Loyalty Card">
+    <a href="{% if site_settings.loyalty_banner_href %}{{ site_settings.loyalty_banner_href }}{% elif user.is_authenticated %}{% url 'account' %}{% else %}{% url 'register' %}{% endif %}" aria-label="Loyalty Card — {% if user.is_authenticated %}Moja kartica{% else %}Pridruži se{% endif %}">
+        <img src="{{ site_settings.loyalty_banner_slika.url }}" alt="Loyalty Card" width="1080" height="1080" loading="lazy" decoding="async">
+    </a>
+</section>
+{% endif %}

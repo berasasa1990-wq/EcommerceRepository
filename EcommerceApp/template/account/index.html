@@ -1,8 +1,10 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/account-mobile.css' %}?v=20260915-account-complaints">{% endblock %}
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
-{% block body_class %}page-account{% endblock %}
+{% block body_class %}page-account catalog-header-reference{% endblock %}
 
 {% block title %}Moj nalog — opremazaribolov.ba{% endblock %}
 
@@ -62,10 +64,6 @@
                 Narudžbe
                 {% if orders_count %}<span class="acc-dash-nav-count">{{ orders_count }}</span>{% endif %}
             </a>
-            <a href="#loyalty" class="acc-dash-nav-link" data-acc-nav="loyalty">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-                Loyalty
-            </a>
             <a href="#adrese" class="acc-dash-nav-link" data-acc-nav="adrese">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-4.4 7-10a7 7 0 1 0-14 0c0 5.6 7 10 7 10z"/><circle cx="12" cy="11" r="2.5"/></svg>
                 Adrese
@@ -98,8 +96,12 @@
         </nav>
 
         <div class="acc-dash-main">
+            <a class="account-mobile-back" href="#pregled">‹ Moj nalog</a>
+            <div class="acc-panel" data-acc-panel="obavjestenja" hidden><section class="acc-card"><h2>Obavještenja o stanju</h2>{% for notice in account_stock_notices %}<p><a href="{{ notice.product.get_absolute_url }}">{{ notice.product.naziv }}</a><br><small>Pratite email — {{ notice.email }}</small></p>{% empty %}<p>Nemate aktivnih prijava za obavještenja.</p>{% endfor %}</section></div>
             {# —— Pregled —— #}
             <div class="acc-panel" data-acc-panel="pregled">
+                {% include 'account/mobile_overview.html' %}
+                {% if account_latest_order %}{% include 'partials/account_order_tracking.html' with order=account_latest_order %}{% endif %}
                 <div class="acc-stats">
                     <article class="acc-stat">
                         <span class="acc-stat-icon" aria-hidden="true">
@@ -175,9 +177,6 @@
                         <div class="acc-quick">
                             <a href="{% url 'home' %}" class="acc-quick-btn acc-quick-btn--primary">Nastavi kupovinu</a>
                             <a href="{% url 'cart' %}" class="acc-quick-btn">Idi u korpu</a>
-                            {% if loyalty %}
-                            <button type="button" class="acc-quick-btn" data-copy="accLoyaltyCode">Kopiraj loyalty kod</button>
-                            {% endif %}
                             <a href="#reklamacije" class="acc-quick-btn">Reklamacija</a>
                         </div>
                     </section>
@@ -201,44 +200,6 @@
                     </header>
                     {% include 'partials/account_orders_table.html' with orders=orders empty_text='Još nemate narudžbi povezanih s ovim nalogom.' %}
                 </section>
-            </div>
-
-            {# —— Loyalty —— #}
-            <div class="acc-panel" data-acc-panel="loyalty" hidden>
-                {% if loyalty %}
-                <section class="acc-card acc-loyalty-detail">
-                    <header class="acc-card-head">
-                        <h2>Vaša loyalty kartica</h2>
-                    </header>
-                    <p class="acc-loyalty-help">U korpi kliknite <strong>Primjeni Loyalty karticu</strong> — popust prema vašem nivou (ne vrijedi na akcije).</p>
-                    <div class="acc-loyalty-progress-row">
-                        <div>
-                            <p class="acc-loyalty-code-label">Broj kartice</p>
-                            <p class="acc-loyalty-code" id="accLoyaltyCode">{{ loyalty.kartica.kod }}</p>
-                            <button type="button" class="acc-copy-btn" data-copy="accLoyaltyCode">Kopiraj</button>
-                        </div>
-                        <div>
-                            <p class="acc-loyalty-code-label">Nivo</p>
-                            <p class="acc-loyalty-code">{{ loyalty.tier.label }} · {{ loyalty.tier.postotak|floatformat:0 }}%</p>
-                            <p class="acc-muted">{{ loyalty.next_line }}</p>
-                        </div>
-                    </div>
-                    <ul class="acc-loyalty-tiers">
-                        {% for t in loyalty.tiers %}
-                        <li class="{% if t.nivo == loyalty.tier.nivo %}is-active{% endif %}">
-                            <strong>{{ t.label }}</strong>
-                            <span>{{ t.postotak|floatformat:0 }}%</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    <div class="account-loyalty-card-preview">
-                        {% include 'partials/loyalty_card_print.html' with loyalty=loyalty cardholder_name=cardholder_name %}
-                    </div>
-                    <div class="account-loyalty-card-actions">
-                        <a href="{% url 'cart' %}" class="btn acc-btn-orange">Primjeni u korpi</a>
-                    </div>
-                </section>
-                {% endif %}
             </div>
 
             {# —— Adrese —— #}
@@ -324,26 +285,7 @@
 
             {# —— Reklamacije —— #}
             <div class="acc-panel" data-acc-panel="reklamacije" hidden>
-                <section class="acc-card">
-                    <header class="acc-card-head"><h2>Reklamacije i garancija</h2></header>
-                    <p class="acc-reklamacije-lead">Postupak reklamacije je jednostavan i u skladu sa zakonskim propisima. Navedite broj narudžbe, artikal i razlog.</p>
-                    <ul class="acc-reklamacije-steps">
-                        <li>Otvorite chat u donjem uglu ili nas kontaktirajte putem Vibera / WhatsAppa.</li>
-                        <li>Pošaljite broj narudžbe i fotografiju artikla ako je potrebno.</li>
-                        <li>Odgovaramo u najkraćem roku i dogovaramo zamjenu ili povrat.</li>
-                    </ul>
-                    {% if orders_recent %}
-                    <p class="acc-muted">Vaše posljednje narudžbe za referencu:</p>
-                    <ul class="acc-reklamacije-orders">
-                        {% for order in orders_recent %}
-                        <li>
-                            <a href="{% url 'account_order_detail' broj=order.broj %}">#{{ order.broj }}</a>
-                            <span>{{ order.kreirana|date:"d.m.Y." }} · {{ order.get_status_label }}</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% endif %}
-                </section>
+                {% include 'partials/account_complaints.html' %}
             </div>
 
             {# —— Postavke —— #}
@@ -371,3 +313,5 @@
 </section>
 {% include 'partials/home_trust_bar.html' %}
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/account-complaints.js' %}?v=20260915" defer></script>{% endblock %}

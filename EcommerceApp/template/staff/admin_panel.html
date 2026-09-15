@@ -8,6 +8,18 @@
 
 {% block body_class %}staff-shell-page{% endblock %}
 
+{% block extra_css %}
+<style>
+body.staff-shell-page { background: #f5f5f7; color: #111; }
+body .staff-admin-page .staff-page-hero { background: #eeeef1; border: 1px solid #dedee3; box-shadow: none; }
+body .staff-admin-page :is(.staff-page-title,.staff-page-subtitle,.staff-page-kicker,.staff-page-back) { color: #111; }
+body .staff-admin-page .admin-btn { background: #f0f0f3; color: #111; border: 1px solid #dedee3; box-shadow: none; }
+body .staff-admin-page .admin-btn:hover { background: #e7e7ec; border-color: #c9c9d1; }
+body .staff-admin-page .admin-btn-icon { background: #e2e2e8; color: #333; }
+body .staff-admin-page .admin-btn-text :is(h2,h3,p,span,strong), body .staff-admin-page .admin-btn-arrow { color: #111; }
+</style>
+{% endblock %}
+
 {% block content %}
 <section class="staff-admin-page">
     <header class="staff-page-hero">
@@ -70,22 +82,6 @@
             <span class="admin-btn-arrow" aria-hidden="true">→</span>
         </a>
 
-        <a href="{% url 'staff_site_overview' %}" class="admin-btn">
-            <div class="admin-btn-icon admin-btn-icon--stats" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 19V5"/>
-                    <path d="M4 19h16"/>
-                    <rect x="7" y="10" width="3" height="6" rx="0.5"/>
-                    <rect x="12" y="7" width="3" height="9" rx="0.5"/>
-                    <rect x="17" y="12" width="3" height="4" rx="0.5"/>
-                </svg>
-            </div>
-            <div class="admin-btn-text">
-                <strong>Pregled sajta</strong>
-                <span>Posjetioci, kupovine i promet — po danima / mjesecima / godinama</span>
-            </div>
-            <span class="admin-btn-arrow" aria-hidden="true">→</span>
-        </a>
 
         <a href="{% url 'staff_live_analytics' %}" class="admin-btn">
             <div class="admin-btn-icon admin-btn-icon--live" aria-hidden="true">

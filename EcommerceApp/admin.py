@@ -35,25 +35,17 @@ ODOO_IMPORT_SESSION_KEY = 'odoo_import_job'
 from .product_merge import ProductMergeError, merge_products, split_product_variations
 from .models import (
     ActiveCartItem,
-    AdvisorBeginnerFishType,
     AdvisorBeginnerSet,
     AdvisorBeginnerSetItem,
-    AIProdajaSettings,
-    ProductDwellItem,
-    AIPopupItem,
     AkcijaBundleLine,
     AkcijaFlashLine,
     AkcijaQtyTier,
-    CityVisitTotal,
     LiveVisitor,
-    LiveVisitorOffer,
     StaffSiteEvent,
     Akcija,
     Banner,
     Brand,
     Category,
-    ChatConversation,
-    ChatMessage,
     Coupon,
     HomeBrandShowcase,
     HomeCategoryShowcase,
@@ -66,9 +58,6 @@ from .models import (
     Order,
     OrderItem,
     Popup,
-    OnlineGiftCampaign,
-    OnlineGiftClaim,
-    OnlineGiftPush,
     PageSEO,
     Product,
     ProductImage,
@@ -457,7 +446,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     autocomplete_fields = ('korpa_exit_popup_artikal',)
     readonly_fields = (
         'pregled_loga', 'pregled_loga_glavnog_sajta', 'pregled_favicona',
-        'pregled_badgea', 'pregled_chat_avatara',
+        'pregled_badgea',
     )
     inlines = [
         HomeTrustItemInline,
@@ -576,10 +565,16 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': (
                 'logo', 'pregled_loga',
                 'favicon', 'pregled_favicona',
+                'loyalty_banner_slika', 'loyalty_banner_desktop', 'loyalty_banner_link',
+                'akcija_banner_slika', 'akcija_banner_desktop', 'akcija_banner_link',
+                'akcija_banner_slika_2', 'akcija_banner_desktop_2', 'akcija_banner_link_2',
+                'akcija_banner_slika_3', 'akcija_banner_desktop_3', 'akcija_banner_link_3',
+                'akcija_banner_slika_4', 'akcija_banner_desktop_4', 'akcija_banner_link_4',
             ),
             'description': (
                 'Logo u crnom headeru (originalna slika, max 640×128). '
-                'Preporuka: PNG s transparentnom pozadinom, bijela/zelena grafika.'
+                'Preporuka: PNG s transparentnom pozadinom, bijela/zelena grafika. '
+                'Uz svaki banner unesi poseban link (npr. /?akcija=1 ili https://…).'
             ),
         }),
         ('② Početna — naslovi sekcija (redom na stranici)', {
@@ -665,40 +660,13 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                 'welcome_reg_popup_aktivan',
                 'welcome_reg_popust',
                 'welcome_reg_delay_seconds',
-                'online_nagrada_bočni_aktivan',
-                'online_nagrada_delay_seconds',
             ),
             'description': (
                 '1) Registracija + % na prvu narudžbu — gostu na početku. '
-                '2) Nagradna igra — mali pulsirajući popup sa strane (treba aktivna kampanja Online nagrada).'
             ),
             'classes': ('collapse',),
         }),
-        ('Chat sa kupcem', {
-            'fields': (
-                'chat_sa_kupcem_aktivan',
-                'chat_delay_seconds',
-                'chat_pozdrav_poruka',
-                'chat_avatar_slika',
-                'pregled_chat_avatara',
-            ),
-            'description': (
-                'Proaktivni live chat: poslije delay-a iskoči kupcu. '
-                'Slika (avatar) se vidi na balonu i u headeru chata. '
-                'Preporuka: 256×256 px, kvadrat PNG/JPG.'
-            ),
-        }),
-        ('Savjetnik i online posjetioci', {
-            'fields': (
-                'savjetnik_aktivan',
-                'javno_online_posjetioci',
-            ),
-            'description': (
-                '1) Ribolovački savjetnik — uključi/isključi chat „Savjeti pri kupovini”. '
-                '2) Javni prikaz — svi na sajtu vide koliko je ljudi online (privatno: grad + gost/kupac).'
-            ),
-            'classes': ('collapse',),
-        }),
+        ('Online posjetioci', {'fields': ('javno_online_posjetioci',)}),
         ('Pogodnosti', {
             'fields': (
                 'novi_korisnik_besplatna_dostava',
@@ -799,15 +767,6 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             )
         return 'Nema badgea — upload PNG s transparentnom pozadinom (npr. garancija).'
 
-    @admin.display(description='Pregled chat slike')
-    def pregled_chat_avatara(self, obj):
-        if obj and obj.chat_avatar_slika:
-            return format_html(
-                '<img src="{}" style="width:72px;height:72px;object-fit:cover;border-radius:50%;'
-                'border:2px solid #0f766e;background:#f0fdfa;" />',
-                obj.chat_avatar_slika.url,
-            )
-        return 'Nema slike — default ikona balona. Upload 256×256 px kvadrat.'
 
 
 @admin.register(PageSEO)
@@ -898,7 +857,7 @@ class CategoryAdmin(admin.ModelAdmin):
             ),
         }),
         ('Prikaz', {
-            'fields': ('redoslijed', 'prikazi_u_meniju', 'aktivan'),
+            'fields': ('redoslijed', 'prikazi_u_meniju', 'aktivan', 'ikonica_pocetna'),
         }),
         ('SEO (Google) — kategorija je ključna za ranking', {
             'fields': (
@@ -1323,92 +1282,10 @@ class AkcijaQtyTierInline(admin.TabularInline):
         return formset
 
 
-class ProductDwellItemInline(admin.TabularInline):
-    """Po artiklu unesi svoj flash popust % — samo artikli na stanju."""
-    model = ProductDwellItem
-    fk_name = 'settings'
-    extra = 1
-    autocomplete_fields = ('product',)
-    fields = ('product', 'popust')
-    verbose_name = 'Artikal (AI dwell)'
-    verbose_name_plural = (
-        'AI dwell artikli — popust %: 0 = bez popusta; npr. 8, 12, 20 = snizenje'
-    )
-    classes = ('akcija-inline-dwell-items',)
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == 'product':
-            from .models import Product
-            kwargs['queryset'] = (
-                Product.objects
-                .filter(aktivan=True, na_stanju=True)
-                .order_by('naziv')
-            )
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
-class AIPopupItemInline(ProductDwellItemInline):
-    """
-    AIPopupItem je FK na SiteSettings, ne na Akciju.
-    Inicijalizira se s parent_model=SiteSettings; formset uvijek veže SiteSettings.load().
-    """
-
-    model = AIPopupItem
-    fields = ('product',)
-    verbose_name = 'Artikal za popup'
-    verbose_name_plural = 'Ručno odabrani artikli — jedan po ponudi, redom bez ponavljanja'
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == 'product':
-            from django.db.models import Q
-            selected = AIPopupItem.objects.filter(settings=SiteSettings.load()).values('product_id')
-            kwargs['queryset'] = Product.objects.filter(
-                Q(aktivan=True, na_stanju=True) | Q(pk__in=selected),
-            ).order_by('naziv')
-        return admin.TabularInline.formfield_for_foreignkey(self, db_field, request, **kwargs)
-
-    def get_formset(self, request, obj=None, **kwargs):
-        from .models import SiteSettings
-
-        settings_obj = SiteSettings.load()
-        FormSet = super().get_formset(request, settings_obj, **kwargs)
-
-        class _DwellFormSet(FormSet):
-            def __init__(self, *args, **kwargs):
-                kwargs['instance'] = SiteSettings.load()
-                super().__init__(*args, **kwargs)
-
-            def clean(self):
-                super().clean()
-                if any(self.errors):
-                    return
-                if self.data.get('browse_interest_source') == 'manual' and self.data.get('browse_interest_popup_aktivan'):
-                    if not any(row.cleaned_data.get('product') and not row.cleaned_data.get('DELETE') for row in self.forms):
-                        from django.core.exceptions import ValidationError
-                        raise ValidationError('Dodaj barem jedan artikal za ručni prikaz ili izaberi automatsku kategoriju.')
-
-        return _DwellFormSet
 
 
-@admin.register(AIProdajaSettings)
-class AIProdajaSettingsAdmin(admin.ModelAdmin):
-    """Zastarjeli proxy — sakriven; sve se uređuje u Akcije → tip AI."""
-    inlines = [ProductDwellItemInline]
-
-    def get_model_perms(self, request):
-        return {}
-
-    def has_module_permission(self, request):
-        return False
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
 
 
 # ─── Ribolovački savjetnik: početnički setovi ───────────────────────
@@ -1472,94 +1349,8 @@ class AdvisorBeginnerSetItemInline(admin.TabularInline):
             return '—'
 
 
-@admin.register(AdvisorBeginnerFishType)
-class AdvisorBeginnerFishTypeAdmin(admin.ModelAdmin):
-    list_display = (
-        'naziv', 'emoji', 'code', 'setovi_aktivni', 'redoslijed', 'aktivan',
-    )
-    list_editable = ('redoslijed', 'aktivan')
-    list_filter = ('aktivan',)
-    search_fields = ('naziv', 'code')
-    prepopulated_fields = {'code': ('naziv',)}
-    inlines = [AdvisorBeginnerSetInline]
-    ordering = ('redoslijed', 'naziv')
-
-    fieldsets = (
-        (None, {
-            'fields': ('naziv', 'code', 'emoji', 'redoslijed', 'aktivan'),
-            'description': (
-                'Tipovi setova koje nudi savjetnik (npr. Saranski set, Feeder set, '
-                'Pečaljke za plovak). Za varaličarski dodaj tipove s kodovima: '
-                'stuka, som, ul — u chatu se grupišu pod „Varaličarski set”. '
-                'Dodaj setove ispod, pa u svaki set artikle. '
-                'Prikazuju se samo aktivni setovi s artiklima na stanju.'
-            ),
-        }),
-    )
-
-    @admin.display(description='Aktivni setovi')
-    def setovi_aktivni(self, obj):
-        if not obj or not obj.pk:
-            return 0
-        return obj.setovi.filter(aktivan=True).count()
 
 
-@admin.register(AdvisorBeginnerSet)
-class AdvisorBeginnerSetAdmin(admin.ModelAdmin):
-    list_display = (
-        'naziv', 'fish_type', 'popust_postotak', 'broj_artikala',
-        'iznos_regularni', 'iznos_snizeni', 'redoslijed', 'aktivan',
-    )
-    list_filter = ('fish_type', 'aktivan')
-    list_editable = ('redoslijed', 'aktivan')
-    search_fields = ('naziv', 'fish_type__naziv')
-    autocomplete_fields = ()
-    inlines = [AdvisorBeginnerSetItemInline]
-    ordering = ('fish_type__redoslijed', 'redoslijed', 'id')
-
-    fieldsets = (
-        (None, {
-            'fields': (
-                'fish_type', 'naziv', 'emoji', 'popust_postotak',
-                'redoslijed', 'aktivan', 'popis',
-            ),
-            'description': (
-                'Dodaj artikle u tabeli ispod. '
-                'Iznos se sabira automatski. Popust % je opcionalan na cijeli set.'
-            ),
-        }),
-        ('Pregled cijene', {
-            'fields': ('iznos_regularni', 'iznos_snizeni'),
-        }),
-    )
-    readonly_fields = ('iznos_regularni', 'iznos_snizeni')
-
-    @admin.display(description='Artikala')
-    def broj_artikala(self, obj):
-        if not obj or not obj.pk:
-            return 0
-        return obj.stavke.count()
-
-    @admin.display(description='Regularno')
-    def iznos_regularni(self, obj):
-        if not obj or not obj.pk:
-            return '—'
-        return f'{obj.regularni_iznos()} KM'
-
-    @admin.display(description='Sa popustom')
-    def iznos_snizeni(self, obj):
-        if not obj or not obj.pk:
-            return '—'
-        reg = obj.regularni_iznos()
-        sale = obj.snizeni_iznos()
-        if obj.ima_popust():
-            return format_html(
-                '<strong style="color:#0a0">{} KM</strong> '
-                '<span style="text-decoration:line-through;color:#888">{} KM</span> '
-                '(-{}%)',
-                sale, reg, obj.popust_postotak,
-            )
-        return f'{sale} KM'
 
 
 @admin.register(Akcija)
@@ -1576,13 +1367,12 @@ class AkcijaAdmin(admin.ModelAdmin):
     )
     autocomplete_fields = ('artikal', 'gratis_artikal', 'kategorija')
     filter_horizontal = ('bundle_artikli',)
-    # Bundle inline; AI dwell artikli se dodaju u get_inline_instances
-    # (ProductDwellItem.FK je SiteSettings, ne Akcija — nije u inlines zbog admin.E202)
+    # Stavke bundle ponude.
     inlines = [AkcijaBundleLineInline]
 
     class Media:
-        js = ('admin/js/akcija_admin.v20260911.js', 'admin/js/ai-settings.v20260909.js')
-        css = {'all': ('admin/css/ai-settings.v20260909.css', 'admin/css/akcija-admin.v20260910.css')}
+        js = ('admin/js/akcija_admin.v20260911.js',)
+        css = {'all': ('admin/css/akcija-admin.v20260910.css',)}
 
     # --- Fieldseti: svako polje SAMO JEDNOM (admin.E012) ---
     # JS pri promjeni tipa prikaže/sakrije relevantne sekcije.
@@ -1591,7 +1381,7 @@ class AkcijaAdmin(admin.ModelAdmin):
             'fields': ('naziv', 'tip', 'aktivan', 'redoslijed'),
             'description': (
                 'Odaberi tip akcije — prikazuju se samo polja za taj tip '
-                '(bundle / kupi više / + ponuda / akcijska ponuda / AI dwell).'
+                '(bundle / kupi više / + ponuda / akcijska ponuda).'
             ),
         }),
     )
@@ -1666,18 +1456,6 @@ class AkcijaAdmin(admin.ModelAdmin):
             'description': 'Za bundle i „Kupi više”. + Ponuda ovo ne koristi.',
         }),
     )
-    _FS_AI = (
-        ('1. Način prikazivanja', {
-            'fields': ('browse_interest_popup_aktivan', 'browse_interest_mode', 'browse_interest_popust'),
-            'description': 'Nametljivo: prva ponuda nakon 35 s, razmak 60 s, najviše 6 ponuda. '
-                           'Uravnoteženo i Bez popusta: nakon 120 s, razmak 180 s, najviše 3 ponude po posjeti.',
-        }),
-        ('2. Izbor artikala', {
-            'fields': ('browse_interest_source',),
-            'description': 'Automatski: artikli iz kategorije koju kupac gleda. Ručno: dodaj jedan ili više artikala u tabelu ispod. '
-                           'Prikazuje se jedan artikal po ponudi; svaki sljedeći je različit. Ponuda traje 3 minute.',
-        }),
-    )
 
     # Svako polje tačno jednom — Django admin.E012
     fieldsets = (
@@ -1687,7 +1465,6 @@ class AkcijaAdmin(admin.ModelAdmin):
         + _FS_FLASH
         + _FS_QTY
         + _FS_PRIKAZ
-        + _FS_AI
     )
 
     def _resolve_akcija_tip(self, request, obj=None):
@@ -1701,8 +1478,6 @@ class AkcijaAdmin(admin.ModelAdmin):
 
     def get_fieldsets(self, request, obj=None):
         """GET omogućava promjenu tipa; POST provjerava izabranu konfiguraciju."""
-        # Sve kontrole moraju postojati za promjenu tipa bez gubljenja unosa.
-        # Na POST-u validiraj samo polja odabranog tipa.
         if request.method != 'POST':
             return self.fieldsets
         tip = self._resolve_akcija_tip(request, obj)
@@ -1711,71 +1486,28 @@ class AkcijaAdmin(admin.ModelAdmin):
         if tip == Akcija.Tip.BUNDLE:
             return self._FS_BASE + self._FS_ARTIKLI + self._FS_BUNDLE_EXTRA + self._FS_PRIKAZ
         if tip == Akcija.Tip.AKCIJSKA:
-            return self._FS_BASE + (
-                ('Popust na odabrane artikle', {'fields': ('popust_postotak',)}),
-                ('Trajanje sniženja', {
-                    'fields': ('pocetak', 'trajanje_sati'),
-                    'description': 'Sniženje važi od početka do isteka unesenog broja sati.',
-                }),
-            )
+            return self._FS_BASE + (('Popust na odabrane artikle', {'fields': ('popust_postotak',)}), ('Trajanje sniženja', {'fields': ('pocetak', 'trajanje_sati'), 'description': 'Sniženje važi od početka do isteka unesenog broja sati.'}))
         if tip == Akcija.Tip.QTY_DEAL:
             return self._FS_BASE + (('Artikal', {'fields': ('artikal',)}),) + self._FS_QTY + self._FS_PRIKAZ
-        if tip == Akcija.Tip.AI_PRODAJA:
-            return ((None, {'fields': ('naziv', 'tip')}),) + self._FS_AI
-        # Novi red / nepoznat tip: svi fieldseti + JS filter
         return self.fieldsets
 
     def get_inline_instances(self, request, obj=None):
         from .models import SiteSettings
-
         tip = self._resolve_akcija_tip(request, obj)
-        dwell = AIPopupItemInline(SiteSettings, self.admin_site)
         bundle = AkcijaBundleLineInline(self.model, self.admin_site)
         flash = AkcijaFlashLineInline(self.model, self.admin_site)
-
-        # Novi red: u DOM-u (JS sakrije po tipu)
         if request.method != 'POST':
-            return [bundle, flash, dwell]
+            return [bundle, flash]
         if tip == Akcija.Tip.BUNDLE:
             return [bundle]
         if tip == Akcija.Tip.AKCIJSKA:
             return [flash]
-        if tip == Akcija.Tip.AI_PRODAJA:
-            # Obavezno: tabela „AI dwell artikli” za unos popusta po artiklu
-            return [dwell]
-        # + Ponuda / Kupi više: bez inline tabela
         return []
 
-    def _ensure_ai_prodaja_akcija(self):
-        """Jedan red u listi Akcije za AI prodaja / AI dwell."""
-        from .models import SiteSettings
-
-        s = SiteSettings.load()
-        dwell_on = bool(getattr(s, 'product_dwell_popup_aktivan', False))
-        browse_on = bool(getattr(s, 'browse_interest_popup_aktivan', False))
-        aktivan = dwell_on or browse_on
-        obj, _created = Akcija.objects.get_or_create(
-            tip=Akcija.Tip.AI_PRODAJA,
-            defaults={
-                'naziv': 'AI prodaja / AI dwell',
-                'aktivan': aktivan,
-                'redoslijed': 99,
-                'tekst_dugmeta': 'AI',
-            },
-        )
-        updates = {}
-        if obj.naziv != 'AI prodaja / AI dwell':
-            updates['naziv'] = 'AI prodaja / AI dwell'
-        if obj.aktivan != aktivan:
-            updates['aktivan'] = aktivan
-        if updates:
-            Akcija.objects.filter(pk=obj.pk).update(**updates)
-        return obj
 
     def get_queryset(self, request):
-        self._ensure_ai_prodaja_akcija()
         qs = super().get_queryset(request)
-        return qs.filter(tip__in=Akcija.ACTIVE_TIPS)
+        return qs.filter(tip__in=Akcija.ACTIVE_TIPS).exclude(tip=Akcija.Tip.AI_PRODAJA)
 
     def formfield_for_choice_field(self, db_field, request, **kwargs):
         if db_field.name == 'tip':
@@ -1784,7 +1516,6 @@ class AkcijaAdmin(admin.ModelAdmin):
                 (Akcija.Tip.QTY_DEAL, Akcija.Tip.QTY_DEAL.label),
                 (Akcija.Tip.PONUDA, Akcija.Tip.PONUDA.label),
                 (Akcija.Tip.AKCIJSKA, Akcija.Tip.AKCIJSKA.label),
-                (Akcija.Tip.AI_PRODAJA, Akcija.Tip.AI_PRODAJA.label),
             ]
         return super().formfield_for_choice_field(db_field, request, **kwargs)
 
@@ -1828,34 +1559,12 @@ class AkcijaAdmin(admin.ModelAdmin):
         return ro
 
     def get_form(self, request, obj=None, change=False, **kwargs):
-        """
-        AI polja nisu na modelu Akcija — moraju biti u form.declared_fields
-        (vidi AkcijaAdminForm). Ovdje osiguravamo da factory ne pukne.
-        """
         from django.contrib.admin.utils import flatten_fieldsets
-        from .forms import AI_SETTINGS_FIELD_NAMES, AkcijaAdminForm
-
-        # Ako bi se base_fields izgubili (reload), ponovo zakači
-        for name in AI_SETTINGS_FIELD_NAMES:
-            if name not in AkcijaAdminForm.declared_fields:
-                try:
-                    from .forms import _make_ai_settings_formfield
-                    ff = _make_ai_settings_formfield(name)
-                    AkcijaAdminForm.base_fields[name] = ff
-                    AkcijaAdminForm.declared_fields[name] = ff
-                except Exception:
-                    pass
-
         if 'fields' not in kwargs:
-            # Uključi model + deklarisana form polja (qty + AI)
-            fieldset_fields = list(flatten_fieldsets(self.get_fieldsets(request, obj)))
-            kwargs['fields'] = fieldset_fields
-
+            kwargs['fields'] = list(flatten_fieldsets(self.get_fieldsets(request, obj)))
         return super().get_form(request, obj, change=change, **kwargs)
 
     def has_delete_permission(self, request, obj=None):
-        if obj is not None and obj.tip == Akcija.Tip.AI_PRODAJA:
-            return False
         return super().has_delete_permission(request, obj)
 
     def save_model(self, request, obj, form, change):
@@ -1865,40 +1574,12 @@ class AkcijaAdmin(admin.ModelAdmin):
             obj.flash_trigger = Akcija.FlashTrigger.OFFER_PRODUCT
             obj.artikal = None
             obj.kategorija = None
-        if obj.tip == Akcija.Tip.AKCIJSKA and not obj.pocetak:
+        if obj.tip == Akcija.Tip.AKCIJSKA and (not obj.pocetak):
             from django.utils import timezone
             obj.pocetak = timezone.now()
-        # Samo jedan AI red — ne dupliciraj
-        if obj.tip == Akcija.Tip.AI_PRODAJA:
-            existing = (
-                Akcija.objects
-                .filter(tip=Akcija.Tip.AI_PRODAJA)
-                .exclude(pk=obj.pk)
-                .first()
-            )
-            if existing:
-                from django.contrib import messages as django_messages
-                django_messages.warning(
-                    request,
-                    'AI prodaja / AI dwell već postoji — uredi postojeći red u listi.',
-                )
-                # Preusmjeri snimanje na postojeći red
-                obj.pk = existing.pk
-                obj.id = existing.pk
-            obj.naziv = 'AI prodaja / AI dwell'
-            if hasattr(form, 'save_ai_settings'):
-                site = form.save_ai_settings()
-                if site is not None:
-                    obj.aktivan = bool(
-                        getattr(site, 'product_dwell_popup_aktivan', False)
-                        or getattr(site, 'browse_interest_popup_aktivan', False)
-                    )
         super().save_model(request, obj, form, change)
-        if obj.tip == Akcija.Tip.AI_PRODAJA:
-            return
         if hasattr(form, 'save_qty_deal_tiers'):
             form.save_qty_deal_tiers(obj)
-        # Potvrda izmjene / kreiranja artikala (nije potrebno brisanje i nova akcija)
         if obj.tip in (Akcija.Tip.PONUDA, Akcija.Tip.QTY_DEAL, Akcija.Tip.BUNDLE, Akcija.Tip.AKCIJSKA):
             from django.contrib import messages as django_messages
             if obj.tip == Akcija.Tip.PONUDA:
@@ -1906,62 +1587,33 @@ class AkcijaAdmin(admin.ModelAdmin):
                 g = obj.gratis_artikal.naziv if obj.gratis_artikal_id else '—'
                 pct = f'{obj.popust_postotak}%' if obj.popust_postotak is not None else 'bez %'
                 verb = 'ažurirana' if change else 'kreirana'
-                django_messages.success(
-                    request,
-                    f'+ Ponuda {verb}: trigger „{t}” → ponuda „{g}” ({pct}). '
-                    f'Kad kupac doda trigger u korpu, iskače DA/NE s popustom na ponudu. '
-                    f'Artikle i % možeš mijenjati ovdje bez brisanja akcije.',
-                )
+                django_messages.success(request, f'+ Ponuda {verb}: trigger „{t}” → ponuda „{g}” ({pct}). Kad kupac doda trigger u korpu, iskače DA/NE s popustom na ponudu. Artikle i % možeš mijenjati ovdje bez brisanja akcije.')
                 self._warn_ponuda_stock(request, obj)
             elif obj.tip == Akcija.Tip.QTY_DEAL and obj.artikal_id:
-                django_messages.success(
-                    request,
-                    f'Kupi više sačuvano za „{obj.artikal.naziv}”. '
-                    f'Artikal i % opcije možeš mijenjati bez brisanja akcije.',
-                )
+                django_messages.success(request, f'Kupi više sačuvano za „{obj.artikal.naziv}”. Artikal i % opcije možeš mijenjati bez brisanja akcije.')
 
     def save_related(self, request, form, formsets, change):
         obj = form.instance
-        if obj.tip == Akcija.Tip.AI_PRODAJA:
-            # Dwell inline: parent je već SiteSettings u formsetu
-            for formset in formsets:
-                self.save_formset(request, form, formset, change=change)
-            if hasattr(form, 'save_ai_settings'):
-                form.save_ai_settings()
-            return
         super().save_related(request, form, formsets, change)
         if hasattr(form, 'save_qty_deal_tiers'):
             form.save_qty_deal_tiers(obj)
         if obj.tip == Akcija.Tip.BUNDLE:
             if obj.bundle_unit_count() < 2:
                 from django.contrib import messages as django_messages
-                django_messages.warning(
-                    request,
-                    'Bundle set mora imati ukupno barem 2 komada '
-                    '(npr. jedan artikal ×2, ili dva različita ×1).',
-                )
+                django_messages.warning(request, 'Bundle set mora imati ukupno barem 2 komada (npr. jedan artikal ×2, ili dva različita ×1).')
         elif obj.tip == Akcija.Tip.QTY_DEAL:
             if not obj.qty_deal_tiers():
                 from django.contrib import messages as django_messages
-                django_messages.warning(
-                    request,
-                    '„Kupi više” treba barem jedan popust (npr. 2 kom → 10%).',
-                )
+                django_messages.warning(request, '„Kupi više” treba barem jedan popust (npr. 2 kom → 10%).')
         elif obj.tip == Akcija.Tip.AKCIJSKA:
             n = obj.flash_lines.count()
             if n < 1:
                 from django.contrib import messages as django_messages
-                django_messages.warning(
-                    request,
-                    'Akcijska ponuda treba barem 1 artikal (najviše 4).',
-                )
+                django_messages.warning(request, 'Akcijska ponuda treba barem 1 artikal (najviše 4).')
         elif obj.tip == Akcija.Tip.PONUDA:
             if not obj.artikal_id or not obj.gratis_artikal_id:
                 from django.contrib import messages as django_messages
-                django_messages.warning(
-                    request,
-                    '+ Ponuda treba trigger artikal i ponuda artikal.',
-                )
+                django_messages.warning(request, '+ Ponuda treba trigger artikal i ponuda artikal.')
 
     def _product_offerable(self, product):
         """True ako se artikal može ponuditi u + Ponuda popup-u (na stanju)."""
@@ -1992,21 +1644,13 @@ class AkcijaAdmin(admin.ModelAdmin):
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
         obj = self.get_object(request, object_id)
-        if obj is not None and obj.tip == Akcija.Tip.AI_PRODAJA:
-            extra_context['title'] = 'AI prodaja / AI dwell'
-            extra_context['show_save_and_add_another'] = False
-        elif obj is not None and obj.tip == Akcija.Tip.PONUDA:
-            extra_context['title'] = (
-                '+ Ponuda — uredi trigger / % / ponudu (bez brisanja)'
-            )
-            # Upozorenje na učitavanju change forme
+        if obj is not None and obj.tip == Akcija.Tip.PONUDA:
+            extra_context['title'] = '+ Ponuda — uredi trigger / % / ponudu (bez brisanja)'
             if request.method == 'GET':
                 self._warn_ponuda_stock(request, obj)
         elif obj is not None and obj.tip == Akcija.Tip.QTY_DEAL:
             extra_context['title'] = 'Kupi više — uredi artikal i % (bez brisanja)'
-        return super().change_view(
-            request, object_id, form_url, extra_context=extra_context,
-        )
+        return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
 
 @admin.register(UpsellOffer)
@@ -2134,7 +1778,7 @@ class BannerAdmin(admin.ModelAdmin):
             'description': (
                 'Klik na banner vodi na kategoriju ili link (ako su postavljeni). '
                 'Obavezna je slika (desktop) ili video.\n'
-                '• Desktop hero: 1920×640 px (3:1)\n'
+                '• Desktop hero: 2172×724 px\n'
                 '• Mobilni hero: 1080×1350 px (4:5) — prikaz SAMO na telefonu (≤768px). '
                 'Ako nije uploadano, mobitel koristi desktop sliku.\n'
                 'Video: MP4/WebM/MOV, max 6 s. Tip „Hero Carousel” za karusel.'
@@ -3838,114 +3482,18 @@ class ProductAdmin(admin.ModelAdmin):
         return '—'
 
 
-class ChatMessageInline(admin.TabularInline):
-    model = ChatMessage
-    extra = 0
-    readonly_fields = ('sender_type', 'staff_user', 'body', 'created_at', 'read_by_staff', 'read_by_customer')
-    can_delete = False
 
 
-@admin.register(ChatConversation)
-class ChatConversationAdmin(admin.ModelAdmin):
-    list_display = ('display_name', 'display_email', 'is_registered', 'staff_unread_count', 'status', 'last_message_at')
-    list_filter = ('status', 'staff_unread_count')
-    search_fields = ('guest_name', 'guest_email', 'user__email', 'user__first_name', 'user__last_name')
-    readonly_fields = ('session_key', 'created_at', 'last_message_at', 'staff_unread_count', 'customer_unread_count')
-    inlines = [ChatMessageInline]
 
 
-@admin.register(ChatMessage)
-class ChatMessageAdmin(admin.ModelAdmin):
-    list_display = ('conversation', 'sender_type', 'body_preview', 'created_at', 'read_by_staff', 'read_by_customer')
-    list_filter = ('sender_type', 'read_by_staff', 'read_by_customer')
-    search_fields = ('body', 'conversation__guest_email', 'conversation__guest_name')
-    readonly_fields = ('conversation', 'sender_type', 'staff_user', 'body', 'created_at', 'read_by_staff', 'read_by_customer')
-
-    @admin.display(description='Poruka')
-    def body_preview(self, obj):
-        return obj.body[:80]
 
 
-@admin.register(LiveVisitorOffer)
-class LiveVisitorOfferAdmin(admin.ModelAdmin):
-    list_display = ('product', 'session_key', 'user', 'discount_percent', 'show_popup', 'added_to_cart', 'poslao', 'azurirano')
-    list_filter = ('show_popup', 'added_to_cart', 'azurirano')
-    search_fields = ('session_key', 'user__email', 'product__naziv')
-    readonly_fields = ('kreirano', 'azurirano')
-    ordering = ('-azurirano',)
-    autocomplete_fields = ('product', 'user', 'poslao')
 
 
-@admin.register(OnlineGiftCampaign)
-class OnlineGiftCampaignAdmin(admin.ModelAdmin):
-    list_display = (
-        'naziv', 'aktivan', 'automatic', 'audience', 'prize_type', 'win_chance_percent',
-        'only_tracked_online', 'product', 'discount_percent', 'discount_km', 'azurirano',
-    )
-    list_filter = ('aktivan', 'automatic', 'audience', 'prize_type', 'only_tracked_online')
-    search_fields = ('naziv', 'naslov', 'product__naziv')
-    autocomplete_fields = ('product',)
-    readonly_fields = ('kreirano', 'azurirano')
-    fieldsets = (
-        ('Osnovno', {
-            'fields': (
-                'naziv', 'aktivan', 'automatic', 'audience', 'only_tracked_online',
-                'naslov', 'poruka', 'popup_delay_seconds', 'once_per_visitor',
-            ),
-            'description': (
-                'Nagrada za kupce ONLINE na sajtu. '
-                'Automatski: iskače svima jednom. '
-                'Manuelno: isključi „Automatski” i pusti pored kupca u Uživo analitici.'
-            ),
-        }),
-        ('Nagrada', {
-            'fields': ('prize_type', 'product', 'discount_percent', 'discount_km', 'win_chance_percent'),
-            'description': (
-                '① Gratis artikal (dostava se naplaćuje). '
-                '② % na narudžbu. ③ KM. '
-                '④ Besplatna dostava — jedina nagrada s gratis poštom.'
-            ),
-        }),
-        ('Sistem', {'fields': ('kreirano', 'azurirano')}),
-    )
 
 
-@admin.register(OnlineGiftPush)
-class OnlineGiftPushAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'campaign', 'session_key', 'user', 'staff',
-        'played', 'dismissed', 'kreirano',
-    )
-    list_filter = ('played', 'dismissed', 'kreirano')
-    search_fields = ('session_key', 'user__email')
-    readonly_fields = (
-        'campaign', 'session_key', 'user', 'staff',
-        'played', 'dismissed', 'kreirano', 'azurirano',
-    )
-    ordering = ('-kreirano',)
-
-    def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
-        if obj.aktivan:
-            OnlineGiftCampaign.objects.filter(aktivan=True).exclude(pk=obj.pk).update(aktivan=False)
 
 
-@admin.register(OnlineGiftClaim)
-class OnlineGiftClaimAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'campaign', 'won', 'prize_type', 'user', 'session_key',
-        'reward_claimed', 'reward_consumed', 'order', 'kreirano',
-    )
-    list_filter = ('won', 'prize_type', 'reward_claimed', 'reward_consumed')
-    search_fields = (
-        'session_key', 'user__email', 'campaign__naziv', 'order__broj',
-    )
-    readonly_fields = (
-        'campaign', 'session_key', 'user', 'won', 'prize_type', 'product',
-        'discount_percent', 'discount_km', 'reward_claimed', 'reward_consumed',
-        'order', 'kreirano',
-    )
-    ordering = ('-kreirano',)
 
 
 @admin.register(LiveVisitor)
@@ -3957,12 +3505,6 @@ class LiveVisitorAdmin(admin.ModelAdmin):
     ordering = ('-last_seen',)
 
 
-@admin.register(CityVisitTotal)
-class CityVisitTotalAdmin(admin.ModelAdmin):
-    list_display = ('grad', 'broj_posjeta', 'azurirano')
-    search_fields = ('grad',)
-    ordering = ('-broj_posjeta', 'grad')
-    readonly_fields = ('azurirano',)
 
 
 @admin.register(StaffSiteEvent)

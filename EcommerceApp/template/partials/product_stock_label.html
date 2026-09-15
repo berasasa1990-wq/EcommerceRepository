@@ -14,9 +14,10 @@
         {% endif %}
     </span>
     {% if product.na_stanju %}
-    <span class="product-stock-label__text">Dostupno:</span>
-    <span class="product-stock-label__qty">{{ product.stanje }} kom</span>
+    {% if detail_stock %}<span class="product-stock-label__available">Na stanju —</span>{% endif %}
+    <span class="product-stock-label__text">{% if detail_stock %}Dostupno{% else %}Dostupno:{% endif %}</span>
+    <span class="product-stock-label__qty">{{ product.stanje }} {% if detail_stock %}komada{% else %}kom{% endif %}</span>
     {% else %}
-    Nije na stanju
+    <span class="product-stock-label__available">Nije na stanju</span>
     {% endif %}
 </p>

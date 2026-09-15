@@ -9,7 +9,7 @@
     }
     .product-detail .product-detail-title-row { display: block; margin: 0 0 10px; }
     .product-detail .product-detail-info h1 {
-        display: block; margin: 0 0 5px; font-size: clamp(16px, 4.1vw, 20px);
+        display: block; margin: 0 0 5px; font-size: clamp(15px, 3.6vw, 17px);
         line-height: 1.2; font-weight: 750; letter-spacing: -.4px; color: #030b19;
         overflow: visible; -webkit-line-clamp: unset; line-clamp: unset;
     }
@@ -38,7 +38,7 @@
     .product-detail .pd-options-price { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin: 13px 0 11px; }
     .product-detail .pd-options-price__price { min-width: 0; }
     .product-detail .product-detail-price { margin: 0; }
-    .product-detail .pd-options-price .price-current { font-size: clamp(21px, 5.6vw, 27px); line-height: 1.15; font-weight: 800; letter-spacing: -.8px; color: #030b19; }
+    .product-detail .pd-options-price .price-current { font-size: clamp(16px, 4.4vw, 18px); line-height: 1.15; font-weight: 800; letter-spacing: -.4px; color: #030b19; }
     .product-detail .pd-price-stock { padding: 8px 10px; border: 1px solid #d0f4e0; border-radius: 11px; background: #e4f8ed; }
     .product-detail .pd-price-stock .product-stock-label { display: flex; align-items: center; gap: 4px; margin: 0; font-size: clamp(10px, 3.1vw, 17px); line-height: 1.3; white-space: nowrap; }
     .product-detail .product-stock-label__text { color: #475569; font-weight: 400; }
@@ -90,7 +90,7 @@
 @media (max-width: 767px) {
     .product-detail .pd-options-price .price-sale,
     .product-detail .pd-options-price .card-dwell-now {
-        font-size: 18px !important; line-height: 1.15;
+        font-size: 16px !important; line-height: 1.15;
     }
     .product-detail .pd-options-price .price-original,
     .product-detail .pd-options-price .card-dwell-was { font-size: 14px; }

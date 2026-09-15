@@ -3,7 +3,6 @@ from django.urls import path
 from . import views
 from . import views_b2b
 from . import views_catalog_api
-from . import views_chat
 from . import views_feed
 from . import views_ledger
 from . import views_magacin
@@ -24,47 +23,6 @@ urlpatterns = [
     path('api/sync/narudzba/', views_sync.sync_narudzba_api, name='sync_narudzba_api'),
     path('api/pretraga/', views.search_suggest, name='search_suggest'),
 
-    # Live chat (kupac ↔ podrška)
-    path('api/chat/config/', views_chat.chat_config, name='chat_config'),
-    path('api/chat/', views_chat.chat_state, name='chat_state'),
-    path('api/chat/guest/', views_chat.chat_guest_info, name='chat_guest_info'),
-    path('api/chat/send/', views_chat.chat_send, name='chat_send'),
-    path('api/chat/badge/', views_chat.chat_badge, name='chat_badge'),
-    path('api/chat/poll/', views_chat.chat_poll, name='chat_poll'),
-    path('api/chat/leave/', views_chat.chat_leave, name='chat_leave'),
-    path('api/chat/add-product/', views_chat.chat_add_product, name='chat_add_product'),
-    path('api/chat/staff/ping/', views_chat.chat_staff_ping, name='chat_staff_ping'),
-    path('api/chat/staff/inbox/', views_chat.chat_staff_inbox, name='chat_staff_inbox'),
-    path(
-        'api/chat/staff/products/',
-        views_chat.chat_staff_product_search,
-        name='chat_staff_product_search',
-    ),
-    path(
-        'api/chat/staff/<int:pk>/',
-        views_chat.chat_staff_conversation,
-        name='chat_staff_conversation',
-    ),
-    path(
-        'api/chat/staff/<int:pk>/send/',
-        views_chat.chat_staff_send,
-        name='chat_staff_send',
-    ),
-    path(
-        'api/chat/staff/<int:pk>/send-product/',
-        views_chat.chat_staff_send_product,
-        name='chat_staff_send_product',
-    ),
-    path(
-        'api/chat/staff/<int:pk>/read/',
-        views_chat.chat_staff_read,
-        name='chat_staff_read',
-    ),
-    path(
-        'api/chat/staff/<int:pk>/close/',
-        views_chat.chat_staff_close,
-        name='chat_staff_close',
-    ),
 
     # Catalog Sync API — partner vuče katalog (read-only, API key)
     path('api/v1/ping/', views_catalog_api.catalog_api_ping, name='catalog_api_ping'),
@@ -117,24 +75,12 @@ urlpatterns = [
     path('korpa/podsjetnik/zatvori/', views.cart_recovery_dismiss, name='cart_recovery_dismiss'),
     path('korpa/exit/zatvori/', views.cart_exit_dismiss, name='cart_exit_dismiss'),
     path('korpa/podsjetnik-exit/zatvori/', views.cart_abandon_exit_dismiss, name='cart_abandon_exit_dismiss'),
-    path('ponuda/dodaj/', views.live_visitor_offer_add, name='live_visitor_offer_add'),
-    path('ponuda/aktiviraj/', views.live_visitor_offer_activate, name='live_visitor_offer_activate'),
-    path('ponuda/zatvori/', views.live_visitor_offer_dismiss, name='live_visitor_offer_dismiss'),
-    path('ponuda/status/', views.live_visitor_offer_poll, name='live_visitor_offer_poll'),
-    path('preporuka/dodaj/', views.browse_interest_offer_add, name='browse_interest_offer_add'),
-    path('preporuka/zatvori/', views.browse_interest_offer_dismiss, name='browse_interest_offer_dismiss'),
-    path('ai-dwell/aktiviraj/', views.ai_dwell_activate, name='ai_dwell_activate'),
-    path('savjetnik/', views.fishing_advisor_step, name='fishing_advisor'),
-    path('savjetnik/kupi-set/', views.fishing_advisor_buy_set, name='fishing_advisor_buy_set'),
     path('kreiraj-set/', views.set_builder_page, name='set_builder'),
     path('kreiraj-set/ulaz/', views.set_builder_unlock, name='set_builder_unlock'),
     path('kreiraj-set/preporuka/', views.set_builder_recommend, name='set_builder_recommend'),
     path('kreiraj-set/zamjena/', views.set_builder_alternatives, name='set_builder_alternatives'),
     path('kreiraj-set/korpa/', views.set_builder_add_cart, name='set_builder_add_cart'),
     path('drustveni-dokaz/', views.social_proof_poll, name='social_proof_poll'),
-    path('online-nagrada/otkrij/', views.online_gift_reveal, name='online_gift_reveal'),
-    path('online-nagrada/zatvori/', views.online_gift_dismiss, name='online_gift_dismiss'),
-    path('online-nagrada/status/', views.online_gift_poll, name='online_gift_poll'),
     path('uzivo/prisutan/', views.live_visitor_heartbeat, name='live_visitor_heartbeat'),
     path('uzivo/odlazak/', views.live_visitor_leave, name='live_visitor_leave'),
     path('uzivo/javno/', views.public_online_visitors, name='public_online_visitors'),
@@ -170,7 +116,6 @@ urlpatterns = [
 
     path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
     path('nalog/b2b-live/', views.staff_b2b_live, name='staff_b2b_live'),
-    path('nalog/pregled-sajta/', views.staff_site_overview, name='staff_site_overview'),
     path('nalog/edit-mode/', views.staff_toggle_edit_mode, name='staff_toggle_edit_mode'),
     path('nalog/site-edit/', views.staff_site_edit_save, name='staff_site_edit_save'),
     path('nalog/artikli/bulk-izmjena/', views.staff_product_bulk_edit, name='staff_product_bulk_edit'),
@@ -401,25 +346,10 @@ urlpatterns = [
     path('nalog/uzivo-analitika/', views.staff_live_analytics, name='staff_live_analytics'),
     path('nalog/uzivo-analitika/podaci/', views.staff_live_analytics_data, name='staff_live_analytics_data'),
     path('nalog/uzivo-obavijesti/', views.staff_site_events_poll, name='staff_site_events_poll'),
-    path('nalog/uzivo-analitika/ponuda/', views.staff_send_live_offer, name='staff_send_live_offer'),
-    path(
-        'nalog/uzivo-analitika/registracija/',
-        views.staff_send_registration_invite,
-        name='staff_send_registration_invite',
-    ),
-    path(
-        'nalog/uzivo-analitika/nagrada/',
-        views.staff_push_online_gift,
-        name='staff_push_online_gift',
-    ),
-    path(
-        'nalog/uzivo-analitika/nagrada-auto/',
-        views.staff_set_online_gift_automatic,
-        name='staff_set_online_gift_automatic',
-    ),
     path('nalog/pretraga-artikala/', views.staff_product_search, name='staff_product_search'),
 
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),
+    path('nalog/loyalty/sync/', views.staff_loyalty_sync, name='staff_loyalty_sync'),
     path('nalog/loyalty/clan/<str:kod>/', views.staff_loyalty_member, name='staff_loyalty_member'),
     path(
         'nalog/loyalty/kartica/<int:card_id>/slika.png',
@@ -447,7 +377,6 @@ urlpatterns = [
     path('nalog/poklon-vaucer/stampa/', views.staff_gift_voucher_print, name='staff_gift_voucher_print'),
     path('nalog/uvoz/', views.staff_uvoz, name='staff_uvoz'),
     path('nalog/uvoz/<int:pk>/', views.staff_uvoz_detail, name='staff_uvoz_detail'),
-    path('nalog/olx-poruke/', views.staff_olx_messages, name='staff_olx_messages'),
     path('nalog/pretraga-kategorija/', views.staff_category_search, name='staff_category_search'),
     path('nalog/pretraga-brendova/', views.staff_brand_search, name='staff_brand_search'),
     path('nalog/pretraga-tagova/', views.staff_tag_search, name='staff_tag_search'),

@@ -1304,14 +1304,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function showCartToast(message) {
         const text = String(message || '').trim();
         if (!text) return;
-        const isError = /nije uspjelo|rasprodan|odaberite|nije dostup|greška|na stanju|smanjena na dostupno/i.test(text);
-        if (!isError) return;
         let toast = document.querySelector('.cart-toast');
         if (!toast) {
             toast = document.createElement('p');
             toast.className = 'cart-toast';
             document.body.appendChild(toast);
         }
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
         toast.textContent = text;
         toast.classList.add('cart-toast--visible');
         clearTimeout(showCartToast.timer);
@@ -2399,6 +2399,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const cartFeedbackTimers = new WeakMap();
+    function animateCartAdded(slug) {
+        document.querySelectorAll('[data-catalog-add]').forEach(button => {
+            if (button.dataset.productSlug !== slug) return;
+            clearTimeout(cartFeedbackTimers.get(button));
+            button.classList.remove('cart-add-confirmed');
+            void button.offsetWidth;
+            button.classList.add('cart-add-confirmed');
+            cartFeedbackTimers.set(button, setTimeout(() => {
+                button.classList.remove('cart-add-confirmed');
+                cartFeedbackTimers.delete(button);
+            }, 1600));
+        });
+        const dockCart = document.querySelector('.mobile-home-dock > a:last-child');
+        if (dockCart) {
+            dockCart.classList.remove('cart-add-pulse');
+            void dockCart.offsetWidth;
+            dockCart.classList.add('cart-add-pulse');
+            clearTimeout(cartFeedbackTimers.get(dockCart));
+            cartFeedbackTimers.set(dockCart, setTimeout(() => dockCart.classList.remove('cart-add-pulse'), 650));
+        }
+    }
+
     async function catalogAddProductToCart(slug, variationId = '', extraFields = {}) {
         const body = new URLSearchParams({
             quantity: '1',
@@ -2432,6 +2455,7 @@ document.addEventListener('DOMContentLoaded', () => {
             openPonudaOfferModal(data.gratis_offer, slug, variationId);
             return data;
         }
+        animateCartAdded(slug);
         updateCartBadge(data.cart_count || 0);
         showCartToast(data.message || 'Artikal je dodan u korpu.');
         if (data.meta_add_to_cart && typeof window.trackMetaAddToCart === 'function') {
@@ -2442,6 +2466,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return data;
     }
+
+    window.catalogAddProductToCart = catalogAddProductToCart;
 
     const catalogVariationModal = document.getElementById('catalogVariationModal');
     const catalogVariationModalProduct = document.getElementById('catalogVariationModalProduct');
@@ -2551,10 +2577,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Ne diraj cijenu dok je AI dwell sniženje na kartici
-                if (card.querySelector('[data-dwell-card-deal], [data-dwell-card-flash].is-active')) {
-                    return;
-                }
 
                 swatches.forEach(s => s.classList.remove('active'));
                 swatch.classList.add('active');
@@ -2622,51 +2644,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     })();
 
-    /* AI dwell flash na karticama (početna / katalog) — odbrojavanje, pa regularna cijena */
-    (function initCardDwellFlashTimers() {
-        const blocks = document.querySelectorAll('[data-dwell-card-flash]');
-        if (!blocks.length) return;
 
-        function fmt(sec) {
-            sec = Math.max(0, Math.floor(sec));
-            const m = Math.floor(sec / 60);
-            const s = sec % 60;
-            return m + ':' + String(s).padStart(2, '0');
-        }
-
-        function expireBlock(block) {
-            block.classList.remove('is-active');
-            block.hidden = true;
-            const parent = block.parentElement || block.closest('.product-card, .product-info, .product-card__price-block');
-            const regular = parent
-                ? parent.querySelector('[data-dwell-regular-price]')
-                : block.parentElement && block.parentElement.querySelector('[data-dwell-regular-price]');
-            if (regular) {
-                regular.hidden = false;
-                regular.removeAttribute('hidden');
-            }
-        }
-
-        blocks.forEach((block) => {
-            const expiresTs = parseFloat(block.getAttribute('data-dwell-expires') || '0');
-            const countdownEl = block.querySelector('[data-dwell-countdown]');
-            if (!expiresTs || !countdownEl) return;
-
-            const tick = () => {
-                const remaining = Math.floor(expiresTs - (Date.now() / 1000));
-                if (remaining <= 0) {
-                    expireBlock(block);
-                    return false;
-                }
-                countdownEl.textContent = fmt(remaining);
-                return true;
-            };
-
-            if (!tick()) return;
-            const timer = setInterval(() => {
-                if (!tick()) clearInterval(timer);
-            }, 1000);
-        });
-    })();
 
 });

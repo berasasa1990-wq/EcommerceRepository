@@ -1,7 +1,35 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block body_class %}{% if not filters_active %}home-mobile-reference{% else %}catalog-header-reference{% if filter_params.q and not filter_params.noviteti and not filter_params.akcija and not filter_params.izdvojeno %} compact-search-results{% endif %}{% endif %}{% endblock %}
 
 {% block extra_css %}
 <style>
+@media (min-width: 1025px) {
+    body.catalog-header-reference.compact-search-results .product-catalog .product-grid--catalog {
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+        gap: 12px;
+    }
+    body.catalog-header-reference.compact-search-results .product-catalog .catalog-products .product-card--home-reference .product-card__title {
+        display: -webkit-box;
+        font-size: 12px !important;
+        font-weight: 600;
+        line-height: 1.2 !important;
+        min-height: 3.6em !important;
+        max-height: 3.6em !important;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3 !important;
+        line-clamp: 3 !important;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+}
+@media (max-width: 1024px) { .home-desktop-banner-only { display: none !important; } }
+@media (min-width: 1025px) { .home-banner-mobile-replaced { display: none !important; } }
+
+@media (max-width: 1024px) { .home-products--novo .home-product-carousel__slide:nth-child(n+5) { display: none; } }
+@media (max-width: 1024px) { .home-products--izdvojeno .home-product-carousel__slide--desktop-extra { display: none !important; } }
+@media (max-width: 1024px) { .home-shop-brands__grid > a:nth-child(n+5) { display: none; } }
 .featured-grid.featured-grid--promos {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -64,10 +92,6 @@
 .home-products--akcija,
 .home-brand-strip-section--mockup {
     border-top: 2px solid var(--ozr-orange, #FF5A00) !important;
-    border-bottom: 2px solid var(--ozr-orange, #FF5A00);
-}
-.home-image-trio {
-    border-top: 2px solid var(--ozr-orange, #FF5A00);
     border-bottom: 2px solid var(--ozr-orange, #FF5A00);
 }
 </style>
@@ -158,6 +182,9 @@
 </section>
 {% endif %}
 
+{% include 'partials/home_mobile_navigation.html' %}
+{% include 'partials/home_mobile_benefits.html' %}
+
 {% if home_trust_items %}
 {% include 'partials/home_trust_bar.html' %}
 {% endif %}
@@ -237,7 +264,7 @@
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
                 {% include 'partials/home_section_header.html' with title=site_settings.naslov_novo subtitle=site_settings.podnaslov_novo edit_title='naslov_novo' edit_title_placeholder='Noviteti' edit_subtitle='podnaslov_novo' header_mod='novo' see_all_url='/?noviteti=1' %}
-                {% include 'partials/home_product_carousel.html' with products=latest_products eager_first_image=eager_first_novo_image home_section_badge='novo' %}
+                {% include 'partials/home_product_carousel.html' with products=latest_products|slice:':6' eager_first_image=eager_first_novo_image home_section_badge='novo' %}
             </div>
         </div>
     </div>
@@ -249,13 +276,15 @@
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
-                {% include 'partials/home_section_header.html' with title=site_settings.naslov_izdvojeno subtitle=site_settings.podnaslov_izdvojeno edit_title='naslov_izdvojeno' edit_title_placeholder='HIT ponude' edit_subtitle='podnaslov_izdvojeno' header_mod='izdvojeno' %}
-                {% include 'partials/home_product_carousel.html' with products=featured_products home_section_badge='hit' %}
+                {% include 'partials/home_section_header.html' with title='Izdvojeno za vas' header_mod='izdvojeno' see_all_url='/?izdvojeno=1' %}
+                {% include 'partials/home_product_carousel.html' with products=featured_products home_section_badge='hit' desktop_extra_ids=featured_desktop_extra_ids %}
             </div>
         </div>
     </div>
 </section>
 {% endif %}
+
+{% include 'partials/home_loyalty_banner.html' %}
 
 {% if sale_products %}
 <section class="category-page category-page--shop home-products home-products--akcija">
@@ -270,27 +299,27 @@
 </section>
 {% endif %}
 
-{% if grid_banners %}
-<section class="home-image-trio" aria-label="Izdvojene slike">
-    {% for card in grid_banners %}
-    {% if card.url %}
-    <a href="{{ card.url }}" class="home-image-trio__item">
-    {% else %}
-    <article class="home-image-trio__item">
-    {% endif %}
-        {% if card.has_video %}
-        <video class="home-image-trio__media" src="{{ card.video }}" autoplay muted loop playsinline preload="metadata"{% if card.image %} poster="{{ card.image }}"{% endif %} width="800" height="500" aria-label="{{ card.title|default:'Banner' }}"></video>
-        {% else %}
-        <img src="{{ card.image }}"{% if card.image_srcset %} srcset="{{ card.image_srcset }}"{% endif %} alt="{{ card.title|default:'Banner' }}" class="home-image-trio__media" width="800" height="500" sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" decoding="async">
-        {% endif %}
-    {% if card.url %}
-    </a>
-    {% else %}
-    </article>
-    {% endif %}
-    {% endfor %}
+{% if showcase_brands %}
+<section class="home-shop-brands" aria-labelledby="homeShopBrandsTitle">
+    <div class="home-shop-brands__heading">
+        <h2 id="homeShopBrandsTitle">Kupujte po brendu</h2>
+        <a href="#brendovi">Pogledaj sve <span aria-hidden="true">›</span></a>
+    </div>
+    <div class="home-shop-brands__grid">
+        {% for brand in showcase_brands %}
+        <a href="{% url 'home' %}?brend={{ brand.slug }}#product-showcase">
+            <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" width="160" height="70" loading="lazy" decoding="async">
+        </a>
+        {% endfor %}
+    </div>
 </section>
 {% endif %}
+
+{% include 'partials/home_sale_banner.html' with mobile_image=site_settings.akcija_banner_slika desktop_image=site_settings.akcija_banner_desktop banner_href=site_settings.akcija_banner_href %}
+{% include 'partials/home_sale_banner.html' with mobile_image=site_settings.akcija_banner_slika_2 desktop_image=site_settings.akcija_banner_desktop_2 banner_href=site_settings.akcija_banner_href_2 %}
+{% include 'partials/home_sale_banner.html' with mobile_image=site_settings.akcija_banner_slika_3 desktop_image=site_settings.akcija_banner_desktop_3 banner_href=site_settings.akcija_banner_href_3 %}
+{% include 'partials/home_sale_banner.html' with mobile_image=site_settings.akcija_banner_slika_4 desktop_image=site_settings.akcija_banner_desktop_4 banner_href=site_settings.akcija_banner_href_4 %}
+
 
 {% if home_category_showcases %}
 {% include 'partials/home_category_showcase.html' with sections=home_category_showcases %}

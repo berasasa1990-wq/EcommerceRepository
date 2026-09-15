@@ -27,7 +27,7 @@ class RetroAdminThemeTests(TestCase):
         self.user = get_user_model().objects.create_superuser('theme-admin', 'theme@example.com', 'test')
         self.product = Product.objects.create(naziv='Tema test', cijena='10')
         self.site = SiteSettings.load()
-        self.ai = Akcija.objects.create(naziv='AI prodaja / AI dwell', tip=Akcija.Tip.AI_PRODAJA)
+        self.action = Akcija.objects.create(naziv='Ponuda', tip=Akcija.Tip.PONUDA)
 
     def assert_theme(self, url):
         response = self.client.get(url)
@@ -53,12 +53,12 @@ class RetroAdminThemeTests(TestCase):
             with self.subTest(url=url):
                 self.assert_theme(url)
 
-    def test_settings_and_ai_keep_existing_controls_and_load_theme_last(self):
+    def test_settings_and_promotions_keep_controls_and_load_theme_last(self):
         self.client.force_login(self.user)
         self.assert_theme(reverse('admin:EcommerceApp_sitesettings_change', args=[self.site.pk]))
-        response = self.assert_theme(reverse('admin:EcommerceApp_akcija_change', args=[self.ai.pk]))
-        self.assertContains(response, 'ai-settings.v20260909.js')
-        self.assertContains(response, 'id_browse_interest_mode')
+        response = self.assert_theme(reverse('admin:EcommerceApp_akcija_change', args=[self.action.pk]))
+        self.assertNotContains(response, 'ai-settings.v20260909.js')
+        self.assertNotContains(response, 'id_browse_interest_mode')
         self.assertContains(response, 'name="_save"')
 
     def test_custom_quick_entry_and_import_share_theme(self):

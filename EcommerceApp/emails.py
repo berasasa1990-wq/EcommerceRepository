@@ -581,3 +581,32 @@ def send_order_emails(order):
             order.broj,
         )
         raise
+
+def send_order_complaint(*, user, order, item, problem):
+    """Pošalji reklamaciju prodavnici, uz odgovor direktno kupcu."""
+    _ensure_email_configured()
+    body = '\n'.join([
+        f'Reklamacija za narudžbu #{order.broj}',
+        f'Datum narudžbe: {timezone.localtime(order.kreirana):%d.%m.%Y. %H:%M}',
+        '',
+        f'Kupac: {user.get_full_name() or order.ime_prezime}',
+        f'Email naloga: {user.email}',
+        f'Telefon na narudžbi: {order.telefon}',
+        f'Adresa: {order.adresa}, {order.grad} {order.postanski_broj}',
+        '',
+        f'Artikal: {item.puni_naziv}',
+        f'Šifra: {item.sifra or "—"}',
+        f'Stavka narudžbe: {item.pk}',
+        f'Naručena količina: {item.kolicina}',
+        f'Cijena po komadu: {item.cijena} KM',
+        '',
+        'Opis problema:',
+        problem,
+    ])
+    message = EmailMultiAlternatives(
+        subject=f'Reklamacija — narudžba #{order.broj}', body=body,
+        from_email=_from_email(), to=[settings.ORDER_NOTIFICATION_EMAIL],
+        reply_to=[user.email],
+    )
+    if message.send(fail_silently=False) != 1:
+        raise RuntimeError('Email reklamacije nije poslan.')

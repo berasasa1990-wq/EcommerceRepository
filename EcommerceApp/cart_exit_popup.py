@@ -81,16 +81,6 @@ def resolve_exit_product(request):
                 return product, 'almost_cart'
 
         # 2) Sell preporuka
-        try:
-            from .browse_interest_offer import build_sell_recommendations
-
-            recs = build_sell_recommendations(visitor, limit=1)
-            if recs:
-                product = Product.objects.filter(pk=recs[0]['product_id'], aktivan=True).first()
-                if _product_usable(product):
-                    return product, 'browse'
-        except Exception:
-            pass
 
         # 3) Najgledaniji artikal u sesiji
         products = getattr(visitor, 'pregledani_proizvodi', None) or []

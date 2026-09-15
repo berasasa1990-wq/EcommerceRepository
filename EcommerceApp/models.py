@@ -59,6 +59,81 @@ class SiteSettings(models.Model):
         verbose_name='Logo sajta',
         help_text='Prikazuje se u headeru (crna pozadina). Originalna slika se ne ofarbava — samo max ~640×128. Preporuka: PNG, transparentna pozadina, bijela/zelena grafika.',
     )
+    loyalty_banner_slika = models.ImageField(
+        upload_to='site/loyalty/', blank=True,
+        verbose_name='Loyalty banner — mobilna slika',
+        help_text='1080 × 1080 px (1:1), JPG, PNG ili WebP. Zamjenjuje cijeli Loyalty banner na mobilnoj početnoj. Bez slike koristi se postojeći dizajn.',
+    )
+    akcija_banner_slika = models.ImageField(
+        upload_to='site/akcija/', blank=True,
+        verbose_name='Banner ispod akcijske ponude — mobilna slika',
+        help_text='1080 × 1080 px (1:1), JPG, PNG ili WebP. Prikazuje se ispod akcijske ponude na mobilnoj početnoj. Bez slike banner se ne prikazuje.',
+    )
+    akcija_banner_slika_2 = models.ImageField(
+        upload_to='site/akcija/', blank=True,
+        verbose_name='Banner 2 ispod akcijske ponude — mobilna slika',
+        help_text='1080 × 1080 px (1:1), JPG, PNG ili WebP. Bez slike banner se ne prikazuje.',
+    )
+    akcija_banner_slika_3 = models.ImageField(
+        upload_to='site/akcija/', blank=True,
+        verbose_name='Banner 3 ispod akcijske ponude — mobilna slika',
+        help_text='1080 × 1080 px (1:1), JPG, PNG ili WebP. Bez slike banner se ne prikazuje.',
+    )
+    akcija_banner_slika_4 = models.ImageField(
+        upload_to='site/akcija/', blank=True,
+        verbose_name='Banner 4 ispod akcijske ponude — mobilna slika',
+        help_text='1080 × 1080 px (1:1), JPG, PNG ili WebP. Bez slike banner se ne prikazuje.',
+    )
+    loyalty_banner_desktop = models.ImageField(
+        upload_to='site/desktop/', blank=True,
+        verbose_name='Banner ispod Izdvojeno za vas — desktop slika',
+        help_text='1920 × 500 px, JPG, PNG ili WebP. Samo desktop (preko 1024 px). Bez slike ostaje postojeći banner.',
+    )
+    akcija_banner_desktop = models.ImageField(
+        upload_to='site/desktop/', blank=True,
+        verbose_name='Banner 1 ispod brendova — desktop slika',
+        help_text='1920 × 500 px, JPG, PNG ili WebP. Samo desktop (preko 1024 px). Bez slike ostaje postojeći banner.',
+    )
+    akcija_banner_desktop_2 = models.ImageField(
+        upload_to='site/desktop/', blank=True,
+        verbose_name='Banner 2 ispod brendova — desktop slika',
+        help_text='1920 × 500 px, JPG, PNG ili WebP. Samo desktop (preko 1024 px). Bez slike ostaje postojeći banner.',
+    )
+    akcija_banner_desktop_3 = models.ImageField(
+        upload_to='site/desktop/', blank=True,
+        verbose_name='Banner 3 ispod brendova — desktop slika',
+        help_text='1920 × 500 px, JPG, PNG ili WebP. Samo desktop (preko 1024 px). Bez slike ostaje postojeći banner.',
+    )
+    akcija_banner_desktop_4 = models.ImageField(
+        upload_to='site/desktop/', blank=True,
+        verbose_name='Banner 4 ispod brendova — desktop slika',
+        help_text='1920 × 500 px, JPG, PNG ili WebP. Samo desktop (preko 1024 px). Bez slike ostaje postojeći banner.',
+    )
+    loyalty_banner_link = models.CharField(
+        max_length=500, blank=True, validators=[validate_banner_link],
+        verbose_name='Loyalty banner — link',
+        help_text='Npr. /nalog/ ili https://… Prazno = registracija / nalog.',
+    )
+    akcija_banner_link = models.CharField(
+        max_length=500, blank=True, validators=[validate_banner_link],
+        verbose_name='Banner 1 — link',
+        help_text='Npr. /?akcija=1 ili https://… Prazno = bez linka.',
+    )
+    akcija_banner_link_2 = models.CharField(
+        max_length=500, blank=True, validators=[validate_banner_link],
+        verbose_name='Banner 2 — link',
+        help_text='Npr. /?akcija=1 ili https://… Prazno = bez linka.',
+    )
+    akcija_banner_link_3 = models.CharField(
+        max_length=500, blank=True, validators=[validate_banner_link],
+        verbose_name='Banner 3 — link',
+        help_text='Npr. /?akcija=1 ili https://… Prazno = bez linka.',
+    )
+    akcija_banner_link_4 = models.CharField(
+        max_length=500, blank=True, validators=[validate_banner_link],
+        verbose_name='Banner 4 — link',
+        help_text='Npr. /?akcija=1 ili https://… Prazno = bez linka.',
+    )
     logo_glavni_sajt = models.ImageField(
         upload_to='site/', blank=True, null=True,
         verbose_name='Logo glavnog sajta',
@@ -732,7 +807,6 @@ class SiteSettings(models.Model):
         from .utils.images import (
             apply_image_processing,
             process_brand_logo,
-            process_chat_avatar,
             process_product_detail_badge,
             process_site_favicon,
             process_site_logo,
@@ -746,8 +820,6 @@ class SiteSettings(models.Model):
             apply_image_processing(self, 'favicon', post_process=process_site_favicon)
         if self.badge_product_detail:
             apply_image_processing(self, 'badge_product_detail', post_process=process_product_detail_badge)
-        if self.chat_avatar_slika:
-            apply_image_processing(self, 'chat_avatar_slika', post_process=process_chat_avatar)
         super().save(*args, **kwargs)
         try:
             from django.core.cache import cache
@@ -848,6 +920,35 @@ class SiteSettings(models.Model):
             'kontakt_prikazi_viber': bool(self.kontakt_prikazi_viber),
             'kontakt_prikazi_messenger': bool(self.kontakt_prikazi_messenger),
         }
+
+    @staticmethod
+    def normalize_banner_link(value):
+        raw = (value or '').strip()
+        if not raw:
+            return ''
+        if raw.startswith(('http://', 'https://', '/')):
+            return raw
+        return f'/{raw.strip("/")}/'
+
+    @property
+    def loyalty_banner_href(self):
+        return self.normalize_banner_link(self.loyalty_banner_link)
+
+    @property
+    def akcija_banner_href(self):
+        return self.normalize_banner_link(self.akcija_banner_link)
+
+    @property
+    def akcija_banner_href_2(self):
+        return self.normalize_banner_link(self.akcija_banner_link_2)
+
+    @property
+    def akcija_banner_href_3(self):
+        return self.normalize_banner_link(self.akcija_banner_link_3)
+
+    @property
+    def akcija_banner_href_4(self):
+        return self.normalize_banner_link(self.akcija_banner_link_4)
 
     def get_dwell_ui(self):
         """
@@ -1087,6 +1188,11 @@ class ProductDwellItem(models.Model):
 
 class Category(models.Model):
     naziv = models.CharField(max_length=100)
+    ikonica_pocetna = models.ImageField(
+        upload_to='categories/icons/', blank=True,
+        verbose_name='Ikonica na početnoj',
+        help_text='Preporuka: 256 × 256 px, PNG ili WebP s prozirnom pozadinom. Bez slike se koristi standardna ikonica.',
+    )
     slug = models.SlugField(unique=True, blank=True)
     roditelj = models.ForeignKey(
         'self', on_delete=models.CASCADE, null=True, blank=True,
@@ -1349,7 +1455,7 @@ class Banner(models.Model):
         blank=True,
         null=True,
         verbose_name='Slika (desktop)',
-        help_text='Hero: 1920×640 px (3:1). Ostali tipovi po potrebi.',
+        help_text='Hero: 2172×724 px. Ostali tipovi po potrebi.',
     )
     slika_mobilna = models.ImageField(
         upload_to='banners/mobile/',
@@ -1928,7 +2034,7 @@ class Akcija(models.Model):
         GRATIS = 'gratis', '+ Gratis (zastarjelo)'
 
     # Tipovi u listi Akcije (admin)
-    ACTIVE_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL, Tip.PONUDA, Tip.AI_PRODAJA, Tip.AKCIJSKA)
+    ACTIVE_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL, Tip.PONUDA, Tip.AKCIJSKA)
     # Site-wide popup queue. Bundle više nije popup — prikaz ispod artikla.
     # Kupi više (qty_deal) iskače tek kad kupac doda artikal u korpu.
     POPUP_TIPS = ()

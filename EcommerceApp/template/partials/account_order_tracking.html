@@ -1,0 +1,22 @@
+<section class="account-tracking" aria-label="Praćenje narudžbe">
+    <h2>Praćenje narudžbe #{{ order.broj }}</h2>
+    <p><strong>{{ order.get_status_display }}</strong></p>
+    {% if order.status == 'otkazana' %}
+    <p>Narudžba je otkazana.</p>
+    {% elif order.status == 'poslana' %}
+    <p>Narudžba je označena kao poslana. Za informacije o dostavi kontaktirajte nas uz broj narudžbe.</p>
+    {% elif order.status == 'zavrsena' %}
+    <p>Obrada narudžbe je završena.</p>
+    {% elif order.status == 'potvrdjena' %}
+    <p>Narudžba je potvrđena i priprema se za slanje.</p>
+    {% elif order.status == 'rezervacija' %}
+    <p>Narudžba je u rezervaciji i čeka dalju obradu.</p>
+    {% else %}
+    <p>Primili smo narudžbu. Čeka potvrdu i obradu.</p>
+    {% endif %}
+    <ul>
+        <li>Primljena: {{ order.kreirana|date:"d.m.Y. H:i" }}</li>
+        {% if order.zapakovana_at %}<li>Zapakovana: {{ order.zapakovana_at|date:"d.m.Y. H:i" }}</li>{% endif %}
+    </ul>
+    <a href="{% url 'account_order_detail' broj=order.broj %}" class="acc-table-link">Detalji i status narudžbe →</a>
+</section>

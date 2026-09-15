@@ -1,0 +1,8 @@
+<details open>
+    <summary>Narudžbe ({{ orders|length }})</summary>
+    <ul>{% for order in orders %}<li>#{{ order.broj }} · {{ order.kreirana|date:'d.m.Y.' }} · {{ order.ukupno|floatformat:2 }} KM · {{ order.get_status_display }}</li>{% empty %}<li>Nema narudžbi.</li>{% endfor %}</ul>
+</details>
+<details open>
+    <summary>Evidentirane kupovine ({{ purchases|length }})</summary>
+    <ul>{% for purchase in purchases %}<li>{{ purchase.kreirano|date:'d.m.Y.' }} · {{ purchase.iznos|floatformat:2 }} KM · {{ purchase.get_placanje_display }}</li>{% empty %}<li>Nema evidentiranih kupovina.</li>{% endfor %}</ul>
+</details>
