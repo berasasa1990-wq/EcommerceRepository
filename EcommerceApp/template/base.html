@@ -158,16 +158,16 @@
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260915-performance" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260915-performance">
-    <link rel="stylesheet" href="{% static 'css/header-base.min.css' %}?v=20260915-performance">
+    <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260915-render-header-v2" as="style">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260915-render-header-v2">
+    <link rel="stylesheet" href="{% static 'css/header-base.min.css' %}?v=20260915-render-header-v2">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
     <style id="site-orange">:root{--ozr-orange:#FF5A00;--ozr-orange-hover:#E04F00;--btn-cart:#FF5A00;--btn-cart-hover:#E04F00;--btn-banner:#FF5A00;--btn-banner-hover:#E04F00;}.header{border-bottom:2px solid var(--ozr-orange,#FF5A00);}.home-products--akcija,.home-brand-strip-section--mockup{border-top:2px solid var(--ozr-orange,#FF5A00)!important;}</style>
-    <link rel="stylesheet" href="{% static 'css/navigation.min.css' %}?v=20260915-performance">
+    <link rel="stylesheet" href="{% static 'css/navigation.min.css' %}?v=20260915-render-header-v2">
     {% block extra_css %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/storefront-extras.min.css' %}?v=20260915-performance">
+    <link rel="stylesheet" href="{% static 'css/storefront-extras.min.css' %}?v=20260915-render-header-v2">
     {% if user.is_superuser %}
     <style>
         body #header .logo-brand:has(.logo-admin-panel) {
@@ -206,7 +206,7 @@
     </style>
     {% endif %}
     <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20260915-category-no-search">
-    <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20260915-menu-no-search">
+    <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20260915-dock-cart-count">
 
     {% if meta_pixel_id %}
     <!-- Meta Pixel — učitava se nakon prvog rendera da ne koči LCP -->
@@ -293,6 +293,28 @@
     }
     </script>
     {% endif %}
+    {# Critical header layout travels with HTML, even when a CDN serves older CSS. #}
+    <style id="site-chrome-layout">
+        body .site-chrome-sticky {
+            position: fixed !important;
+            inset: 0 0 auto !important;
+            width: 100%;
+            z-index: 1002;
+            background: #fff;
+        }
+        body .site-chrome-sticky .promo-bar,
+        body .site-chrome-sticky .header {
+            position: relative !important;
+            inset: auto !important;
+        }
+        body .site-chrome-spacer {
+            display: block;
+            height: var(--site-chrome-height, var(--site-chrome-top));
+            flex: 0 0 auto;
+        }
+        body { padding-top: 0 !important; }
+        html { scroll-padding-top: var(--site-chrome-top); }
+    </style>
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
@@ -703,7 +725,7 @@
     <script type="application/ld+json">{{ website_json_ld|safe }}</script>
     {% endif %}
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/main.min.js' %}?v=20260915-performance" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20260915-render-header-v2" defer></script>
     <script src="{% static 'js/desktop-reference.js' %}?v=20260914-dropdowns" defer></script>
     <script src="{% static 'js/stock-notify.js' %}?v=20260914-follow-email" defer></script>
     {% if site_settings.javno_online_posjetioci %}

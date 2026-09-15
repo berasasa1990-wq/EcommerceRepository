@@ -6,11 +6,11 @@
     <button type="button" data-mobile-home-menu><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span>Kategorije</span></button>
     <button type="button" data-mobile-home-search><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 6 6"/></svg><span>Pretraga</span></button>
     <button type="button" data-mobile-favorites><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg><span>Omiljeno</span></button>
-    <a href="{% url 'cart' %}"{% if request.resolver_match.url_name == "cart" %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="15" rx="2"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg><span>Korpa</span></a>
+    <a class="mobile-dock-cart" href="{% url 'cart' %}"{% if request.resolver_match.url_name == "cart" %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="15" rx="2"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg><span>Korpa</span><span class="mobile-dock-cart-count" data-mobile-cart-count aria-live="polite" aria-atomic="true"{% if not cart_count %} hidden{% endif %}>{{ cart_count|default:0 }}</span></a>
 </nav>
 <dialog class="mobile-favorites" id="mobileFavorites">
     <form method="dialog"><strong>Omiljeno</strong><button aria-label="Zatvori">×</button></form>
     <p>Proizvodi sačuvani u ovom pregledniku.</p>
     <div data-favorites-list></div>
 </dialog>
-<script src="{% static 'js/mobile-dock.js' %}?v=20260915-menu-no-search" defer></script>
+<script src="{% static 'js/mobile-dock.js' %}?v=20260915-dock-cart-count" defer></script>

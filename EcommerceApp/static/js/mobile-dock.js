@@ -94,3 +94,21 @@
         }
     });
 })();
+
+// Mirror the header count for all cart flows, including product detail and bundles.
+(() => {
+    const headerCart = document.querySelector('.cart-btn');
+    const badge = document.querySelector('[data-mobile-cart-count]');
+    if (!headerCart || !badge) return;
+    function syncCount() {
+        const count = Math.max(0, parseInt(headerCart.dataset.cartCount || '0', 10) || 0);
+        badge.textContent = String(count);
+        badge.hidden = count === 0;
+        badge.parentElement.setAttribute('aria-label', `Korpa — ${count} artikala`);
+    }
+    new MutationObserver(syncCount).observe(headerCart, {
+        attributes: true, attributeFilter: ['data-cart-count']
+    });
+    window.addEventListener('pageshow', syncCount);
+    syncCount();
+})();

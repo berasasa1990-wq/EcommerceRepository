@@ -15,3 +15,26 @@
         input.placeholder = 'Pretraži proizvode i brendove';
     }
 })();
+
+(() => {
+    const track = document.getElementById('homeCategoryTrack');
+    if (!track) return;
+    const buttons = document.querySelectorAll('[data-category-scroll]');
+    const update = () => {
+        const max = track.scrollWidth - track.clientWidth;
+        buttons.forEach(button => {
+            button.disabled = Number(button.dataset.categoryScroll) < 0
+                ? track.scrollLeft <= 1 : track.scrollLeft >= max - 1;
+        });
+    };
+    buttons.forEach(button => button.addEventListener('click', () => {
+        track.scrollBy({
+            left: Number(button.dataset.categoryScroll) * track.clientWidth,
+            behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+        });
+    }));
+    track.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update, { passive: true });
+    if (window.ResizeObserver) new ResizeObserver(update).observe(track);
+    update();
+})();

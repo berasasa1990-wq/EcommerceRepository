@@ -143,3 +143,12 @@ html.categories-dialog-open, .categories-dialog-open body { overflow: hidden; }
         height: 24px;
     }
 }
+
+.mobile-home-dock .mobile-dock-cart { position: relative; }
+.mobile-home-dock .mobile-dock-cart-count {
+    position: absolute; top: -3px; left: calc(50% + 5px);
+    display: grid; place-items: center; min-width: 17px; height: 17px;
+    padding: 0 4px; border-radius: 999px; background: #ff6500;
+    color: #fff; font-size: 10px; font-weight: 700; line-height: 1;
+}
+.mobile-home-dock .mobile-dock-cart-count[hidden] { display: none; }
