@@ -22,7 +22,7 @@ class Stylesheets(HTMLParser):
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
 })
-class RetroAdminThemeTests(TestCase):
+class StorefrontAdminThemeTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_superuser('theme-admin', 'theme@example.com', 'test')
         self.product = Product.objects.create(naziv='Tema test', cijena='10')
@@ -32,11 +32,11 @@ class RetroAdminThemeTests(TestCase):
     def assert_theme(self, url):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200, url)
-        self.assertContains(response, 'admin/css/retro-admin.v20260908.css')
+        self.assertContains(response, 'admin/css/storefront-admin.v20260916.css')
         self.assertContains(response, 'admin/js/retro-admin.v20260908.js')
         parser = Stylesheets()
         parser.feed(response.content.decode())
-        self.assertTrue(parser.urls[-1].endswith('retro-admin.v20260908.css'), parser.urls)
+        self.assertTrue(parser.urls[-1].split('?')[0].endswith('storefront-admin.v20260916.css'), parser.urls)
         return response
 
     def test_login_has_shared_theme(self):

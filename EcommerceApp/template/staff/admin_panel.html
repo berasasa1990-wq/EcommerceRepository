@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
@@ -6,9 +7,10 @@
 <title>Admin panel — opremazaribolov.ba</title>
 {% endblock %}
 
-{% block body_class %}staff-shell-page{% endblock %}
+{% block body_class %}staff-shell-page is-cart-page{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20260916-coupon-prices">
 <style>
 body.staff-shell-page { background: #f5f5f7; color: #111; }
 body .staff-admin-page .staff-page-hero { background: #eeeef1; border: 1px solid #dedee3; box-shadow: none; }

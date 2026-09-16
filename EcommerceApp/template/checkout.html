@@ -9,10 +9,20 @@
 {% if seo_description %}<meta name="description" content="{{ seo_description }}">{% endif %}
 {% endblock %}
 
+{% block body_class %}is-cart-page is-checkout-page{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20260916-checkout">
+<link rel="stylesheet" href="{% static 'css/checkout-page.css' %}?v=20260916-checkout">
+{% endblock %}
+
 {% block content %}
 <script src="{% static 'js/cart-stock.js' %}?v=20260907" defer></script>
 <section data-cart-stock-url="{% url 'cart_stock' %}" class="checkout-page"{% if meta_pixel_id and meta_initiate_checkout_event_id %} data-meta-initiate-checkout data-event-id="{{ meta_initiate_checkout_event_id }}" data-num-items="{{ meta_initiate_num_items|default:0 }}" data-value="{{ meta_initiate_value }}" data-content-ids="{{ meta_initiate_content_ids }}" data-contents="{{ meta_initiate_contents }}"{% endif %}>
-    <h1>{{ seo_h1|default:"Narudžba" }}</h1>
+    <div class="checkout-heading">
+        <div><h1>Plaćanje</h1><p>Unesite podatke za dostavu i potvrdite narudžbu.</p></div>
+        <a class="checkout-back" href="{% url 'cart' %}">‹ Nazad na korpu</a>
+    </div>
     {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
     {% if not user.is_authenticated %}
     <p class="checkout-auth-note">
@@ -24,6 +34,7 @@
         <form method="post" class="checkout-form" id="checkout-form">
             {% csrf_token %}
             <h2>Podaci za dostavu</h2>
+            {% if form.non_field_errors %}<div class="checkout-form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
             {% for field in form %}
             <div class="form-group{% if field.errors %} form-group--error{% endif %}">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -33,11 +44,13 @@
                 {% endfor %}
             </div>
             {% endfor %}
-            <button type="submit" class="btn btn-primary btn-add-to-bag">Pošalji narudžbu</button>
+            <div class="checkout-payment-note"><h2>Način plaćanja</h2><p>Plaćanje pouzećem prilikom preuzimanja pošiljke.</p></div>
+            <button type="submit" class="btn btn-primary btn-add-to-bag">Potvrdi narudžbu</button>
+            <p class="checkout-secure-note">Sigurna kupovina i plaćanje pouzećem</p>
         </form>
 
         <aside class="checkout-summary">
-            <h2>Pregled korpe</h2>
+            <h2>Pregled narudžbe</h2>
             <ul class="checkout-items" id="checkoutItemsList">
                 {% include 'partials/checkout_items.html' with cart_items=cart_items %}
             </ul>

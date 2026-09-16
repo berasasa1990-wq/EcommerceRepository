@@ -32,12 +32,14 @@
         if (emailInput) emailInput.value = '';
         overlay.hidden = false;
         document.body.classList.add('popup-open');
-        if (emailInput) emailInput.focus();
+        var closeButton = overlay.querySelector('.stock-notify-close');
+        if (closeButton) closeButton.focus({ preventScroll: true });
     }
 
     function closePopup() {
         overlay.hidden = true;
         document.body.classList.remove('popup-open');
+        if (activeBtn) activeBtn.focus({ preventScroll: true });
         activeUrl = '';
         activeBtn = null;
         showError('');
@@ -118,7 +120,7 @@
             var email = (emailInput && emailInput.value || '').trim();
             if (!email || email.indexOf('@') < 1) {
                 showError('Unesi ispravan email.');
-                if (emailInput) emailInput.focus();
+                if (emailInput) emailInput.focus({ preventScroll: true });
                 return;
             }
             if (!activeUrl) return;
@@ -130,6 +132,16 @@
     }
 
     document.addEventListener('keydown', function (ev) {
-        if (ev.key === 'Escape' && overlay.hidden === false) closePopup();
+        if (overlay.hidden) return;
+        if (ev.key === 'Escape') closePopup();
+        if (ev.key === 'Tab') {
+            var items = overlay.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])');
+            var first = items[0], last = items[items.length - 1];
+            if (ev.shiftKey && document.activeElement === first) {
+                ev.preventDefault(); last.focus({ preventScroll: true });
+            } else if (!ev.shiftKey && document.activeElement === last) {
+                ev.preventDefault(); first.focus({ preventScroll: true });
+            }
+        }
     });
 })();

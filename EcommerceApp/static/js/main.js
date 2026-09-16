@@ -1166,6 +1166,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 link.classList.toggle('is-active', link.dataset.accNav === section);
             });
             window.dispatchEvent(new Event('resize'));
+            if (window.matchMedia('(max-width: 1024px)').matches) {
+                requestAnimationFrame(() => {
+                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                });
+            }
         }
 
         function fromHash() {
@@ -1174,6 +1179,13 @@ document.addEventListener('DOMContentLoaded', () => {
             show(fromUrl || initial);
         }
 
+        // Reopening the current section does not trigger hashchange.
+        root.addEventListener('click', (event) => {
+            const link = event.target.closest('a[href^="#"]');
+            if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+            const id = link.getAttribute('href').slice(1);
+            if (valid.has(id) && window.location.hash === '#' + id) show(id);
+        });
         window.addEventListener('hashchange', fromHash);
         fromHash();
 

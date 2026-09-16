@@ -434,3 +434,29 @@ def pripremi_stavke_za_racun(order):
             'ima_snizenje': ima_snizenje,
         })
     return stavke
+
+def annotate_cart_coupon_prices(items, coupon):
+    """Display-only line prices; leave the cart's original accounting values intact."""
+    from decimal import ROUND_DOWN
+
+    if not coupon or coupon.postotak <= 0:
+        return
+    rows = []
+    for item in items:
+        total = Decimal(str(item['ukupno_stavka']))
+        base = _loyalty_osnovica_iz_korpe([item]) if coupon.automatski else total
+        raw = min(total, base * coupon.postotak / Decimal('100'))
+        if raw > 0:
+            rows.append((item, total, raw, raw.quantize(Decimal('.01'), rounding=ROUND_DOWN)))
+    target = _kvantiziraj(sum((row[2] for row in rows), Decimal('0')))
+    remainder = int((target - sum((row[3] for row in rows), Decimal('0'))) * 100)
+    ranked = sorted(range(len(rows)), key=lambda i: rows[i][2] - rows[i][3], reverse=True)
+    extra = set(ranked[:remainder])
+    for i, (item, total, raw, discount) in enumerate(rows):
+        discount += Decimal('.01') if i in extra else Decimal('0')
+        if discount > 0:
+            item['coupon_original_total'] = total
+            item['coupon_total'] = total - discount
+            # Unit price is useful only when every unit had the same base price.
+            if not (item.get('deal_info') or {}).get('has_discount') and item.get('discounted_unit_price') is None:
+                item['coupon_unit_price'] = _kvantiziraj(item['coupon_total'] / int(item['quantity']))

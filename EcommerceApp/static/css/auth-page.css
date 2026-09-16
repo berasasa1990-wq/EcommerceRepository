@@ -1,0 +1,43 @@
+/* Shared cart/checkout palette for customer authentication. */
+body.is-auth-page, body.is-auth-page main { background: #fff; }
+body.is-auth-page .auth-page {
+    width: 100%; max-width: 520px; margin: 0 auto;
+    padding: 28px 16px 64px; color: #111;
+}
+.is-auth-page .auth-card {
+    background: #f5f5f7; border: 1px solid #e5e7eb;
+    border-radius: 12px; padding: 24px;
+}
+.is-auth-page .auth-card h1 {
+    margin: 0 0 8px; color: #111; font-size: 28px; font-weight: 800;
+    line-height: 1.2; letter-spacing: -.03em; text-transform: none;
+}
+.is-auth-page .auth-lead { margin: 0 0 22px; color: #666973; font-size: 13px; line-height: 1.5; }
+.is-auth-page .form-group { margin-bottom: 14px; min-width: 0; }
+.is-auth-page .form-group label { margin-bottom: 6px; color: #333; font-size: 13px; font-weight: 600; }
+.is-auth-page .form-input {
+    width: 100%; min-height: 44px; padding: 10px 12px;
+    border: 1px solid #dfe1e6; border-radius: 8px;
+    background: #fff; color: #111; font-size: 16px;
+}
+.is-auth-page .form-input:focus-visible { outline: 2px solid #666; outline-offset: 2px; }
+.is-auth-page .form-group--error .form-input { border-color: #b42318; }
+.is-auth-page .form-error { color: #b42318; font-size: 13px; }
+.is-auth-page .auth-form .btn-primary {
+    width: 100%; min-height: 48px; padding: 12px 16px;
+    border: 0; border-radius: 9px; background: #ff6500; color: #fff;
+    font-size: 15px; font-weight: 700; text-transform: none; letter-spacing: 0;
+}
+.is-auth-page .auth-form .btn-primary:hover { background: #e65b00; }
+.is-auth-page .auth-form .btn-primary:focus-visible { outline: 2px solid #333; outline-offset: 3px; }
+.is-auth-page .auth-switch { margin: 20px 0 0; font-size: 13px; color: #666973; line-height: 1.5; }
+.is-auth-page .auth-switch a { color: #333; text-decoration: underline; text-underline-offset: 3px; }
+@media (min-width: 1025px) {
+    body.is-auth-page.cats-sidebar-open main { padding-left: 0; padding-right: 0; }
+    body.is-auth-page.cats-sidebar-open .footer { margin-left: 0; }
+}
+@media (max-width: 1024px) {
+    body.is-auth-page .auth-page { padding: 12px 16px 28px; }
+    .is-auth-page .auth-card { padding: 18px 14px; }
+    .is-auth-page .auth-card h1 { font-size: 24px; }
+}

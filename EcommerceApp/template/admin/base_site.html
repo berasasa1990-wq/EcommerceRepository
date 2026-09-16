@@ -11,8 +11,12 @@
 {% block branding %}
 <div id="site-name">
     <a href="{% url 'admin:index' %}">
-        opremazaribolov.ba
-        <span style="opacity:.75;font-weight:600;font-size:.85em;margin-left:6px;">Admin</span>
+        {% if site_settings.logo %}
+        <img class="admin-store-logo" src="{{ site_settings.logo.url }}" alt="opremazaribolov.ba" width="245" height="66">
+        {% else %}
+        <span class="admin-store-name">opremazaribolov.ba</span>
+        {% endif %}
+        <span class="admin-store-label">Admin panel</span>
     </a>
 </div>
 {% if user.is_anonymous %}
@@ -24,6 +28,6 @@
 
 {% block responsive %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'admin/css/retro-admin.v20260908.css' %}">
+<link rel="stylesheet" href="{% static 'admin/css/storefront-admin.v20260916.css' %}?v=black-text-3">
 <script src="{% static 'admin/js/retro-admin.v20260908.js' %}" defer></script>
 {% endblock %}

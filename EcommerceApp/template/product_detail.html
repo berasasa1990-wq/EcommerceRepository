@@ -3,6 +3,7 @@
 {% block body_class %}product-mobile-reference{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/product-zoom.css' %}?v=20260916">
 <link rel="stylesheet" href="{% static 'css/product-sale-alignment.v20260908.css' %}">
 <link rel="stylesheet" href="{% static 'css/product-inline-qty.v20260912.css' %}">
 <link rel="stylesheet" href="{% static 'css/product-inline-bundle.v20260912.css' %}">
@@ -38,6 +39,11 @@
 {% block og_type %}product{% endblock %}
 
 {% block content %}
+<dialog id="productZoomDialog" class="pd-zoom-dialog" aria-label="Uvećana slika artikla">
+    <button type="button" class="pd-zoom-close" aria-label="Zatvori uvećanu sliku" autofocus>×</button>
+    <img id="productZoomImage" alt="">
+</dialog>
+<script src="{% static 'js/product-zoom.js' %}?v=20260916" defer></script>
 {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 <section class="product-detail" data-product-card data-product-id="{{ product.pk }}"{% if meta_pixel_id and meta_view_content_event_id %} data-meta-view-content data-content-id="{{ product.sifra|default:product.pk }}" data-content-name="{{ product.naziv }}" data-content-value="{{ product.prikazna_cijena }}" data-event-id="{{ meta_view_content_event_id }}"{% endif %}>
     <nav class="pd-reference-breadcrumb" aria-label="Putanja"><a href="{% url 'home' %}">Početna</a><span class="pd-crumb-mobile">{% if product.kategorija %}<span>/</span><a href="{{ product.kategorija.get_absolute_url }}">{{ product.kategorija.naziv }}</a>{% endif %}{% if product.brend %}<span>/</span><span>{{ product.brend.naziv }}</span>{% endif %}</span><span class="pd-crumb-desktop" aria-hidden="true">›</span><span class="pd-crumb-desktop">{{ seo_h1|default:product.naziv }}</span></nav>
@@ -68,6 +74,11 @@
                 {% endif %}
                 <button type="button" class="pd-desktop-gallery-arrow pd-desktop-gallery-prev" data-gallery-step="-1" aria-label="Prethodna slika artikla" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
                 <button type="button" class="pd-desktop-gallery-arrow pd-desktop-gallery-next" data-gallery-step="1" aria-label="Sljedeća slika artikla" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+                {% if product.prikazna_slika %}
+                <button type="button" class="pd-zoom-button" id="productZoomOpen" aria-label="Uvećaj sliku artikla" aria-haspopup="dialog" aria-controls="productZoomDialog">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6M7 10h6M10 7v6"/></svg>
+                </button>
+                {% endif %}
                 <div class="pd-desktop-dots" id="pdDesktopDots" hidden></div>
                 {% if similar_name_products %}
                 <button type="button" class="product-other-options-btn pd-image-options" id="productOtherOptionsBtn" data-other-options-open>

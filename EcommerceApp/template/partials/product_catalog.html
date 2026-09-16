@@ -15,7 +15,6 @@
                 <h1>{{ seo_h1|default:category.naziv }}</h1>
             </div>
             {% elif catalog_title %}
-            {% if filter_params.akcija %}<div class="sale-catalog-heading">{% endif %}
             <nav class="shop-breadcrumb" aria-label="Putanja">
                 <a href="{% url 'home' %}">Početna</a>
                 {% if filter_params.brend %}
@@ -37,17 +36,16 @@
                 <span>{{ catalog_title }}</span>
                 {% endif %}
             </nav>
+            {% if not filter_params.akcija %}
             <div class="category-header">
                 <h1>{{ seo_h1|default:catalog_title }}</h1>
                 {% if catalog_subtitle %}<p>{{ catalog_subtitle }}</p>{% endif %}
             </div>
-            {% if filter_params.akcija %}</div>{% endif %}
+            {% endif %}
             {% endif %}
 
-            {% if not category %}
-            {% if filter_params.akcija %}<div class="sale-catalog-intro">{% endif %}
+            {% if not category and not filter_params.akcija %}
             {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
-            {% if filter_params.akcija %}</div>{% endif %}
             {% endif %}
             {% include 'partials/catalog_mobile_filter.html' %}
 
@@ -67,6 +65,20 @@
 
             {% if page_obj %}
             {% include 'partials/catalog_pagination.html' with filter_action=filter_action elided_page_range=elided_page_range catalog_query=catalog_query pagination_placement='bottom' %}
+            {% endif %}
+
+            {% if filter_params.akcija and not category %}
+            <div class="sale-catalog-heading">
+            <div class="category-header">
+                <h1>{{ seo_h1|default:catalog_title }}</h1>
+                {% if catalog_subtitle %}<p>{{ catalog_subtitle }}</p>{% endif %}
+            </div>
+            </div>
+            {% if seo_tekst_iznad != seo_tekst_ispod %}
+            <div class="sale-catalog-intro">
+                {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='below' %}
+            </div>
+            {% endif %}
             {% endif %}
 
             {% if category %}

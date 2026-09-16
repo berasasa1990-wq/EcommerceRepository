@@ -169,6 +169,8 @@ body.is-cart-page .cart-page {
 .cart-item-qty {
     display: inline-flex;
     align-items: center;
+    gap: 0;
+    flex-shrink: 0;
     border: 1px solid #e5e7eb;
     border-radius: 10px;
     overflow: hidden;
@@ -182,8 +184,15 @@ body.is-cart-page .cart-page {
     clip: rect(0 0 0 0);
 }
 .cart-qty-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
     width: 36px;
     height: 40px;
+    padding: 0;
+    line-height: 1;
+    text-align: center;
     border: 0;
     background: #fff;
     color: #111;
@@ -192,6 +201,8 @@ body.is-cart-page .cart-page {
     cursor: pointer;
 }
 .cart-page .cart-item-qty .form-input--qty {
+    flex-shrink: 0;
+    min-width: 0;
     width: 40px;
     height: 40px;
     margin: 0;
@@ -553,7 +564,7 @@ body.is-cart-page .cart-page {
  .cart-item-qty { border: 0; border-radius: 8px; background: #f5f5f7; }
  .cart-qty-btn { width: 24px; height: 32px; font-size: 17px; font-weight: 400; color: #626772; background: #f5f5f7; }
  .cart-page .cart-item-qty .form-input--qty { width: 24px; height: 32px; font-size: 13px; font-weight: 400; border: 0; }
- .cart-item-remove { width: 25px; height: 34px; border: 0; padding: 0; border-radius: 0; color: #383b42; }
+ .cart-item-remove { width: 25px; min-width: 25px; height: 34px; border: 0; padding: 0; border-radius: 0; color: #383b42; }
  .cart-summary { display: flex; flex-direction: column; gap: 9px; padding: 0; border: 0; border-radius: 0; }
  .cart-shipping-mobile { order: 4; }
  .cart-shipping-mobile .cart-shipping-progress { display: flex; flex-direction: column-reverse; gap: 6px; padding: 12px; margin: 0; background: #f5f5f7; border: 0; border-radius: 10px; }
@@ -603,3 +614,17 @@ body.is-cart-page .cart-page {
     border-color: #9ca3af;
     color: #111;
 }
+
+.cart-page .cart-item-sale-notice {
+    margin: 6px 0 0;
+    color: #b42318;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.cart-page .coupon-price-new, .cart-page .coupon-price-old { display: block; }
+.cart-page .coupon-price-new { color: #b42318; font-weight: 700; }
+.cart-page .coupon-price-old { color: #858a96; font-size: 12px; text-decoration: line-through; }
+.cart-page .coupon-line-prices { display: flex; flex-direction: column; gap: 3px; }
+.cart-page .coupon-line-prices small { font-size: 10px; color: #666973; }

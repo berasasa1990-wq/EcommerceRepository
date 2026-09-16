@@ -1,0 +1,108 @@
+/* Admin shares the storefront cart palette; model-specific controls remain intact. */
+:root, html[data-theme="light"], html[data-theme="dark"] {
+    color-scheme: light;
+    --primary: #ff6500; --secondary: #f5f5f7; --accent: #111;
+    --primary-fg: #fff; --body-fg: #222; --body-bg: #fff;
+    --body-quiet-color: #666973; --body-medium-color: #555862; --body-loud-color: #111;
+    --header-color: #333; --header-branding-color: #111; --header-bg: #fff; --header-link-color: #333;
+    --breadcrumbs-fg: #666973; --breadcrumbs-link-fg: #333; --breadcrumbs-bg: #f5f5f7;
+    --link-fg: #111; --link-hover-color: #111; --link-selected-fg: #111;
+    --hairline-color: #eceef1; --border-color: #dfe1e6; --darkened-bg: #f5f5f7;
+    --selected-bg: #f0f1f3; --selected-row: #fff3e8;
+    --button-fg: #fff; --button-bg: #ff6500; --button-hover-bg: #e65b00;
+    --default-button-bg: #ff6500; --default-button-hover-bg: #e65b00;
+    --close-button-bg: #666973; --close-button-hover-bg: #444;
+    --delete-button-bg: #b42318; --delete-button-hover-bg: #8f1c13;
+    --object-tools-fg: #333; --object-tools-bg: #e5e7eb; --object-tools-hover-bg: #d1d5db;
+    --error-fg: #b42318; --message-success-bg: #edf7ef; --message-warning-bg: #fff5df; --message-error-bg: #fff0ef;
+    --font-family-primary: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --ozr-font: var(--font-family-primary); --ozr-bg: #fff; --ozr-card: #f5f5f7;
+    --ozr-border: #dfe1e6; --ozr-ink: #111; --ozr-muted: #666973;
+    --ozr-brand: #111; --ozr-green: #ff6500; --ozr-green-dark: #e65b00; --ozr-green-soft: #fff3e8;
+    --ozr-radius: 12px; --ozr-shadow: none;
+}
+html body, html body #container, html body #main { background: #fff !important; color: #222; font-family: var(--font-family-primary); }
+html body #header { background: #fff !important; color: #333 !important; border-bottom: 1px solid #e5e7eb; box-shadow: none; padding: 18px 24px; }
+html body #site-name a, html body #branding h1, html body #user-tools, html body #user-tools a, html body #logout-form button { color: #333 !important; }
+html body #site-name a { font-size: 21px; font-weight: 800; }
+html body .theme-toggle { display: none; }
+html body div.breadcrumbs { background: #f5f5f7 !important; color: #666973 !important; padding: 12px 24px; border: 0; }
+html body div.breadcrumbs a { color: #333 !important; }
+html body #content { padding: 24px; min-width: 0; }
+html body #content h1 { color: #111; font-size: 28px; font-weight: 800; letter-spacing: -.03em; }
+html body .module, html body #changelist, html body .inline-group, html body .bu-card {
+    background: #fff !important; border: 1px solid #e5e7eb !important; border-radius: 12px !important; box-shadow: none !important;
+}
+html body .module h2, html body .module caption, html body .inline-group h2, html body #changelist-filter h2, html body .selector h2 {
+    background: #f5f5f7 !important; color: #333 !important; padding: 12px 14px; font-size: 14px; font-weight: 700;
+    border-bottom: 1px solid #e5e7eb; text-transform: none; letter-spacing: 0;
+}
+html body .module caption a, html body .module h2 a { color: #333 !important; }
+html body a:hover, html body a:focus,
+html body #changelist-filter li.selected a,
+html body #changelist-filter a:hover { color: #111; }
+html body #changelist-filter li.selected a,
+html body #changelist-filter a:hover { color: #111 !important; }
+html body #nav-sidebar, html body #changelist-filter { background: #f5f5f7 !important; border-color: #e5e7eb; }
+html body #nav-sidebar .current-model, html body #changelist-filter li.selected { background: #fff3e8 !important; border-left: 3px solid #ff6500; }
+html body input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]),
+html body select, html body textarea, html body .select2-container--admin-autocomplete .select2-selection {
+    background: #fff; color: #111; border: 1px solid #dfe1e6; border-radius: 8px; padding: 9px 10px; min-height: 40px; box-shadow: none;
+}
+html body input:focus-visible, html body select:focus-visible, html body textarea:focus-visible, html body button:focus-visible, html body a:focus-visible {
+    outline: 2px solid #666; outline-offset: 2px;
+}
+html body .button, html body input[type="submit"], html body input[type="button"], html body .submit-row input, html body a.button {
+    background: #ff6500 !important; color: #fff !important; border: 0 !important; border-radius: 9px !important;
+    padding: 11px 16px; min-height: 42px; font-weight: 600; box-shadow: none !important; text-transform: none;
+}
+html body .button:hover, html body input[type="submit"]:hover, html body input[type="button"]:hover { background: #e65b00 !important; }
+html body .object-tools a, html body #changelist .actions .button, html body .submit-row a.closelink {
+    background: #e5e7eb !important; color: #333 !important; border-radius: 8px !important; box-shadow: none;
+}
+html body .submit-row { background: #f5f5f7 !important; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; box-shadow: none; }
+html body .submit-row a.deletelink, html body .delete-confirmation input[type="submit"] { background: #b42318 !important; color: #fff !important; border-radius: 8px; }
+html body #changelist #toolbar, html body #changelist .actions, html body .paginator { background: #f5f5f7 !important; border-color: #e5e7eb; }
+html body thead th { background: #f5f5f7 !important; color: #555862; }
+html body tbody tr { background: #fff; }
+html body tbody tr:nth-child(even) { background: #fafafa; }
+html body td, html body th, html body .form-row { border-color: #eceef1; }
+html body.login #container { border: 1px solid #e5e7eb; border-radius: 12px; background: #f5f5f7 !important; box-shadow: none; }
+html body.login #header { border-radius: 12px 12px 0 0; }
+@media (max-width: 767px) {
+    html body #content { padding: 16px; }
+    html body #content h1 { font-size: 24px; }
+    html body #header { padding: 14px 16px; }
+    html body input, html body select, html body textarea { font-size: 16px; }
+    html body .submit-row { display: flex; flex-wrap: wrap; gap: 8px; }
+}
+.retro-tools { margin: 0 0 20px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f5f5f7; }
+.retro-tools-title { font-size: 14px; font-weight: 700; margin: 0 0 10px; color: #333; }
+.retro-tools-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.retro-tools-controls label { display: flex; flex-direction: column; gap: 5px; flex: 1 1 220px; font-size: 13px; color: #555862; }
+html body .retro-tools-controls input, html body .retro-tools-controls select { width: 100%; max-width: none; box-sizing: border-box; }
+.retro-search-results { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.retro-search-results:empty, .retro-search-message:empty { display: none; }
+.retro-search-message { margin: 10px 0 0; color: #666973; font-size: 12px; }
+.retro-tools button { border: 1px solid #dfe1e6; border-radius: 8px; padding: 9px 12px; background: #fff; color: #333; cursor: pointer; }
+html body .retro-field-target { outline: 2px solid #ff6500; outline-offset: -2px; background: #fff3e8 !important; }
+@media print { .retro-tools, #header, #nav-sidebar, #toggle-nav-sidebar, .submit-row, .object-tools { display: none !important; } }
+
+/* Storefront-style header with the same store logo and compact mobile sizing. */
+html body #header {
+    background: #fff !important; min-height: 90px; padding: 12px 24px;
+    box-sizing: border-box; border-bottom: 1px solid #eceef1; gap: 16px;
+}
+html body #site-name { margin: 0; }
+html body #site-name a { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+html body .admin-store-logo { display: block; width: 245px; height: 66px; max-width: 100%; object-fit: contain; object-position: left center; }
+html body .admin-store-label { padding: 5px 9px; border-radius: 8px; background: #f5f5f7; color: #666973; font-size: 12px; font-weight: 600; white-space: nowrap; }
+html body #user-tools { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; font-size: 12px; line-height: 1.5; }
+html body #user-tools a, html body #logout-form button { border: 0; border-radius: 8px; padding: 7px 10px; background: #f5f5f7; color: #333 !important; }
+html body #user-tools a:hover, html body #logout-form button:hover { background: #e5e7eb; }
+@media (max-width: 767px) {
+    html body #header { min-height: 0; padding: 8px 18px; gap: 10px; }
+    html body .admin-store-logo { width: 160px; height: 44px; }
+    html body #site-name a { gap: 8px; }
+    html body #user-tools { justify-content: center; width: 100%; }
+}

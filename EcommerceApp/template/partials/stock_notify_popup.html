@@ -7,13 +7,23 @@
                 <line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
         </button>
-        <h2 id="stockNotifyTitle" class="stock-notify-title">Javi mi</h2>
-        <p class="stock-notify-lead">Unesi email i javit ćemo ti čim <strong id="stockNotifyProductName">artikal</strong> bude na stanju.</p>
+        <h2 id="stockNotifyTitle" class="stock-notify-title">Obavijest o dostupnosti</h2>
+        <p class="stock-notify-lead">Prijavite se za obavijest putem emaila. Javit ćemo vam čim <strong id="stockNotifyProductName">artikal</strong> bude na stanju.</p>
         <form id="stockNotifyForm" novalidate>
             <label class="stock-notify-field" for="stockNotifyEmail">Email</label>
             <input id="stockNotifyEmail" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="npr. ime@email.com">
             <p class="stock-notify-error" id="stockNotifyError" hidden></p>
-            <button type="submit" class="btn btn-primary stock-notify-submit" id="stockNotifySubmit">Javi mi</button>
+            <button type="submit" class="btn btn-primary stock-notify-submit" id="stockNotifySubmit">Prijavi me za obavijest</button>
         </form>
+        {% if not user.is_authenticated %}
+        <p class="stock-notify-account">Želite i svoj nalog? <a href="{% url 'register' %}">Registrujte se</a> ili <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">prijavite se</a>.</p>
+        {% endif %}
     </div>
 </div>
+
+<style>
+#stockNotifyOverlay .stock-notify-panel { max-height: calc(100dvh - 32px); overflow-y: auto; }
+#stockNotifyOverlay input[type="email"] { font-size: 16px !important; }
+#stockNotifyOverlay .stock-notify-account { margin: 16px 0 0; color: #666; font-size: 13px; line-height: 1.5; }
+#stockNotifyOverlay .stock-notify-account a { color: #333; text-decoration: underline; }
+</style>

@@ -12,7 +12,7 @@
 {% block body_class %}is-cart-page{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20260915-shipping-below-checkout">
+<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20260916-qty-plus-visible">
 {% endblock %}
 
 {% block content %}
@@ -90,7 +90,10 @@
                         </p>
                         {% endif %}
                         <p class="cart-item-price">
-                            {% if item.deal_info and item.deal_info.has_discount and item.deal_info.discounted_unit_price %}
+                            {% if item.coupon_unit_price != None %}
+                                <span class="price-discounted coupon-price-new">{{ item.coupon_unit_price }} KM</span>
+                                <del class="price-original coupon-price-old">{{ item.cijena_decimal }} KM</del>
+                            {% elif item.deal_info and item.deal_info.has_discount and item.deal_info.discounted_unit_price %}
                                 <span class="price-original">{{ item.deal_info.full_unit_price }} KM</span>
                                 <span class="price-deal">{{ item.deal_info.discounted_unit_price }} KM</span>
                             {% elif item.discounted_unit_price %}
@@ -103,6 +106,11 @@
                                 {{ item.cijena_decimal }} KM
                             {% endif %}
                         </p>
+                        {% if summary.kupon_primijenjen %}
+                            {% if item.na_akciji or item.deal_info.has_discount or item.discounted_unit_price %}
+                            <p class="cart-item-sale-notice" role="status">Artikal je već na sniženju.</p>
+                            {% endif %}
+                        {% endif %}
                         {% include 'partials/korpa_nudjenje_inline.html' with nudjenje=item.korpa_nudjenje %}
                     </div>
                     <div class="cart-item-controls">
@@ -119,7 +127,13 @@
                         </button>
                     </div>
                     <div class="cart-item-total">
-                        {% if item.deal_info and item.deal_info.has_discount %}
+                        {% if item.coupon_total != None %}
+                        <p class="coupon-line-prices">
+                            <span class="price-discounted coupon-price-new">{{ item.coupon_total }} KM</span>
+                            <del class="price-original coupon-price-old">{{ item.coupon_original_total }} KM</del>
+                            <small>Ukupno sa kuponom</small>
+                        </p>
+                        {% elif item.deal_info and item.deal_info.has_discount %}
                         <p>
                             <span class="price-original">{{ item.deal_info.original_total }} KM</span>
                             <span class="price-deal">{{ item.ukupno_stavka }} KM</span>

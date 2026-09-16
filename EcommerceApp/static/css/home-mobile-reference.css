@@ -725,12 +725,14 @@
     }
 }
 
-/* Category pages keep the header compact without search controls. */
-body.category-hide-search #header .header-search,
-body.category-hide-search #header [data-mobile-home-search] {
-    display: none !important;
-}
-body.category-hide-search #header .header-row--primary {
-    grid-template-columns: minmax(0, 1fr) auto !important;
-    grid-template-areas: 'logo actions' !important;
+/* Only mobile category pages hide the header search. */
+@media (max-width: 1024px) {
+    body.category-hide-search #header .header-search,
+    body.category-hide-search #header [data-mobile-home-search] {
+        display: none !important;
+    }
+    body.category-hide-search #header .header-row--primary {
+        grid-template-columns: minmax(0, 1fr) auto !important;
+        grid-template-areas: 'logo actions' !important;
+    }
 }

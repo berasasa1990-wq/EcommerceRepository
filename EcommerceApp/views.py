@@ -4374,6 +4374,10 @@ def _cart_context(request, cart):
     applied_code = cart.get_coupon_code() if cart.is_coupon_applied() else ''
     if not applied_code:
         applied_code = summary.get('kupon_kod') or ''
+    if applied_code and summary.get('kupon_primijenjen'):
+        from .pricing import annotate_cart_coupon_prices
+        coupon, _ = validiraj_kupon(applied_code, request.user)
+        annotate_cart_coupon_prices(cart_items, coupon)
     if cart_items:
         product_labels = {
             pk: (slug, brand) for pk, slug, brand in Product.objects.filter(
