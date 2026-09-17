@@ -238,6 +238,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'EcommerceApp.media_retention.PreserveUploadsMiddleware',
     'EcommerceApp.middleware.live_visitor.LiveVisitorMiddleware',
     'EcommerceApp.middleware.site_prep_lock.SitePrepLockMiddleware',
     'EcommerceApp.middleware.meta_page_view.MetaPageViewMiddleware',
@@ -501,7 +502,7 @@ else:
         MEDIA_URL = '/' + MEDIA_URL.lstrip('/')
     STORAGES = {
         'default': {
-            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+            'BACKEND': 'EcommerceApp.storage_backends.RetainingFileSystemStorage',
             'OPTIONS': {
                 'location': str(MEDIA_ROOT),
                 'base_url': MEDIA_URL,

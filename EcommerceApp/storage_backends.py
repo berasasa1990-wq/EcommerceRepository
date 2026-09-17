@@ -5,6 +5,11 @@ R2 ne podržava S3 ACL headere — PutObject s ACL-om često daje AccessDenied.
 """
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+from .media_retention import RetainingStorageMixin
+
+
+class RetainingFileSystemStorage(RetainingStorageMixin, FileSystemStorage):
+    pass
 
 
 try:
@@ -15,7 +20,7 @@ except ImportError:  # pragma: no cover
 
 if _S3Boto3Storage is not None:
 
-    class CloudflareR2Storage(_S3Boto3Storage):
+    class CloudflareR2Storage(RetainingStorageMixin, _S3Boto3Storage):
         """S3Boto3 storage za R2: bez ACL, path-style, custom domain opcionalno."""
 
         default_acl = None
@@ -55,14 +60,8 @@ if _S3Boto3Storage is not None:
             return params
 
         def exists(self, name):
-            """
-            exists() na R2 je skup (HEAD). Za URL/srcset ne koristimo.
-            Pri grešci/timeoutu → False da ne sruši request.
-            """
-            try:
-                return super().exists(name)
-            except Exception:
-                return False
+            # A failed lookup must not allow overwriting an unarchived file.
+            return super().exists(name)
 
         def _save(self, name, content):
             self.default_acl = None
@@ -70,7 +69,7 @@ if _S3Boto3Storage is not None:
 
 else:
 
-    class CloudflareR2Storage(FileSystemStorage):
+    class CloudflareR2Storage(RetainingFileSystemStorage):
         """
         Fallback ako django-storages nije instaliran.
         Ignoriše S3 kwargs da ne sruši gunicorn na startu.

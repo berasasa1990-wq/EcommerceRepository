@@ -1163,8 +1163,8 @@ def track_live_visitor(request):
 
 
 def cleanup_stale_live_visitors():
-    cutoff = timezone.now() - timedelta(hours=RETENTION_HOURS)
-    return LiveVisitor.objects.filter(last_seen__lt=cutoff).delete()[0]
+    # Retain historical records until explicitly deleted by the owner.
+    return 0
 
 
 def public_online_visitors_payload(limit=24):

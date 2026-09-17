@@ -1,0 +1,25 @@
+{% extends 'staff/magacin/base.html' %}
+{% block magacin_content %}
+<h1>Historija podataka</h1>
+<p>Sačuvane verzije nemaju rok brisanja. Historija promjena u bazi počinje od uključivanja ove evidencije.</p>
+<a class="mg-btn" href="?">Promjene u bazi</a>
+<a class="mg-btn" href="?unos=1">Unosi sa stranica</a>
+<a class="mg-btn" href="?fajlovi=1">Sačuvani fajlovi</a>
+<a class="mg-btn" href="{% url 'staff_magacin_draft_history' %}">Nacrti narudžbi</a>
+{% if not input_history and not media_history %}<form method="get"><label>Tabela <input name="tabela" value="{{ table }}"></label><button type="submit">Filtriraj</button></form>{% endif %}
+{% for record in records %}
+<details class="mg-card">
+<summary>{{ record.created_at|date:'d.m.Y. H:i:s' }} · {% if media_history %}{{ record.name }}{% elif input_history %}{{ record.path }} · {{ record.form_key }}{% else %}{{ record.table_name }} #{{ record.record_key }} · {{ record.operation }}{% endif %}</summary>
+{% if media_history %}
+<a href="{% url 'staff_magacin_media_history_download' record.pk %}">Preuzmi sačuvani fajl</a>
+{% elif input_history %}
+<table><tbody>{% for field in record.payload %}<tr><th>{{ field.name }}</th><td>{{ field.value }}{% if field.checked %} ✓{% endif %}</td></tr>{% endfor %}</tbody></table>
+{% else %}
+<h3>Prije promjene</h3><pre style="white-space:pre-wrap;overflow-wrap:anywhere">{{ record.before }}</pre>
+<h3>Nakon promjene</h3><pre style="white-space:pre-wrap;overflow-wrap:anywhere">{{ record.after }}</pre>
+{% endif %}
+</details>
+{% empty %}<p>Još nema sačuvanih promjena.</p>{% endfor %}
+{% if records.has_previous %}<a href="?page={{ records.previous_page_number }}&amp;unos={{ input_history|yesno:'1,0' }}&amp;tabela={{ table|urlencode }}&amp;fajlovi={{ media_history|yesno:'1,0' }}">Prethodna</a>{% endif %}
+{% if records.has_next %}<a href="?page={{ records.next_page_number }}&amp;unos={{ input_history|yesno:'1,0' }}&amp;tabela={{ table|urlencode }}&amp;fajlovi={{ media_history|yesno:'1,0' }}">Sljedeća</a>{% endif %}
+{% endblock %}

@@ -349,6 +349,7 @@
     }
 })();
 </script>
+<script src="{% static 'js/staff-manual-order-draft.js' %}?v=20260916database" data-user="{{ request.user.pk }}"></script>
 <script src="{% static 'js/staff-magacin.js' %}?v=20260910pickRules"></script>
 {% if request.duplicate_barcode_message %}
 {{ request.duplicate_barcode_message|json_script:"duplicate-barcode-message" }}

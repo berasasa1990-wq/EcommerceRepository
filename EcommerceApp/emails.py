@@ -550,8 +550,10 @@ def send_stock_back_email(*, to_email, product):
     text = '\n'.join([
         f'{product.naziv} je ponovo na stanju.',
         '',
+        'Proizvod koji vas je zanimao sada je dostupan. Imajte na umu da bi se mogao brzo rasprodati.',
+        '',
         f'Cijena: {ctx["cijena_label"]} KM' if ctx['cijena_label'] else '',
-        f'Pogledaj artikal: {ctx["product_url"]}',
+        f'Poruči: {ctx["product_url"]}',
         '',
         'Lijep pozdrav,',
         'opremazaribolov.ba',

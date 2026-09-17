@@ -13,7 +13,7 @@ def _configure_sqlite(sender, connection, **kwargs):
     with connection.cursor() as cursor:
         cursor.execute('PRAGMA journal_mode=WAL;')
         cursor.execute('PRAGMA busy_timeout=60000;')
-        cursor.execute('PRAGMA synchronous=NORMAL;')
+        cursor.execute('PRAGMA synchronous=FULL;')
 
 
 class EcommerceappConfig(AppConfig):
@@ -21,6 +21,9 @@ class EcommerceappConfig(AppConfig):
 
     def ready(self):
         connection_created.connect(_configure_sqlite)
+        from django.db.models.signals import post_migrate
+        from .retention_triggers import refresh_history_triggers
+        post_migrate.connect(refresh_history_triggers, dispatch_uid='permanent_system_history')
 
         from django.db.models.signals import post_delete, post_save
 

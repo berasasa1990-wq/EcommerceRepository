@@ -84,28 +84,32 @@ class StockNotifyTests(TestCase):
         product_url = f'https://example.com{self.product.get_absolute_url()}'
         html = mail.outbox[0].alternatives[0][0]
         self.assertIn(f'href="{product_url}"', html)
-        self.assertIn('Pogledaj artikal', html)
+        self.assertIn('PORUČI', html)
         self.assertIn('Artikal je ponovo na stanju', html)
         self.assertIn('9,90 KM', html)
-        self.assertIn('#FF5A00', html)
+        self.assertIn('background:#ffffff', html)
+        self.assertNotIn('#FF5A00', html)
         self.assertNotIn('img/emails/stock-header.jpg', html)
-        self.assertIn('Dodaj u korpu', html)
+        self.assertNotIn('Dodaj u korpu', html)
         self.assertIn(product_url, mail.outbox[0].body)
         row = StockNotify.objects.get(email='gost@example.com')
         self.assertIsNotNone(row.notified_at)
 
-    def test_email_shows_brand_and_unsubscribe(self):
+    def test_email_is_minimal_and_keeps_unsubscribe(self):
         brand = Brand.objects.create(naziv='Daiwa')
         self.product.brend = brand
-        self.product.save(update_fields=['brend'])
+        self.product.slika = 'products/stock-email.jpg'
+        self.product.save(update_fields=['brend', 'slika'])
         subscribe(product=self.product, email='gost@example.com')
         self.product.na_stanju = True
         self.product.stanje = 2
         self.product.save(update_fields=['na_stanju', 'stanje'])
         notify_back_in_stock(self.product.pk)
         html = mail.outbox[0].alternatives[0][0]
-        self.assertIn('DAIWA', html)
-        self.assertIn('Šifra: FOX-OUT-1', html)
+        self.assertIn('width="340"', html)
+        self.assertIn('https://example.com/media/products/stock-email.jpg', html)
+        self.assertNotIn('DAIWA', html)
+        self.assertNotIn('Šifra: FOX-OUT-1', html)
         self.assertIn('/obavijesti/odjava/', html)
         token = email_action_token('gost@example.com', self.product.pk)
         preview = self.client.get(reverse('stock_back_preview', args=[token]))

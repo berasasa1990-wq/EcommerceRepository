@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>B2B veleprodaja | Carpologija BH</title>
-<link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20260911cartBelow">
+<link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20260917categoryScroll">
 <script src="{% static 'js/b2b.js' %}?v=20260912headCart" defer></script>
 <link rel="stylesheet" href="{% static 'css/touch-navigation.css' %}?v=20260909">
 </head>
@@ -35,7 +35,6 @@
   </div>
   {% endif %}
 </header>
-{% if account and messages %}<div class="notices" role="status">{% for message in messages %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}
 <div class="b2b-cart-toast" role="status" aria-live="polite" hidden></div>
 {% if account %}
 <div class="b2b-workspace">
@@ -104,4 +103,5 @@
   <p class="b2b-image-caption"></p>
 </dialog>
 {% endif %}
+{% include 'partials/permanent_input_history.html' %}
 </body></html>

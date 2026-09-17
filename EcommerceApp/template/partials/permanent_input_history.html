@@ -1,0 +1,9 @@
+{% load static %}
+{% if user.is_authenticated and user.is_superuser %}
+<div id="permanentInputConfig" data-user="{{ user.pk }}" data-url="{% url 'staff_magacin_save_input' %}" style="padding:8px 16px;font-size:12px">
+    <span hidden>{% csrf_token %}</span>
+    <span id="permanentInputStatus" role="status"></span>
+    <a href="{% url 'staff_magacin_data_history' %}">Historija sačuvanih podataka i unosa</a>
+</div>
+<script src="{% static 'js/permanent-form-inputs.js' %}?v=20260916" defer></script>
+{% endif %}

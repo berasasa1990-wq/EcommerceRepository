@@ -4104,10 +4104,22 @@ def magacin_narudzba_nova(request):
     context['customer_lookup_url'] = reverse('staff_magacin_kupci_lookup')
     context['loyalty_lookup_url'] = reverse('staff_magacin_loyalty_telefon')
     context['existing_order'] = existing
+    from .manual_order_drafts import draft_for_page, capture_submit, archive, form_data
+    draft = draft_for_page(request, existing.broj if existing else '')
+    context['order_draft'] = draft
+    context['draft_payload'] = draft.payload
+    context['draft_posted'] = request.method == 'POST'
+    context['draft_token'] = draft.token
     context['invoice_only_items'] = list(existing.stavke.filter(ledger_excess_line__isnull=False)) if existing else []
     context['missing_fulfillment_items'] = list(existing.stavke.filter(ledger_missing_line__isnull=False)) if existing else []
     context['invoice_only_total'] = sum((item.ukupno for item in context['invoice_only_items']), Decimal('0.00'))
     if request.method == 'POST':
+        if not capture_submit(request, draft):
+            messages.error(request, 'Postoji noviji unos. Tvoja verzija je sačuvana u historiji unosa.')
+            return redirect('staff_magacin_draft_history')
+        context['draft_payload'] = draft.payload
+        if request.POST.get('action') == 'restore_draft':
+            return redirect(f"{reverse('staff_magacin_narudzba_nova')}?nacrt={draft.token}")
         if (request.POST.get('action') or '').strip() == 'otkazi':
             if existing is None:
                 messages.error(request, 'Narudžba za otkazivanje nije pronađena.')
@@ -4117,13 +4129,20 @@ def magacin_narudzba_nova(request):
             except MagacinError as exc:
                 messages.error(request, str(exc))
                 return redirect(f"{reverse('staff_magacin_narudzba_nova')}?broj={existing.broj}")
+            archive(draft, 'cancelled', existing.broj)
             messages.success(
                 request,
                 f'Narudžba #{existing.broj} je otkazana — rezervacija je vraćena na lokacije.',
             )
             return redirect('staff_magacin_narudzbe')
         try:
-            order = _create_manual_order(request, existing=existing)
+            from .models import ManualOrderDraft
+            with transaction.atomic():
+                locked_draft = ManualOrderDraft.objects.select_for_update().get(pk=draft.pk)
+                if locked_draft.status != 'active' or locked_draft.version != draft.version:
+                    raise MagacinError('Narudžba je već obrađena ili izmijenjena u drugom prozoru. Unos je u historiji.')
+                order = _create_manual_order(request, existing=existing)
+                archive(draft, 'reserved' if order.status == Order.Status.REZERVACIJA else 'completed', order.broj)
         except MagacinError as exc:
             messages.error(request, str(exc))
             context['customer_refused'] = WarehouseCustomer.objects.filter(pk=request.POST.get('customer_id')).filter(odbio_posiljku=True).exists() if str(request.POST.get('customer_id') or '').isdigit() else False
@@ -4176,6 +4195,15 @@ def magacin_narudzba_nova(request):
     else:
         context['form'] = {}
         context['form_lines'] = []
+    if draft.payload:
+        from types import SimpleNamespace
+        data = form_data(draft.payload)
+        context['form'] = data.copy()
+        context['form']['vp_kupac'] = data.get('vp_kupac') == '1'
+        context['form_lines'] = _posted_display_lines(SimpleNamespace(POST=data))
+        context['customer_refused'] = WarehouseCustomer.objects.filter(
+            telefon=data.get('telefon') or '', odbio_posiljku=True,
+        ).exists()
     return render(request, 'staff/magacin/narudzba_nova.html', context)
 
 

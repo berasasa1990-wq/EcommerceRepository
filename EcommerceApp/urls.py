@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from . import manual_order_drafts, data_history
 from . import views_b2b
 from . import views_catalog_api
 from . import views_feed
@@ -10,6 +11,13 @@ from . import views_site_prep
 from . import views_sync
 
 urlpatterns = [
+    path('nalog/magacin/historija-podataka/fajl/<int:pk>/', data_history.media_download, name='staff_magacin_media_history_download'),
+    path('nalog/magacin/nacrti/uvoz/', manual_order_drafts.import_local_draft, name='staff_magacin_draft_import'),
+    path('nalog/magacin/nacrti/sacuvaj/', manual_order_drafts.save_draft, name='staff_magacin_draft_save'),
+    path('nalog/magacin/nacrti/historija/', manual_order_drafts.history, name='staff_magacin_draft_history'),
+    path('nalog/magacin/nacrti/<int:pk>/vrati/', manual_order_drafts.restore_revision, name='staff_magacin_draft_restore'),
+    path('nalog/magacin/historija-podataka/', data_history.history, name='staff_magacin_data_history'),
+    path('nalog/magacin/historija-podataka/unos/', data_history.save_input, name='staff_magacin_save_input'),
     path("veleprodaja/zatrazi-pristup/", views_b2b.request_access, name="b2b_request_access"),
     path("veleprodaja/zavrsi/", views_b2b.checkout, name="b2b_checkout"),
     path("veleprodaja/narudzba/<int:pk>/", views_b2b.order_confirmation, name="b2b_order"),

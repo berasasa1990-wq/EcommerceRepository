@@ -194,5 +194,5 @@ def sync_active_cart(request, cart):
 
 
 def cleanup_stale_active_cart_items():
-    cutoff = timezone.now() - timedelta(days=STALE_CART_DAYS)
-    return ActiveCartItem.objects.filter(azurirano__lt=cutoff).delete()[0]
+    # Retain historical records until explicitly deleted by the owner.
+    return 0

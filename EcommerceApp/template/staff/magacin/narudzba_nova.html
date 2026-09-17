@@ -22,6 +22,12 @@
 
 <form data-missing-fulfillment-count="{{ missing_fulfillment_items|length }}" data-invoice-only-total="{{ invoice_only_total|default:0 }}" id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-customer-save="{% url 'staff_magacin_kupci_save' %}" data-loyalty-lookup="{{ loyalty_lookup_url }}" data-bulk-url="{% url 'staff_magacin_narudzba_bulk' %}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
     {% csrf_token %}
+    <input type="hidden" name="draft_token" id="mgDraftToken" value="{{ draft_token }}" data-save-url="{% url 'staff_magacin_draft_save' %}" data-import-url="{% url 'staff_magacin_draft_import' %}">
+    <input type="hidden" name="draft_version" id="mgDraftVersion" value="{{ order_draft.version }}">
+    <input type="hidden" name="draft_ui" id="mgDraftUI">
+    {{ draft_payload|json_script:"mgDraftPayload" }}
+    <p id="mgDraftStatus" class="mg-muted" role="status">Automatsko čuvanje u bazu je uključeno.</p>
+    <a href="{% url 'staff_magacin_draft_history' %}">Historija unosa</a>
     {% if existing_order %}<input type="hidden" name="order_broj" value="{{ existing_order.broj }}">{% endif %}
     <section class="mg-card mg-order-customer" id="mgCustomerCard">
         <div class="mg-card-head">
@@ -247,7 +253,7 @@
     <div class="mg-order-foot">
         <button type="button" class="mg-btn" id="mgOrderClear">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
-            Očisti narudžbu
+            {% if existing_order %}Očisti narudžbu{% else %}Otkaži narudžbu{% endif %}
         </button>
         {% if existing_order %}
         <button type="submit" name="action" value="otkazi" class="mg-btn mg-btn-danger" id="mgOrderCancel" formnovalidate>

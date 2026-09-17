@@ -132,7 +132,10 @@ body.is-catalog .b2b-workspace>aside{
   border-right:1px solid #9aa3ab;
   box-shadow:inset -1px 0 #fff, 4px 0 10px #0001;
   min-width:0;
-  overflow:hidden;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior-y:contain;
+  scrollbar-gutter:stable;
 }
 .b2b-main{display:flex;flex-direction:column;min-width:0;min-height:0}
 body.is-catalog .b2b-main{overflow:hidden}
@@ -207,11 +210,13 @@ body.is-catalog .products{min-height:0;overflow:auto;padding-bottom:calc(180px +
 .account-menu form button{width:100%}
 
 .cats-panel{display:contents}
+.cats-panel::details-content{display:contents}
 .cats-panel>summary{list-style:none}
 .cats-panel>summary::-webkit-details-marker{display:none}
 .b2b-all-products{display:none}
 .side-heading{
   display:flex;
+  flex-shrink:0;
   align-items:center;
   gap:10px;
   min-height:52px;
@@ -222,7 +227,8 @@ body.is-catalog .products{min-height:0;overflow:auto;padding-bottom:calc(180px +
   border-bottom:1px solid #a7afb6;
   box-shadow:inset 0 1px #fff;
 }
-.category-nav{flex:1;overflow:auto}
+.category-nav{flex:0 0 auto;min-height:0;overflow:visible}
+body.is-catalog .b2b-workspace>aside>.benefits{flex-shrink:0}
 .category-nav a,
 .category-branch summary{
   display:flex;
@@ -836,6 +842,7 @@ html:has(.b2b-image-dialog[open]){overflow:hidden}
   .cats-panel[open]>.side-heading{flex-shrink:0}
   .cats-panel[open] .category-nav{
     flex:1;
+    min-height:0;
     max-height:none;
     overflow:auto;
     padding:8px;

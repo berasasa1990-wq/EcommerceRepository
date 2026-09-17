@@ -736,3 +736,17 @@
         grid-template-areas: 'logo actions' !important;
     }
 }
+
+/* Smaller product names on storefront category pages. */
+body.category-hide-search .product-catalog .catalog-products .product-card--catalog .product-card__title {
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+    min-height: 2.5em;
+    max-height: 2.5em;
+}
+
+@media (max-width: 1024px) {
+    body.category-hide-search .product-catalog .catalog-products .product-card--catalog .product-card__title {
+        font-size: 11px !important;
+    }
+}

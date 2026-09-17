@@ -205,7 +205,7 @@
         body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
     </style>
     {% endif %}
-    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20260916-category-desktop-search">
+    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20260916-category-smaller-names">
     <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20260915-dock-cart-count">
 
     {% if meta_pixel_id %}
@@ -777,6 +777,7 @@
         </div>
     </div>
     <script src="{% static 'js/set-builder-gate.js' %}?v=20260903beta" defer></script>
+    {% include 'partials/permanent_input_history.html' %}
     {% block extra_js %}{% endblock %}
 </body>
 </html>

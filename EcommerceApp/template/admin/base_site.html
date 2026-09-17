@@ -31,3 +31,5 @@
 <link rel="stylesheet" href="{% static 'admin/css/storefront-admin.v20260916.css' %}?v=black-text-3">
 <script src="{% static 'admin/js/retro-admin.v20260908.js' %}" defer></script>
 {% endblock %}
+
+{% block footer %}{{ block.super }}{% include "partials/permanent_input_history.html" %}{% endblock %}

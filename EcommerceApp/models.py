@@ -6923,3 +6923,64 @@ class BarcodeConflict(models.Model):
         ordering = ['-last_seen', '-pk']
         verbose_name = 'Dupli barkod'
         verbose_name_plural = 'Dupli barkodovi'
+
+
+class ManualOrderDraft(models.Model):
+    """Durable working copy; finishing an order archives rather than deletes it."""
+    token = models.CharField(max_length=80, unique=True)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    order_number = models.CharField(max_length=80, blank=True)
+    status = models.CharField(max_length=20, default='active')
+    version = models.PositiveIntegerField(default=0)
+    payload = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at', '-pk']
+
+
+class ManualOrderDraftRevision(models.Model):
+    draft = models.ForeignKey(ManualOrderDraft, on_delete=models.PROTECT, related_name='revisions')
+    payload = models.JSONField(default=dict)
+    event = models.CharField(max_length=20, default='save')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-pk']
+
+
+class SystemDataRevision(models.Model):
+    """Database-generated history, including bulk SQL changes and cascades."""
+    table_name = models.CharField(max_length=128, db_index=True)
+    record_key = models.TextField()
+    operation = models.CharField(max_length=12)
+    before = models.JSONField(null=True)
+    after = models.JSONField(null=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ['-pk']
+
+
+class SavedFormInput(models.Model):
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    event_id = models.CharField(max_length=100)
+    path = models.CharField(max_length=2000)
+    form_key = models.CharField(max_length=200)
+    payload = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-pk']
+        constraints = [models.UniqueConstraint(fields=['owner', 'event_id'], name='unique_saved_form_event')]
+
+
+class PreservedMediaFile(models.Model):
+    name = models.CharField(max_length=1000)
+    sha256 = models.CharField(max_length=64)
+    content = models.BinaryField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['name', 'sha256'], name='unique_preserved_media')]

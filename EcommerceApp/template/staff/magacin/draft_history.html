@@ -1,0 +1,18 @@
+{% extends 'staff/magacin/base.html' %}
+{% block magacin_content %}
+<h1>Historija unosa narudžbi</h1>
+<p>Prethodni unosi ostaju sačuvani i nakon izmjene, završavanja, rezervacije ili otkazivanja. Vraćanje pravi novi nacrt.</p>
+<a class="mg-btn" href="{% url 'staff_magacin_narudzba_nova' %}">Nastavi narudžbu</a>
+<a class="mg-btn" href="{% url 'staff_magacin_data_history' %}">Historija cijelog sistema</a>
+{% for revision in revisions %}
+<details class="mg-card">
+<summary>{{ revision.created_at|date:'d.m.Y. H:i:s' }} · {{ revision.event }}{% if revision.draft.order_number %} · #{{ revision.draft.order_number }}{% endif %}</summary>
+<table><tbody>{% for field in revision.payload.fields %}<tr><th>{{ field.0 }}</th><td>{{ field.1 }}</td></tr>{% endfor %}</tbody></table>
+{% for line in revision.payload.lines %}<p>{{ line }}</p>{% endfor %}
+{% for key, input in revision.payload.inputs.items %}{% if input.value %}<p>{{ key }}: {{ input.value }}</p>{% endif %}{% endfor %}
+<form method="post" action="{% url 'staff_magacin_draft_restore' revision.pk %}">{% csrf_token %}<button class="mg-btn" type="submit">Vrati kao novi nacrt</button></form>
+</details>
+{% empty %}<p>Još nema sačuvanih promjena.</p>{% endfor %}
+{% if revisions.has_previous %}<a href="?page={{ revisions.previous_page_number }}">Prethodna</a>{% endif %}
+{% if revisions.has_next %}<a href="?page={{ revisions.next_page_number }}">Sljedeća</a>{% endif %}
+{% endblock %}
