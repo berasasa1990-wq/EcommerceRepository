@@ -38,6 +38,9 @@ class EcommerceappConfig(AppConfig):
 
         from django.contrib import admin
 
+        from .admin_forms import TurnstileAdminAuthenticationForm
+
+        admin.site.login_form = TurnstileAdminAuthenticationForm
         admin.site.site_header = 'opremazaribolov.ba Admin'
         admin.site.site_title = 'opremazaribolov.ba'
         admin.site.index_title = 'Upravljanje trgovinom'
