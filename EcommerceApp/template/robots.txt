@@ -5,8 +5,7 @@ User-agent: *
 Allow: /
 
 # Sitemap (Google / Bing)
-Sitemap: https://www.opremazaribolov.ba/sitemap.xml
-
+Sitemap: https://carpologijabh.ba/sitemap.xml
 # —— Ne indeksirati (utility / privatno) ——
 Disallow: /korpa/
 Disallow: /narudzba/

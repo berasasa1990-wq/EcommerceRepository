@@ -869,7 +869,7 @@
     body.catalog-header-reference .product-catalog .product-grid--catalog,
     body.catalog-header-reference .product-catalog .catalog-layout:not(.catalog-layout--full) .product-grid--catalog,
     body.catalog-header-reference.compact-search-results .product-catalog .product-grid--catalog {
-        grid-template-columns:repeat(6,minmax(0,1fr)) !important;
+        grid-template-columns:repeat(5,minmax(0,1fr)) !important;
     }
     body.catalog-header-reference.compact-search-results .product-catalog .catalog-products .product-card--home-reference .product-card__title {
         font-size: 12px !important;

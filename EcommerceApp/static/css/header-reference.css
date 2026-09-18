@@ -1,0 +1,59 @@
+/* Desktop header matching the storefront reference. */
+.desktop-trust-bar,.header-category-select,.header-register{display:none!important}
+@media(min-width:1025px){
+ body .promo-bar{background:#25292c!important;min-height:36px;padding:0 32px!important;color:#fff!important}
+ body .promo-bar>p{display:none!important}
+ body .promo-bar .desktop-trust-bar{display:flex!important;align-items:center;justify-content:space-between;gap:20px;max-width:1660px;min-height:36px;margin:auto}
+ body .promo-bar .desktop-trust-benefits{display:flex;align-items:center;gap:28px}
+ body .promo-bar .desktop-trust-benefits>span{display:flex;align-items:center;gap:12px;color:#fff!important;font-size:13px;font-weight:600;white-space:nowrap}
+ body .promo-bar .desktop-trust-benefits>span+span{border-left:1px solid #7a7d7e;padding-left:28px}
+ .desktop-trust-bar svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.8;flex-shrink:0}
+ body .promo-bar .desktop-trust-bar nav{display:flex;align-items:center;white-space:nowrap}
+ body .promo-bar .desktop-trust-bar nav a{color:#fff!important;font-size:12px;font-weight:400;padding:0 16px;line-height:1;text-decoration:none}
+ .desktop-trust-bar nav a+a{border-left:1px solid #8c8e90}
+ body #header{background:#fff!important;border-bottom:1px solid #e9eaec!important}
+ body #header .header-shell{max-width:1740px;padding:0 28px!important;margin:auto}
+ body #header .header-row--primary{grid-template-columns:minmax(185px,280px) minmax(230px,1fr) auto!important;grid-template-areas:'logo search actions'!important;min-height:120px;padding:26px 0 16px!important;gap:30px!important}
+ body #header .logo-brand{min-width:0;width:100%}
+ body #header .logo-brand>.logo,body #header .logo-image{width:100%;max-width:280px;max-height:86px;object-fit:contain}
+ body #header .header-search{min-width:0;display:block!important}
+ body #header .header-search-form{height:52px!important;min-height:52px!important;border:1px solid #dce0e5!important;background:#fff!important;border-radius:11px!important;box-shadow:0 3px 10px #1421390a!important;overflow:visible!important}
+ body #header .header-search-form .search-combobox{background:transparent!important;flex:1!important;min-width:0!important;padding:0 10px!important}
+ body #header .header-search-form input{color:#202b39!important;font-size:14px!important;height:50px!important;background:transparent!important}
+ body #header .header-search-form input::placeholder{color:#939dab!important}
+ body #header .header-search-icon{color:#414b59!important;padding-left:16px!important}
+ body #header .header-category-select{display:block!important;width:144px;min-width:0;border:0;background:#fff;color:#1e2732;padding:0 12px;font-size:13px;outline-offset:2px}
+ body #header .header-search-form .header-search-submit{display:flex!important;min-width:58px!important;width:58px!important;min-height:50px!important;padding:0!important;background:#ff5100!important;border-radius:0 10px 10px 0!important;color:#fff!important}
+ body #header .header-search-submit-icon{display:block!important;width:23px;height:23px}
+ body #header .header-search-submit-label{display:none!important}
+ body #header .nav-actions{display:flex!important;align-items:center;gap:16px!important}
+ body #header .nav-actions .nav-action-link{display:flex!important;flex-direction:column;justify-content:center;align-items:center;gap:5px;min-width:58px;height:70px;padding:5px 4px!important;border:0;background:transparent;color:#101923!important;text-decoration:none;position:relative}
+ body #header .nav-actions .nav-action-label{display:block!important;color:#101923!important;font-size:13px!important;line-height:1.2;font-weight:600;white-space:nowrap}
+ body #header .nav-actions .nav-action-link svg{width:30px!important;height:30px!important;stroke:currentColor;fill:none}
+ body #header .nav-actions .header-register{display:flex!important;min-width:105px;border:2px dashed #22a323;border-radius:11px;margin:0 5px}
+ body #header .header-register-badge{position:absolute;bottom:calc(100% + 3px);left:50%;transform:translateX(-50%);padding:7px 14px;background:#20a62c;border-radius:7px;color:#fff;font-size:12px;font-weight:700;white-space:nowrap}
+ body #header .nav-actions .header-phone,body #header .nav-actions .reference-header-search,body #header .nav-actions .reference-header-menu{display:none!important}
+ body #header .nav-actions .desktop-sale-link{display:flex!important;align-items:center;gap:12px;background:#ff5100;color:#fff!important;border:0;border-radius:9px;padding:16px 18px!important;margin-left:2px;font-size:13px;font-weight:700;white-space:nowrap;text-decoration:none;box-shadow:0 3px 9px #1421390c}
+ body #header .cart-badge{display:flex!important;background:#ff5100!important;color:#fff!important;border:2px solid white;min-width:24px;height:24px;align-items:center;justify-content:center;top:-10px;right:-12px}
+ body #header .desktop-category-nav{display:flex!important;justify-content:space-between;align-items:center;flex-wrap:nowrap;gap:16px;min-height:51px;border-top:1px solid #edf0f2;padding:0!important}
+ body #header .desktop-category-nav>a,body #header .desktop-category-nav summary{font-size:14px!important;font-weight:600;color:#142035;padding:16px 0!important;white-space:nowrap}
+ body #header .header-row--categories{display:none!important}
+ body #header .desktop-category-dropdown__panel{max-height:65vh;overflow-y:auto}
+}
+@media(min-width:1025px) and (max-width:1350px){
+ body .promo-bar{padding-inline:18px!important}
+ body .promo-bar .desktop-trust-benefits{gap:14px}
+ body .promo-bar .desktop-trust-benefits>span{font-size:11px;gap:7px}
+ body .promo-bar .desktop-trust-benefits>span+span{padding-left:14px}
+ body .promo-bar .desktop-trust-bar nav a{font-size:11px;padding-inline:9px}
+ body #header .header-shell{padding-inline:18px!important}
+ body #header .header-row--primary{grid-template-columns:190px minmax(180px,1fr) auto!important;gap:16px!important}
+ body #header .nav-actions{gap:7px!important}
+ body #header .nav-actions .nav-action-link{min-width:48px}
+ body #header .nav-actions .header-register{min-width:88px;margin-inline:0}
+ body #header .header-register-badge{font-size:10px;padding-inline:8px}
+ body #header .header-category-select{width:112px;font-size:11px;padding-inline:5px}
+ body #header .nav-actions .desktop-sale-link{padding:14px 10px!important;font-size:11px;gap:6px}
+ body #header .desktop-category-nav{gap:10px;flex-wrap:wrap}
+ body #header .desktop-category-nav>a,body #header .desktop-category-nav summary{font-size:12px!important}
+}

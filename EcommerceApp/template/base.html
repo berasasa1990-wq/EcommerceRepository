@@ -75,7 +75,7 @@
     <link rel="dns-prefetch" href="https://www.google-analytics.com">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
     <style>@media(max-width:1024px){.desktop-category-extra,.desktop-category-nav,.desktop-sale-link,.reference-header-heart{display:none!important}}</style>
-    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20260915-categories-one-row" media="(min-width: 1025px)">
+    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20260917-catalog-five-columns" media="(min-width: 1025px)">
 
     {% if meta_pixel_id %}
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin>
@@ -208,6 +208,8 @@
     <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20260916-category-smaller-names">
     <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20260915-dock-cart-count">
 
+    <link rel="stylesheet" href="{% static 'css/header-reference.css' %}?v=20260917">
+
     {% if meta_pixel_id %}
     <!-- Meta Pixel — učitava se nakon prvog rendera da ne koči LCP -->
     <script data-cfasync="false">
@@ -322,6 +324,14 @@
 
     <div class="site-chrome-sticky">
     <div class="promo-bar">
+        <div class="desktop-trust-bar">
+            <div class="desktop-trust-benefits">
+                <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4h13v13H2zM15 9h4l3 4v4h-7M5 8h7M5 11h7"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>Besplatna dostava za narudžbe iznad {{ site_settings.besplatna_dostava_od|default:'250'|floatformat:'-2' }} KM</span>
+                <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 3"/></svg>Brza dostava u roku 24h</span>
+                <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6zM7 11l3 3 6-6"/></svg>Sigurna kupovina</span>
+            </div>
+            <nav aria-label="Informacije"><a href="#footerContact">Kontakt</a><a href="{% url 'about_us' %}">O nama</a><a href="{% url 'vlog_list' %}">Blog</a><a href="{% url 'payment_methods' %}">Pomoć</a></nav>
+        </div>
         <p>
             <span data-site-edit="promo_bar_tekst" data-site-edit-placeholder="Promo tekst">{% if site_settings.promo_bar_tekst %}{{ site_settings.promo_bar_tekst }}{% endif %}</span>
             <a href="{% url 'register' %}"{% if staff_edit_mode %} data-site-edit="promo_bar_link_tekst" data-site-edit-placeholder="Link tekst"{% endif %}>{% if site_settings.promo_bar_link_tekst %}{{ site_settings.promo_bar_link_tekst }}{% elif not staff_edit_mode %}Pridruži se sada{% endif %}</a>
@@ -382,8 +392,12 @@
                             </svg>
                         </span>
                         <div class="search-combobox" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-haspopup="listbox">
-                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, šifri, brandu ili tagu..." autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
+                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, brandu ili kategoriji..." autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
                         </div>
+                        <select name="kategorija" class="header-category-select" aria-label="Kategorija pretrage">
+                            <option value="">Sve kategorije</option>
+                            {% for cat in nav_categories %}<option value="{{ cat.slug }}"{% if filter_params.kategorija == cat.slug %} selected{% endif %}>{{ cat.naziv }}</option>{% endfor %}
+                        </select>
                         <button type="submit" class="header-search-submit" aria-label="Pretraži proizvode">
                             <svg class="header-search-submit-icon" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/></svg>
                             <span class="header-search-submit-label">TRAŽI</span>
@@ -426,18 +440,25 @@
                             <path d="M4 21v-1a8 7 0 0 1 16 0v1Z"/>
                             <circle cx="12" cy="6" r="4"/>
                         </svg>
-                        <span class="nav-action-label">Nalog</span>
+                        <span class="nav-action-label">Prijava</span>
+                    </a>
+                    {% endif %}
+                    {% if not user.is_authenticated %}
+                    <a class="nav-action-link header-register" href="{% url 'register' %}">
+                        <span class="header-register-badge">REGISTRUJ SE</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="6" r="4"/><path d="M2 22v-3a8 7 0 0 1 16 0v3zM20 8v8M16 12h8"/></svg>
+                        <span class="nav-action-label">Registracija</span>
                     </a>
                     {% endif %}
                     <button type="button" class="nav-action-link reference-header-heart" data-mobile-favorites aria-label="Omiljeno">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+                        <span class="nav-action-label">Lista želja</span>
                     </button>
                     <div class="nav-cart-stack">
                     <a href="{% url 'cart' %}" class="nav-action-link cart-btn{% if cart_count %} cart-btn--has-items{% endif %}" aria-label="Korpa" data-cart-count="{{ cart_count|default:0 }}">
                         <span class="nav-action-icon">
                             <svg class="cart-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M5 7h14l1.6 13.2a1.5 1.5 0 0 1-1.5 1.8H4.9a1.5 1.5 0 0 1-1.5-1.8Z"/>
-                    <path d="M9 9V5a3 3 0 0 1 6 0v4"/>
+                    <path d="M2 3h3l3 13h11l3-10H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
                 </svg>
                             <span class="cart-badge">{{ cart_count|default:0 }}</span>
                         </span>
@@ -455,7 +476,7 @@
                     </form>
                     {% endif %}
                     </div>
-                    <a class="desktop-sale-link" href="{% url 'home' %}?akcija=1#product-showcase" hidden>Akcijska ponuda</a>
+                    <a class="desktop-sale-link" href="{% url 'home' %}?akcija=1#product-showcase" hidden>Akcijska ponuda <span aria-hidden="true">%</span></a>
                     <button type="button" class="nav-action-link reference-header-menu" data-mobile-home-menu aria-label="Otvori kategorije"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg></button>
                 </div>
             </div>

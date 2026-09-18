@@ -9,7 +9,8 @@
         {% for cat in nav_categories %}
         <a href="{{ cat.get_absolute_url }}">
             {% if cat.ikonica_pocetna %}
-            <img class="mobile-home-category-icon" src="{{ cat.ikonica_pocetna.url }}" alt="" width="256" height="256" loading="lazy" decoding="async">
+            <img class="mobile-home-category-icon" src="{{ cat.ikonica_pocetna.url }}" alt="" width="256" height="256" loading="eager" decoding="async">
+            <span data-category-icon-fallback hidden>{% include 'partials/nav_category_icon.html' with naziv=cat.naziv slug=cat.slug %}</span>
             {% else %}
             {% include 'partials/nav_category_icon.html' with naziv=cat.naziv slug=cat.slug %}
             {% endif %}
@@ -20,9 +21,11 @@
     </div>
 </section>
 
-<script src="{% static 'js/home-mobile-reference.js' %}?v=20260915-category-arrows" defer></script>
+<script src="{% static 'js/home-mobile-reference.js' %}?v=20260917-category-icons" defer></script>
 
 <style>
+#mobileHomeCategories .mobile-home-category-icon[hidden],
+#mobileHomeCategories [data-category-icon-fallback][hidden] { display: none !important; }
 #mobileHomeCategories .mobile-home-category-grid {
     display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto;
     scroll-snap-type: x mandatory; scrollbar-width: none;

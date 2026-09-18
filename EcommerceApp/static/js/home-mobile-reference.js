@@ -19,6 +19,33 @@
 (() => {
     const track = document.getElementById('homeCategoryTrack');
     if (!track) return;
+    track.querySelectorAll('.mobile-home-category-icon').forEach(image => {
+        const fallback = image.parentElement.querySelector('[data-category-icon-fallback]');
+        let retries = 0;
+        let retryTimer = null;
+        const loaded = () => {
+            clearTimeout(retryTimer);
+            retryTimer = null;
+            image.hidden = false;
+            if (fallback) fallback.hidden = true;
+        };
+        const failed = () => {
+            image.hidden = true;
+            if (fallback) fallback.hidden = false;
+            if (retries >= 2 || retryTimer !== null) return;
+            retries += 1;
+            retryTimer = setTimeout(() => {
+                retryTimer = null;
+                image.src = image.getAttribute('src');
+            }, retries * 1000);
+        };
+        image.addEventListener('load', loaded);
+        image.addEventListener('error', failed);
+        if (image.complete) {
+            if (image.naturalWidth > 0) loaded();
+            else failed();
+        }
+    });
     const buttons = document.querySelectorAll('[data-category-scroll]');
     const update = () => {
         const max = track.scrollWidth - track.clientWidth;
