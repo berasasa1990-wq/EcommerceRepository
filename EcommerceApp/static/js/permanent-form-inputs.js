@@ -6,6 +6,7 @@
     var prefix = 'permanent-form-event.' + config.dataset.user + '.';
     var queue = [];
     var sending = false;
+    var flushTimer = null;
     var localSaved = true;
     var latest = new Map();
     var secret = /password|passwd|lozinka|csrf|token|secret|api.?key|card.?number|cvv|cvc/i;
@@ -14,8 +15,8 @@
             queue.push(JSON.parse(localStorage.getItem(key)));
         });
     } catch (error) {}
-    function persist() {
-        try { queue.forEach(function (event) { localStorage.setItem(prefix + event.event_id, JSON.stringify(event)); }); localSaved = true; return true; }
+    function persist(event) {
+        try { (event ? [event] : queue).forEach(function (event) { localStorage.setItem(prefix + event.event_id, JSON.stringify(event)); }); localSaved = true; return true; }
         catch (error) { localSaved = false; status.textContent = 'Lokalno čuvanje nije dostupno. Sačekaj potvrdu baze prije izlaska.'; return false; }
     }
     function capture(target) {
@@ -35,23 +36,34 @@
         latest.set(form, serialized);
         queue.push({owner: config.dataset.user, event_id: crypto.randomUUID(), path: location.pathname + location.search,
             form_key: form.id || form.getAttribute('action') || 'unos', payload: fields});
-        persist();
+        persist(queue[queue.length - 1]);
         status.textContent = 'Čuvanje unosa u bazu…';
-        flush();
+        if (flushTimer === null) flushTimer = setTimeout(flush, 400);
     }
     async function flush() {
+        clearTimeout(flushTimer);
+        flushTimer = null;
         if (sending || !queue.length) return;
         sending = true;
         try {
-            var body = JSON.stringify(queue[0]);
+            var batch = [];
+            var bytes = 0;
+            for (var event of queue.slice(0, 50)) {
+                var size = JSON.stringify(event).length;
+                if (batch.length && bytes + size > 100000) break;
+                batch.push(event); bytes += size;
+            }
+            var body = JSON.stringify({events: batch});
             var response = await fetch(config.dataset.url, {
                 method: 'POST', credentials: 'same-origin', keepalive: body.length < 18000,
                 headers: {'Content-Type': 'application/json', 'X-CSRFToken': config.querySelector('[name=csrfmiddlewaretoken]').value},
                 body: body
             });
             if (!response.ok || !(await response.json()).ok) throw new Error('save');
-            var saved = queue.shift();
-            try { localStorage.removeItem(prefix + saved.event_id); } catch (error) {}
+            queue.splice(0, batch.length);
+            batch.forEach(function (saved) {
+                try { localStorage.removeItem(prefix + saved.event_id); } catch (error) {}
+            });
             status.textContent = queue.length ? 'Čuvanje unosa u bazu…' : 'Unos je sačuvan u bazi.';
         } catch (error) {
             status.textContent = localSaved ? 'Unos čeka vezu s bazom. Ne briši podatke preglednika dok čuvanje ne bude potvrđeno.' : 'Unos nije sačuvan ni lokalno ni u bazi. Ne zatvaraj ovu stranicu.';
@@ -65,7 +77,7 @@
         if (first) capture(first);
     }, true);
     window.addEventListener('online', flush);
-    window.addEventListener('pagehide', persist);
+    window.addEventListener('pagehide', function () { persist(); flush(); });
     document.addEventListener('visibilitychange', function () { if (document.hidden) flush(); });
     setInterval(flush, 3000);
     flush();

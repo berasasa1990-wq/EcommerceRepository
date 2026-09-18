@@ -4,6 +4,7 @@ import re
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_POST
@@ -19,34 +20,41 @@ SENSITIVE = re.compile(r'password|passwd|lozinka|csrf|token|secret|api.?key|card
 @require_POST
 def save_input(request):
     try:
-        data = json.loads(request.body)
-        if not isinstance(data, dict):
+        body = json.loads(request.body)
+        events = body.get('events') if isinstance(body, dict) and 'events' in body else [body]
+        if not isinstance(events, list) or not 1 <= len(events) <= 50:
             raise ValueError
-        if str(data.get('owner', request.user.pk)) != str(request.user.pk):
-            return JsonResponse({'error': 'Prijavljeni korisnik je promijenjen.'}, status=403)
-        event_id = data['event_id']
-        if not isinstance(event_id, str) or not re.fullmatch(r'[a-zA-Z0-9_-]{1,100}', event_id):
-            raise ValueError
-        fields = data['payload']
-        if not isinstance(fields, list):
-            raise ValueError
-        safe = []
-        for field in fields:
-            if not isinstance(field, dict):
+        rows = []
+        for data in events:
+            if not isinstance(data, dict):
                 raise ValueError
-            name = str(field.get('name', ''))
-            if SENSITIVE.search(name) or field.get('type') in ('password', 'file'):
-                continue
-            safe.append(field)
-        path = str(data.get('path', ''))[:2000]
-        if not path.startswith('/'):
-            raise ValueError
+            if str(data.get('owner', request.user.pk)) != str(request.user.pk):
+                return JsonResponse({'error': 'Prijavljeni korisnik je promijenjen.'}, status=403)
+            event_id = data['event_id']
+            if not isinstance(event_id, str) or not re.fullmatch(r'[a-zA-Z0-9_-]{1,100}', event_id):
+                raise ValueError
+            fields = data['payload']
+            if not isinstance(fields, list):
+                raise ValueError
+            safe = []
+            for field in fields:
+                if not isinstance(field, dict):
+                    raise ValueError
+                name = str(field.get('name', ''))
+                if SENSITIVE.search(name) or field.get('type') in ('password', 'file'):
+                    continue
+                safe.append(field)
+            path = str(data.get('path', ''))[:2000]
+            if not path.startswith('/'):
+                raise ValueError
+            rows.append(SavedFormInput(owner=request.user, event_id=event_id, path=path,
+                form_key=str(data.get('form_key', ''))[:200], payload=safe))
     except (ValueError, KeyError, TypeError):
         return JsonResponse({'error': 'Neispravan unos.'}, status=400)
-    SavedFormInput.objects.get_or_create(owner=request.user, event_id=event_id, defaults={
-        'path': path, 'form_key': str(data.get('form_key', ''))[:200], 'payload': safe,
-    })
-    return JsonResponse({'ok': True})
+    # Preserve every version; batch only transport/SQL, never discard keystrokes.
+    with transaction.atomic():
+        SavedFormInput.objects.bulk_create(rows, ignore_conflicts=True)
+    return JsonResponse({'ok': True, 'saved': [row.event_id for row in rows]})
 
 
 @login_required(login_url='login')

@@ -4487,6 +4487,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(page, 'Backup baze')
         self.assertContains(page, reverse('staff_magacin_backup'))
 
+    @override_settings(STORAGES={'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'}, 'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
     def test_backup_create_list_and_download(self):
         import sqlite3
 
@@ -4579,8 +4580,9 @@ class MagacinViewTests(TestCase):
                 self.assertEqual(uploaded.status_code, 302)
                 self.assertEqual(uploaded['Location'], reverse('staff_magacin_podesavanja'))
                 uploaded_restore.assert_called_once()
-                self.assertTrue((Path(tmp) / 'db-upload-test.sqlite3').is_file())
+                self.assertEqual(len(list(Path(tmp).glob('db-upload-*.sqlite3'))), 1)
 
+    @override_settings(STORAGES={'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'}, 'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
     def test_backup_lists_all_and_never_deletes(self):
         from .db_backup import create_backup, list_backups
 

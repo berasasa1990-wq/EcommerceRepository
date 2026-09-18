@@ -18,6 +18,7 @@ Opcije:
 from __future__ import annotations
 
 import os
+import uuid
 import shutil
 import zipfile
 from datetime import datetime
@@ -153,7 +154,7 @@ def build_r2_zip(
 
     with zipfile.ZipFile(
         dest,
-        mode='w',
+        mode='x',
         compression=zipfile.ZIP_STORED,
         allowZip64=True,
     ) as zf:
@@ -221,7 +222,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--force',
             action='store_true',
-            help='Prepiši ZIP ako već postoji isto ime.',
+            help='Kompatibilnost: uvijek pravi novu kopiju bez prepisivanja.',
         )
         parser.add_argument(
             '--limit',
@@ -238,16 +239,12 @@ class Command(BaseCommand):
         out_dir.mkdir(parents=True, exist_ok=True)
 
         prefix = (options.get('prefix') or '').strip()
-        force = options['force']
         limit = int(options.get('limit') or 0)
 
         stamp = datetime.now().strftime('%Y%m%d-%H%M%S')
         safe_prefix = prefix.replace('/', '-').strip('-') if prefix else 'all'
-        zip_name = f'r2-backup-{safe_prefix}-{stamp}.zip'
+        zip_name = f'r2-backup-{safe_prefix}-{stamp}-{uuid.uuid4().hex}.zip'
         dest = out_dir / zip_name
-
-        if dest.exists() and not force:
-            raise CommandError(f'Već postoji {dest} — koristi --force')
 
         on_render = bool(
             os.environ.get('RENDER')
@@ -268,6 +265,11 @@ class Command(BaseCommand):
             log=self.stdout.write,
         )
 
+        if result['errors']:
+            raise CommandError(
+                f'Backup nije potpun: {result["errors"]} fajlova nedostaje. '
+                f'Preuzeti podaci ostaju sačuvani u {result["path"]}. Ponovi backup u novu kopiju.'
+            )
         self.stdout.write(self.style.SUCCESS('✓ R2 backup gotov'))
         self.stdout.write(f'  ZIP:      {result["path"].resolve()}')
         self.stdout.write(f'  Veličina: {result["zip_bytes"] / (1024 * 1024):.2f} MB')
@@ -278,8 +280,4 @@ class Command(BaseCommand):
         if not on_render and out_dir == (Path.home() / 'Downloads').resolve():
             self.stdout.write(self.style.SUCCESS(
                 '  → Otvori Finder → Downloads (Preuzimanja)',
-            ))
-        if result['errors']:
-            self.stdout.write(self.style.WARNING(
-                f'  {result["errors"]} fajl(ova) nije u ZIP-u — vidi GREŠKA linije gore.',
             ))

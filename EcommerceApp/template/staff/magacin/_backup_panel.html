@@ -1,6 +1,6 @@
 <section class="mg-card" id="backupBaze">
     <h2 class="mg-h">Backup baze</h2>
-    <p class="mg-lead">Preuzmi bazu na svoj disk i čuvaj je kod sebe. Uploadom istog fajla vraćaš sajt na to stanje. Prije restore-a sistem prvo sačuva trenutnu bazu.</p>
+    <p class="mg-lead">Preuzmi bazu na svoj disk i čuvaj je kod sebe. Uploadom istog fajla vraćaš sajt na to stanje. Stare kopije se ne brišu niti prepisuju. Prije vraćanja sistem provjerava backup i sačuva trenutnu bazu.</p>
     {% if backup_status.warning %}
     <p class="mg-warn">{{ backup_status.warning }}</p>
     {% endif %}

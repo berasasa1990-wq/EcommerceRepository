@@ -70,6 +70,29 @@ class PermanentHistoryTests(TestCase):
         self.assertEqual(self.client.get(reverse('staff_magacin_data_history')).status_code, 200)
         self.assertEqual(self.client.get(reverse('staff_magacin_data_history'), {'unos': '1'}).status_code, 200)
 
+    def test_input_batch_preserves_each_version_and_retries(self):
+        owner = get_user_model().objects.create_superuser('batch-owner', '', 'password')
+        self.client.force_login(owner)
+        events = [{'event_id': f'batch-{index}', 'path': '/nalog/', 'payload': [
+            {'name': 'naziv', 'type': 'text', 'value': str(index)}]} for index in range(50)]
+        for _ in range(2):
+            response = self.client.post(reverse('staff_magacin_save_input'),
+                json.dumps({'events': events}), content_type='application/json')
+            self.assertEqual(response.status_code, 200)
+        self.assertEqual(SavedFormInput.objects.count(), 50)
+        self.assertEqual({row.payload[0]['value'] for row in SavedFormInput.objects.all()},
+                         {str(index) for index in range(50)})
+
+    def test_invalid_batch_does_not_acknowledge_or_save_partial_input(self):
+        owner = get_user_model().objects.create_superuser('invalid-owner', '', 'password')
+        self.client.force_login(owner)
+        valid = {'event_id': 'valid-event', 'path': '/nalog/', 'payload': []}
+        for invalid, status in [({'event_id': '!'}, 400), (dict(valid, owner='someone-else'), 403)]:
+            response = self.client.post(reverse('staff_magacin_save_input'),
+                json.dumps({'events': [valid, invalid]}), content_type='application/json')
+            self.assertEqual(response.status_code, status)
+            self.assertFalse(SavedFormInput.objects.exists())
+
     def test_non_owner_cannot_access_history(self):
         user = get_user_model().objects.create_user('customer', password='password')
         self.client.force_login(user)

@@ -2249,10 +2249,11 @@ def _home_latest_products(request=None):
 
 
 def _home_latest_products_uncached(request=None):
-    recent_ids = list(
-        _home_product_queryset(request).order_by('-kreiran', '-pk')
-        .values_list('pk', flat=True)[:50]
-    )
+    candidates = Product.objects.filter(aktivan=True, na_stanju=True, stanje__gt=0)
+    if not _staff_edit_mode_enabled(request):
+        candidates = candidates.filter(sakriven_do_stanja=False)
+    # IDs do not need product-card joins, variation counts or prefetches.
+    recent_ids = list(candidates.order_by('-kreiran', '-pk').values_list('pk', flat=True)[:50])
     selected_ids = random.sample(recent_ids, min(HOME_SECTION_PRODUCT_LIMIT, len(recent_ids)))
     products = {product.pk: product for product in _home_product_queryset(request).filter(pk__in=selected_ids)}
     return [products[pk] for pk in selected_ids if pk in products]
@@ -2577,20 +2578,19 @@ def facebook_domain_verification(request):
 
 
 def home(request):
-    hero_banners = _banners_with_media(Banner.objects.filter(
-        tip=Banner.BannerType.HERO, aktivan=True,
-    ).order_by('redoslijed', '-id'))
+    # Fetch the four banner groups together instead of four round trips.
+    banner_groups = {}
+    for banner in _banners_with_media(
+        Banner.objects.filter(aktivan=True).select_related('kategorija').order_by('redoslijed', '-id')
+    ):
+        banner_groups.setdefault(banner.tip, []).append(banner)
+    hero_banners = banner_groups.get(Banner.BannerType.HERO, [])
     grid_banners = _filter_banners_for_empty_categories(
-        _banners_with_media(Banner.objects.filter(
-            tip=Banner.BannerType.GRID, aktivan=True,
-        ).select_related('kategorija').order_by('redoslijed', '-id'))[:3]
+        banner_groups.get(Banner.BannerType.GRID, [])[:3]
     )
-    featured_banners = _banners_with_media(Banner.objects.filter(
-        tip=Banner.BannerType.FEATURED, aktivan=True,
-    ).order_by('redoslijed', '-id'))
-    spotlight_banner = _banners_with_media(Banner.objects.filter(
-        tip=Banner.BannerType.SPOTLIGHT, aktivan=True,
-    ).order_by('redoslijed', '-id')).first()
+    featured_banners = banner_groups.get(Banner.BannerType.FEATURED, [])
+    spotlights = banner_groups.get(Banner.BannerType.SPOTLIGHT, [])
+    spotlight_banner = spotlights[0] if spotlights else None
 
     filter_params = _get_filter_params(request)
     filters_active = _filters_active(filter_params)

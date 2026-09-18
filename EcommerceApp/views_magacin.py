@@ -8956,7 +8956,7 @@ def magacin_backup_download(request, name):
 @require_GET
 def magacin_backup_download_current(request):
     try:
-        info = create_backup()
+        info = create_backup(require_durable=False)
         path = resolve_backup_file(info['name'])
     except BackupError as exc:
         messages.error(request, str(exc) if str(exc) else 'Backup nije uspio.')

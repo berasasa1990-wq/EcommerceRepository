@@ -10,7 +10,7 @@ Render / Postgres (ako je DATABASE_URL postavljen):
   # koristi pg_dump ako je dostupan, inače jasna greška
 
 Opcije:
-  --force     prepiši ako fajl već postoji (isti timestamp je rijedak)
+  --force     zadržana kompatibilnost; stare kopije se nikada ne prepisuju
   --media     uz bazu spakuj i media/ folder
   --out DIR   odredišni folder (default: backups/ ili RENDER_DISK_PATH/db-backups)
 """
@@ -21,7 +21,6 @@ from pathlib import Path
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-from django.utils import timezone
 
 from EcommerceApp.db_backup import BackupError, create_backup
 
@@ -33,7 +32,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--force',
             action='store_true',
-            help='Prepiši postojeći backup fajl istog imena.',
+            help='Kompatibilnost: uvijek pravi novu kopiju, bez prepisivanja.',
         )
         parser.add_argument(
             '--media',
@@ -67,9 +66,8 @@ class Command(BaseCommand):
             if not media_root.is_dir():
                 self.stdout.write(self.style.WARNING(f'  media/ ne postoji: {media_root}'))
                 return
-            stamp = timezone.localtime().strftime('%Y%m%d-%H%M%S')
             folder = dest.parent
-            archive_base = folder / f'media-{stamp}'
+            archive_base = folder / f'media-{dest.stem}'
             shutil.make_archive(str(archive_base), 'gztar', root_dir=str(media_root))
             made = Path(str(archive_base) + '.tar.gz')
             self.stdout.write(self.style.SUCCESS(f'✓ Backup media: {made}'))

@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import os
+import hashlib
+import uuid
 import re
 import shutil
 import subprocess
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 
@@ -72,9 +75,9 @@ def backup_storage_status() -> dict:
     """Gdje stoje backupi i da li prežive deploy."""
     disk = (os.environ.get('RENDER_DISK_PATH') or '').strip()
     disk_path = Path(disk) if disk else None
-    disk_ok = bool(disk_path and disk_path.is_dir())
+    disk_ok = bool(disk_path and os.path.ismount(disk_path))
     try:
-        root = backup_root(create=True)
+        root = backup_root(create=False)
     except OSError:
         root = backup_root(create=False)
     persistent = False
@@ -108,7 +111,7 @@ def absorb_ephemeral_backups() -> int:
     if getattr(settings, 'MAGACIN_BACKUP_DIR', None):
         return 0
     disk = (os.environ.get('RENDER_DISK_PATH') or '').strip()
-    if not disk:
+    if not disk or not backup_storage_status()['persistent']:
         return 0
     try:
         persistent = (Path(disk) / 'db-backups').resolve()
@@ -133,9 +136,14 @@ def absorb_ephemeral_backups() -> int:
             if dest.exists():
                 continue
             try:
-                shutil.copy2(path, dest)
+                # Exclusive copy: never replace an existing snapshot or leave
+                # an incomplete file visible in the restore list.
+                partial = persistent / (path.name + '.' + uuid.uuid4().hex + '.partial')
+                validate_backup(path, 'sqlite' if path.suffix == '.sqlite3' else 'postgres')
+                shutil.copy2(path, partial)
+                _publish_backup(partial, dest, 'sqlite' if path.suffix == '.sqlite3' else 'postgres')
                 moved += 1
-            except OSError:
+            except (OSError, BackupError):
                 continue
     return moved
 
@@ -152,24 +160,20 @@ def save_uploaded_backup(uploaded) -> dict:
         prefix = 'postgres'
     else:
         raise BackupError('Fajl mora biti .sqlite3 (lokalna baza) ili .dump (sajt / Postgres).')
-    safe = original if BACKUP_FILE_RE.match(original) else f'{prefix}-upload-{_stamp()}{suffix}'
+    safe = f'{prefix}-upload-{_stamp()}-{uuid.uuid4().hex}{suffix}'
     root = backup_root()
     dest = root / safe
-    extra = 0
-    while dest.exists():
-        extra += 1
-        dest = root / f'{Path(safe).stem}-{extra}{suffix}'
-    with dest.open('wb') as out:
-        if hasattr(uploaded, 'chunks'):
-            for chunk in uploaded.chunks():
-                out.write(chunk)
-        else:
-            data = uploaded.read() if hasattr(uploaded, 'read') else uploaded
-            out.write(data)
-    if not dest.is_file() or dest.stat().st_size <= 0:
-        dest.unlink(missing_ok=True)
-        raise BackupError('Upload je prazan.')
-    return _info(dest)
+    partial = root / (safe + '.partial')
+    try:
+        with partial.open('xb') as out:
+            if hasattr(uploaded, 'chunks'):
+                for chunk in uploaded.chunks():
+                    out.write(chunk)
+            else:
+                out.write(uploaded.read() if hasattr(uploaded, 'read') else uploaded)
+        return _publish_backup(partial, dest, 'sqlite' if suffix == '.sqlite3' else 'postgres')
+    except OSError as exc:
+        raise BackupError('Upload nije sačuvan. Provjeri prostor i dozvole diska.') from exc
 
 
 def _is_backup_file(path: Path) -> bool:
@@ -262,7 +266,7 @@ def _backup_sqlite(dest: Path) -> Path:
     dst = sqlite3.connect(str(dest))
     try:
         if live is not None:
-            src = sqlite3.connect(f'file:{live}?mode=ro', uri=True)
+            src = sqlite3.connect(live.as_uri() + '?mode=ro', uri=True)
             try:
                 src.backup(dst)
             finally:
@@ -288,8 +292,7 @@ def _backup_postgres(dest: Path) -> Path:
     try:
         subprocess.run(cmd, check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as exc:
-        if dest.exists():
-            dest.unlink(missing_ok=True)
+        # Keep the incomplete file for diagnosis; it is never listed for restore.
         raise BackupError(
             f'pg_dump nije uspio (exit {exc.returncode}). {exc.stderr or exc.stdout or ""}'.strip()
         ) from exc
@@ -300,21 +303,9 @@ def _backup_postgres(dest: Path) -> Path:
 
 def _restore_sqlite(src_path: Path) -> None:
     import sqlite3
-    from django.db import connections
-
-    live = _sqlite_file_path()
-    if live is not None:
-        connections.close_all()
-        for suffix in ('-wal', '-shm'):
-            extra = Path(str(live) + suffix)
-            extra.unlink(missing_ok=True)
-        shutil.copy2(src_path, live)
-        for suffix in ('-wal', '-shm'):
-            extra = Path(str(live) + suffix)
-            extra.unlink(missing_ok=True)
-        return
-
-    src = sqlite3.connect(f'file:{src_path}?mode=ro', uri=True)
+    # SQLite's backup API replaces the destination in a transaction and handles
+    # existing WAL connections without unlinking files beneath other workers.
+    src = sqlite3.connect(src_path.resolve().as_uri() + '?mode=ro', uri=True)
     try:
         dst = _sqlite_conn()
         src.backup(dst)
@@ -334,6 +325,8 @@ def _restore_postgres(src_path: Path) -> None:
     connections.close_all()
     cmd = [
         pg_restore,
+        '--single-transaction',
+        '--exit-on-error',
         '--clean',
         '--if-exists',
         '--no-owner',
@@ -362,36 +355,87 @@ def _info(path: Path) -> dict:
     }
 
 
-def create_backup(*, out_dir: Path | str | None = None, keep=None, protect=None) -> dict:
-    """Napravi novi backup. Stari se nikad ne brišu."""
-    root = Path(out_dir).expanduser().resolve() if out_dir else backup_root()
-    root.mkdir(parents=True, exist_ok=True)
-    kind = engine_kind()
-    stamp = _stamp()
-    dest = None
-    for extra in range(30):
-        suffix = '' if extra == 0 else f'-{extra}'
-        candidate = root / (
-            f'db-{stamp}{suffix}.sqlite3' if kind == 'sqlite' else f'postgres-{stamp}{suffix}.dump'
-        )
-        if not candidate.exists():
-            dest = candidate
-            break
-    if dest is None:
-        raise BackupError('Backup fajl već postoji — pokušaj ponovo.')
-    if kind == 'sqlite':
-        _backup_sqlite(dest)
-    else:
-        _backup_postgres(dest)
+def _checksum(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open('rb') as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def validate_backup(path: Path, kind: str) -> None:
+    """Reject damaged copies before touching the live database."""
+    import sqlite3
+    try:
+        checksum = Path(str(path) + '.sha256')
+        if checksum.exists() and checksum.read_text().strip() != _checksum(path):
+            raise BackupError('Backup je oštećen: kontrolni zbir se ne podudara.')
+        if kind == 'sqlite':
+            with closing(sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True)) as db:
+                if db.execute('PRAGMA quick_check').fetchall() != [('ok',)]:
+                    raise BackupError('SQLite backup nije ispravan.')
+                if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' LIMIT 1").fetchone():
+                    raise BackupError('Backup ne sadrži tabele.')
+        else:
+            command = shutil.which('pg_restore')
+            if not command:
+                raise BackupError('pg_restore je potreban za provjeru backupa.')
+            subprocess.run([command, '--list', str(path)], check=True, capture_output=True)
+    except (OSError, sqlite3.DatabaseError, subprocess.CalledProcessError) as exc:
+        raise BackupError('Backup nije prošao provjeru ispravnosti.') from exc
+
+
+def _publish_backup(partial: Path, dest: Path, kind: str) -> dict:
+    validate_backup(partial, kind)
+    with partial.open('rb') as source:
+        os.fsync(source.fileno())
+    # Exclusive link publishes the completed snapshot without ever replacing a file.
+    checksum = Path(str(dest) + '.sha256')
+    with checksum.open('x') as output:
+        output.write(_checksum(partial) + '\n')
+        output.flush()
+        os.fsync(output.fileno())
+    os.link(partial, dest)
+    partial.unlink()
+    descriptor = os.open(dest.parent, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
     return _info(dest)
 
 
-def list_backups(*, out_dir: Path | str | None = None) -> list[dict]:
+def create_backup(*, out_dir: Path | str | None = None, keep=None, protect=None,
+                  require_durable: bool = True) -> dict:
+    """Napravi provjeren novi backup. Stari se nikad ne brišu ni prepisuju."""
+    root = Path(out_dir).expanduser().resolve() if out_dir else backup_root(create=False)
+    if require_durable and _on_render():
+        disk = (os.environ.get('RENDER_DISK_PATH') or '').strip()
+        if not disk or not os.path.ismount(disk) or not root.is_relative_to(Path(disk).resolve()):
+            raise BackupError('Backup na server nije sačuvan: potreban je montiran trajni disk. '
+                              'Preuzmi backup na računar dok se trajni disk ne podesi.')
+    kind = engine_kind()
+    name = f"{'db' if kind == 'sqlite' else 'postgres'}-{_stamp()}-{uuid.uuid4().hex}"
+    dest = root / (name + ('.sqlite3' if kind == 'sqlite' else '.dump'))
+    partial = root / (dest.name + '.partial')
+    try:
+        root.mkdir(parents=True, exist_ok=True)
+        if kind == 'sqlite':
+            _backup_sqlite(partial)
+        else:
+            _backup_postgres(partial)
+        return _publish_backup(partial, dest, kind)
+    except OSError as exc:
+        raise BackupError('Backup nije završen. Provjeri prostor i dozvole diska; stare kopije ostaju sačuvane.') from exc
+
+
+def list_backups(*, out_dir: Path | str | None = None, migrate: bool = True) -> list[dict]:
     try:
         if out_dir:
             roots = [Path(out_dir).expanduser().resolve()]
         else:
-            absorb_ephemeral_backups()
+            if migrate:
+                absorb_ephemeral_backups()
             roots = backup_search_dirs()
     except (OSError, BackupError):
         return []
@@ -423,11 +467,20 @@ def list_backups(*, out_dir: Path | str | None = None) -> list[dict]:
 
 
 def last_backup(*, out_dir: Path | str | None = None) -> dict | None:
+    from django.core.cache import cache
+    roots = [Path(out_dir)] if out_dir else backup_search_dirs()
     try:
-        rows = list_backups(out_dir=out_dir)
+        signature = repr([(str(root), root.stat().st_mtime_ns) for root in roots])
+        key = 'backup-last:' + hashlib.sha256(signature.encode()).hexdigest()
+        cached = cache.get(key)
+        if cached is not None:
+            return cached['row']
+        rows = list_backups(out_dir=out_dir, migrate=False)
+        row = rows[0] if rows else None
+        cache.set(key, {'row': row}, 30)
+        return row
     except (OSError, BackupError):
         return None
-    return rows[0] if rows else None
 
 
 def resolve_backup_file(name: str, *, out_dir: Path | str | None = None) -> Path:
@@ -459,6 +512,7 @@ def restore_backup(name: str, *, out_dir: Path | str | None = None, safety: bool
         raise BackupError(
             f'Ovaj backup je za {src_kind}, a trenutna baza je {kind}.'
         )
+    validate_backup(src, kind)
     safety_info = None
     if safety:
         safety_info = create_backup(out_dir=out_dir, protect={src.name})

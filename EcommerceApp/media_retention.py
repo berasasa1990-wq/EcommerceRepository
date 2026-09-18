@@ -9,7 +9,7 @@ from django.utils.deprecation import MiddlewareMixin
 def preserve_bytes(name, content):
     from .models import PreservedMediaFile
     data = bytes(content)
-    PreservedMediaFile.objects.get_or_create(
+    PreservedMediaFile.objects.only('pk').get_or_create(
         name=str(name)[:1000], sha256=hashlib.sha256(data).hexdigest(), defaults={'content': data},
     )
 

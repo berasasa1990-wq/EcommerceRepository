@@ -112,11 +112,11 @@ def send_event(
     custom_data=None,
     event_source_url=None,
 ):
-    logger.warning('Meta CAPI send_event entered: %s', event_name)
+    logger.debug('Meta CAPI send_event entered: %s', event_name)
     pixel_id_present = bool(str(getattr(settings, 'META_PIXEL_ID', '') or '').strip())
     access_token_present = bool(str(getattr(settings, 'META_ACCESS_TOKEN', '') or '').strip())
     if not is_configured():
-        logger.warning(
+        logger.debug(
             'Meta CAPI not configured: pixel_id_present=%s access_token_present=%s',
             pixel_id_present, access_token_present,
         )
@@ -166,7 +166,7 @@ def send_event(
 
 
 def _post_meta_event(url, body, event_name, event_id, test_mode=False):
-    logger.warning(
+    logger.debug(
         'Meta CAPI POST starting: event=%s event_id=%s test_mode=%s',
         event_name, event_id, test_mode,
     )
