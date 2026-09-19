@@ -1,9 +1,9 @@
 from html.parser import HTMLParser
 
 from django.template import Context
-from django.template.loader import get_template
+from django.template.loader import get_template, render_to_string
 from django.template.loader_tags import BlockNode
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 
 
 class PreloadLinks(HTMLParser):
@@ -64,3 +64,29 @@ class HomeBannerPreloadTests(SimpleTestCase):
 
     def test_no_lcp_image_does_not_emit_preloads(self):
         self.assertEqual(self.links(lcp_image_url=None), [])
+
+    @override_settings(STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    })
+    def test_media_preconnect_is_unique_and_precedes_hero_preloads(self):
+        from .models import SiteSettings
+        html = render_to_string('home.html', {
+            'site_settings': SiteSettings(),
+            'lcp_image_url': '/desktop.jpg',
+            'lcp_image_sizes': '100vw',
+            'hero_slides': [{'has_mobile_image': True, 'has_video': False,
+                             'image_mobile': '/mobile.jpg', 'image': '/desktop.jpg'}],
+        })
+        head = html.split('<head>', 1)[1].split('</head>', 1)[0]
+        links = PreloadLinks(head).links
+        preconnect = {'rel': 'preconnect', 'href': 'https://media.opremazaribolov.ba'}
+        matching = [link for link in links if link.get('rel') == 'preconnect'
+                    and link.get('href') == preconnect['href']]
+        self.assertEqual(matching, [preconnect])
+        self.assertEqual(PreloadLinks(html).links.count(preconnect), 1)
+        hero_preloads = [link for link in links if link.get('rel') == 'preload'
+                         and link.get('as') == 'image']
+        self.assertEqual({link['href'] for link in hero_preloads}, {'/mobile.jpg', '/desktop.jpg'})
+        for link in hero_preloads + [link for link in links if link.get('rel') == 'stylesheet']:
+            self.assertLess(links.index(preconnect), links.index(link))
