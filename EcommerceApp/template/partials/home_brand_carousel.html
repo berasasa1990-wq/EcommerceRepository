@@ -1,11 +1,10 @@
 {% if brands %}
 {# 2 reda brend logo-a — više brendova odjednom, uredno i čitljivo #}
-<div class="home-brand-grid" role="list">
+<div class="home-brand-grid">
     {% for brand in brands %}
     <a href="{% url 'home' %}?brend={{ brand.slug }}#product-showcase"
        class="showcase-brand-link home-brand-grid__item"
-       title="{{ brand.naziv }}"
-       role="listitem">
+       title="{{ brand.naziv }}">
         <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" class="showcase-brand-logo" width="120" height="30" loading="lazy" decoding="async">
     </a>
     {% endfor %}
