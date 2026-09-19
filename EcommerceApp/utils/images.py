@@ -26,13 +26,13 @@ BANNER_MAX_WIDTH = 1920
 HERO_BANNER_MAX_WIDTH = 2172
 HERO_BANNER_MAX_HEIGHT = 724
 HERO_BANNER_RESPONSIVE_WIDTHS = (640, 960, 1280, 1600, 2172)
-MAX_BANNER_UPLOAD_BYTES = 300_000
+MAX_BANNER_UPLOAD_BYTES = 200_000
 HERO_JPEG_VARIANT_MAX_BYTES = {
     640: 36 * 1024,
     960: 48 * 1024,
     1280: 120_000,
     1600: MAX_BANNER_UPLOAD_BYTES,
-    2172: 300_000,
+    2172: MAX_BANNER_UPLOAD_BYTES,
 }
 MAX_GRID_BANNER_AVIF_BYTES = MAX_BANNER_UPLOAD_BYTES
 GRID_BANNER_MAX_DIMENSION = 360
@@ -74,7 +74,7 @@ BANNER_WIDE_VARIANT_MAX_BYTES = {
 # Mobilni hero: ograniči rezoluciju, ali sačuvaj originalni omjer slike.
 HERO_MOBILE_MAX_WIDTH = 1080
 HERO_MOBILE_MAX_HEIGHT = 1350
-MAX_HERO_MOBILE_BYTES = 300_000  # 300 KB
+MAX_HERO_MOBILE_BYTES = MAX_BANNER_UPLOAD_BYTES
 
 BANNER_AVIF_SETTINGS = {
     'grid': {
@@ -1383,7 +1383,7 @@ def _process_banner_image_for_admin(image_field, tip='hero'):
     )
 
 
-MAX_HOME_BANNER_BYTES = 300_000
+MAX_HOME_BANNER_BYTES = MAX_BANNER_UPLOAD_BYTES
 
 
 def _limit_banner_file(content):
@@ -1403,7 +1403,7 @@ def _limit_banner_file(content):
             if buffer.tell() <= MAX_HOME_BANNER_BYTES:
                 return ContentFile(buffer.getvalue(), name=content.name)
         image = image.resize((max(1, int(image.width * 0.9)), max(1, int(image.height * 0.9))), Image.Resampling.LANCZOS)
-    raise ValueError('Banner se ne može smanjiti ispod 300 KB. Pokušajte drugu sliku.')
+    raise ValueError('Banner se ne može smanjiti ispod 200 KB. Pokušajte drugu sliku.')
 
 
 def process_banner_image_for_admin(image_field, tip='hero'):
@@ -1900,7 +1900,7 @@ def apply_image_processing(instance, field_name, post_process=None):
         processor = getattr(post_process, 'func', post_process)
         if processor is process_banner_image_for_admin:
             # Never bypass the hard banner limit by storing a large raw upload.
-            raise ValueError('Banner nije sačuvan: obrada do 300 KB nije uspjela. Pokušajte drugu sliku.') from exc
+            raise ValueError('Banner nije sačuvan: obrada do 200 KB nije uspjela. Pokušajte drugu sliku.') from exc
         if _save_raw_upload(getattr(instance, field_name)):
             logger.warning(
                 'Sačuvan je originalni upload bez obrade za %s.%s (%s).',

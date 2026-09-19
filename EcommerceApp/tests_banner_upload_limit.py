@@ -15,11 +15,11 @@ class BannerUploadLimitTests(SimpleTestCase):
         Image.effect_noise((1800, 1000), 100).convert('RGB').save(buffer, format='PNG')
         return buffer.getvalue()
 
-    def test_large_image_is_reencoded_under_300kb(self):
+    def test_large_image_is_reencoded_under_200kb(self):
         original = self.noisy()
-        self.assertGreater(len(original), 300000)
+        self.assertGreater(len(original), 200000)
         output = _limit_banner_file(ContentFile(original, name='banner.png'))
-        self.assertLessEqual(output.size, 300000)
+        self.assertLessEqual(output.size, 200000)
         with Image.open(output) as image:
             image.verify()
 
@@ -29,6 +29,26 @@ class BannerUploadLimitTests(SimpleTestCase):
         original = buffer.getvalue()
         self.assertEqual(_limit_banner_file(ContentFile(original, name='small.jpg')).read(), original)
 
+    def test_exact_limit_preserves_original_bytes_and_resolution(self):
+        buffer = BytesIO()
+        Image.new('RGB', (1920, 640), '#5080a0').save(buffer, format='JPEG', quality=95)
+        original = buffer.getvalue().ljust(200000, b'\0')
+        output = _limit_banner_file(ContentFile(original, name='banner.jpg'))
+        self.assertEqual(output.read(), original)
+        output.seek(0)
+        with Image.open(output) as image:
+            self.assertEqual(image.size, (1920, 640))
+
+    def test_file_between_old_and_new_limit_is_reencoded_without_resizing(self):
+        buffer = BytesIO()
+        Image.new('RGB', (1920, 640), '#5080a0').save(buffer, format='JPEG', quality=95)
+        original = buffer.getvalue().ljust(250000, b'\0')
+        output = _limit_banner_file(ContentFile(original, name='banner.jpg'))
+        self.assertLessEqual(output.size, 200000)
+        with Image.open(output) as image:
+            self.assertEqual(image.size, (1920, 640))
+            self.assertEqual(image.format, 'JPEG')
+
     def test_every_banner_type_caps_main_and_responsive_fallbacks(self):
         data = self.noisy()
         for tip in ('hero', 'hero_mobile', 'grid', 'featured', 'spotlight'):
@@ -37,12 +57,12 @@ class BannerUploadLimitTests(SimpleTestCase):
                           'variants': {640: ContentFile(data, name='banner-640w.png')}}
                 with patch('EcommerceApp.utils.images._process_banner_image_for_admin', return_value=result):
                     processed = process_banner_image_for_admin(None, tip=tip)
-                self.assertLessEqual(processed['main'].size, 300000)
-                self.assertLessEqual(processed['variants'][640].size, 300000)
+                self.assertLessEqual(processed['main'].size, 200000)
+                self.assertLessEqual(processed['variants'][640].size, 200000)
 
     def test_real_hero_and_mobile_uploads_fit_limit(self):
         data = self.noisy()
         for tip in ('hero', 'hero_mobile'):
             result = process_banner_image_for_admin(SimpleUploadedFile('banner.png', data), tip=tip)
             files = [result['main'], *result['variants'].values()] if isinstance(result, dict) else [result]
-            self.assertTrue(all(file.size <= 300000 for file in files))
+            self.assertTrue(all(file.size <= 200000 for file in files))
