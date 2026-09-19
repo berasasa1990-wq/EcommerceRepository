@@ -59,6 +59,7 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('api/newsletter/', views.newsletter_subscribe, name='newsletter_subscribe'),
     path('o-nama/', views.about_us, name='about_us'),
+    path('lista-zelja/', views.wishlist, name='wishlist'),
     path('nacin-placanja/', views.payment_methods, name='payment_methods'),
     path('brendovi/', views.brands_list, name='brands_list'),
     path('vlog/', views.vlog_list, name='vlog_list'),

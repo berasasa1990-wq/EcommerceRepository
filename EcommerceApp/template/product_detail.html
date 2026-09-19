@@ -45,12 +45,12 @@
 </dialog>
 <script src="{% static 'js/product-zoom.js' %}?v=20260916" defer></script>
 {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
-<section class="product-detail" data-product-card data-product-id="{{ product.pk }}"{% if meta_pixel_id and meta_view_content_event_id %} data-meta-view-content data-content-id="{{ product.sifra|default:product.pk }}" data-content-name="{{ product.naziv }}" data-content-value="{{ product.prikazna_cijena }}" data-event-id="{{ meta_view_content_event_id }}"{% endif %}>
+<section class="product-detail" data-product-card data-product-id="{{ product.pk }}" data-default-name="{{ product.naziv }}" data-default-price="{{ product.prikazna_cijena }}" data-category="{% if product.kategorija %}{{ product.kategorija.naziv }}{% endif %}"{% if product.na_stanju %} data-in-stock="1"{% endif %}{% if meta_pixel_id and meta_view_content_event_id %} data-meta-view-content data-content-id="{{ product.sifra|default:product.pk }}" data-content-name="{{ product.naziv }}" data-content-value="{{ product.prikazna_cijena }}" data-event-id="{{ meta_view_content_event_id }}"{% endif %}>
     <nav class="pd-reference-breadcrumb" aria-label="Putanja"><a href="{% url 'home' %}">Početna</a><span class="pd-crumb-mobile">{% if product.kategorija %}<span>/</span><a href="{{ product.kategorija.get_absolute_url }}">{{ product.kategorija.naziv }}</a>{% endif %}{% if product.brend %}<span>/</span><span>{{ product.brend.naziv }}</span>{% endif %}</span><span class="pd-crumb-desktop" aria-hidden="true">›</span><span class="pd-crumb-desktop">{{ seo_h1|default:product.naziv }}</span></nav>
     <div class="product-detail-grid">
         <div class="product-gallery">
             <div class="product-gallery-main" id="mainProductImageWrap">
-                <span class="home-card-heart pd-reference-heart" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></span>
+                <button type="button" class="home-card-heart pd-reference-heart" aria-label="Omiljeno — {{ product.naziv }}" data-favorite-id="{{ product.pk }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></button>
                 <div class="product-gallery-overlays">
                     {% if product.je_novitet %}
                     <span class="product-detail-corner-badge product-detail-corner-badge--novitet is-pulse" aria-label="Noviteti">NOVITETI</span>

@@ -2918,6 +2918,19 @@ def about_us(request):
     return render(request, 'pages/about.html', context)
 
 
+def wishlist(request):
+    context = {
+        **_base_context(),
+        **page_seo_context('wishlist', defaults={
+            'seo_title': 'Lista želja — opremazaribolov.ba',
+            'seo_description': 'Sačuvani proizvodi na listi želja.',
+            'seo_h1': 'Lista želja',
+        }),
+        'canonical_url': settings.SITE_URL.rstrip('/') + reverse('wishlist'),
+    }
+    return render(request, 'wishlist.html', context)
+
+
 def payment_methods(request):
     context = {
         **_base_context(),

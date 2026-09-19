@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}<title>Lista želja — opremazaribolov.ba</title>{% endblock %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block body_class %}catalog-header-reference page-wishlist{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/wishlist.css' %}?v=20260919-popover">
+{% endblock %}
+
+{% block content %}
+<section class="wishlist-page">
+    <nav class="shop-breadcrumb" aria-label="Putanja">
+        <a href="{% url 'home' %}">Početna</a>
+        <span aria-hidden="true">›</span>
+        <span class="shop-breadcrumb__current">Lista želja</span>
+    </nav>
+    <header class="wishlist-page__head">
+        <h1>Lista želja</h1>
+        <p>Proizvodi sačuvani u ovom pregledniku.</p>
+    </header>
+    <div class="wishlist-page__list" data-favorites-list></div>
+</section>
+{% endblock %}

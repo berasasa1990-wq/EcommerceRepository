@@ -1,4 +1,65 @@
 .mobile-home-dock { display: none; }
+
+.product-card--catalog,
+.product-card--home-reference {
+    position: relative;
+}
+.product-card .home-card-heart {
+    display: grid !important;
+    place-items: center;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+    border: 0;
+    background: transparent;
+    color: #111;
+}
+.product-card .home-card-heart svg {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+.product-card .home-card-heart,
+.pd-reference-heart {
+    pointer-events: auto !important;
+    cursor: pointer;
+    z-index: 5;
+}
+.home-card-heart[aria-pressed="true"] svg,
+.pd-reference-heart[aria-pressed="true"] svg {
+    fill: #ff5100;
+    stroke: #ff5100;
+}
+.header .wishlist-badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #ff5100;
+    color: #fff;
+    border: 0;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 16px;
+    text-align: center;
+    box-sizing: border-box;
+}
+.header .reference-header-heart.wishlist-btn--has-items svg {
+    fill: #ff5100;
+    stroke: #ff5100;
+}
+.header .reference-header-heart.wishlist-btn--pulse-once .wishlist-btn-svg {
+    animation: cart-icon-add-pulse 0.9s ease-in-out 1;
+}
 .mobile-favorites { width: min(440px, calc(100% - 32px)); max-height: 75vh; padding: 20px; border: 1px solid #e7e8ed; border-radius: 16px; color: #111; background: #fff; }
 .mobile-favorites::backdrop { background: #0006; }
 .mobile-favorites form { display: flex; align-items: center; justify-content: space-between; font-size: 20px; }
@@ -22,8 +83,16 @@
     .mobile-home-dock [aria-current] { color: #ff6000; }
     .mobile-home-dock [aria-current] svg { stroke: #ff6000; }
     .mobile-home-dock > a:first-child[aria-current] svg { fill: #ff6000; }
-    .home-mobile-reference .product-card--home-reference .home-card-heart { pointer-events: auto; border: 0; padding: 0; background: transparent; cursor: pointer; }
-    .home-card-heart[aria-pressed="true"] svg { fill: #ff6000; stroke: #ff6000; }
+    .home-mobile-reference .product-card--home-reference .home-card-heart { pointer-events: auto; border: 0; padding: 6px; background: transparent; cursor: pointer; }
+    .mobile-home-dock .mobile-dock-favorites { position: relative; }
+    .mobile-home-dock .mobile-dock-favorites-count {
+        position: absolute; top: -3px; left: calc(50% + 5px);
+        display: grid; place-items: center; min-width: 17px; height: 17px;
+        padding: 0 4px; border-radius: 999px; background: #ff6500;
+        color: #fff; font-size: 10px; font-weight: 700; line-height: 1;
+    }
+    .mobile-home-dock .mobile-dock-favorites-count[hidden] { display: none; }
+    .mobile-home-dock .wishlist-btn--has-items svg { fill: #ff6500; stroke: #ff6500; }
 }
 
 /* Confirmation starts only after the server accepts the cart addition. */

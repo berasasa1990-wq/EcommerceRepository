@@ -75,8 +75,8 @@
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.google-analytics.com">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
-    <style>@media(max-width:1024px){.desktop-category-extra,.desktop-category-nav,.desktop-sale-link,.reference-header-heart{display:none!important}}</style>
-    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20260919-hide-header-search-icon" media="(min-width: 1025px)">
+    <style>@media(max-width:1024px){.desktop-category-extra,.desktop-category-nav,.desktop-sale-link{display:none!important}}</style>
+    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20260919-wishlist-heart" media="(min-width: 1025px)">
 
     {% if meta_pixel_id %}
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin>
@@ -160,8 +160,8 @@
     <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260915-render-header-v2" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260915-render-header-v2">
-    <link rel="stylesheet" href="{% static 'css/header-base.min.css' %}?v=20260915-render-header-v2">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260919-wishlist-badge">
+    <link rel="stylesheet" href="{% static 'css/header-base.min.css' %}?v=20260919-wishlist-mobile">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -206,11 +206,12 @@
         body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
     </style>
     {% endif %}
-    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20260916-category-smaller-names">
-    <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20260915-dock-cart-count">
+    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20260919-wishlist-heart">
+    <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20260919-wishlist-badge">
+    <link rel="stylesheet" href="{% static 'css/wishlist.css' %}?v=20260919-mobile-sheet">
 
     <style>.desktop-trust-bar,.header-category-select,.header-register{display:none!important}</style>
-    <link rel="stylesheet" href="{% static 'css/header-reference.css' %}?v=20260919-hide-extra-lupa" media="(min-width: 1025px)">
+    <link rel="stylesheet" href="{% static 'css/header-reference.css' %}?v=20260919-wishlist-popover" media="(min-width: 1025px)">
     <style>
       @media (min-width: 1025px) {
         body #header .nav-actions .reference-header-search,
@@ -462,10 +463,18 @@
                         <span class="nav-action-label">Registracija</span>
                     </a>
                     {% endif %}
-                    <button type="button" class="nav-action-link reference-header-heart" data-mobile-favorites aria-label="Omiljeno">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+                    <div class="wishlist-menu">
+                    <button type="button" class="nav-action-link reference-header-heart" data-mobile-favorites aria-label="Lista želja" aria-haspopup="dialog" aria-expanded="false" aria-controls="wishlistPopover">
+                        <span class="nav-action-icon">
+                            <svg class="wishlist-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+                            <span class="wishlist-badge" data-wishlist-count>0</span>
+                        </span>
                         <span class="nav-action-label">Lista želja</span>
                     </button>
+                    <div class="wishlist-popover" id="wishlistPopover" hidden>
+                        {% include 'partials/wishlist_panel.html' %}
+                    </div>
+                    </div>
                     <div class="nav-cart-stack">
                     <a href="{% url 'cart' %}" class="nav-action-link cart-btn{% if cart_count %} cart-btn--has-items{% endif %}" aria-label="Korpa" data-cart-count="{{ cart_count|default:0 }}">
                         <span class="nav-action-icon">

@@ -29365,7 +29365,8 @@ body.product-other-options-open {
 }
 
 .header .cart-badge,
-.header .nav-action-icon:not(:has(.cart-badge))::after {
+.header .wishlist-badge,
+.header .nav-action-icon:not(:has(.cart-badge)):not(:has(.wishlist-badge))::after {
     position: absolute;
     top: -5px;
     right: -8px;
@@ -29383,7 +29384,7 @@ body.product-other-options-open {
     box-sizing: border-box;
 }
 
-.header .nav-action-icon:not(:has(.cart-badge))::after {
+.header .nav-action-icon:not(:has(.cart-badge)):not(:has(.wishlist-badge))::after {
     content: "0";
 }
 
