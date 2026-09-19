@@ -209,7 +209,8 @@
     <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20260916-category-smaller-names">
     <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20260915-dock-cart-count">
 
-    <link rel="stylesheet" href="{% static 'css/header-reference.css' %}?v=20260917">
+    <style>.desktop-trust-bar,.header-category-select,.header-register{display:none!important}</style>
+    <link rel="stylesheet" href="{% static 'css/header-reference.css' %}?v=20260917" media="(min-width: 1025px)">
 
     {% if meta_pixel_id %}
     <!-- Meta Pixel — učitava se nakon prvog rendera da ne koči LCP -->
