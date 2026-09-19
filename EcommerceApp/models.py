@@ -1294,6 +1294,12 @@ class Category(models.Model):
             self.search_tagovi = ''
         elif self.search_tagovi:
             self.search_tagovi = self.normalize_search_tagovi(self.search_tagovi)
+        from .utils.images import is_new_upload, process_category_icon
+        update_fields = kwargs.get('update_fields')
+        if (update_fields is None or 'ikonica_pocetna' in update_fields) and is_new_upload(self.ikonica_pocetna):
+            # Do not silently save an oversized original if conversion fails.
+            processed = process_category_icon(self.ikonica_pocetna)
+            self.ikonica_pocetna.save(processed.name, processed, save=False)
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):

@@ -1123,7 +1123,7 @@ def process_banner_image(image_field, tip='hero'):
         )
 
 
-def process_banner_image_for_admin(image_field, tip='hero'):
+def _process_banner_image_for_admin(image_field, tip='hero'):
     """Upload: optimizacija uz ograničenje da glavni fajl ne bude veći od originala."""
     filename = image_field.name if hasattr(image_field, 'name') else 'banner.jpg'
     settings = BANNER_AVIF_SETTINGS.get(tip, {
@@ -1381,6 +1381,36 @@ def process_banner_image_for_admin(image_field, tip='hero'):
         filename,
         needs_resize=needs_resize,
     )
+
+
+MAX_HOME_BANNER_BYTES = 200_000
+
+
+def _limit_banner_file(content):
+    """Enforce the final on-disk limit, including original-image fallbacks."""
+    if content.size <= MAX_HOME_BANNER_BYTES:
+        content.seek(0)
+        return content
+    content.seek(0)
+    with Image.open(content) as source:
+        image_format = source.format
+        image = ImageOps.exif_transpose(source).convert('RGBA' if image_format in ('PNG', 'WEBP', 'AVIF') else 'RGB')
+    for _ in range(12):
+        for quality in ((85,) if image_format in ('PNG', 'GIF') else (85, 70, 55)):
+            buffer = BytesIO()
+            image.save(buffer, format=image_format, quality=quality)
+            if buffer.tell() <= MAX_HOME_BANNER_BYTES:
+                return ContentFile(buffer.getvalue(), name=content.name)
+        image = image.resize((max(1, int(image.width * 0.8)), max(1, int(image.height * 0.8))), Image.Resampling.LANCZOS)
+    raise ValueError('Banner se ne može smanjiti ispod 200 KB. Pokušajte drugu sliku.')
+
+
+def process_banner_image_for_admin(image_field, tip='hero'):
+    result = _process_banner_image_for_admin(image_field, tip=tip)
+    if isinstance(result, dict):
+        return {**result, 'main': _limit_banner_file(result['main']),
+                'variants': {width: _limit_banner_file(file) for width, file in result.get('variants', {}).items()}}
+    return _limit_banner_file(result)
 
 
 def reprocess_existing_banner_file(image_field, *, tip='hero'):
@@ -1866,6 +1896,10 @@ def apply_image_processing(instance, field_name, post_process=None):
     except Exception as exc:
         _reset_upload(image_field)
         logger.exception('Obrada slike nije uspjela za %s.%s', instance, field_name)
+        processor = getattr(post_process, 'func', post_process)
+        if processor is process_banner_image_for_admin:
+            # Never bypass the hard banner limit by storing a large raw upload.
+            raise ValueError('Banner nije sačuvan: obrada do 200 KB nije uspjela. Pokušajte drugu sliku.') from exc
         if _save_raw_upload(getattr(instance, field_name)):
             logger.warning(
                 'Sačuvan je originalni upload bez obrade za %s.%s (%s).',
@@ -2106,3 +2140,23 @@ def process_brand_logo(image_field):
         fill_ratio=BRAND_LOGO_FILL_RATIO,
         trim_content=True,
     )
+
+CATEGORY_ICON_MAX_BYTES = 15_000
+
+
+def process_category_icon(upload):
+    """Create a transparent AVIF icon with a hard 15 KB output limit."""
+    upload.seek(0)
+    try:
+        with Image.open(upload) as source:
+            image = ImageOps.exif_transpose(source).convert('RGBA')
+        for dimension in (256, 192, 128, 96, 64, 32):
+            candidate = image.copy()
+            candidate.thumbnail((dimension, dimension), Image.Resampling.LANCZOS)
+            for quality in (80, 65, 50, 35, 20):
+                data = _encode_avif(candidate, quality)
+                if len(data) <= CATEGORY_ICON_MAX_BYTES:
+                    return ContentFile(data, name=_avif_filename(upload.name))
+        raise ValueError('Ikonica se ne može smanjiti na 15 KB.')
+    finally:
+        upload.seek(0)
