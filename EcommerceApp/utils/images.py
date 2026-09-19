@@ -634,6 +634,16 @@ def save_responsive_variants(storage, main_name, variants):
         return
     for width, content in variants.items():
         variant_name = _responsive_variant_name(main_name, width)
+        # A capped banner variant may use a different format from its main image.
+        if getattr(content, 'name', '').lower().endswith('.webp'):
+            variant_name = variant_name.rsplit('.', 1)[0] + '.webp'
+        elif main_name.lower().endswith('.webp'):
+            # Hero variants are JPEG even when the original main upload is PNG/WebP.
+            content.seek(0)
+            with Image.open(content) as variant_image:
+                extension = {'JPEG': 'jpg', 'PNG': 'png', 'AVIF': 'avif', 'WEBP': 'webp'}[variant_image.format]
+            content.seek(0)
+            variant_name = variant_name.rsplit('.', 1)[0] + '.' + extension
         _safe_storage_delete(storage, variant_name)
         storage.save(variant_name, content)
 
@@ -1132,14 +1142,28 @@ def _process_banner_image_for_admin(image_field, tip='hero'):
     })
     try:
         raw_original, filename = _read_image_source(image_field, filename=filename)
+        preserve_mobile_webp = False
+        if tip == 'hero_mobile':
+            with Image.open(BytesIO(raw_original)) as uploaded_image:
+                preserve_mobile_webp = uploaded_image.format == 'WEBP'
+                if preserve_mobile_webp:
+                    uploaded_image.verify()
         # Mobilni: još agresivniji early downscale (phone foto često 8–12 MP)
         decode_side = 1600 if tip == 'hero_mobile' else 2048
-        source = _load_banner_rgb_from_raw(raw_original, max_decode_side=decode_side)
+        source = None if preserve_mobile_webp else _load_banner_rgb_from_raw(raw_original, max_decode_side=decode_side)
     except Exception as exc:
         raise ValueError(
             f'Slika se ne može očitati ({exc}). Koristite JPG ili PNG '
             f'(preporuka: max 2–3 MB, mobilni 1080×1350).',
         ) from exc
+
+    if preserve_mobile_webp:
+        if len(raw_original) > MAX_HERO_MOBILE_BYTES:
+            raise ValueError(
+                'Mobilni WebP banner prelazi 200 KB. Izvezite WebP do 200 KB; '
+                'slika nije sačuvana niti joj je smanjen kvalitet ili rezolucija.'
+            )
+        return _original_content_file(raw_original, filename.rsplit('.', 1)[0] + '.webp')
 
     upload_byte_cap = len(raw_original)
     needs_resize = _banner_needs_resize(
@@ -1395,14 +1419,25 @@ def _limit_banner_file(content):
     with Image.open(content) as source:
         image_format = source.format
         image = ImageOps.exif_transpose(source).convert('RGBA' if image_format in ('PNG', 'WEBP', 'AVIF') else 'RGB')
+    output_name = content.name
+    if image_format == 'PNG':
+        # PNG ignores quality: shrinking it until it fits destroys banner detail.
+        # Try efficient lossless encoding, then high-quality WebP at full size.
+        buffer = BytesIO()
+        image.save(buffer, format='WEBP', lossless=True, method=4)
+        output_name = content.name.rsplit('.', 1)[0] + '.webp'
+        if buffer.tell() <= MAX_HOME_BANNER_BYTES:
+            return ContentFile(buffer.getvalue(), name=output_name)
+        image_format = 'WEBP'
+    original_image = image
     for _ in range(24):
         for quality in ((85,) if image_format in ('PNG', 'GIF') else (92, 88, 84, 80, 78)):
             buffer = BytesIO()
             options = {'optimize': True, 'progressive': True, 'subsampling': 0} if image_format == 'JPEG' else {}
             image.save(buffer, format=image_format, quality=quality, **options)
             if buffer.tell() <= MAX_HOME_BANNER_BYTES:
-                return ContentFile(buffer.getvalue(), name=content.name)
-        image = image.resize((max(1, int(image.width * 0.9)), max(1, int(image.height * 0.9))), Image.Resampling.LANCZOS)
+                return ContentFile(buffer.getvalue(), name=output_name)
+        image = original_image.resize((max(1, int(image.width * 0.9)), max(1, int(image.height * 0.9))), Image.Resampling.LANCZOS)
     raise ValueError('Banner se ne može smanjiti ispod 200 KB. Pokušajte drugu sliku.')
 
 

@@ -440,6 +440,19 @@ class BannerAdminForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        from django.core.files.uploadedfile import UploadedFile
+        from .utils.images import MAX_HERO_MOBILE_BYTES
+        mobile = cleaned_data.get('slika_mobilna')
+        if (
+            cleaned_data.get('tip') == Banner.BannerType.HERO
+            and isinstance(mobile, UploadedFile)
+            and getattr(getattr(mobile, 'image', None), 'format', None) == 'WEBP'
+            and mobile.size > MAX_HERO_MOBILE_BYTES
+        ):
+            raise forms.ValidationError({
+                'slika_mobilna': 'Mobilni WebP banner mora biti do 200 KB. '
+                'Sačuvat ćemo ga bez dodatne kompresije i smanjivanja rezolucije.',
+            })
         slika = cleaned_data.get('slika')
         video = cleaned_data.get('video')
         has_slika = bool(slika) or bool(getattr(self.instance, 'slika', None))
