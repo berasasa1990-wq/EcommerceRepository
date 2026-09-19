@@ -1158,11 +1158,7 @@ def _process_banner_image_for_admin(image_field, tip='hero'):
         ) from exc
 
     if preserve_mobile_webp:
-        if len(raw_original) > MAX_HERO_MOBILE_BYTES:
-            raise ValueError(
-                'Mobilni WebP banner prelazi 200 KB. Izvezite WebP do 200 KB; '
-                'slika nije sačuvana niti joj je smanjen kvalitet ili rezolucija.'
-            )
+        # The final limiter optimizes oversized WebP uploads without a JPEG round-trip.
         return _original_content_file(raw_original, filename.rsplit('.', 1)[0] + '.webp')
 
     upload_byte_cap = len(raw_original)
@@ -1420,7 +1416,7 @@ def _limit_banner_file(content):
         image_format = source.format
         image = ImageOps.exif_transpose(source).convert('RGBA' if image_format in ('PNG', 'WEBP', 'AVIF') else 'RGB')
     output_name = content.name
-    if image_format == 'PNG':
+    if image_format in ('PNG', 'WEBP'):
         # PNG ignores quality: shrinking it until it fits destroys banner detail.
         # Try efficient lossless encoding, then high-quality WebP at full size.
         buffer = BytesIO()

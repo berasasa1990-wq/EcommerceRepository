@@ -76,7 +76,7 @@
     <link rel="dns-prefetch" href="https://www.google-analytics.com">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
     <style>@media(max-width:1024px){.desktop-category-extra,.desktop-category-nav,.desktop-sale-link,.reference-header-heart{display:none!important}}</style>
-    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20260917-catalog-five-columns" media="(min-width: 1025px)">
+    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20260919-hide-header-search-icon" media="(min-width: 1025px)">
 
     {% if meta_pixel_id %}
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin>
@@ -210,7 +210,17 @@
     <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20260915-dock-cart-count">
 
     <style>.desktop-trust-bar,.header-category-select,.header-register{display:none!important}</style>
-    <link rel="stylesheet" href="{% static 'css/header-reference.css' %}?v=20260917" media="(min-width: 1025px)">
+    <link rel="stylesheet" href="{% static 'css/header-reference.css' %}?v=20260919-hide-extra-lupa" media="(min-width: 1025px)">
+    <style>
+      @media (min-width: 1025px) {
+        body #header .nav-actions .reference-header-search,
+        body #header .nav-actions .mobile-home-search-action,
+        body #header .nav-actions .pd-reference-search,
+        body #header .nav-actions [data-mobile-home-search] {
+          display: none !important;
+        }
+      }
+    </style>
 
     {% if meta_pixel_id %}
     <!-- Meta Pixel — učitava se nakon prvog rendera da ne koči LCP -->

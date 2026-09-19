@@ -11,15 +11,13 @@ from .utils.images import _limit_banner_file, process_banner_image_for_admin, sa
 
 
 class BannerUploadLimitTests(SimpleTestCase):
-    def test_admin_rejects_oversized_mobile_webp_as_field_error(self):
+    def test_admin_accepts_oversized_mobile_webp_for_optimization(self):
         from django import forms
         from .forms import BannerAdminForm
         mobile = forms.ImageField().clean(SimpleUploadedFile('mobile.webp', self.mobile_webp(200001)))
         form = BannerAdminForm()
         form.cleaned_data = {'tip': 'hero', 'slika_mobilna': mobile, 'slika': mobile}
-        with self.assertRaises(forms.ValidationError) as error:
-            form.clean()
-        self.assertIn('slika_mobilna', error.exception.message_dict)
+        self.assertIs(form.clean()['slika_mobilna'], mobile)
 
     def mobile_webp(self, size):
         buffer = BytesIO()
@@ -39,11 +37,16 @@ class BannerUploadLimitTests(SimpleTestCase):
                     self.assertEqual(image.format, 'WEBP')
                     self.assertEqual(image.size, (1900, 400))
 
-    def test_mobile_webp_over_limit_is_rejected_instead_of_recompressed(self):
-        with self.assertRaisesMessage(ValueError, 'Mobilni WebP banner prelazi 200 KB'):
-            process_banner_image_for_admin(
-                SimpleUploadedFile('mobile.webp', self.mobile_webp(200001)), tip='hero_mobile',
-            )
+    def test_mobile_webp_over_limit_is_optimized_losslessly_when_possible(self):
+        original = self.mobile_webp(250000)
+        result = process_banner_image_for_admin(
+            SimpleUploadedFile('mobile.webp', original), tip='hero_mobile',
+        )
+        self.assertLessEqual(result.size, 200000)
+        with Image.open(BytesIO(original)) as source, Image.open(result) as output:
+            self.assertEqual(output.format, 'WEBP')
+            self.assertEqual(output.size, source.size)
+            self.assertEqual(output.convert('RGB').tobytes(), source.convert('RGB').tobytes())
 
     def test_png_banner_keeps_full_resolution_and_pixels_when_lossless_webp_fits(self):
         image = Image.new('RGBA', (1900, 400), (20, 90, 150, 255))
