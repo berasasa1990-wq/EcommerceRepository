@@ -1299,8 +1299,14 @@ class Category(models.Model):
         if (update_fields is None or 'ikonica_pocetna' in update_fields) and is_new_upload(self.ikonica_pocetna):
             # Do not silently save an oversized original if conversion fails.
             processed = process_category_icon(self.ikonica_pocetna)
+            from uuid import uuid4
+            # R2 overwrites same-name files; a fresh URL also bypasses CDN/browser cache.
+            processed.name = f'category-{uuid4().hex}.avif'
             self.ikonica_pocetna.save(processed.name, processed, save=False)
         super().save(*args, **kwargs)
+        from django.db import transaction
+        from .category_visibility import invalidate_category_product_cache
+        transaction.on_commit(invalidate_category_product_cache)
 
     def get_absolute_url(self):
         return reverse('category', kwargs={'slug': self.slug})

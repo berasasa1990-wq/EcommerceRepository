@@ -46,3 +46,22 @@ class CategoryIconUploadTests(TestCase):
                 category.save()
         category.refresh_from_db()
         self.assertEqual(category.ikonica_pocetna.name, original)
+
+    def test_reupload_changes_url_and_refreshes_cached_home_categories(self):
+        from django.core.cache import cache
+        from .models import Product
+        from .context_processors import _build_nav_categories
+        cache.clear()
+        self.addCleanup(cache.clear)
+        with self.captureOnCommitCallbacks(execute=True):
+            category = Category.objects.create(naziv='Fresh icon', ikonica_pocetna=self.upload())
+        Product.objects.create(naziv='Visible product', cijena=10, kategorija=category)
+        original_url = _build_nav_categories()[0].ikonica_pocetna.url
+        category.ikonica_pocetna = self.upload(noisy=True)
+        with self.captureOnCommitCallbacks(execute=True):
+            category.save()
+        fresh = _build_nav_categories()[0]
+        self.assertNotEqual(fresh.ikonica_pocetna.url, original_url)
+        self.assertEqual(fresh.ikonica_pocetna.url, category.ikonica_pocetna.url)
+        self.assertTrue(fresh.ikonica_pocetna.name.endswith('.avif'))
+        self.assertLessEqual(fresh.ikonica_pocetna.size, 15000)
