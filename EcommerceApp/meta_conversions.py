@@ -112,14 +112,8 @@ def send_event(
     custom_data=None,
     event_source_url=None,
 ):
-    logger.debug('Meta CAPI send_event entered: %s', event_name)
-    pixel_id_present = bool(str(getattr(settings, 'META_PIXEL_ID', '') or '').strip())
-    access_token_present = bool(str(getattr(settings, 'META_ACCESS_TOKEN', '') or '').strip())
     if not is_configured():
-        logger.debug(
-            'Meta CAPI not configured: pixel_id_present=%s access_token_present=%s',
-            pixel_id_present, access_token_present,
-        )
+        _log_meta_result('skipped_configuration', event_name, event_id)
         return event_id
 
     if not event_id:
@@ -151,48 +145,54 @@ def send_event(
     test_event_code = (getattr(settings, 'META_TEST_EVENT_CODE', '') or '').strip()
     if test_event_code:
         body['test_event_code'] = test_event_code
-    test_mode = bool(test_event_code)
-
     # Ne blokiraj request (timeout 10s na 1 worker = cijeli sajt stoji).
     try:
         threading.Thread(
             target=_post_meta_event,
-            args=(url, body, event_name, event_id, test_mode),
+            args=(url, body, event_name, event_id),
             daemon=True,
         ).start()
-    except Exception:
-        logger.exception('Meta CAPI %s thread start failed', event_name)
+    except Exception as exc:
+        _log_meta_result('thread_start_error', event_name, event_id, network_error=type(exc).__name__)
     return event_id
 
 
-def _post_meta_event(url, body, event_name, event_id, test_mode=False):
-    logger.debug(
-        'Meta CAPI POST starting: event=%s event_id=%s test_mode=%s',
-        event_name, event_id, test_mode,
+def _log_meta_result(status, event_name, event_id, *, http_status=None, events_received=None,
+                     fbtrace_id=None, error_type=None, error_code=None, error_subcode=None,
+                     network_error=None):
+    logger.warning(
+        'Meta CAPI status=%s event_name=%s event_id=%s http_status=%s '
+        'events_received=%s fbtrace_id=%s error.type=%s error.code=%s '
+        'error.error_subcode=%s network_error=%s',
+        status, event_name, event_id, http_status, events_received, fbtrace_id,
+        error_type, error_code, error_subcode, network_error,
     )
+
+
+def _post_meta_event(url, body, event_name, event_id):
     try:
         response = requests.post(url, json=body, timeout=4)
-    except Exception:
-        logger.exception('Meta CAPI %s request error (event_id=%s)', event_name, event_id)
+    except Exception as exc:
+        _log_meta_result('network_error', event_name, event_id, network_error=type(exc).__name__)
         return
-    snippet = (response.text or '')[:500]
     try:
         result = response.json()
     except ValueError:
-        logger.warning(
-            'Meta CAPI %s failed HTTP %s (event_id=%s): %s',
-            event_name, response.status_code, event_id, snippet,
-        )
+        _log_meta_result('invalid_response', event_name, event_id, http_status=response.status_code)
         return
     error = result.get('error') if isinstance(result, dict) else None
+    error_details = error if isinstance(error, dict) else {}
+    response_details = result if isinstance(result, dict) else {}
     if response.ok and not error:
-        logger.info('Meta CAPI %s sent (event_id=%s)', event_name, event_id)
-        return
-    if isinstance(error, dict):
-        snippet = error.get('message') or error.get('error_user_msg') or snippet
-    logger.warning(
-        'Meta CAPI %s failed HTTP %s (event_id=%s): %s',
-        event_name, response.status_code, event_id, snippet,
+        status = 'success'
+    else:
+        status = 'meta_error'
+    _log_meta_result(
+        status, event_name, event_id, http_status=response.status_code,
+        events_received=response_details.get('events_received'),
+        fbtrace_id=response_details.get('fbtrace_id') or error_details.get('fbtrace_id'),
+        error_type=error_details.get('type'), error_code=error_details.get('code'),
+        error_subcode=error_details.get('error_subcode'),
     )
 
 

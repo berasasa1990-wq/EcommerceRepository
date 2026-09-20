@@ -560,7 +560,7 @@ MESSENGER_PAGE = _env('MESSENGER_PAGE', 'opremazaribolov.ba')
 STORE_EMAIL = _env('STORE_EMAIL', 'narudzbe@opremazaribolov.ba')
 
 # Meta (Facebook / Instagram) Pixel + Conversions API
-META_PIXEL_ID = _env('META_PIXEL_ID', '1380997860816172')
+META_PIXEL_ID = _env('META_PIXEL_ID', '1059983681812075')
 META_ACCESS_TOKEN = _env('META_ACCESS_TOKEN', '')
 META_TEST_EVENT_CODE = _env('META_TEST_EVENT_CODE', '')
 
