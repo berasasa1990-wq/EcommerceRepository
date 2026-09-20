@@ -93,6 +93,18 @@ def build_user_data(request, *, email=None, phone=None, first_name=None, last_na
     return user_data
 
 
+def _event_email_user_data(request):
+    if not request:
+        return {}
+    user = getattr(request, 'user', None)
+    email = getattr(user, 'email', '') if getattr(user, 'is_authenticated', False) else ''
+    if not email:
+        session = getattr(request, 'session', None)
+        email = session.get('checkout_email', '') if session is not None else ''
+    em_hash = hash_email(email) if isinstance(email, str) else None
+    return {'em': [em_hash]} if em_hash else {}
+
+
 def build_content_item(content_id, quantity=1, price=None):
     item = {
         'id': str(content_id),
@@ -210,7 +222,7 @@ def _post_meta_event(url, body, event_name, event_id):
 
 
 def track_page_view(request, event_id=None):
-    return send_event(request, 'PageView', event_id=event_id)
+    return send_event(request, 'PageView', event_id=event_id, user_data=_event_email_user_data(request))
 
 
 def track_view_content(request, product, event_id=None):
@@ -223,7 +235,10 @@ def track_view_content(request, product, event_id=None):
         'currency': CURRENCY,
         'contents': [build_content_item(content_id, 1, product.prikazna_cijena)],
     }
-    return send_event(request, 'ViewContent', event_id=event_id, custom_data=custom_data)
+    return send_event(
+        request, 'ViewContent', event_id=event_id,
+        user_data=_event_email_user_data(request), custom_data=custom_data,
+    )
 
 
 def track_add_to_cart(request, product, variation=None, quantity=1, event_id=None):
@@ -244,7 +259,10 @@ def track_add_to_cart(request, product, variation=None, quantity=1, event_id=Non
         'currency': CURRENCY,
         'contents': [build_content_item(content_id, quantity, price)],
     }
-    return send_event(request, 'AddToCart', event_id=event_id, custom_data=custom_data)
+    return send_event(
+        request, 'AddToCart', event_id=event_id,
+        user_data=_event_email_user_data(request), custom_data=custom_data,
+    )
 
 
 def track_initiate_checkout(request, cart, event_id=None):
@@ -266,7 +284,10 @@ def track_initiate_checkout(request, cart, event_id=None):
         'num_items': sum(item['quantity'] for item in cart),
         'contents': items,
     }
-    return send_event(request, 'InitiateCheckout', event_id=event_id, custom_data=custom_data)
+    return send_event(
+        request, 'InitiateCheckout', event_id=event_id,
+        user_data=_event_email_user_data(request), custom_data=custom_data,
+    )
 
 
 def track_purchase(request, order, event_id=None):
