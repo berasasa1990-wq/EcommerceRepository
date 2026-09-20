@@ -27,8 +27,14 @@ class MetaPageViewMiddleware:
         if self._should_track(request):
             event_id = f'pageview-{uuid.uuid4().hex}'
             request.meta_page_view_event_id = event_id
-            track_page_view(request, event_id=event_id)
-        return self.get_response(request)
+        response = self.get_response(request)
+        if (
+            request.meta_page_view_event_id
+            and 200 <= response.status_code < 300
+            and response.get('Content-Type', '').split(';', 1)[0].strip().lower() == 'text/html'
+        ):
+            track_page_view(request, event_id=request.meta_page_view_event_id)
+        return response
 
     def _should_track(self, request):
         if request.method != 'GET':
