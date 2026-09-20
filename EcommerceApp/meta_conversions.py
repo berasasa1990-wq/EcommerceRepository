@@ -164,7 +164,8 @@ def send_event(
 def _log_meta_result(status, event_name, event_id, *, http_status=None, events_received=None,
                      fbtrace_id=None, error_type=None, error_code=None, error_subcode=None,
                      network_error=None, test_event_code_present=False):
-    logger.warning(
+    log = logger.info if status == 'success' else logger.warning
+    log(
         'Meta CAPI status=%s event_name=%s event_id=%s http_status=%s '
         'events_received=%s fbtrace_id=%s error.type=%s error.code=%s '
         'error.error_subcode=%s network_error=%s test_event_code_present=%s',
