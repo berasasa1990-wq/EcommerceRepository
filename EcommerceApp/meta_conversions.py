@@ -168,6 +168,7 @@ def send_event(
         _log_meta_result(
             'thread_start_error', event_name, event_id,
             test_event_code_present=bool(body.get('test_event_code')),
+            em_present=bool(body['data'][0]['user_data'].get('em')),
             network_error=type(exc).__name__,
         )
     return event_id
@@ -175,25 +176,27 @@ def send_event(
 
 def _log_meta_result(status, event_name, event_id, *, http_status=None, events_received=None,
                      fbtrace_id=None, error_type=None, error_code=None, error_subcode=None,
-                     network_error=None, test_event_code_present=False):
+                     network_error=None, test_event_code_present=False, em_present=False):
     log = logger.info if status == 'success' else logger.warning
     log(
         'Meta CAPI status=%s event_name=%s event_id=%s http_status=%s '
         'events_received=%s fbtrace_id=%s error.type=%s error.code=%s '
-        'error.error_subcode=%s network_error=%s test_event_code_present=%s',
+        'error.error_subcode=%s network_error=%s test_event_code_present=%s em_present=%s',
         status, event_name, event_id, http_status, events_received, fbtrace_id,
-        error_type, error_code, error_subcode, network_error, test_event_code_present,
+        error_type, error_code, error_subcode, network_error, test_event_code_present, em_present,
     )
 
 
 def _post_meta_event(url, body, event_name, event_id):
     test_event_code_present = bool(body.get('test_event_code'))
+    em_present = bool(body['data'][0]['user_data'].get('em'))
     try:
         response = requests.post(url, json=body, timeout=4)
     except Exception as exc:
         _log_meta_result(
             'network_error', event_name, event_id,
             network_error=type(exc).__name__, test_event_code_present=test_event_code_present,
+            em_present=em_present,
         )
         return
     try:
@@ -201,7 +204,7 @@ def _post_meta_event(url, body, event_name, event_id):
     except ValueError:
         _log_meta_result(
             'invalid_response', event_name, event_id, http_status=response.status_code,
-            test_event_code_present=test_event_code_present,
+            test_event_code_present=test_event_code_present, em_present=em_present,
         )
         return
     error = result.get('error') if isinstance(result, dict) else None
@@ -217,7 +220,7 @@ def _post_meta_event(url, body, event_name, event_id):
         fbtrace_id=response_details.get('fbtrace_id') or error_details.get('fbtrace_id'),
         error_type=error_details.get('type'), error_code=error_details.get('code'),
         error_subcode=error_details.get('error_subcode'),
-        test_event_code_present=test_event_code_present,
+        test_event_code_present=test_event_code_present, em_present=em_present,
     )
 
 
