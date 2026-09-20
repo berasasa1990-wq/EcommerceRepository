@@ -730,14 +730,28 @@
 <script data-cfasync="false">
 (function () {
     var el = document.querySelector('[data-meta-view-content]');
-    if (!el || typeof fbq !== 'function') return;
-    fbq('track', 'ViewContent', {
-        content_ids: [el.dataset.contentId],
-        content_type: 'product',
-        content_name: el.dataset.contentName,
-        value: parseFloat(el.dataset.contentValue, 10),
-        currency: 'BAM'
-    }, { eventID: el.dataset.eventId });
+    if (!el) return;
+    var sent = false;
+    var deadline = Date.now() + 5000;
+    var timer = null;
+    function sendWhenReady() {
+        if (sent || Date.now() >= deadline) {
+            if (timer !== null) clearInterval(timer);
+            return;
+        }
+        if (typeof fbq !== 'function') return;
+        sent = true;
+        if (timer !== null) clearInterval(timer);
+        fbq('track', 'ViewContent', {
+            content_ids: [el.dataset.contentId],
+            content_type: 'product',
+            content_name: el.dataset.contentName,
+            value: parseFloat(el.dataset.contentValue, 10),
+            currency: 'BAM'
+        }, { eventID: el.dataset.eventId });
+    }
+    sendWhenReady();
+    if (!sent) timer = setInterval(sendWhenReady, 50);
 })();
 </script>
 {% endif %}
