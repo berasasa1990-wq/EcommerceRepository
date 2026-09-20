@@ -4037,32 +4037,20 @@ function initArticleScanner() {
     var shortPending = false;
     function confirmShortQuantity(item, got) {
         if (got >= item.need || isPrenosMp) { setGot(item, got, true); return; }
-        var confirmText = got
-            ? ('Pokupljeno je ' + got + ' od ' + item.need + ' na lokaciji ' + item.loc
-                + '. Očistiti tu lokaciju i potražiti ostatak na drugim lokacijama?')
-            : ('Pokupljeno je 0 komada na lokaciji ' + item.loc + '. Potvrditi količinu 0?');
-        if (!window.confirm(confirmText)) {
-            return;
-        }
-        function postZeroPick(password) {
+        var confirmText = 'Pokupljeno ' + got + '/' + item.need + ' na lokaciji ' + item.loc
+            + '. Potvrditi i poslati zahtjev za čišćenje u Lokacije? Zaliha se sada ne čisti.';
+        if (!window.confirm(confirmText)) return;
+        function postZeroPick() {
             if (shortPending) return;
-            if (!password) {
-                draftQuantities[item.key] = got;
-                render();
-                showMsg('Unesi lozinku da očistiš ' + item.loc + ' i nastaviš na sljedeću lokaciju.');
-                return;
-            }
             shortPending = true;
             window.clearTimeout(saveTimer);
             root.inert = true;
             var body = new URLSearchParams();
             var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
             body.set('action', 'pick_short');
-            body.set('clear_location', '1');
             body.set('item_id', item.item_id);
             body.set('loc', item.loc);
             body.set('got', got);
-            body.set('lozinka', password);
             if (csrf) body.set('csrfmiddlewaretoken', csrf.value);
             Promise.resolve(saveServer()).then(function () {
                 return fetch(window.location.pathname, { method: 'POST', body: body,
@@ -4085,47 +4073,11 @@ function initArticleScanner() {
                 window.alert(error.message || 'Količina nije potvrđena. Pokušaj ponovo.');
             }).finally(function () { shortPending = false; root.inert = false; });
         }
-        var askPassword = window.mgPrenosClearPassword;
-        if (typeof askPassword === 'function') {
-            askPassword(item.loc).then(postZeroPick);
-            return;
-        }
-        postZeroPick(window.prompt('Lozinka za čišćenje lokacije ' + item.loc) || '');
+        postZeroPick();
     }
 
     function dropMissing(item) {
-        if (!item) return;
-        if (!window.confirm('Artikal nema na ovoj lokaciji. Skinuti s narudžbe i s lokacije?')) return;
-        var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
-        var body = new URLSearchParams();
-        body.set('action', 'pick_nema');
-        body.set('item_id', String(item.item_id || ''));
-        body.set('loc', item.loc || '');
-        body.set('need', String(item.need || 0));
-        body.set('key', item.key || '');
-        if (csrf) body.set('csrfmiddlewaretoken', csrf.value);
-        fetch(window.location.pathname, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': csrf ? csrf.value : '',
-            },
-            body: body,
-            credentials: 'same-origin',
-        }).then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
-          .then(function (result) {
-              if (!result.data || !result.data.ok) {
-                  window.alert((result.data && result.data.error) || 'Stavka nije skinuta.');
-                  return;
-              }
-              if (result.data.redirect) {
-                  window.location.href = result.data.redirect;
-                  return;
-              }
-              window.location.reload();
-          }).catch(function () {
-              window.alert('Stavka nije skinuta.');
-          });
+        if (item) confirmShortQuantity(item, 0);
     }
 
     function setGot(item, got, forceDone) {

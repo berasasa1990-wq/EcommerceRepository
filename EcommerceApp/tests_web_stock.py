@@ -13,16 +13,24 @@ class WebStockTests(TestCase):
         self.order = Order.objects.create(ime_prezime='Kupac', ukupno=20)
         OrderItem.objects.create(narudzba=self.order, artikal=self.product, naziv='Web artikal', cijena=10, kolicina=2)
 
-    def test_sale_is_immediate_and_not_repeated_on_validation(self):
+    def test_checkout_reserves_and_only_picking_sells_once(self):
+        from .views_magacin import _order_pick_bundle, apply_order_pick
         deduct_web_order_stock(self.order)
-        self.product.refresh_from_db()
-        self.assertEqual(self.product.stanje, 1)
-        self.assertEqual(WarehouseStock.objects.get(product=self.product).kolicina, 1)
-        self.assertTrue(WarehouseMovement.objects.filter(napomena=f'Web narudžba #{self.order.broj}', kolicina=-2).exists())
-        stale = Order.objects.get(pk=self.order.pk)
-        deduct_web_order_stock(stale)
-        validate_order_stock(stale)
-        self.assertEqual(WarehouseStock.objects.get(product=self.product).kolicina, 1)
+        deduct_web_order_stock(self.order)
+        stock = WarehouseStock.objects.get(product=self.product)
+        self.assertEqual((stock.kolicina, stock.rezervisano), (3, 2))
+        self.assertFalse(WarehouseMovement.objects.filter(tip='prodaja').exists())
+        self.assertFalse(self.order.stanje_skinuto)
+        with self.assertRaises(MagacinError):
+            validate_order_stock(self.order)
+        queue = _order_pick_bundle(self.order)[0]
+        apply_order_pick(self.order, [dict(row, got=row['need'], done=True) for row in queue], finalize=True)
+        validate_order_stock(self.order)
+        validate_order_stock(self.order)
+        self.assertTrue(self.order.stanje_skinuto)
+        stock.refresh_from_db()
+        self.assertEqual((stock.kolicina, stock.rezervisano), (1, 0))
+        self.assertEqual(WarehouseMovement.objects.filter(tip='prodaja').count(), 1)
 
     def test_sold_out_web_order_remains_on_picking_at_original_location(self):
         from .views_magacin import _order_pick_bundle, apply_order_pick
@@ -42,7 +50,7 @@ class WebStockTests(TestCase):
         self.assertTrue(self.order.zapakovana)
         self.assertEqual(self.order.lager_status, Order.LagerStatus.VALIDIRANO)
         self.assertEqual(WarehouseStock.objects.get(product=self.product).kolicina, 0)
-        self.assertEqual(WarehouseMovement.objects.count(), before)
+        self.assertGreater(WarehouseMovement.objects.count(), before)
 
     def test_insufficient_stock_rolls_back_whole_sale(self):
         extra = Product.objects.create(naziv='Nema', cijena=5, stanje=0, na_stanju=False)
@@ -90,18 +98,29 @@ class WebStockTests(TestCase):
         session.save()
         request.session = session
         request._messages = FallbackStorage(request)
-        def confirm(order):
-            self.assertTrue(order.stanje_skinuto)
-            self.assertEqual(WarehouseStock.objects.get(product=self.product).kolicina, 1)
-        with patch('EcommerceApp.views.send_order_emails', side_effect=confirm) as email, \
+        with patch('EcommerceApp.emails.Thread') as thread, \
+             patch('EcommerceApp.emails.send_order_emails') as email, \
              patch('EcommerceApp.views.sync_narudzba'), \
              patch('EcommerceApp.views.azuriraj_loyalty_nakon_narudzbe', return_value=None), \
              patch('EcommerceApp.views.track_purchase'), \
              patch('EcommerceApp.staff_alerts.notify_purchase'):
-            response = checkout(request)
-        self.assertEqual(response.status_code, 302)
-        self.assertIn('/narudzba/uspjeh/', response.url)
-        email.assert_called_once()
+            with self.captureOnCommitCallbacks(execute=False) as callbacks:
+                response = checkout(request)
+            self.assertEqual(response.status_code, 302)
+            self.assertIn('/narudzba/uspjeh/', response.url)
+            saved = Order.objects.get(ime_prezime='Web Kupac')
+            self.assertFalse(saved.stanje_skinuto)
+            stock = WarehouseStock.objects.get(product=self.product)
+            self.assertEqual((stock.kolicina, stock.rezervisano), (3, 2))
+            self.assertFalse(request.session.get('cart'))
+            email.assert_not_called()
+            thread.assert_not_called()
+            for callback in callbacks:
+                callback()
+            thread.assert_called_once()
+            self.assertEqual(thread.call_args.kwargs['args'], (saved.pk,))
+            thread.return_value.start.assert_called_once()
+            email.assert_not_called()
 
     def test_partial_pick_reduces_webshop_total_and_xexpress_otkup(self):
         from .xexpress_service import _shipment_amounts
@@ -177,3 +196,103 @@ class WebStockTests(TestCase):
         self.order.refresh_from_db()
         self.assertEqual(self.order.ukupno, Decimal('80.00'))
         self.assertEqual(self.order.stavke.get().kolicina, 8)
+
+    def test_zero_and_partial_pick_preserve_uncollected_stock(self):
+        from .views_magacin import _order_pick_bundle, apply_order_pick
+        from .models import LocationCleaningRequest
+        for got in (0, 1):
+            with self.subTest(got=got):
+                product = Product.objects.create(naziv=f'Web {got}/2', cijena=10)
+                apply_movement(product=product, location=self.location, tip='prijem', kolicina=2)
+                order = Order.objects.create(ime_prezime='Kupac', ukupno=20)
+                item = order.stavke.create(artikal=product, naziv=product.naziv, cijena=10, kolicina=2)
+                deduct_web_order_stock(order)
+                queue = _order_pick_bundle(order)[0]
+                apply_order_pick(order, [dict(row, got=got, done=True) for row in queue], finalize=True)
+                if got:
+                    validate_order_stock(order)
+                    item.refresh_from_db()
+                    self.assertEqual(item.kolicina_faktura, got)
+                stock = WarehouseStock.objects.get(product=product)
+                self.assertEqual((stock.kolicina, stock.rezervisano), (2-got, 0))
+                self.assertEqual(WarehouseMovement.objects.filter(product=product, tip='prodaja').count(), got)
+                self.assertTrue(LocationCleaningRequest.objects.filter(order=order).exists())
+
+    def test_zero_validation_never_sells_leftover_reservations(self):
+        deduct_web_order_stock(self.order)
+        self.order.stavke.update(kolicina_pokupljeno=0)
+        validate_order_stock(self.order)
+        stock = WarehouseStock.objects.get(product=self.product)
+        self.assertEqual((stock.kolicina, stock.rezervisano), (3, 0))
+        self.assertFalse(WarehouseMovement.objects.filter(tip='prodaja').exists())
+
+    def test_legacy_checkout_deduction_is_restored_before_zero_pick(self):
+        from .magacin import deduct_for_order, restore_unfinished_web_stock
+        from .views_magacin import _order_pick_bundle, apply_order_pick
+        deduct_for_order(self.product, 2, web_order=self.order, napomena=f'Web narudžba #{self.order.broj}')
+        self.order.stanje_skinuto = True
+        self.order.lager_status = Order.LagerStatus.REZERVISANO
+        self.order.save(update_fields=['stanje_skinuto', 'lager_status'])
+        queue = _order_pick_bundle(self.order)[0]
+        apply_order_pick(self.order, [dict(row, got=0, done=True) for row in queue], finalize=True)
+        restore_unfinished_web_stock(self.order)
+        stock = WarehouseStock.objects.get(product=self.product)
+        self.assertEqual((stock.kolicina, stock.rezervisano), (3, 0))
+        self.order.refresh_from_db()
+        self.assertFalse(self.order.stanje_skinuto)
+        self.assertEqual(self.order.status, Order.Status.OTKAZANA)
+
+    def test_legacy_partial_only_sells_physically_picked_quantity(self):
+        from .magacin import deduct_for_order
+        from .views_magacin import _order_pick_bundle, apply_order_pick
+        deduct_for_order(self.product, 2, web_order=self.order, napomena=f'Web narudžba #{self.order.broj}')
+        self.order.stanje_skinuto = True
+        self.order.lager_status = Order.LagerStatus.REZERVISANO
+        self.order.save(update_fields=['stanje_skinuto', 'lager_status'])
+        queue = _order_pick_bundle(self.order)[0]
+        apply_order_pick(self.order, [dict(row, got=1, done=True) for row in queue], finalize=True)
+        validate_order_stock(self.order)
+        validate_order_stock(self.order)
+        stock = WarehouseStock.objects.get(product=self.product)
+        self.assertEqual((stock.kolicina, stock.rezervisano), (2, 0))
+
+    def test_reservation_prevents_another_order_buying_same_units(self):
+        deduct_web_order_stock(self.order)
+        other = Order.objects.create(ime_prezime='Drugi kupac', ukupno=20)
+        other.stavke.create(artikal=self.product, naziv=self.product.naziv, cijena=10, kolicina=2)
+        with self.assertRaises(MagacinError):
+            deduct_web_order_stock(other)
+        stock = WarehouseStock.objects.get(product=self.product)
+        self.assertEqual((stock.kolicina, stock.rezervisano), (3, 2))
+        self.assertFalse(other.magacin_holds.exists())
+
+    def test_already_cancelled_legacy_zero_is_restored_once(self):
+        from .magacin import deduct_for_order, restore_unfinished_web_stock
+        deduct_for_order(self.product, 2, web_order=self.order, napomena=f'Web narudžba #{self.order.broj}')
+        self.order.stanje_skinuto = True
+        self.order.status = Order.Status.OTKAZANA
+        self.order.lager_status = Order.LagerStatus.OTKAZANO
+        self.order.save(update_fields=['stanje_skinuto', 'status', 'lager_status'])
+        stale = Order.objects.get(pk=self.order.pk)
+        restore_unfinished_web_stock(self.order)
+        restore_unfinished_web_stock(stale)
+        self.assertFalse(stale.stanje_skinuto)
+        stock = WarehouseStock.objects.get(product=self.product)
+        self.assertEqual((stock.kolicina, stock.rezervisano), (3, 0))
+        self.assertFalse(self.order.stanje_skinuto)
+        self.assertEqual(self.order.status, Order.Status.OTKAZANA)
+
+    def test_legacy_explicit_cleaning_is_not_undone(self):
+        from .magacin import deduct_for_order, restore_unfinished_web_stock
+        from .models import LocationCleaningRequest
+        deduct_for_order(self.product, 2, web_order=self.order, napomena=f'Web narudžba #{self.order.broj}')
+        self.order.stanje_skinuto = True
+        self.order.status = Order.Status.OTKAZANA
+        self.order.lager_status = Order.LagerStatus.OTKAZANO
+        self.order.save(update_fields=['stanje_skinuto', 'status', 'lager_status'])
+        LocationCleaningRequest.objects.create(order=self.order, order_number=self.order.broj,
+            item_id_snapshot=self.order.stavke.get().pk, product=self.product,
+            location=self.location, name=self.product.naziv, needed=2, picked=0, decision='clear')
+        apply_movement(product=self.product, location=self.location, tip='korekcija', kolicina=0)
+        restore_unfinished_web_stock(self.order)
+        self.assertEqual(WarehouseStock.objects.get(product=self.product).kolicina, 0)

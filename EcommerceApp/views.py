@@ -47,9 +47,8 @@ from .loyalty import (
 )
 from .pricing import izracunaj_sazetak, pripremi_stavke_za_racun, sazetak_iz_narudzbe
 from .emails import (
-    EmailNotConfiguredError,
     get_order_email_context,
-    send_order_emails,
+    queue_order_emails,
 )
 from .olx_api import (
     OlxApiError,
@@ -4667,7 +4666,7 @@ def checkout(request):
                     'iznos': str(summary['prize_popust']),
                 })
 
-            from .magacin import deduct_web_order_stock, MagacinError
+            from .magacin import reserve_web_order_stock, MagacinError
             try:
                 with transaction.atomic():
                     order = Order.objects.create(
@@ -4774,7 +4773,7 @@ def checkout(request):
                             popust_iznos=popust_iznos,
                             kolicina=qty,
                         )
-                    deduct_web_order_stock(order)
+                    reserve_web_order_stock(order)
             except MagacinError as exc:
                 messages.error(request, str(exc))
                 return redirect('cart')
@@ -4810,31 +4809,9 @@ def checkout(request):
             except Exception:
                 pass
 
-            try:
-                send_order_emails(order)
-            except EmailNotConfiguredError:
-                logger.error(
-                    'Email nije konfigurisan — narudžba #%s nije poslana na %s.',
-                    order.broj,
-                    settings.ORDER_NOTIFICATION_EMAIL,
-                )
-                messages.warning(
-                    request,
-                    'Narudžba je sačuvana, ali email nije poslan. '
-                    'Provjerite Proton SMTP postavke (EMAIL_APP_PASSWORD) na serveru.',
-                )
-            except Exception:
-                logger.exception(
-                    'Slanje emaila za narudžbu #%s nije uspjelo (cilj: %s).',
-                    order.broj,
-                    settings.ORDER_NOTIFICATION_EMAIL,
-                )
-                messages.warning(
-                    request,
-                    'Narudžba je sačuvana, ali email obavijest nije poslana. Kontaktirajte nas.',
-                )
+            queue_order_emails(order)
 
-            # Sync loyalty nakon emaila — ne smije blokirati slanje narudžbe na mail.
+            # Email obavijesti se šalju u pozadini; lokalna evidencija ostaje ažurna.
             # Evidentiraj potrošnju i bez unesenog loyalty koda / popusta (email ili telefon).
             logger.info("Checkout završen, pripremam sync za narudžbu #%s", order.broj)
             try:

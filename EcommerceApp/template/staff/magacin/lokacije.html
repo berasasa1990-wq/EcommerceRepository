@@ -15,6 +15,30 @@
     <button type="button" class="mg-btn mg-btn-primary" id="locOpenNew">+ Nova lokacija</button>
 </div>
 
+<section class="mg-card" style="margin-bottom:20px;overflow-x:auto;">
+    <h2 class="mg-h">Zahtjevi za čišćenje lokacije</h2>
+    <p class="mg-muted">Zaliha se ne čisti automatski. Očisti postavlja stanje ovog artikla na ovoj lokaciji na 0, nakon završetka pickinga. Ostavi zadržava preostalu zalihu.</p>
+    <table class="mg-table">
+        <thead><tr><th>Lokacija</th><th>Artikal / šifra</th><th>Razlog</th><th>Pokupljeno</th><th>Narudžba / poslao</th><th>Odluka</th></tr></thead>
+        <tbody>
+        {% for entry in cleaning_requests %}
+        <tr>
+            <td><a href="?lokacija={{ entry.location_id }}">{{ entry.location.label }}</a></td>
+            <td>{{ entry.name }}<br>{{ entry.sku }}</td>
+            <td>{{ entry.reason }}</td>
+            <td>{{ entry.picked }}/{{ entry.needed }}</td>
+            <td>#{{ entry.order_number }}<br>{{ entry.created_by|default:'—' }} · {{ entry.created_at|date:'d.m.Y. H:i' }}</td>
+            <td><form method="post">{% csrf_token %}
+                <input type="hidden" name="cleaning_id" value="{{ entry.pk }}">
+                <button class="mg-btn" name="action" value="cleaning_clear" type="submit">Očisti</button>
+                <button class="mg-btn" name="action" value="cleaning_keep" type="submit">Ostavi</button>
+            </form></td>
+        </tr>
+        {% empty %}<tr><td colspan="6">Nema zahtjeva za čišćenje lokacije.</td></tr>{% endfor %}
+        </tbody>
+    </table>
+</section>
+
 <div class="mg-grid-2">
     <section class="mg-card">
         <h2 class="mg-h">Lokacije</h2>

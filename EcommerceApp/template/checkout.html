@@ -65,25 +65,27 @@
 
     {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
 
-    <div id="order-loading" class="order-loading" style="display:none;">
-        <div class="fish-animation">🐟</div>
-        <div class="rod-animation">🎣</div>
-        <div class="loading-text">Slanje narudžbe... Molimo sačekajte.</div>
-    </div>
 </section>
 
 <script data-cfasync="false">
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('checkout-form');
-    const grid = document.getElementById('checkout-grid');
-    const loading = document.getElementById('order-loading');
-
-    if (form && grid && loading) {
-        form.addEventListener('submit', function() {
-            grid.style.display = 'none';
-            loading.style.display = 'block';
-        });
-    }
+    if (!form) return;
+    const submit = form.querySelector('button[type="submit"]');
+    let submitting = false;
+    form.addEventListener('submit', function(event) {
+        if (event.defaultPrevented) return;
+        if (submitting) {
+            event.preventDefault();
+            return;
+        }
+        submitting = true;
+        if (submit) submit.disabled = true;
+    });
+    window.addEventListener('pageshow', function() {
+        if (submitting && submit) submit.disabled = false;
+        submitting = false;
+    });
 });
 </script>
 {% endblock %}

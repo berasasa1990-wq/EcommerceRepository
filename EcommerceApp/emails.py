@@ -1,9 +1,11 @@
 import logging
+from threading import Thread
 from decimal import Decimal
 from email.utils import formataddr
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+from django.db import close_old_connections, connections, transaction
 from django.template.loader import render_to_string
 from django.templatetags.static import static
 from django.urls import reverse
@@ -583,6 +585,31 @@ def send_order_emails(order):
             order.broj,
         )
         raise
+
+
+def _send_order_emails_in_background(order_id):
+    close_old_connections()
+    try:
+        order = Order.objects.get(pk=order_id)
+        send_order_emails(order)
+    except Exception:
+        logger.exception('Slanje emaila za narudžbu ID %s nije uspjelo.', order_id)
+    finally:
+        connections.close_all()
+
+
+def queue_order_emails(order):
+    """Start email delivery after commit without making checkout wait for SMTP."""
+    order_id = order.pk
+
+    def start_delivery():
+        try:
+            Thread(target=_send_order_emails_in_background, args=(order_id,),
+                   name=f'order-email-{order_id}', daemon=False).start()
+        except Exception:
+            logger.exception('Pokretanje email obavijesti za narudžbu ID %s nije uspjelo.', order_id)
+
+    transaction.on_commit(start_delivery)
 
 def send_order_complaint(*, user, order, item, problem):
     """Pošalji reklamaciju prodavnici, uz odgovor direktno kupcu."""

@@ -6996,3 +6996,30 @@ class PreservedMediaFile(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['name', 'sha256'], name='unique_preserved_media')]
+
+
+class LocationCleaningRequest(models.Model):
+    """A picking shortage awaiting a warehouse stock decision."""
+    order = models.ForeignKey('Order', on_delete=models.SET_NULL, null=True)
+    order_number = models.CharField(max_length=100)
+    item_id_snapshot = models.PositiveIntegerField()
+    product = models.ForeignKey('Product', on_delete=models.PROTECT)
+    variation = models.ForeignKey('ProductVariation', on_delete=models.PROTECT, null=True, blank=True)
+    location = models.ForeignKey('WarehouseLocation', on_delete=models.PROTECT)
+    name = models.CharField(max_length=500)
+    sku = models.CharField(max_length=100, blank=True)
+    needed = models.PositiveIntegerField()
+    picked = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='+')
+    decision = models.CharField(max_length=10, blank=True, choices=[('clear', 'Očišćeno'), ('keep', 'Ostavljeno')])
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='+')
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [models.UniqueConstraint(fields=['order', 'item_id_snapshot', 'location'], name='unique_pick_cleaning_request')]
+
+    @property
+    def reason(self):
+        return 'Artikal nije pronađen' if self.picked == 0 else 'Pronađeno manje nego što treba'

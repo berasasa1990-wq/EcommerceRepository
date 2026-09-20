@@ -147,7 +147,7 @@
             <tbody>
                 {% for row in job.stavke %}
                 <tr>
-                    <td class="naziv">{{ row.naziv }}{% for note in row.price_notes %}<div class="price-note">{{ note }}</div>{% endfor %}</td>
+                    <td class="naziv">{{ row.naziv }}{% if row.is_mp %} <strong>MP</strong>{% endif %}{% for note in row.price_notes %}<div class="price-note">{{ note }}</div>{% endfor %}</td>
                     <td class="sifra">{% if row.sifra %}{{ row.sifra }}{% else %}—{% endif %}</td>
                     <td class="qty">{{ row.kolicina }}</td>
                 </tr>

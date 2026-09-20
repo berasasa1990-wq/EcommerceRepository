@@ -5410,55 +5410,89 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False, placanje=''):
 
 
 @transaction.atomic
-def deduct_web_order_stock(order):
-    """Commit a web sale once, before checkout sends confirmations."""
+def reserve_web_order_stock(order):
+    """Reserve checkout quantities; physical stock is sold only after picking."""
     locked = Order.objects.select_for_update().get(pk=order.pk)
     if locked.izvor != Order.Izvor.WEBSHOP:
-        raise MagacinError('Automatsko skidanje je samo za web narudžbe.')
-    if locked.stanje_skinuto or locked.lager_status == Order.LagerStatus.VALIDIRANO:
+        raise MagacinError('Ova rezervacija je samo za web narudžbe.')
+    if locked.lager_status != Order.LagerStatus.NIJE or locked.stanje_skinuto:
         return
     items = list(locked.stavke.select_related('artikal', 'varijacija').order_by('artikal_id', 'pk'))
     products = {p.pk: p for p in Product.objects.select_for_update().filter(
         pk__in=[item.artikal_id for item in items if item.artikal_id],
     ).order_by('pk')}
-    note = f'Web narudžba #{locked.broj}'
     for item in items:
         product = products.get(item.artikal_id)
         if product is None:
             raise MagacinError('Artikal više nije dostupan. Osvježite korpu.')
-        qty = int(item.kolicina)
-        variation = ProductVariation.objects.select_for_update().get(pk=item.varijacija_id) if item.varijacija_id else None
-        if WarehouseStock.objects.filter(product=product).exists():
-            if deduct_for_order(product, qty, variation=variation, napomena=note, web_order=locked):
-                raise MagacinError(f'Artikal „{product.naziv}” nema dovoljnu količinu. Provjerite korpu.')
-        else:
-            # Catalog-only stock has no physical warehouse location to deduct from.
-            target = variation or product
-            target.refresh_from_db()
-            available = max(0, int(target.stanje or 0))
-            if not target.na_stanju or available < qty:
-                raise MagacinError(f'Artikal „{product.naziv}” nema dovoljnu količinu. Provjerite korpu.')
-            target.stanje = available - qty
-            target.na_stanju = target.stanje > 0
-            target.save(update_fields=['stanje', 'na_stanju'])
-            if variation:
-                product.stanje = sum(product.varijacije.values_list('stanje', flat=True))
-                product.na_stanju = product.stanje > 0
-                product.save(update_fields=['stanje', 'na_stanju'])
+        if not WarehouseStock.objects.filter(product=product).exists():
+            # Give catalog-only inventory a physical stock record so reservations
+            # and later picking use the same accounting as warehouse products.
             location, _ = WarehouseLocation.objects.get_or_create(
                 sifra='WEB', defaults={'naziv': 'Webshop — bez magacinske lokacije'},
             )
-            WarehouseMovement.objects.create(product=product, variation=variation, location=location,
-                tip=WarehouseMovement.Tip.PRODAJA, kolicina=-qty, napomena=note)
-            OrderStockHold.objects.create(narudzba=locked, product=product, variation=variation,
-                location=location, kolicina=qty, status=OrderStockHold.Status.VALIDIRANO)
-    locked.stanje_skinuto = True
-    locked.stanje_skinuto_at = timezone.now()
+            variants = list(product.varijacije.select_for_update())
+            for target in variants or [product]:
+                WarehouseStock.objects.create(product=product,
+                    variation=target if variants else None, location=location,
+                    kolicina=max(0, int(target.stanje or 0)) if target.na_stanju else 0)
+        if reserve_for_order(locked, product, int(item.kolicina), variation=item.varijacija,
+                             napomena=f'Web rezervacija #{locked.broj}'):
+            raise MagacinError(f'Artikal „{product.naziv}” nema dovoljnu količinu. Provjerite korpu.')
     locked.lager_status = Order.LagerStatus.REZERVISANO
-    locked.save(update_fields=['stanje_skinuto', 'stanje_skinuto_at', 'lager_status'])
-    order.stanje_skinuto = locked.stanje_skinuto
-    order.stanje_skinuto_at = locked.stanje_skinuto_at
+    locked.save(update_fields=['lager_status'])
     order.lager_status = locked.lager_status
+
+
+# Compatibility for integrations using the previous checkout helper name.
+deduct_web_order_stock = reserve_web_order_stock
+
+
+@transaction.atomic
+def restore_unfinished_web_stock(order, *, user=None):
+    """Convert the previous checkout deductions back to reservations exactly once."""
+    if order.izvor != Order.Izvor.WEBSHOP or not order.stanje_skinuto:
+        return
+    locked = Order.objects.select_for_update().get(pk=order.pk)
+    if not locked.stanje_skinuto or locked.lager_status == Order.LagerStatus.VALIDIRANO:
+        order.refresh_from_db()
+        return
+    # Old explicit physical corrections cannot be inferred from checkout holds.
+    from .models import LocationCleaningRequest
+    if locked.pick_short_events or LocationCleaningRequest.objects.filter(order=locked, decision='clear').exists():
+        return
+    holds = list(locked.magacin_holds.select_for_update().filter(
+        status=OrderStockHold.Status.VALIDIRANO,
+    ).select_related('product', 'variation', 'location').order_by('product_id', 'pk'))
+    if not holds:
+        return
+    list(Product.objects.select_for_update().filter(pk__in=[h.product_id for h in holds]).order_by('pk'))
+    cancelled = locked.status == Order.Status.OTKAZANA or locked.lager_status == Order.LagerStatus.OTKAZANO
+    for hold in holds:
+        if not WarehouseMovement.objects.filter(product=hold.product, variation=hold.variation,
+                location=hold.location, tip=WarehouseMovement.Tip.PRODAJA,
+                napomena=f'Web narudžba #{locked.broj}').exists():
+            raise MagacinError('Nije pronađeno prvobitno skidanje web narudžbe. Provjeri istoriju stanja.')
+        if hold.location.sifra == 'WEB' and not WarehouseStock.objects.filter(
+                product=hold.product, variation=hold.variation, location=hold.location).exists():
+            target = hold.variation or hold.product
+            WarehouseStock.objects.create(product=hold.product, variation=hold.variation,
+                                          location=hold.location, kolicina=max(0, int(target.stanje or 0)))
+        apply_movement(product=hold.product, variation=hold.variation, location=hold.location,
+                       tip=WarehouseMovement.Tip.PRIJEM, kolicina=hold.kolicina, order=locked, user=user,
+                       napomena=f'Povrat preranog skidanja web narudžbe #{locked.broj} — obračun po pickingu')
+        if not cancelled:
+            stock = get_or_create_stock(product=hold.product, variation=hold.variation, location=hold.location)
+            apply_movement(product=hold.product, variation=hold.variation, location=hold.location,
+                           tip=WarehouseMovement.Tip.REZERVACIJA, kolicina=1,
+                           rezervisano=stock.rezervisano + hold.kolicina, user=user,
+                           napomena=f'Web rezervacija #{locked.broj}')
+        hold.status = OrderStockHold.Status.OTKAZANO if cancelled else OrderStockHold.Status.REZERVISANO
+        hold.save(update_fields=['status'])
+    locked.stanje_skinuto = False
+    locked.stanje_skinuto_at = None
+    locked.save(update_fields=['stanje_skinuto', 'stanje_skinuto_at'])
+    order.refresh_from_db()
 
 
 def deduct_for_order(product, qty, *, variation=None, user=None, napomena='', web_order=None, order=None):
@@ -6751,6 +6785,9 @@ def validate_order_stock(order, *, user=None):
         from .b2b_orders import finish_pick
         return finish_pick(order, user=user)
     if order.izvor == Order.Izvor.WEBSHOP:
+        restore_unfinished_web_stock(order, user=user)
+        if order.lager_status != Order.LagerStatus.VALIDIRANO and order.stavke.filter(kolicina_pokupljeno__isnull=True, ledger_excess_line__isnull=True).exists():
+            raise MagacinError('Prvo potvrdi pokupljene količine na pickingu.')
         sync_webshop_charges_to_picked(order)
         order.refresh_from_db()
     if order.lager_status == Order.LagerStatus.VALIDIRANO:
@@ -6765,7 +6802,7 @@ def validate_order_stock(order, *, user=None):
     if not (order.izvor == Order.Izvor.WEBSHOP and order.stanje_skinuto):
         pick_rows = _iter_pick_deduct_rows(order)
         needed = _warehouse_qty_still_needed(order, pick_rows)
-        if not any(needed.values()) and not order.pick_short_events:
+        if order.izvor != Order.Izvor.WEBSHOP and not any(needed.values()) and not order.pick_short_events and not order.pick_state and not order.stavke.filter(kolicina_pokupljeno__isnull=False).exists():
             for hold in order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO):
                 needed[_stock_key(hold.product, hold.variation)] += int(hold.kolicina or 0)
         for row in pick_rows:
@@ -6811,6 +6848,10 @@ def validate_order_stock(order, *, user=None):
 
     order.lager_status = Order.LagerStatus.VALIDIRANO
     update_fields = ['lager_status']
+    if order.izvor == Order.Izvor.WEBSHOP and order.stavke.filter(kolicina_pokupljeno__gt=0).exists():
+        order.stanje_skinuto = True
+        order.stanje_skinuto_at = timezone.now()
+        update_fields.extend(['stanje_skinuto', 'stanje_skinuto_at'])
     if order.status != Order.Status.OTKAZANA:
         order.status = Order.Status.ZAVRSENA
         update_fields.append('status')
@@ -6833,6 +6874,7 @@ def validate_order_stock(order, *, user=None):
 @transaction.atomic
 def cancel_order_stock(order, *, user=None):
     """Vrati rezervaciju i otkaži narudžbu."""
+    restore_unfinished_web_stock(order, user=user)
     if order.lager_status == Order.LagerStatus.OTKAZANO:
         return
     if order.lager_status == Order.LagerStatus.VALIDIRANO:
