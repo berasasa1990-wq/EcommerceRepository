@@ -2,6 +2,15 @@ import logging
 
 from django import forms
 from django.contrib import admin, messages
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.forms import UserChangeForm
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.models import User
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.contrib.admin import helpers
 from django.db.models import Count, Q
 from django.http import HttpResponseRedirect
@@ -132,11 +141,24 @@ class LoyaltyCardAdmin(admin.ModelAdmin):
 
 @admin.register(Coupon)
 class CouponAdmin(admin.ModelAdmin):
-    list_display = ('kod', 'naziv', 'postotak', 'vlasnik', 'aktivan', 'automatski')
-    list_filter = ('aktivan', 'automatski')
+    list_display = ('kod', 'naziv', 'vrsta', 'postotak', 'iznos', 'vlasnik', 'aktivan', 'automatski')
+    list_filter = ('vrsta', 'aktivan', 'automatski')
     search_fields = ('kod', 'naziv', 'vlasnik__email')
     autocomplete_fields = ('vlasnik', 'loyalty_kartica')
     readonly_fields = ('kreiran',)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if not form.cleaned_data.get('posalji_email'):
+            return
+        from .emails import send_coupon_reward_email
+        try:
+            send_coupon_reward_email(obj)
+        except Exception:
+            logger.exception('Slanje emaila za kupon %s nije uspjelo', obj.pk)
+            self.message_user(request, f'Kupon {obj.kod} je sačuvan, ali email nije poslan.', messages.ERROR)
+        else:
+            self.message_user(request, f'Email o nagradi {obj.kod} poslan je kupcu.', messages.SUCCESS)
 
 
 @admin.register(UserProfile)
@@ -144,6 +166,184 @@ class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'telefon', 'grad')
     search_fields = ('user__email', 'user__first_name', 'telefon')
     autocomplete_fields = ('user',)
+
+
+class CustomerUserChangeForm(UserChangeForm):
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip().lower()
+        if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('Korisnik s ovim emailom već postoji.')
+        return email
+
+
+class CustomerProfileInline(admin.StackedInline):
+    model = UserProfile
+    can_delete = False
+    extra = 1
+    max_num = 1
+    fields = ('telefon', 'adresa', 'grad', 'postanski_broj', 'prva_prijava')
+    readonly_fields = ('prva_prijava',)
+
+
+class CustomerCouponForm(forms.ModelForm):
+    posalji_email = forms.BooleanField(
+        required=False,
+        label='Pošalji email kupcu',
+        help_text='Kupac dobija obavijest o nagradi i uputu da je primijeni u korpi.',
+    )
+
+    class Meta:
+        model = Coupon
+        fields = '__all__'
+
+    def clean(self):
+        cleaned = super().clean()
+        kind = cleaned.get('vrsta')
+        pct = cleaned.get('postotak') or 0
+        amount = cleaned.get('iznos') or 0
+        if kind == Coupon.Vrsta.POSTOTAK and not 0 < pct <= 100:
+            self.add_error('postotak', 'Unesite postotak od 0 do 100.')
+        if kind == Coupon.Vrsta.IZNOS and amount <= 0:
+            self.add_error('iznos', 'Unesite iznos veći od nule.')
+        if kind != Coupon.Vrsta.POSTOTAK:
+            cleaned['postotak'] = 0
+        if kind != Coupon.Vrsta.IZNOS:
+            cleaned['iznos'] = None
+        owner = cleaned.get('vlasnik') or getattr(self.instance, 'vlasnik', None)
+        loyalty_card = cleaned.get('loyalty_kartica') or getattr(self.instance, 'loyalty_kartica', None)
+        recipient = owner or getattr(loyalty_card, 'user', None)
+        if cleaned.get('posalji_email') and not getattr(recipient, 'email', ''):
+            self.add_error('posalji_email', 'Za slanje emaila kupon mora imati vlasnika s email adresom.')
+        return cleaned
+
+
+CouponAdmin.form = CustomerCouponForm
+
+
+class CustomerCouponInline(admin.TabularInline):
+    model = Coupon
+    form = CustomerCouponForm
+    fk_name = 'vlasnik'
+    extra = 0
+    fields = ('kod', 'naziv', 'vrsta', 'postotak', 'iznos', 'aktivan', 'posalji_email')
+    verbose_name = 'Lični kupon'
+    verbose_name_plural = 'Lični kuponi: % popusta, KM ili besplatna dostava'
+
+
+admin.site.unregister(User)
+
+
+@admin.register(User)
+class CustomerUserAdmin(UserAdmin):
+    form = CustomerUserChangeForm
+    list_display = ('email', 'first_name', 'last_name', 'customer_phone', 'date_joined', 'last_login', 'login_channel', 'is_active')
+    list_display_links = ('email',)
+    list_filter = ('is_active', 'is_staff', 'date_joined', 'last_login')
+    search_fields = ('email', 'username', 'first_name', 'last_name', 'profil__telefon')
+    ordering = ('-date_joined',)
+    inlines = (CustomerProfileInline, CustomerCouponInline)
+    readonly_fields = ('created_at_display', 'last_login_display', 'first_login_display', 'login_channel', 'reset_password_link')
+    fieldsets = (
+        ('Kontakt', {'fields': (('first_name', 'last_name'), 'email', 'username')}),
+        ('Prijave i sigurnost', {'fields': ('created_at_display', 'first_login_display', 'last_login_display', 'login_channel', 'reset_password_link', 'password')}),
+        ('Prava pristupa', {'classes': ('collapse',), 'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+    )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('profil')
+
+    def save_formset(self, request, form, formset, change):
+        super().save_formset(request, form, formset, change)
+        if formset.model is not Coupon:
+            return
+        from .emails import send_coupon_reward_email
+        for coupon_form in formset.forms:
+            if (
+                not hasattr(coupon_form, 'cleaned_data')
+                or coupon_form.cleaned_data.get('DELETE')
+                or not coupon_form.cleaned_data.get('posalji_email')
+            ):
+                continue
+            try:
+                send_coupon_reward_email(coupon_form.instance)
+            except Exception:
+                logger.exception('Slanje emaila za kupon %s nije uspjelo', coupon_form.instance.pk)
+                self.message_user(
+                    request,
+                    f'Kupon {coupon_form.instance.kod} je sačuvan, ali email nije poslan.',
+                    messages.ERROR,
+                )
+            else:
+                self.message_user(
+                    request,
+                    f'Email o nagradi {coupon_form.instance.kod} poslan je kupcu.',
+                    messages.SUCCESS,
+                )
+
+    @admin.display(description='Telefon')
+    def customer_phone(self, obj):
+        return getattr(getattr(obj, 'profil', None), 'telefon', '') or '—'
+
+    @admin.display(description='Prva zabilježena prijava')
+    def first_login_display(self, obj):
+        return getattr(getattr(obj, 'profil', None), 'prva_prijava', None) or 'Nije zabilježena'
+
+    @admin.display(description='Kreiran')
+    def created_at_display(self, obj):
+        return obj.date_joined
+
+    @admin.display(description='Posljednja prijava')
+    def last_login_display(self, obj):
+        return obj.last_login or 'Nije zabilježena'
+
+    @admin.display(description='Način prijave')
+    def login_channel(self, obj):
+        return 'Email i lozinka' if obj.has_usable_password() else 'Lozinka nije postavljena'
+
+    @admin.display(description='Reset lozinke')
+    def reset_password_link(self, obj):
+        if not obj.pk or not obj.email:
+            return 'Korisnik nema email adresu.'
+        url = reverse('admin:customer_reset_password', args=[obj.pk])
+        return format_html('<a href="{}">Pošalji link za reset lozinke</a>', url)
+
+    def get_urls(self):
+        return [
+            path('<int:user_id>/reset-password/', self.admin_site.admin_view(self.reset_password_view), name='customer_reset_password'),
+        ] + super().get_urls()
+
+    def reset_password_view(self, request, user_id):
+        from django.shortcuts import get_object_or_404
+
+        user = get_object_or_404(User, pk=user_id)
+        if not self.has_change_permission(request, user):
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
+        if request.method == 'POST':
+            if user.email and user.is_active and user.has_usable_password():
+                body = render_to_string('auth/admin_password_reset_email.txt', {
+                    'protocol': 'https' if request.is_secure() else 'http',
+                    'domain': get_current_site(request).domain,
+                    'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                    'token': default_token_generator.make_token(user),
+                })
+                subject = render_to_string('auth/admin_password_reset_subject.txt').strip()
+                try:
+                    sent = send_mail(subject, body, None, [user.email])
+                except Exception:
+                    logger.warning('Slanje reset lozinke nije uspjelo')
+                    sent = 0
+                self.message_user(request, 'Link za reset lozinke je poslan.' if sent else 'Email nije poslan.',
+                                  messages.SUCCESS if sent else messages.ERROR)
+            else:
+                self.message_user(request, 'Reset nije moguć za ovog korisnika.', messages.ERROR)
+            return redirect('admin:auth_user_change', user.pk)
+        return render(request, 'admin/customer_reset_password.html', {
+            **self.admin_site.each_context(request),
+            'title': 'Pošalji reset lozinke',
+            'customer': user,
+            'opts': self.model._meta,
+        })
 
 
 class ProductVariationInline(admin.TabularInline):

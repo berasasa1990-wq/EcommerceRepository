@@ -1,0 +1,76 @@
+.coupon-choice-modal[hidden] { display: none; }
+.coupon-choice-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+}
+.coupon-choice-backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    border: 0;
+    background: rgba(0, 0, 0, .7);
+    cursor: pointer;
+}
+.coupon-choice-panel {
+    position: relative;
+    width: min(520px, 100%);
+    max-height: min(85vh, 760px);
+    overflow-y: auto;
+    padding: clamp(22px, 5vw, 34px);
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .32);
+}
+.coupon-choice-close {
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    border: 0;
+    background: transparent;
+    color: #444;
+    font-size: 30px;
+    cursor: pointer;
+}
+.coupon-choice-kicker {
+    margin: 0 0 6px;
+    color: #d94c00;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .12em;
+}
+.coupon-choice-panel h2 { margin: 0 36px 7px 0; font-size: 25px; }
+.coupon-choice-intro { margin: 0 0 20px; color: #555; font-size: 14px; }
+.coupon-choice-list { display: grid; gap: 10px; }
+.coupon-choice-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid #e4e4e4;
+    border-radius: 12px;
+    background: #fafafa;
+}
+.coupon-choice-icon { font-size: 24px; }
+.coupon-choice-copy { display: grid; flex: 1; min-width: 0; gap: 4px; }
+.coupon-choice-copy strong { color: #111; font-size: 15px; }
+.coupon-choice-copy > span { color: #555; font-size: 13px; line-height: 1.35; }
+.coupon-choice-select {
+    flex: none;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 8px;
+    background: #f05a18;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+.coupon-choice-select:hover, .coupon-choice-select:focus-visible { background: #c9450e; }
+@media (max-width: 480px) {
+    .coupon-choice-card { flex-wrap: wrap; }
+    .coupon-choice-select { width: 100%; }
+}

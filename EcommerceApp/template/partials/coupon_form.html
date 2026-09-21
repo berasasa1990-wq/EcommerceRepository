@@ -36,40 +36,21 @@
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
         <p class="coupon-applied">
-            Aktivan loyalty popust
-            {% if summary.kupon_postotak %}<strong>{{ summary.kupon_postotak }}%</strong>{% endif %}
-            {% if summary.kupon_popust %}(−{{ summary.kupon_popust }} KM){% endif %}
+            {% if applied_coupon %}{{ applied_coupon.naziv }}{% else %}Aktivan kupon{% endif %}
+            {% if applied_coupon.vrsta == 'dostava' %}<strong>Besplatna dostava</strong>
+            {% elif applied_coupon.vrsta == 'iznos' %}<strong>−{{ summary.kupon_popust }} KM</strong>
+            {% elif summary.kupon_postotak %}<strong>{{ summary.kupon_postotak }}%</strong> (−{{ summary.kupon_popust }} KM){% endif %}
             <button type="submit" class="coupon-remove-btn">Ukloni</button>
         </p>
     </form>
-    <p class="loyalty-code-hint loyalty-code-hint--compact">Ne vrijedi na artikle koji su na akciji.</p>
+    {% if applied_coupon.automatski or applied_coupon.loyalty_kartica_id %}<p class="loyalty-code-hint loyalty-code-hint--compact">Ne vrijedi na artikle koji su na akciji.</p>{% endif %}
 
-    {% elif user.is_authenticated and loyalty_card %}
+    {% else %}
     <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form coupon-form--loyalty-oneclick">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
-        <input type="hidden" name="kod" value="{{ loyalty_card.kod }}">
-        <button type="submit" class="btn btn-coupon btn-coupon--full">Primijeni loyalty karticu <span aria-hidden="true">›</span></button>
-    </form>
-
-    {% else %}
-    <p class="loyalty-code-hint">
-        {% if user.is_authenticated %}
-        Nemate loyalty karticu. Unesite broj kartice ako ga imate.
-        {% else %}
-        <a href="{% url 'login' %}?next={% url 'cart' %}">Prijavite se</a> da primijenite loyalty popust jednim klikom, ili unesite broj kartice.
-        {% endif %}
-    </p>
-    <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
-        <div class="coupon-form-row">
-            {{ coupon_form.kod }}
-            <button type="submit" class="btn btn-coupon">Primijeni</button>
-        </div>
-        {% for error in coupon_form.kod.errors %}
-        <p class="form-error">{{ error }}</p>
-        {% endfor %}
+        <input type="hidden" name="choose_reward" value="1">
+        <button type="submit" class="btn btn-coupon btn-coupon--full"{% if coupon_choices|length > 1 %} data-coupon-choice-open aria-haspopup="dialog" aria-controls="couponChoiceDialog"{% endif %}>Primijeni kupon ili karticu <span aria-hidden="true">›</span></button>
     </form>
     {% endif %}
 </div>

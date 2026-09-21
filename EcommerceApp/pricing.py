@@ -2,7 +2,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from .cart import izracunaj_pdv
 from .loyalty import validiraj_kupon
-from .models import Order, SiteSettings
+from .models import Coupon, Order, SiteSettings
 
 
 def _kvantiziraj(value):
@@ -107,6 +107,12 @@ def izracunaj_sazetak(
             if 'Besplatna dostava za novog korisnika' not in pogodnosti:
                 pogodnosti.append('Besplatna dostava za novog korisnika')
 
+    kupon = None
+    if coupon_code:
+        kupon, _ = validiraj_kupon(coupon_code, user)
+        if kupon and kupon.vrsta == Coupon.Vrsta.DOSTAVA:
+            dostava = Decimal('0.00')
+
     # Cijene artikala i dostave su maloprodajne (sa PDV-om).
     ukupno_sa_pdvom = _kvantiziraj(medjuzbir + dostava)
 
@@ -155,25 +161,29 @@ def izracunaj_sazetak(
             popust += iznos
             pogodnosti.append(f'Nagradni točak: -{iznos} KM')
 
-    kupon = None
     kupon_popust = Decimal('0.00')
-    if coupon_code:
-        kupon, _ = validiraj_kupon(coupon_code, user)
-        if kupon:
-            if kupon.automatski:
-                loyalty_osnovica = _loyalty_osnovica_iz_korpe(cart_items)
-                kupon_popust = _postotni_popust(loyalty_osnovica, kupon.postotak)
-            else:
-                kupon_popust = _postotni_popust(ukupno_sa_pdvom, kupon.postotak)
+    if kupon:
+        if kupon.vrsta == Coupon.Vrsta.DOSTAVA:
+            pogodnosti.append(f'Kupon: besplatna dostava ({kupon.kod})')
+        elif kupon.vrsta == Coupon.Vrsta.IZNOS:
+            kupon_popust = min(ukupno_sa_pdvom, kupon.iznos or Decimal('0.00'))
             popust += kupon_popust
-            if kupon.naziv == 'Registracijski popust (uživo)':
-                pct = kupon.postotak
-                pct_label = int(pct) if pct == int(pct) else pct
-                pogodnosti.append(f'Registracijski popust {pct_label}% (jednokratno)')
-            elif kupon.automatski or kupon.loyalty_kartica_id:
-                pogodnosti.append(f'Loyalty kupon {kupon.postotak}% ({kupon.kod})')
-            else:
-                pogodnosti.append(f'Kupon {kupon.postotak}% ({kupon.kod})')
+            pogodnosti.append(f'Kupon {kupon_popust} KM ({kupon.kod})')
+        elif kupon.automatski:
+            loyalty_osnovica = _loyalty_osnovica_iz_korpe(cart_items)
+            kupon_popust = _postotni_popust(loyalty_osnovica, kupon.postotak)
+        elif kupon.vrsta == Coupon.Vrsta.POSTOTAK:
+            kupon_popust = _postotni_popust(ukupno_sa_pdvom, kupon.postotak)
+        if kupon.vrsta == Coupon.Vrsta.POSTOTAK:
+            popust += kupon_popust
+        if kupon.vrsta == Coupon.Vrsta.POSTOTAK and kupon.naziv == 'Registracijski popust (uživo)':
+            pct = kupon.postotak
+            pct_label = int(pct) if pct == int(pct) else pct
+            pogodnosti.append(f'Registracijski popust {pct_label}% (jednokratno)')
+        elif kupon.vrsta == Coupon.Vrsta.POSTOTAK and (kupon.automatski or kupon.loyalty_kartica_id):
+            pogodnosti.append(f'Loyalty kupon {kupon.postotak}% ({kupon.kod})')
+        elif kupon.vrsta == Coupon.Vrsta.POSTOTAK:
+            pogodnosti.append(f'Kupon {kupon.postotak}% ({kupon.kod})')
 
     popust = min(popust, ukupno_sa_pdvom)
     ukupno = _kvantiziraj(ukupno_sa_pdvom - popust)
@@ -213,7 +223,7 @@ def izracunaj_sazetak(
         'ukupno': ukupno,
         'pdv': izracunaj_pdv(ukupno),
         'kupon_kod': kupon.kod if kupon else '',
-        'kupon_postotak': kupon.postotak if kupon else None,
+        'kupon_postotak': kupon.postotak if kupon and kupon.vrsta == Coupon.Vrsta.POSTOTAK else None,
     }
 
 

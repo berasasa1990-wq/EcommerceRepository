@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block page_title %}Odaberite kupon ili karticu{% endblock %}
+{% block content %}
+<main class="container" style="max-width:650px;padding:40px 16px">
+    <h1>{% if coupons %}Odaberite nagradu{% else %}Unesite kod kupona ili kartice{% endif %}</h1>
+    {% if coupons %}<p>Možete primijeniti jednu nagradu na narudžbu.</p>{% endif %}
+    {% for coupon in coupons %}
+    <form method="post" action="{% url 'apply_coupon' %}" style="margin:12px 0;padding:16px;border:1px solid #ddd;border-radius:10px">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ coupon_next }}">
+        <input type="hidden" name="kod" value="{{ coupon.kod }}">
+        <strong>{{ coupon.naziv }}</strong><br>
+        {% if coupon.vrsta == 'dostava' %}Besplatna dostava
+        {% elif coupon.vrsta == 'iznos' %}{{ coupon.iznos }} KM popusta
+        {% else %}{{ coupon.postotak }}% popusta{% if coupon.automatski or coupon.loyalty_kartica_id %} na artikle koji nisu na akciji{% endif %}{% endif %}
+        <br><button type="submit" class="btn btn-coupon">Primijeni ovu nagradu</button>
+    </form>
+    {% endfor %}
+    {% if not coupons %}<form method="post" action="{% url 'apply_coupon' %}" style="margin:20px 0">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ coupon_next }}">
+        <label for="coupon-choice-code">Unesite kod kupona ili kartice</label>
+        <input id="coupon-choice-code" name="kod" type="text" required autocomplete="off" maxlength="20">
+        <button type="submit" class="btn btn-coupon">Primijeni kod</button>
+    </form>{% endif %}
+    <a href="{% url coupon_next %}">Nazad bez odabira</a>
+</main>
+{% endblock %}

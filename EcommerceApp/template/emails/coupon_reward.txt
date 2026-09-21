@@ -1,0 +1,11 @@
+Pozdrav{% if customer.first_name %} {{ customer.first_name }}{% endif %},
+
+Dobili ste nagradu: {{ reward_label }}.
+
+Prijavite se na svoj nalog, otvorite korpu i prije kupovine kliknite na dugme „Primijeni kupon ili karticu“. Vaša nagrada će biti ponuđena automatski.
+
+Prijava i korpa: {{ login_url }}
+
+Vaš kod: {{ coupon.kod }}
+
+Carpologija BH

@@ -1,0 +1,26 @@
+{% if coupon_choices|length > 1 and not applied_coupon_code %}
+<div class="coupon-choice-modal" id="couponChoiceDialog" role="dialog" aria-modal="true" aria-labelledby="couponChoiceTitle" hidden>
+    <button type="button" class="coupon-choice-backdrop" data-coupon-choice-close aria-label="Zatvori izbor nagrade"></button>
+    <div class="coupon-choice-panel">
+        <button type="button" class="coupon-choice-close" data-coupon-choice-close aria-label="Zatvori">×</button>
+        <p class="coupon-choice-kicker">VAŠE POGODNOSTI</p>
+        <h2 id="couponChoiceTitle">Odaberite nagradu</h2>
+        <p class="coupon-choice-intro">Odaberite jednu pogodnost za ovu narudžbu.</p>
+        <div class="coupon-choice-list">
+            {% for coupon in coupon_choices %}
+            <form method="post" action="{% url 'apply_coupon' %}" class="coupon-choice-card">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
+                <input type="hidden" name="kod" value="{{ coupon.kod }}">
+                <span class="coupon-choice-icon" aria-hidden="true">{% if coupon.vrsta == 'dostava' %}🚚{% else %}🎁{% endif %}</span>
+                <span class="coupon-choice-copy">
+                    <strong>{{ coupon.naziv }}</strong>
+                    <span>{% if coupon.vrsta == 'dostava' %}Besplatna dostava{% elif coupon.vrsta == 'iznos' %}{{ coupon.iznos }} KM popusta{% else %}{{ coupon.postotak }}% popusta{% if coupon.automatski or coupon.loyalty_kartica_id %} na artikle koji nisu na akciji{% endif %}{% endif %}</span>
+                </span>
+                <button type="submit" class="coupon-choice-select">Primijeni</button>
+            </form>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}

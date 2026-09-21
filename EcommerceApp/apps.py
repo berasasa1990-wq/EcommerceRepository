@@ -21,6 +21,17 @@ class EcommerceappConfig(AppConfig):
 
     def ready(self):
         connection_created.connect(_configure_sqlite)
+        from django.contrib.auth.signals import user_logged_in
+        from django.utils import timezone
+        from .models import UserProfile
+
+        def record_first_login(sender, request, user, **kwargs):
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            if profile.prva_prijava is None:
+                profile.prva_prijava = timezone.now()
+                profile.save(update_fields=['prva_prijava'])
+
+        user_logged_in.connect(record_first_login, dispatch_uid='record_first_customer_login')
         from django.db.models.signals import post_migrate
         from .retention_triggers import refresh_history_triggers
         post_migrate.connect(refresh_history_triggers, dispatch_uid='permanent_system_history')

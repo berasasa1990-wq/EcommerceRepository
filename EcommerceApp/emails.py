@@ -38,6 +38,38 @@ def _from_email():
     return formataddr(('opremazaribolov.ba', settings.DEFAULT_FROM_EMAIL))
 
 
+def send_coupon_reward_email(coupon):
+    """Obavijesti vlasnika da mu je u adminu dodijeljen lični kupon."""
+    user = coupon.vlasnik or getattr(coupon.loyalty_kartica, 'user', None)
+    if not user or not user.email:
+        raise ValueError('Kupon nema vlasnika s email adresom.')
+
+    if coupon.vrsta == coupon.Vrsta.DOSTAVA:
+        reward_label = 'Besplatna dostava'
+    elif coupon.vrsta == coupon.Vrsta.IZNOS:
+        reward_label = f'{coupon.iznos} KM popusta'
+    else:
+        reward_label = f'{coupon.postotak}% popusta'
+
+    site_url = (settings.SITE_URL or '').rstrip('/')
+    login_url = f'{site_url}{reverse("login")}?next={reverse("cart")}'
+    context = {
+        'coupon': coupon,
+        'customer': user,
+        'reward_label': reward_label,
+        'site_url': site_url,
+        'login_url': login_url,
+    }
+    mail = EmailMultiAlternatives(
+        subject=f'Dobili ste nagradu: {reward_label} — opremazaribolov.ba',
+        body=render_to_string('emails/coupon_reward.txt', context),
+        from_email=_from_email(),
+        to=[user.email],
+    )
+    mail.attach_alternative(render_to_string('emails/coupon_reward.html', context), 'text/html')
+    return mail.send(fail_silently=False)
+
+
 def _admin_order_text(order):
     lines = [
         f'Nova narudžba #{order.broj}',

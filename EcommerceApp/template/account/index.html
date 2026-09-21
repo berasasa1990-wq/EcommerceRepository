@@ -6,7 +6,7 @@
 
 {% block body_class %}page-account catalog-header-reference{% endblock %}
 
-{% block title %}Moj nalog — opremazaribolov.ba{% endblock %}
+{% block title %}Moj nalog — Carpologija BH{% endblock %}
 
 {% block content %}
 <section
@@ -268,7 +268,7 @@
                                 <p class="acc-coupon-code" id="accCoupon{{ coupon.pk }}">{{ coupon.kod }}</p>
                             </div>
                             <div class="acc-coupon-meta">
-                                <span class="acc-coupon-pct">−{{ coupon.postotak|floatformat:0 }}%</span>
+                                <span class="acc-coupon-pct">{% if coupon.vrsta == 'dostava' %}Besplatna dostava{% elif coupon.vrsta == 'iznos' %}−{{ coupon.iznos }} KM{% else %}−{{ coupon.postotak|floatformat:0 }}%{% endif %}</span>
                                 <button type="button" class="acc-copy-btn" data-copy="accCoupon{{ coupon.pk }}">Kopiraj</button>
                             </div>
                         </li>

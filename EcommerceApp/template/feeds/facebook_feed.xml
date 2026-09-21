@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
-    <title>opremazaribolov.ba</title>
+    <title>Carpologija BH</title>
     <link>{{ request.build_absolute_uri|escape }}</link>
     <description>Product catalog feed for Meta Commerce</description>
 {% for item in feed_items %}

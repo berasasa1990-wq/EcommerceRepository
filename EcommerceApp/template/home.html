@@ -1,29 +1,9 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block body_class %}{% if not filters_active %}home-mobile-reference{% else %}catalog-header-reference{% if filter_params.q and not filter_params.noviteti and not filter_params.akcija and not filter_params.izdvojeno %} compact-search-results{% endif %}{% endif %}{% endblock %}
+{% block body_class %}{% if not filters_active %}home-mobile-reference{% else %}catalog-header-reference{% endif %}{% endblock %}
 
 {% block extra_css %}
 <style>
-@media (min-width: 1025px) {
-    body.catalog-header-reference.compact-search-results .product-catalog .product-grid--catalog {
-        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-        gap: 12px;
-    }
-    body.catalog-header-reference.compact-search-results .product-catalog .catalog-products .product-card--home-reference .product-card__title {
-        display: -webkit-box;
-        font-size: 12px !important;
-        font-weight: 600;
-        line-height: 1.2 !important;
-        min-height: 3.6em !important;
-        max-height: 3.6em !important;
-        overflow: hidden;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 3 !important;
-        line-clamp: 3 !important;
-        white-space: normal;
-        overflow-wrap: anywhere;
-    }
-}
 @media (max-width: 1024px) { .home-desktop-banner-only { display: none !important; } }
 @media (min-width: 1025px) { .home-banner-mobile-replaced { display: none !important; } }
 

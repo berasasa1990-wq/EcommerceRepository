@@ -725,7 +725,11 @@ class SiteVersionTests(TestCase):
         page = self.client.get(reverse('home'))
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, 'Verzija')
-        self.assertContains(page, build_site_version()['site_version_label'])
+        version = build_site_version()
+        self.assertContains(page, f"Verzija {version['site_version']}")
+        if version['site_version_sha']:
+            self.assertContains(page, f"Deploy {version['site_version_sha']}")
+        self.assertContains(page, '<strong>Izrada web stranice: 065 838 653</strong>', html=True)
 
     def test_footer_copies_carpologija_text(self):
         from django.urls import reverse

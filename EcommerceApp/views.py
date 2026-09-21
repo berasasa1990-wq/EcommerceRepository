@@ -2617,16 +2617,10 @@ def home(request):
         scope_qs = _filter_size_scope_qs(filter_params, request=request)
         filter_sizes = _available_sizes(scope_qs)
         filter_size_groups = _size_filter_groups(home_url, filter_params, filter_sizes)
-        is_site_search = bool(
-            filter_params.get('q')
-            and not filter_params.get('noviteti')
-            and not filter_params.get('akcija')
-            and not filter_params.get('izdvojeno')
-        )
         page_obj = _paginate_catalog_products(
             request,
             products,
-            per_page=30 if is_site_search else CATALOG_PRODUCTS_PER_PAGE,
+            per_page=CATALOG_PRODUCTS_PER_PAGE,
         )
         search_products = page_obj.object_list
         result_count = page_obj.paginator.count
@@ -4400,6 +4394,23 @@ def _loyalty_za_kupon(request):
     return card
 
 
+def _coupon_choices(request):
+    if not request.user.is_authenticated:
+        return []
+    card = _loyalty_za_kupon(request)
+    candidates = Coupon.objects.filter(aktivan=True).filter(
+        Q(vlasnik=request.user) | Q(loyalty_kartica=card)
+    ).distinct().order_by('automatski', '-kreiran')
+    choices = []
+    seen_ids = set()
+    for candidate in candidates:
+        coupon, error = validiraj_kupon(candidate.kod, request.user)
+        if not error and coupon and coupon.pk not in seen_ids:
+            choices.append(coupon)
+            seen_ids.add(coupon.pk)
+    return choices
+
+
 def _cart_context(request, cart):
     loyalty_card = _loyalty_za_kupon(request)
     cart_items = list(cart)
@@ -4407,9 +4418,11 @@ def _cart_context(request, cart):
     applied_code = cart.get_coupon_code() if cart.is_coupon_applied() else ''
     if not applied_code:
         applied_code = summary.get('kupon_kod') or ''
+    applied_coupon = None
     if applied_code and summary.get('kupon_primijenjen'):
         from .pricing import annotate_cart_coupon_prices
         coupon, _ = validiraj_kupon(applied_code, request.user)
+        applied_coupon = coupon
         annotate_cart_coupon_prices(cart_items, coupon)
     if cart_items:
         product_labels = {
@@ -4448,6 +4461,8 @@ def _cart_context(request, cart):
         'pricing': summary['pdv'],
         'coupon_form': CouponForm(initial={'kod': ''}),
         'applied_coupon_code': applied_code,
+        'applied_coupon': applied_coupon,
+        'coupon_choices': _coupon_choices(request) if not applied_code else [],
         'loyalty_card': loyalty_card,
         'loyalty': loyalty,
         'loyalty_progress': loyalty_progress,
@@ -4480,8 +4495,8 @@ def cart_view(request):
         'upsell_banners_above': get_cart_banner_upsell_offers(UpsellOffer.PrikazTip.BANNER_IZNAD),
         'upsell_banners_below': get_cart_banner_upsell_offers(UpsellOffer.PrikazTip.BANNER_ISPOD),
         **page_seo_context('cart', defaults={
-            'seo_title': 'Korpa — opremazaribolov.ba',
-            'seo_description': 'Vaša korpa — opremazaribolov.ba',
+            'seo_title': 'Korpa — Carpologija BH',
+            'seo_description': 'Vaša korpa — Carpologija BH',
             'seo_h1': 'Korpa',
         }),
     }
@@ -4519,32 +4534,49 @@ def update_cart(request):
 @require_POST
 def apply_coupon(request):
     cart = Cart(request)
-    form = CouponForm(request.POST)
-    if form.is_valid():
+    redirect_to = request.POST.get('next', 'cart')
+    if request.POST.get('choose_reward') == '1':
+        choices = _coupon_choices(request)
+        if len(choices) != 1:
+            return render(request, 'coupon_choice.html', {
+                'coupons': choices,
+                'coupon_next': 'checkout' if redirect_to == 'checkout' else 'cart',
+            })
+        kod = choices[0].kod
+    else:
+        form = CouponForm(request.POST)
+        if not form.is_valid():
+            for error in form.errors.get('kod', []):
+                messages.error(request, error)
+            return redirect('checkout' if redirect_to == 'checkout' else 'cart')
         kod = form.cleaned_data['kod']
+
+    if kod:
         coupon, error = validiraj_kupon(kod, request.user)
         if error:
             messages.error(request, error)
         else:
             cart.set_coupon_code(coupon.kod)
             cart.mark_coupon_keep_after_apply()
-            pct = coupon.postotak
-            pct_label = int(pct) if pct == int(pct) else pct
-            if coupon.automatski or coupon.loyalty_kartica_id:
+            if coupon.vrsta == Coupon.Vrsta.DOSTAVA:
+                messages.success(request, 'Kupon primijenjen — besplatna dostava.')
+            elif coupon.vrsta == Coupon.Vrsta.IZNOS:
+                messages.success(request, f'Kupon primijenjen — {coupon.iznos} KM popusta.')
+            elif coupon.automatski or coupon.loyalty_kartica_id:
+                pct = coupon.postotak
+                pct_label = int(pct) if pct == int(pct) else pct
                 messages.success(
                     request,
                     f'Loyalty kartica primijenjena — popust {pct_label}% '
                     f'(ne vrijedi na artikle na akciji).',
                 )
             else:
+                pct = coupon.postotak
+                pct_label = int(pct) if pct == int(pct) else pct
                 messages.success(
                     request,
                     f'Kupon primijenjen — popust {pct_label}%.',
                 )
-    else:
-        for error in form.errors.get('kod', []):
-            messages.error(request, error)
-    redirect_to = request.POST.get('next', 'cart')
     if redirect_to == 'checkout':
         return redirect('checkout')
     return redirect('cart')
@@ -4877,8 +4909,8 @@ def checkout(request):
         'form': form,
         'upsell_checkout_offers': get_checkout_upsell_offers(cart),
         **page_seo_context('checkout', defaults={
-            'seo_title': 'Narudžba — opremazaribolov.ba',
-            'seo_description': 'Završite narudžbu — opremazaribolov.ba',
+            'seo_title': 'Narudžba — Carpologija BH',
+            'seo_description': 'Završite narudžbu — Carpologija BH',
             'seo_h1': 'Narudžba',
         }),
     }
@@ -4944,7 +4976,7 @@ def order_success(request, broj):
         **_base_context(),
         'order': order,
         **page_seo_context('order_success', defaults={
-            'seo_title': 'Narudžba primljena — opremazaribolov.ba',
+            'seo_title': 'Narudžba primljena — Carpologija BH',
             'seo_description': '',
             'seo_h1': 'Hvala na narudžbi!',
         }),
@@ -5068,8 +5100,8 @@ def register(request):
         'form': form,
         'turnstile_site_key': getattr(settings, 'TURNSTILE_SITE_KEY', ''),
         **page_seo_context('register', defaults={
-            'seo_title': 'Registracija — opremazaribolov.ba',
-            'seo_description': 'Kreirajte nalog — opremazaribolov.ba',
+            'seo_title': 'Registracija — Carpologija BH',
+            'seo_description': 'Kreirajte nalog — Carpologija BH',
             'seo_h1': 'Registracija',
         }),
     }
@@ -5138,8 +5170,8 @@ def login_view(request):
         'next_url': next_url,
         'turnstile_site_key': getattr(settings, 'TURNSTILE_SITE_KEY', ''),
         **page_seo_context('login', defaults={
-            'seo_title': 'Prijava — opremazaribolov.ba',
-            'seo_description': 'Prijavite se — opremazaribolov.ba',
+            'seo_title': 'Prijava — Carpologija BH',
+            'seo_description': 'Prijavite se — Carpologija BH',
             'seo_h1': 'Prijava',
         }),
     }
@@ -5948,7 +5980,7 @@ def staff_order_brza_posta(request, broj):
         'order': order,
         'datum': created.strftime('%d.%m.%Y.'),
         'vrijeme': created.strftime('%H:%M'),
-        'site_name': 'opremazaribolov.ba',
+        'site_name': 'Carpologija BH',
         'iznos_sa_dostavom': order.ukupno,
         'iznos_copy': f'{order.ukupno:.2f}'.replace('.', ','),
         'packing_lines': packing_lines,
@@ -6499,7 +6531,7 @@ def staff_order_packing(request, broj):
         'odoo_error': odoo_error,
         'datum': created.strftime('%d.%m.%Y.'),
         'vrijeme': created.strftime('%H:%M'),
-        'site_name': 'opremazaribolov.ba',
+        'site_name': 'Carpologija BH',
     }
     return render(request, 'staff/order_packing.html', context)
 
@@ -6712,7 +6744,7 @@ def staff_gift_voucher_print(request):
         'punio_ime': f'{ime} {prezime}'.strip(),
         'iznos': iznos,
         'datum': created.strftime('%d.%m.%Y.'),
-        'site_name': 'opremazaribolov.ba',
+        'site_name': 'Carpologija BH',
     }
     return render(request, 'staff/gift_voucher_print.html', context)
 

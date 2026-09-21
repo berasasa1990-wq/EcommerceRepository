@@ -1,4 +1,5 @@
 from django.urls import path
+from django.contrib.auth import views as auth_views
 
 from . import views
 from . import manual_order_drafts, data_history
@@ -11,6 +12,13 @@ from . import views_site_prep
 from . import views_sync
 
 urlpatterns = [
+    path('lozinka/potvrdi/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
+        template_name='auth/password_reset_confirm.html',
+        success_url='/lozinka/gotovo/',
+    ), name='password_reset_confirm'),
+    path('lozinka/gotovo/', auth_views.PasswordResetCompleteView.as_view(
+        template_name='auth/password_reset_complete.html',
+    ), name='password_reset_complete'),
     path('nalog/magacin/historija-podataka/fajl/<int:pk>/', data_history.media_download, name='staff_magacin_media_history_download'),
     path('nalog/magacin/nacrti/uvoz/', manual_order_drafts.import_local_draft, name='staff_magacin_draft_import'),
     path('nalog/magacin/nacrti/sacuvaj/', manual_order_drafts.save_draft, name='staff_magacin_draft_save'),

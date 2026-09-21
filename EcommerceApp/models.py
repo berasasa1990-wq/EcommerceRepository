@@ -4230,9 +4230,16 @@ class LoyaltyPurchase(models.Model):
 
 
 class Coupon(models.Model):
+    class Vrsta(models.TextChoices):
+        POSTOTAK = 'postotak', 'Postotak'
+        IZNOS = 'iznos', 'Iznos u KM'
+        DOSTAVA = 'dostava', 'Besplatna dostava'
+
     kod = models.CharField(max_length=20, unique=True)
     naziv = models.CharField(max_length=100)
-    postotak = models.DecimalField(max_digits=5, decimal_places=2)
+    postotak = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), blank=True)
+    vrsta = models.CharField(max_length=10, choices=Vrsta.choices, default=Vrsta.POSTOTAK)
+    iznos = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     vlasnik = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -4261,6 +4268,10 @@ class Coupon(models.Model):
         verbose_name_plural = 'Kuponi'
 
     def __str__(self):
+        if self.vrsta == self.Vrsta.DOSTAVA:
+            return f'{self.kod} — besplatna dostava'
+        if self.vrsta == self.Vrsta.IZNOS:
+            return f'{self.kod} — {self.iznos} KM'
         return f'{self.kod} — {self.postotak}%'
 
 
@@ -4271,6 +4282,7 @@ class UserProfile(models.Model):
         related_name='profil',
     )
     telefon = models.CharField(max_length=30, blank=True)
+    prva_prijava = models.DateTimeField(null=True, blank=True, editable=False)
     telefon_verifikovan = models.BooleanField(
         default=False,
         verbose_name='Telefon verifikovan (Viber)',
