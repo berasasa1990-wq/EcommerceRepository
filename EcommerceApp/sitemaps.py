@@ -2,7 +2,9 @@ from django.contrib.sitemaps import Sitemap
 from django.contrib.sitemaps.views import sitemap as django_sitemap_view
 from django.db.models import Q
 from django.urls import reverse
-from django.utils import timezone
+from urllib.parse import urlparse
+
+from django.conf import settings
 
 from .category_visibility import filter_categories_with_products
 from .models import Brand, Category, HomeVlog, Product
@@ -41,7 +43,12 @@ def sitemap_view(request, sitemaps, section=None, template_name='sitemap.xml', c
 
 
 
-class StaticViewSitemap(Sitemap):
+class CanonicalSitemap(Sitemap):
+    def get_domain(self, site=None):
+        return urlparse(settings.SEO_CANONICAL_URL).netloc
+
+
+class StaticViewSitemap(CanonicalSitemap):
     """Javne statične stranice visokog prioriteta."""
     priority = 1.0
     changefreq = 'daily'
@@ -54,7 +61,7 @@ class StaticViewSitemap(Sitemap):
         return reverse(item)
 
 
-class CategorySitemap(Sitemap):
+class CategorySitemap(CanonicalSitemap):
     changefreq = 'daily'
     priority = 0.85
     protocol = 'https'
@@ -63,13 +70,13 @@ class CategorySitemap(Sitemap):
         return filter_categories_with_products(Category.objects.filter(aktivan=True))
 
     def lastmod(self, obj):
-        return getattr(obj, 'azuriran', None) or timezone.now()
+        return getattr(obj, 'azuriran', None)
 
     def location(self, obj):
         return obj.get_absolute_url()
 
 
-class VlogSitemap(Sitemap):
+class VlogSitemap(CanonicalSitemap):
     changefreq = 'weekly'
     priority = 0.65
     protocol = 'https'
@@ -81,7 +88,7 @@ class VlogSitemap(Sitemap):
         return obj.get_absolute_url()
 
 
-class ProductSitemap(Sitemap):
+class ProductSitemap(CanonicalSitemap):
     """
     Samo aktivni artikli koji su (ili imaju varijaciju) na stanju.
     Out-of-stock stranice imaju noindex — ne treba ih u sitemapu.
@@ -107,7 +114,7 @@ class ProductSitemap(Sitemap):
         return obj.get_absolute_url()
 
 
-class BrandSitemap(Sitemap):
+class BrandSitemap(CanonicalSitemap):
     """
     Brand filter URL-ovi na početnoj (?brend=slug) — samo brendovi s artiklima.
     """

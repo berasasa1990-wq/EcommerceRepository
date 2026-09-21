@@ -12,6 +12,7 @@ from .category_visibility import filter_categories_with_products, get_category_i
 from .models import Akcija, Category, SiteSettings
 from .online_gift import active_reward_label
 from .upsell import get_active_upsell_offer
+from .utils.seo import absolute_url
 
 _CONTACT_MESSAGE = 'Zdravo, imam pitanje sa opremazaribolov.ba'
 
@@ -152,7 +153,9 @@ def nav_categories(request):
         except Exception:
             site_settings = SiteSettings()
         return {
-            'site_url': settings.SITE_URL,
+            'site_url': settings.SEO_CANONICAL_URL,
+            'site_brand': 'Carpologija BH',
+            'site_og_image_url': '',
             'nav_categories': [],
             'site_settings': site_settings,
             'cart_count': 0,
@@ -261,8 +264,8 @@ def nav_categories(request):
     try:
         from django.core.cache import cache
         from .utils.seo import json_ld, organization_json_ld as _org_ld, website_json_ld as _web_ld
-        org_key = 'seo_org_json_ld_v1'
-        web_key = 'seo_web_json_ld_v1'
+        org_key = 'seo_org_json_ld_carpologija_v1'
+        web_key = 'seo_web_json_ld_carpologija_v1'
         organization_json_ld = cache.get(org_key)
         website_json_ld = cache.get(web_key)
         if organization_json_ld is None or website_json_ld is None:
@@ -274,7 +277,9 @@ def nav_categories(request):
         pass
 
     return {
-        'site_url': settings.SITE_URL,
+        'site_url': settings.SEO_CANONICAL_URL,
+        'site_brand': 'Carpologija BH',
+        'site_og_image_url': absolute_url(site_settings.og_image.url) if site_settings.og_image else '',
         'nav_categories': categories,
         'site_settings': site_settings,
         'cart_count': len(cart),

@@ -99,6 +99,8 @@ if '192.168.1.103' not in ALLOWED_HOSTS:
 
 # Produkcijski domeni (uvijek — da Cloudflare → Render ne padne na host grešku)
 for _prod_host in (
+    'carpologijabh.ba',
+    'www.carpologijabh.ba',
     'opremazaribolov.ba',
     'www.opremazaribolov.ba',
     'media.opremazaribolov.ba',
@@ -107,7 +109,7 @@ for _prod_host in (
         ALLOWED_HOSTS.append(_prod_host)
 
 # Host iz SITE_URL env (ako je drugačiji custom domain)
-_site_url_early = _env('SITE_URL', 'https://www.opremazaribolov.ba')
+_site_url_early = _env('SITE_URL', 'https://carpologijabh.ba')
 _site_host = urlparse(_site_url_early).hostname if _site_url_early else None
 if _site_host and _site_host not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(_site_host)
@@ -149,6 +151,8 @@ if _env('RENDER_EXTERNAL_HOSTNAME') or _env('RENDER', '') or render_disk_path:
 
 # Produkcijski CSRF (Cloudflare custom domain)
 for _origin in (
+    'https://carpologijabh.ba',
+    'https://www.carpologijabh.ba',
     'https://opremazaribolov.ba',
     'https://www.opremazaribolov.ba',
 ):
@@ -552,7 +556,9 @@ ORDER_NOTIFICATION_EMAIL = _env(
     'narudzbe@opremazaribolov.ba',
 ).strip().lower()
 EMAIL_TIMEOUT = int(_env('EMAIL_TIMEOUT', '30'))
-SITE_URL = _env('SITE_URL', 'https://www.opremazaribolov.ba').rstrip('/')
+SITE_URL = _env('SITE_URL', 'https://carpologijabh.ba').rstrip('/')
+# SEO URL-ovi ostaju na glavnom domenu i kada SITE_URL okruženja pokazuje na Render.
+SEO_CANONICAL_URL = 'https://carpologijabh.ba'
 STORE_PHONE = _env('STORE_PHONE', '')
 # Viber broj s kojeg se šalju loyalty kodovi za provjeru kupca (BA format 00… ili +…)
 LOYALTY_VIBER_FROM_PHONE = _env('LOYALTY_VIBER_FROM_PHONE', '0038765152072')

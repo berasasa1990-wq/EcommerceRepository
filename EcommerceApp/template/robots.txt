@@ -1,4 +1,4 @@
-# opremazaribolov.ba — robots.txt
+# Carpologija BH — robots.txt
 # Javni katalog i sadržaj: dozvoljeno. Korpa, nalog, API: zabranjeno indeksiranje.
 
 User-agent: *

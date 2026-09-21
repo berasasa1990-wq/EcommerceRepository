@@ -66,11 +66,13 @@ from .utils.images import image_field_dimensions
 from .utils.seo import (
     auto_category_seo_description,
     auto_category_seo_title,
+    absolute_url,
     breadcrumb_json_ld,
     collection_page_json_ld,
     entity_seo_context,
     json_ld,
     page_seo_context,
+    public_brand,
     product_json_ld,
 )
 
@@ -2801,21 +2803,30 @@ def home(request):
         'selected_brand': Brand.objects.filter(slug=filter_params['brend']).first() if filter_params.get('brend') else None,
         'home_section_product_visible': HOME_SECTION_PRODUCT_VISIBLE,
         'home_section_product_visible_mobile': HOME_SECTION_PRODUCT_VISIBLE_MOBILE,
-        'canonical_url': settings.SITE_URL.rstrip('/') + '/',
+        'canonical_url': settings.SEO_CANONICAL_URL + '/',
     }
     # SEO: početna ili filtrirani katalog (akcija / noviteti / pretraga / brend)
     selected_brand = context['selected_brand']
     if filters_active:
+        primary = [key for key in ('brend', 'akcija', 'noviteti') if filter_params.get(key)]
+        secondary = [key for key in ('q', 'kategorija', 'velicina', 'cijena_od', 'cijena_do', 'izdvojeno') if filter_params.get(key)]
+        if len(primary) == 1 and not secondary:
+            key = primary[0]
+            context['canonical_url'] = settings.SEO_CANONICAL_URL + '/?' + urlencode({key: filter_params[key]})
+        else:
+            context['meta_robots_content'] = 'noindex, follow'
+        if page_obj and page_obj.number > 1 and not context.get('meta_robots_content'):
+            context['canonical_url'] += ('&' if '?' in context['canonical_url'] else '?') + f'page={page_obj.number}'
         if filter_params.get('akcija'):
             context.update(page_seo_context('akcija', defaults={
                 'seo_title': 'Akcija | Oprema za ribolov',
-                'seo_description': 'Artikli na sniženoj cijeni — opremazaribolov.ba',
+                'seo_description': 'Artikli na sniženoj cijeni — Carpologija BH',
                 'seo_h1': catalog_title or 'Akcija',
             }))
         elif filter_params.get('noviteti'):
             context.update(page_seo_context('noviteti', defaults={
                 'seo_title': 'Noviteti | Oprema za ribolov',
-                'seo_description': 'Novi artikli u ponudi — opremazaribolov.ba',
+                'seo_description': 'Novi artikli u ponudi — Carpologija BH',
                 'seo_h1': catalog_title or 'Noviteti',
             }))
         elif filter_params.get('q'):
@@ -2849,11 +2860,10 @@ def home(request):
             context['catalog_title'] = context['seo_h1']
     else:
         context.update(page_seo_context('home', defaults={
-            'seo_title': site_settings.seo_title or '',
-            'seo_description': site_settings.meta_description or '',
-            'seo_h1': '',
+            'seo_title': public_brand(site_settings.seo_title) or 'Oprema za ribolov | Online shop BiH | Carpologija BH',
+            'seo_description': public_brand(site_settings.meta_description) or 'Štapovi, mašinice, varalice i pribor za ribolov. Istražite ponudu Carpologija BH i naručite online uz dostavu širom BiH.',
+            'seo_h1': 'Oprema za ribolov — Carpologija BH',
         }))
-        context['seo_h1'] = ''
     return render(request, 'home.html', context)
 
 
@@ -2893,9 +2903,9 @@ def vlog_detail(request, slug):
         'vlog_image': vlog_image,
         'image_width': vlog_image['width'],
         'image_height': vlog_image['height'],
-        'seo_title': f'{vlog.naslov} | Vlog — opremazaribolov.ba',
+        'seo_title': f'{vlog.naslov} | Vlog — Carpologija BH',
         'seo_description': seo_description,
-        'canonical_url': settings.SITE_URL.rstrip('/') + vlog.get_absolute_url(),
+        'canonical_url': settings.SEO_CANONICAL_URL + vlog.get_absolute_url(),
         'og_image': request.build_absolute_uri(vlog_image['src']),
     }
     return render(request, 'vlog_detail.html', context)
@@ -2905,14 +2915,14 @@ def about_us(request):
     context = {
         **_base_context(),
         **page_seo_context('about', defaults={
-            'seo_title': 'O nama — opremazaribolov.ba',
+            'seo_title': 'O nama — Carpologija BH',
             'seo_description': (
-                'Saznajte više o opremazaribolov.ba — dugogodišnje iskustvo u ribolovu '
+                'Saznajte više o Carpologija BH — dugogodišnje iskustvo u ribolovu '
                 'i opremi, sada u online prodaji za ribare u Bosni i Hercegovini.'
             ),
             'seo_h1': 'O nama',
         }),
-        'canonical_url': settings.SITE_URL.rstrip('/') + reverse('about_us'),
+        'canonical_url': settings.SEO_CANONICAL_URL + reverse('about_us'),
     }
     return render(request, 'pages/about.html', context)
 
@@ -2921,11 +2931,11 @@ def wishlist(request):
     context = {
         **_base_context(),
         **page_seo_context('wishlist', defaults={
-            'seo_title': 'Lista želja — opremazaribolov.ba',
+            'seo_title': 'Lista želja — Carpologija BH',
             'seo_description': 'Sačuvani proizvodi na listi želja.',
             'seo_h1': 'Lista želja',
         }),
-        'canonical_url': settings.SITE_URL.rstrip('/') + reverse('wishlist'),
+        'canonical_url': settings.SEO_CANONICAL_URL + reverse('wishlist'),
     }
     return render(request, 'wishlist.html', context)
 
@@ -2934,13 +2944,13 @@ def payment_methods(request):
     context = {
         **_base_context(),
         **page_seo_context('payment', defaults={
-            'seo_title': 'Način plaćanja — opremazaribolov.ba',
+            'seo_title': 'Način plaćanja — Carpologija BH',
             'seo_description': (
                 'Plaćanje prilikom preuzimanja, dostava brzom poštom u roku 48h i sigurno slanje pošiljki.'
             ),
             'seo_h1': 'Način plaćanja',
         }),
-        'canonical_url': settings.SITE_URL.rstrip('/') + reverse('payment_methods'),
+        'canonical_url': settings.SEO_CANONICAL_URL + reverse('payment_methods'),
     }
     return render(request, 'pages/payment.html', context)
 
@@ -2965,7 +2975,7 @@ def brands_list(request):
     total = page_obj.paginator.count
     start = page_obj.start_index() if total else 0
     end = page_obj.end_index() if total else 0
-    canonical = settings.SITE_URL.rstrip('/') + reverse('brands_list')
+    canonical = settings.SEO_CANONICAL_URL + reverse('brands_list')
     context = {
         **_base_context(),
         'brands': page_obj.object_list,
@@ -2976,16 +2986,16 @@ def brands_list(request):
         'brands_shown_end': end,
         'brands_total': total,
         **page_seo_context('brands', defaults={
-            'seo_title': 'Brendovi — opremazaribolov.ba',
+            'seo_title': 'Brendovi — Carpologija BH',
             'seo_description': (
-                'Svi brendovi ribolovne opreme na opremazaribolov.ba — Fox, Shimano, '
+                'Svi brendovi ribolovne opreme na Carpologija BH — Fox, Shimano, '
                 'Daiwa, Korda i drugi. Pronađite vrhunsku opremu poznatih brendova.'
             ),
             'seo_h1': 'Svi brendovi',
         }),
         'canonical_url': canonical,
         'breadcrumb_json_ld': json_ld(breadcrumb_json_ld([
-            {'name': 'Početna', 'url': settings.SITE_URL.rstrip('/') + '/'},
+            {'name': 'Početna', 'url': settings.SEO_CANONICAL_URL + '/'},
             {'name': 'Brendovi', 'url': canonical},
         ])),
     }
@@ -2997,13 +3007,13 @@ def vlog_list(request):
         **_base_context(),
         'vlogs': _vlog_cards(),
         **page_seo_context('vlog', defaults={
-            'seo_title': 'Blog — opremazaribolov.ba',
+            'seo_title': 'Blog — Carpologija BH',
             'seo_description': (
-                'Blog i vlog opremazaribolov.ba — savjeti, priče i novosti iz svijeta ribolova.'
+                'Blog i vlog Carpologija BH — savjeti, priče i novosti iz svijeta ribolova.'
             ),
             'seo_h1': 'Blog',
         }),
-        'canonical_url': settings.SITE_URL.rstrip('/') + reverse('vlog_list'),
+        'canonical_url': settings.SEO_CANONICAL_URL + reverse('vlog_list'),
     }
     return render(request, 'vlog_list.html', context)
 
@@ -3037,7 +3047,9 @@ def category_detail(request, slug):
         default_description=auto_category_seo_description(category),
         default_h1=category.naziv,
     )
-    cat_canonical = settings.SITE_URL.rstrip('/') + category.get_absolute_url()
+    cat_canonical = settings.SEO_CANONICAL_URL + category.get_absolute_url()
+    if direct_subs and show_all:
+        cat_canonical += '?all=1'
     category_ld = {
         'collection_json_ld': json_ld(collection_page_json_ld(
             name=category_seo['seo_h1'] or category.naziv,
@@ -3045,7 +3057,7 @@ def category_detail(request, slug):
             url=cat_canonical,
         )),
         'breadcrumb_json_ld': json_ld(breadcrumb_json_ld([
-            {'name': 'Početna', 'url': settings.SITE_URL.rstrip('/') + '/'},
+            {'name': 'Početna', 'url': settings.SEO_CANONICAL_URL + '/'},
             {'name': category.naziv, 'url': cat_canonical},
         ])),
     }
@@ -3081,6 +3093,13 @@ def category_detail(request, slug):
     )
 
     page_obj = _paginate_catalog_products(request, products)
+    if page_obj.number > 1:
+        cat_canonical += ('&' if '?' in cat_canonical else '?') + f'page={page_obj.number}'
+        category_ld['collection_json_ld'] = json_ld(collection_page_json_ld(
+            name=category_seo['seo_h1'] or category.naziv,
+            description=category_seo['seo_description'],
+            url=cat_canonical,
+        ))
 
     context = {
         **_base_context(),
@@ -3099,6 +3118,8 @@ def category_detail(request, slug):
         'canonical_url': cat_canonical,
         **category_ld,
     }
+    if _filters_active(filter_params) or filter_params.get('sort'):
+        context['meta_robots_content'] = 'noindex, follow'
     return render(request, 'category.html', context)
 
 
@@ -3242,9 +3263,9 @@ def product_detail(request, slug):
             default_description=product.seo_description,
             default_h1=product.naziv,
         ),
-        'canonical_url': settings.SITE_URL.rstrip('/') + product.get_absolute_url(),
+        'canonical_url': settings.SEO_CANONICAL_URL + product.get_absolute_url(),
         'og_image': (
-            request.build_absolute_uri(product.prikazna_slika.url)
+            absolute_url(product.prikazna_slika.url)
             if product.prikazna_slika else None
         ),
         'product_back_url': _product_back_url(request, product),
@@ -3252,22 +3273,22 @@ def product_detail(request, slug):
         'meta_robots_content': None if product_available else 'noindex, follow',
         'product_json_ld': json_ld(product_json_ld(
             product,
-            canonical_url=settings.SITE_URL.rstrip('/') + product.get_absolute_url(),
+            canonical_url=settings.SEO_CANONICAL_URL + product.get_absolute_url(),
             site_settings=site_settings,
             request=request,
         )),
         'breadcrumb_json_ld': json_ld(breadcrumb_json_ld([
-            {'name': 'Početna', 'url': settings.SITE_URL.rstrip('/') + '/'},
+            {'name': 'Početna', 'url': settings.SEO_CANONICAL_URL + '/'},
             *(
                 [{
                     'name': product.kategorija.naziv,
-                    'url': settings.SITE_URL.rstrip('/') + product.kategorija.get_absolute_url(),
+                    'url': settings.SEO_CANONICAL_URL + product.kategorija.get_absolute_url(),
                 }]
                 if product.kategorija_id else []
             ),
             {
                 'name': product.naziv,
-                'url': settings.SITE_URL.rstrip('/') + product.get_absolute_url(),
+                'url': settings.SEO_CANONICAL_URL + product.get_absolute_url(),
             },
         ])),
     }

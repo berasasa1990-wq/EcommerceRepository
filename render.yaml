@@ -107,7 +107,7 @@ services:
 # Render će automatski postaviti DATABASE_URL
 
 # Nakon prvog deploya:
-# 1. Idi u Web Service → Environment → dodaj SITE_URL = https://tvoja-app.onrender.com
+# 1. Idi u Web Service → Environment → dodaj SITE_URL = https://carpologijabh.ba
 # 2. Poveži Postgres (ako nije automatski)
 # 3. Provjeri da je Disk mountovan na /var/data
 # 4. Pokreni collectstatic ako treba preko shell

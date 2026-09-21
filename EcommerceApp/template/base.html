@@ -87,10 +87,12 @@
     <meta name="google-site-verification" content="{{ site_settings.google_site_verification }}">
     {% endif %}
     {% block meta_robots %}
+    {% if meta_robots_content %}<meta name="robots" content="{{ meta_robots_content }}">{% else %}
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    {% endif %}
     {% endblock %}
 
-    {% with site_name=site_settings.seo_organizacija_naziv|default:"opremazaribolov.ba" %}
+    {% with site_name=site_brand %}
     {% block page_title %}
     <title>{{ seo_title|default:site_settings.seo_title|default:site_name }}</title>
     {% endblock %}
@@ -108,7 +110,7 @@
     {% if canonical_url %}
     <link rel="canonical" href="{{ canonical_url }}">
     {% else %}
-    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+    <link rel="canonical" href="{{ site_url }}{{ request.path }}">
     {% endif %}
     {% endblock %}
 
@@ -125,14 +127,14 @@
     {% block og_image %}
     {% if og_image %}
     <meta property="og:image" content="{{ og_image }}">
-    {% elif site_settings.og_image %}
-    <meta property="og:image" content="{{ site_url }}{{ site_settings.og_image.url }}">
-    <meta property="og:image:secure_url" content="{{ site_url }}{{ site_settings.og_image.url }}">
+    {% elif site_og_image_url %}
+    <meta property="og:image" content="{{ site_og_image_url }}">
+    <meta property="og:image:secure_url" content="{{ site_og_image_url }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     {% endif %}
     {% endblock %}
-    <meta property="og:url" content="{% if canonical_url %}{{ canonical_url }}{% else %}{{ request.build_absolute_uri }}{% endif %}">
+    <meta property="og:url" content="{% if canonical_url %}{{ canonical_url }}{% else %}{{ site_url }}{{ request.path }}{% endif %}">
 
     {# Twitter Cards #}
     <meta name="twitter:card" content="summary_large_image">
@@ -145,8 +147,8 @@
     {% block twitter_image %}
     {% if og_image %}
     <meta name="twitter:image" content="{{ og_image }}">
-    {% elif site_settings.og_image %}
-    <meta name="twitter:image" content="{{ site_url }}{{ site_settings.og_image.url }}">
+    {% elif site_og_image_url %}
+    <meta name="twitter:image" content="{{ site_og_image_url }}">
     {% endif %}
     {% endblock %}
     {% endwith %}
@@ -376,9 +378,9 @@
                 </div>
 
                 <div class="logo-brand">
-                    <a href="{% url 'home' %}" class="logo" aria-label="opremazaribolov.ba">
+                    <a href="{% url 'home' %}" class="logo" aria-label="Carpologija BH">
                         {% if site_settings.logo %}
-                        <img src="{{ site_settings.logo.url }}" alt="opremazaribolov.ba" class="logo-image" width="480" height="76" loading="eager" fetchpriority="low" decoding="async">
+                        <img src="{{ site_settings.logo.url }}" alt="Carpologija BH" class="logo-image" width="480" height="76" loading="eager" fetchpriority="low" decoding="async">
                         {% else %}
                         <svg class="logo-icon" viewBox="0 0 36 36" fill="none" aria-hidden="true">
                             <circle cx="18" cy="18" r="17" stroke="currentColor" stroke-width="1.5"/>

@@ -25,8 +25,17 @@ from django.utils.html import strip_tags
 
 from EcommerceApp.models import PageSEO
 
-SITE_BRAND = 'opremazaribolov.ba'
+SITE_BRAND = 'Carpologija BH'
 SHOP_PHRASE = 'Oprema za ribolov'
+
+
+def public_brand(text: str) -> str:
+    """Ukloni stari webshop brand iz SEO polja spremljenih u bazi."""
+    return re.sub(
+        r'(?i)(?:www\.)?opremazaribolov(?:\.ba)?',
+        SITE_BRAND,
+        text or '',
+    )
 
 
 def get_page_seo(page_key: str) -> PageSEO | None:
@@ -51,21 +60,21 @@ def page_seo_context(
     seo = get_page_seo(page_key)
     if not seo:
         return {
-            'seo_title': defaults.get('seo_title') or '',
-            'seo_description': defaults.get('seo_description') or '',
+            'seo_title': public_brand(defaults.get('seo_title') or ''),
+            'seo_description': public_brand(defaults.get('seo_description') or ''),
             'seo_h1': defaults.get('seo_h1') or '',
             'seo_tekst_iznad': defaults.get('seo_tekst_iznad') or '',
             'seo_tekst_ispod': defaults.get('seo_tekst_ispod') or '',
         }
     return {
-        'seo_title': (seo.seo_title or '').strip() or (defaults.get('seo_title') or ''),
-        'seo_description': (seo.meta_description or '').strip()
-        or (defaults.get('seo_description') or ''),
+        'seo_title': public_brand((seo.seo_title or '').strip() or (defaults.get('seo_title') or '')),
+        'seo_description': public_brand((seo.meta_description or '').strip()
+        or (defaults.get('seo_description') or '')),
         'seo_h1': (seo.h1_naslov or '').strip() or (defaults.get('seo_h1') or ''),
-        'seo_tekst_iznad': (seo.seo_tekst_iznad or '').strip()
-        or (defaults.get('seo_tekst_iznad') or ''),
-        'seo_tekst_ispod': (seo.seo_tekst_ispod or '').strip()
-        or (defaults.get('seo_tekst_ispod') or ''),
+        'seo_tekst_iznad': public_brand((seo.seo_tekst_iznad or '').strip()
+        or (defaults.get('seo_tekst_iznad') or '')),
+        'seo_tekst_ispod': public_brand((seo.seo_tekst_ispod or '').strip()
+        or (defaults.get('seo_tekst_ispod') or '')),
     }
 
 
@@ -81,11 +90,11 @@ def entity_seo_context(
     default_h1: str = '',
 ) -> dict[str, Any]:
     return {
-        'seo_title': (meta_title or '').strip() or (default_title or ''),
-        'seo_description': (meta_description or '').strip() or (default_description or ''),
+        'seo_title': public_brand((meta_title or '').strip() or (default_title or '')),
+        'seo_description': public_brand((meta_description or '').strip() or (default_description or '')),
         'seo_h1': (h1_naslov or '').strip() or (default_h1 or default_title or ''),
-        'seo_tekst_iznad': (seo_tekst_iznad or '').strip(),
-        'seo_tekst_ispod': (seo_tekst_ispod or '').strip(),
+        'seo_tekst_iznad': public_brand((seo_tekst_iznad or '').strip()),
+        'seo_tekst_ispod': public_brand((seo_tekst_ispod or '').strip()),
     }
 
 
@@ -101,7 +110,7 @@ def _clip(text: str, max_len: int) -> str:
 
 def _title_suffix(site_settings=None) -> str:
     if site_settings is not None:
-        s = (getattr(site_settings, 'seo_title_suffix', None) or '').strip()
+        s = public_brand((getattr(site_settings, 'seo_title_suffix', None) or '').strip())
         if s:
             return s
     return SITE_BRAND
@@ -192,14 +201,18 @@ def auto_product_seo_description(product) -> str:
 
 def auto_category_seo_title(category, site_settings=None) -> str:
     name = (getattr(category, 'naziv', None) or '').strip()
-    core = f'{name} | {SHOP_PHRASE}'
+    parent = getattr(category, 'roditelj', None)
+    scope = f' – {parent.naziv}' if parent else ''
+    core = f'{name}{scope} | {SHOP_PHRASE}'
     return with_title_suffix(core, site_settings)
 
 
 def auto_category_seo_description(category) -> str:
     name = (getattr(category, 'naziv', None) or '').strip()
+    parent = getattr(category, 'roditelj', None)
+    scope = f' u kategoriji {parent.naziv}' if parent else ''
     return _clip(
-        f'{name} — širok izbor kvalitete opreme za ribolov. '
+        f'{name}{scope} — izbor opreme za ribolov. '
         f'Provjereni brendovi, povoljne cijene i brza dostava širom Bosne i Hercegovine. '
         f'Naručite online na {SITE_BRAND}.',
         158,
@@ -207,7 +220,7 @@ def auto_category_seo_description(category) -> str:
 
 
 def site_url_base() -> str:
-    return (getattr(settings, 'SITE_URL', '') or '').rstrip('/')
+    return settings.SEO_CANONICAL_URL.rstrip('/')
 
 
 def absolute_url(path_or_url: str, *, request=None) -> str:
@@ -217,16 +230,10 @@ def absolute_url(path_or_url: str, *, request=None) -> str:
     - Ako je već http(s)://… (npr. Cloudflare R2: https://media.opremazaribolov.ba/…)
       → vrati kako jeste, bez dodavanja SITE_URL.
     - Ako je //host/path → dodaj scheme.
-    - Ako je relativan (/media/… ili media/…) → apsolutni preko request.build_absolute_uri
-      ili SITE_URL.
+    - Ako je relativan (/media/… ili media/…) → apsolutni preko canonical domena.
     """
     raw = (path_or_url or '').strip()
     if not raw:
-        if request is not None:
-            try:
-                return request.build_absolute_uri('/')
-            except Exception:
-                pass
         return site_url_base() + '/'
 
     lower = raw.lower()
@@ -245,11 +252,6 @@ def absolute_url(path_or_url: str, *, request=None) -> str:
         return f'{scheme}:{raw}'
 
     path = raw if raw.startswith('/') else f'/{raw}'
-    if request is not None:
-        try:
-            return request.build_absolute_uri(path)
-        except Exception:
-            pass
     base = site_url_base()
     return urljoin(base + '/', path.lstrip('/'))
 
@@ -262,7 +264,7 @@ def json_ld(data: dict | list) -> str:
 def organization_json_ld(site_settings) -> dict:
     base = site_url_base()
     name = (
-        (getattr(site_settings, 'seo_organizacija_naziv', None) or '').strip()
+        public_brand((getattr(site_settings, 'seo_organizacija_naziv', None) or '').strip())
         or SITE_BRAND
     )
     logo = ''
@@ -318,7 +320,7 @@ def website_json_ld(site_settings) -> dict:
     """WebSite + SearchAction — sitelinks search box u Googleu."""
     base = site_url_base()
     name = (
-        (getattr(site_settings, 'seo_organizacija_naziv', None) or '').strip()
+        public_brand((getattr(site_settings, 'seo_organizacija_naziv', None) or '').strip())
         or SITE_BRAND
     )
     # Pretraga je na početnoj: /?q=
@@ -377,8 +379,6 @@ def product_json_ld(product, *, canonical_url: str, site_settings=None, request=
             seen.add(u)
             cleaned.append(u)
     images = cleaned
-    if not images:
-        images = [absolute_url('/static/img/placeholder.png', request=request)]
 
     # availability: product or any variation in stock
     in_stock = bool(getattr(product, 'na_stanju', False))
@@ -402,7 +402,6 @@ def product_json_ld(product, *, canonical_url: str, site_settings=None, request=
         '@type': 'Product',
         'name': product.naziv,
         'description': product.seo_description,
-        'image': images if len(images) > 1 else images[0],
         'url': product_url,
         'offers': {
             '@type': 'Offer',
@@ -414,16 +413,17 @@ def product_json_ld(product, *, canonical_url: str, site_settings=None, request=
                 if in_stock
                 else 'https://schema.org/OutOfStock'
             ),
-            'itemCondition': 'https://schema.org/NewCondition',
             'seller': {
                 '@type': 'Organization',
                 'name': (
-                    (getattr(site_settings, 'seo_organizacija_naziv', None) or '').strip()
+                    public_brand((getattr(site_settings, 'seo_organizacija_naziv', None) or '').strip())
                     or SITE_BRAND
                 ),
             },
         },
     }
+    if images:
+        data['image'] = images if len(images) > 1 else images[0]
     if getattr(product, 'brend', None):
         data['brand'] = {
             '@type': 'Brand',
@@ -431,7 +431,6 @@ def product_json_ld(product, *, canonical_url: str, site_settings=None, request=
         }
     if getattr(product, 'sifra', None):
         data['sku'] = product.sifra
-        data['mpn'] = product.sifra
     barkod = (getattr(product, 'barkod', None) or '').strip()
     if barkod and barkod.isdigit():
         if len(barkod) == 13:
@@ -440,8 +439,6 @@ def product_json_ld(product, *, canonical_url: str, site_settings=None, request=
             data['gtin12'] = barkod
         elif len(barkod) == 8:
             data['gtin8'] = barkod
-        else:
-            data['gtin'] = barkod
     if getattr(product, 'kategorija', None):
         data['category'] = product.kategorija.naziv
     return data
@@ -490,24 +487,24 @@ def collection_page_json_ld(
 # title max 70, meta_description max 160 (DB CharField limits — PostgreSQL rejectuje duže!)
 PAGE_SEO_DEFAULTS: dict[str, dict[str, str]] = {
     'home': {
-        'seo_title': 'Oprema za ribolov | Online shop BiH — opremazaribolov.ba',
+        'seo_title': 'Oprema za ribolov | Online shop BiH | Carpologija BH',
         'meta_description': (
             'Online shop opreme za ribolov u BiH: štapovi, mašinice, varalice, najloni i pribor. '
-            'Brza dostava, akcije i podrška — opremazaribolov.ba.'
+            'Brza dostava, akcije i podrška — Carpologija BH.'
         ),
         'h1_naslov': 'Oprema za ribolov — online shop',
         'seo_tekst_iznad': '',
         'seo_tekst_ispod': (
-            'opremazaribolov.ba je online trgovina ribolovačke opreme za bosanskohercegovačke '
+            'Carpologija BH je online trgovina ribolovačke opreme za bosanskohercegovačke '
             'ribare. U ponudi su štapovi, mašinice, varalice, najloni, hranilice i pribor '
             'provjerenih brendova. Naručite online — brza dostava širom BiH i savjeti pri kupovini.'
         ),
     },
     'akcija': {
-        'seo_title': 'Akcija opreme za ribolov | Snižene cijene — opremazaribolov.ba',
+        'seo_title': 'Akcija opreme za ribolov | Snižene cijene — Carpologija BH',
         'meta_description': (
             'Akcijska ponuda ribolovačke opreme: snižene cijene na štapove, mašinice, varalice '
-            'i pribor. Iskoristite popuste i brzu dostavu u BiH — opremazaribolov.ba.'
+            'i pribor. Iskoristite popuste i brzu dostavu u BiH — Carpologija BH.'
         ),
         'h1_naslov': 'Akcija — snižena oprema za ribolov',
         'seo_tekst_iznad': (
@@ -516,7 +513,7 @@ PAGE_SEO_DEFAULTS: dict[str, dict[str, str]] = {
         'seo_tekst_ispod': '',
     },
     'noviteti': {
-        'seo_title': 'Noviteti opreme za ribolov | Novo u ponudi — opremazaribolov.ba',
+        'seo_title': 'Noviteti opreme za ribolov | Novo u ponudi — Carpologija BH',
         'meta_description': (
             'Novi artikli u ponudi: najnovija oprema za ribolov, brendovi i modeli. '
             'Otkrijte novitete i naručite online s brzim slanjem u BiH.'
@@ -526,7 +523,7 @@ PAGE_SEO_DEFAULTS: dict[str, dict[str, str]] = {
         'seo_tekst_ispod': '',
     },
     'about': {
-        'seo_title': 'O nama | opremazaribolov.ba — oprema za ribolov iz prakse',
+        'seo_title': 'O nama | Carpologija BH — oprema za ribolov iz prakse',
         'meta_description': (
             'Saznajte ko smo: dugogodišnje iskustvo u ribolovu i opremi, online shop za ribare '
             'u Bosni i Hercegovini. Kvalitet, savjet i pouzdana dostava.'
@@ -536,41 +533,41 @@ PAGE_SEO_DEFAULTS: dict[str, dict[str, str]] = {
         'seo_tekst_ispod': '',
     },
     'payment': {
-        'seo_title': 'Način plaćanja i dostava | opremazaribolov.ba',
+        'seo_title': 'Način plaćanja i dostava | Carpologija BH',
         'meta_description': (
             'Plaćanje pouzećem, brza dostava poštom u roku do 48h i sigurno pakovanje. '
-            'Sve o plaćanju i slanju na opremazaribolov.ba.'
+            'Sve o plaćanju i slanju na Carpologija BH.'
         ),
         'h1_naslov': 'Način plaćanja i dostava',
         'seo_tekst_iznad': '',
         'seo_tekst_ispod': '',
     },
     'vlog': {
-        'seo_title': 'Blog i vlog o ribolovu | Savjeti — opremazaribolov.ba',
+        'seo_title': 'Blog i vlog o ribolovu | Savjeti — Carpologija BH',
         'meta_description': (
             'Blog i vlog: savjeti, priče i novosti iz svijeta ribolova. '
-            'Korisni sadržaji za početnike i iskusne ribare — opremazaribolov.ba.'
+            'Korisni sadržaji za početnike i iskusne ribare — Carpologija BH.'
         ),
         'h1_naslov': 'Blog i vlog',
         'seo_tekst_iznad': 'Savjeti, priče i novosti iz svijeta ribolova.',
         'seo_tekst_ispod': '',
     },
     'search': {
-        'seo_title': 'Pretraga artikala | opremazaribolov.ba',
+        'seo_title': 'Pretraga artikala | Carpologija BH',
         'meta_description': 'Pronađite opremu za ribolov po nazivu, brendu ili šifri.',
         'h1_naslov': 'Rezultati pretrage',
         'seo_tekst_iznad': '',
         'seo_tekst_ispod': '',
     },
     'cart': {
-        'seo_title': 'Korpa | opremazaribolov.ba',
+        'seo_title': 'Korpa | Carpologija BH',
         'meta_description': 'Pregled artikala u korpi prije narudžbe.',
         'h1_naslov': 'Korpa',
         'seo_tekst_iznad': '',
         'seo_tekst_ispod': '',
     },
     'checkout': {
-        'seo_title': 'Narudžba | opremazaribolov.ba',
+        'seo_title': 'Narudžba | Carpologija BH',
         'meta_description': 'Završite narudžbu — podaci za dostavu.',
         'h1_naslov': 'Narudžba',
         'seo_tekst_iznad': '',
