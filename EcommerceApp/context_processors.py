@@ -3,6 +3,7 @@ from urllib.parse import quote
 
 from django.conf import settings
 from django.db.models import Prefetch
+from django.templatetags.static import static
 
 from .cart import Cart
 from .cart_exit_popup import get_cart_abandon_exit_context, get_cart_exit_popup_context
@@ -279,7 +280,11 @@ def nav_categories(request):
     return {
         'site_url': settings.SEO_CANONICAL_URL,
         'site_brand': 'Carpologija BH',
-        'site_og_image_url': absolute_url(site_settings.og_image.url) if site_settings.og_image else '',
+        # Dijeljeni linkovi uvijek nose Carpologija BH identitet, a ne staru
+        # Oprema za ribolov OG sliku iz podešavanja.
+        'site_og_image_url': absolute_url(
+            site_settings.logo.url if site_settings.logo else static('img/carpologija-nav-logo.jpg')
+        ),
         'nav_categories': categories,
         'site_settings': site_settings,
         'cart_count': len(cart),

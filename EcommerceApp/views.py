@@ -3296,10 +3296,6 @@ def product_detail(request, slug):
             default_h1=product.naziv,
         ),
         'canonical_url': settings.SEO_CANONICAL_URL + product.get_absolute_url(),
-        'og_image': (
-            absolute_url(product.prikazna_slika.url)
-            if product.prikazna_slika else None
-        ),
         'product_back_url': _product_back_url(request, product),
         # Van stanja: ne indeksiraj (i dalje otvoren link za stare bookmarke)
         'meta_robots_content': None if product_available else 'noindex, follow',
