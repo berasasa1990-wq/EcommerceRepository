@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block page_title %}<title>Carpologija aplikacija</title>{% endblock %}
+{% block body_class %}app-dashboard-page{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/app-dashboard.css' %}?v=20260922">
+{% endblock %}
+
+{% block content %}
+<main class="app-dashboard" aria-label="Carpologija administrativna aplikacija">
+    <header class="app-topbar">
+        <a class="app-menu" href="{% url 'staff_admin_panel' %}" aria-label="Sve administrativne sekcije">
+            <span></span><span></span><span></span>
+        </a>
+        <img class="app-logo" src="{% static 'img/carpologija-nav-logo-dark.jpg' %}" alt="Carpologija BH">
+        <div class="app-topbar-actions">
+            <a href="{% url 'staff_online_orders' %}" class="app-bell" aria-label="Nove narudžbe">
+                ♧{% if new_order_count %}<b>{{ new_order_count }}</b>{% endif %}
+            </a>
+            <a class="app-avatar" href="{% url 'account' %}" aria-label="Moj nalog">{{ user.username|slice:':2'|upper }}</a>
+        </div>
+    </header>
+
+    <section class="app-hero app-hero--photo">
+        <div class="app-hero__glow"></div>
+        <p class="app-hero__eyebrow">CARPOLOGIJA ADMIN</p>
+        <h1>Ribolov je više od <em>hobija.</em></h1>
+        <p>Upravljajte trgovinom brzo i jednostavno — sve važne informacije su na jednom mjestu.</p>
+        <span class="app-hero__script">Uvijek uz vas!</span>
+    </section>
+
+    <section class="app-kpis" aria-label="Pregled trgovine">
+        <div class="app-kpi"><i>▣</i><strong>{{ product_count }}</strong><span>Ukupno artikala</span></div>
+        <div class="app-kpi"><i>◈</i><strong>{{ in_stock_count }}</strong><span>Na stanju</span></div>
+        <div class="app-kpi"><i>🛒</i><strong>{{ new_order_count }}</strong><span>Nove narudžbe</span></div>
+        <div class="app-kpi app-kpi--sales"><i>KM</i><strong>{{ new_sales_total|floatformat:2 }} KM</strong><span>Prodaja — samo nove</span><div><small>Web <b>{{ new_web_total|floatformat:2 }} KM</b></small><small>B2B <b>{{ new_b2b_total|floatformat:2 }} KM</b></small></div></div>
+    </section>
+
+    <section class="app-card app-orders">
+        <div class="app-card__head"><h2><span>🛒</span> Online narudžbe</h2><span class="app-card__caption">Samo nove</span></div>
+        {% if recent_orders %}
+        <div class="app-order-list">
+            {% for order in recent_orders %}
+            <div class="app-order-row">
+                <strong>#{{ order.broj }}</strong><span>{{ order.ime_prezime }}</span><time>{{ order.kreirana|date:'d.m., H:i' }}</time><b>{{ order.ukupno|floatformat:2 }} KM</b><em class="app-status app-status--{{ order.status }}">{{ order.get_status_display }}</em><i>›</i>
+                <span class="app-order-tags">
+                    <small>{% if order.b2b_submission %}B2B{% else %}Web{% endif %}</small>
+                    <small>{{ order.packing_placanje_label|lower|capfirst }}</small>
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}<p class="app-empty">Trenutno nema narudžbi.</p>{% endif %}
+    </section>
+
+</main>
+
+<nav class="app-bottom-nav" aria-label="Administrativna navigacija">
+    <a class="is-active" href="{% url 'superuser_app' %}"><i>⌂</i><span>Početna</span></a>
+    <a href="{% url 'superuser_app_products' %}"><i>▣</i><span>Artikli</span></a>
+    <a href="{% url 'superuser_app_analytics' %}"><i>▥</i><span>Analitika</span></a>
+</nav>
+{% endblock %}

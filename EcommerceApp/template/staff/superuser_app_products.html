@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block page_title %}<title>Pretraga artikala — Carpologija aplikacija</title>{% endblock %}
+{% block body_class %}app-dashboard-page{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/app-dashboard.css' %}?v=20260922">{% endblock %}
+
+{% block content %}
+<main class="app-dashboard app-products" aria-label="Pretraga artikala">
+    <header class="app-topbar">
+        <a class="app-menu" href="{% url 'superuser_app' %}" aria-label="Nazad na početnu aplikacije">‹</a>
+        <img class="app-logo" src="{% static 'img/carpologija-nav-logo-dark.jpg' %}" alt="Carpologija BH">
+        <span></span>
+    </header>
+    <section class="app-products__head">
+        <p class="app-hero__eyebrow">BRZA PRETRAGA</p>
+        <h1>Artikli</h1>
+        <p>Pronađite artikal i provjerite cijenu i trenutno stanje.</p>
+    </section>
+    <form class="app-product-search" method="get">
+        <label for="appProductQuery">Naziv, šifra ili barkod</label>
+        <div><input id="appProductQuery" name="q" value="{{ query }}" type="search" autocomplete="off" placeholder="Pretraži artikal…"><button type="submit">Pretraži</button></div>
+    </form>
+    {% if query %}
+        {% if products %}
+        <section class="app-product-results" aria-label="Rezultati pretrage">
+            {% for product in products %}
+            <article class="app-product-row">
+                <div><h2>{{ product.naziv }}</h2>{% if product.sifra %}<p>Šifra: {{ product.sifra }}</p>{% endif %}</div>
+                <dl><div><dt>Cijena</dt><dd>{{ product.prikazna_cijena|floatformat:2 }} KM</dd></div><div><dt>Stanje</dt><dd class="{% if product.stanje > 0 %}is-stocked{% else %}is-empty{% endif %}">{{ product.stanje }} kom.</dd></div></dl>
+            </article>
+            {% endfor %}
+        </section>
+        {% else %}<p class="app-empty">Nema artikala za „{{ query }}“.</p>{% endif %}
+    {% else %}<p class="app-empty">Unesite naziv, šifru ili barkod artikla.</p>{% endif %}
+</main>
+<nav class="app-bottom-nav" aria-label="Administrativna navigacija">
+    <a href="{% url 'superuser_app' %}"><i>⌂</i><span>Početna</span></a>
+    <a class="is-active" href="{% url 'superuser_app_products' %}"><i>▣</i><span>Artikli</span></a>
+    <a href="{% url 'superuser_app_analytics' %}"><i>▥</i><span>Analitika</span></a>
+</nav>
+{% endblock %}

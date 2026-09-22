@@ -22,7 +22,12 @@ class TurnstileAdminAuthenticationForm(AdminAuthenticationForm):
         self.fields['password'].widget = AdminTurnstilePasswordInput(attrs=original.attrs)
 
     def clean(self):
-        # Never allow missing configuration or a failed challenge to bypass login.
+        # Turnstile keys are deliberately disabled in local DEBUG mode.
+        # Keep normal Django admin authentication available for local work.
+        if settings.DEBUG:
+            return super().clean()
+        # Never allow missing configuration or a failed challenge to bypass login
+        # in production.
         if not (getattr(settings, 'TURNSTILE_SITE_KEY', '')
                 and getattr(settings, 'TURNSTILE_SECRET_KEY', '')):
             raise forms.ValidationError(

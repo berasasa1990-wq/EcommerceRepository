@@ -4364,6 +4364,8 @@ class Order(models.Model):
         db_index=True,
         verbose_name='Izvor',
     )
+    marketing_source = models.CharField(max_length=32, blank=True, db_index=True, verbose_name='Marketing izvor')
+    marketing_device = models.CharField(max_length=16, blank=True, db_index=True, verbose_name='Marketing uređaj')
     lager_status = models.CharField(
         max_length=20,
         choices=LagerStatus.choices,
@@ -5172,6 +5174,35 @@ class StaffSiteEvent(models.Model):
 
     def __str__(self):
         return f'{self.get_tip_display()}: {self.naslov}'
+
+
+class SiteSearchEvent(models.Model):
+    """Anonimna evidencija stvarnih pretraga za agregiranu analitiku."""
+    session_key = models.CharField(max_length=40, blank=True, db_index=True)
+    query = models.CharField(max_length=160, db_index=True)
+    results_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'Pretraga sajta'
+        verbose_name_plural = 'Pretrage sajta'
+        indexes = [models.Index(fields=['-created_at', 'query'])]
+
+
+class ProductAnalyticsEvent(models.Model):
+    class Event(models.TextChoices):
+        VIEW = 'view', 'Pregled proizvoda'
+        CART = 'cart', 'Dodano u korpu'
+
+    product = models.ForeignKey('Product', on_delete=models.CASCADE, related_name='analytics_events')
+    session_key = models.CharField(max_length=40, blank=True, db_index=True)
+    event = models.CharField(max_length=10, choices=Event.choices, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'Analitički događaj proizvoda'
+        verbose_name_plural = 'Analitički događaji proizvoda'
+        indexes = [models.Index(fields=['product', 'event', '-created_at'])]
 
 
 class LiveVisitorOffer(models.Model):

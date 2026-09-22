@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block page_title %}<title>Pristup ograničen — Carpologija BH</title>{% endblock %}
+{% block body_class %}is-cart-page is-auth-page{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20260915-shipping-below-checkout">
+<link rel="stylesheet" href="{% static 'css/auth-page.css' %}?v=20260922-access-denied">
+{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+    <div class="auth-card auth-card--restricted">
+        <span class="auth-eyebrow">PRISTUP OGRANIČEN</span>
+        <div class="auth-restricted-icon" aria-hidden="true">⌁</div>
+        <h1>Ovo je privatna aplikacija</h1>
+        <p class="auth-lead">Ova stranica je namijenjena samo superuserima sajta. Vaš nalog nema potrebna ovlaštenja za pristup aplikaciji.</p>
+        <a class="btn btn-primary btn-block auth-link-button" href="{% url 'account' %}">Nazad na moj nalog</a>
+    </div>
+</section>
+{% endblock %}

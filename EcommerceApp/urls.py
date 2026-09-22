@@ -1,5 +1,7 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
+from django.urls import reverse_lazy
+from django.views.decorators.cache import never_cache
 
 from . import views
 from . import manual_order_drafts, data_history
@@ -12,13 +14,22 @@ from . import views_site_prep
 from . import views_sync
 
 urlpatterns = [
-    path('lozinka/potvrdi/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
+    path('lozinka/reset/', never_cache(auth_views.PasswordResetView.as_view(
+        template_name='auth/password_reset_form.html',
+        email_template_name='auth/password_reset_email.txt',
+        subject_template_name='auth/password_reset_subject.txt',
+        success_url=reverse_lazy('password_reset_done'),
+    )), name='password_reset'),
+    path('lozinka/poslano/', never_cache(auth_views.PasswordResetDoneView.as_view(
+        template_name='auth/password_reset_done.html',
+    )), name='password_reset_done'),
+    path('lozinka/potvrdi/<uidb64>/<token>/', never_cache(auth_views.PasswordResetConfirmView.as_view(
         template_name='auth/password_reset_confirm.html',
         success_url='/lozinka/gotovo/',
-    ), name='password_reset_confirm'),
-    path('lozinka/gotovo/', auth_views.PasswordResetCompleteView.as_view(
+    )), name='password_reset_confirm'),
+    path('lozinka/gotovo/', never_cache(auth_views.PasswordResetCompleteView.as_view(
         template_name='auth/password_reset_complete.html',
-    ), name='password_reset_complete'),
+    )), name='password_reset_complete'),
     path('nalog/magacin/historija-podataka/fajl/<int:pk>/', data_history.media_download, name='staff_magacin_media_history_download'),
     path('nalog/magacin/nacrti/uvoz/', manual_order_drafts.import_local_draft, name='staff_magacin_draft_import'),
     path('nalog/magacin/nacrti/sacuvaj/', manual_order_drafts.save_draft, name='staff_magacin_draft_save'),
@@ -132,6 +143,10 @@ urlpatterns = [
 
 
     path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
+    path('app', views.superuser_app, name='superuser_app'),
+    path('app/', views.superuser_app),
+    path('app/artikli/', views.superuser_app_products, name='superuser_app_products'),
+    path('app/analitika/', views.superuser_app_analytics, name='superuser_app_analytics'),
     path('nalog/b2b-live/', views.staff_b2b_live, name='staff_b2b_live'),
     path('nalog/edit-mode/', views.staff_toggle_edit_mode, name='staff_toggle_edit_mode'),
     path('nalog/site-edit/', views.staff_site_edit_save, name='staff_site_edit_save'),

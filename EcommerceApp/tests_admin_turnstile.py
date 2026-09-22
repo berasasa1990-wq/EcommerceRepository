@@ -29,6 +29,7 @@ class LoginFormMarkup(HTMLParser):
 
 
 @override_settings(
+    DEBUG=False,
     TURNSTILE_SITE_KEY='test-public-site-key',
     TURNSTILE_SECRET_KEY='test-private-secret-key',
     SITE_PREP_ENABLED=False,
@@ -114,6 +115,16 @@ class AdminTurnstileTests(TestCase):
             with self.subTest(site_present=bool(site), secret_present=bool(secret)):
                 with override_settings(TURNSTILE_SITE_KEY=site, TURNSTILE_SECRET_KEY=secret):
                     self.assert_rejected(self.client.post(self.url, self.payload), 'Sigurnosna provjera prijave nije podešena')
+        self.siteverify.assert_not_called()
+
+    @override_settings(DEBUG=True, TURNSTILE_SITE_KEY='', TURNSTILE_SECRET_KEY='')
+    def test_debug_mode_allows_local_admin_login_without_turnstile(self):
+        response = self.client.post(self.url, {
+            'username': self.user.username,
+            'password': 'test-password',
+            'next': '/admin/',
+        })
+        self.assertRedirects(response, '/admin/', fetch_redirect_response=False)
         self.siteverify.assert_not_called()
 
     def test_password_staff_and_active_checks_remain_enforced(self):

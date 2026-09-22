@@ -4,6 +4,7 @@ import random
 import re
 import uuid
 import requests
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 from functools import lru_cache
 from urllib.parse import urlencode, urlparse
@@ -19,7 +20,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db import DatabaseError, transaction
-from django.db.models import Case, Count, Exists, F, IntegerField, Max, OuterRef, Prefetch, Q, Value, When
+from django.db.models import Case, Count, Exists, F, IntegerField, Max, OuterRef, Prefetch, Q, Sum, Value, When
 from django.db.models.functions import Trim
 from django.utils import timezone
 from django.http import Http404, HttpResponse, JsonResponse
@@ -107,13 +108,24 @@ from .models import (
     Order,
     OrderItem,
     Product,
+    ProductAnalyticsEvent,
     ProductImage,
     ProductVariation,
     SiteSettings,
+    SiteSearchEvent,
     Tag,
     UpsellOffer,
     UserProfile,
 )
+
+
+def _track_product_analytics(request, product, event):
+    """Anonymous product interaction used only in aggregated admin analytics."""
+    if request.session.session_key is None:
+        request.session.create()
+    ProductAnalyticsEvent.objects.create(
+        product=product, session_key=request.session.session_key or '', event=event,
+    )
 
 
 def _in_stock_variations_qs():
@@ -1800,6 +1812,20 @@ def search_suggest(request):
     has_more = len(pool) > limit
     products = pool[:limit]
 
+    # Suggest endpoint is the site's search entry point.  Store only one event
+    # per phrase in a session so typing does not inflate analytics.
+    if request.session.session_key is None:
+        request.session.create()
+    normalized_query = _normalize_phrase(query)[:160]
+    last_query = request.session.get('_analytics_last_search_query')
+    if normalized_query and last_query != normalized_query:
+        SiteSearchEvent.objects.create(
+            session_key=request.session.session_key or '',
+            query=normalized_query,
+            results_count=len(products),
+        )
+        request.session['_analytics_last_search_query'] = normalized_query
+
     results = []
     for product in products:
         _bind_variation_parents(product)
@@ -3351,6 +3377,7 @@ def product_detail(request, slug):
         context['qty_deal_page'] = qty_deal_akcija.qty_deal_page_offer()
 
     view_content_event_id = f'viewcontent-{product.pk}-{uuid.uuid4().hex[:12]}'
+    _track_product_analytics(request, product, ProductAnalyticsEvent.Event.VIEW)
     context['meta_view_content_event_id'] = view_content_event_id
     track_view_content(request, product, event_id=view_content_event_id)
 
@@ -4119,6 +4146,7 @@ def add_to_cart(request, slug):
         discount_source=disc_src,
         discount_percent=disc_pct,
     )
+    _track_product_analytics(request, product, ProductAnalyticsEvent.Event.CART)
     cart.clear_coupon()
     if request.POST.get('exit_popup') == '1':
         from .cart_exit_popup import dismiss_cart_exit_popup
@@ -4756,6 +4784,9 @@ def checkout(request):
             from .magacin import reserve_web_order_stock, MagacinError
             try:
                 with transaction.atomic():
+                    visitor = LiveVisitor.objects.filter(session_key=request.session.session_key).only('izvor_dolaska').first()
+                    user_agent = (request.META.get('HTTP_USER_AGENT') or '').lower()
+                    device = 'mobile' if any(token in user_agent for token in ('mobile', 'android', 'iphone')) else 'desktop'
                     order = Order.objects.create(
                         korisnik=request.user if request.user.is_authenticated else None,
                         ime_prezime=form.cleaned_data['ime_prezime'],
@@ -4771,6 +4802,8 @@ def checkout(request):
                         kupon_kod=summary.get('kupon_kod', ''),
                         popust_detalji=popust_detalji,
                         ukupno=summary['ukupno'],
+                        marketing_source=(visitor.izvor_dolaska if visitor else '')[:32],
+                        marketing_device=device,
                     )
                     try:
                         from .views_magacin import invalidate_magacin_nav_counts
@@ -6728,6 +6761,153 @@ def staff_admin_panel(request):
         'new_orders_count': nova_count,
     }
     return render(request, 'staff/admin_panel.html', context)
+
+
+@login_required(login_url='login')
+def superuser_app(request):
+    """Private short URL for the owner/admin application dashboard."""
+    if not request.user.is_superuser:
+        return render(request, 'staff/superuser_app_denied.html', {
+            **_base_context(),
+        }, status=403)
+    # /app is a glance-only dashboard: show only orders awaiting first action.
+    recent_orders = list(
+        Order.objects.filter(status=Order.Status.NOVA)
+        .select_related('b2b_submission')
+        .order_by('-kreirana')[:5],
+    )
+    new_orders = Order.objects.filter(status=Order.Status.NOVA)
+    new_web_total = new_orders.filter(b2b_submission__isnull=True).aggregate(
+        total=Sum('ukupno'),
+    )['total'] or 0
+    new_b2b_total = new_orders.filter(b2b_submission__isnull=False).aggregate(
+        total=Sum('ukupno'),
+    )['total'] or 0
+    context = {
+        **_base_context(),
+        'recent_orders': recent_orders,
+        'product_count': Product.objects.filter(aktivan=True).count(),
+        'in_stock_count': Product.objects.filter(
+            aktivan=True, na_stanju=True, stanje__gt=0,
+        ).count(),
+        'new_order_count': Order.objects.filter(status=Order.Status.NOVA).count(),
+        'new_web_total': new_web_total,
+        'new_b2b_total': new_b2b_total,
+        'new_sales_total': new_web_total + new_b2b_total,
+    }
+    return render(request, 'staff/superuser_app.html', context)
+
+
+@login_required(login_url='login')
+def superuser_app_products(request):
+    """Read-only product lookup used exclusively by the private /app UI."""
+    if not request.user.is_superuser:
+        return render(request, 'staff/superuser_app_denied.html', {
+            **_base_context(),
+        }, status=403)
+
+    query = (request.GET.get('q') or '').strip()
+    products = Product.objects.none()
+    if query:
+        products = Product.objects.filter(aktivan=True).filter(
+            Q(naziv__icontains=query)
+            | Q(sifra__icontains=query)
+            | Q(barkod__icontains=query),
+        ).order_by('naziv')[:50]
+    return render(request, 'staff/superuser_app_products.html', {
+        **_base_context(),
+        'query': query,
+        'products': products,
+    })
+
+
+@login_required(login_url='login')
+def superuser_app_analytics(request):
+    """Compact, read-only analytics screen reserved for the /app interface."""
+    if not request.user.is_superuser:
+        return render(request, 'staff/superuser_app_denied.html', {
+            **_base_context(),
+        }, status=403)
+    today = timezone.localdate()
+    period = (request.GET.get('period') or 'today').strip()
+    configs = {'today': ('Danas', today, 1), '7d': ('7 dana', today - timedelta(days=6), 7), '30d': ('30 dana', today - timedelta(days=29), 30), '90d': ('90 dana', today - timedelta(days=89), 90), 'year': ('Godina', today.replace(month=1, day=1), (today - today.replace(month=1, day=1)).days + 1)}
+    if period not in configs: period = 'today'
+    period_label, start, days = configs[period]
+    previous_end = start - timedelta(days=1)
+    previous_start = previous_end - timedelta(days=days - 1)
+    visit_count = LiveVisitor.objects.filter(first_seen__date__range=(start, today)).count()
+    previous_visit_count = LiveVisitor.objects.filter(first_seen__date__range=(previous_start, previous_end)).count()
+    visit_change = round((visit_count - previous_visit_count) * 100 / previous_visit_count) if previous_visit_count else None
+    period_orders = Order.objects.filter(kreirana__date__range=(start, today)).exclude(
+        status=Order.Status.OTKAZANA,
+    )
+    period_items = OrderItem.objects.filter(narudzba__kreirana__date__range=(start, today)).exclude(narudzba__status=Order.Status.OTKAZANA)
+    top_products = period_items.values('naziv').annotate(sold=Sum('kolicina')).order_by('-sold', 'naziv')[:5]
+    category_sales = period_items.values('artikal__kategorija__naziv').annotate(sold=Sum('kolicina')).order_by('-sold')[:6]
+    previous_items = OrderItem.objects.filter(
+        narudzba__kreirana__date__range=(previous_start, previous_end),
+    ).exclude(narudzba__status=Order.Status.OTKAZANA).values('naziv').annotate(sold=Sum('kolicina'))
+    previous_sales = {row['naziv']: row['sold'] for row in previous_items}
+    growth_candidates = []
+    for row in top_products:
+        before = previous_sales.get(row['naziv'], 0)
+        if before:
+            growth_candidates.append({
+                'name': row['naziv'],
+                'percent': round((row['sold'] - before) * 100 / before),
+            })
+    fastest_growth = max(growth_candidates, key=lambda row: row['percent'], default=None)
+    low_stock_product = Product.objects.filter(
+        aktivan=True, na_stanju=True, stanje__gt=0, stanje__lte=10,
+    ).order_by('stanje', 'naziv').first()
+    order_count = period_orders.count()
+    revenue = period_orders.aggregate(total=Sum('ukupno'))['total'] or 0
+    units_sold = period_items.aggregate(total=Sum('kolicina'))['total'] or 0
+    average_order_value = revenue / order_count if order_count else 0
+    conversion_rate = (order_count * 100 / visit_count) if visit_count else 0
+    from .models import CityVisitTotal
+    yearly_visits = LiveVisitor.objects.values('first_seen__year').annotate(
+        visits=Count('pk'),
+    ).order_by('-first_seen__year')[:8]
+    city_visits = CityVisitTotal.objects.order_by('-broj_posjeta', 'grad')[:8]
+    searches = SiteSearchEvent.objects.filter(created_at__date__range=(start, today))
+    top_searches = searches.values('query').annotate(count=Count('pk')).order_by('-count', 'query')[:5]
+    zero_result_searches = searches.filter(results_count=0).values('query').annotate(count=Count('pk')).order_by('-count', 'query')[:5]
+    product_events = ProductAnalyticsEvent.objects.filter(created_at__date__range=(start, today))
+    event_rows = product_events.values('product_id', 'product__naziv').annotate(
+        views=Count('pk', filter=Q(event=ProductAnalyticsEvent.Event.VIEW)),
+        carts=Count('pk', filter=Q(event=ProductAnalyticsEvent.Event.CART)),
+    )
+    sale_rows = period_items.values('artikal_id', 'naziv').annotate(
+        purchases=Count('narudzba_id', distinct=True), units=Sum('kolicina'),
+        revenue=Sum(F('cijena') * F('kolicina')),
+    )
+    product_metrics = {}
+    for row in event_rows:
+        product_metrics[row['product_id']] = {'name': row['product__naziv'], 'views': row['views'], 'carts': row['carts'], 'purchases': 0, 'revenue': 0}
+    for row in sale_rows:
+        metric = product_metrics.setdefault(row['artikal_id'], {'name': row['naziv'], 'views': 0, 'carts': 0, 'purchases': 0, 'revenue': 0})
+        metric['purchases'], metric['revenue'] = row['purchases'], row['revenue'] or 0
+    product_metrics = sorted(product_metrics.values(), key=lambda row: (row['purchases'], row['carts'], row['views']), reverse=True)[:10]
+    for metric in product_metrics:
+        metric['conversion'] = round(metric['purchases'] * 100 / metric['views'], 2) if metric['views'] else 0
+    live = _live_analytics_context(request)
+    return render(request, 'staff/superuser_app_analytics.html', {
+        **_base_context(),
+        **live,
+        'today_orders_count': order_count,
+        'today_revenue': revenue,
+        'units_sold': units_sold,
+        'average_order_value': average_order_value,
+        'conversion_rate': conversion_rate,
+        'visit_count': visit_count, 'previous_visit_count': previous_visit_count,
+        'visit_change': visit_change, 'period': period, 'period_label': period_label,
+        'top_products': top_products, 'category_sales': category_sales,
+        'fastest_growth': fastest_growth, 'low_stock_product': low_stock_product,
+        'top_searches': top_searches, 'zero_result_searches': zero_result_searches,
+        'product_metrics': product_metrics,
+        'yearly_visits': yearly_visits, 'city_visits': city_visits,
+    })
 
 
 @login_required(login_url='login')

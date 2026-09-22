@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block page_title %}<title>Analitika sajta — Carpologija aplikacija</title>{% endblock %}
+{% block body_class %}app-dashboard-page{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/app-dashboard.css' %}?v=20260922">{% endblock %}
+{% block content %}
+<main class="app-dashboard app-analytics app-analytics--photo">
+    <header class="app-topbar"><a class="app-menu" href="{% url 'superuser_app' %}" aria-label="Nazad na početnu aplikacije">‹</a><img class="app-logo" src="{% static 'img/carpologija-nav-logo-dark.jpg' %}" alt="Carpologija BH"><span></span></header>
+    <section class="app-analytics__head"><p class="app-hero__eyebrow">UŽIVO PREGLED</p><h1>Analitika sajta</h1><p>Pregled posjeta, narudžbi i prodaje u stvarnom vremenu.</p></section>
+    <div class="app-analytics__filters"><a class="{% if period == 'today' %}is-active{% endif %}" href="?period=today">Danas</a><a class="{% if period == '7d' %}is-active{% endif %}" href="?period=7d">7 dana</a><a class="{% if period == '30d' %}is-active{% endif %}" href="?period=30d">30 dana</a><a class="{% if period == '90d' %}is-active{% endif %}" href="?period=90d">90 dana</a><a class="{% if period == 'year' %}is-active{% endif %}" href="?period=year">Godina</a><time>▣ {{ period_label }} · {{ generated_at|date:'d.m.Y.' }}</time></div>
+    <section class="app-analytics__stats">
+        <article><i>◉</i><span>Posjete sajtu</span><strong>{{ visit_count }}</strong><small>{% if visit_change != None %}{% if visit_change >= 0 %}↑{% else %}↓{% endif %} {{ visit_change }}% u odnosu na prethodni period{% else %}Prethodni period: {{ previous_visit_count }}{% endif %}</small></article>
+        <article><i>🛒</i><span>Online narudžbe</span><strong>{{ today_orders_count }}</strong><small>{{ period_label|lower }}, bez otkazanih</small></article>
+        <article><i>KM</i><span>Prihod</span><strong>{{ today_revenue|floatformat:2 }} KM</strong><small>{{ period_label|lower }}</small></article>
+        <article><i>◌</i><span>Online sada</span><strong>{{ online_count }}</strong><small>aktivnih posjetilaca</small></article>
+        <article><i>▣</i><span>Prodano artikala</span><strong>{{ units_sold }}</strong><small>{{ period_label|lower }}</small></article><article><i>%</i><span>Konverzija</span><strong>{{ conversion_rate|floatformat:2 }}%</strong><small>narudžbe / posjete</small></article><article><i>KM</i><span>Prosj. narudžba</span><strong>{{ average_order_value|floatformat:2 }} KM</strong><small>stvarni prosjek</small></article>
+    </section>
+    <section class="app-analytics__visuals"><article class="app-card app-chart"><h2>Posjete sajtu</h2><div class="app-chart__bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div>00:00　04:00　08:00　12:00　16:00　20:00</div></article><article class="app-card app-analytics__card"><div class="app-card__head"><h2>Izvori posjeta</h2><span class="app-card__caption">uživo</span></div><div class="app-source-list">{% for source in sources %}<div><span>{{ source.label }}</span><b>{{ source.count }}</b></div>{% empty %}<p class="app-empty">Nema aktivnih izvora trenutno.</p>{% endfor %}</div></article></section>
+    <section class="app-analytics__visuals"><article class="app-card app-analytics__card"><div class="app-card__head"><h2>Najprodavaniji artikli</h2><span class="app-card__caption">{{ period_label }}</span></div>{% for product in top_products %}<p>{{ forloop.counter }}. {{ product.naziv }} <b>{{ product.sold }} prodaja</b></p>{% empty %}<p class="app-empty">Nema prodaje u ovom periodu.</p>{% endfor %}</article><article class="app-card app-analytics__card"><div class="app-card__head"><h2>Prodaja po kategorijama</h2><span class="app-card__caption">{{ period_label }}</span></div>{% for category in category_sales %}<p>{{ category.artikal__kategorija__naziv|default:'Ostalo' }} <b>{{ category.sold }}</b></p>{% empty %}<p class="app-empty">Nema prodaje u ovom periodu.</p>{% endfor %}</article></section>
+    <section class="app-card app-analytics__card"><div class="app-card__head"><h2>Uvidi i prilike</h2><span class="app-card__caption">stvarni podaci</span></div>{% if fastest_growth %}<p>🔥 <b>Najviše raste:</b> {{ fastest_growth.name }} · {{ fastest_growth.percent }}% prodaje</p>{% endif %}{% if low_stock_product %}<p>📦 <b>Proizvod pri niskoj zalihi:</b> {{ low_stock_product.naziv }} · još {{ low_stock_product.stanje }} kom.</p>{% endif %}<p class="app-empty">Pregledi, dodavanja u korpu i pretrage prikazat će se nakon prikupljanja anonimne evidencije.</p></section>
+    <section class="app-analytics__visuals"><article class="app-card app-analytics__card"><div class="app-card__head"><h2>Pretrage na sajtu</h2><span class="app-card__caption">{{ period_label }}</span></div>{% for row in top_searches %}<p>🔎 {{ row.query }} <b>{{ row.count }}×</b></p>{% empty %}<p class="app-empty">Evidencija pretraga počinje od sada.</p>{% endfor %}</article><article class="app-card app-analytics__card"><div class="app-card__head"><h2>Bez rezultata</h2><span class="app-card__caption">signal za nabavku</span></div>{% for row in zero_result_searches %}<p>⚠️ {{ row.query }} <b>{{ row.count }}×</b></p>{% empty %}<p class="app-empty">Nema pretraga bez rezultata u ovom periodu.</p>{% endfor %}</article></section>
+    <section class="app-card app-analytics__card"><div class="app-card__head"><h2>Proizvodi za oglase</h2><span class="app-card__caption">{{ period_label }}</span></div><div class="app-table-wrap"><table><thead><tr><th>Artikal</th><th aria-label="Pregledi" title="Pregledi">👁</th><th aria-label="Kupovine" title="Kupovine">🛒</th></tr></thead><tbody>{% for item in product_metrics %}<tr><td>{{ item.name }}</td><td>{{ item.views }}</td><td>{{ item.purchases }}</td></tr>{% empty %}<tr><td colspan="3">Evidencija interakcija počinje od sada.</td></tr>{% endfor %}</tbody></table></div></section>
+    <section class="app-card app-analytics__card"><div class="app-card__head"><h2>Posjetioci uživo</h2><span class="app-card__caption">{{ online_minutes }} min</span></div><div class="app-live-list">{% for visitor in online_visitors %}<article><div><strong>{{ visitor.ime|default:'Gost' }}{% if visitor.grad %} · {{ visitor.grad }}{% endif %}</strong><span>{{ visitor.current_page }}</span></div><small>{{ visitor.source_label }} · {{ visitor.ago_label }}</small></article>{% empty %}<p class="app-empty">Niko nije online upravo sada.</p>{% endfor %}</div><div class="app-card__head"><h2>Posjete po gradovima</h2></div><div class="app-live-list">{% for row in city_visits %}<article><strong>{{ row.grad }}</strong><small>{{ row.broj_posjeta }} posjeta</small></article>{% empty %}<p class="app-empty">Nema evidencije.</p>{% endfor %}</div></section>
+</main>
+<nav class="app-bottom-nav" aria-label="Administrativna navigacija"><a href="{% url 'superuser_app' %}"><i>⌂</i><span>Početna</span></a><a href="{% url 'superuser_app_products' %}"><i>▣</i><span>Artikli</span></a><a class="is-active" href="{% url 'superuser_app_analytics' %}"><i>▥</i><span>Analitika</span></a></nav>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.app-analytics__card').forEach(function (card) {
+    var rows = card.querySelectorAll(':scope > p, tbody > tr, .app-live-list > article, .app-source-list > div');
+    if (rows.length <= 3) return;
+    card.dataset.collapsible = 'true';
+    var head = card.querySelector('.app-card__head');
+    if (!head) return;
+    var button = document.createElement('button');
+    button.className = 'app-show-all'; button.type = 'button'; button.textContent = 'Prikaži sve';
+    head.appendChild(button);
+    button.addEventListener('click', function () {
+      var dialog = document.createElement('dialog');
+      dialog.className = 'app-list-modal';
+      var copy = card.cloneNode(true);
+      copy.removeAttribute('data-collapsible');
+      copy.querySelectorAll('.app-show-all').forEach(function (node) { node.remove(); });
+      dialog.appendChild(copy);
+      var close = document.createElement('button'); close.className = 'app-modal-close'; close.type = 'button'; close.textContent = '×';
+      close.addEventListener('click', function () { dialog.close(); });
+      dialog.appendChild(close); document.body.appendChild(dialog); dialog.showModal();
+      dialog.addEventListener('close', function () { dialog.remove(); });
+    });
+  });
+});
+</script>
+{% endblock %}
