@@ -1,5 +1,84 @@
 /* Edit mode — outline na klikabilnim elementima; popover fixed na klik */
 
+.staff-missing-filter {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px max(16px, calc((100% - 1200px) / 2));
+    background: #f5f9ef;
+    border-bottom: 1px solid #dce9ce;
+}
+
+.staff-missing-filter[hidden] {
+    display: none;
+}
+
+.staff-edit-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.staff-missing-filter-toggle {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #205714;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.staff-missing-filter-toggle:hover,
+.staff-missing-filter-toggle:focus-visible {
+    text-decoration: underline;
+}
+
+@media (max-width: 1024px) {
+    .header .nav-actions .staff-edit-controls {
+        grid-row: 1;
+        grid-column: 2;
+        justify-self: center;
+        line-height: 1;
+    }
+
+    .header .nav-actions .staff-missing-filter-toggle {
+        color: #fff;
+    }
+}
+
+.staff-missing-filter__label {
+    margin-right: 5px;
+    font-weight: 700;
+    color: #26351e;
+}
+
+.staff-missing-filter a {
+    padding: 7px 12px;
+    border: 1px solid #b8cda5;
+    border-radius: 20px;
+    background: #fff;
+    color: #26351e;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.staff-missing-filter a:hover,
+.staff-missing-filter a[aria-current="page"] {
+    background: #417b18;
+    border-color: #417b18;
+    color: #fff;
+}
+
+.staff-missing-filter .staff-missing-filter__clear {
+    border-color: transparent;
+    background: transparent;
+    text-decoration: underline;
+}
+
 body.staff-edit-mode-on .home-products-header p[data-site-edit]:empty::before {
     content: 'Klikni za podnaslov…';
     color: #94a3b8;

@@ -59,7 +59,7 @@ render_disk_path = _env('RENDER_DISK_PATH', '')
 SECRET_KEY = _env('SECRET_KEY', 'django-insecure-_73#1@hjsxhlmfx4+&85s10a(cyb9i*q7-28$_zpjz5vm&+0ek')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = _env('DEBUG', 'True').lower() in ('true', '1', 'yes')
+DEBUG = _env('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 # Brzi in-memory cache (meni, SiteSettings, brendovi, home sekcije)
 CACHES = {

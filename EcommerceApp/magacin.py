@@ -5461,7 +5461,9 @@ def restore_unfinished_web_stock(order, *, user=None):
     from .models import LocationCleaningRequest
     if locked.pick_short_events or LocationCleaningRequest.objects.filter(order=locked, decision='clear').exists():
         return
-    holds = list(locked.magacin_holds.select_for_update().filter(
+    # ``variation`` is optional. PostgreSQL cannot lock the nullable side of
+    # its OUTER JOIN, so lock only the reservation rows themselves.
+    holds = list(locked.magacin_holds.select_for_update(of=('self',)).filter(
         status=OrderStockHold.Status.VALIDIRANO,
     ).select_related('product', 'variation', 'location').order_by('product_id', 'pk'))
     if not holds:

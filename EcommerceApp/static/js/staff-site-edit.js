@@ -13,6 +13,16 @@
 
         document.body.classList.add('staff-edit-mode-on');
 
+        const missingFilterToggle = document.querySelector('[data-staff-missing-filter-toggle]');
+        const missingFilter = document.getElementById('staffMissingFilter');
+        if (missingFilterToggle && missingFilter) {
+            missingFilterToggle.addEventListener('click', function () {
+                missingFilter.hidden = !missingFilter.hidden;
+                missingFilterToggle.setAttribute('aria-expanded', String(!missingFilter.hidden));
+                if (!missingFilter.hidden) missingFilter.scrollIntoView({ block: 'start' });
+            });
+        }
+
         const saveUrl = root.getAttribute('data-save-url') || '/nalog/site-edit/';
         const popTitle = document.getElementById('staffEditPopoverTitle');
         const popBody = document.getElementById('staffEditPopoverBody');

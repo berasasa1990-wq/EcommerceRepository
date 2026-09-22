@@ -224,7 +224,7 @@
             {% endif %}
             {% if request.user|warehouse_can:"staff_magacin_sync_istorija" %}<a class="mg-history-btn" href="{% url 'staff_magacin_sync_istorija' %}">Istorija sync-a</a>{% endif %}
             {% if request.user|warehouse_can:"staff_magacin_backup" %}<a class="mg-history-btn" href="{% url 'staff_magacin_backup' %}">Backupi / Restore</a>{% endif %}
-            <p class="mg-version">Verzija {{ site_version_label }}</p>
+            <p class="mg-version">Verzija {{ site_version }}</p>
         </div>
         {% endif %}
     </aside>

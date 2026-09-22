@@ -20,6 +20,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db import DatabaseError, transaction
 from django.db.models import Case, Count, Exists, F, IntegerField, Max, OuterRef, Prefetch, Q, Value, When
+from django.db.models.functions import Trim
 from django.utils import timezone
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -461,6 +462,9 @@ def _product_matches_size(product, size_label):
 
 
 def _get_filter_params(request):
+    missing = request.GET.get('nedostaje', '').strip()
+    if not _staff_edit_mode_enabled(request) or missing not in {'opis', 'slika', 'kategorija', 'tag'}:
+        missing = ''
     return {
         'q': request.GET.get('q', '').strip(),
         'kategorija': request.GET.get('kategorija', '').strip(),
@@ -472,6 +476,7 @@ def _get_filter_params(request):
         'akcija': request.GET.get('akcija', '').strip(),
         'noviteti': request.GET.get('noviteti', '').strip(),
         'izdvojeno': request.GET.get('izdvojeno', '').strip(),
+        'nedostaje': missing,
     }
 
 
@@ -1829,6 +1834,21 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     params = _get_filter_params(request)
     search_q = _normalize_phrase(params.get('q') or '')
 
+    missing = params['nedostaje']
+    if missing == 'opis':
+        products_qs = products_qs.alias(_opis_bez_razmaka=Trim('opis')).filter(_opis_bez_razmaka='')
+    elif missing == 'slika':
+        variation_image = ProductVariation.objects.filter(
+            artikal_id=OuterRef('pk'), na_stanju=True,
+        ).exclude(Q(slika__isnull=True) | Q(slika=''))
+        products_qs = products_qs.filter(Q(slika__isnull=True) | Q(slika='')).filter(
+            ~Exists(variation_image)
+        )
+    elif missing == 'kategorija':
+        products_qs = products_qs.filter(kategorija__isnull=True)
+    elif missing == 'tag':
+        products_qs = products_qs.filter(tagovi__isnull=True)
+
     products_qs = _apply_search_filter(products_qs, params['q'])
 
     if params.get('akcija'):
@@ -2613,8 +2633,12 @@ def home(request):
     site_settings = SiteSettings.load()
 
     if filters_active:
-        products, filter_params = _apply_product_filters(_product_queryset(request), request)
-        scope_qs = _filter_size_scope_qs(filter_params, request=request)
+        products_qs = (
+            _prefetch_product_cards(Product.objects.all())
+            if filter_params['nedostaje'] else _product_queryset(request)
+        )
+        products, filter_params = _apply_product_filters(products_qs, request)
+        scope_qs = _filter_size_scope_qs(filter_params, base_qs=products_qs, request=request)
         filter_sizes = _available_sizes(scope_qs)
         filter_size_groups = _size_filter_groups(home_url, filter_params, filter_sizes)
         page_obj = _paginate_catalog_products(
@@ -2624,7 +2648,15 @@ def home(request):
         )
         search_products = page_obj.object_list
         result_count = page_obj.paginator.count
-        if filter_params.get('q'):
+        if filter_params.get('nedostaje'):
+            catalog_title = {
+                'opis': 'Artikli bez opisa',
+                'slika': 'Artikli bez slike',
+                'kategorija': 'Artikli bez kategorije',
+                'tag': 'Artikli bez taga',
+            }.get(filter_params['nedostaje'], 'Artikli za provjeru')
+            catalog_subtitle = f'Pronađeno {result_count} artikala.'
+        elif filter_params.get('q'):
             catalog_title = 'Rezultati pretrage'
             if result_count:
                 catalog_subtitle = (
@@ -2803,7 +2835,7 @@ def home(request):
     selected_brand = context['selected_brand']
     if filters_active:
         primary = [key for key in ('brend', 'akcija', 'noviteti') if filter_params.get(key)]
-        secondary = [key for key in ('q', 'kategorija', 'velicina', 'cijena_od', 'cijena_do', 'izdvojeno') if filter_params.get(key)]
+        secondary = [key for key in ('q', 'kategorija', 'velicina', 'cijena_od', 'cijena_do', 'izdvojeno', 'nedostaje') if filter_params.get(key)]
         if len(primary) == 1 and not secondary:
             key = primary[0]
             context['canonical_url'] = settings.SEO_CANONICAL_URL + '/?' + urlencode({key: filter_params[key]})
@@ -2811,7 +2843,13 @@ def home(request):
             context['meta_robots_content'] = 'noindex, follow'
         if page_obj and page_obj.number > 1 and not context.get('meta_robots_content'):
             context['canonical_url'] += ('&' if '?' in context['canonical_url'] else '?') + f'page={page_obj.number}'
-        if filter_params.get('akcija'):
+        if filter_params.get('nedostaje'):
+            context.update({
+                'seo_title': f'{catalog_title} | Carpologija BH',
+                'seo_description': catalog_subtitle,
+                'seo_h1': catalog_title,
+            })
+        elif filter_params.get('akcija'):
             context.update(page_seo_context('akcija', defaults={
                 'seo_title': 'Akcija | Oprema za ribolov',
                 'seo_description': 'Artikli na sniženoj cijeni — Carpologija BH',

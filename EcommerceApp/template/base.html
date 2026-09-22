@@ -488,6 +488,10 @@
                         <span class="nav-action-label">Korpa</span>
                     </a>
                     {% if user.is_authenticated and user.is_superuser %}
+                    <div class="staff-edit-controls">
+                    {% if staff_edit_mode %}
+                    <button type="button" class="staff-missing-filter-toggle" data-staff-missing-filter-toggle aria-controls="staffMissingFilter" aria-expanded="{% if request.GET.nedostaje %}true{% else %}false{% endif %}">Filter</button>
+                    {% endif %}
                     <form method="post" action="{% url 'staff_toggle_edit_mode' %}" class="staff-edit-toggle-form">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
@@ -497,6 +501,7 @@
                             Edit
                         </label>
                     </form>
+                    </div>
                     {% endif %}
                     </div>
                     <a class="desktop-sale-link" href="{% url 'home' %}?akcija=1#product-showcase" hidden>Akcijska ponuda <span aria-hidden="true">%</span></a>
@@ -735,6 +740,16 @@
     {% endblock %}
 
     <main>
+        {% if staff_edit_mode %}
+        <nav class="staff-missing-filter" id="staffMissingFilter" aria-label="Provjera artikala"{% if not request.GET.nedostaje %} hidden{% endif %}>
+            <span class="staff-missing-filter__label">Artikli kojima nedostaje:</span>
+            <a href="{% url 'home' %}?nedostaje=opis#product-showcase"{% if request.GET.nedostaje == 'opis' %} aria-current="page"{% endif %}>Opis</a>
+            <a href="{% url 'home' %}?nedostaje=slika#product-showcase"{% if request.GET.nedostaje == 'slika' %} aria-current="page"{% endif %}>Slika</a>
+            <a href="{% url 'home' %}?nedostaje=kategorija#product-showcase"{% if request.GET.nedostaje == 'kategorija' %} aria-current="page"{% endif %}>Kategorija</a>
+            <a href="{% url 'home' %}?nedostaje=tag#product-showcase"{% if request.GET.nedostaje == 'tag' %} aria-current="page"{% endif %}>Tag</a>
+            {% if request.GET.nedostaje %}<a href="{% url 'home' %}" class="staff-missing-filter__clear">Poništi</a>{% endif %}
+        </nav>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
 
@@ -798,8 +813,8 @@
     {% endif %}
     {% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
     {% include 'partials/staff_site_editor.html' %}
-    <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20260901bulkMainImg">
-    <script src="{% static 'js/staff-site-edit.js' %}?v=20260901bulkMainImg" defer></script>
+    <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20260922missingFilters">
+    <script src="{% static 'js/staff-site-edit.js' %}?v=20260922missingFilters" defer></script>
     {% endif %}
     <div class="setb-gate" id="setBuilderGate" hidden
          data-unlock-url="{% url 'set_builder_unlock' %}"

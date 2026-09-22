@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from .models import Product, ProductVariation
 from .pricing import _loyalty_osnovica_iz_korpe
@@ -728,7 +728,7 @@ class SiteVersionTests(TestCase):
         version = build_site_version()
         self.assertContains(page, f"Verzija {version['site_version']}")
         if version['site_version_sha']:
-            self.assertContains(page, f"Deploy {version['site_version_sha']}")
+            self.assertNotContains(page, f"Deploy {version['site_version_sha']}")
         self.assertContains(page, '<strong>Izrada web stranice: 065 838 653</strong>', html=True)
 
     def test_footer_copies_carpologija_text(self):
@@ -1006,6 +1006,55 @@ class StaffStorefrontEditModeTests(TestCase):
             ['kategorija', 'cijena', 'slika', 'opis'],
         )
         self.assertEqual(self.complete.missing_storefront_fields(), [])
+
+    @override_settings(STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    })
+    def test_edit_mode_filters_products_with_missing_content(self):
+        from .models import Tag
+
+        tag = Tag.objects.create(naziv='Test tag')
+        self.complete.tagovi.add(tag)
+        self.client.force_login(self.admin)
+        session = self.client.session
+        session['staff_edit_mode'] = True
+        session.save()
+
+        for field, title in (
+            ('opis', 'Artikli bez opisa'),
+            ('slika', 'Artikli bez slike'),
+            ('kategorija', 'Artikli bez kategorije'),
+            ('tag', 'Artikli bez taga'),
+        ):
+            response = self.client.get('/', {'nedostaje': field})
+            ids = {product.pk for product in response.context['search_products']}
+            self.assertEqual(ids, {self.incomplete.pk}, field)
+            self.assertContains(response, title)
+            self.assertContains(response, '<meta name="robots" content="noindex, follow">', html=True)
+            self.assertContains(response, f'?nedostaje={field}#product-showcase')
+
+        self.incomplete.opis = '   '
+        self.incomplete.save(update_fields=['opis'])
+        response = self.client.get('/', {'nedostaje': 'opis'})
+        self.assertEqual([p.pk for p in response.context['search_products']], [self.incomplete.pk])
+
+        self.complete.slika = None
+        self.complete.save(update_fields=['slika'])
+        variation = ProductVariation.objects.create(artikal=self.complete, naziv='Sa slikom')
+        ProductVariation.objects.filter(pk=variation.pk).update(slika='products/variations/ok.jpg')
+        response = self.client.get('/', {'nedostaje': 'slika'})
+        self.assertEqual([p.pk for p in response.context['search_products']], [self.incomplete.pk])
+
+        self.incomplete.aktivan = False
+        self.incomplete.save(update_fields=['aktivan'])
+        response = self.client.get('/', {'nedostaje': 'kategorija'})
+        self.assertEqual([p.pk for p in response.context['search_products']], [self.incomplete.pk])
+
+        self.client.force_login(self.guest)
+        response = self.client.get('/', {'nedostaje': 'tag'})
+        self.assertFalse(response.context['filters_active'])
+        self.assertNotContains(response, 'staff-missing-filter')
 
     def test_edit_checkbox_only_for_superuser(self):
         from django.urls import reverse
