@@ -159,6 +159,11 @@ def _fix_api_text(text: str) -> str:
 
 
 def order_is_pouzece(order) -> bool:
+    try:
+        # B2B payment is authoritative: only cash orders have COD collection.
+        return order.b2b_submission.payment == 'gotovina'
+    except Exception:
+        pass
     return not bool(getattr(order, 'placeno_karticom', lambda: False)())
 
 
@@ -287,16 +292,32 @@ def _shipment_amounts(order) -> tuple[float, bool, float]:
 
 def recipient_from_order(order) -> dict:
     """Ime, telefon, adresa, grad, PTT i ukupno s narudžbe."""
-    ime = (getattr(order, 'ime_prezime', None) or '').strip()
-    telefon = (getattr(order, 'telefon', None) or '').strip()
-    adresa = (getattr(order, 'adresa', None) or '').strip()
-    grad_raw = (getattr(order, 'grad', None) or '').strip()
-    ptt_raw = (getattr(order, 'postanski_broj', None) or '').strip()
+    # B2B shipment recipients are maintained on the B2B account, not copied
+    # from a potentially older checkout snapshot on the order.
+    try:
+        b2b_account = order.b2b_submission.account
+    except Exception:
+        b2b_account = None
+    if b2b_account is not None:
+        ime = (b2b_account.username or '').strip()
+        kontakt = (b2b_account.ime_prezime or '').strip()
+        telefon = (b2b_account.telefon or '').strip()
+        adresa = (b2b_account.adresa or '').strip()
+        grad_raw = (b2b_account.grad or '').strip()
+        ptt_raw = (b2b_account.postanski_broj or '').strip()
+    else:
+        ime = (getattr(order, 'ime_prezime', None) or '').strip()
+        kontakt = ime
+        telefon = (getattr(order, 'telefon', None) or '').strip()
+        adresa = (getattr(order, 'adresa', None) or '').strip()
+        grad_raw = (getattr(order, 'grad', None) or '').strip()
+        ptt_raw = (getattr(order, 'postanski_broj', None) or '').strip()
     ptt = _digits_ptt(ptt_raw, adresa, grad_raw) or _ptt_from_city(grad_raw)
     grad = _clean_city(grad_raw) or _clean_city(adresa)
     declared, _, _ = _shipment_amounts(order)
     return {
         'ime': ime,
+        'kontakt': kontakt,
         'telefon': telefon,
         'adresa': adresa,
         'grad': grad,
@@ -341,13 +362,18 @@ def build_shipment_payload(order) -> dict:
     if waived:
         opis = f'{opis} — bez poštarine'
     # PosiljkaDto iz X-Express OpenAPI — samo njihova polja, bez sifra (generiše API).
+    try:
+        order.b2b_submission
+        is_b2b = True
+    except Exception:
+        is_b2b = False
     payload = {
         'sifraExt': broj,
         'nazivPrim': ime,
         'adresaPrim': dest['adresa'],
         'pttPrim': dest['ptt'],
         'telefonPrim': dest['telefon'],
-        'kontaktPrim': ime,
+        'kontaktPrim': dest.get('kontakt') or ime,
         'opisPosiljke': opis,
         'brojPaketa': 1,
         'duzina': 0,
@@ -365,6 +391,9 @@ def build_shipment_payload(order) -> dict:
         'tipNajave': 0,
         'napomenaInterna': opis,
     }
+    # B2B always requires the return receipt, whether it is cash or bank payment.
+    if is_b2b:
+        payload['povratnica'] = True
     return payload
 
 

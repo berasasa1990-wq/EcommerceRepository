@@ -5189,6 +5189,12 @@ class SiteSearchEvent(models.Model):
         indexes = [models.Index(fields=['-created_at', 'query'])]
 
 
+class DeploymentVersion(models.Model):
+    """Persistent version counter incremented once by the deployment build."""
+    number = models.DecimalField(max_digits=8, decimal_places=1, default=Decimal('1.1'))
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 class ProductAnalyticsEvent(models.Model):
     class Event(models.TextChoices):
         VIEW = 'view', 'Pregled proizvoda'
@@ -6791,6 +6797,14 @@ class WarehouseLedgerLine(models.Model):
 class B2BAccount(models.Model):
     username = models.CharField('Korisničko ime', max_length=150, unique=True)
     company = models.CharField('Firma / kupac', max_length=200)
+    ime_prezime = models.CharField('Ime i prezime', max_length=200, blank=True)
+    telefon = models.CharField('Telefon', max_length=30, blank=True)
+    adresa = models.CharField('Adresa', max_length=300, blank=True)
+    grad = models.CharField('Grad', max_length=100, blank=True)
+    postanski_broj = models.CharField('Poštanski broj', max_length=20, blank=True)
+    email = models.EmailField('Email', blank=True)
+    vp_kupac = models.BooleanField('VP kupac', default=False)
+    odbio_posiljku = models.BooleanField('Odbio pošiljku', default=False)
     password = models.CharField('Šifra (hash)', max_length=128, editable=False)
     is_active = models.BooleanField('Aktivan', default=True)
     rabat = models.BooleanField(

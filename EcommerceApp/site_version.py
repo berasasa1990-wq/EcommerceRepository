@@ -43,7 +43,14 @@ def _git_sha(root: Path) -> str:
 @lru_cache(maxsize=1)
 def build_site_version():
     root = Path(getattr(settings, 'BASE_DIR', Path(__file__).resolve().parents[1]))
-    number = (os.environ.get('SITE_VERSION') or '').strip() or _read_version_file(root) or '1'
+    number = (os.environ.get('SITE_VERSION') or '').strip()
+    if not number:
+        try:
+            from .models import DeploymentVersion
+            number = f'{DeploymentVersion.objects.filter(pk=1).values_list("number", flat=True).first() or ""}'
+        except Exception:
+            number = ''
+    number = number or _read_version_file(root) or '1'
     sha = _git_sha(root)
     label = f'v{number}'
     if sha:

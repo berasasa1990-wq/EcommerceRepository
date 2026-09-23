@@ -20,7 +20,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db import DatabaseError, transaction
-from django.db.models import Case, Count, Exists, F, IntegerField, Max, OuterRef, Prefetch, Q, Sum, Value, When
+from django.db.models import Case, Count, Exists, F, IntegerField, Max, Min, OuterRef, Prefetch, Q, Sum, Value, When
 from django.db.models.functions import Trim
 from django.utils import timezone
 from django.http import Http404, HttpResponse, JsonResponse
@@ -6844,9 +6844,10 @@ def superuser_app_analytics(request):
     scoped_orders = Order.objects.exclude(status=Order.Status.OTKAZANA)
     scoped_orders = scoped_orders.filter(b2b_submission__isnull=(analytics_channel == 'web'))
     period_orders = scoped_orders.filter(kreirana__date__range=(start, today))
-    # Product lists are lifetime totals, but always respect the selected channel.
+    # Lifetime product lists are separate from period-dependent KPI cards.
     period_items = OrderItem.objects.filter(narudzba__in=scoped_orders)
-    top_products = period_items.values('naziv').annotate(sold=Sum('kolicina')).order_by('-sold', 'naziv')[:5]
+    kpi_items = OrderItem.objects.filter(narudzba__in=period_orders)
+    top_products = period_items.values('naziv').annotate(sold=Count('narudzba_id', distinct=True)).order_by('-sold', 'naziv')[:5]
     category_sales = period_items.values('artikal__kategorija__naziv').annotate(sold=Sum('kolicina')).order_by('-sold')[:6]
     previous_items = OrderItem.objects.filter(
         narudzba__kreirana__date__range=(previous_start, previous_end),
@@ -6866,7 +6867,7 @@ def superuser_app_analytics(request):
     ).order_by('stanje', 'naziv').first()
     order_count = period_orders.count()
     revenue = period_orders.aggregate(total=Sum('ukupno'))['total'] or 0
-    units_sold = period_items.aggregate(total=Sum('kolicina'))['total'] or 0
+    units_sold = kpi_items.aggregate(total=Sum('kolicina'))['total'] or 0
     average_order_value = revenue / order_count if order_count else 0
     conversion_rate = (order_count * 100 / visit_count) if visit_count else 0
     from .models import CityVisitTotal
@@ -6879,10 +6880,12 @@ def superuser_app_analytics(request):
     zero_result_searches = searches.filter(results_count=0).values('query').annotate(count=Count('pk')).order_by('-count', 'query')[:5]
     product_events = ProductAnalyticsEvent.objects.all() if analytics_channel == 'web' else ProductAnalyticsEvent.objects.none()
     event_rows = product_events.values('product_id', 'product__naziv').annotate(
-        views=Count('pk', filter=Q(event=ProductAnalyticsEvent.Event.VIEW)),
+        views=Count('session_key', filter=Q(event=ProductAnalyticsEvent.Event.VIEW), distinct=True),
         carts=Count('pk', filter=Q(event=ProductAnalyticsEvent.Event.CART)),
     )
-    sale_rows = period_items.values('artikal_id', 'naziv').annotate(
+    tracking_started = ProductAnalyticsEvent.objects.aggregate(first=Min('created_at'))['first']
+    tracked_sales = period_items.filter(narudzba__kreirana__gte=tracking_started) if tracking_started else period_items.none()
+    sale_rows = tracked_sales.values('artikal_id', 'naziv').annotate(
         purchases=Count('narudzba_id', distinct=True), units=Sum('kolicina'),
         revenue=Sum(F('cijena') * F('kolicina')),
     )
@@ -6890,8 +6893,10 @@ def superuser_app_analytics(request):
     for row in event_rows:
         product_metrics[row['product_id']] = {'name': row['product__naziv'], 'views': row['views'], 'carts': row['carts'], 'purchases': 0, 'revenue': 0}
     for row in sale_rows:
-        metric = product_metrics.setdefault(row['artikal_id'], {'name': row['naziv'], 'views': 0, 'carts': 0, 'purchases': 0, 'revenue': 0})
-        metric['purchases'], metric['revenue'] = row['purchases'], row['revenue'] or 0
+        metric = product_metrics.get(row['artikal_id'])
+        if metric is not None:
+            metric['purchases'], metric['revenue'] = row['purchases'], row['revenue'] or 0
+    product_metrics = {key: value for key, value in product_metrics.items() if value['views']}
     product_metrics = sorted(product_metrics.values(), key=lambda row: (row['purchases'], row['carts'], row['views']), reverse=True)[:10]
     for metric in product_metrics:
         metric['conversion'] = round(metric['purchases'] * 100 / metric['views'], 2) if metric['views'] else 0

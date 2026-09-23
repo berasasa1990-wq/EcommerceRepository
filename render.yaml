@@ -12,6 +12,7 @@ services:
       python scripts/minify_assets.py
       python manage.py collectstatic --noinput
       python manage.py migrate --noinput
+      python manage.py bump_site_version
       # Superuser NE kreirati na svakom deployu (već postoji → CommandError).
       # Jednom ručno: python manage.py createsuperuser
     # Starter 0.5 CPU / 512 MB: 1 worker. max-requests 80 + pollovi = restart svakih ~2 min (CPU spike).

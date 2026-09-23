@@ -3817,7 +3817,10 @@ class B2BAccountForm(forms.ModelForm):
 
     class Meta:
         model = B2BAccount
-        fields = ['username', 'company', 'is_active']
+        fields = [
+            'username', 'company', 'ime_prezime', 'telefon', 'adresa', 'grad',
+            'postanski_broj', 'email', 'vp_kupac', 'odbio_posiljku', 'is_active',
+        ]
 
     def clean_new_password(self):
         password = self.cleaned_data.get('new_password')
@@ -3848,9 +3851,9 @@ class B2BAccountBrandRabatInline(admin.TabularInline):
 @admin.register(B2BAccount)
 class B2BAccountAdmin(admin.ModelAdmin):
     form = B2BAccountForm
-    list_display = ['username', 'company', 'is_active', 'rabat_pregled']
-    list_filter = ['is_active']
-    search_fields = ['username', 'company']
+    list_display = ['username', 'company', 'ime_prezime', 'telefon', 'vp_kupac', 'odbio_posiljku', 'is_active', 'rabat_pregled']
+    list_filter = ['is_active', 'vp_kupac', 'odbio_posiljku']
+    search_fields = ['username', 'company', 'ime_prezime', 'telefon', 'email', 'grad']
     inlines = [B2BAccountBrandRabatInline]
 
     def get_queryset(self, request):
