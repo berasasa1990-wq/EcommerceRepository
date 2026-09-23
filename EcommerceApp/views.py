@@ -6833,15 +6833,19 @@ def superuser_app_analytics(request):
     configs = {'today': ('Danas', today, 1), '7d': ('7 dana', today - timedelta(days=6), 7), '30d': ('30 dana', today - timedelta(days=29), 30), '90d': ('90 dana', today - timedelta(days=89), 90), 'year': ('Godina', today.replace(month=1, day=1), (today - today.replace(month=1, day=1)).days + 1)}
     if period not in configs: period = 'today'
     period_label, start, days = configs[period]
+    analytics_channel = request.GET.get('channel', 'web')
+    if analytics_channel not in ('web', 'b2b'):
+        analytics_channel = 'web'
     previous_end = start - timedelta(days=1)
     previous_start = previous_end - timedelta(days=days - 1)
     visit_count = LiveVisitor.objects.filter(first_seen__date__range=(start, today)).count()
     previous_visit_count = LiveVisitor.objects.filter(first_seen__date__range=(previous_start, previous_end)).count()
     visit_change = round((visit_count - previous_visit_count) * 100 / previous_visit_count) if previous_visit_count else None
-    period_orders = Order.objects.filter(kreirana__date__range=(start, today)).exclude(
-        status=Order.Status.OTKAZANA,
-    )
-    period_items = OrderItem.objects.filter(narudzba__kreirana__date__range=(start, today)).exclude(narudzba__status=Order.Status.OTKAZANA)
+    scoped_orders = Order.objects.exclude(status=Order.Status.OTKAZANA)
+    scoped_orders = scoped_orders.filter(b2b_submission__isnull=(analytics_channel == 'web'))
+    period_orders = scoped_orders.filter(kreirana__date__range=(start, today))
+    # Product lists are lifetime totals, but always respect the selected channel.
+    period_items = OrderItem.objects.filter(narudzba__in=scoped_orders)
     top_products = period_items.values('naziv').annotate(sold=Sum('kolicina')).order_by('-sold', 'naziv')[:5]
     category_sales = period_items.values('artikal__kategorija__naziv').annotate(sold=Sum('kolicina')).order_by('-sold')[:6]
     previous_items = OrderItem.objects.filter(
@@ -6870,10 +6874,10 @@ def superuser_app_analytics(request):
         visits=Count('pk'),
     ).order_by('-first_seen__year')[:8]
     city_visits = CityVisitTotal.objects.order_by('-broj_posjeta', 'grad')[:8]
-    searches = SiteSearchEvent.objects.filter(created_at__date__range=(start, today))
+    searches = SiteSearchEvent.objects.all() if analytics_channel == 'web' else SiteSearchEvent.objects.none()
     top_searches = searches.values('query').annotate(count=Count('pk')).order_by('-count', 'query')[:5]
     zero_result_searches = searches.filter(results_count=0).values('query').annotate(count=Count('pk')).order_by('-count', 'query')[:5]
-    product_events = ProductAnalyticsEvent.objects.filter(created_at__date__range=(start, today))
+    product_events = ProductAnalyticsEvent.objects.all() if analytics_channel == 'web' else ProductAnalyticsEvent.objects.none()
     event_rows = product_events.values('product_id', 'product__naziv').annotate(
         views=Count('pk', filter=Q(event=ProductAnalyticsEvent.Event.VIEW)),
         carts=Count('pk', filter=Q(event=ProductAnalyticsEvent.Event.CART)),
@@ -6892,6 +6896,18 @@ def superuser_app_analytics(request):
     for metric in product_metrics:
         metric['conversion'] = round(metric['purchases'] * 100 / metric['views'], 2) if metric['views'] else 0
     live = _live_analytics_context(request)
+    source_scope = request.GET.get('source_scope', 'live')
+    if source_scope == 'total':
+        source_labels = {
+            'google_ads': 'Google Ads', 'facebook_ads': 'Facebook/Instagram Ads',
+            'google': 'Google', 'facebook': 'Facebook', 'instagram': 'Instagram',
+            'direct': 'Direktno', 'other': 'Ostalo',
+        }
+        source_rows = LiveVisitor.objects.filter(first_seen__date__range=(start, today)).values('izvor_dolaska').annotate(count=Count('pk')).order_by('-count')
+        live['sources'] = [
+            {'label': source_labels.get(row['izvor_dolaska'] or 'direct', row['izvor_dolaska'] or 'Direktno'), 'count': row['count']}
+            for row in source_rows
+        ]
     return render(request, 'staff/superuser_app_analytics.html', {
         **_base_context(),
         **live,
@@ -6900,12 +6916,14 @@ def superuser_app_analytics(request):
         'units_sold': units_sold,
         'average_order_value': average_order_value,
         'conversion_rate': conversion_rate,
+        'analytics_channel': analytics_channel,
         'visit_count': visit_count, 'previous_visit_count': previous_visit_count,
         'visit_change': visit_change, 'period': period, 'period_label': period_label,
         'top_products': top_products, 'category_sales': category_sales,
         'fastest_growth': fastest_growth, 'low_stock_product': low_stock_product,
         'top_searches': top_searches, 'zero_result_searches': zero_result_searches,
         'product_metrics': product_metrics,
+        'source_scope': source_scope,
         'yearly_visits': yearly_visits, 'city_visits': city_visits,
     })
 
