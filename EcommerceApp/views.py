@@ -979,7 +979,7 @@ def _exact_cat_ids_for_query_cached(q_key: str) -> frozenset:
 
     direct = set()
     for row in _cached_category_search_tags():
-        if not row.get('parent_id') or not row.get('tags'):
+        if not row.get('tags'):
             continue
         for tag in row['tags']:
             tag_key = _phrase_key(tag)
@@ -1005,7 +1005,7 @@ def _fuzzy_cat_ids_for_query_cached(q_key: str) -> frozenset:
         return frozenset()
     direct = set()
     for row in _cached_category_search_tags():
-        if not row.get('parent_id') or not row.get('tags'):
+        if not row.get('tags'):
             continue
         for tag in row['tags']:
             if _tag_matches_category_search_tag(tag, q_key):
