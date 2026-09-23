@@ -35,20 +35,17 @@
         <div class="app-kpi"><i>▣</i><strong>{{ product_count }}</strong><span>Ukupno artikala</span></div>
         <div class="app-kpi"><i>◈</i><strong>{{ in_stock_count }}</strong><span>Na stanju</span></div>
         <div class="app-kpi"><i>🛒</i><strong>{{ new_order_count }}</strong><span>Nove narudžbe</span></div>
-        <div class="app-kpi app-kpi--sales"><i>KM</i><strong>{{ new_sales_total|floatformat:2 }} KM</strong><span>Prodaja — samo nove</span><div><small>Web <b>{{ new_web_total|floatformat:2 }} KM</b></small><small>B2B <b>{{ new_b2b_total|floatformat:2 }} KM</b></small></div></div>
+        <div class="app-kpi app-kpi--sales"><i>KM</i><strong>{{ new_sales_total|floatformat:2 }} KM</strong><span>Web prodaja — samo nove</span><div><small>Web <b>{{ new_web_total|floatformat:2 }} KM</b></small></div></div>
     </section>
 
     <section class="app-card app-orders">
-        <div class="app-card__head"><h2><span>🛒</span> Online narudžbe</h2><span class="app-card__caption">Samo nove</span></div>
+        <div class="app-card__head"><h2><span>🛒</span> Online narudžbe</h2><span class="app-card__caption">Web · od 22.09.2026.</span></div>
         {% if recent_orders %}
         <div class="app-order-list">
             {% for order in recent_orders %}
             <div class="app-order-row">
                 <strong>#{{ order.broj }}</strong><span>{{ order.ime_prezime }}</span><time>{{ order.kreirana|date:'d.m., H:i' }}</time><b>{{ order.ukupno|floatformat:2 }} KM</b><em class="app-status app-status--{{ order.status }}">{{ order.get_status_display }}</em><i>›</i>
-                <span class="app-order-tags">
-                    <small>{% if order.b2b_submission %}B2B{% else %}Web{% endif %}</small>
-                    <small>{{ order.packing_placanje_label|lower|capfirst }}</small>
-                </span>
+                <span class="app-order-tags"><small>Web</small><small>{{ order.packing_placanje_label|lower|capfirst }}</small></span>
             </div>
             {% endfor %}
         </div>

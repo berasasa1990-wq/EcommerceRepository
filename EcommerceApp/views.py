@@ -4,7 +4,7 @@ import random
 import re
 import uuid
 import requests
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from functools import lru_cache
 from urllib.parse import urlencode, urlparse
@@ -6774,16 +6774,17 @@ def superuser_app(request):
             **_base_context(),
         }, status=403)
     # /app is a glance-only dashboard: show only orders awaiting first action.
+    app_web_cutoff = date(2026, 9, 22)
+    new_orders = Order.objects.filter(
+        status=Order.Status.NOVA,
+        b2b_submission__isnull=True,
+        kreirana__date__gte=app_web_cutoff,
+    )
     recent_orders = list(
-        Order.objects.filter(status=Order.Status.NOVA)
-        .select_related('b2b_submission')
+        new_orders
         .order_by('-kreirana')[:5],
     )
-    new_orders = Order.objects.filter(status=Order.Status.NOVA)
-    new_web_total = new_orders.filter(b2b_submission__isnull=True).aggregate(
-        total=Sum('ukupno'),
-    )['total'] or 0
-    new_b2b_total = new_orders.filter(b2b_submission__isnull=False).aggregate(
+    new_web_total = new_orders.aggregate(
         total=Sum('ukupno'),
     )['total'] or 0
     context = {
@@ -6793,10 +6794,9 @@ def superuser_app(request):
         'in_stock_count': Product.objects.filter(
             aktivan=True, na_stanju=True, stanje__gt=0,
         ).count(),
-        'new_order_count': Order.objects.filter(status=Order.Status.NOVA).count(),
+        'new_order_count': new_orders.count(),
         'new_web_total': new_web_total,
-        'new_b2b_total': new_b2b_total,
-        'new_sales_total': new_web_total + new_b2b_total,
+        'new_sales_total': new_web_total,
     }
     return render(request, 'staff/superuser_app.html', context)
 
