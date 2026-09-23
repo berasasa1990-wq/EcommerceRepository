@@ -6779,7 +6779,7 @@ def superuser_app(request):
         status=Order.Status.NOVA,
         b2b_submission__isnull=True,
         kreirana__date__gte=app_web_cutoff,
-    )
+    ).exclude(ime_prezime='Prenos u MP')
     recent_orders = list(
         new_orders
         .order_by('-kreirana')[:5],
