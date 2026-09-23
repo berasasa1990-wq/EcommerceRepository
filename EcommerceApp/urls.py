@@ -147,6 +147,7 @@ urlpatterns = [
     path('app/', views.superuser_app),
     path('app/artikli/', views.superuser_app_products, name='superuser_app_products'),
     path('app/analitika/', views.superuser_app_analytics, name='superuser_app_analytics'),
+    path('app/b2b/', views.superuser_app_b2b, name='superuser_app_b2b'),
     path('nalog/b2b-live/', views.staff_b2b_live, name='staff_b2b_live'),
     path('nalog/edit-mode/', views.staff_toggle_edit_mode, name='staff_toggle_edit_mode'),
     path('nalog/site-edit/', views.staff_site_edit_save, name='staff_site_edit_save'),

@@ -4734,8 +4734,11 @@ def _save_profile_from_checkout(user, cleaned_data):
     profil.postanski_broj = cleaned_data.get('postanski_broj', '')
     profil.save(update_fields=['telefon', 'adresa', 'grad', 'postanski_broj'])
     user.first_name = cleaned_data['ime_prezime']
-    user.email = cleaned_data['email']
-    user.save(update_fields=['first_name', 'email'])
+    update_fields = ['first_name']
+    if cleaned_data.get('email'):
+        user.email = cleaned_data['email']
+        update_fields.append('email')
+    user.save(update_fields=update_fields)
 
 
 def checkout(request):
@@ -6833,9 +6836,7 @@ def superuser_app_analytics(request):
     configs = {'today': ('Danas', today, 1), '7d': ('7 dana', today - timedelta(days=6), 7), '30d': ('30 dana', today - timedelta(days=29), 30), '90d': ('90 dana', today - timedelta(days=89), 90), 'year': ('Godina', today.replace(month=1, day=1), (today - today.replace(month=1, day=1)).days + 1)}
     if period not in configs: period = 'today'
     period_label, start, days = configs[period]
-    analytics_channel = request.GET.get('channel', 'web')
-    if analytics_channel not in ('web', 'b2b'):
-        analytics_channel = 'web'
+    analytics_channel = getattr(request, '_app_analytics_channel', 'web')
     previous_end = start - timedelta(days=1)
     previous_start = previous_end - timedelta(days=days - 1)
     visit_count = LiveVisitor.objects.filter(first_seen__date__range=(start, today)).count()
@@ -6931,6 +6932,13 @@ def superuser_app_analytics(request):
         'source_scope': source_scope,
         'yearly_visits': yearly_visits, 'city_visits': city_visits,
     })
+
+
+@login_required(login_url='login')
+def superuser_app_b2b(request):
+    """Dedicated B2B analytics route; public-web analytics remains separate."""
+    request._app_analytics_channel = 'b2b'
+    return superuser_app_analytics(request)
 
 
 @login_required(login_url='login')
