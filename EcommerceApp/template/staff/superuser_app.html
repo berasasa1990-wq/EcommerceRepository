@@ -11,16 +11,7 @@
 {% block content %}
 <main class="app-dashboard" aria-label="Carpologija administrativna aplikacija">
     <header class="app-topbar">
-        <a class="app-menu" href="{% url 'staff_admin_panel' %}" aria-label="Sve administrativne sekcije">
-            <span></span><span></span><span></span>
-        </a>
         <img class="app-logo" src="{% static 'img/carpologija-nav-logo-dark.jpg' %}" alt="Carpologija BH">
-        <div class="app-topbar-actions">
-            <a href="{% url 'staff_online_orders' %}" class="app-bell" aria-label="Nove narudžbe">
-                ♧{% if new_order_count %}<b>{{ new_order_count }}</b>{% endif %}
-            </a>
-            <a class="app-avatar" href="{% url 'account' %}" aria-label="Moj nalog">{{ user.username|slice:':2'|upper }}</a>
-        </div>
     </header>
 
     <section class="app-hero app-hero--photo">
@@ -57,7 +48,7 @@
 <nav class="app-bottom-nav" aria-label="Administrativna navigacija">
     <a class="is-active" href="{% url 'superuser_app' %}"><i>⌂</i><span>Početna</span></a>
     <a href="{% url 'superuser_app_products' %}"><i>▣</i><span>Artikli</span></a>
-    <a href="{% url 'superuser_app_analytics' %}"><i>▥</i><span>Analitika</span></a>
+    <a href="{% url 'superuser_app_analytics' %}"><i>▥</i><span>Web</span></a>
     <a href="{% url 'superuser_app_b2b' %}"><i>▤</i><span>B2B</span></a>
 </nav>
 {% endblock %}

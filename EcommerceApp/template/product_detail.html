@@ -127,16 +127,6 @@
             <div class="product-detail-title-row">
                 <h1>{{ seo_h1|default:product.naziv }}</h1>
                 <p class="pd-mobile-meta"><span>Šifra: {{ product.sifra }}</span>{% if product.brend %}<span>Brend: {{ product.brend.naziv }}</span>{% endif %}</p>
-                <p class="pd-desktop-rating">
-                    <span class="pd-desktop-rating__stars" aria-hidden="true">
-                        <svg viewBox="0 0 20 20"><path d="M10 1.8 12.5 7l5.8.7-4.3 3.9 1.2 5.7L10 14.8 4.8 17.3l1.2-5.7L1.7 7.7 7.5 7z"/></svg>
-                        <svg viewBox="0 0 20 20"><path d="M10 1.8 12.5 7l5.8.7-4.3 3.9 1.2 5.7L10 14.8 4.8 17.3l1.2-5.7L1.7 7.7 7.5 7z"/></svg>
-                        <svg viewBox="0 0 20 20"><path d="M10 1.8 12.5 7l5.8.7-4.3 3.9 1.2 5.7L10 14.8 4.8 17.3l1.2-5.7L1.7 7.7 7.5 7z"/></svg>
-                        <svg viewBox="0 0 20 20"><path d="M10 1.8 12.5 7l5.8.7-4.3 3.9 1.2 5.7L10 14.8 4.8 17.3l1.2-5.7L1.7 7.7 7.5 7z"/></svg>
-                        <svg viewBox="0 0 20 20"><path fill="#e5e7eb" d="M10 1.8 12.5 7l5.8.7-4.3 3.9 1.2 5.7L10 14.8 4.8 17.3l1.2-5.7L1.7 7.7 7.5 7z"/><path d="M10 1.8 7.5 7 1.7 7.7l4.3 3.9-1.2 5.7L10 14.8z"/></svg>
-                    </span>
-                    <span>(12 recenzija)</span>
-                </p>
             </div>
             <div class="product-detail-body">
             {% if product.proizvedeno_u_japanu %}

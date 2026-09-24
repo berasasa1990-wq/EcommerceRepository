@@ -1,5 +1,10 @@
 /* Private mobile-first dashboard at /app. */
 body.app-dashboard-page { background:#080909; color:#f8f8f8; }
+.app-dashboard-home .app-topbar{display:flex;justify-content:center}
+.app-chart>div:last-child{display:flex;justify-content:space-between;gap:4px}.app-chart>div:last-child span{flex:1;text-align:center}
+.app-chart{display:flex;flex-direction:column}.app-chart__bars{order:2}.app-chart>div:last-child{order:3;margin-top:10px}
+.app-chart__bars i{position:relative}.app-chart__bars i b{position:absolute;left:50%;bottom:calc(100% + 5px);transform:translateX(-50%);color:#fff;font-size:10px;font-style:normal;white-space:nowrap}
+.app-analytics--b2b>.app-analytics__stats:not(.b2b-summary),.app-analytics--b2b>.app-analytics__visuals,.app-analytics--b2b>.app-card:not(.b2b-summary){display:none}.app-analytics--b2b .b2b-summary{display:grid}
 .app-bottom-nav{grid-template-columns:repeat(4,1fr)}
 @supports (zoom:1){body.app-dashboard-page{zoom:.88}}
 .app-source-scope{display:flex;gap:4px}.app-source-scope a{padding:4px 7px;border:1px solid #4a4a4a;border-radius:6px;color:#cfcfcf;font-size:11px;text-decoration:none}.app-source-scope a.is-active{border-color:#ff6500;color:#ff6500}
@@ -11,10 +16,10 @@ body.app-dashboard-page .footer, body.app-dashboard-page .header-float-ctas,
 body.app-dashboard-page .mobile-home-dock { display:none !important; }
 body.app-dashboard-page main { overflow:visible; }
 .app-dashboard { width:min(100%, 560px); min-height:100vh; margin:0 auto; padding:0 12px calc(94px + env(safe-area-inset-bottom)); background:radial-gradient(circle at 78% 0,#43200c 0,#131313 28%,#080909 68%); }
-.app-topbar { height:78px; display:grid; grid-template-columns:42px minmax(0,1fr) 92px; gap:8px; align-items:center; }
+.app-topbar { height:78px; display:flex; justify-content:center; align-items:center; }
 .app-menu { display:grid; gap:5px; width:36px; padding:8px 5px; }
 .app-menu span { height:2px; border-radius:4px; background:#fff; }
-.app-logo { width:100%; max-width:190px; justify-self:center; mix-blend-mode:screen; }
+.app-topbar .app-logo { width:190px; max-width:100%; margin:0; mix-blend-mode:screen; }
 .app-topbar-actions { display:flex; align-items:center; justify-content:flex-end; gap:9px; }
 .app-bell { position:relative; width:35px; height:35px; display:grid; place-items:center; border:1px solid #696969; border-radius:50%; color:#fff; font-size:23px; line-height:1; }
 .app-bell b,.app-bottom-nav b { position:absolute; top:-7px; right:-6px; min-width:19px; height:19px; display:grid; place-items:center; padding:0 4px; border-radius:99px; background:#ff6500; color:#fff; font-size:10px; }

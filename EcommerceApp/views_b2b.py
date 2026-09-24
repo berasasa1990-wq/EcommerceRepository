@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from django import forms
@@ -42,6 +43,8 @@ def current_account(request):
         pk=request.session.get('b2b_account_id'), is_active=True,
     ).prefetch_related('brand_rabats__brand').first()
     if account and constant_time_compare(request.session.get('b2b_hash', ''), account.session_hash()):
+        from django.utils import timezone
+        request.session['b2b_last_seen'] = timezone.now().isoformat()
         return account
     return None
 
@@ -258,6 +261,11 @@ def cart_change(request, product_id):
     if ok:
         request.session.pop('b2b_checkout_token', None)
         request.session['b2b_cart'] = cart
+        if action == 'add':
+            from django.utils import timezone
+            request.session['b2b_cart_last_added'] = {
+                'name': product.naziv, 'at': timezone.now().isoformat(),
+            }
     if ajax:
         return JsonResponse({'ok': ok, 'message': message, **cart_summary(request, current_account(request))}, status=200 if ok else 409)
     if ok:
@@ -373,6 +381,7 @@ def live_b2b_sessions():
     from django.contrib.sessions.models import Session
     from django.utils import timezone
     now = timezone.now()
+    active_after = now - timedelta(minutes=5)
     accounts = {
         account.pk: account
         for account in B2BAccount.objects.filter(is_active=True).prefetch_related('brand_rabats__brand')
@@ -389,16 +398,23 @@ def live_b2b_sessions():
         stored_hash = str(data.get('b2b_hash') or '')
         if not stored_hash or not constant_time_compare(stored_hash, account.session_hash()):
             continue
-        totals = cart_totals(account, data.get('b2b_cart') or {})
-        if totals['b2b_cart_count'] <= 0:
+        try:
+            last_seen = timezone.datetime.fromisoformat(data.get('b2b_last_seen', ''))
+            if timezone.is_naive(last_seen):
+                last_seen = timezone.make_aware(last_seen)
+        except (TypeError, ValueError):
             continue
+        if last_seen < active_after:
+            continue
+        totals = cart_totals(account, data.get('b2b_cart') or {})
         rows.append({
             'account': account,
             'expire_date': session.expire_date,
             'count': totals['b2b_cart_count'],
             'netto': totals['b2b_cart_total'],
             'gross': totals['b2b_cart_gross'],
-            'has_cart': True,
+            'has_cart': totals['b2b_cart_count'] > 0,
+            'last_added': data.get('b2b_cart_last_added') or {},
         })
     rows.sort(key=lambda row: (-row['count'], -row['netto'], row['account'].company.lower()))
     return rows

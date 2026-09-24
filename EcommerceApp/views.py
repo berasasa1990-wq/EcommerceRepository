@@ -1812,20 +1812,6 @@ def search_suggest(request):
     has_more = len(pool) > limit
     products = pool[:limit]
 
-    # Suggest endpoint is the site's search entry point.  Store only one event
-    # per phrase in a session so typing does not inflate analytics.
-    if request.session.session_key is None:
-        request.session.create()
-    normalized_query = _normalize_phrase(query)[:160]
-    last_query = request.session.get('_analytics_last_search_query')
-    if normalized_query and last_query != normalized_query:
-        SiteSearchEvent.objects.create(
-            session_key=request.session.session_key or '',
-            query=normalized_query,
-            results_count=len(products),
-        )
-        request.session['_analytics_last_search_query'] = normalized_query
-
     results = []
     for product in products:
         _bind_variation_parents(product)
@@ -1979,7 +1965,17 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
             price_sort='rastuca',
         )
 
-    return _oos_at_end(products), params
+    products = _oos_at_end(products)
+    # Store the actual submitted webshop search, not every autocomplete keystroke.
+    if search_q and len(search_q) >= 2 and not request.path.startswith(('/nalog/', '/app/')):
+        if request.session.session_key is None:
+            request.session.create()
+        SiteSearchEvent.objects.create(
+            session_key=request.session.session_key or '',
+            query=search_q[:160],
+            results_count=len(products),
+        )
+    return products, params
 
 
 CATALOG_PRODUCTS_PER_PAGE = 49
@@ -6842,8 +6838,23 @@ def superuser_app_analytics(request):
     visit_count = LiveVisitor.objects.filter(first_seen__date__range=(start, today)).count()
     previous_visit_count = LiveVisitor.objects.filter(first_seen__date__range=(previous_start, previous_end)).count()
     visit_change = round((visit_count - previous_visit_count) * 100 / previous_visit_count) if previous_visit_count else None
+    week_start = today - timedelta(days=today.weekday())
+    week_labels = ('Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned')
+    week_counts = {
+        row['first_seen__date']: row['count']
+        for row in LiveVisitor.objects.filter(first_seen__date__range=(week_start, week_start + timedelta(days=6))).values('first_seen__date').annotate(count=Count('pk'))
+    }
+    weekly_visits = [
+        {'label': week_labels[index], 'count': week_counts.get(week_start + timedelta(days=index), 0)}
+        for index in range(7)
+    ]
+    week_max = max([row['count'] for row in weekly_visits] or [1])
+    for row in weekly_visits:
+        row['height'] = max(4, round(row['count'] * 100 / week_max)) if row['count'] else 2
     scoped_orders = Order.objects.exclude(status=Order.Status.OTKAZANA)
     scoped_orders = scoped_orders.filter(b2b_submission__isnull=(analytics_channel == 'web'))
+    if analytics_channel == 'web':
+        scoped_orders = scoped_orders.exclude(ime_prezime='Prenos u MP')
     period_orders = scoped_orders.filter(kreirana__date__range=(start, today))
     # Lifetime product lists are separate from period-dependent KPI cards.
     period_items = OrderItem.objects.filter(narudzba__in=scoped_orders)
@@ -6901,7 +6912,30 @@ def superuser_app_analytics(request):
     product_metrics = sorted(product_metrics.values(), key=lambda row: (row['purchases'], row['carts'], row['views']), reverse=True)[:10]
     for metric in product_metrics:
         metric['conversion'] = round(metric['purchases'] * 100 / metric['views'], 2) if metric['views'] else 0
+    low_conversion_product = next(
+        (row for row in product_metrics if row['views'] >= 10 and row['carts'] >= 1 and row['purchases'] <= 2),
+        None,
+    )
     live = _live_analytics_context(request)
+    b2b_live_sessions = []
+    b2b_customers = []
+    b2b_lifetime_orders = b2b_lifetime_revenue = b2b_total_visits = 0
+    if analytics_channel == 'b2b':
+        from .views_b2b import live_b2b_sessions
+        from .models import B2BSubmission
+        from django.contrib.sessions.models import Session
+        b2b_live_sessions = live_b2b_sessions()
+        b2b_lifetime_orders = scoped_orders.count()
+        b2b_lifetime_revenue = scoped_orders.aggregate(total=Sum('ukupno'))['total'] or 0
+        b2b_customers = B2BSubmission.objects.exclude(order__status=Order.Status.OTKAZANA).values(
+            'account__username', 'account__ime_prezime', 'account__company',
+        ).annotate(order_count=Count('order_id'), total=Sum('order__ukupno')).order_by('-total')
+        for session in Session.objects.iterator():
+            try:
+                if session.get_decoded().get('b2b_account_id'):
+                    b2b_total_visits += 1
+            except Exception:
+                continue
     source_scope = request.GET.get('source_scope', 'live')
     if source_scope == 'total':
         source_labels = {
@@ -6923,12 +6957,19 @@ def superuser_app_analytics(request):
         'average_order_value': average_order_value,
         'conversion_rate': conversion_rate,
         'analytics_channel': analytics_channel,
+        'b2b_live_sessions': b2b_live_sessions,
+        'b2b_lifetime_orders': b2b_lifetime_orders,
+        'b2b_lifetime_revenue': b2b_lifetime_revenue,
+        'b2b_total_visits': b2b_total_visits,
+        'b2b_customers': b2b_customers,
         'visit_count': visit_count, 'previous_visit_count': previous_visit_count,
         'visit_change': visit_change, 'period': period, 'period_label': period_label,
+        'weekly_visits': weekly_visits,
         'top_products': top_products, 'category_sales': category_sales,
         'fastest_growth': fastest_growth, 'low_stock_product': low_stock_product,
         'top_searches': top_searches, 'zero_result_searches': zero_result_searches,
         'product_metrics': product_metrics,
+        'low_conversion_product': low_conversion_product,
         'source_scope': source_scope,
         'yearly_visits': yearly_visits, 'city_visits': city_visits,
     })

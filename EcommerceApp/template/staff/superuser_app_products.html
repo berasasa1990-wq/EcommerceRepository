@@ -9,9 +9,7 @@
 {% block content %}
 <main class="app-dashboard app-products" aria-label="Pretraga artikala">
     <header class="app-topbar">
-        <a class="app-menu" href="{% url 'superuser_app' %}" aria-label="Nazad na početnu aplikacije">‹</a>
         <img class="app-logo" src="{% static 'img/carpologija-nav-logo-dark.jpg' %}" alt="Carpologija BH">
-        <span></span>
     </header>
     <section class="app-products__head">
         <p class="app-hero__eyebrow">BRZA PRETRAGA</p>
@@ -38,6 +36,6 @@
 <nav class="app-bottom-nav" aria-label="Administrativna navigacija">
     <a href="{% url 'superuser_app' %}"><i>⌂</i><span>Početna</span></a>
     <a class="is-active" href="{% url 'superuser_app_products' %}"><i>▣</i><span>Artikli</span></a>
-    <a href="{% url 'superuser_app_analytics' %}"><i>▥</i><span>Analitika</span></a><a href="{% url 'superuser_app_b2b' %}"><i>▤</i><span>B2B</span></a>
+    <a href="{% url 'superuser_app_analytics' %}"><i>▥</i><span>Web</span></a><a href="{% url 'superuser_app_b2b' %}"><i>▤</i><span>B2B</span></a>
 </nav>
 {% endblock %}
