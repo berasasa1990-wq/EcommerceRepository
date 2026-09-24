@@ -6864,12 +6864,40 @@ def superuser_app_analytics(request):
         return render(request, 'staff/superuser_app_denied.html', {
             **_base_context(),
         }, status=403)
+    analytics_channel = getattr(request, '_app_analytics_channel', 'web')
+    if analytics_channel == 'b2b':
+        # B2B has its own small dashboard.  Do not calculate Web charts,
+        # searches and product analytics only to hide them with CSS.
+        from .models import B2BAccount, B2BSubmission
+        from .views_b2b import live_b2b_sessions
+
+        b2b_orders = Order.objects.exclude(status=Order.Status.OTKAZANA).filter(
+            b2b_submission__isnull=False,
+        )
+        b2b_live_sessions = live_b2b_sessions()
+        b2b_customers = B2BSubmission.objects.exclude(
+            order__status=Order.Status.OTKAZANA,
+        ).values(
+            'account__username', 'account__ime_prezime', 'account__company',
+        ).annotate(
+            order_count=Count('order_id'), total=Sum('order__ukupno'),
+        ).order_by('-total')
+        return render(request, 'staff/superuser_app_analytics.html', {
+            **_base_context(),
+            'analytics_channel': 'b2b',
+            'b2b_live_sessions': b2b_live_sessions,
+            'b2b_live_count': len(b2b_live_sessions),
+            'b2b_lifetime_orders': b2b_orders.count(),
+            'b2b_lifetime_revenue': b2b_orders.aggregate(total=Sum('ukupno'))['total'] or 0,
+            'b2b_total_visits': B2BAccount.objects.filter(is_active=True).count(),
+            'b2b_customers': b2b_customers,
+        })
+
     today = timezone.localdate()
     period = (request.GET.get('period') or 'today').strip()
     configs = {'today': ('Danas', today, 1), '7d': ('7 dana', today - timedelta(days=6), 7), '30d': ('30 dana', today - timedelta(days=29), 30), '90d': ('90 dana', today - timedelta(days=89), 90), 'year': ('Godina', today.replace(month=1, day=1), (today - today.replace(month=1, day=1)).days + 1)}
     if period not in configs: period = 'today'
     period_label, start, days = configs[period]
-    analytics_channel = getattr(request, '_app_analytics_channel', 'web')
     previous_end = start - timedelta(days=1)
     previous_start = previous_end - timedelta(days=days - 1)
     visit_count = LiveVisitor.objects.filter(first_seen__date__range=(start, today)).count()

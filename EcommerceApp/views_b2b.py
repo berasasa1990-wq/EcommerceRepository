@@ -1,5 +1,5 @@
 from datetime import timedelta
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from django import forms
 from django.contrib import messages
@@ -206,6 +206,9 @@ def catalog(request):
 @never_cache
 @require_POST
 def logout(request):
+    account = current_account(request)
+    if account:
+        _set_live_presence(request, account, offline=True)
     request.session.pop('b2b_cart', None)
     request.session.pop('b2b_account_id', None)
     request.session.pop('b2b_hash', None)
@@ -232,7 +235,8 @@ def cart_change(request, product_id):
     ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     def error(message, status=400):
         return JsonResponse({'ok': False, 'message': message}, status=status) if ajax else HttpResponseBadRequest(message)
-    if not current_account(request):
+    account = current_account(request)
+    if not account:
         return error('Sesija je istekla. Ponovo se prijavite u B2B.', 401) if ajax else redirect('b2b_catalog')
     product = cart_product(product_id)
     try:
@@ -267,8 +271,9 @@ def cart_change(request, product_id):
             request.session['b2b_cart_last_added'] = {
                 'name': product.naziv, 'at': timezone.now().isoformat(),
             }
+        _set_live_presence(request, account)
     if ajax:
-        return JsonResponse({'ok': ok, 'message': message, **cart_summary(request, current_account(request))}, status=200 if ok else 409)
+        return JsonResponse({'ok': ok, 'message': message, **cart_summary(request, account)}, status=200 if ok else 409)
     if ok:
         messages.success(request, message)
     else:
@@ -378,47 +383,78 @@ def cart_summary(request, account=None):
     return cart_totals(account, cart)
 
 
+_LIVE_PRESENCE_CACHE_KEY = 'b2b-live-presence-v1'
+
+
+def _set_live_presence(request, account, offline=False):
+    """Keep a tiny, short-lived index of B2B pages currently open in browsers."""
+    session_key = request.session.session_key
+    if not session_key:
+        request.session.save()
+        session_key = request.session.session_key
+    presence = dict(cache.get(_LIVE_PRESENCE_CACHE_KEY) or {})
+    if offline:
+        presence.pop(session_key, None)
+    else:
+        from django.utils import timezone
+        totals = cart_totals(account, request.session.get('b2b_cart') or {})
+        presence[session_key] = {
+            'account_id': account.pk,
+            'at': timezone.now().isoformat(),
+            'count': totals['b2b_cart_count'],
+            'netto': str(totals['b2b_cart_total']),
+            'gross': str(totals['b2b_cart_gross']),
+        }
+    cache.set(_LIVE_PRESENCE_CACHE_KEY, presence, timeout=90)
+
+
 def live_b2b_sessions():
-    from django.contrib.sessions.models import Session
     from django.utils import timezone
     now = timezone.now()
     # Presence is refreshed by the B2B page itself.  A short timeout makes a
     # closed tab disappear even if the browser cannot send its final request.
     active_after = now - timedelta(seconds=75)
-    accounts = {
-        account.pk: account
-        for account in B2BAccount.objects.filter(is_active=True).prefetch_related('brand_rabats__brand')
-    }
-    rows_by_account = {}
-    for session in Session.objects.filter(expire_date__gte=now).iterator():
+    presence = dict(cache.get(_LIVE_PRESENCE_CACHE_KEY) or {})
+    active_presence = {}
+    account_ids = set()
+    for session_key, data in presence.items():
         try:
-            data = session.get_decoded()
-        except Exception:
-            continue
-        account = accounts.get(data.get('b2b_account_id'))
-        if not account:
-            continue
-        stored_hash = str(data.get('b2b_hash') or '')
-        if not stored_hash or not constant_time_compare(stored_hash, account.session_hash()):
-            continue
-        try:
-            last_seen = timezone.datetime.fromisoformat(data.get('b2b_live_at', ''))
+            last_seen = timezone.datetime.fromisoformat(data.get('at', ''))
             if timezone.is_naive(last_seen):
                 last_seen = timezone.make_aware(last_seen)
-        except (TypeError, ValueError):
+        except (AttributeError, TypeError, ValueError):
+            continue
+        if last_seen >= active_after:
+            active_presence[session_key] = data
+            account_ids.add(data.get('account_id'))
+    if active_presence != presence:
+        cache.set(_LIVE_PRESENCE_CACHE_KEY, active_presence, timeout=90)
+    accounts = B2BAccount.objects.filter(pk__in=account_ids, is_active=True).in_bulk()
+    rows_by_account = {}
+    for data in active_presence.values():
+        account = accounts.get(data.get('b2b_account_id'))
+        if account is None:
+            account = accounts.get(data.get('account_id'))
+        if not account:
+            continue
+        try:
+            last_seen = timezone.datetime.fromisoformat(data.get('at', ''))
+            if timezone.is_naive(last_seen):
+                last_seen = timezone.make_aware(last_seen)
+            count = int(data.get('count') or 0)
+            netto = Decimal(str(data.get('netto') or '0'))
+            gross_total = Decimal(str(data.get('gross') or '0'))
+        except (TypeError, ValueError, InvalidOperation):
             continue
         if last_seen < active_after:
             continue
-        totals = cart_totals(account, data.get('b2b_cart') or {})
         row = {
             'account': account,
-            'expire_date': session.expire_date,
             'last_seen': last_seen,
-            'count': totals['b2b_cart_count'],
-            'netto': totals['b2b_cart_total'],
-            'gross': totals['b2b_cart_gross'],
-            'has_cart': totals['b2b_cart_count'] > 0,
-            'last_added': data.get('b2b_cart_last_added') or {},
+            'count': count,
+            'netto': netto,
+            'gross': gross_total,
+            'has_cart': count > 0,
         }
         previous = rows_by_account.get(account.pk)
         if previous is None or row['last_seen'] > previous['last_seen']:
@@ -438,9 +474,11 @@ def presence(request):
 
     if request.GET.get('offline') == '1':
         request.session.pop('b2b_live_at', None)
+        _set_live_presence(request, account, offline=True)
     else:
         from django.utils import timezone
         request.session['b2b_live_at'] = timezone.now().isoformat()
+        _set_live_presence(request, account)
     return JsonResponse({'ok': True})
 
 
