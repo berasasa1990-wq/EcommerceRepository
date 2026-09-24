@@ -14,6 +14,8 @@ from . import views_site_prep
 from . import views_sync
 
 urlpatterns = [
+    path('manifest.webmanifest', views.pwa_manifest, name='pwa_manifest'),
+    path('service-worker.js', views.pwa_service_worker, name='pwa_service_worker'),
     path('lozinka/reset/', never_cache(auth_views.PasswordResetView.as_view(
         template_name='auth/password_reset_form.html',
         email_template_name='auth/password_reset_email.txt',
@@ -42,6 +44,7 @@ urlpatterns = [
     path("veleprodaja/narudzba/<int:pk>/", views_b2b.order_confirmation, name="b2b_order"),
     path("veleprodaja/korpa/", views_b2b.cart_view, name="b2b_cart"),
     path("veleprodaja/korpa/<int:product_id>/", views_b2b.cart_change, name="b2b_cart_change"),
+    path("veleprodaja/uzivo/", views_b2b.presence, name="b2b_presence"),
     path("veleprodaja", views_b2b.catalog, name="b2b_catalog"),
     path("veleprodaja/", views_b2b.catalog),
     path("veleprodaja/odjava/", views_b2b.logout, name="b2b_logout"),

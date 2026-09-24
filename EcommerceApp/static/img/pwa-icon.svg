@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Carpologija BH">
+  <rect width="512" height="512" rx="108" fill="#111111"/>
+  <path d="M72 376c70-3 123-29 165-80 43-52 82-103 171-134" fill="none" stroke="#ff6500" stroke-width="21" stroke-linecap="round"/>
+  <path d="M375 122c21 5 37 20 44 41-21-5-37-20-44-41Z" fill="#ff6500"/>
+  <circle cx="183" cy="252" r="28" fill="#fff"/>
+  <path d="M179 286l-39 89m45-64 64 18m-43-38 50-49m-65 69 22 74" fill="none" stroke="#fff" stroke-width="20" stroke-linecap="round"/>
+  <path d="M99 413h314" stroke="#fff" stroke-width="12" stroke-linecap="round" opacity=".8"/>
+  <text x="256" y="474" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="47" font-weight="800" text-anchor="middle">CARPOLOGIJA</text>
+</svg>

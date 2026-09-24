@@ -104,4 +104,20 @@
 </dialog>
 {% endif %}
 {% include 'partials/permanent_input_history.html' %}
+{% if account %}
+<script>
+(() => {
+  const presenceUrl = "{% url 'b2b_presence' %}";
+  const updatePresence = (offline = false) => {
+    fetch(presenceUrl + (offline ? '?offline=1' : ''), {
+      credentials: 'same-origin', cache: 'no-store', keepalive: true,
+    }).catch(() => {});
+  };
+  updatePresence();
+  window.setInterval(() => updatePresence(), 25000);
+  document.addEventListener('visibilitychange', () => updatePresence(document.hidden));
+  window.addEventListener('pagehide', () => updatePresence(true));
+})();
+</script>
+{% endif %}
 </body></html>

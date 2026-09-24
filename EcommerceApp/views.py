@@ -32,6 +32,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+from django.templatetags.static import static
 from django.middleware.csrf import get_token
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
@@ -79,6 +80,42 @@ from .utils.seo import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+@require_GET
+def pwa_manifest(request):
+    """Web app manifest served dynamically so hashed static icon URLs stay valid."""
+    payload = {
+        'name': 'Carpologija BH — Oprema za ribolov',
+        'short_name': 'Carpologija',
+        'lang': 'bs',
+        'start_url': '/',
+        'scope': '/',
+        'display': 'standalone',
+        'background_color': '#f7f7f7',
+        'theme_color': '#ff6500',
+        'icons': [{
+            'src': static('img/pwa-icon.svg'),
+            'sizes': 'any',
+            'type': 'image/svg+xml',
+            'purpose': 'any maskable',
+        }],
+    }
+    response = HttpResponse(json.dumps(payload), content_type='application/manifest+json')
+    response['Cache-Control'] = 'no-cache'
+    return response
+
+
+@require_GET
+def pwa_service_worker(request):
+    """Installation worker only; it deliberately does not cache shop or checkout data."""
+    script = """self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
+"""
+    response = HttpResponse(script, content_type='application/javascript; charset=utf-8')
+    response['Cache-Control'] = 'no-cache'
+    response['Service-Worker-Allowed'] = '/'
+    return response
 from .forms import (
     CheckoutForm,
     CouponForm,
@@ -6919,12 +6956,13 @@ def superuser_app_analytics(request):
     live = _live_analytics_context(request)
     b2b_live_sessions = []
     b2b_customers = []
-    b2b_lifetime_orders = b2b_lifetime_revenue = b2b_total_visits = 0
+    b2b_lifetime_orders = b2b_lifetime_revenue = b2b_total_visits = b2b_live_count = 0
     if analytics_channel == 'b2b':
         from .views_b2b import live_b2b_sessions
         from .models import B2BSubmission
         from django.contrib.sessions.models import Session
         b2b_live_sessions = live_b2b_sessions()
+        b2b_live_count = len(b2b_live_sessions)
         b2b_lifetime_orders = scoped_orders.count()
         b2b_lifetime_revenue = scoped_orders.aggregate(total=Sum('ukupno'))['total'] or 0
         b2b_customers = B2BSubmission.objects.exclude(order__status=Order.Status.OTKAZANA).values(
@@ -6961,6 +6999,7 @@ def superuser_app_analytics(request):
         'b2b_lifetime_orders': b2b_lifetime_orders,
         'b2b_lifetime_revenue': b2b_lifetime_revenue,
         'b2b_total_visits': b2b_total_visits,
+        'b2b_live_count': b2b_live_count,
         'b2b_customers': b2b_customers,
         'visit_count': visit_count, 'previous_visit_count': previous_visit_count,
         'visit_change': visit_change, 'period': period, 'period_label': period_label,

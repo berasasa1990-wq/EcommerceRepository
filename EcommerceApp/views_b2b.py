@@ -16,7 +16,7 @@ from django.shortcuts import redirect, render
 from django.templatetags.static import static
 from django.utils.crypto import constant_time_compare, salted_hmac
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_http_methods, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .b2b_icons import category_icon_name
 from .b2b_pricing import (
@@ -209,6 +209,7 @@ def logout(request):
     request.session.pop('b2b_cart', None)
     request.session.pop('b2b_account_id', None)
     request.session.pop('b2b_hash', None)
+    request.session.pop('b2b_live_at', None)
     request.session.cycle_key()
     return redirect('b2b_catalog')
 
@@ -381,12 +382,14 @@ def live_b2b_sessions():
     from django.contrib.sessions.models import Session
     from django.utils import timezone
     now = timezone.now()
-    active_after = now - timedelta(minutes=5)
+    # Presence is refreshed by the B2B page itself.  A short timeout makes a
+    # closed tab disappear even if the browser cannot send its final request.
+    active_after = now - timedelta(seconds=75)
     accounts = {
         account.pk: account
         for account in B2BAccount.objects.filter(is_active=True).prefetch_related('brand_rabats__brand')
     }
-    rows = []
+    rows_by_account = {}
     for session in Session.objects.filter(expire_date__gte=now).iterator():
         try:
             data = session.get_decoded()
@@ -399,7 +402,7 @@ def live_b2b_sessions():
         if not stored_hash or not constant_time_compare(stored_hash, account.session_hash()):
             continue
         try:
-            last_seen = timezone.datetime.fromisoformat(data.get('b2b_last_seen', ''))
+            last_seen = timezone.datetime.fromisoformat(data.get('b2b_live_at', ''))
             if timezone.is_naive(last_seen):
                 last_seen = timezone.make_aware(last_seen)
         except (TypeError, ValueError):
@@ -407,17 +410,38 @@ def live_b2b_sessions():
         if last_seen < active_after:
             continue
         totals = cart_totals(account, data.get('b2b_cart') or {})
-        rows.append({
+        row = {
             'account': account,
             'expire_date': session.expire_date,
+            'last_seen': last_seen,
             'count': totals['b2b_cart_count'],
             'netto': totals['b2b_cart_total'],
             'gross': totals['b2b_cart_gross'],
             'has_cart': totals['b2b_cart_count'] > 0,
             'last_added': data.get('b2b_cart_last_added') or {},
-        })
+        }
+        previous = rows_by_account.get(account.pk)
+        if previous is None or row['last_seen'] > previous['last_seen']:
+            rows_by_account[account.pk] = row
+    rows = list(rows_by_account.values())
     rows.sort(key=lambda row: (-row['count'], -row['netto'], row['account'].company.lower()))
     return rows
+
+
+@never_cache
+@require_GET
+def presence(request):
+    """Mark an authenticated B2B visitor as present or gone from veleprodaja."""
+    account = current_account(request)
+    if not account:
+        return JsonResponse({'ok': False}, status=401)
+
+    if request.GET.get('offline') == '1':
+        request.session.pop('b2b_live_at', None)
+    else:
+        from django.utils import timezone
+        request.session['b2b_live_at'] = timezone.now().isoformat()
+    return JsonResponse({'ok': True})
 
 
 class B2BCheckoutForm(forms.Form):
