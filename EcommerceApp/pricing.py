@@ -99,7 +99,7 @@ def izracunaj_sazetak(
     if prize_free_shipping:
         dostava = Decimal('0.00')
         if 'Nagradni točak: besplatna dostava' not in pogodnosti:
-            pogodnosti.append('Nagradni točak: besplatna dostava')
+            pogodnosti.append('Greb-Greb nagrada: besplatna dostava')
 
     if ima_novu_pogodnost:
         if postavke.novi_korisnik_besplatna_dostava:
@@ -152,14 +152,14 @@ def izracunaj_sazetak(
                 if prize_percent == int(prize_percent)
                 else prize_percent
             )
-            pogodnosti.append(f'Nagradni točak: {pct_display}% na narudžbu')
+            pogodnosti.append(f'Greb-Greb nagrada: {pct_display}% na narudžbu')
     if prize_discount_km:
         prize_km = _kvantiziraj(prize_discount_km)
         if prize_km > 0:
             iznos = min(prize_km, medjuzbir)
             prize_popust = _kvantiziraj(prize_popust + iznos)
             popust += iznos
-            pogodnosti.append(f'Nagradni točak: -{iznos} KM')
+            pogodnosti.append(f'Greb-Greb nagrada: -{iznos} KM')
 
     kupon_popust = Decimal('0.00')
     if kupon:

@@ -3,6 +3,12 @@
         <span>Iznos sa PDV-om</span>
         <span>{{ summary.medjuzbir }} KM</span>
     </div>
+    {% if summary.scratch_reward.claim %}
+    <div class="order-totals-row order-totals-row--discount">
+        <span>🎁 Greb-Greb: {{ summary.scratch_reward.label }}</span>
+        <span>{% if summary.scratch_reward.active %}Aktivno{% elif summary.scratch_reward.remaining %}Još {{ summary.scratch_reward.remaining }} KM{% else %}Nije osvojeno{% endif %}</span>
+    </div>
+    {% endif %}
     <div class="order-totals-row">
         <span>Dostava — {{ summary.dostava_naziv }}</span>
         <span>

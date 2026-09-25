@@ -101,6 +101,12 @@
             {# —— Pregled —— #}
             <div class="acc-panel" data-acc-panel="pregled">
                 {% include 'account/mobile_overview.html' %}
+                {% if account_scratch_reward %}
+                <section class="acc-card" aria-label="Sretni Greb-Greb nagrada">
+                    <header class="acc-card-head"><h2>🎁 Sretni Greb-Greb</h2></header>
+                    <p><strong>{{ account_scratch_reward_label }}</strong><br><small>Sačuvano na vašem nalogu. Važi do {{ account_scratch_reward_expires|date:"d.m.Y. H:i" }} i automatski se primjenjuje u korpi.</small></p>
+                </section>
+                {% endif %}
                 {% if account_latest_order %}{% include 'partials/account_order_tracking.html' with order=account_latest_order %}{% endif %}
                 <div class="acc-stats">
                     <article class="acc-stat">

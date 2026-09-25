@@ -16,6 +16,10 @@ from . import views_sync
 urlpatterns = [
     path('manifest.webmanifest', views.pwa_manifest, name='pwa_manifest'),
     path('service-worker.js', views.pwa_service_worker, name='pwa_service_worker'),
+    path('nagrade/greb-greb/status/', views.scratch_status, name='scratch_status'),
+    path('nagrade/greb-greb/otkrij/', views.scratch_claim, name='scratch_claim'),
+    path('nagrade/greb-greb/dodaj-artikal/', views.scratch_add_product, name='scratch_add_product'),
+    path('nagrade/greb-greb/dodaj-na-narudzbu/', views.scratch_add_product_to_order, name='scratch_add_product_to_order'),
     path('lozinka/reset/', never_cache(auth_views.PasswordResetView.as_view(
         template_name='auth/password_reset_form.html',
         email_template_name='auth/password_reset_email.txt',

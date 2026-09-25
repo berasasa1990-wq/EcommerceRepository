@@ -116,6 +116,64 @@ self.addEventListener('activate', event => event.waitUntil(self.clients.claim())
     response['Cache-Control'] = 'no-cache'
     response['Service-Worker-Allowed'] = '/'
     return response
+
+
+@require_GET
+def scratch_status(request):
+    from .online_gift import scratch_status as get_scratch_status
+    return JsonResponse({'eligible': get_scratch_status(request)})
+
+
+@require_POST
+def scratch_claim(request):
+    from .online_gift import scratch_claim as create_scratch_claim
+    claim, created = create_scratch_claim(request)
+    if claim is None:
+        return JsonResponse({'ok': False, 'detail': 'Greb-Greb trenutno nije aktivan.'}, status=403)
+    reward = request.session.get('online_gift_reward') or {}
+    product_id = reward.get('product_id')
+    product = Product.objects.filter(pk=product_id, aktivan=True, na_stanju=True).first() if product_id else None
+    product_image = ''
+    if product and product.prikazna_slika:
+        product_image = product.prikazna_slika.url
+    product_price = Decimal('0.00')
+    product_regular_price = Decimal('0.00')
+    if product:
+        percent = Decimal(str(reward.get('percent') or 0))
+        product_regular_price = Decimal(str(product.prikazna_cijena))
+        product_price = (product_regular_price * (Decimal('1') - percent / Decimal('100'))).quantize(Decimal('0.01'))
+    return JsonResponse({'ok': True, 'created': created, 'won': claim.won,
+        'label': reward.get('label') or 'Više sreće sljedeći put',
+        'minimum': reward.get('minimum') or '0',
+        'saved_to_account': bool(request.user.is_authenticated and claim.user_id == request.user.pk),
+        'product_offer': reward.get('scratch_kind') == 'product_discount' and bool(product),
+        'product_name': product.naziv if product else '',
+        'product_image': product_image,
+        'product_discount': reward.get('percent') or '0',
+        'product_price': str(product_price),
+        'product_regular_price': str(product_regular_price)})
+
+
+@require_POST
+def scratch_add_product(request):
+    from .online_gift import add_scratch_discount_product
+    product, error = add_scratch_discount_product(request)
+    if error:
+        return JsonResponse({'ok': False, 'detail': error}, status=400)
+    return JsonResponse({'ok': True, 'product_name': product.naziv})
+
+
+@require_POST
+def scratch_add_product_to_order(request):
+    from .online_gift import add_scratch_discount_product_to_order
+    product, order, error = add_scratch_discount_product_to_order(request)
+    if error:
+        return JsonResponse({'ok': False, 'detail': error}, status=400)
+    try:
+        sync_narudzba(order)
+    except Exception:
+        logger.exception('Sync Greb-Greb artikla za narudžbu #%s nije uspio', order.broj)
+    return JsonResponse({'ok': True, 'product_name': product.naziv, 'order_number': order.broj})
 from .forms import (
     CheckoutForm,
     CouponForm,
@@ -144,6 +202,7 @@ from .models import (
     MarketingSubscriber,
     Order,
     OrderItem,
+    OnlineGiftClaim,
     Product,
     ProductAnalyticsEvent,
     ProductImage,
@@ -4813,9 +4872,12 @@ def checkout(request):
                 })
             if summary.get('prize_popust'):
                 popust_detalji.append({
-                    'opis': 'Nagradni točak / online nagrada',
+                    'opis': 'Sretni Greb-Greb / online nagrada',
                     'iznos': str(summary['prize_popust']),
                 })
+            scratch_reward = summary.get('scratch_reward') or {}
+            if scratch_reward.get('active') and scratch_reward.get('kind') == 'gift':
+                popust_detalji.append({'opis': 'Sretni Greb-Greb: poklon uz narudžbu', 'iznos': None})
 
             from .magacin import reserve_web_order_stock, MagacinError
             try:
@@ -4929,17 +4991,43 @@ def checkout(request):
                             popust_iznos=popust_iznos,
                             kolicina=qty,
                         )
+                    # Poklon je stvarna stavka narudžbe po cijeni 0 KM, zbog
+                    # čega ide kroz istu rezervaciju lagera kao ostali artikli.
+                    gift_product = scratch_reward.get('gift_product')
+                    if scratch_reward.get('active') and scratch_reward.get('kind') == 'gift' and gift_product:
+                        gift_base_price = gift_product.prikazna_cijena or gift_product.cijena
+                        OrderItem.objects.create(
+                            narudzba=order,
+                            artikal=gift_product,
+                            naziv=f'{gift_product.naziv} — Sretni Greb-Greb poklon',
+                            product_naziv=gift_product.naziv,
+                            sifra=gift_product.sifra or '',
+                            cijena=Decimal('0.00'),
+                            bazna_cijena=gift_base_price,
+                            popust_opis='Sretni Greb-Greb — poklon uz narudžbu',
+                            popust_iznos=gift_base_price,
+                            kolicina=1,
+                        )
                     reserve_web_order_stock(order)
             except MagacinError as exc:
                 messages.error(request, str(exc))
                 return redirect('cart')
 
             try:
-                from .online_gift import mark_reward_consumed
-                mark_reward_consumed(request, order=order)
+                from .online_gift import get_session_reward, mark_reward_consumed
+                reward = get_session_reward(request) or {}
+                # Greb-Greb se troši samo kada je uslov za baš tu nagradu
+                # stvarno ispunjen. Narudžba ispod praga ne smije je poništiti.
+                if not reward.get('scratch_kind') or scratch_reward.get('active'):
+                    mark_reward_consumed(request, order=order)
             except Exception:
                 pass
             cart.clear()
+            try:
+                from .online_gift import grant_scratch_chance
+                grant_scratch_chance(request, order)
+            except Exception:
+                logger.exception('Nije dodijeljena Greb-Greb prilika za narudžbu #%s', order.broj)
             if request.user.is_authenticated:
                 from .live_visitor_offer import consume_registration_reward
                 consume_registration_reward(request.user)
@@ -5078,6 +5166,8 @@ def order_success(request, broj):
     context = {
         **_base_context(),
         'order': order,
+        'scratch_game_immediate': True,
+        'scratch_game_return_url': reverse('home'),
         **page_seo_context('order_success', defaults={
             'seo_title': 'Narudžba primljena — Carpologija BH',
             'seo_description': '',
@@ -5493,6 +5583,14 @@ def account(request):
         (request.user.get_full_name() or request.user.first_name or '').strip()
         or cardholder_name
     )
+    from .online_gift import SCRATCH_CAMPAIGN_NAME, scratch_label_for_claim
+    account_scratch_reward = OnlineGiftClaim.objects.filter(
+        user=request.user,
+        campaign__naziv=SCRATCH_CAMPAIGN_NAME,
+        won=True,
+        reward_consumed=False,
+        kreirano__gt=timezone.now() - timedelta(hours=24),
+    ).order_by('-kreirano').first()
 
     context = {
         **_base_context(),
@@ -5501,6 +5599,9 @@ def account(request):
         'loyalty': loyalty,
         'cardholder_name': cardholder_name,
         'welcome_name': welcome_name,
+        'account_scratch_reward': account_scratch_reward,
+        'account_scratch_reward_label': scratch_label_for_claim(account_scratch_reward) if account_scratch_reward else '',
+        'account_scratch_reward_expires': (account_scratch_reward.kreirano + timedelta(hours=24)) if account_scratch_reward else None,
         'account_stock_notices': request.user.stock_notifies.filter(notified_at__isnull=True).select_related('product'),
         'account_initial_section': account_initial_section,
         'complaint_order': complaint_order,

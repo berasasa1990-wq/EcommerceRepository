@@ -1,0 +1,256 @@
+.scratch-game[hidden] { display: none; }
+.scratch-game { position: fixed; inset: 0; z-index: 16000; display: grid; place-items: center; padding: 18px; background: rgba(0,0,0,.76); backdrop-filter: blur(7px); }
+.scratch-game__panel { position: relative; width: min(500px,100%); padding: 26px; border: 1px solid #ff6500; border-radius: 20px; background: linear-gradient(145deg,#181818,#050505); color: #fff; text-align: center; box-shadow: 0 25px 75px #000; }
+.scratch-game__logo { width: 185px; margin: 0 auto 18px; }
+.scratch-game__close { position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border: 0; border-radius: 50%; background: #fff; color: #111; font-size: 27px; cursor: pointer; }
+.scratch-game__eyebrow { margin: 0; color: #ff6500; font-size: 11px; font-weight: 900; letter-spacing: .18em; }
+.scratch-game h2 { margin: 6px 0; font-size: clamp(28px,7vw,42px); line-height: 1; }
+.scratch-game__panel > p { color: #ddd; }
+.scratch-game__card { position: relative; display: grid; place-items: center; min-height: 210px; margin: 22px 0 10px; overflow: hidden; border: 2px solid #ff7a22; border-radius: 14px; background: radial-gradient(circle at 50% 35%,#ff9b45,#b43800 55%,#431300); box-shadow: inset 0 0 40px #160500; font-size: clamp(22px,6vw,32px); }
+.scratch-game__card strong { padding: 20px; color: #fff; text-align: center; text-shadow: 0 2px 5px #260800; }
+.scratch-reveal-product { display: flex; align-items: center; gap: 18px; width: 100%; height: 100%; box-sizing: border-box; padding: 22px; background: #fff; color: #161616; text-align: left; }
+.scratch-reveal-product img { width: 130px; height: 130px; object-fit: contain; border-radius: 10px; }
+.scratch-reveal-product small { display: block; color: #e85d00; font-weight: 900; letter-spacing: .08em; }
+.scratch-reveal-product strong { display: block; padding: 0; margin: 7px 0; color: #151515; text-align: left; text-shadow: none; font-size: 20px; line-height: 1.18; }
+.scratch-reveal-product b { display: block; color: #f35f00; }
+.scratch-reveal-product span { display: block; margin-top: 5px; font-weight: 900; color: #151515; }
+@media (max-width: 430px) { .scratch-reveal-product { gap: 12px; padding: 15px; } .scratch-reveal-product img { width: 94px; height: 94px; } .scratch-reveal-product strong { font-size: 16px; } }
+.scratch-game--product-result .scratch-game__panel { width: min(600px,100%); max-height: calc(100vh - 24px); box-sizing: border-box; overflow-y: auto; padding: 18px 24px; background: #fff; color: #181d25; border-color: #d7dce0; }
+.scratch-game--product-result .scratch-game__eyebrow, .scratch-game--product-result .scratch-game__panel > p { color: #1b222c; }
+.scratch-game--product-result h2 { margin: 3px 0; color: #f35f00; font-size: clamp(32px,7vw,52px); font-style: italic; }
+.scratch-game--product-result .scratch-game__hint { color: #f35f00 !important; }
+.scratch-game--product-result .scratch-game__card { min-height: 300px; margin: 8px 0 4px; border: 0; background: #fff; box-shadow: none; }
+.scratch-reveal-product { display: flex; flex-direction: column; justify-content: center; gap: 7px; width: 100%; height: 100%; box-sizing: border-box; padding: 22px; background: #fff; color: #171c24; text-align: center; }
+.scratch-reveal-product img { width: min(340px,82%); height: 185px; object-fit: contain; }
+.scratch-reveal-win { margin: 0; color: #f4311d; font-size: clamp(24px,5vw,34px); font-weight: 1000; font-style: italic; }
+.scratch-reveal-product small { color: #242b34; font-weight: 900; letter-spacing: .1em; }
+.scratch-reveal-product b { display: inline-block; padding: 7px 18px; color: #fff; background: #ff6500; font-size: clamp(21px,5vw,31px); font-weight: 1000; font-style: italic; }
+.scratch-reveal-prices { display: flex; justify-content: center; align-items: baseline; gap: 16px; }
+.scratch-reveal-prices del { color: #727982; font-size: 20px; font-weight: 800; }
+.scratch-reveal-prices strong { padding: 0; color: #f35f00; font-size: clamp(25px,6vw,37px); text-shadow: none; }
+.scratch-reveal-product > span { max-width: 520px; color: #202731; font-size: clamp(15px,2.5vw,20px); font-weight: 900; }
+.scratch-game--product-result #scratchProductChoice p { color: #202731; }
+.scratch-game--product-result #scratchSkipProduct { border: 1px solid #d5d9dd; background: #fff; color: #202731; }
+.scratch-game--product-result #scratchAddToOrder { background: linear-gradient(90deg,#ff8b1f,#ff5900); }
+@media (max-width: 560px) { .scratch-game--product-result .scratch-game__panel { padding: 13px 16px; } .scratch-game--product-result .scratch-game__card { min-height: 280px; } .scratch-reveal-product { padding: 10px; gap: 4px; } .scratch-reveal-product img { width: min(270px,86%); height: 145px; } .scratch-reveal-product b { padding: 6px 12px; } .scratch-reveal-prices del { font-size: 16px; } #scratchProductChoice button { padding: 9px 11px; } }
+.scratch-game canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.scratch-game canvas:active { cursor: grabbing; }
+.scratch-game__hint { margin: 0 !important; color: #ff8a42 !important; font-weight: 900; letter-spacing: .16em; }
+.scratch-game__result { font-weight: 800; color: #ffb06b !important; }
+#scratchProductChoice { margin-top: 14px; }
+#scratchProductChoice p { margin: 0 0 10px; font-weight: 700; }
+#scratchProductChoice button { margin: 0 4px; padding: 10px 14px; border: 0; border-radius: 8px; font-weight: 800; cursor: pointer; }
+#scratchAddProduct { background: #ff6500; color: #fff; }
+#scratchSkipProduct { background: #333; color: #fff; }
+.scratch-product-popup { display: flex; gap: 12px; align-items: center; margin: 14px 0 10px; padding: 10px; border: 1px solid #ff6500; border-radius: 12px; background: #161616; text-align: left; }
+.scratch-product-popup img { width: 72px; height: 72px; border-radius: 8px; object-fit: contain; background: #fff; }
+.scratch-product-popup small { display: block; color: #ff8a42; font-weight: 900; letter-spacing: .08em; }
+.scratch-product-popup strong { display: block; margin: 4px 0; color: #fff; }
+.scratch-product-popup b { color: #ff6500; }
+.scratch-product-popup span { display: block; color: #fff; font-weight: 800; }
+#scratchAddToOrder { background: #21a65a; color: #fff; }
+
+/* Završni prikaz osvojene nagrade: izraženiji, ilustrativni Greb-Greb stil. */
+.scratch-game--product-result .scratch-game__panel {
+  width: min(660px, 100%);
+  border: 1px solid #d9dde1;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(255, 115, 24, .08), transparent 26%),
+    #fff;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, .5);
+}
+
+.scratch-game--product-result .scratch-game__logo {
+  width: min(225px, 52vw);
+  margin: 0 auto 8px;
+}
+
+.scratch-game--product-result .scratch-game__eyebrow {
+  display: none;
+}
+
+.scratch-game--product-result #scratchGameTitle {
+  margin: 2px auto 6px;
+  color: #14191f;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: clamp(46px, 9vw, 84px);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: -.045em;
+  line-height: .75;
+  text-transform: uppercase;
+  transform: skewX(-5deg);
+}
+
+.scratch-game--product-result #scratchGameTitle span {
+  display: block;
+}
+
+.scratch-game--product-result #scratchGameTitle span:first-child {
+  font-size: .65em;
+  letter-spacing: .01em;
+}
+
+.scratch-game--product-result #scratchGameTitle span:last-child {
+  margin-top: .08em;
+  color: #ff5b08;
+  font-size: 1.18em;
+  letter-spacing: -.07em;
+  text-shadow: 1px 2px 0 #dd3d00, 3px 4px 0 rgba(255, 112, 29, .18);
+}
+
+.scratch-game--product-result .scratch-game__panel > p:not(.scratch-game__hint):not(.scratch-game__result) {
+  margin: 12px 0 5px;
+  color: #1e252d;
+  font-size: clamp(17px, 3.1vw, 25px);
+  font-weight: 800;
+}
+
+.scratch-game--product-result .scratch-game__card {
+  min-height: 355px;
+  margin: 0;
+}
+
+.scratch-game--product-result .scratch-reveal-product {
+  gap: 6px;
+  padding: 13px 20px 10px;
+}
+
+.scratch-game--product-result .scratch-reveal-win {
+  position: relative;
+  margin: 0;
+  color: #f0441d;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: clamp(34px, 6vw, 54px);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: -.035em;
+  line-height: .9;
+  text-shadow: 1px 1px 0 rgba(160, 33, 0, .16);
+  transform: skewX(-6deg);
+}
+
+.scratch-game--product-result .scratch-reveal-win::before,
+.scratch-game--product-result .scratch-reveal-win::after {
+  position: absolute;
+  top: 50%;
+  width: clamp(28px, 8vw, 62px);
+  height: 3px;
+  background: #ff6500;
+  content: "";
+}
+
+.scratch-game--product-result .scratch-reveal-win::before {
+  right: calc(50% + clamp(96px, 17vw, 152px));
+  box-shadow: 9px -10px 0 -1px #ff6500, 18px 10px 0 -1px #ff6500;
+  transform: rotate(22deg);
+}
+
+.scratch-game--product-result .scratch-reveal-win::after {
+  left: calc(50% + clamp(96px, 17vw, 152px));
+  box-shadow: -9px -10px 0 -1px #ff6500, -18px 10px 0 -1px #ff6500;
+  transform: rotate(-22deg);
+}
+
+.scratch-game--product-result .scratch-reveal-product small {
+  color: #20262e;
+  font-size: clamp(17px, 3vw, 23px);
+  letter-spacing: .12em;
+}
+
+.scratch-game--product-result .scratch-reveal-product img {
+  width: min(410px, 88%);
+  height: 205px;
+  filter: drop-shadow(0 14px 10px rgba(0, 0, 0, .18));
+}
+
+.scratch-game--product-result .scratch-reveal-product b {
+  min-width: min(435px, 88%);
+  box-sizing: border-box;
+  padding: 12px 28px;
+  background: linear-gradient(100deg, #f76b00 0%, #ff991e 45%, #f85a00 100%);
+  clip-path: polygon(2% 10%, 8% 0, 95% 4%, 100% 20%, 97% 88%, 91% 100%, 5% 96%, 0 80%);
+  color: #fff;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: clamp(28px, 6vw, 49px);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: -.02em;
+  line-height: .95;
+  text-shadow: 0 2px 1px rgba(128, 40, 0, .22);
+  transform: skewX(-3deg);
+}
+
+.scratch-game--product-result .scratch-reveal-prices {
+  margin-top: 1px;
+  gap: 18px;
+}
+
+.scratch-game--product-result .scratch-reveal-prices del {
+  color: #777f89;
+  font-size: clamp(20px, 3vw, 27px);
+  font-weight: 900;
+}
+
+.scratch-game--product-result .scratch-reveal-prices strong {
+  color: #f65d00;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: clamp(34px, 6vw, 51px);
+  font-weight: 900;
+  letter-spacing: .01em;
+  line-height: .9;
+}
+
+.scratch-game--product-result .scratch-reveal-product > span {
+  max-width: 590px;
+  color: #1b222a;
+  font-size: clamp(17px, 3vw, 25px);
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.scratch-game--product-result #scratchProductChoice {
+  margin-top: 8px;
+}
+
+.scratch-game--product-result #scratchProductChoice p {
+  margin: 0 0 12px;
+  color: #1b222a;
+  font-size: clamp(15px, 2.5vw, 19px);
+  font-weight: 800;
+}
+
+.scratch-game--product-result #scratchProductChoice button {
+  min-width: min(250px, 44%);
+  margin: 0 5px;
+  padding: 14px 22px;
+  border-radius: 14px;
+  font-size: clamp(16px, 2.5vw, 20px);
+}
+
+.scratch-game--product-result #scratchAddToOrder {
+  background: linear-gradient(100deg, #ff8b20, #ff5300);
+  box-shadow: 0 8px 18px rgba(246, 89, 0, .2);
+}
+
+.scratch-game--product-result #scratchSkipProduct {
+  border: 2px solid #dce0e4;
+  background: #fff;
+  color: #1b222a;
+}
+
+@media (max-width: 560px) {
+  .scratch-game { padding: 8px; }
+  .scratch-game--product-result .scratch-game__panel { max-height: calc(100vh - 16px); padding: 15px 12px 17px; border-radius: 20px; }
+  .scratch-game--product-result #scratchGameTitle { font-size: clamp(40px, 12vw, 58px); }
+  .scratch-game--product-result .scratch-game__panel > p:not(.scratch-game__hint):not(.scratch-game__result) { margin: 10px 0 2px; font-size: 17px; }
+  .scratch-game--product-result .scratch-game__card { min-height: 292px; }
+  .scratch-game--product-result .scratch-reveal-product { padding: 8px 10px; gap: 3px; }
+  .scratch-game--product-result .scratch-reveal-product img { height: 145px; }
+  .scratch-game--product-result .scratch-reveal-product b { min-width: 92%; padding: 9px 12px; }
+  .scratch-game--product-result .scratch-reveal-win::before { right: calc(50% + 105px); }
+  .scratch-game--product-result .scratch-reveal-win::after { left: calc(50% + 105px); }
+  .scratch-game--product-result #scratchProductChoice p { margin-bottom: 8px; }
+  .scratch-game--product-result #scratchProductChoice button { min-width: 0; width: calc(50% - 8px); margin: 0 2px; padding: 11px 6px; font-size: 14px; }
+}

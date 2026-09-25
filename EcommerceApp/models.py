@@ -59,6 +59,15 @@ class SiteSettings(models.Model):
         verbose_name='Logo sajta',
         help_text='Prikazuje se u headeru (crna pozadina). Originalna slika se ne ofarbava — samo max ~640×128. Preporuka: PNG, transparentna pozadina, bijela/zelena grafika.',
     )
+    sretni_greb_greb_poklon = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='sretni_greb_greb_settings',
+        verbose_name='Sretni Greb-Greb — poklon',
+        help_text='Artikal koji se automatski dodaje bez naplate kada kupac osvoji poklon i ispuni prag od 150 KM.',
+    )
     loyalty_banner_slika = models.ImageField(
         upload_to='site/loyalty/', blank=True,
         verbose_name='Loyalty banner — mobilna slika',
@@ -5191,7 +5200,8 @@ class SiteSearchEvent(models.Model):
 
 class DeploymentVersion(models.Model):
     """Persistent version counter incremented once by the deployment build."""
-    number = models.DecimalField(max_digits=8, decimal_places=1, default=Decimal('1.1'))
+    # String čuva semantičku verziju (npr. 1.1.3), a ne samo decimalni broj.
+    number = models.CharField(max_length=32, default='1.1.3')
     updated_at = models.DateTimeField(auto_now=True)
 
 
@@ -5457,6 +5467,46 @@ class OnlineGiftCampaign(models.Model):
         return True
 
 
+class ScratchPrize(models.Model):
+    """Podesiva nagrada Sretni Greb-Greb igre."""
+
+    class Kind(models.TextChoices):
+        PERCENT = 'percent', 'Popust u procentima'
+        SHIPPING = 'shipping', 'Besplatna dostava'
+        PRODUCT = 'product', 'Besplatan artikal'
+        PRODUCT_DISCOUNT = 'product_discount', 'Artikal + popust'
+        NONE = 'none', 'Bez nagrade'
+
+    campaign = models.ForeignKey(OnlineGiftCampaign, on_delete=models.CASCADE, related_name='scratch_prizes')
+    code = models.SlugField(max_length=24)
+    label = models.CharField(max_length=120, verbose_name='Tekst nagrade')
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    weight = models.PositiveSmallIntegerField(default=1, verbose_name='Šansa / težina')
+    minimum = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name='Minimalna korpa (KM)')
+    discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), verbose_name='Popust (%)')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, related_name='scratch_prizes', verbose_name='Besplatan artikal')
+    active = models.BooleanField(default=True, verbose_name='Aktivna')
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'Sretni Greb-Greb nagrada'
+        verbose_name_plural = 'Sretni Greb-Greb nagrade'
+        ordering = ['sort_order', 'pk']
+        constraints = [models.UniqueConstraint(fields=['campaign', 'code'], name='scratch_prize_unique_campaign_code')]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.kind == self.Kind.PERCENT and self.discount_percent <= 0:
+            raise ValidationError({'discount_percent': 'Unesite popust veći od 0.'})
+        if self.kind in (self.Kind.PRODUCT, self.Kind.PRODUCT_DISCOUNT) and not self.product_id:
+            raise ValidationError({'product': 'Odaberite artikal koji kupac dobija besplatno.'})
+        if self.kind == self.Kind.PRODUCT_DISCOUNT and self.discount_percent <= 0:
+            raise ValidationError({'discount_percent': 'Unesite popust veći od 0.'})
+
+    def __str__(self):
+        return self.label
+
+
 class OnlineGiftClaim(models.Model):
     """Jedan pokušaj / nagrada online posjetioca."""
 
@@ -5487,6 +5537,15 @@ class OnlineGiftClaim(models.Model):
     discount_km = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     reward_claimed = models.BooleanField(default=False)
     reward_consumed = models.BooleanField(default=False)
+    # Popunjava se samo za Sretni Greb-Greb. Kombinacija je zaključana u bazi
+    # kako dva istovremena zahtjeva ne bi mogla dodijeliti dvije nagrade.
+    scratch_week_start = models.DateField(null=True, blank=True, db_index=True)
+    scratch_eligibility_key = models.CharField(max_length=80, blank=True)
+    scratch_prize_code = models.CharField(max_length=24, blank=True)
+    scratch_trigger_order = models.ForeignKey(
+        'Order', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='scratch_reward_claims',
+    )
     order = models.ForeignKey(
         'Order',
         on_delete=models.SET_NULL,
@@ -5506,6 +5565,13 @@ class OnlineGiftClaim(models.Model):
             models.Index(fields=['session_key', 'campaign']),
             models.Index(fields=['user', 'campaign']),
             models.Index(fields=['won', '-kreirano']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['campaign', 'scratch_trigger_order'],
+                condition=models.Q(scratch_trigger_order__isnull=False),
+                name='online_gift_one_scratch_claim_per_order',
+            ),
         ]
 
     def __str__(self):

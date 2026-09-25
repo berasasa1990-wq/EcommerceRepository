@@ -3951,6 +3951,17 @@ class B2BSettingsAdmin(admin.ModelAdmin):
 
 
 from .models import B2BSubmission
+from .models import ScratchPrize
+
+
+@admin.register(ScratchPrize)
+class ScratchPrizeAdmin(admin.ModelAdmin):
+    list_display = ('label', 'kind', 'weight', 'minimum', 'discount_percent', 'product', 'active')
+    list_editable = ('weight', 'minimum', 'discount_percent', 'product', 'active')
+    list_filter = ('kind', 'active')
+    search_fields = ('label', 'code', 'product__naziv')
+    autocomplete_fields = ('product',)
+    fields = ('campaign', 'code', 'label', 'kind', 'weight', 'minimum', 'discount_percent', 'product', 'active', 'sort_order')
 
 
 @admin.register(B2BSubmission)
