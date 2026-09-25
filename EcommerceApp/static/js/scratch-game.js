@@ -57,6 +57,9 @@
         const revealImage = document.getElementById('scratchRevealImage');
         revealImage.src = prize.product_image || '';
         revealImage.hidden = !prize.product_image;
+        const revealPack = document.getElementById('scratchRevealPack');
+        revealPack.textContent = prize.product_pack || '';
+        revealPack.hidden = !prize.product_pack;
       } else {
         rewardLabel.hidden = false;
         rewardLabel.textContent = prize.label;
@@ -84,7 +87,6 @@
         finished = true;
         context.clearRect(0, 0, bounds.width, bounds.height);
         canvas.style.pointerEvents = 'none';
-        if (prize.won) document.getElementById('scratchGameHint').hidden = true;
         const result = document.getElementById('scratchGameResult');
         result.hidden = prize.product_offer;
         if (!prize.product_offer) result.textContent = prize.won

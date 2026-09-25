@@ -47,11 +47,6 @@
         🎁 Online nagrada: {{ online_gift_reward_label }} — primjenjuje se na ovoj narudžbi
     </div>
     {% endif %}
-    {% if summary.scratch_reward.claim %}
-    <div class="online-gift-banner" role="status">
-        {% if summary.scratch_reward.active %}🎁 Greb-Greb nagrada: {{ summary.scratch_reward.label }}{% if summary.prize_popust %} — ušteda {{ summary.prize_popust|floatformat:2 }} KM{% elif summary.scratch_reward.kind == 'gift' and summary.scratch_reward.gift_product %} — poklon {{ summary.scratch_reward.gift_product.naziv }} je dodan narudžbi{% endif %}{% elif summary.scratch_reward.remaining %}🎁 {{ summary.scratch_reward.label }} — do nagrade nedostaje još {{ summary.scratch_reward.remaining|floatformat:2 }} KM.{% else %}🎁 {{ summary.scratch_reward.label }}{% endif %}
-    </div>
-    {% endif %}
     <div class="cart-layout">
         <div class="cart-main">
             {% include 'partials/upsell_cart_banner.html' with position='banner_iznad' upsell_offers=upsell_banners_above %}
@@ -201,6 +196,6 @@
 
 {% block extra_js %}
 <script src="{% static 'js/coupon-choice.js' %}?v=20260920" defer></script>
-<script src="{% static 'js/cart-qty.js' %}?v=20260914cartLoyaltyGray" defer></script>
+<script src="{% static 'js/cart-qty.js' %}?v=20260925-mobile-qty" defer></script>
 <script src="{% static 'js/cart-stock.js' %}?v=20260907" defer></script>
 {% endblock %}

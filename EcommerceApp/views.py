@@ -149,6 +149,7 @@ def scratch_claim(request):
         'product_offer': reward.get('scratch_kind') == 'product_discount' and bool(product),
         'product_name': product.naziv if product else '',
         'product_image': product_image,
+        'product_pack': product.pakovanje_label if product and product.je_pakovanje else '',
         'product_discount': reward.get('percent') or '0',
         'product_price': str(product_price),
         'product_regular_price': str(product_regular_price)})

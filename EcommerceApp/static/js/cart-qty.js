@@ -22,9 +22,23 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 220);
     }
     document.querySelectorAll('.cart-item-qty input[type="number"]').forEach(function (input) {
+        input.addEventListener('focus', function () {
+            // Na telefonu je unos količine namjeran: ukloni postojeći broj i
+            // odmah ostavi aktivnu numeričku tastaturu za novi unos.
+            if (!window.matchMedia('(pointer: coarse)').matches || input.disabled) return;
+            input.dataset.previousQuantity = input.value;
+            input.value = '';
+        });
         input.addEventListener('change', function () {
+            var qty = parseInt(input.value, 10);
+            if (!Number.isInteger(qty) || qty < 1) {
+                input.value = input.dataset.previousQuantity || input.min || '1';
+                return;
+            }
+            var max = parseInt(input.max, 10) || 99;
+            qty = Math.min(max, qty);
+            input.value = String(qty);
             var item = input.closest('.cart-item');
-            var qty = parseInt(input.value, 10) || 1;
             updateLineTotal(item, qty);
             submitQty(input.closest('form'));
         });
