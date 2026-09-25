@@ -140,7 +140,9 @@ def scratch_claim(request):
     product_regular_price = Decimal('0.00')
     if product:
         percent = Decimal(str(reward.get('percent') or 0))
-        product_regular_price = Decimal(str(product.prikazna_cijena))
+        # Greb-Greb popust se uvijek računa od redovne cijene, bez obzira na
+        # eventualnu tekuću akciju artikla.
+        product_regular_price = Decimal(str(product.bazna_cijena))
         product_price = (product_regular_price * (Decimal('1') - percent / Decimal('100'))).quantize(Decimal('0.01'))
     return JsonResponse({'ok': True, 'created': created, 'won': claim.won,
         'label': reward.get('label') or 'Više sreće sljedeći put',

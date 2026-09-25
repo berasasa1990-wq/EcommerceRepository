@@ -266,12 +266,12 @@ def add_scratch_discount_product(request):
         return None, 'Osvojeni artikal trenutno nije dostupan.'
     cart = Cart(request)
     minimum = Decimal(str(reward.get('minimum') or 0))
-    if cart.ukupno + Decimal(str(product.prikazna_cijena or 0)) < minimum:
+    regular = Decimal(str(product.bazna_cijena or 0))
+    if cart.ukupno + regular < minimum:
         return None, f'Za ovu nagradu korpa mora imati najmanje {minimum:.2f} KM.'
     key = cart._line_key(product.pk, promo=True)
     if key in cart.cart:
         return product, ''
-    regular = Decimal(str(product.prikazna_cijena))
     discounted = (regular * (Decimal('1') - percent / Decimal('100'))).quantize(Decimal('0.01'))
     if not cart.add(product, quantity=1, custom_price=discounted, promo_bazna=regular,
                     discount_source='Sretni Greb-Greb — osvojeni artikal', discount_percent=percent):
@@ -308,7 +308,9 @@ def add_scratch_discount_product_to_order(request):
             return None, None, 'Osvojeni artikal trenutno nije dostupan.'
         if OrderItem.objects.filter(narudzba=order, artikal=product, popust_opis__startswith='Sretni Greb-Greb').exists():
             return product, order, ''
-        regular = Decimal(str(product.prikazna_cijena))
+        # Ne slažemo akcijski i Greb-Greb popust: osvojeni popust polazi od
+        # redovne cijene artikla.
+        regular = Decimal(str(product.bazna_cijena))
         discounted = (regular * (Decimal('1') - percent / Decimal('100'))).quantize(Decimal('0.01'))
         if reserve_for_order(order, product, 1, napomena=f'Sretni Greb-Greb #{order.broj}'):
             return None, None, 'Osvojeni artikal više nije dostupan na lageru.'
