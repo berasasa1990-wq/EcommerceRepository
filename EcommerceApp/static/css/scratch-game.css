@@ -55,9 +55,7 @@
   width: min(660px, 100%);
   border: 1px solid #d9dde1;
   border-radius: 26px;
-  background:
-    radial-gradient(circle at 50% 8%, rgba(255, 115, 24, .08), transparent 26%),
-    #fff;
+  background: #fff;
   box-shadow: 0 28px 90px rgba(0, 0, 0, .5);
 }
 
@@ -112,6 +110,11 @@
   margin: 0;
 }
 
+.scratch-game--product-result .scratch-game__card > #scratchGameReward {
+  color: #1b222a;
+  text-shadow: none;
+}
+
 .scratch-game--product-result .scratch-reveal-product {
   gap: 6px;
   padding: 13px 20px 10px;
@@ -162,28 +165,31 @@
 .scratch-game--product-result .scratch-reveal-product img {
   width: min(410px, 88%);
   height: 205px;
+  image-rendering: -webkit-optimize-contrast;
   filter: drop-shadow(0 14px 10px rgba(0, 0, 0, .18));
 }
 
 .scratch-reveal-media {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: center;
-  gap: 12px;
   width: 100%;
 }
 
-.scratch-reveal-media .scratch-reveal-pack {
-  max-width: 135px;
-  padding: 8px 10px;
-  border: 1px solid #ff7a22;
-  border-radius: 10px;
-  background: #fff7f2;
-  color: #222a33;
-  font-size: 14px;
+.scratch-reveal-media > img {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.scratch-game--product-result .scratch-reveal-pack {
+  display: block;
+  margin: 0;
+  color: #20262e;
+  font-size: clamp(14px, 2.5vw, 18px);
   font-weight: 900;
   line-height: 1.2;
-  text-align: left;
+  letter-spacing: .04em;
+  text-align: center;
 }
 
 .scratch-game--product-result .scratch-reveal-product b {
@@ -270,11 +276,10 @@
   .scratch-game--product-result .scratch-game__panel { max-height: calc(100dvh - 16px); padding: 12px 10px 14px; border-radius: 20px; overscroll-behavior: contain; }
   .scratch-game--product-result #scratchGameTitle { font-size: clamp(40px, 12vw, 58px); }
   .scratch-game--product-result .scratch-game__panel > p:not(.scratch-game__hint):not(.scratch-game__result) { margin: 10px 0 2px; font-size: 17px; }
-  .scratch-game--product-result .scratch-game__card { min-height: 260px; }
+  .scratch-game--product-result .scratch-game__card { min-height: 185px; }
   .scratch-game--product-result .scratch-reveal-product { padding: 8px 10px; gap: 3px; }
-  .scratch-game--product-result .scratch-reveal-product img { height: 145px; }
-  .scratch-reveal-media { gap: 6px; }
-  .scratch-reveal-media .scratch-reveal-pack { max-width: 96px; padding: 6px; font-size: 11px; }
+  .scratch-reveal-media { position: relative; display: flex; justify-content: center; min-height: 118px; overflow: hidden; }
+  .scratch-game--product-result .scratch-reveal-product img { width: min(230px, 65vw); height: 118px; }
   .scratch-game--product-result .scratch-reveal-product b { min-width: 92%; padding: 9px 12px; }
   .scratch-game--product-result .scratch-reveal-win::before { right: calc(50% + 105px); }
   .scratch-game--product-result .scratch-reveal-win::after { left: calc(50% + 105px); }
@@ -285,8 +290,9 @@
 @media (max-width: 390px), (max-height: 700px) and (max-width: 560px) {
   .scratch-game--product-result .scratch-game__logo { width: 130px; margin-bottom: 3px; }
   .scratch-game--product-result #scratchGameTitle { font-size: 38px; }
-  .scratch-game--product-result .scratch-game__card { min-height: 230px; }
-  .scratch-game--product-result .scratch-reveal-product img { height: 112px; }
+  .scratch-game--product-result .scratch-game__card { min-height: 165px; }
+  .scratch-reveal-media { min-height: 98px; }
+  .scratch-game--product-result .scratch-reveal-product img { width: min(185px, 54vw); height: 98px; }
   .scratch-game--product-result .scratch-reveal-win { font-size: 30px; }
   .scratch-game--product-result .scratch-reveal-product small { font-size: 14px; }
   .scratch-game--product-result .scratch-reveal-product b { padding: 7px 10px; font-size: 25px; }

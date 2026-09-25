@@ -9,7 +9,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="icon" type="image/svg+xml" href="{% static 'img/pwa-icon.svg' %}">
-    <link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.1.3-mobile-fit">
+    <link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.1.3-pack-above-image">
     <link rel="preconnect" href="https://media.opremazaribolov.ba">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <script>
@@ -846,11 +846,11 @@
     <section class="scratch-game" id="scratchGame" data-status-url="{% url 'scratch_status' %}" data-claim-url="{% url 'scratch_claim' %}" data-add-to-order-url="{% url 'scratch_add_product_to_order' %}"{% if scratch_game_immediate %} data-immediate="1"{% endif %}{% if scratch_game_return_url %} data-after-close-url="{{ scratch_game_return_url }}"{% endif %} hidden aria-modal="true" role="dialog" aria-labelledby="scratchGameTitle">
       <div class="scratch-game__panel"><button class="scratch-game__close" type="button" aria-label="Zatvori">×</button>
         <p class="scratch-game__eyebrow">CARPOLOGIJA.BH</p><h2 id="scratchGameTitle">GREB-GREB</h2>
-        <div class="scratch-game__card"><div id="scratchProductReveal" class="scratch-reveal-product" hidden><p class="scratch-reveal-win">ČESTITAMO!</p><small>OSVOJILI STE</small><div class="scratch-reveal-media"><img id="scratchRevealImage" alt=""><span id="scratchRevealPack" class="scratch-reveal-pack" hidden></span></div><b id="scratchRevealDiscount"></b><div class="scratch-reveal-prices"><del id="scratchRevealRegularPrice"></del><strong id="scratchRevealPrice"></strong></div><span id="scratchRevealName"></span></div><strong id="scratchGameReward">Nagrada je skrivena</strong><canvas id="scratchGameCanvas" aria-label="Grebi ovdje za otkrivanje nagrade"></canvas></div>
+        <div class="scratch-game__card"><div id="scratchProductReveal" class="scratch-reveal-product" hidden><p class="scratch-reveal-win">ČESTITAMO!</p><small id="scratchRevealPack" class="scratch-reveal-pack" hidden></small><div class="scratch-reveal-media"><img id="scratchRevealImage" alt=""></div><b id="scratchRevealDiscount"></b><div class="scratch-reveal-prices"><del id="scratchRevealRegularPrice"></del><strong id="scratchRevealPrice"></strong></div><span id="scratchRevealName"></span></div><strong id="scratchGameReward">Nagrada je skrivena</strong><canvas id="scratchGameCanvas" aria-label="Grebi ovdje za otkrivanje nagrade"></canvas></div>
         <p id="scratchGameResult" class="scratch-game__result" hidden></p><div id="scratchProductChoice" hidden><p>Želite li ovaj artikal dodati u upravo kreiranu narudžbu?</p><button type="button" id="scratchAddToOrder">Dodaj u narudžbu</button><button type="button" id="scratchSkipProduct">Ne želim</button></div>
       </div>
     </section>
-    <script src="{% static 'js/scratch-game.js' %}?v=1.1.3-greb-title" defer></script>
+    <script src="{% static 'js/scratch-game.js' %}?v=1.1.3-touch-scratch" defer></script>
     <script>
       if ('serviceWorker' in navigator && window.isSecureContext) {
         window.addEventListener('load', function () {

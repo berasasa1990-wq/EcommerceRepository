@@ -58,7 +58,7 @@
         revealImage.src = prize.product_image || '';
         revealImage.hidden = !prize.product_image;
         const revealPack = document.getElementById('scratchRevealPack');
-        revealPack.textContent = prize.product_pack || '';
+        revealPack.textContent = prize.product_pack ? `📦 ${prize.product_pack}` : '';
         revealPack.hidden = !prize.product_pack;
       } else {
         rewardLabel.hidden = false;
@@ -76,6 +76,7 @@
       const scratched = new Set();
       let finished = false;
       let previousPoint = null;
+      let activePointerId = null;
 
       canvas.width = bounds.width * ratio;
       canvas.height = bounds.height * ratio;
@@ -88,12 +89,12 @@
         context.clearRect(0, 0, bounds.width, bounds.height);
         canvas.style.pointerEvents = 'none';
         const result = document.getElementById('scratchGameResult');
+        if (prize.won) modal.classList.add('scratch-game--product-result');
         result.hidden = prize.product_offer;
         if (!prize.product_offer) result.textContent = prize.won
           ? `Čestitamo! Osvojili ste ${prize.label}. ${prize.saved_to_account ? 'Nagrada je sačuvana na vašem nalogu' : 'Nagrada je sačuvana za ovu sesiju'} i može se automatski iskoristiti na sljedećoj narudžbi u naredna 24 sata.`
           : 'Više sreće sljedeći put!';
         if (prize.won && prize.product_offer) {
-          modal.classList.add('scratch-game--product-result');
           const choice = document.getElementById('scratchProductChoice');
           choice.hidden = false;
           choice.querySelector('p').textContent = 'Želite li ovaj artikal dodati u kreiranu narudžbu po sniženoj cijeni?';
@@ -136,10 +137,26 @@
         markScratched(point.x, point.y);
       }
 
-      canvas.addEventListener('pointerdown', event => { previousPoint = null; scratch(event); });
-      canvas.addEventListener('pointermove', event => { if (event.buttons || event.pressure) scratch(event); });
-      canvas.addEventListener('pointerup', () => { previousPoint = null; });
-      canvas.addEventListener('pointerleave', () => { previousPoint = null; });
+      canvas.addEventListener('pointerdown', event => {
+        activePointerId = event.pointerId;
+        previousPoint = null;
+        canvas.setPointerCapture?.(event.pointerId);
+        event.preventDefault();
+        scratch(event);
+      });
+      canvas.addEventListener('pointermove', event => {
+        if (event.pointerId !== activePointerId) return;
+        event.preventDefault();
+        scratch(event);
+      });
+      function finishScratch(event) {
+        if (event.pointerId !== activePointerId) return;
+        canvas.releasePointerCapture?.(event.pointerId);
+        activePointerId = null;
+        previousPoint = null;
+      }
+      canvas.addEventListener('pointerup', finishScratch);
+      canvas.addEventListener('pointercancel', finishScratch);
     } catch (_) {}
   }, delay);
 })();
