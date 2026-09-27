@@ -44,6 +44,8 @@ SOURCE_FACEBOOK = 'facebook'          # organski Facebook
 SOURCE_FACEBOOK_ADS = 'facebook_ads'
 SOURCE_INSTAGRAM = 'instagram'        # organski Instagram
 SOURCE_INSTAGRAM_ADS = 'instagram_ads'
+SOURCE_EMAIL = 'email'
+SOURCE_YOUTUBE = 'youtube'
 SOURCE_OTHER = 'other'
 
 SOURCE_LABELS = {
@@ -54,6 +56,8 @@ SOURCE_LABELS = {
     SOURCE_FACEBOOK_ADS: 'Facebook Ads',
     SOURCE_INSTAGRAM: 'Instagram (organski)',
     SOURCE_INSTAGRAM_ADS: 'Instagram Ads',
+    SOURCE_EMAIL: 'Email',
+    SOURCE_YOUTUBE: 'YouTube',
     SOURCE_OTHER: 'Ostalo',
 }
 
@@ -66,6 +70,8 @@ SOURCE_DISPLAY_ORDER = (
     SOURCE_FACEBOOK_ADS,
     SOURCE_INSTAGRAM,
     SOURCE_INSTAGRAM_ADS,
+    SOURCE_EMAIL,
+    SOURCE_YOUTUBE,
     SOURCE_OTHER,
 )
 
@@ -78,6 +84,8 @@ SOURCE_SHORT_LABELS = {
     SOURCE_FACEBOOK_ADS: 'FB Ads',
     SOURCE_INSTAGRAM: 'Instagram',
     SOURCE_INSTAGRAM_ADS: 'IG Ads',
+    SOURCE_EMAIL: 'Email',
+    SOURCE_YOUTUBE: 'YouTube',
     SOURCE_OTHER: 'Ostalo',
 }
 
@@ -112,6 +120,10 @@ def normalize_traffic_source(raw) -> str:
         'google_ad': SOURCE_GOOGLE_ADS,
         'organic': SOURCE_GOOGLE,
         'seo': SOURCE_GOOGLE,
+        'newsletter': SOURCE_EMAIL,
+        'mail': SOURCE_EMAIL,
+        'e-mail': SOURCE_EMAIL,
+        'yt': SOURCE_YOUTUBE,
         'none': SOURCE_DIRECT,
         'typed': SOURCE_DIRECT,
     }
@@ -125,6 +137,13 @@ def traffic_source_label(raw, *, short=False) -> str:
     if short:
         return SOURCE_SHORT_LABELS.get(key, SOURCE_SHORT_LABELS[SOURCE_OTHER])
     return SOURCE_LABELS.get(key, SOURCE_LABELS[SOURCE_OTHER])
+
+
+def detect_visitor_device(request) -> str:
+    """Svedi user-agent na dvije jasne kategorije za live statistiku."""
+    user_agent = (request.META.get('HTTP_USER_AGENT') or '').lower()
+    mobile_markers = ('mobile', 'android', 'iphone', 'ipod', 'ipad', 'tablet', 'windows phone')
+    return 'mobile' if any(marker in user_agent for marker in mobile_markers) else 'desktop'
 
 
 def _display_name(user):
@@ -363,7 +382,7 @@ def detect_traffic_source(request):
     """
     Izvor dolaska s razlikom organsko vs ads:
       direct | google | google_ads | facebook | facebook_ads |
-      instagram | instagram_ads | other
+      instagram | instagram_ads | email | youtube | other
 
     Prioritet: click-id / UTM → HTTP Referer → direktno (ukucan URL).
     """
@@ -389,6 +408,9 @@ def detect_traffic_source(request):
     has_msclkid = bool(get.get('msclkid'))
     has_ttclid = bool(get.get('ttclid'))
 
+    if utm_source in ('email', 'newsletter', 'mail', 'e-mail') or utm_medium in ('email', 'newsletter'):
+        return SOURCE_EMAIL
+
     def _is_ig_signal(text: str) -> bool:
         t = text or ''
         return (
@@ -413,6 +435,10 @@ def detect_traffic_source(request):
             or t in ('adwords', 'gads', 'googleads', 'google_ads', 'youtube')
         )
 
+    def _is_youtube_signal(text: str) -> bool:
+        t = text or ''
+        return 'youtube' in t or 'youtu.be' in t or t in ('yt', 'youtube')
+
     # --- Click IDs (najjači signal za plaćene kanale) ---
     if has_gclid:
         return SOURCE_GOOGLE_ADS
@@ -427,6 +453,8 @@ def detect_traffic_source(request):
 
     # --- UTM ---
     if utm_source or utm_medium:
+        if _is_youtube_signal(utm_source) or _is_youtube_signal(utm_blob):
+            return SOURCE_YOUTUBE
         if _is_ig_signal(utm_source) or _is_ig_signal(utm_blob):
             return SOURCE_INSTAGRAM_ADS if is_paid_medium else SOURCE_INSTAGRAM
         if _is_fb_signal(utm_source) or _is_fb_signal(utm_blob):
@@ -455,15 +483,15 @@ def detect_traffic_source(request):
             return SOURCE_FACEBOOK
         if 'instagram.com' in referer or 'l.instagram' in referer:
             return SOURCE_INSTAGRAM
+        if 'youtube.com' in referer or 'youtu.be' in referer:
+            return SOURCE_YOUTUBE
         if (
             'google.' in referer
             or 'googleusercontent' in referer
             or 'googleapis' in referer
             or 'ggpht.com' in referer
-            or 'youtube.com' in referer
-            or 'youtu.be' in referer
         ):
-            # Organic search / YouTube referral (bez gclid = nije Ads click)
+            # Organska Google pretraga (bez gclid = nije Ads click)
             return SOURCE_GOOGLE
         try:
             from urllib.parse import urlparse
@@ -820,7 +848,7 @@ def heartbeat_live_visitor(request, body_session_key=''):
         return False
 
     now = timezone.now()
-    update_fields = {'last_seen': now}
+    update_fields = {'last_seen': now, 'uredjaj': detect_visitor_device(request)}
 
     # Path iz body-ja treba prije throttle-a da se „Sada:” ipak osvježi na navigaciji.
     body_path_preview = ''
@@ -866,6 +894,7 @@ def heartbeat_live_visitor(request, body_session_key=''):
                 grad='',
                 drzava=BOSNIA_HERZEGOVINA_COUNTRY_CODE,
                 ip_adresa=get_client_ip(request) or None,
+                uredjaj=update_fields['uredjaj'],
                 trenutna_putanja=page_path,
                 trenutno_gleda=page_label,
                 last_seen=now,
@@ -1010,6 +1039,7 @@ def track_live_visitor(request):
     user = request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
     now = timezone.now()
     path = getattr(request, 'path', '') or ''
+    device = detect_visitor_device(request)
 
     # Throttle: ista putanja unutar 15 s → samo last_seen (isti live UI, manje CPU/DB)
     throttle_key = f'lv_track:{session_key}'
@@ -1019,7 +1049,7 @@ def track_live_visitor(request):
         and last_path == path
         and not is_background_request_path(path)
     ):
-        LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now)
+        LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now, uredjaj=device)
         touch_visitor_presence(session_key)
         return
     if not is_background_request_path(path):
@@ -1035,7 +1065,7 @@ def track_live_visitor(request):
 
     # Poll / heartbeat / AJAX — samo last_seen (+ kreiraj red ako nedostaje)
     if is_background_request_path(path):
-        updated = LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now)
+        updated = LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now, uredjaj=device)
         if not updated:
             try:
                 LiveVisitor.objects.create(
@@ -1046,6 +1076,7 @@ def track_live_visitor(request):
                     grad='',
                     drzava=country[:2] if country else BOSNIA_HERZEGOVINA_COUNTRY_CODE,
                     ip_adresa=ip or None,
+                    uredjaj=device,
                     trenutna_putanja='/',
                     trenutno_gleda='Na sajtu',
                     last_seen=now,
@@ -1129,6 +1160,7 @@ def track_live_visitor(request):
         'pregledane_kategorije': existing_categories,
         'pregledani_proizvodi': existing_products,
         'izvor_dolaska': (traffic_source or '')[:32],
+        'uredjaj': device,
         'trenutna_putanja': page_path,
         'trenutno_gleda': page_label,
         'last_seen': now,

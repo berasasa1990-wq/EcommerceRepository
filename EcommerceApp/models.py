@@ -5100,6 +5100,13 @@ class LiveVisitor(models.Model):
             'instagram | instagram_ads | other'
         ),
     )
+    uredjaj = models.CharField(
+        max_length=16,
+        blank=True,
+        db_index=True,
+        verbose_name='Uređaj',
+        help_text='mobile ili desktop — određeno iz user-agenta pri ulasku na sajt.',
+    )
     trenutna_putanja = models.CharField(
         max_length=300,
         blank=True,

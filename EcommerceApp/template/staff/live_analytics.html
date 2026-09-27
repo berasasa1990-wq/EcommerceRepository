@@ -3,10 +3,52 @@
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {% block page_title %}
-<title>Uživo analitika — opremazaribolov.ba</title>
+<title>Live centar — opremazaribolov.ba</title>
 {% endblock %}
 
 {% block body_class %}staff-shell-page{% endblock %}
+
+{% block extra_css %}
+<style>
+body.staff-shell-page { background:#f2f3f5; }
+body.staff-shell-page main { width:100% !important; max-width:none !important; margin:0 !important; padding-left:0 !important; padding-right:0 !important; }
+.live-lite { padding-bottom:56px; background:#f5f5f7; }
+.live-lite .staff-page-hero { background:#eeeef1; border:1px solid #dedee3; border-bottom:1px solid #dedee3; box-shadow:none; }
+.live-lite :is(.staff-page-title,.staff-page-subtitle,.staff-page-kicker,.staff-page-back) { color:#111; }
+.live-lite .staff-page-back { color:#50505a; }.live-lite .staff-page-back:hover { color:#111; }
+.live-lite .staff-page-hero__inner { width:100% !important; max-width:none !important; margin:0 !important; padding-left:40px !important; padding-right:40px !important; }
+.live-lite-heading-row { display:flex; align-items:baseline; gap:14px; min-width:0; }.live-lite-heading-row .staff-page-kicker { margin:0; flex:0 0 auto; }.live-lite-heading-row .staff-page-title { margin:0; flex:0 0 auto; }.live-lite-heading-row .staff-page-subtitle { min-width:0; margin:0; }
+body.staff-shell-page main .live-lite__body { width:100% !important; max-width:none !important; margin-left:0 !important; margin-right:0 !important; padding:26px 40px 0 !important; }
+.live-center-kpis { width:100%; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin:0 0 18px 0 !important; padding:0 !important; }
+.live-center-kpi { position:relative; min-height:122px; overflow:hidden; padding:20px; border:1px solid #dedee3; border-radius:14px; background:#fff; box-shadow:none; transition:transform .18s ease,box-shadow .18s ease; }
+.live-center-kpi::after { content:""; position:absolute; right:-22px; bottom:-28px; width:92px; height:92px; border-radius:50%; background:currentColor; opacity:.07; }
+.live-center-kpi:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(17,17,17,.08); }
+.live-center-kpi b { position:relative; z-index:1; display:block; font-size:2.25rem; line-height:1; letter-spacing:-.06em; color:#111; }
+.live-center-kpi span { position:relative; z-index:1; display:block; margin-top:10px; color:#5c5d66; font-size:13px; font-weight:800; line-height:1.3; }
+.live-center-kpi--online { color:#198754; border-top:3px solid #198754; }.live-center-kpi--online b { color:#198754; }
+.live-center-kpi--products { color:#ff5a00; border-top:3px solid #ff5a00; }.live-center-kpi--products b { color:#f05216; }
+.live-center-kpi--checkout { color:#2864bd; border-top:3px solid #2864bd; }.live-center-kpi--checkout b { color:#2864bd; }
+.live-center-kpi--b2b { color:#7845c5; border-top:3px solid #7845c5; }.live-center-kpi--b2b b { color:#7845c5; }
+.live-center-kpi--trigger { width:100%; cursor:pointer; text-align:left; font:inherit; appearance:none; }
+.live-center-kpi--trigger:focus-visible { outline:3px solid rgba(25,135,84,.28); outline-offset:3px; }
+.live-weekly-modal[hidden] { display:none; }
+.live-weekly-modal { position:fixed; z-index:1200; inset:0; display:grid; place-items:center; padding:20px; background:rgba(13,14,16,.58); }
+.live-weekly-dialog { width:min(720px,100%); border:1px solid #dfe0e3; border-radius:18px; background:#fff; box-shadow:0 24px 60px rgba(0,0,0,.28); overflow:hidden; }
+.live-weekly-dialog__head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; padding:23px 25px 18px; border-bottom:1px solid #ececf0; }.live-weekly-dialog__head h2 { margin:0; color:#16171a; font-size:22px; }.live-weekly-dialog__head p { margin:5px 0 0; color:#6b6c75; font-size:13px; }
+.live-weekly-dialog__close { flex:0 0 auto; display:grid; width:34px; height:34px; place-items:center; border:1px solid #e0e1e5; border-radius:50%; background:#fff; color:#1b1c20; font-size:23px; line-height:1; cursor:pointer; }.live-weekly-dialog__close:hover { background:#f5f5f7; }
+.live-weekly-chart { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:10px; align-items:end; min-height:260px; padding:24px 25px 28px; }.live-weekly-day { display:grid; grid-template-rows:auto 178px auto; gap:8px; min-width:0; text-align:center; }.live-weekly-day__count { color:#1c1d21; font-size:15px; font-weight:900; }.live-weekly-day__count small { display:block; margin-top:2px; color:#8a8b93; font-size:10px; font-weight:700; }.live-weekly-day__bar-area { display:flex; align-items:end; min-height:178px; border-bottom:1px solid #dfe0e4; background:repeating-linear-gradient(to bottom,transparent 0,transparent 43px,#f1f1f3 44px); }.live-weekly-day__bar { width:100%; min-height:8%; height:var(--bar-height); border-radius:8px 8px 2px 2px; background:linear-gradient(180deg,#ff8a46,#ff5a00); box-shadow:0 4px 9px rgba(255,90,0,.18); transition:height .25s ease; }.live-weekly-day__label { color:#565760; font-size:13px; font-weight:900; }
+.live-b2b-dialog { width:min(620px,100%); }.live-b2b-list { display:grid; gap:9px; padding:20px 25px 25px; }.live-b2b-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 15px; border:1px solid #e3e3e7; border-left:3px solid #7845c5; border-radius:11px; background:#fafafd; }.live-b2b-row__name { margin:0; color:#202126; font-size:15px; font-weight:900; }.live-b2b-row__company { margin:3px 0 0; color:#74757e; font-size:12px; }.live-b2b-row__cart { flex:0 0 auto; color:#5f32a6; font-size:14px; font-weight:900; text-align:right; }.live-b2b-row__cart small { display:block; margin-top:3px; color:#7b7c84; font-size:11px; font-weight:700; }.live-b2b-empty { margin:0; padding:24px 25px 28px; color:#777881; text-align:center; }
+.live-products-dialog { width:min(680px,100%); }.live-products-list { display:grid; gap:8px; max-height:min(58vh,510px); overflow-y:auto; overscroll-behavior:contain; padding:20px 25px 25px; scrollbar-width:thin; scrollbar-color:#ff7a36 #f0f0f2; }.live-products-list::-webkit-scrollbar { width:8px; }.live-products-list::-webkit-scrollbar-track { background:#f0f0f2; }.live-products-list::-webkit-scrollbar-thumb { border:2px solid #f0f0f2; border-radius:99px; background:#ff7a36; }.live-products-row { display:flex; align-items:center; gap:13px; padding:13px 14px; border:1px solid #e4e4e8; border-left:3px solid #ff5a00; border-radius:11px; background:#fffaf7; }.live-products-row__rank { display:grid; flex:0 0 29px; width:29px; height:29px; place-items:center; border-radius:50%; background:#ff5a00; color:#fff; font-size:13px; font-weight:900; }.live-products-row__name { min-width:0; flex:1; color:#25262a; font-size:14px; font-weight:800; }.live-products-row__orders { flex:0 0 auto; color:#df4e0f; font-size:13px; font-weight:900; text-align:right; }.live-products-row__orders small { display:block; margin-top:2px; color:#767780; font-size:11px; font-weight:700; }
+.live-center-interest { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:0 0 18px; }.live-center-interest--full { grid-template-columns:1fr; }
+.live-center-interest section { min-height:172px; padding:19px 20px; border:1px solid #dedee3; border-radius:14px; background:#fff; box-shadow:none; }
+.live-center-interest h2 { display:flex; align-items:center; gap:9px; margin:0 0 12px; color:#1c1d20; font-size:16px; letter-spacing:-.02em; }.live-center-interest h2::before { content:""; width:8px; height:8px; border-radius:50%; background:#ff5a00; box-shadow:0 0 0 4px #fff0e8; }.live-center-interest ul { margin:0; padding:0; list-style:none; }
+.live-center-interest li { display:flex; align-items:center; justify-content:space-between; gap:14px; min-height:35px; padding:8px 0; border-top:1px solid #eff0f2; color:#444650; font-size:13px; }.live-center-interest li:first-child { border-top:0; }.live-center-interest li span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.live-center-interest li b { display:grid; min-width:27px; height:25px; place-items:center; border-radius:999px; background:#fff0e8; color:#e65014; font-size:12px; }.live-center-interest .is-empty { color:#85868e; }
+.live-center-live-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:0 0 12px; }.live-center-live-row .live-lite-summary { margin:0; }.live-lite-summary { margin-bottom:12px; border:1px solid #dedee3; border-radius:14px; background:#fff; box-shadow:none; }.live-lite-count { color:#60606a; }.live-lite-count strong { color:#111; }.live-lite-sources li { background:#f0f0f3; color:#444; }.live-lite-sources li strong { color:#111; }.live-lite-sources li[data-key="direct"] { background:#ff5a00; color:#fff; }.live-lite-sources li[data-key="direct"] strong { color:#fff; }.live-device-summary { padding:18px 20px; border:1px solid #dedee3; border-radius:14px; background:#fff; }.live-device-summary h2 { display:flex; align-items:center; gap:9px; margin:0 0 14px; color:#1d1e23; font-size:16px; }.live-device-summary h2::before { content:""; width:8px; height:8px; border-radius:50%; background:#2864bd; box-shadow:0 0 0 4px #eaf1ff; }.live-device-list { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0; padding:0; list-style:none; }.live-device-list li { padding:12px 13px; border:1px solid #e6e7eb; border-radius:10px; background:#f7f9fe; }.live-device-list span { display:block; color:#646671; font-size:12px; font-weight:800; }.live-device-list b { display:block; margin-top:4px; color:#2864bd; font-size:24px; line-height:1; letter-spacing:-.05em; }.live-device-list small { display:block; margin-top:5px; color:#737580; font-size:11px; font-weight:700; }
+.live-lite-list { gap:10px; }.live-lite-row { padding:16px 18px; border-color:#dedee3; border-left:3px solid #ff5a00; border-radius:13px; box-shadow:none; }.live-lite-row:hover { border-color:#ffb184; box-shadow:0 8px 18px rgba(17,17,17,.07); }.live-lite-row__name { font-size:15px; }.live-lite-pill--ago { border:1px solid #e5e5e8; background:#fff; }.live-lite-empty { border-color:#dfe0e3; background:#fff; }.live-lite-footnote { padding:12px 14px; border-left:3px solid #ff5a00; background:#fff9f5; border-radius:0 10px 10px 0; }
+@media (max-width:820px) { .live-lite .staff-page-hero__inner { padding-left:16px; padding-right:16px; } .live-lite-heading-row { align-items:flex-start; flex-wrap:wrap; gap:5px 11px; }.live-lite-heading-row .staff-page-subtitle { flex-basis:100%; } body.staff-shell-page main .live-lite__body { padding:20px 16px 0 !important; }.live-center-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }.live-center-interest,.live-center-live-row { grid-template-columns:1fr; }.live-weekly-modal { padding:12px; }.live-weekly-dialog__head { padding:19px 18px 15px; }.live-weekly-chart { gap:6px; min-height:235px; padding:20px 14px 22px; }.live-weekly-day { grid-template-rows:auto 152px auto; gap:6px; }.live-weekly-day__bar-area { min-height:152px; }.live-weekly-day__count { font-size:13px; }.live-weekly-day__count small { font-size:9px; }.live-weekly-day__label { font-size:12px; }.live-b2b-list { padding:16px 18px 20px; }.live-b2b-row { padding:13px; }.live-b2b-row__cart { font-size:13px; } }
+@media (max-width:520px) { .live-lite__body { padding:16px 12px 0; }.live-center-kpis { gap:10px; }.live-center-kpi { min-height:104px; padding:16px; border-radius:13px; }.live-center-kpi b { font-size:1.85rem; }.live-center-kpi span { margin-top:7px; font-size:12px; }.live-center-interest { gap:10px; }.live-center-interest section { min-height:0; padding:16px; border-radius:13px; }.live-lite-summary { padding:13px; }.live-lite-row { padding:14px; } }
+</style>
+{% endblock %}
 
 {% block content %}
 <section class="live-lite" id="liveLitePage"
@@ -14,33 +56,114 @@
     <header class="staff-page-hero">
         <div class="staff-page-hero__inner">
             <a href="{% url 'staff_admin_panel' %}" class="staff-page-back">← Nazad na Admin panel</a>
-            <p class="staff-page-kicker">Live</p>
-            <h1 class="staff-page-title">Uživo analitika</h1>
-            <p class="staff-page-subtitle">
-                Ko je sada na sajtu, šta radi i odakle je došao.
-                Prozor: zadnjih {{ online_minutes }} min · osvježeno
-                <strong id="liveLiteUpdated">{{ generated_at_label }}</strong>
-            </p>
+            <div class="live-lite-heading-row">
+                <p class="staff-page-kicker">Live</p>
+                <h1 class="staff-page-title">Live centar</h1>
+                <p class="staff-page-subtitle">
+                    Šta se upravo dešava na webshopu i veleprodaji. Prozor: zadnjih {{ online_minutes }} min · osvježeno
+                    <strong id="liveLiteUpdated">{{ generated_at_label }}</strong>
+                </p>
+            </div>
         </div>
     </header>
 
     <div class="live-lite__body">
-        <div class="live-lite-summary">
-            <div class="live-lite-count">
-                <span class="live-lite-count__dot" aria-hidden="true"></span>
-                <strong id="liveLiteCount">{{ online_count }}</strong>
-                <span>live sada</span>
+        <section class="live-center-kpis" aria-label="Live sažetak">
+            <button type="button" class="live-center-kpi live-center-kpi--online live-center-kpi--trigger" id="liveWeeklyOpen" aria-haspopup="dialog" aria-controls="liveWeeklyModal"><b id="liveCenterOnline">{{ online_count }}</b><span>ljudi online · sedmični pregled</span></button>
+            <button type="button" class="live-center-kpi live-center-kpi--products live-center-kpi--trigger" id="liveTopProductsOpen" aria-haspopup="dialog" aria-controls="liveTopProductsModal"><b id="liveCenterTopProducts">{{ top_products.0.order_count|default:0 }}</b><span>najprodavaniji artikli · pregledaj</span></button>
+            <article class="live-center-kpi live-center-kpi--checkout"><b id="liveCenterCheckouts">{{ checkout_count }}</b><span>na checkoutu</span></article>
+            <button type="button" class="live-center-kpi live-center-kpi--b2b live-center-kpi--trigger" id="liveB2bOpen" aria-haspopup="dialog" aria-controls="liveB2bModal"><b id="liveCenterB2b">{{ b2b_online_count }}</b><span>B2B korisnika online · pregledaj</span></button>
+        </section>
+
+        <div class="live-weekly-modal" id="liveWeeklyModal" role="dialog" aria-modal="true" aria-labelledby="liveWeeklyTitle" hidden>
+            <div class="live-weekly-dialog">
+                <div class="live-weekly-dialog__head">
+                    <div><h2 id="liveWeeklyTitle">Ljudi na sajtu ove sedmice</h2><p>Broj iznad stuba · dan u sedmici ispod.</p></div>
+                    <button type="button" class="live-weekly-dialog__close" id="liveWeeklyClose" aria-label="Zatvori pregled">×</button>
+                </div>
+                <div class="live-weekly-chart" id="liveWeeklyChart">
+                    {% for day in weekly_online %}
+                    <div class="live-weekly-day">
+                        <div class="live-weekly-day__count">{{ day.count }}<small>{{ day.date_label }}</small></div>
+                        <div class="live-weekly-day__bar-area"><div class="live-weekly-day__bar" style="--bar-height:{{ day.height }}%"></div></div>
+                        <div class="live-weekly-day__label">{{ day.label }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
-            <ul class="live-lite-sources" id="liveLiteSources">
-                {% for src in sources %}
-                <li data-key="{{ src.key }}">
-                    <span>{{ src.label }}</span>
-                    <strong>{{ src.count }}</strong>
-                </li>
-                {% empty %}
-                <li class="live-lite-sources__empty">Nema izvora još</li>
-                {% endfor %}
-            </ul>
+        </div>
+
+        <div class="live-weekly-modal" id="liveB2bModal" role="dialog" aria-modal="true" aria-labelledby="liveB2bTitle" hidden>
+            <div class="live-weekly-dialog live-b2b-dialog">
+                <div class="live-weekly-dialog__head">
+                    <div><h2 id="liveB2bTitle">B2B korisnici na veleprodaji</h2><p>Aktivni korisnici na URL-u veleprodaja i trenutni iznos korpe.</p></div>
+                    <button type="button" class="live-weekly-dialog__close" id="liveB2bClose" aria-label="Zatvori B2B pregled">×</button>
+                </div>
+                <div class="live-b2b-list" id="liveB2bList">
+                    {% for person in b2b_online_users %}
+                    <article class="live-b2b-row">
+                        <div><p class="live-b2b-row__name">{{ person.username }}</p>{% if person.company %}<p class="live-b2b-row__company">{{ person.company }}</p>{% endif %}</div>
+                        <div class="live-b2b-row__cart">Korpa: {{ person.cart_total|floatformat:2 }} KM<small>{{ person.cart_count }} art.</small></div>
+                    </article>
+                    {% empty %}
+                    <p class="live-b2b-empty">Trenutno niko nije aktivan na veleprodaji.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="live-weekly-modal" id="liveTopProductsModal" role="dialog" aria-modal="true" aria-labelledby="liveTopProductsTitle" hidden>
+            <div class="live-weekly-dialog live-products-dialog">
+                <div class="live-weekly-dialog__head">
+                    <div><h2 id="liveTopProductsTitle">Najprodavaniji artikli</h2><p>Rangirano po broju različitih webshop narudžbi, ne po količini komada.</p></div>
+                    <button type="button" class="live-weekly-dialog__close" id="liveTopProductsClose" aria-label="Zatvori pregled artikala">×</button>
+                </div>
+                <div class="live-products-list" id="liveTopProductsList">
+                    {% for product in top_products %}
+                    <article class="live-products-row"><span class="live-products-row__rank">{{ forloop.counter }}</span><span class="live-products-row__name">{{ product.name }}</span><span class="live-products-row__orders">{{ product.order_count }}<small>narudžbi</small></span></article>
+                    {% empty %}
+                    <p class="live-b2b-empty">Još nema webshop narudžbi za prikaz.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <section class="live-center-interest" aria-label="Izvori posjete i gradovi">
+            <section><h2>Odakle ljudi dolaze</h2><ul id="liveCenterTraffic">{% for source in traffic_sources %}<li><span>{{ source.label }}</span><b>{{ source.percent }}%</b></li>{% empty %}<li class="is-empty">Još nema evidentiranih izvora posjete.</li>{% endfor %}</ul></section>
+            <section><h2>Gradovi odakle dolaze</h2><ul id="liveCenterCities">{% for city in city_sources %}<li><span>{{ city.name }}</span><b>{{ city.count }}</b></li>{% empty %}<li class="is-empty">Još nema evidentiranih gradova.</li>{% endfor %}</ul></section>
+        </section>
+
+        <section class="live-center-interest" aria-label="Pretrage na sajtu">
+            <section><h2>Pretrage bez rezultata</h2><ul id="liveSearchWithout">{% for item in search_without_results %}<li><span>„{{ item.name }}“</span><b>{{ item.count }}×</b></li>{% empty %}<li class="is-empty">Nema pretraga bez rezultata.</li>{% endfor %}</ul></section>
+            <section><h2>Najčešće pronađeno</h2><ul id="liveSearchWith">{% for item in search_with_results %}<li><span>„{{ item.name }}“</span><b>{{ item.count }}×</b></li>{% empty %}<li class="is-empty">Nema evidentiranih uspješnih pretraga.</li>{% endfor %}</ul></section>
+        </section>
+
+        <div class="live-center-live-row">
+            <div class="live-lite-summary">
+                <div class="live-lite-count">
+                    <span class="live-lite-count__dot" aria-hidden="true"></span>
+                    <strong id="liveLiteCount">{{ online_count }}</strong>
+                    <span>live sada</span>
+                </div>
+                <ul class="live-lite-sources" id="liveLiteSources">
+                    {% for src in sources %}
+                    <li data-key="{{ src.key }}">
+                        <span>{{ src.label }}</span>
+                        <strong>{{ src.count }}</strong>
+                    </li>
+                    {% empty %}
+                    <li class="live-lite-sources__empty">Nema izvora još</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <section class="live-device-summary" aria-label="Uređaji posjetilaca ukupno">
+                <h2>Uređaji posjetilaca ukupno</h2>
+                <ul class="live-device-list" id="liveDeviceList">
+                    {% for device in device_breakdown %}
+                    <li><span>{{ device.label }}</span><b>{{ device.percent }}%</b><small>{{ device.count }} posjeta</small></li>
+                    {% endfor %}
+                </ul>
+            </section>
         </div>
 
         <div class="live-lite-list" id="liveLiteList">
@@ -64,7 +187,7 @@
         </div>
 
         <p class="live-lite-footnote">
-            Lagani mode · poll ~5 s · jedinstveni posjetioci (token/IP) · bez teških AI/gift/statistika.
+            Podaci su prikazani samo superuseru, iz postojeće evidencije aktivnih sesija; bez prikaza IP adresa.
         </p>
     </div>
 </section>
@@ -79,7 +202,28 @@
     var listEl = document.getElementById('liveLiteList');
     var countEl = document.getElementById('liveLiteCount');
     var sourcesEl = document.getElementById('liveLiteSources');
+    var deviceListEl = document.getElementById('liveDeviceList');
     var updatedEl = document.getElementById('liveLiteUpdated');
+    var centerOnlineEl = document.getElementById('liveCenterOnline');
+    var centerTopProductsEl = document.getElementById('liveCenterTopProducts');
+    var centerCheckoutsEl = document.getElementById('liveCenterCheckouts');
+    var centerB2bEl = document.getElementById('liveCenterB2b');
+    var centerTrafficEl = document.getElementById('liveCenterTraffic');
+    var centerCitiesEl = document.getElementById('liveCenterCities');
+    var searchWithoutEl = document.getElementById('liveSearchWithout');
+    var searchWithEl = document.getElementById('liveSearchWith');
+    var weeklyOpenEl = document.getElementById('liveWeeklyOpen');
+    var weeklyModalEl = document.getElementById('liveWeeklyModal');
+    var weeklyCloseEl = document.getElementById('liveWeeklyClose');
+    var weeklyChartEl = document.getElementById('liveWeeklyChart');
+    var b2bOpenEl = document.getElementById('liveB2bOpen');
+    var b2bModalEl = document.getElementById('liveB2bModal');
+    var b2bCloseEl = document.getElementById('liveB2bClose');
+    var b2bListEl = document.getElementById('liveB2bList');
+    var topProductsOpenEl = document.getElementById('liveTopProductsOpen');
+    var topProductsModalEl = document.getElementById('liveTopProductsModal');
+    var topProductsCloseEl = document.getElementById('liveTopProductsClose');
+    var topProductsListEl = document.getElementById('liveTopProductsList');
     var inFlight = false;
 
     function esc(s) {
@@ -92,7 +236,25 @@
 
     function render(data) {
         if (countEl) countEl.textContent = String(data.online_count || 0);
+        if (centerOnlineEl) centerOnlineEl.textContent = String(data.online_count || 0);
+        if (centerTopProductsEl) centerTopProductsEl.textContent = String((data.top_products || [])[0] ? (data.top_products || [])[0].order_count || 0 : 0);
+        if (centerCheckoutsEl) centerCheckoutsEl.textContent = String(data.checkout_count || 0);
+        if (centerB2bEl) centerB2bEl.textContent = String(data.b2b_online_count || 0);
         if (updatedEl) updatedEl.textContent = data.generated_at_label || '';
+
+        function renderInterest(el, rows, emptyText) {
+            if (!el) return;
+            if (!rows || !rows.length) { el.innerHTML = '<li class="is-empty">' + esc(emptyText) + '</li>'; return; }
+            el.innerHTML = rows.map(function (row) { return '<li><span>' + esc(row.name) + '</span><b>' + esc(row.count) + '</b></li>'; }).join('');
+        }
+        renderTraffic(centerTrafficEl, data.traffic_sources || []);
+        renderInterest(centerCitiesEl, data.city_sources || [], 'Još nema evidentiranih gradova.');
+        renderSearches(searchWithoutEl, data.search_without_results || [], 'Nema pretraga bez rezultata.');
+        renderSearches(searchWithEl, data.search_with_results || [], 'Nema evidentiranih uspješnih pretraga.');
+        renderWeeklyChart(data.weekly_online || []);
+        renderB2bUsers(data.b2b_online_users || []);
+        renderTopProducts(data.top_products || []);
+        renderDevices(data.device_breakdown || []);
 
         if (sourcesEl) {
             var sources = data.sources || [];
@@ -131,6 +293,138 @@
                 '</div></article>'
             );
         }).join('');
+    }
+
+    function renderTraffic(el, sources) {
+        if (!el) return;
+        if (!sources.length) {
+            el.innerHTML = '<li class="is-empty">Još nema evidentiranih izvora posjete.</li>';
+            return;
+        }
+        el.innerHTML = sources.map(function (source) {
+            var percent = Number(source.percent || 0);
+            var label = percent % 1 ? percent.toFixed(1).replace('.', ',') : String(percent);
+            return '<li><span>' + esc(source.label || 'Ostalo') + '</span><b>' + esc(label) + '%</b></li>';
+        }).join('');
+    }
+
+    function renderDevices(devices) {
+        if (!deviceListEl || !devices.length) return;
+        deviceListEl.innerHTML = devices.map(function (device) {
+            var percent = Number(device.percent || 0);
+            var label = percent % 1 ? percent.toFixed(1).replace('.', ',') : String(percent);
+            return '<li><span>' + esc(device.label || '') + '</span><b>' + esc(label) + '%</b><small>' + esc(device.count || 0) + ' posjeta</small></li>';
+        }).join('');
+    }
+
+    function renderSearches(el, searches, emptyText) {
+        if (!el) return;
+        if (!searches.length) {
+            el.innerHTML = '<li class="is-empty">' + esc(emptyText) + '</li>';
+            return;
+        }
+        el.innerHTML = searches.map(function (search) {
+            return '<li><span>„' + esc(search.name || '') + '“</span><b>' + esc(search.count || 0) + '×</b></li>';
+        }).join('');
+    }
+
+    function renderWeeklyChart(days) {
+        if (!weeklyChartEl || !days.length) return;
+        var max = Math.max.apply(null, days.map(function (day) { return Number(day.count || 0); }).concat([0]));
+        weeklyChartEl.innerHTML = days.map(function (day) {
+            var count = Number(day.count || 0);
+            var height = max ? Math.max(8, Math.round(count * 100 / max)) : 8;
+            return '<div class="live-weekly-day">' +
+                '<div class="live-weekly-day__count">' + esc(count) + '<small>' + esc(day.date_label || '') + '</small></div>' +
+                '<div class="live-weekly-day__bar-area"><div class="live-weekly-day__bar" style="--bar-height:' + esc(height) + '%"></div></div>' +
+                '<div class="live-weekly-day__label">' + esc(day.label || '') + '</div></div>';
+        }).join('');
+    }
+
+    function formatKM(value) {
+        return Number(value || 0).toFixed(2).replace('.', ',') + ' KM';
+    }
+    function renderB2bUsers(users) {
+        if (!b2bListEl) return;
+        if (!users.length) {
+            b2bListEl.innerHTML = '<p class="live-b2b-empty">Trenutno niko nije aktivan na veleprodaji.</p>';
+            return;
+        }
+        b2bListEl.innerHTML = users.map(function (person) {
+            var company = person.company ? '<p class="live-b2b-row__company">' + esc(person.company) + '</p>' : '';
+            return '<article class="live-b2b-row"><div><p class="live-b2b-row__name">' + esc(person.username || 'B2B korisnik') + '</p>' + company + '</div>' +
+                '<div class="live-b2b-row__cart">Korpa: ' + esc(formatKM(person.cart_total)) + '<small>' + esc(person.cart_count || 0) + ' art.</small></div></article>';
+        }).join('');
+    }
+
+    function renderTopProducts(products) {
+        if (!topProductsListEl) return;
+        if (!products.length) {
+            topProductsListEl.innerHTML = '<p class="live-b2b-empty">Još nema webshop narudžbi za prikaz.</p>';
+            return;
+        }
+        topProductsListEl.innerHTML = products.map(function (product, index) {
+            return '<article class="live-products-row"><span class="live-products-row__rank">' + esc(index + 1) + '</span>' +
+                '<span class="live-products-row__name">' + esc(product.name || 'Artikal') + '</span>' +
+                '<span class="live-products-row__orders">' + esc(product.order_count || 0) + '<small>narudžbi</small></span></article>';
+        }).join('');
+    }
+
+    function closeWeeklyModal() {
+        if (!weeklyModalEl) return;
+        weeklyModalEl.hidden = true;
+        if (weeklyOpenEl) weeklyOpenEl.focus();
+    }
+    if (weeklyOpenEl && weeklyModalEl) {
+        weeklyOpenEl.addEventListener('click', function () {
+            weeklyModalEl.hidden = false;
+            if (weeklyCloseEl) weeklyCloseEl.focus();
+        });
+        weeklyCloseEl.addEventListener('click', closeWeeklyModal);
+        weeklyModalEl.addEventListener('click', function (event) {
+            if (event.target === weeklyModalEl) closeWeeklyModal();
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !weeklyModalEl.hidden) closeWeeklyModal();
+        });
+    }
+
+    function closeB2bModal() {
+        if (!b2bModalEl) return;
+        b2bModalEl.hidden = true;
+        if (b2bOpenEl) b2bOpenEl.focus();
+    }
+    if (b2bOpenEl && b2bModalEl && b2bCloseEl) {
+        b2bOpenEl.addEventListener('click', function () {
+            b2bModalEl.hidden = false;
+            b2bCloseEl.focus();
+        });
+        b2bCloseEl.addEventListener('click', closeB2bModal);
+        b2bModalEl.addEventListener('click', function (event) {
+            if (event.target === b2bModalEl) closeB2bModal();
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !b2bModalEl.hidden) closeB2bModal();
+        });
+    }
+
+    function closeTopProductsModal() {
+        if (!topProductsModalEl) return;
+        topProductsModalEl.hidden = true;
+        if (topProductsOpenEl) topProductsOpenEl.focus();
+    }
+    if (topProductsOpenEl && topProductsModalEl && topProductsCloseEl) {
+        topProductsOpenEl.addEventListener('click', function () {
+            topProductsModalEl.hidden = false;
+            topProductsCloseEl.focus();
+        });
+        topProductsCloseEl.addEventListener('click', closeTopProductsModal);
+        topProductsModalEl.addEventListener('click', function (event) {
+            if (event.target === topProductsModalEl) closeTopProductsModal();
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !topProductsModalEl.hidden) closeTopProductsModal();
+        });
     }
 
     async function poll() {

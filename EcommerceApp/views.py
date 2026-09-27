@@ -21,7 +21,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db import DatabaseError, transaction
 from django.db.models import Case, Count, Exists, F, IntegerField, Max, Min, OuterRef, Prefetch, Q, Sum, Value, When
-from django.db.models.functions import Trim
+from django.db.models.functions import Lower, Trim, TruncDate
 from django.utils import timezone
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -6904,256 +6904,6 @@ def staff_admin_panel(request):
 
 
 @login_required(login_url='login')
-def superuser_app(request):
-    """Private short URL for the owner/admin application dashboard."""
-    if not request.user.is_superuser:
-        return render(request, 'staff/superuser_app_denied.html', {
-            **_base_context(),
-        }, status=403)
-    # /app is a glance-only dashboard: show only orders awaiting first action.
-    app_web_cutoff = date(2026, 9, 22)
-    new_orders = Order.objects.filter(
-        status=Order.Status.NOVA,
-        b2b_submission__isnull=True,
-        kreirana__date__gte=app_web_cutoff,
-    ).exclude(ime_prezime='Prenos u MP')
-    recent_orders = list(
-        new_orders
-        .order_by('-kreirana')[:5],
-    )
-    new_web_total = new_orders.aggregate(
-        total=Sum('ukupno'),
-    )['total'] or 0
-    context = {
-        **_base_context(),
-        'recent_orders': recent_orders,
-        'product_count': Product.objects.filter(aktivan=True).count(),
-        'in_stock_count': Product.objects.filter(
-            aktivan=True, na_stanju=True, stanje__gt=0,
-        ).count(),
-        'new_order_count': new_orders.count(),
-        'new_web_total': new_web_total,
-        'new_sales_total': new_web_total,
-    }
-    return render(request, 'staff/superuser_app.html', context)
-
-
-@login_required(login_url='login')
-def superuser_app_products(request):
-    """Read-only product lookup used exclusively by the private /app UI."""
-    if not request.user.is_superuser:
-        return render(request, 'staff/superuser_app_denied.html', {
-            **_base_context(),
-        }, status=403)
-
-    query = (request.GET.get('q') or '').strip()
-    products = Product.objects.none()
-    if query:
-        products = Product.objects.filter(aktivan=True).filter(
-            Q(naziv__icontains=query)
-            | Q(sifra__icontains=query)
-            | Q(barkod__icontains=query),
-        ).order_by('naziv')[:50]
-    return render(request, 'staff/superuser_app_products.html', {
-        **_base_context(),
-        'query': query,
-        'products': products,
-    })
-
-
-@login_required(login_url='login')
-def superuser_app_analytics(request):
-    """Compact, read-only analytics screen reserved for the /app interface."""
-    if not request.user.is_superuser:
-        return render(request, 'staff/superuser_app_denied.html', {
-            **_base_context(),
-        }, status=403)
-    analytics_channel = getattr(request, '_app_analytics_channel', 'web')
-    if analytics_channel == 'b2b':
-        # B2B has its own small dashboard.  Do not calculate Web charts,
-        # searches and product analytics only to hide them with CSS.
-        from .models import B2BAccount, B2BSubmission
-        from .views_b2b import live_b2b_sessions
-
-        b2b_orders = Order.objects.exclude(status=Order.Status.OTKAZANA).filter(
-            b2b_submission__isnull=False,
-        )
-        b2b_live_sessions = live_b2b_sessions()
-        b2b_customers = B2BSubmission.objects.exclude(
-            order__status=Order.Status.OTKAZANA,
-        ).values(
-            'account__username', 'account__ime_prezime', 'account__company',
-        ).annotate(
-            order_count=Count('order_id'), total=Sum('order__ukupno'),
-        ).order_by('-total')
-        return render(request, 'staff/superuser_app_analytics.html', {
-            **_base_context(),
-            'analytics_channel': 'b2b',
-            'b2b_live_sessions': b2b_live_sessions,
-            'b2b_live_count': len(b2b_live_sessions),
-            'b2b_lifetime_orders': b2b_orders.count(),
-            'b2b_lifetime_revenue': b2b_orders.aggregate(total=Sum('ukupno'))['total'] or 0,
-            'b2b_total_visits': B2BAccount.objects.filter(is_active=True).count(),
-            'b2b_customers': b2b_customers,
-        })
-
-    today = timezone.localdate()
-    period = (request.GET.get('period') or 'today').strip()
-    configs = {'today': ('Danas', today, 1), '7d': ('7 dana', today - timedelta(days=6), 7), '30d': ('30 dana', today - timedelta(days=29), 30), '90d': ('90 dana', today - timedelta(days=89), 90), 'year': ('Godina', today.replace(month=1, day=1), (today - today.replace(month=1, day=1)).days + 1)}
-    if period not in configs: period = 'today'
-    period_label, start, days = configs[period]
-    previous_end = start - timedelta(days=1)
-    previous_start = previous_end - timedelta(days=days - 1)
-    visit_count = LiveVisitor.objects.filter(first_seen__date__range=(start, today)).count()
-    previous_visit_count = LiveVisitor.objects.filter(first_seen__date__range=(previous_start, previous_end)).count()
-    visit_change = round((visit_count - previous_visit_count) * 100 / previous_visit_count) if previous_visit_count else None
-    week_start = today - timedelta(days=today.weekday())
-    week_labels = ('Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned')
-    week_counts = {
-        row['first_seen__date']: row['count']
-        for row in LiveVisitor.objects.filter(first_seen__date__range=(week_start, week_start + timedelta(days=6))).values('first_seen__date').annotate(count=Count('pk'))
-    }
-    weekly_visits = [
-        {'label': week_labels[index], 'count': week_counts.get(week_start + timedelta(days=index), 0)}
-        for index in range(7)
-    ]
-    week_max = max([row['count'] for row in weekly_visits] or [1])
-    for row in weekly_visits:
-        row['height'] = max(4, round(row['count'] * 100 / week_max)) if row['count'] else 2
-    scoped_orders = Order.objects.exclude(status=Order.Status.OTKAZANA)
-    scoped_orders = scoped_orders.filter(b2b_submission__isnull=(analytics_channel == 'web'))
-    if analytics_channel == 'web':
-        scoped_orders = scoped_orders.exclude(ime_prezime='Prenos u MP')
-    period_orders = scoped_orders.filter(kreirana__date__range=(start, today))
-    # Lifetime product lists are separate from period-dependent KPI cards.
-    period_items = OrderItem.objects.filter(narudzba__in=scoped_orders)
-    kpi_items = OrderItem.objects.filter(narudzba__in=period_orders)
-    top_products = period_items.values('naziv').annotate(sold=Count('narudzba_id', distinct=True)).order_by('-sold', 'naziv')[:5]
-    category_sales = period_items.values('artikal__kategorija__naziv').annotate(sold=Sum('kolicina')).order_by('-sold')[:6]
-    previous_items = OrderItem.objects.filter(
-        narudzba__kreirana__date__range=(previous_start, previous_end),
-    ).exclude(narudzba__status=Order.Status.OTKAZANA).values('naziv').annotate(sold=Sum('kolicina'))
-    previous_sales = {row['naziv']: row['sold'] for row in previous_items}
-    growth_candidates = []
-    for row in top_products:
-        before = previous_sales.get(row['naziv'], 0)
-        if before:
-            growth_candidates.append({
-                'name': row['naziv'],
-                'percent': round((row['sold'] - before) * 100 / before),
-            })
-    fastest_growth = max(growth_candidates, key=lambda row: row['percent'], default=None)
-    low_stock_product = Product.objects.filter(
-        aktivan=True, na_stanju=True, stanje__gt=0, stanje__lte=10,
-    ).order_by('stanje', 'naziv').first()
-    order_count = period_orders.count()
-    revenue = period_orders.aggregate(total=Sum('ukupno'))['total'] or 0
-    units_sold = kpi_items.aggregate(total=Sum('kolicina'))['total'] or 0
-    average_order_value = revenue / order_count if order_count else 0
-    conversion_rate = (order_count * 100 / visit_count) if visit_count else 0
-    from .models import CityVisitTotal
-    yearly_visits = LiveVisitor.objects.values('first_seen__year').annotate(
-        visits=Count('pk'),
-    ).order_by('-first_seen__year')[:8]
-    city_visits = CityVisitTotal.objects.order_by('-broj_posjeta', 'grad')[:8]
-    searches = SiteSearchEvent.objects.all() if analytics_channel == 'web' else SiteSearchEvent.objects.none()
-    top_searches = searches.values('query').annotate(count=Count('pk')).order_by('-count', 'query')[:5]
-    zero_result_searches = searches.filter(results_count=0).values('query').annotate(count=Count('pk')).order_by('-count', 'query')[:5]
-    product_events = ProductAnalyticsEvent.objects.all() if analytics_channel == 'web' else ProductAnalyticsEvent.objects.none()
-    event_rows = product_events.values('product_id', 'product__naziv').annotate(
-        views=Count('session_key', filter=Q(event=ProductAnalyticsEvent.Event.VIEW), distinct=True),
-        carts=Count('pk', filter=Q(event=ProductAnalyticsEvent.Event.CART)),
-    )
-    tracking_started = ProductAnalyticsEvent.objects.aggregate(first=Min('created_at'))['first']
-    tracked_sales = period_items.filter(narudzba__kreirana__gte=tracking_started) if tracking_started else period_items.none()
-    sale_rows = tracked_sales.values('artikal_id', 'naziv').annotate(
-        purchases=Count('narudzba_id', distinct=True), units=Sum('kolicina'),
-        revenue=Sum(F('cijena') * F('kolicina')),
-    )
-    product_metrics = {}
-    for row in event_rows:
-        product_metrics[row['product_id']] = {'name': row['product__naziv'], 'views': row['views'], 'carts': row['carts'], 'purchases': 0, 'revenue': 0}
-    for row in sale_rows:
-        metric = product_metrics.get(row['artikal_id'])
-        if metric is not None:
-            metric['purchases'], metric['revenue'] = row['purchases'], row['revenue'] or 0
-    product_metrics = {key: value for key, value in product_metrics.items() if value['views']}
-    product_metrics = sorted(product_metrics.values(), key=lambda row: (row['purchases'], row['carts'], row['views']), reverse=True)[:10]
-    for metric in product_metrics:
-        metric['conversion'] = round(metric['purchases'] * 100 / metric['views'], 2) if metric['views'] else 0
-    low_conversion_product = next(
-        (row for row in product_metrics if row['views'] >= 10 and row['carts'] >= 1 and row['purchases'] <= 2),
-        None,
-    )
-    live = _live_analytics_context(request)
-    b2b_live_sessions = []
-    b2b_customers = []
-    b2b_lifetime_orders = b2b_lifetime_revenue = b2b_total_visits = b2b_live_count = 0
-    if analytics_channel == 'b2b':
-        from .views_b2b import live_b2b_sessions
-        from .models import B2BSubmission
-        from django.contrib.sessions.models import Session
-        b2b_live_sessions = live_b2b_sessions()
-        b2b_live_count = len(b2b_live_sessions)
-        b2b_lifetime_orders = scoped_orders.count()
-        b2b_lifetime_revenue = scoped_orders.aggregate(total=Sum('ukupno'))['total'] or 0
-        b2b_customers = B2BSubmission.objects.exclude(order__status=Order.Status.OTKAZANA).values(
-            'account__username', 'account__ime_prezime', 'account__company',
-        ).annotate(order_count=Count('order_id'), total=Sum('order__ukupno')).order_by('-total')
-        for session in Session.objects.iterator():
-            try:
-                if session.get_decoded().get('b2b_account_id'):
-                    b2b_total_visits += 1
-            except Exception:
-                continue
-    source_scope = request.GET.get('source_scope', 'live')
-    if source_scope == 'total':
-        source_labels = {
-            'google_ads': 'Google Ads', 'facebook_ads': 'Facebook/Instagram Ads',
-            'google': 'Google', 'facebook': 'Facebook', 'instagram': 'Instagram',
-            'direct': 'Direktno', 'other': 'Ostalo',
-        }
-        source_rows = LiveVisitor.objects.filter(first_seen__date__range=(start, today)).values('izvor_dolaska').annotate(count=Count('pk')).order_by('-count')
-        live['sources'] = [
-            {'label': source_labels.get(row['izvor_dolaska'] or 'direct', row['izvor_dolaska'] or 'Direktno'), 'count': row['count']}
-            for row in source_rows
-        ]
-    return render(request, 'staff/superuser_app_analytics.html', {
-        **_base_context(),
-        **live,
-        'today_orders_count': order_count,
-        'today_revenue': revenue,
-        'units_sold': units_sold,
-        'average_order_value': average_order_value,
-        'conversion_rate': conversion_rate,
-        'analytics_channel': analytics_channel,
-        'b2b_live_sessions': b2b_live_sessions,
-        'b2b_lifetime_orders': b2b_lifetime_orders,
-        'b2b_lifetime_revenue': b2b_lifetime_revenue,
-        'b2b_total_visits': b2b_total_visits,
-        'b2b_live_count': b2b_live_count,
-        'b2b_customers': b2b_customers,
-        'visit_count': visit_count, 'previous_visit_count': previous_visit_count,
-        'visit_change': visit_change, 'period': period, 'period_label': period_label,
-        'weekly_visits': weekly_visits,
-        'top_products': top_products, 'category_sales': category_sales,
-        'fastest_growth': fastest_growth, 'low_stock_product': low_stock_product,
-        'top_searches': top_searches, 'zero_result_searches': zero_result_searches,
-        'product_metrics': product_metrics,
-        'low_conversion_product': low_conversion_product,
-        'source_scope': source_scope,
-        'yearly_visits': yearly_visits, 'city_visits': city_visits,
-    })
-
-
-@login_required(login_url='login')
-def superuser_app_b2b(request):
-    """Dedicated B2B analytics route; public-web analytics remains separate."""
-    request._app_analytics_channel = 'b2b'
-    return superuser_app_analytics(request)
-
-
-@login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_b2b_live(request):
     from .views_b2b import live_b2b_sessions
@@ -7607,10 +7357,215 @@ def _live_analytics_context(request):
     if hasattr(generated_at, 'astimezone'):
         generated_at = dj_tz.localtime(generated_at)
     online_visitors = snapshot.get('online_visitors') or []
+    session_keys = [
+        row.get('session_key') for row in online_visitors
+        if row.get('session_key')
+    ]
+    live_rows = list(
+        LiveVisitor.objects.filter(session_key__in=session_keys).values(
+            'session_key', 'trenutno_gleda', 'pregledane_kategorije',
+        )
+    ) if session_keys else []
+    cart_sessions = set(
+        ActiveCartItem.objects.filter(session_key__in=session_keys)
+        .values_list('session_key', flat=True).distinct()
+    ) if session_keys else set()
+    checkout_count = sum(
+        1 for row in online_visitors
+        if (row.get('path') or '').rstrip('/').endswith('/narudzba')
+        or (row.get('path') or '').rstrip('/').endswith('/checkout')
+    )
+    product_counts = {}
+    category_counts = {}
+    for row in live_rows:
+        looking = (row.get('trenutno_gleda') or '').strip()
+        if looking.startswith('Artikal: '):
+            name = looking[9:].strip()
+            if name:
+                product_counts[name] = product_counts.get(name, 0) + 1
+        elif looking.startswith('Kategorija: '):
+            name = looking[11:].strip()
+            if name:
+                category_counts[name] = category_counts.get(name, 0) + 1
+        for category in (row.get('pregledane_kategorije') or [])[:1]:
+            if isinstance(category, str) and category.strip():
+                name = category.strip()
+                category_counts[name] = category_counts.get(name, 0) + 1
+    live_products = [
+        {'name': name, 'count': count}
+        for name, count in sorted(product_counts.items(), key=lambda item: (-item[1], item[0]))[:5]
+    ]
+    live_categories = [
+        {'name': name, 'count': count}
+        for name, count in sorted(category_counts.items(), key=lambda item: (-item[1], item[0]))[:5]
+    ]
+    device_breakdown = cache.get('live_center_device_breakdown_v1')
+    if device_breakdown is None:
+        raw_device_counts = {
+            row['uredjaj']: int(row['visit_count'] or 0)
+            for row in (
+                LiveVisitor.objects.exclude(user__is_staff=True)
+                .exclude(user__is_superuser=True)
+                .filter(uredjaj__in=('mobile', 'desktop'))
+                .values('uredjaj')
+                .annotate(visit_count=Count('id'))
+            )
+        }
+        known_device_count = sum(raw_device_counts.values())
+        device_breakdown = [
+            {
+                'key': key,
+                'label': 'Telefon' if key == 'mobile' else 'Desktop',
+                'count': raw_device_counts.get(key, 0),
+                'percent': round((raw_device_counts.get(key, 0) * 100 / known_device_count), 1) if known_device_count else 0,
+            }
+            for key in ('mobile', 'desktop')
+        ]
+        cache.set('live_center_device_breakdown_v1', device_breakdown, 60)
+    # LiveVisitor red ostaje sačuvan nakon izlaska, pa first_seen daje
+    # stvarni dnevni broj zabilježenih ulazaka u ovoj kalendarskoj sedmici.
+    today = dj_tz.localdate()
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=7)
+    weekday_labels = ('Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub', 'Ned')
+    daily_rows = (
+        LiveVisitor.objects.filter(first_seen__date__gte=week_start, first_seen__date__lt=week_end)
+        .exclude(user__is_staff=True)
+        .exclude(user__is_superuser=True)
+        .annotate(day=TruncDate('first_seen', tzinfo=dj_tz.get_current_timezone()))
+        .values('day')
+        .annotate(
+            identified=Count('visitor_token', distinct=True, filter=~Q(visitor_token='')),
+            anonymous=Count('session_key', filter=Q(visitor_token='')),
+        )
+    )
+    daily_counts = {
+        row['day']: int(row['identified'] or 0) + int(row['anonymous'] or 0)
+        for row in daily_rows if row.get('day')
+    }
+    weekly_online = []
+    for offset, label in enumerate(weekday_labels):
+        day = week_start + timedelta(days=offset)
+        weekly_online.append({
+            'label': label,
+            'date_label': day.strftime('%d.%m.'),
+            'count': daily_counts.get(day, 0),
+        })
+    weekly_max = max([item['count'] for item in weekly_online] or [0])
+    for item in weekly_online:
+        item['height'] = 8 if not weekly_max else max(8, round(item['count'] * 100 / weekly_max))
+    traffic_sources = cache.get('live_center_traffic_sources_v1')
+    if traffic_sources is None:
+        from .live_visitors import SOURCE_DISPLAY_ORDER, normalize_traffic_source, traffic_source_label
+
+        source_rows = (
+            LiveVisitor.objects.exclude(user__is_staff=True)
+            .exclude(user__is_superuser=True)
+            .values('izvor_dolaska')
+            .annotate(count=Count('id'))
+        )
+        traffic_counts = {}
+        for row in source_rows:
+            key = normalize_traffic_source(row['izvor_dolaska'])
+            traffic_counts[key] = traffic_counts.get(key, 0) + int(row['count'] or 0)
+        traffic_total = sum(traffic_counts.values())
+        traffic_sources = [
+            {
+                'key': key,
+                'label': traffic_source_label(key),
+                'count': traffic_counts.get(key, 0),
+                'percent': round((traffic_counts.get(key, 0) * 100 / traffic_total), 1) if traffic_total else 0,
+            }
+            for key in SOURCE_DISPLAY_ORDER
+            if traffic_counts.get(key, 0)
+        ]
+        traffic_sources.sort(key=lambda item: (-item['count'], item['label']))
+        cache.set('live_center_traffic_sources_v1', traffic_sources, 60)
+    city_sources = cache.get('live_center_city_sources_v1')
+    if city_sources is None:
+        city_sources = [
+            {'name': row['grad'], 'count': int(row['visit_count'] or 0)}
+            for row in (
+                LiveVisitor.objects.exclude(user__is_staff=True)
+                .exclude(user__is_superuser=True)
+                .exclude(grad='')
+                .values('grad')
+                .annotate(visit_count=Count('id'))
+                .order_by('-visit_count', 'grad')[:8]
+            )
+        ]
+        cache.set('live_center_city_sources_v1', city_sources, 60)
+    search_lists = cache.get('live_center_search_lists_v1')
+    if search_lists is None:
+        def _search_rows(queryset):
+            return [
+                {'name': row['normalized'], 'count': int(row['search_count'] or 0)}
+                for row in (
+                    queryset.annotate(normalized=Lower('query'))
+                    .values('normalized')
+                    .annotate(search_count=Count('id'))
+                    .order_by('-search_count', 'normalized')[:8]
+                )
+                if row.get('normalized')
+            ]
+
+        search_lists = {
+            'without_results': _search_rows(SiteSearchEvent.objects.filter(results_count=0)),
+            'with_results': _search_rows(SiteSearchEvent.objects.filter(results_count__gt=0)),
+        }
+        cache.set('live_center_search_lists_v1', search_lists, 30)
+    top_products = cache.get('live_center_top_products_v1')
+    if top_products is None:
+        product_rows = (
+            OrderItem.objects.filter(
+                narudzba__izvor=Order.Izvor.WEBSHOP,
+                narudzba__b2b_submission__isnull=True,
+            )
+            .exclude(narudzba__ime_prezime='Prenos u MP')
+            .exclude(narudzba__status=Order.Status.OTKAZANA)
+            .values('artikal_id', 'naziv')
+            .annotate(order_count=Count('narudzba_id', distinct=True))
+            .order_by('-order_count', 'naziv')[:10]
+        )
+        top_products = [
+            {'name': row['naziv'], 'order_count': int(row['order_count'] or 0)}
+            for row in product_rows
+        ]
+        cache.set('live_center_top_products_v1', top_products, 30)
+    b2b_online_users = []
+    try:
+        from .views_b2b import live_b2b_sessions
+        b2b_rows = live_b2b_sessions()
+        b2b_online_count = len(b2b_rows)
+        b2b_online_users = [
+            {
+                'username': row['account'].username,
+                'company': row['account'].company,
+                'cart_total': str(row['netto']),
+                'cart_count': row['count'],
+            }
+            for row in b2b_rows
+        ]
+    except Exception:
+        logger.exception('B2B live snapshot nije dostupan.')
+        b2b_online_count = 0
     return {
         'online_count': snapshot.get('online_count') or len(online_visitors),
         'online_visitors': online_visitors,
         'sources': snapshot.get('sources') or [],
+        'cart_count': len(cart_sessions),
+        'top_products': top_products,
+        'checkout_count': checkout_count,
+        'device_breakdown': device_breakdown,
+        'b2b_online_count': b2b_online_count,
+        'b2b_online_users': b2b_online_users,
+        'live_products': live_products,
+        'live_categories': live_categories,
+        'traffic_sources': traffic_sources,
+        'city_sources': city_sources,
+        'search_without_results': search_lists['without_results'],
+        'search_with_results': search_lists['with_results'],
+        'weekly_online': weekly_online,
         'online_minutes': snapshot.get('online_minutes') or 1,
         'generated_at': generated_at,
         'generated_at_label': generated_at.strftime('%H:%M:%S'),
@@ -7990,6 +7945,19 @@ def staff_live_analytics_data(request):
         'online_count': payload.get('online_count') or 0,
         'online_visitors': payload.get('online_visitors') or [],
         'sources': payload.get('sources') or [],
+        'cart_count': payload.get('cart_count') or 0,
+        'top_products': payload.get('top_products') or [],
+        'checkout_count': payload.get('checkout_count') or 0,
+        'device_breakdown': payload.get('device_breakdown') or [],
+        'b2b_online_count': payload.get('b2b_online_count') or 0,
+        'b2b_online_users': payload.get('b2b_online_users') or [],
+        'live_products': payload.get('live_products') or [],
+        'live_categories': payload.get('live_categories') or [],
+        'traffic_sources': payload.get('traffic_sources') or [],
+        'city_sources': payload.get('city_sources') or [],
+        'search_without_results': payload.get('search_without_results') or [],
+        'search_with_results': payload.get('search_with_results') or [],
+        'weekly_online': payload.get('weekly_online') or [],
         'online_minutes': payload.get('online_minutes') or 1,
         'generated_at': payload.get('generated_at'),
         'generated_at_label': payload.get('generated_at_label') or '',

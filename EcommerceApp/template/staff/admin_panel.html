@@ -13,12 +13,21 @@
 <link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20260916-coupon-prices">
 <style>
 body.staff-shell-page { background: #f5f5f7; color: #111; }
+body.staff-shell-page main { width: 100% !important; max-width: none !important; margin: 0 !important; }
+body .staff-admin-page { width: 100% !important; max-width: none !important; margin: 0 !important; }
+body .staff-admin-page .staff-page-hero__inner { max-width: none !important; padding-left: 40px !important; padding-right: 40px !important; }
+body .staff-admin-page .admin-buttons { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 40px 40px !important; }
 body .staff-admin-page .staff-page-hero { background: #eeeef1; border: 1px solid #dedee3; box-shadow: none; }
 body .staff-admin-page :is(.staff-page-title,.staff-page-subtitle,.staff-page-kicker,.staff-page-back) { color: #111; }
 body .staff-admin-page .admin-btn { background: #f0f0f3; color: #111; border: 1px solid #dedee3; box-shadow: none; }
 body .staff-admin-page .admin-btn:hover { background: #e7e7ec; border-color: #c9c9d1; }
 body .staff-admin-page .admin-btn-icon { background: #e2e2e8; color: #333; }
 body .staff-admin-page .admin-btn-text :is(h2,h3,p,span,strong), body .staff-admin-page .admin-btn-arrow { color: #111; }
+body .staff-admin-page .admin-live-new { position: absolute; top: 12px; right: 13px; padding: 4px 8px; border-radius: 999px; background: #ff5a00; color: #fff !important; font-size: 10px; font-weight: 900; letter-spacing: .08em; line-height: 1; }
+@media (max-width: 820px) {
+    body .staff-admin-page .staff-page-hero__inner { padding-left: 16px !important; padding-right: 16px !important; }
+    body .staff-admin-page .admin-buttons { padding: 0 16px 32px !important; }
+}
 </style>
 {% endblock %}
 
@@ -86,6 +95,7 @@ body .staff-admin-page .admin-btn-text :is(h2,h3,p,span,strong), body .staff-adm
 
 
         <a href="{% url 'staff_live_analytics' %}" class="admin-btn">
+            <span class="admin-live-new">NEW</span>
             <div class="admin-btn-icon admin-btn-icon--live" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="2.5"/>
@@ -96,25 +106,8 @@ body .staff-admin-page .admin-btn-text :is(h2,h3,p,span,strong), body .staff-adm
                 </svg>
             </div>
             <div class="admin-btn-text">
-                <strong>Uživo analitika</strong>
-                <span>Ko je trenutno na sajtu i u zadnjih 30 minuta</span>
-            </div>
-            <span class="admin-btn-arrow" aria-hidden="true">→</span>
-        </a>
-
-        <a href="{% url 'staff_b2b_live' %}" class="admin-btn">
-            <div class="admin-btn-icon admin-btn-icon--live" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="9" cy="8" r="3"/>
-                    <path d="M4 19c.7-3 2.8-5 5-5s4.3 2 5 5"/>
-                    <path d="M16 11h5"/>
-                    <path d="M16 16h4"/>
-                    <path d="M16 21h3"/>
-                </svg>
-            </div>
-            <div class="admin-btn-text">
-                <strong>B2B Live</strong>
-                <span>Ko je ulogovan na veleprodaju i koliko ima u korpi</span>
+                <strong>Live centar</strong>
+                <span>Online kupci, korpe, checkout, B2B i aktivni pregledi</span>
             </div>
             <span class="admin-btn-arrow" aria-hidden="true">→</span>
         </a>
