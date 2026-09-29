@@ -5546,6 +5546,10 @@ class OnlineGiftClaim(models.Model):
     reward_consumed = models.BooleanField(default=False)
     # Popunjava se samo za Sretni Greb-Greb. Kombinacija je zaključana u bazi
     # kako dva istovremena zahtjeva ne bi mogla dodijeliti dvije nagrade.
+    scratch_tracking_enabled = models.BooleanField(default=False)
+    scratch_shown_at = models.DateTimeField(null=True, blank=True)
+    scratch_revealed_at = models.DateTimeField(null=True, blank=True)
+    scratch_reward_label = models.CharField(max_length=500, blank=True)
     scratch_week_start = models.DateField(null=True, blank=True, db_index=True)
     scratch_eligibility_key = models.CharField(max_length=80, blank=True)
     scratch_prize_code = models.CharField(max_length=24, blank=True)

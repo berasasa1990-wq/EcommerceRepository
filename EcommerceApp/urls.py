@@ -16,6 +16,7 @@ from . import views_sync
 urlpatterns = [
     path('manifest.webmanifest', views.pwa_manifest, name='pwa_manifest'),
     path('service-worker.js', views.pwa_service_worker, name='pwa_service_worker'),
+    path('nagrade/greb-greb/dogadjaj/', views.scratch_event, name='scratch_event'),
     path('nagrade/greb-greb/status/', views.scratch_status, name='scratch_status'),
     path('nagrade/greb-greb/otkrij/', views.scratch_claim, name='scratch_claim'),
     path('nagrade/greb-greb/dodaj-artikal/', views.scratch_add_product, name='scratch_add_product'),
@@ -378,6 +379,7 @@ urlpatterns = [
         views_magacin.magacin_backup_download_current,
         name='staff_magacin_backup_download_current',
     ),
+    path('nalog/greb-greb/', views.staff_scratch_analytics, name='staff_scratch_analytics'),
     path('nalog/uzivo-analitika/', views.staff_live_analytics, name='staff_live_analytics'),
     path('nalog/uzivo-analitika/podaci/', views.staff_live_analytics_data, name='staff_live_analytics_data'),
     path('nalog/uzivo-obavijesti/', views.staff_site_events_poll, name='staff_site_events_poll'),

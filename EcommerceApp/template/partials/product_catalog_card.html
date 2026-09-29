@@ -12,7 +12,9 @@
     data-category="{% if product.kategorija %}{{ product.kategorija.naziv }}{% endif %}"
     {% if product.na_stanju %}data-in-stock="1"{% endif %}
 >
-    {% if product.je_novitet or home_section_badge == 'novo' %}
+    {% if home_reference_card and home_section_badge == 'novo' %}
+    <span class="home-card-new-label">Novo</span>
+    {% elif product.je_novitet or home_section_badge == 'novo' %}
     <span class="product-card-corner-badge product-card-corner-badge--novitet" aria-label="Novo">NOVO</span>
     {% elif product.katalog_akcija_postotak %}
     <span class="product-card-corner-badge product-card-corner-badge--sale is-pulse" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>

@@ -111,6 +111,13 @@ body .staff-admin-page .admin-live-new { position: absolute; top: 12px; right: 1
             </div>
             <span class="admin-btn-arrow" aria-hidden="true">→</span>
         </a>
+        <a href="{% url 'staff_scratch_analytics' %}" class="admin-btn">
+            <span class="admin-live-new">NEW</span>
+            <div class="admin-btn-icon" aria-hidden="true">🎁</div>
+            <div class="admin-btn-text"><strong>Greb Greb</strong><span>Prikazi kupcima, ogrebane nagrade i dodavanje u narudžbu</span></div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
+        </a>
+
 
         {% else %}
         <div class="admin-btn admin-btn--locked" title="Dostupno samo superuseru" aria-disabled="true">

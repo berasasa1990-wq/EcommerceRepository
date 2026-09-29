@@ -199,6 +199,8 @@ def scratch_claim(request):
                         OnlineGiftCampaign.PrizeType.FREE_SHIPPING if kind == 'shipping' else ''),
                     discount_percent=percent,
                     scratch_prize_code=code,
+                    scratch_tracking_enabled=True,
+                    scratch_reward_label=label[:500],
                     scratch_trigger_order_id=trigger_order_id,
                 )
         except IntegrityError:

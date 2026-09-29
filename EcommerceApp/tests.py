@@ -1101,6 +1101,46 @@ class StaffStorefrontEditModeTests(TestCase):
             reverse('staff_magacin_brzi_unos_aktivacija', args=[self.incomplete.pk]),
         )
 
+    def test_bulk_search_tags_append_deduplicate_and_refresh_search(self):
+        from django.urls import reverse
+        from .models import Tag
+        from .views import _product_ids_for_product_tag_query, invalidate_product_tag_search_cache, _apply_search_filter
+
+        self.client.force_login(self.admin)
+        session = self.client.session
+        session['staff_edit_mode'] = True
+        session.save()
+        old = Tag.objects.create(naziv='Postojeći tag')
+        self.complete.tagovi.add(old)
+        invalidate_product_tag_search_cache()
+        self.addCleanup(invalidate_product_tag_search_cache)
+        self.assertNotIn(self.complete.pk, _product_ids_for_product_tag_query('bulkpecanje'))
+        payload = {'product_ids': [self.complete.pk, self.incomplete.pk], 'tagovi': 'bulkpecanje, BULKPECANJE; feeder set'}
+        response = self.client.post(reverse('staff_product_bulk_edit'), payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['ok'])
+        self.assertEqual(self.complete.tagovi.count(), 3)
+        self.assertEqual(self.incomplete.tagovi.count(), 2)
+        for query in ('bulkpecanje', 'feeder set', 'FEEDER SET'):
+            with self.subTest(query=query):
+                found = set(_apply_search_filter(Product.objects.all(), query).values_list('pk', flat=True))
+                self.assertEqual(found, {self.complete.pk, self.incomplete.pk})
+        self.assertNotIn(self.complete.pk, _product_ids_for_product_tag_query('naknadni tag'))
+        new_tag = Tag.objects.create(naziv='naknadni tag')
+        self.complete.tagovi.add(new_tag)
+        self.assertIn(self.complete.pk, _product_ids_for_product_tag_query('naknadni tag'))
+        self.complete.tagovi.remove(new_tag)
+        self.assertNotIn(self.complete.pk, _product_ids_for_product_tag_query('naknadni tag'))
+
+        self.assertTrue(self.complete.tagovi.filter(pk=old.pk).exists())
+        self.assertIn(self.complete.pk, _product_ids_for_product_tag_query('bulkpecanje'))
+        self.assertIn(self.incomplete.pk, _product_ids_for_product_tag_query('bulkpecanje'))
+        self.client.post(reverse('staff_product_bulk_edit'), payload)
+        self.assertEqual(self.complete.tagovi.count(), 3)
+        response = self.client.post(reverse('staff_product_bulk_edit'), {'product_ids': [self.complete.pk], 'tagovi': 'x' * 51})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self.complete.tagovi.count(), 3)
+
     def test_edit_mode_bulk_applies_only_filled_fields(self):
         import json
         from django.urls import reverse

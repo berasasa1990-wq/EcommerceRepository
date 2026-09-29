@@ -44,6 +44,11 @@
       });
       const prize = await claimResponse.json();
       if (!prize.ok) return;
+      const recordEvent = event => fetch(modal.dataset.eventUrl, {
+        method: 'POST', credentials: 'same-origin', keepalive: true,
+        headers: { 'X-CSRFToken': csrfToken },
+        body: new URLSearchParams({ claim_id: prize.claim_id, event }),
+      }).catch(() => {});
 
       const rewardLabel = document.getElementById('scratchGameReward');
       const productReveal = document.getElementById('scratchProductReveal');
@@ -65,6 +70,7 @@
         rewardLabel.textContent = prize.label;
       }
       modal.hidden = false;
+      recordEvent('shown');
 
       const canvas = document.getElementById('scratchGameCanvas');
       const context = canvas.getContext('2d');
@@ -86,6 +92,7 @@
       function showResult() {
         if (finished) return;
         finished = true;
+        recordEvent('revealed');
         context.clearRect(0, 0, bounds.width, bounds.height);
         canvas.style.pointerEvents = 'none';
         const result = document.getElementById('scratchGameResult');

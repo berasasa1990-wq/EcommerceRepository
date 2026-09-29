@@ -1,0 +1,70 @@
+body.scratch-report-page { background:#f4f5f7; }
+body.scratch-report-page main { width:100% !important; max-width:none !important; margin:0 !important; padding:0 !important; }
+.scratch-report { --sr-ink:#202734; --sr-muted:#697386; width:100%; max-width:none; margin:0; padding:26px 40px 56px; color:var(--sr-ink); }
+.scratch-report * { box-sizing:border-box; }
+.scratch-report__back { display:inline-flex; gap:8px; align-items:center; color:var(--sr-muted); font-size:13px; font-weight:600; text-decoration:none; margin-bottom:22px; }
+.scratch-report__hero { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:24px; }
+.scratch-report__eyebrow { color:#c24b0b; font-size:11px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+.scratch-report h1 { font-size:clamp(28px,3vw,40px); letter-spacing:-.04em; line-height:1.15; margin:8px 0 10px; }
+.scratch-report__hero p { color:var(--sr-muted); font-size:14px; line-height:1.65; margin:0; max-width:650px; }
+.scratch-report__total { flex:0 0 auto; min-width:166px; padding:20px 26px; border:1px solid #f2d7c6; border-radius:16px; background:#fff8f2; }
+.scratch-report__total strong { display:block; color:#c24b0b; font-size:32px; line-height:1.1; letter-spacing:-.04em; font-variant-numeric:tabular-nums; }
+.scratch-report__total span { display:block; margin-top:7px; color:#86644e; font-size:12px; font-weight:600; }
+.scratch-report__note { display:flex; align-items:flex-start; gap:12px; padding:15px 18px; background:#edf2f8; border:1px solid #dde5ef; border-radius:12px; color:#52647b; font-size:12px; line-height:1.65; }
+.scratch-report__note svg { flex:none; width:18px; height:18px; margin-top:1px; }
+.scratch-report__table { overflow-x:auto; border:1px solid #e1e5eb; border-radius:16px; margin:22px 0 18px; background:#fff; box-shadow:0 4px 20px #20273405; }
+.scratch-report table { width:100%; border-collapse:collapse; text-align:left; font-size:13px; }
+.scratch-report caption { text-align:left; padding:20px; font-size:15px; font-weight:750; border-bottom:1px solid #edf0f4; }
+.scratch-report caption span { float:right; font-size:11px; font-weight:500; color:var(--sr-muted); }
+.scratch-report th,.scratch-report td { padding:19px 18px; border-bottom:1px solid #edf0f4; vertical-align:top; line-height:1.55; }
+.scratch-report th { background:#fafbfc; color:#738093; font-size:10px; text-transform:uppercase; letter-spacing:.065em; font-weight:750; white-space:nowrap; }
+.scratch-report tbody tr:last-child td { border-bottom:0; }
+.scratch-report tbody tr:hover { background:#fcfcfd; }
+.scratch-report td:first-child { min-width:210px; }
+.scratch-report small { display:block; color:var(--sr-muted); margin-top:5px; font-size:11px; overflow-wrap:anywhere; }
+.scratch-report__name { display:block; font-size:14px; font-weight:700; }
+.scratch-report__order { color:#385e92; font-weight:650; text-decoration:none; white-space:nowrap; }
+.scratch-report__order:hover { text-decoration:underline; }
+.scratch-report__badge { display:inline-flex; align-items:center; gap:6px; border:1px solid transparent; border-radius:7px; padding:4px 8px; font-size:11px; line-height:1.3; font-weight:650; }
+.scratch-report__badge--yes { color:#23714e; background:#edf8f1; border-color:#d9eddf; }
+.scratch-report__badge--pending { color:#92651c; background:#fff8e8; border-color:#f3e5c5; }
+.scratch-report__badge--muted { color:#768091; background:#f3f5f7; border-color:#e8ebef; }
+.scratch-report__reward { display:block; font-weight:650; max-width:260px; }
+.scratch-report__empty { padding:56px 20px!important; text-align:center; color:var(--sr-muted); }
+.scratch-report__empty strong { display:block; color:var(--sr-ink); font-size:17px; margin-bottom:8px; }
+.scratch-report nav { display:flex; align-items:center; justify-content:space-between; gap:16px; font-size:12px; color:var(--sr-muted); }
+.scratch-report nav a { display:inline-block; padding:10px 14px; border:1px solid #dce1e8; border-radius:9px; color:var(--sr-ink); background:white; text-decoration:none; font-weight:600; }
+.scratch-report a:focus-visible { outline:3px solid #ed8a43; outline-offset:3px; }
+@media(max-width:767px) {
+ .scratch-report { margin:20px auto; padding:0 14px 36px; }
+ .scratch-report__hero { align-items:flex-start; gap:14px; }
+ .scratch-report__total { min-width:100px; padding:15px; }
+ .scratch-report__total strong { font-size:26px; }
+ .scratch-report__total span { font-size:10px; }
+ .scratch-report__hero p { font-size:12px; }
+ .scratch-report__table { overflow:visible; background:transparent; border:0; box-shadow:none; }
+ .scratch-report table,.scratch-report tbody { display:block; }
+ .scratch-report caption { display:block; padding:0 0 14px; border:0; }
+ .scratch-report caption span { float:none; display:block; margin-top:4px; }
+ .scratch-report thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+ .scratch-report tbody tr { display:block; padding:6px 16px; margin-bottom:14px; border:1px solid #e1e5eb; border-radius:14px; background:white; }
+ .scratch-report td { display:grid; grid-template-columns:116px minmax(0,1fr); gap:5px 12px; padding:13px 0; }
+ .scratch-report td::before { content:attr(data-label); grid-column:1; grid-row:1 / span 4; font-size:11px; color:var(--sr-muted); padding-top:3px; }
+ .scratch-report td > * { grid-column:2; justify-self:start; }
+ .scratch-report td:first-child { min-width:0; }
+ .scratch-report td.scratch-report__empty { display:block; }
+ .scratch-report td.scratch-report__empty::before { display:none; }
+}
+
+.scratch-report__stats { display:flex; gap:12px; flex-shrink:0; }
+.scratch-report__total--accepted { background:#edf8f1; border-color:#d9eddf; }
+.scratch-report__total--accepted strong { color:#23714e; }
+.scratch-report__total--accepted span { color:#427457; }
+@media(max-width:900px) {
+ .scratch-report__hero { flex-wrap:wrap; }
+ .scratch-report__stats { width:100%; }
+ .scratch-report__stats .scratch-report__total { flex:1; min-width:0; }
+}
+@media(max-width:767px) {
+ .scratch-report { margin:0; padding:20px 14px 36px; }
+}

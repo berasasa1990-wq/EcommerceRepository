@@ -338,6 +338,22 @@
         body { padding-top: 0 !important; }
         html { scroll-padding-top: var(--site-chrome-top); }
     </style>
+    <style>
+    .desktop-trust-bar nav a.site-wholesale-link {
+        display:inline-block; font-weight:800; letter-spacing:.06em;
+        color:#ff5a00; white-space:nowrap;
+        animation:site-wholesale-pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes site-wholesale-pulse {
+        0%,100% { opacity:1; }
+        50% { opacity:.5; }
+    }
+    .desktop-trust-bar nav a.site-wholesale-link:hover,
+    .desktop-trust-bar nav a.site-wholesale-link:focus-visible { animation:none; opacity:1; }
+    @media(prefers-reduced-motion:reduce) {
+        .desktop-trust-bar nav a.site-wholesale-link { animation:none; }
+    }
+    </style>
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
@@ -351,7 +367,7 @@
                 <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 3"/></svg>Brza dostava u roku 24h</span>
                 <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6zM7 11l3 3 6-6"/></svg>Sigurna kupovina</span>
             </div>
-            <nav aria-label="Informacije"><a href="#footerContact">Kontakt</a><a href="{% url 'about_us' %}">O nama</a><a href="{% url 'vlog_list' %}">Blog</a><a href="{% url 'payment_methods' %}">Pomoć</a></nav>
+            <nav aria-label="Informacije"><a href="#footerContact">Kontakt</a><a href="{% url 'about_us' %}">O nama</a><a href="{% url 'vlog_list' %}">Blog</a><a href="{% url 'payment_methods' %}">Pomoć</a><a class="site-wholesale-link" href="{% url 'b2b_catalog' %}">VELEPRODAJA</a></nav>
         </div>
         <p>
             <span data-site-edit="promo_bar_tekst" data-site-edit-placeholder="Promo tekst">{% if site_settings.promo_bar_tekst %}{{ site_settings.promo_bar_tekst }}{% endif %}</span>
@@ -819,8 +835,8 @@
     {% endif %}
     {% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
     {% include 'partials/staff_site_editor.html' %}
-    <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20260922missingFilters">
-    <script src="{% static 'js/staff-site-edit.js' %}?v=20260922missingFilters" defer></script>
+    <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20260929bulkTags">
+    <script src="{% static 'js/staff-site-edit.js' %}?v=20260929bulkTags" defer></script>
     {% endif %}
     <div class="setb-gate" id="setBuilderGate" hidden
          data-unlock-url="{% url 'set_builder_unlock' %}"
@@ -843,14 +859,14 @@
     </div>
     <script src="{% static 'js/set-builder-gate.js' %}?v=20260903beta" defer></script>
     {% include 'partials/permanent_input_history.html' %}
-    <section class="scratch-game" id="scratchGame" data-status-url="{% url 'scratch_status' %}" data-claim-url="{% url 'scratch_claim' %}" data-add-to-order-url="{% url 'scratch_add_product_to_order' %}"{% if scratch_game_immediate %} data-immediate="1"{% endif %}{% if scratch_game_return_url %} data-after-close-url="{{ scratch_game_return_url }}"{% endif %} hidden aria-modal="true" role="dialog" aria-labelledby="scratchGameTitle">
+    <section class="scratch-game" id="scratchGame" data-status-url="{% url 'scratch_status' %}" data-event-url="{% url 'scratch_event' %}" data-claim-url="{% url 'scratch_claim' %}" data-add-to-order-url="{% url 'scratch_add_product_to_order' %}"{% if scratch_game_immediate %} data-immediate="1"{% endif %}{% if scratch_game_return_url %} data-after-close-url="{{ scratch_game_return_url }}"{% endif %} hidden aria-modal="true" role="dialog" aria-labelledby="scratchGameTitle">
       <div class="scratch-game__panel"><button class="scratch-game__close" type="button" aria-label="Zatvori">×</button>
         <p class="scratch-game__eyebrow">CARPOLOGIJA.BH</p><h2 id="scratchGameTitle">GREB-GREB</h2>
         <div class="scratch-game__card"><div id="scratchProductReveal" class="scratch-reveal-product" hidden><p class="scratch-reveal-win">ČESTITAMO!</p><small id="scratchRevealPack" class="scratch-reveal-pack" hidden></small><div class="scratch-reveal-media"><img id="scratchRevealImage" alt=""></div><b id="scratchRevealDiscount"></b><div class="scratch-reveal-prices"><del id="scratchRevealRegularPrice"></del><strong id="scratchRevealPrice"></strong></div><span id="scratchRevealName"></span></div><strong id="scratchGameReward">Nagrada je skrivena</strong><canvas id="scratchGameCanvas" aria-label="Grebi ovdje za otkrivanje nagrade"></canvas></div>
         <p id="scratchGameResult" class="scratch-game__result" hidden></p><div id="scratchProductChoice" hidden><p>Želite li ovaj artikal dodati u upravo kreiranu narudžbu?</p><button type="button" id="scratchAddToOrder">Dodaj u narudžbu</button><button type="button" id="scratchSkipProduct">Ne želim</button></div>
       </div>
     </section>
-    <script src="{% static 'js/scratch-game.js' %}?v=1.1.3-touch-scratch" defer></script>
+    <script src="{% static 'js/scratch-game.js' %}?v=1.1.4-event-tracking" defer></script>
     <script>
       if ('serviceWorker' in navigator && window.isSecureContext) {
         window.addEventListener('load', function () {

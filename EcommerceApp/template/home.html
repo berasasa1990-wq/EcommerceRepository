@@ -4,6 +4,17 @@
 
 {% block extra_css %}
 <style>
+.home-products--novo .product-card--home-reference { position: relative; }
+.home-products--novo .home-card-new-label {
+    position: absolute; top: 9px; left: 10px; z-index: 5;
+    display: inline-block; padding: 5px 10px; border-radius: 5px;
+    background: #16a34a; color: #fff; font-size: 12px;
+    font-weight: 700; line-height: 1.3; pointer-events: none;
+}
+body.home-mobile-reference .home-products--novo .product-card--home-reference > .home-card-sale-percent {
+    top: 42px;
+}
+
 @media (max-width: 1024px) { .home-desktop-banner-only { display: none !important; } }
 @media (min-width: 1025px) { .home-banner-mobile-replaced { display: none !important; } }
 

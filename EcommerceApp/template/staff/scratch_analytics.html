@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block body_class %}staff-shell-page scratch-report-page{% endblock %}
+{% block page_title %}<title>Greb Greb — pregled kupaca</title>{% endblock %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/staff-scratch.css' %}?v=20260929-wide-counts">{% endblock %}
+{% block content %}
+<section class="scratch-report">
+<a class="scratch-report__back" href="{% url 'staff_admin_panel' %}">← Admin panel</a>
+<header class="scratch-report__hero">
+<div><span class="scratch-report__eyebrow">Nagrade kupaca</span><h1>Greb Greb</h1><p>Od prvog prikaza do iskorištene nagrade. Pratite kome je kartica prikazana, šta je ogrebao i je li nagradu dodao u narudžbu.</p></div>
+<div class="scratch-report__stats"><div class="scratch-report__total"><strong>{{ page.paginator.count }}</strong><span>Ukupno pokušaja</span></div><div class="scratch-report__total scratch-report__total--accepted"><strong>{{ accepted_count }}</strong><span>Prihvaćeno</span></div></div>
+</header>
+<aside class="scratch-report__note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v2"/></svg><span>Za stare pokušaje prikaz i grebanje nisu praćeni. Oznaka „Nije zabilježeno” ne znači da kupac nije vidio prozor.</span></aside>
+<div class="scratch-report__table"><table><caption>Aktivnost kupaca <span>Najnoviji pokušaji na vrhu</span></caption>
+<thead><tr><th>Vrijeme / kupac</th><th>Početna narudžba</th><th>Prikazano</th><th>Ogrebao</th><th>Šta je ogrebao</th><th>Dodano u narudžbu</th></tr></thead>
+<tbody>{% for claim in page %}<tr>
+<td data-label="Kupac"><strong class="scratch-report__name">{{ claim.customer_name }}</strong><small>{{ claim.customer_email }}</small><small>{{ claim.kreirano|date:"d.m.Y. H:i" }}</small></td>
+<td data-label="Početna narudžba">{% if claim.scratch_trigger_order %}<a class="scratch-report__order" href="{% url 'staff_order_detail' claim.scratch_trigger_order.broj %}">#{{ claim.scratch_trigger_order.broj }}</a>{% else %}—{% endif %}</td>
+<td data-label="Prikazano">{% if claim.scratch_shown_at %}<span class="scratch-report__badge scratch-report__badge--yes">Da</span><small>{{ claim.scratch_shown_at|date:"d.m.Y. H:i" }}</small>{% else %}<span class="scratch-report__badge scratch-report__badge--muted">Nije zabilježeno</span>{% endif %}</td>
+<td data-label="Ogrebao">{% if claim.scratch_revealed_at %}<span class="scratch-report__badge scratch-report__badge--yes">Da</span><small>{{ claim.scratch_revealed_at|date:"d.m.Y. H:i" }}</small>{% elif claim.scratch_tracking_enabled %}<span class="scratch-report__badge scratch-report__badge--pending">Bez potvrde grebanja</span>{% else %}<span class="scratch-report__badge scratch-report__badge--muted">Stari zapis</span>{% endif %}</td>
+<td data-label="Nagrada">{% if claim.scratch_revealed_at %}<span class="scratch-report__reward">{{ claim.display_reward }}</span>{% elif not claim.scratch_tracking_enabled %}<span class="scratch-report__reward">{{ claim.display_reward }}</span><small>Dodijeljeno; grebanje nije praćeno</small>{% else %}<span class="scratch-report__badge scratch-report__badge--muted">Nije otkriveno</span>{% endif %}</td>
+<td data-label="U narudžbi">{% if claim.reward_consumed %}<span class="scratch-report__badge scratch-report__badge--yes">Dodano</span>{% if claim.order %} <a class="scratch-report__order" href="{% url 'staff_order_detail' claim.order.broj %}">#{{ claim.order.broj }}</a>{% endif %}{% elif not claim.won %}<span class="scratch-report__badge scratch-report__badge--muted">Bez dobitka</span>{% else %}<span class="scratch-report__badge scratch-report__badge--pending">Nije dodano</span>{% endif %}</td>
+</tr>{% empty %}<tr><td colspan="6" class="scratch-report__empty"><strong>Još nema Greb Greb pokušaja</strong>Novi pokušaji kupaca pojavit će se ovdje.</td></tr>{% endfor %}</tbody>
+</table></div>
+<nav aria-label="Stranice pregleda"><span>{% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">← Prethodna</a>{% endif %}</span><span>{{ page.number }} / {{ page.paginator.num_pages }}</span><span>{% if page.has_next %}<a href="?page={{ page.next_page_number }}">Sljedeća →</a>{% endif %}</span></nav>
+</section>
+{% endblock %}

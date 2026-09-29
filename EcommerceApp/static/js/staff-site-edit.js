@@ -858,6 +858,7 @@
             fd.append('kategorija_id', (document.getElementById('staffBulkCatId') || {}).value || '');
             fd.append('brend_id', (document.getElementById('staffBulkBrandId') || {}).value || '');
             fd.append('opis', (document.getElementById('staffBulkOpis') || {}).value || '');
+            fd.append('tagovi', (document.getElementById('staffBulkTags') || {}).value || '');
             fd.append('akcija_postotak', (document.getElementById('staffBulkPct') || {}).value || '');
             fd.append('je_hit', (document.getElementById('staffBulkHit') || {}).value || '');
             fd.append('sakriven_do_stanja', (document.getElementById('staffBulkHide') || {}).value || '');

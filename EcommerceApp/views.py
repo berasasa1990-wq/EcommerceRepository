@@ -144,7 +144,7 @@ def scratch_claim(request):
         # eventualnu tekuću akciju artikla.
         product_regular_price = Decimal(str(product.bazna_cijena))
         product_price = (product_regular_price * (Decimal('1') - percent / Decimal('100'))).quantize(Decimal('0.01'))
-    return JsonResponse({'ok': True, 'created': created, 'won': claim.won,
+    return JsonResponse({'ok': True, 'claim_id': claim.pk, 'created': created, 'won': claim.won,
         'label': reward.get('label') or 'Više sreće sljedeći put',
         'minimum': reward.get('minimum') or '0',
         'saved_to_account': bool(request.user.is_authenticated and claim.user_id == request.user.pk),
@@ -155,6 +155,32 @@ def scratch_claim(request):
         'product_discount': reward.get('percent') or '0',
         'product_price': str(product_price),
         'product_regular_price': str(product_regular_price)})
+
+
+@require_POST
+def scratch_event(request):
+    from .online_gift import SCRATCH_CAMPAIGN_NAME
+    event = request.POST.get('event')
+    if event not in ('shown', 'revealed'):
+        return JsonResponse({'ok': False}, status=400)
+    try:
+        claim_id = int(request.POST.get('claim_id', ''))
+    except (TypeError, ValueError):
+        return JsonResponse({'ok': False}, status=400)
+    session_key = request.session.session_key
+    if not session_key:
+        return JsonResponse({'ok': False}, status=404)
+    claims = OnlineGiftClaim.objects.filter(
+        pk=claim_id, session_key=session_key, campaign__naziv=SCRATCH_CAMPAIGN_NAME,
+        scratch_tracking_enabled=True,
+    )
+    if not claims.exists():
+        return JsonResponse({'ok': False}, status=404)
+    now = timezone.now()
+    claims.filter(scratch_shown_at__isnull=True).update(scratch_shown_at=now)
+    if event == 'revealed':
+        claims.filter(scratch_revealed_at__isnull=True).update(scratch_revealed_at=now)
+    return JsonResponse({'ok': True})
 
 
 @require_POST
@@ -1199,10 +1225,8 @@ def invalidate_product_tag_search_cache():
     global _PRODUCT_TAG_CACHE, _PRODUCT_TAG_CACHE_AT
     _PRODUCT_TAG_CACHE = None
     _PRODUCT_TAG_CACHE_AT = 0.0
-    _product_ids_for_tag_query_cached.cache_clear()
 
 
-@lru_cache(maxsize=256)
 def _product_ids_for_tag_query_cached(q_key: str) -> frozenset:
     """
     Artikli čiji M2M tag odgovara upitu (isti match engine kao potkategorija tagovi).
@@ -1214,7 +1238,8 @@ def _product_ids_for_tag_query_cached(q_key: str) -> frozenset:
     # Match funkcije same rade fold/normalize — prosljeđujemo q_key kao upit
     query = q_key
     matching_tag_ids = []
-    for row in _cached_product_tags():
+    # Read current tags so edits are visible across server workers immediately.
+    for row in Tag.objects.values('id', 'naziv'):
         name = row.get('naziv') or ''
         if not name:
             continue
@@ -1417,17 +1442,17 @@ def _apply_search_filter(products_qs, query):
     # 1–2) Naziv (sve riječi, bilo kojim redom) + šifra
     match = _search_exists_match(raw)
 
-    # Višerječni upit ostaje na nazivu/šifri — tagovi ne smiju preplaviti listu.
-    if len(tokens) >= 2:
-        return products_qs.filter(match).distinct()
-
-    # 3) Tagovi artikla (M2M) — samo za jednu riječ
+    # 3) Explicit product tags also match phrases such as "feeder set".
     try:
         product_tag_ids = _product_ids_for_product_tag_query(raw)
         if product_tag_ids:
             match |= Q(pk__in=product_tag_ids)
     except Exception:
         pass
+
+    # Category expansion stays limited to single-word queries.
+    if len(tokens) >= 2:
+        return products_qs.filter(match).distinct()
 
     # 4) Tagovi potkategorije — samo za jednu riječ
     try:
@@ -7584,6 +7609,27 @@ def staff_live_analytics(request):
 
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
+def staff_scratch_analytics(request):
+    from .online_gift import SCRATCH_CAMPAIGN_NAME, scratch_label_for_claim
+    claims = OnlineGiftClaim.objects.filter(campaign__naziv=SCRATCH_CAMPAIGN_NAME).select_related(
+        'user', 'scratch_trigger_order', 'order', 'campaign', 'product',
+    ).order_by('-kreirano', '-pk')
+    page = Paginator(claims, 50).get_page(request.GET.get('page'))
+    for claim in page:
+        trigger = claim.scratch_trigger_order
+        claim.customer_name = (trigger.ime_prezime if trigger else '') or (
+            claim.user.get_full_name() or claim.user.get_username() if claim.user else 'Gost'
+        )
+        claim.customer_email = (trigger.email if trigger else '') or (claim.user.email if claim.user else '')
+        claim.display_reward = claim.scratch_reward_label or scratch_label_for_claim(claim)
+    return render(request, 'staff/scratch_analytics.html', {
+        **_base_context(), 'page': page,
+        'accepted_count': claims.filter(reward_consumed=True, order__isnull=False).count(),
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
 @require_GET
 def staff_product_search(request):
     query = request.GET.get('q', '').strip()
@@ -8567,6 +8613,9 @@ def staff_product_bulk_edit(request):
     if not ids:
         return JsonResponse({'ok': False, 'error': 'Odaberi artikle.'}, status=400)
 
+    tag_names = [name.strip() for name in Category.normalize_search_tagovi(payload.get('tagovi') or '').split(',') if name.strip()]
+    if any(len(name) < 2 or len(name) > 50 for name in tag_names):
+        return JsonResponse({'ok': False, 'error': 'Svaki tag mora imati između 2 i 50 znakova.'}, status=400)
     updates = {}
     raw_cat = str(payload.get('kategorija_id') or '').strip()
     if raw_cat:
@@ -8653,13 +8702,21 @@ def staff_product_bulk_edit(request):
             if len(extra_uploads) >= 12:
                 break
 
-    if not updates and not per_opis and not per_slika and not extra_uploads and not main_upload:
+    if not tag_names and not updates and not per_opis and not per_slika and not extra_uploads and not main_upload:
         return JsonResponse({'ok': False, 'error': 'Unesi barem jedno polje.'}, status=400)
 
     found = {p.pk: p for p in Product.objects.filter(pk__in=ids)}
     products = [found[pk] for pk in ids if pk in found]
     if not products:
         return JsonResponse({'ok': False, 'error': 'Artikli nisu pronađeni.'}, status=400)
+    if tag_names:
+        with transaction.atomic():
+            tags = [Tag.get_or_create_by_name(name)[0] for name in tag_names]
+            for product in products:
+                product.tagovi.add(*tags)
+        invalidate_product_tag_search_cache()
+        _invalidate_search_tag_caches()
+        _invalidate_storefront_product_caches()
     first = products[0]
     name_source = first.naziv or first.slug or 'artikal'
     image_urls = {}
@@ -8724,6 +8781,8 @@ def staff_product_bulk_edit(request):
                     redoslijed=max_order + index,
                 )
     parts = []
+    if tag_names:
+        parts.append('tagovi: ' + ', '.join(tag_names))
     if 'kategorija' in updates:
         parts.append('kategorija')
     if 'brend' in updates:
