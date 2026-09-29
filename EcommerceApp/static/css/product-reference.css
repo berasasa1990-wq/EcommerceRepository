@@ -669,6 +669,7 @@
         background: transparent;
     }
     body.product-mobile-reference .pd-gallery-bar {
+        display: block;
         position: static;
         grid-column: 1;
         grid-row: 1;
