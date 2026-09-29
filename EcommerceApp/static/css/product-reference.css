@@ -683,8 +683,10 @@
         flex-direction: column;
         gap: 10px;
         width: 76px;
-        max-height: none;
-        overflow: visible;
+        max-height: 334px; /* Four 76px thumbnails and three 10px gaps. */
+        overflow-x: hidden;
+        overflow-y: auto;
+        scrollbar-width: none;
         padding: 0;
     }
     body.product-mobile-reference .product-gallery .product-thumbnail,
@@ -1129,4 +1131,12 @@
         height: 100%;
         object-fit: contain;
     }
+}
+
+.pd-thumbnail-scroll-controls { display: none; }
+@media (min-width: 1025px) {
+    body.product-mobile-reference .pd-gallery-bar .product-thumbnails::-webkit-scrollbar { display: none; }
+    .pd-thumbnail-scroll-controls:not([hidden]) { display: flex; gap: 4px; margin-top: 6px; width: 76px; }
+    .pd-thumbnail-scroll-controls button { flex: 1; height: 26px; padding: 0; border: 1px solid #e1e5eb; border-radius: 5px; background: #fff; color: #333; cursor: pointer; }
+    .pd-thumbnail-scroll-controls button:disabled { opacity: .35; cursor: default; }
 }

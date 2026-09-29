@@ -40,26 +40,14 @@ class LiveVisitorMiddleware:
         except Exception:
             logger.exception('Live visitor session bootstrap failed')
 
-        # Track ODMAH na GET stranicama — staff live vidi kupca čim stigne request
-        # (ne čeka kraj rendera HTML-a). Geo je sada samo header/cache — ne blokira TTFB.
-        tracked_early = False
-        try:
-            if (
-                should_track_visitor(request)
-                and request.method in ('GET', 'HEAD')
-                and not is_background_request_path(path)
-            ):
-                track_live_visitor(request)
-                tracked_early = True
-        except Exception:
-            logger.exception('Live visitor early tracking failed')
-
         response = self.get_response(request)
         try:
-            # Heartbeat / poll / AJAX već imaju svoj lagani update.
-            # Drugi track ovdje je dupli SQLite/Postgres write na svaki ping.
+            # Broji samo uspješno učitane stranice, nikad 404, slike ili API odgovore.
             if (
-                not tracked_early
+                request.method == 'GET'
+                and 200 <= response.status_code < 300
+                and response.get('Content-Type', '').split(';', 1)[0].strip().lower() == 'text/html'
+                and request.headers.get('X-Requested-With') != 'XMLHttpRequest'
                 and should_track_visitor(request)
                 and not is_background_request_path(path)
             ):

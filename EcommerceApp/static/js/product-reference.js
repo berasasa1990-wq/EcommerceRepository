@@ -34,6 +34,32 @@
         alignGallery();
     }
     const thumbs = document.getElementById('productThumbnails');
+    if (thumbs) {
+        const controls = document.createElement('div');
+        controls.className = 'pd-thumbnail-scroll-controls';
+        controls.hidden = true;
+        const up = document.createElement('button');
+        const down = document.createElement('button');
+        up.type = down.type = 'button';
+        up.textContent = '↑';
+        down.textContent = '↓';
+        up.setAttribute('aria-label', 'Prethodne dodatne slike');
+        down.setAttribute('aria-label', 'Sljedeće dodatne slike');
+        up.setAttribute('aria-controls', thumbs.id);
+        down.setAttribute('aria-controls', thumbs.id);
+        controls.append(up, down);
+        thumbs.after(controls);
+        const updateScrollControls = () => {
+            controls.hidden = thumbs.scrollHeight <= thumbs.clientHeight + 1;
+            up.disabled = thumbs.scrollTop <= 1;
+            down.disabled = thumbs.scrollTop + thumbs.clientHeight >= thumbs.scrollHeight - 1;
+        };
+        up.addEventListener('click', () => thumbs.scrollBy({ top: -86, behavior: 'smooth' }));
+        down.addEventListener('click', () => thumbs.scrollBy({ top: 86, behavior: 'smooth' }));
+        thumbs.addEventListener('scroll', updateScrollControls, { passive: true });
+        new ResizeObserver(updateScrollControls).observe(thumbs);
+        updateScrollControls();
+    }
     if (gallery && thumbs) {
         const counter = document.createElement('span'); counter.className = 'pd-reference-counter';
         gallery.append(counter);

@@ -668,6 +668,8 @@ _BOT_UA_MARKERS = (
     'amazonbot', 'ia_archiver', 'archive.org', 'screaming frog',
     'lighthouse', 'gtmetrix', 'pingdom', 'uptime', 'statuscake',
     'render', 'better uptime', 'hetzner', 'monitor',
+    'python-httpx', 'aiohttp', 'scrape', 'http.rb', 'zgrab', 'masscan',
+    'nuclei', 'sqlmap', 'nikto', 'censys', 'netcraft', 'got/', 'axios/',
 )
 
 
@@ -678,6 +680,16 @@ def is_bot_user_agent(ua: str) -> bool:
         return True
     return any(m in ua for m in _BOT_UA_MARKERS)
 
+
+
+def is_non_visitor_path(path):
+    """CMS probes and assets must never appear as customer pages."""
+    path = (path or '').split('?', 1)[0].lower()
+    return (
+        path.startswith(('/wp-', '/wordpress/', '/xmlrpc.php', '/.env', '/.git', '/phpmyadmin'))
+        or path.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.ico',
+                          '.css', '.js', '.map', '.woff', '.woff2', '.ttf', '.xml', '.txt'))
+    )
 
 def should_track_visitor(request):
     """
@@ -702,6 +714,8 @@ def should_track_visitor(request):
         return False
 
     path = request.path or ''
+    if is_non_visitor_path(path):
+        return False
     skip_prefixes = (
         '/admin/',
         '/api/',
@@ -837,8 +851,10 @@ def maybe_notify_visitor_online(session_key):
 
 def heartbeat_live_visitor(request, body_session_key=''):
     """Laki ping dok je tab otvoren — osvježava last_seen, trenutnu stranicu + presence."""
-    user = getattr(request, 'user', None)
-    if user is not None and user.is_authenticated and user.is_superuser:
+    if not should_track_visitor(request):
+        return False
+    reported_path = request.POST.get('path') or request.GET.get('path') or ''
+    if is_non_visitor_path(reported_path):
         return False
 
     session_key = resolve_presence_session_key(request, body_session_key)
@@ -2133,6 +2149,8 @@ def get_live_visitor_snapshot_lite(*, limit: int = 60):
     # person_key → najnoviji red (dedupe bot/više tabova)
     by_person: dict[str, dict] = {}
     for row in qs:
+        if is_non_visitor_path(row.trenutna_putanja):
+            continue
         sk = (row.session_key or '').strip()
         if not sk or is_visitor_marked_left(sk):
             continue
