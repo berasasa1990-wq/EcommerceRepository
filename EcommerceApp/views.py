@@ -8154,6 +8154,90 @@ def staff_active_carts(request):
 
 
 
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def staff_orders_validation(request):
+    orders = Order.objects.exclude(
+        status__in=[Order.Status.ZAVRSENA, Order.Status.OTKAZANA],
+    ).exclude(lager_status__in=[Order.LagerStatus.VALIDIRANO, Order.LagerStatus.OTKAZANO])
+    pending_summary = orders.aggregate(count=Count('pk'), total=Sum('ukupno'))
+    from .online_gift import SCRATCH_CAMPAIGN_NAME, scratch_label_for_claim
+    from .models import ScratchPrize
+    scratch_claims = OnlineGiftClaim.objects.filter(
+        Q(scratch_tracking_enabled=True) | Q(campaign__naziv=SCRATCH_CAMPAIGN_NAME),
+    )
+    orders = orders.annotate(has_scratch=Exists(scratch_claims.filter(
+        Q(scratch_trigger_order_id=OuterRef('pk')) | Q(order_id=OuterRef('pk')),
+    )))
+    query = (request.GET.get('q') or '').strip()
+    source = request.GET.get('source', '')
+    scratch = request.GET.get('scratch', '')
+    dates = {}
+    for key, lookup in [('date_from', 'kreirana__date__gte'), ('date_to', 'kreirana__date__lte')]:
+        raw = request.GET.get(key, '')
+        try:
+            parsed = date.fromisoformat(raw) if raw else None
+        except ValueError:
+            parsed = None
+            messages.error(request, 'Unesite ispravan datum.')
+        dates[key] = parsed.isoformat() if parsed else ''
+        if parsed:
+            orders = orders.filter(**{lookup: parsed})
+    if dates['date_from'] and dates['date_to'] and dates['date_from'] > dates['date_to']:
+        messages.error(request, 'Datum od mora biti prije datuma do.')
+    if source in Order.Izvor.values:
+        orders = orders.filter(izvor=source)
+    if scratch == 'yes':
+        orders = orders.filter(has_scratch=True)
+    elif scratch == 'no':
+        orders = orders.filter(has_scratch=False)
+    if query:
+        orders = orders.filter(Q(ime_prezime__icontains=query) | Q(telefon__icontains=query)
+                               | Q(email__icontains=query) | Q(broj__icontains=query))
+    sort = 'oldest' if request.GET.get('sort') == 'oldest' else 'newest'
+    orders = orders.order_by('kreirana' if sort == 'oldest' else '-kreirana', '-pk')
+    page = Paginator(orders, 50).get_page(request.GET.get('page'))
+    # Include the reward offered after this order as well as rewards used on it.
+    page_orders = list(page.object_list)
+    order_ids = [order.pk for order in page_orders]
+    rewards_by_order = {order_id: [] for order_id in order_ids}
+    claims = scratch_claims.filter(
+        Q(scratch_trigger_order_id__in=order_ids) | Q(order_id__in=order_ids),
+    ).select_related('product', 'campaign').order_by('-kreirano', '-pk')
+    claims = list(claims)
+    prizes = {
+        (prize.campaign_id, prize.code): prize
+        for prize in ScratchPrize.objects.filter(
+            campaign_id__in={claim.campaign_id for claim in claims},
+            code__in={claim.scratch_prize_code for claim in claims},
+        ).select_related('product')
+    }
+    for claim in claims:
+        prize = prizes.get((claim.campaign_id, claim.scratch_prize_code))
+        claim.display_product = claim.product or (prize.product if prize else None)
+        claim.display_discount = claim.discount_percent
+        claim.display_reward = claim.scratch_reward_label or scratch_label_for_claim(claim)
+        for order_id in {claim.scratch_trigger_order_id, claim.order_id}:
+            if order_id in rewards_by_order:
+                rewards_by_order[order_id].append(claim)
+    for order in page_orders:
+        order.scratch_details = rewards_by_order[order.pk]
+        order.scratch_count = len(order.scratch_details)
+    page.object_list = page_orders
+    params = request.GET.copy()
+    params.pop('page', None)
+    page_query = params.urlencode()
+    params['sort'] = 'newest' if sort == 'oldest' else 'oldest'
+    return render(request, 'staff/orders_validation.html', {
+        **_base_context(), **dates, 'orders': page, 'pending_count': pending_summary['count'],
+        'pending_total': pending_summary['total'] or Decimal('0.00'),
+        'search_query': query, 'source': source, 'scratch': scratch, 'sort': sort,
+        'source_choices': Order.Izvor.choices, 'page_query': page_query,
+        'sort_query': params.urlencode(),
+    })
+
+
 def _staff_online_orders_filter(request):
     raw = (request.GET.get('filter') or 'nove').strip().lower()
     if raw in ('zavrsene', 'zavrsena', 'validirane', 'validirana'):

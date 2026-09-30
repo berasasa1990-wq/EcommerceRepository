@@ -211,3 +211,70 @@ class PickQuantityTests(TestCase):
         self.assertEqual(WarehouseStock.objects.get(product=self.product, variation=other, location=self.location).kolicina, 2)
         self.assertEqual(WarehouseStock.objects.get(product=self.product, variation=variant, location=elsewhere).kolicina, 2)
         self.assertEqual(WarehouseStock.objects.get(product=self.product, variation=None, location=self.location).kolicina, 10)
+
+    def test_short_pick_routes_remainder_across_shelves_without_cleaning(self):
+        from .models import LocationCleaningRequest
+        for got in (0, 1):
+            with self.subTest(got=got):
+                product = Product.objects.create(naziv=f'Preusmjerenje {got}', cijena=10, magacin_sync_at=timezone.now())
+                locations = [WarehouseLocation.objects.create(sifra=f'R{got}-{i}', naziv=f'Polica {i}') for i in range(3)]
+                for location, qty in zip(locations, (4, 1, 2)):
+                    apply_movement(product=product, location=location, tip='prijem', kolicina=qty)
+                order = self._make_order(product.naziv, product, 4, '061555004')
+                item = order.stavke.get()
+                confirm_short_pick(order, item_id=item.pk, loc=locations[0].sifra, got=got, user=self.user)
+                queue = _order_pick_bundle(order)[0]
+                pending = [row for row in queue if not order.pick_state.get(row['key'], {}).get('done')]
+                self.assertEqual([(row['loc'], row['need']) for row in pending],
+                                 [(locations[1].sifra, 1), (locations[2].sifra, 2)])
+                entry = LocationCleaningRequest.objects.get(order=order)
+                self.assertEqual((entry.location_id, entry.picked, entry.needed, entry.decision),
+                                 (locations[0].pk, got, 4, ''))
+                self.assertEqual(WarehouseStock.objects.get(product=product, location=locations[0]).kolicina, 4)
+                # Reload and retry must not add requests or repeat the empty shelf.
+                confirm_short_pick(order, item_id=item.pk, loc=locations[0].sifra, got=got, user=self.user)
+                self.assertEqual(LocationCleaningRequest.objects.filter(order=order).count(), 1)
+                apply_order_pick(order, [dict(row, got=row['need'], done=True) for row in pending], finalize=True, user=self.user)
+                validate_order_stock(order, user=self.user)
+                item.refresh_from_db()
+                self.assertEqual(item.kolicina_faktura, got + 3)
+                self.assertEqual(WarehouseStock.objects.get(product=product, location=locations[0]).kolicina, 4-got)
+                for location in locations[1:]:
+                    self.assertEqual(WarehouseStock.objects.get(product=product, location=location).kolicina, 0)
+
+    def test_repeated_shortages_continue_and_exclude_other_orders_reservations(self):
+        from .models import LocationCleaningRequest
+        b = WarehouseLocation.objects.create(sifra='PICK-B', naziv='B')
+        c = WarehouseLocation.objects.create(sifra='PICK-C', naziv='C')
+        apply_movement(product=self.product, location=b, tip='prijem', kolicina=2)
+        apply_movement(product=self.product, location=c, tip='prijem', kolicina=2)
+        other = self._make_order('Druga rezervacija', self.product, 9, '061555005')
+        # First order holds 3 on A; second holds the remaining 7 on A and 2 on B.
+        confirm_short_pick(self.order, item_id=self.item.pk, loc=self.location.sifra, got=1, user=self.user)
+        queue = _order_pick_bundle(self.order)[0]
+        pending = [row for row in queue if not self.order.pick_state.get(row['key'], {}).get('done')]
+        self.assertEqual([(row['loc'], row['need']) for row in pending], [('PICK-C', 2)])
+        confirm_short_pick(self.order, item_id=self.item.pk, loc='PICK-C', got=1, user=self.user)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.kolicina_pokupljeno, 2)
+        self.assertEqual(LocationCleaningRequest.objects.filter(order=self.order).count(), 2)
+        self.assertTrue(all(self.order.pick_state.get(row['key'], {}).get('done') for row in _order_pick_bundle(self.order)[0]))
+        self.assertEqual(WarehouseStock.objects.get(product=self.product, location=c).kolicina, 2)
+
+    def test_shortage_does_not_route_to_another_variant_or_parent_stock(self):
+        from .models import ProductVariation, OrderItem
+        product = Product.objects.create(naziv='Boje', cijena=10, magacin_sync_at=timezone.now())
+        red = ProductVariation.objects.create(artikal=product, naziv='Crvena')
+        blue = ProductVariation.objects.create(artikal=product, naziv='Plava')
+        b = WarehouseLocation.objects.create(sifra='VAR-B', naziv='Druga polica')
+        c = WarehouseLocation.objects.create(sifra='VAR-C', naziv='Treća polica')
+        apply_movement(product=product, variation=red, location=self.location, tip='prijem', kolicina=4)
+        apply_movement(product=product, variation=blue, location=b, tip='prijem', kolicina=10)
+        apply_movement(product=product, location=b, tip='prijem', kolicina=10)
+        apply_movement(product=product, variation=red, location=c, tip='prijem', kolicina=1)
+        order = Order.objects.create(ime_prezime='Tačna varijacija', ukupno=40)
+        item = OrderItem.objects.create(narudzba=order, artikal=product, varijacija=red,
+                                       naziv='Crvena', cijena=10, kolicina=4)
+        confirm_short_pick(order, item_id=item.pk, loc=self.location.sifra, got=0, user=self.user)
+        pending = [row for row in _order_pick_bundle(order)[0] if not order.pick_state.get(row['key'], {}).get('done')]
+        self.assertEqual([(row['loc'], row['need']) for row in pending], [('VAR-C', 1)])

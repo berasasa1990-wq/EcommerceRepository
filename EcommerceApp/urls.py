@@ -409,6 +409,7 @@ urlpatterns = [
         views.staff_loyalty_card_barcode,
         name='staff_loyalty_card_barcode',
     ),
+    path('nalog/narudzbe/', views.staff_orders_validation, name='staff_orders_validation'),
     path('nalog/online-narudzbe/', views.staff_online_orders, name='staff_online_orders'),
     path('nalog/poklon-vaucer/', views.staff_gift_voucher, name='staff_gift_voucher'),
     path('nalog/poklon-vaucer/stampa/', views.staff_gift_voucher_print, name='staff_gift_voucher_print'),

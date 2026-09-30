@@ -4038,7 +4038,7 @@ function initArticleScanner() {
     function confirmShortQuantity(item, got) {
         if (got >= item.need || isPrenosMp) { setGot(item, got, true); return; }
         var confirmText = 'Pokupljeno ' + got + '/' + item.need + ' na lokaciji ' + item.loc
-            + '. Potvrditi i poslati zahtjev za čišćenje u Lokacije? Zaliha se sada ne čisti.';
+            + '. Potvrditi i poslati zahtjev za čišćenje u Lokacije? Preostala količina tražit će se na drugim lokacijama. Zaliha se sada ne čisti.';
         if (!window.confirm(confirmText)) return;
         function postZeroPick() {
             if (shortPending) return;

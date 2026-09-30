@@ -5180,12 +5180,89 @@ def _prenos_scan_codes(item):
     return codes
 
 
+def _reallocate_short_pick_queue(order, lines, queue):
+    """Keep confirmed rows and route their shortage to unvisited physical shelves.
+
+    Inventory remains unchanged until picking/cleaning is approved. Only exact
+    product/variant stock, excluding other orders' reservations, is offered.
+    """
+    from .models import WarehouseStock, OrderStockHold
+    from .magacin import is_ignored_stock_location, maloprodaja_last_sort_key
+
+    state = order.pick_state or {}
+    done_by_item = {}
+    affected = set()
+    for key, row in state.items():
+        if not isinstance(row, dict) or not row.get('done'):
+            continue
+        item_id = row.get('item_id')
+        done_by_item.setdefault(item_id, []).append((key, row))
+        if int(row.get('got') or 0) < int(row.get('need') or 0):
+            affected.add(item_id)
+    if not affected:
+        return queue
+    items = {item.pk: item for item in order.stavke.filter(pk__in=affected)}
+    out = [row for row in queue if row['item_id'] not in affected]
+    for line in lines:
+        item = items.get(line['item_id'])
+        if item is None or not item.artikal_id:
+            if line['item_id'] in affected:
+                out.extend(row for row in queue if row['item_id'] == line['item_id'])
+            continue
+        visited = set()
+        remaining = int(item.kolicina)
+        for key, saved in done_by_item.get(item.pk, []):
+            loc = _pick_line_loc(saved)
+            visited.add(loc)
+            remaining -= int(saved.get('got') or 0)
+            completed = dict(line, check_mp=False, shortfall=0, picks=[{
+                'location_name': loc, 'take': int(saved.get('need') or 0),
+            }])
+            rows = _pick_queue(_packing_location_groups([completed]))
+            for row in rows:
+                row.update(key=key, need=int(saved.get('need') or 0))
+            out.extend(rows)
+        own_holds = {}
+        for hold in order.magacin_holds.filter(
+            product_id=item.artikal_id, variation_id=item.varijacija_id,
+            status=OrderStockHold.Status.REZERVISANO,
+        ):
+            own_holds[hold.location_id] = own_holds.get(hold.location_id, 0) + hold.kolicina
+        stocks = list(WarehouseStock.objects.filter(
+            product_id=item.artikal_id, variation_id=item.varijacija_id,
+            location__aktivan=True, kolicina__gt=0,
+        ).select_related('location'))
+        stocks.sort(key=lambda stock: maloprodaja_last_sort_key(stock.location.sifra, stock.location))
+        picks = []
+        for stock in stocks:
+            location = stock.location
+            if remaining <= 0:
+                break
+            if location.sifra in visited or location.naziv in visited or is_ignored_stock_location(location):
+                continue
+            available = max(0, stock.kolicina - max(0, stock.rezervisano - own_holds.get(location.pk, 0)))
+            take = min(remaining, available)
+            if not take:
+                continue
+            picks.append({'location_name': location.sifra or location.naziv,
+                          'location_id': location.pk, 'take': take,
+                          'on_hand': stock.kolicina, 'location_path': location.odoo_location_path})
+            remaining -= take
+        pending = dict(line, picks=picks, check_mp=False, shortfall=max(0, remaining))
+        out.extend(_pick_queue(_packing_location_groups([pending])))
+    out.sort(key=lambda row: (bool(row.get('is_mp')), _location_sort_key(row['loc']), row['item_id']))
+    for index, row in enumerate(out, start=1):
+        row['i'] = index
+    return out
+
+
 def _order_pick_bundle(order):
     from .views import _build_order_packing_lines
 
     lines, error = _build_order_packing_lines(order)
     groups = _packing_location_groups(lines)
     queue = _pick_queue(groups)
+    queue = _reallocate_short_pick_queue(order, lines, queue)
     events = order.pick_short_events or []
     for event in events:
         queue = [row for row in queue if not (
@@ -5443,8 +5520,10 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
             key: dict(row, need=limits.get((row['item_id'], row['loc']), row['need']))
             for key, row in state.items() if isinstance(row, dict)
         }
+        order.pick_state = shortage_state
+        order.save(update_fields=['pick_state'])
         record_shortages(order, shortage_state, user=user)
-        return state
+        return shortage_state
     state = dict(order.pick_state or {})
     locked_picks = {e['picked_key']: e for e in (order.pick_short_events or []) if e.get('got')}
     lines = [row for row in (lines or []) if str(row.get('key') or '') not in locked_picks]
@@ -5488,6 +5567,13 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
         if not finalize and not done:
             continue
         picked_by_item[item_id] = picked_by_item.get(item_id, 0) + got
+
+    # Short-pick requests send one row; retain quantities confirmed earlier.
+    picked_by_item = {}
+    for saved in state.values():
+        if isinstance(saved, dict) and saved.get('done') and saved.get('item_id'):
+            item_id = saved['item_id']
+            picked_by_item[item_id] = picked_by_item.get(item_id, 0) + max(0, int(saved.get('got') or 0))
 
     order.pick_state = state
     order.save(update_fields=['pick_state'])
