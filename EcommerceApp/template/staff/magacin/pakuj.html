@@ -65,7 +65,7 @@
                     </td>
                     <td><span class="pk-full-order-number">RN-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</span><span class="pk-mobile-order-number">#{{ order.broj }}</span></td>
                     <td>
-                        <strong class="mg-order-name">{{ order.ime_prezime }}</strong>
+                        <strong class="mg-order-name">{{ order.display_customer_name }}</strong>
                         {% if order.telefon %}<span class="sub">{{ order.telefon }}</span>{% endif %}
                     </td>
                     <td>{{ order.stavki }} stavki</td>

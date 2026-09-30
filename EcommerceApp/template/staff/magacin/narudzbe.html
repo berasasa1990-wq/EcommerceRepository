@@ -160,7 +160,7 @@
                         <span class="sub">#{{ order.pk }}</span>
                     </td>
                     <td>
-                        <strong class="mg-order-name">{{ order.ime_prezime }}</strong>
+                        <strong class="mg-order-name">{{ order.display_customer_name }}</strong>
                         {% if order.telefon %}<span class="sub">{{ order.telefon }}</span>{% endif %}
                         {% if order.loyalty_popust_info %}
                         <span class="mg-pill is-loyalty">{{ order.loyalty_popust_info.label }}</span>
@@ -188,7 +188,9 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if order.is_vp %}
+                        {% if order.is_mp_transfer %}
+                        <span class="mg-pill mg-src-rucna">Prenosnica u MP</span>
+                        {% elif order.is_vp %}
                         <span class="mg-pill mg-src-vp">VP</span>
                         {% elif order.izvor == 'magacin' %}
                         <span class="mg-pill mg-src-rucna">Ručna</span>

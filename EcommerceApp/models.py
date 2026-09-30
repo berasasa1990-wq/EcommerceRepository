@@ -4521,6 +4521,15 @@ class Order(models.Model):
     def dostava_naziv(self):
         return SiteSettings.load().dostava_naziv
 
+    @property
+    def is_mp_transfer(self):
+        from .magacin import is_prenos_mp_order
+        return is_prenos_mp_order(self)
+
+    @property
+    def display_customer_name(self):
+        return 'Prenosnica u MP' if self.is_mp_transfer else self.ime_prezime
+
     def get_status_label(self):
         if self.lager_status == self.LagerStatus.VALIDIRANO:
             return 'Validatovana'

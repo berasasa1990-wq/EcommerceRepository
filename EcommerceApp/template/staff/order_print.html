@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% if print_jobs|length == 1 %}Štampa narudžbe #{{ print_jobs.0.order.broj }}{% else %}Štampa {{ print_jobs|length }} narudžbi{% endif %}</title>
+    <title>{% if print_jobs|length == 1 %}{% if print_jobs.0.order.is_mp_transfer %}Prenosnica u MP{% else %}Štampa narudžbe{% endif %} #{{ print_jobs.0.order.broj }}{% else %}Štampa {{ print_jobs|length }} narudžbi{% endif %}</title>
     <style>
         body {
             margin: 0;
@@ -949,7 +949,7 @@
     <div class="print-toolbar no-print">
         <p>
             {% if print_jobs|length == 1 %}
-            <strong>Narudžba #{{ print_jobs.0.order.broj }}</strong>
+            <strong>{% if print_jobs.0.order.is_mp_transfer %}Prenosnica u MP{% else %}Narudžba{% endif %} #{{ print_jobs.0.order.broj }}</strong>
             — samo faktura. Štampaj <strong>A4 uspravno (Portrait)</strong>, bez smanjivanja stranice.
             {% else %}
             <strong>{{ print_jobs|length }} narudžbe</strong>

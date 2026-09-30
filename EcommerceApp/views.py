@@ -1426,7 +1426,6 @@ def _apply_search_filter(products_qs, query):
     1) naziv artikla — podstring / riječi (AND)
     2) šifra artikla / varijacije
     3) tagovi artikla (M2M Tag)
-    4) search tagovi potkategorije
 
     Primjer: „MATE” → svi artikli s „mate” u nazivu.
     """
@@ -1436,9 +1435,6 @@ def _apply_search_filter(products_qs, query):
     if len(raw) < 2:
         return products_qs.none()
 
-    folded_raw = _search_fold(raw)
-    tokens = _search_tokens(raw)
-
     # 1–2) Naziv (sve riječi, bilo kojim redom) + šifra
     match = _search_exists_match(raw)
 
@@ -1447,26 +1443,6 @@ def _apply_search_filter(products_qs, query):
         product_tag_ids = _product_ids_for_product_tag_query(raw)
         if product_tag_ids:
             match |= Q(pk__in=product_tag_ids)
-    except Exception:
-        pass
-
-    # Category expansion stays limited to single-word queries.
-    if len(tokens) >= 2:
-        return products_qs.filter(match).distinct()
-
-    # 4) Tagovi potkategorije — samo za jednu riječ
-    try:
-        exact_cat_ids = _subcategory_ids_for_exact_tag(raw)
-        if folded_raw and folded_raw != raw.casefold():
-            exact_cat_ids = exact_cat_ids | _subcategory_ids_for_exact_tag(folded_raw)
-        if exact_cat_ids:
-            match |= Q(kategorija_id__in=exact_cat_ids)
-        else:
-            fuzzy_cat_ids = _category_ids_for_search_query(raw)
-            if folded_raw and folded_raw != raw.casefold():
-                fuzzy_cat_ids = fuzzy_cat_ids | _category_ids_for_search_query(folded_raw)
-            if fuzzy_cat_ids:
-                match |= Q(kategorija_id__in=fuzzy_cat_ids)
     except Exception:
         pass
 
@@ -1627,16 +1603,6 @@ def _search_relevance_score(product, query):
     except Exception:
         pass
 
-    # —— Tag potkategorije (ispod naziva/šifre) ——
-    try:
-        level = _product_subcategory_tag_match_level(product, raw)
-        if level >= 2:
-            best = max(best, S['exact_category_tag'])
-        elif level == 1:
-            best = max(best, S['category_tag'])
-    except Exception:
-        pass
-
     return best
 
 
@@ -1677,10 +1643,8 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
         except Exception:
             pass
 
-    # Cache cat/tag setova za cijeli sort (1× po upitu, ne N× po artiklu)
+    # Pripremi tagove proizvoda za sortiranje rezultata.
     if query:
-        _subcategory_ids_for_exact_tag(query)
-        _category_ids_for_search_query(query)
         _product_ids_for_product_tag_query(query)
 
     def key(p):
@@ -1813,7 +1777,7 @@ def _suggest_relevance_annotation(query):
 
     Prioritet (Case = prvi match pobjedi):
       1) šifra / naziv (tačno → djelomično → sve riječi)
-      2) tek onda tag artikla / tag potkategorije
+      2) tek onda tag artikla
 
     Bez JOIN-a na tagovi__ (M2M) — koristi pk__in da ne duplicira redove.
     """
@@ -1851,7 +1815,6 @@ def _suggest_relevance_annotation(query):
             When(sifra__icontains=term, then=Value(90)),
             When(naziv__icontains=term, then=Value(88)),
             When(naziv_normalized__icontains=term, then=Value(87)),
-            When(search_keywords__icontains=term, then=Value(86)),
         ])
 
     if len(words) >= 2:
@@ -1865,22 +1828,6 @@ def _suggest_relevance_annotation(query):
         tag_product_ids = _product_ids_for_product_tag_query(raw)
         if tag_product_ids:
             whens.append(When(pk__in=list(tag_product_ids), then=Value(50)))
-    except Exception:
-        pass
-
-    # Tag potkategorije — najniži match band (ispod naziva/šifre/taga artikla)
-    try:
-        exact_cat_ids = _subcategory_ids_for_exact_tag(raw)
-        if folded and folded != raw.casefold():
-            exact_cat_ids = exact_cat_ids | _subcategory_ids_for_exact_tag(folded)
-        if exact_cat_ids:
-            whens.append(When(kategorija_id__in=list(exact_cat_ids), then=Value(40)))
-        else:
-            fuzzy_cat_ids = _category_ids_for_search_query(raw)
-            if folded and folded != raw.casefold():
-                fuzzy_cat_ids = fuzzy_cat_ids | _category_ids_for_search_query(folded)
-            if fuzzy_cat_ids:
-                whens.append(When(kategorija_id__in=list(fuzzy_cat_ids), then=Value(30)))
     except Exception:
         pass
 
@@ -8158,7 +8105,9 @@ def staff_active_carts(request):
 @user_passes_test(_superuser_required)
 @require_GET
 def staff_orders_validation(request):
-    orders = Order.objects.exclude(
+    orders = Order.objects.filter(izvor=Order.Izvor.WEBSHOP).exclude(
+        Q(ime_prezime__iexact='Prenos u MP') | Q(pick_state__kind__isnull=False, pick_state__kind='prenos_mp'),
+    ).exclude(
         status__in=[Order.Status.ZAVRSENA, Order.Status.OTKAZANA],
     ).exclude(lager_status__in=[Order.LagerStatus.VALIDIRANO, Order.LagerStatus.OTKAZANO])
     pending_summary = orders.aggregate(count=Count('pk'), total=Sum('ukupno'))
@@ -8233,7 +8182,7 @@ def staff_orders_validation(request):
         **_base_context(), **dates, 'orders': page, 'pending_count': pending_summary['count'],
         'pending_total': pending_summary['total'] or Decimal('0.00'),
         'search_query': query, 'source': source, 'scratch': scratch, 'sort': sort,
-        'source_choices': Order.Izvor.choices, 'page_query': page_query,
+        'source_choices': [(Order.Izvor.WEBSHOP, 'Web shop')], 'page_query': page_query,
         'sort_query': params.urlencode(),
     })
 
@@ -8250,6 +8199,9 @@ def _staff_online_orders_filter(request):
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_online_orders(request):
+    web_orders = Order.objects.filter(izvor=Order.Izvor.WEBSHOP).exclude(
+        Q(ime_prezime__iexact='Prenos u MP') | Q(pick_state__kind__isnull=False, pick_state__kind='prenos_mp'),
+    )
     filter_status = _staff_online_orders_filter(request)
     query = (request.GET.get('q') or '').strip()
     searched = bool(query)
@@ -8272,20 +8224,20 @@ def staff_online_orders(request):
         return redirect(redirect_url)
 
     if query:
-        orders = list(_search_staff_orders(query))
+        orders = list(_search_staff_orders(query).filter(pk__in=web_orders.values('pk')))
         if len(orders) == 1:
             return redirect('staff_order_detail', broj=orders[0].broj)
     elif filter_status == 'nove':
         orders = list(
-            Order.objects.filter(status=Order.Status.NOVA).order_by('-kreirana'),
+            web_orders.filter(status=Order.Status.NOVA).order_by('-kreirana'),
         )
     elif filter_status == 'zavrsene':
         orders = list(
-            Order.objects.filter(status=Order.Status.ZAVRSENA).order_by('-kreirana'),
+            web_orders.filter(status=Order.Status.ZAVRSENA).order_by('-kreirana'),
         )
     else:
         orders = list(
-            Order.objects.order_by(
+            web_orders.order_by(
                 Case(
                     When(status=Order.Status.NOVA, then=0),
                     default=1,
@@ -8300,8 +8252,8 @@ def staff_online_orders(request):
         'filter_status': filter_status,
         'search_query': query,
         'searched': searched,
-        'nova_count': Order.objects.filter(status=Order.Status.NOVA).count(),
-        'zavrsena_count': Order.objects.filter(status=Order.Status.ZAVRSENA).count(),
+        'nova_count': web_orders.filter(status=Order.Status.NOVA).count(),
+        'zavrsena_count': web_orders.filter(status=Order.Status.ZAVRSENA).count(),
     }
     return render(request, 'staff/online_orders.html', context)
 

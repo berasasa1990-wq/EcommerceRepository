@@ -6,8 +6,8 @@
                 <p class="doc-contact">Kontakt: <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a></p>
             </td>
             <td class="doc-meta">
-                <p class="doc-title">Online Narudžbe br. {{ order.broj }}</p>
-                <p>Datum narudžbe: {{ datum_kratko }} {{ vrijeme }}</p>
+                <p class="doc-title">{% if order.is_mp_transfer %}Prenosnica u MP{% else %}Online Narudžbe{% endif %} br. {{ order.broj }}</p>
+                <p>{% if order.is_mp_transfer %}Datum prenosa:{% else %}Datum narudžbe:{% endif %} {{ datum_kratko }} {{ vrijeme }}</p>
                 <p>Datum isporuke: {{ datum_kratko }}</p>
                 <div class="doc-order-barcode">
                     <img src="{% url 'staff_magacin_narudzba_barkod' order.broj %}" alt="{{ order.barkod }}" width="180" height="48">
@@ -21,7 +21,7 @@
         <tr>
             <td>
                 <span class="party-label">KUPAC</span>
-                <span class="party-name">{{ order.ime_prezime }}</span>
+                <span class="party-name">{{ order.display_customer_name }}</span>
                 {{ order.adresa }}<br>
                 {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}<br>
                 Telefon: {{ order.telefon }}<br>
