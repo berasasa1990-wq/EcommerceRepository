@@ -3090,7 +3090,7 @@ def magacin_narudzbe(request):
     ) if order_list else set()
     for order in order_list:
         order.is_vp = order.pk in vp_ids
-        order.can_edit_from_list = order.izvor == Order.Izvor.MAGACIN and order_is_editable(order)
+        order.can_edit_from_list = order_is_editable(order)
         seen = []
         for hold in order.magacin_holds.all():
             sifra = (hold.location.sifra if hold.location_id else '') or ''
@@ -3843,11 +3843,13 @@ def magacin_kupci_lookup(request):
 
 
 def _add_customer_excess_payload(results):
-    from .warehouse_ledger import pending_excess_lines, pending_missing_lines
+    from .warehouse_ledger import pending_excess_lines, pending_missing_lines, customer_debt_amounts
+    debts = customer_debt_amounts(row['id'] for row in results)
     by_id = {row['id']: row for row in results}
     for row in results:
         row['excess_items'] = []
         row['missing_items'] = []
+        row['debt_amount'] = str(debts.get(row['id'], Decimal('0.00')))
     for line in pending_excess_lines().filter(entry__partner__customer_id__in=by_id):
         by_id[line.entry.partner.customer_id]['excess_items'].append({'name': line.name, 'code': line.code, 'quantity': line.quantity, 'amount': str(line.amount)})
     for line in pending_missing_lines().filter(entry__partner__customer_id__in=by_id):
@@ -3923,31 +3925,44 @@ def magacin_kupci_save(request):
         )
 
 
+def _customer_phone_key(phone):
+    from .loyalty import ba_mobile_e164
+    canonical = ba_mobile_e164(phone)
+    if canonical:
+        return canonical
+    digits = re.sub(r'\D', '', phone or '')
+    return digits[2:] if digits.startswith('00') else digits
+
+
+@transaction.atomic
 def _save_warehouse_customer(
     *, ime, telefon, adresa='', grad='', email='', postanski_broj='',
-    customer_id=None, replace=False, vp_kupac=None, odbio_posiljku=None,
+    customer_id=None, replace=False, vp_kupac=None, odbio_posiljku=None, update_existing=True,
 ):
     ime = (ime or '').strip()
     telefon = (telefon or '').strip()
     if not ime or not telefon:
         return None
+    # Serialize lookup + creation even when no matching customer exists yet.
+    from .models import SiteSettings
+    SiteSettings.objects.get_or_create(pk=1)
+    SiteSettings.objects.select_for_update().get(pk=1)
+    phone_key = _customer_phone_key(telefon)
+    if not phone_key:
+        return None
+    matching_ids = [pk for pk, phone in WarehouseCustomer.objects.order_by('pk').values_list('pk', 'telefon')
+                    if _customer_phone_key(phone) == phone_key]
     customer = None
     if customer_id:
         customer = WarehouseCustomer.objects.filter(pk=int(customer_id)).first()
         if customer is None:
             return None
-        clash = (
-            WarehouseCustomer.objects.filter(telefon=telefon)
-            .exclude(pk=customer.pk)
-            .first()
-        )
-        if clash:
+        if any(pk != customer.pk for pk in matching_ids):
             raise MagacinError('Već postoji kupac s tim telefonom.')
-    else:
-        customer = (
-            WarehouseCustomer.objects.filter(ime_prezime__iexact=ime, telefon=telefon).first()
-            or WarehouseCustomer.objects.filter(telefon=telefon).first()
-        )
+    elif matching_ids:
+        customer = WarehouseCustomer.objects.get(pk=matching_ids[0])
+    if customer and not update_existing:
+        return customer
     fields = {
         'ime_prezime': ime[:200],
         'telefon': telefon[:30],
@@ -4125,7 +4140,8 @@ def magacin_narudzba_nova(request):
     context['draft_token'] = draft.token
     context['invoice_only_items'] = list(existing.stavke.filter(ledger_excess_line__isnull=False)) if existing else []
     context['missing_fulfillment_items'] = list(existing.stavke.filter(ledger_missing_line__isnull=False)) if existing else []
-    context['invoice_only_total'] = sum((item.ukupno for item in context['invoice_only_items']), Decimal('0.00'))
+    context['invoice_only_total'] = sum((item.ukupno for item in context['invoice_only_items'] if item.ledger_excess_line.entry.kind != 'collection'), Decimal('0.00'))
+    context['debt_total'] = sum((item.ukupno for item in context['invoice_only_items'] if item.ledger_excess_line.entry.kind == 'collection'), Decimal('0.00'))
     if request.method == 'POST':
         if not capture_submit(request, draft):
             messages.error(request, 'Postoji noviji unos. Tvoja verzija je sačuvana u historiji unosa.')
@@ -4230,10 +4246,6 @@ def _editable_order_from_request(request):
         .first()
     )
     if order is None:
-        return None
-    if order.status == Order.Status.REZERVACIJA:
-        return order
-    if getattr(order, 'izvor', '') != Order.Izvor.MAGACIN:
         return None
     if not order_is_editable(order):
         return None
@@ -4370,10 +4382,11 @@ def _create_manual_order(request, *, existing=None):
     rezervni_flags = request.POST.getlist('rezervni')
     spare_names = request.POST.getlist('spare_naziv')
     spare_prices = request.POST.getlist('spare_cijena')
-    from .warehouse_ledger import pending_excess_lines, pending_missing_lines
+    from .warehouse_ledger import pending_excess_lines, pending_missing_lines, customer_debt_amount
     has_pending_missing = bool(customer and pending_missing_lines().filter(entry__partner__customer=customer).exists())
     has_pending_excess = bool(customer and pending_excess_lines().filter(entry__partner__customer=customer).exists())
-    if not product_ids and not has_pending_excess and not has_pending_missing and not (existing and existing.stavke.filter(Q(ledger_excess_line__isnull=False) | Q(ledger_missing_line__isnull=False)).exists()):
+    has_pending_debt = bool(customer_debt_amount(customer) > 0)
+    if not product_ids and not has_pending_debt and not has_pending_excess and not has_pending_missing and not (existing and existing.stavke.filter(Q(ledger_excess_line__isnull=False) | Q(ledger_missing_line__isnull=False)).exists()):
         raise MagacinError('Dodaj barem jedan artikal.')
 
     divisors = brand_divisors() if vp_kupac else {}
@@ -4457,7 +4470,7 @@ def _create_manual_order(request, *, existing=None):
 
     medjuzbir = sum((line['cijena'] * line['qty'] for line in lines), Decimal('0.00'))
     if existing:
-        medjuzbir += sum((item.ukupno for item in existing.stavke.filter(ledger_excess_line__isnull=False)), Decimal('0.00'))
+        medjuzbir += sum((item.ukupno for item in existing.stavke.filter(ledger_excess_line__isnull=False).exclude(ledger_excess_line__entry__kind='collection')), Decimal('0.00'))
     from .pricing import _loyalty_osnovica_iz_korpe, _postotni_popust, _standardna_dostava
     from .loyalty import loyalty_coupon_za_telefon
     if vp_kupac and request.POST.get('action') != 'rezervacija':
@@ -4535,9 +4548,12 @@ def _create_manual_order(request, *, existing=None):
             customer=customer,
         )
         if existing is None:
-            from .warehouse_ledger import attach_customer_excess, attach_customer_missing
+            from .warehouse_ledger import attach_customer_excess, attach_customer_missing, attach_customer_debt
             attached = attach_customer_excess(order, customer, user=request.user)
             missing = attach_customer_missing(order, customer, user=request.user)
+            debt = attach_customer_debt(order, customer, user=request.user)
+            if debt:
+                messages.warning(request, f'Kupac ima dug: {debt.amount:.2f} KM. Iznos je dodat na narudžbu za naplatu.')
             if missing:
                 messages.info(request, 'Dugujemo kupcu — dodato na picking, bez fakturisanja: ' + '; '.join(f'{item.naziv} — {item.kolicina} kom.' for item in missing))
             if not order.stavke.exists():
@@ -4745,11 +4761,12 @@ def _save_manual_order(
         existing.grad = grad[:100]
         existing.postanski_broj = (request.POST.get('postanski_broj') or '').strip()[:20]
         existing.napomena = napomena
-        existing.medjuzbir = medjuzbir
+        retained_debt = sum((item.ukupno for item in existing.stavke.filter(ledger_excess_line__entry__kind='collection')), Decimal('0.00'))
+        existing.medjuzbir = medjuzbir + retained_debt
         existing.dostava = dostava
         existing.popust = popust
         existing.popust_detalji = popust_detalji
-        existing.ukupno = ukupno
+        existing.ukupno = ukupno + retained_debt
         existing.status = status
         existing.kupon_kod = loyalty_coupon.kod if loyalty_coupon else ''
         existing.save()
@@ -6276,7 +6293,7 @@ def magacin_pakuj_detail(request, broj):
         'can_edit_order': order_is_editable(order),
         'edit_form_url': (
             f"{reverse('staff_magacin_narudzba_nova')}?broj={order.broj}"
-            if getattr(order, 'izvor', '') == Order.Izvor.MAGACIN and order_is_editable(order)
+            if order_is_editable(order)
             else ''
         ),
         'is_vp_order': is_vp_order(order),

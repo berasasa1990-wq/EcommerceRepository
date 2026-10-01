@@ -22,6 +22,9 @@
     {% endif %}
 
     <footer class="pk-dock">
+        {% if edit_form_url %}
+        <a class="mg-btn" href="{{ edit_form_url }}">Izmijeni narudžbu</a>
+        {% endif %}
         <a class="mg-btn" data-picking-list="1" href="{% url 'staff_magacin_pakuj' %}">‹ Nazad</a>
         <a class="mg-btn" data-picking-list="1" href="{% url 'staff_magacin_pakuj' %}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12h4"/><path d="M10 4v16h8a2 2 0 0 0 2-2V8z"/><path d="M10 9h4"/></svg>

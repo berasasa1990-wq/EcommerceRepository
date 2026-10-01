@@ -1,3 +1,4 @@
+from . import views_partner_stock
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from django.urls import reverse_lazy
@@ -56,6 +57,8 @@ urlpatterns = [
     path('nalog/magacin/duguje/', views_ledger.ledger, name='staff_magacin_duguje'),
     path('api/sync/korisnik/', views_sync.sync_korisnik_api, name='sync_korisnik_api'),
     path('api/sync/narudzba/', views_sync.sync_narudzba_api, name='sync_narudzba_api'),
+    path('api/partner/v1/products/', views_partner_stock.products, name='partner_stock_products'),
+    path('api/partner/v1/products/<int:pk>/', views_partner_stock.product_detail, name='partner_stock_product'),
     path('api/pretraga/', views.search_suggest, name='search_suggest'),
 
 
@@ -124,6 +127,7 @@ urlpatterns = [
     path('narudzba/', views.checkout, name='checkout'),
     path('narudzba/uspjeh/<str:broj>/', views.order_success, name='order_success'),
     path('prijava/', views.login_view, name='login'),
+    path('prijava/csrf/', views.auth_csrf_token, name='auth_csrf_token'),
     path('registracija/', views.register, name='register'),
     path('activate/<uidb64>/<token>/', views.activate, name='activate'),
     path('odjava/', views.logout_view, name='logout'),

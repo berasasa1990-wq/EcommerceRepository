@@ -19,7 +19,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
-from django.db import DatabaseError, transaction
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Case, Count, Exists, F, IntegerField, Max, Min, OuterRef, Prefetch, Q, Sum, Value, When
 from django.db.models.functions import Lower, Trim, TruncDate
 from django.utils import timezone
@@ -27,7 +27,7 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.html import escape, mark_safe, strip_tags
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode, url_has_allowed_host_and_scheme
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -4857,6 +4857,13 @@ def checkout(request):
             from .magacin import reserve_web_order_stock, MagacinError
             try:
                 with transaction.atomic():
+                    from .views_magacin import _save_warehouse_customer
+                    _save_warehouse_customer(
+                        ime=form.cleaned_data['ime_prezime'], telefon=form.cleaned_data['telefon'],
+                        adresa=form.cleaned_data['adresa'], grad=form.cleaned_data['grad'],
+                        email=form.cleaned_data['email'],
+                        postanski_broj=form.cleaned_data.get('postanski_broj', ''), update_existing=False,
+                    )
                     visitor = LiveVisitor.objects.filter(session_key=request.session.session_key).only('izvor_dolaska').first()
                     user_agent = (request.META.get('HTTP_USER_AGENT') or '').lower()
                     device = 'mobile' if any(token in user_agent for token in ('mobile', 'android', 'iphone')) else 'desktop'
@@ -5184,6 +5191,13 @@ def verify_turnstile(token, request):
         return False
 
 
+@never_cache
+@require_GET
+def auth_csrf_token(request):
+    return JsonResponse({'csrfToken': get_token(request)})
+
+
+@never_cache
 def register(request):
     if request.user.is_authenticated:
         return redirect('account')
@@ -5194,74 +5208,80 @@ def register(request):
         if form.is_valid():
             token = form.cleaned_data.get('cf_turnstile_response')
             secret = getattr(settings, 'TURNSTILE_SECRET_KEY', '')
-            if secret and not verify_turnstile(token, request):
+            if secret and getattr(settings, 'TURNSTILE_SITE_KEY', '') and not verify_turnstile(token, request):
                 form.add_error(None, 'Turnstile provjera nije uspjela. Molimo pokušajte ponovo.')
             else:
                 email = form.cleaned_data['email']
-                # Odmah aktivan — bez email aktivacije / bez slanja maila
-                user = User.objects.create_user(
-                    username=email,
-                    email=email,
-                    password=form.cleaned_data['lozinka'],
-                    first_name=form.cleaned_data['ime_prezime'],
-                    is_active=True,
-                )
-                UserProfile.objects.create(
-                    user=user,
-                    telefon=form.cleaned_data.get('telefon', ''),
-                )
-                Order.objects.filter(email__iexact=email, korisnik__isnull=True).update(korisnik=user)
-                kreiraj_loyalty_karticu(user)
-                logger.info("Register: sync_korisnik za novog korisnika %s", email)
-                sync_korisnik(user)
-
-                from .live_visitor_offer import (
-                    claim_registration_invite_reward,
-                    mark_loyalty_popup_registration_pending,
-                )
-                if (request.POST.get('loyalty_popup') or '').strip() == '1':
-                    mark_loyalty_popup_registration_pending(request)
-                reg_reward = claim_registration_invite_reward(request, user)
-
                 try:
-                    from .cart_tracking import get_cart_session_key
-                    from .staff_alerts import notify_registration
-                    notify_registration(
-                        ime=form.cleaned_data.get('ime_prezime') or '',
-                        email=email,
-                        session_key=get_cart_session_key(request),
-                    )
-                except Exception:
-                    pass
-
-                # Odmah prijavi korisnika (nema čekanja na email)
-                from django.contrib.auth import login as auth_login
-                auth_login(
-                    request,
-                    user,
-                    backend='django.contrib.auth.backends.ModelBackend',
-                )
-
-                if reg_reward and reg_reward.get('percent'):
-                    messages.success(
-                        request,
-                        f'Dobrodošli! Nalog je spreman. '
-                        f'Imate {reg_reward["percent"]}% popusta na prvu narudžbu.',
-                    )
-                elif reg_reward:
-                    messages.success(
-                        request,
-                        'Dobrodošli! Nalog je spreman — besplatna dostava na prvu narudžbu.',
-                    )
+                    with transaction.atomic():
+                        # Odmah aktivan — bez email aktivacije / bez slanja maila
+                        user = User.objects.create_user(
+                            username=email,
+                            email=email,
+                            password=form.cleaned_data['lozinka'],
+                            first_name=form.cleaned_data['ime_prezime'],
+                            is_active=True,
+                        )
+                        UserProfile.objects.create(
+                            user=user,
+                            telefon=form.cleaned_data.get('telefon', ''),
+                        )
+                        Order.objects.filter(email__iexact=email, korisnik__isnull=True).update(korisnik=user)
+                        kreiraj_loyalty_karticu(user)
+                except IntegrityError:
+                    logger.exception('Registration could not create a complete account')
+                    form.add_error(None, 'Nalog nije kreiran. Ako već imate nalog, prijavite se ili obnovite lozinku.')
                 else:
-                    messages.success(
-                        request,
-                        'Dobrodošli! Nalog je kreiran i odmah ste prijavljeni.',
+                    logger.info("Register: sync_korisnik za novog korisnika %s", email)
+                    sync_korisnik(user)
+
+                    from .live_visitor_offer import (
+                        claim_registration_invite_reward,
+                        mark_loyalty_popup_registration_pending,
                     )
-                next_url = request.GET.get('next') or request.POST.get('next') or '/'
-                if not str(next_url).startswith('/'):
-                    next_url = '/'
-                return redirect(next_url)
+                    if (request.POST.get('loyalty_popup') or '').strip() == '1':
+                        mark_loyalty_popup_registration_pending(request)
+                    reg_reward = claim_registration_invite_reward(request, user)
+
+                    try:
+                        from .cart_tracking import get_cart_session_key
+                        from .staff_alerts import notify_registration
+                        notify_registration(
+                            ime=form.cleaned_data.get('ime_prezime') or '',
+                            email=email,
+                            session_key=get_cart_session_key(request),
+                        )
+                    except Exception:
+                        pass
+
+                    # Odmah prijavi korisnika (nema čekanja na email)
+                    from django.contrib.auth import login as auth_login
+                    auth_login(
+                        request,
+                        user,
+                        backend='django.contrib.auth.backends.ModelBackend',
+                    )
+
+                    if reg_reward and reg_reward.get('percent'):
+                        messages.success(
+                            request,
+                            f'Dobrodošli! Nalog je spreman. '
+                            f'Imate {reg_reward["percent"]}% popusta na prvu narudžbu.',
+                        )
+                    elif reg_reward:
+                        messages.success(
+                            request,
+                            'Dobrodošli! Nalog je spreman — besplatna dostava na prvu narudžbu.',
+                        )
+                    else:
+                        messages.success(
+                            request,
+                            'Dobrodošli! Nalog je kreiran i odmah ste prijavljeni.',
+                        )
+                    next_url = request.GET.get('next') or request.POST.get('next') or '/'
+                    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+                        next_url = '/'
+                    return redirect(next_url)
 
     context = {
         **_base_context(),
@@ -5294,6 +5314,7 @@ def activate(request, uidb64, token):
         return redirect('register')
 
 
+@never_cache
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('account')
@@ -5305,7 +5326,7 @@ def login_view(request):
         if form.is_valid():
             token = form.cleaned_data.get('cf_turnstile_response')
             secret = getattr(settings, 'TURNSTILE_SECRET_KEY', '')
-            if secret and not verify_turnstile(token, request):
+            if secret and getattr(settings, 'TURNSTILE_SITE_KEY', '') and not verify_turnstile(token, request):
                 form.add_error(None, 'Turnstile provjera nije uspjela. Molimo pokušajte ponovo.')
             else:
                 login(request, form.user)
@@ -5328,7 +5349,7 @@ def login_view(request):
                 else:
                     messages.success(request, 'Uspješno ste se prijavili.')
                 redirect_to = request.POST.get('next') or next_url
-                if redirect_to and redirect_to.startswith('/'):
+                if redirect_to and url_has_allowed_host_and_scheme(redirect_to, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
                     return redirect(redirect_to)
                 return redirect('account')
 
@@ -5346,6 +5367,7 @@ def login_view(request):
     return render(request, 'auth/login.html', context)
 
 
+@never_cache
 def logout_view(request):
     logout(request)
     messages.info(request, 'Odjavljeni ste.')
@@ -5452,6 +5474,7 @@ def _account_dashboard_extras(request, *, orders, loyalty, loyalty_card, profil)
     }
 
 
+@never_cache
 @login_required(login_url='login')
 def account(request):
     from .loyalty import ba_mobile_local
@@ -5884,10 +5907,7 @@ def staff_order_detail(request, broj):
 
     from .magacin import order_is_editable
     from .views_magacin import _magacin_context
-    can_edit = (
-        getattr(order, 'izvor', '') == Order.Izvor.MAGACIN
-        and order_is_editable(order)
-    )
+    can_edit = order_is_editable(order)
     context = {
         **_magacin_context(request, section='narudzbe', page_title=f'Narudžba #{order.broj}'),
         **get_order_email_context(order),

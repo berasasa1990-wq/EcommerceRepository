@@ -314,3 +314,7 @@ def nav_categories(request):
         'cats_sidebar_open': _cats_sidebar_open(request),
         'turnstile_site_key': getattr(settings, 'TURNSTILE_SITE_KEY', '') or '',
     }
+
+
+def csrf_settings(request):
+    return {'csrf_cookie_name': settings.CSRF_COOKIE_NAME}

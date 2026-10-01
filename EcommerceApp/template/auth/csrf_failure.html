@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<section class="container" style="padding:40px 20px">
+    <h1>Osvježite stranicu i pokušajte ponovo</h1>
+    <p>Sigurnosna provjera nije uspjela. To se može desiti ako je stranica dugo otvorena ili ste se prijavili u drugom tabu.</p>
+    <p>Zahtjev nije obrađen. Ako se problem ponovi, provjerite da su kolačići dozvoljeni za ovaj sajt.</p>
+    <a class="btn btn-primary" href="{{ retry_url }}">Ponovo otvori stranicu</a>
+</section>
+{% endblock %}

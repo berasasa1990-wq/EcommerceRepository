@@ -20,7 +20,7 @@
         </a>
     </div>
 
-<form data-missing-fulfillment-count="{{ missing_fulfillment_items|length }}" data-invoice-only-total="{{ invoice_only_total|default:0 }}" id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-customer-save="{% url 'staff_magacin_kupci_save' %}" data-loyalty-lookup="{{ loyalty_lookup_url }}" data-bulk-url="{% url 'staff_magacin_narudzba_bulk' %}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
+<form data-debt-total="{{ debt_total|default:0 }}" data-missing-fulfillment-count="{{ missing_fulfillment_items|length }}" data-invoice-only-total="{{ invoice_only_total|default:0 }}" id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-customer-save="{% url 'staff_magacin_kupci_save' %}" data-loyalty-lookup="{{ loyalty_lookup_url }}" data-bulk-url="{% url 'staff_magacin_narudzba_bulk' %}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
     {% csrf_token %}
     <input type="hidden" name="draft_token" id="mgDraftToken" value="{{ draft_token }}" data-save-url="{% url 'staff_magacin_draft_save' %}" data-import-url="{% url 'staff_magacin_draft_import' %}">
     <input type="hidden" name="draft_version" id="mgDraftVersion" value="{{ order_draft.version }}">
@@ -76,7 +76,7 @@
 
     <div class="mg-order-build" id="mgOrderBuild">
     {% if missing_fulfillment_items %}<section class="mg-card"><h2>Dugujemo kupcu — samo picking, bez fakturisanja</h2>{% for item in missing_fulfillment_items %}<p>{{ item.naziv }} · {{ item.kolicina }} kom.</p>{% endfor %}</section>{% endif %}
-    {% if invoice_only_items %}<section class="mg-card"><h2>Već poslati artikli — samo za fakturisanje</h2>{% for item in invoice_only_items %}<p>{{ item.naziv }} · {{ item.kolicina }} kom. · {{ item.ukupno|floatformat:2 }} KM — bez pickinga</p>{% endfor %}</section>{% endif %}
+    {% if invoice_only_items %}<section class="mg-card"><h2>Ranija zaduženja — samo za naplatu</h2>{% for item in invoice_only_items %}<p>{{ item.naziv }} · {{ item.kolicina }} kom. · {{ item.ukupno|floatformat:2 }} KM — bez pickinga</p>{% endfor %}</section>{% endif %}
     <section class="mg-card vp-box vp-search" id="mgOrderSearchBox">
         <h2 class="mg-h">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>

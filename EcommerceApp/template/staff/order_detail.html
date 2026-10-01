@@ -35,6 +35,9 @@ body.magacin-page.is-invoice-view .staff-order-invoice .doc{width:100%;max-width
 <div class="invoice-back-row">
     <button type="button" class="mg-btn invoice-menu-toggle" onclick="document.getElementById('mgNavToggle').click()" aria-label="Otvori meni magacina">☰ Meni magacina</button>
     <a href="{% url 'staff_magacin_narudzbe' %}">← Nazad na narudžbe</a>
+    {% if can_edit_order %}
+    <a href="{{ edit_order_url }}">Izmijeni narudžbu</a>
+    {% endif %}
 </div>
 <section class="mg-card mg-order-invoice-card" id="orderInvoice">
     <div class="staff-order-invoice">

@@ -489,10 +489,11 @@ def _configure_turnstile_field(form):
 class RegisterForm(forms.Form):
     ime_prezime = forms.CharField(
         label='Ime i prezime',
-        max_length=200,
+        max_length=User._meta.get_field('first_name').max_length,
         widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Ime i prezime'}),
     )
     email = forms.EmailField(
+        max_length=User._meta.get_field('username').max_length,
         label='Email',
         widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'email@primjer.ba'}),
     )
@@ -510,11 +511,13 @@ class RegisterForm(forms.Form):
         }),
     )
     lozinka = forms.CharField(
+        strip=False,
         label='Lozinka',
         min_length=8,
         widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Min. 8 znakova'}),
     )
     lozinka_potvrda = forms.CharField(
+        strip=False,
         label='Potvrdite lozinku',
         widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Ponovite lozinku'}),
     )
@@ -567,6 +570,7 @@ class LoginForm(forms.Form):
         widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'email@primjer.ba', 'autofocus': True}),
     )
     lozinka = forms.CharField(
+        strip=False,
         label='Lozinka',
         widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Lozinka'}),
     )
@@ -591,20 +595,21 @@ class LoginForm(forms.Form):
         if not email or not lozinka:
             return cleaned
 
-        user = User.objects.filter(email__iexact=email).first()
-        if user is None:
-            user = User.objects.filter(username__iexact=email).first()
-
-        if user is None:
+        # Manual loyalty records and merged accounts can share an email.
+        # Authenticate every active account instead of trusting the first row.
+        from django.db.models import Q
+        matches = []
+        for user in User.objects.filter(
+            Q(email__iexact=email) | Q(username__iexact=email), is_active=True,
+        ).order_by('pk'):
+            if not user.has_usable_password():
+                continue
+            authenticated = authenticate(self.request, username=user.username, password=lozinka)
+            if authenticated is not None:
+                matches.append(authenticated)
+        if len(matches) != 1:
             raise forms.ValidationError('Pogrešan email ili lozinka.')
-
-        authenticated = authenticate(self.request, username=user.username, password=lozinka)
-        if authenticated is None:
-            raise forms.ValidationError('Pogrešan email ili lozinka.')
-        if not authenticated.is_active:
-            raise forms.ValidationError('Ovaj nalog je deaktiviran.')
-
-        self.user = authenticated
+        self.user = matches[0]
         return cleaned
 
 

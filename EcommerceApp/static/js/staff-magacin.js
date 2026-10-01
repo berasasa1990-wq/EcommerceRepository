@@ -461,14 +461,16 @@ function initCustomerPicker() {
         }
         if (intro) intro.textContent = 'Kreiraj narudžbu dodavanjem kupca i artikla.';
         closeAddModal();
-        showCustomerExcess(data.excess_items || [], data.missing_items || []);
+        showCustomerExcess(data.excess_items || [], data.missing_items || [], data.debt_amount || 0);
         applyLoyaltyForPhone(data.telefon || '');
         var articleSearch = document.getElementById('mgOrderSearch');
         if (articleSearch) window.setTimeout(function () { articleSearch.focus(); }, 40);
     }
-    function showCustomerExcess(items, missing) {
+    function showCustomerExcess(items, missing, debtAmount) {
         missing = missing || [];
+        debtAmount = Number(debtAmount) || 0;
         items = items.concat(missing);
+        if (debtAmount > 0) items.push({ debt: true, name: 'Dug iz ranijeg perioda', quantity: 1, amount: debtAmount.toFixed(2) });
         if (!form || form.querySelector('[name="order_broj"]')) return;
         var preview = document.getElementById('mgAutoExcessPreview');
         if (!preview) {
@@ -482,15 +484,16 @@ function initCustomerPicker() {
         preview.hidden = !items.length;
         var total = 0;
         var title = document.createElement('h3');
-        title.textContent = 'Raniji višak / manjak za ovog kupca';
+        title.textContent = debtAmount > 0 ? 'UPOZORENJE: Kupac ima dug ' + debtAmount.toFixed(2) + ' KM — dodat na narudžbu' : 'Raniji višak / manjak za ovog kupca';
         preview.appendChild(title);
         items.forEach(function (item) {
             var row = document.createElement('p');
-            row.textContent = (item.missing ? 'Manjak — dugujemo kupcu: ' : 'Ranije poslati višak: ') + (item.code ? item.code + ' · ' : '') + item.name + ' — ' + item.quantity + ' kom.' + (item.missing ? ' · picking, bez fakture' : ' · ' + item.amount + ' KM · faktura, bez pickinga');
+            row.textContent = item.debt ? ('Dug iz ranijeg perioda: ' + item.amount + ' KM · za naplatu, bez pickinga') : (item.missing ? 'Manjak — dugujemo kupcu: ' : 'Ranije poslati višak: ') + (item.code ? item.code + ' · ' : '') + item.name + ' — ' + item.quantity + ' kom.' + (item.missing ? ' · picking, bez fakture' : ' · ' + item.amount + ' KM · faktura, bez pickinga');
             preview.appendChild(row);
-            total += Number(item.amount) || 0;
+            if (!item.debt) total += Number(item.amount) || 0;
         });
         form.setAttribute('data-auto-excess-total', total.toFixed(2));
+        form.setAttribute('data-auto-debt-total', debtAmount.toFixed(2));
         form.setAttribute('data-auto-missing-count', missing.length);
         refreshOrderTotal();
         var modal = document.getElementById('mgAutoExcessNotice');
@@ -832,6 +835,12 @@ function initCustomerPicker() {
             odbio_posiljku: document.getElementById('mgCustomerRefused')?.dataset.initial === '1',
             vp_kupac: !!(vpInput && vpInput.value === '1'),
         });
+        if (!form.querySelector('[name="order_broj"]') && lookupUrl) {
+            fetch(lookupUrl + '?q=' + encodeURIComponent(telInput.value), { credentials: 'same-origin' })
+                .then(function (response) { return response.json(); })
+                .then(function (data) { var found = (data.results || []).find(function (row) { return String(row.id) === String(idInput.value); }); if (found) showCustomerExcess(found.excess_items || [], found.missing_items || [], found.debt_amount || 0); })
+                .catch(function () {});
+        }
     }
 }
 
@@ -1477,8 +1486,10 @@ function initManualOrderForm() {
         var pct = card ? 100 : discountPct();
         var discount = card ? sum : Math.round(sum * pct) / 100;
         var grossDiscount = card ? grossSum : Math.round(grossSum * pct) / 100;
+        var debt = (parseFloat(String(form.getAttribute('data-debt-total') || '0').replace(',', '.')) || 0) + (parseFloat(form.getAttribute('data-auto-debt-total')) || 0);
         var payable = wholesale ? grossSum - grossDiscount + ship : sum - discount + ship;
         var vat = wholesale ? payable - (sum - discount + ship) : 0;
+        payable += debt;
         document.getElementById('mgOrderVatRow').hidden = !wholesale;
         document.getElementById('mgOrderVat').textContent = money(vat).replace('.', ',') + ' KM';
         document.getElementById('mgOrderGoodsLabel').textContent = wholesale ? 'Vpc netto bez PDV-a:' : 'Ukupno artikli:';
@@ -2255,7 +2266,7 @@ function initManualOrderForm() {
             commitPick();
             return;
         }
-        if (!lineCount() && !(parseFloat(form.getAttribute('data-auto-excess-total')) > 0) && !(parseFloat(form.getAttribute('data-invoice-only-total')) > 0) && !(Number(form.getAttribute('data-auto-missing-count')) > 0) && !(Number(form.getAttribute('data-missing-fulfillment-count')) > 0)) {
+        if (!lineCount() && !(parseFloat(form.getAttribute('data-auto-debt-total')) > 0) && !(parseFloat(form.getAttribute('data-debt-total')) > 0) && !(parseFloat(form.getAttribute('data-auto-excess-total')) > 0) && !(parseFloat(form.getAttribute('data-invoice-only-total')) > 0) && !(Number(form.getAttribute('data-auto-missing-count')) > 0) && !(Number(form.getAttribute('data-missing-fulfillment-count')) > 0)) {
             event.preventDefault();
             if (search) search.focus();
         }

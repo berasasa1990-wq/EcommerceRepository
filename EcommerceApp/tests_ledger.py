@@ -857,3 +857,113 @@ class WarehouseLedgerTests(TestCase):
         self.assertEqual(_order_print_job(order)['stavke'], [])
         self.stock.refresh_from_db()
         self.assertEqual(self.stock.kolicina, 8)
+
+    def debt_order_fixture(self, amount='100'):
+        from django.utils import timezone
+        self.linked_order()
+        self.post(kind='debit', amount=amount)
+        self.product.magacin_sync_at = timezone.now()
+        self.product.save()
+        self.client.force_login(self.user)
+        customer = self.partner.customer
+        return {'ime_prezime': customer.ime_prezime, 'telefon': customer.telefon,
+                'adresa': 'Ulica 1', 'grad': 'Sarajevo',
+                'product_id': [str(self.product.pk)], 'variation_id': [''],
+                'kolicina': ['1'], 'mp_ok': ['0'], 'action': 'sacuvaj'}
+
+    def create_debt_order(self, payload):
+        response = self.client.post(reverse('staff_magacin_narudzba_nova'), payload)
+        self.assertEqual(response.status_code, 302)
+        return Order.objects.filter(izvor=Order.Izvor.MAGACIN).latest('pk')
+
+    def test_debt_lookup_and_order_charge_are_automatic_without_picking(self):
+        from .views import _build_order_packing_lines
+        payload = self.debt_order_fixture()
+        self.post(kind='receipt', amount='25')
+        lookup = self.client.get(reverse('staff_magacin_kupci_lookup'), {'q': self.partner.customer.ime_prezime})
+        self.assertEqual(lookup.json()['results'][0]['debt_amount'], '75.00')
+        order = self.create_debt_order(payload)
+        debt_item = order.stavke.get(ledger_excess_line__entry__kind=Entry.Kind.COLLECTION)
+        self.assertEqual(debt_item.cijena, Decimal('75'))
+        self.assertIsNone(debt_item.artikal_id)
+        self.assertEqual(order.medjuzbir, Decimal('85'))
+        self.assertEqual(order.ukupno, Decimal('96'))
+        self.assertEqual(order.magacin_holds.get().kolicina, 1)
+        rows, _ = _build_order_packing_lines(order)
+        self.assertNotIn(debt_item.pk, [row['item_id'] for row in rows])
+        self.assertEqual(self.balance(), Decimal('75'))
+        next_order = self.create_debt_order(payload)
+        self.assertFalse(next_order.stavke.filter(ledger_excess_line__entry__kind=Entry.Kind.COLLECTION).exists())
+
+    def test_debt_edit_is_not_discounted_and_does_not_waive_shipping(self):
+        payload = self.debt_order_fixture(amount='300')
+        order = self.create_debt_order(dict(payload, popust_pct='10'))
+        self.assertEqual(order.popust, Decimal('1'))
+        self.assertEqual(order.dostava, Decimal('11'))
+        self.assertEqual(order.ukupno, Decimal('320'))
+        payload.update(order_broj=order.broj, kolicina=['2'], popust_pct='10')
+        self.client.post(reverse('staff_magacin_narudzba_nova'), payload)
+        order.refresh_from_db()
+        self.assertEqual(order.medjuzbir, Decimal('320'))
+        self.assertEqual(order.popust, Decimal('2'))
+        self.assertEqual(order.ukupno, Decimal('329'))
+        self.assertEqual(order.stavke.filter(ledger_excess_line__entry__kind=Entry.Kind.COLLECTION).count(), 1)
+
+    def test_cancelling_order_makes_debt_available_again(self):
+        from .magacin import cancel_order_stock
+        from .warehouse_ledger import customer_debt_amount
+        payload = self.debt_order_fixture()
+        order = self.create_debt_order(payload)
+        self.assertEqual(customer_debt_amount(self.partner.customer), 0)
+        cancel_order_stock(order, user=self.user)
+        self.assertEqual(customer_debt_amount(self.partner.customer), Decimal('100'))
+        next_order = self.create_debt_order(payload)
+        self.assertEqual(next_order.stavke.get(ledger_excess_line__entry__kind=Entry.Kind.COLLECTION).cijena, Decimal('100'))
+
+    def test_separate_partial_and_full_payment_reduce_pending_charge(self):
+        payload = self.debt_order_fixture()
+        order = self.create_debt_order(payload)
+        self.post(kind='receipt', amount='40')
+        order.refresh_from_db()
+        self.assertEqual(order.stavke.get(ledger_excess_line__entry__kind=Entry.Kind.COLLECTION).cijena, Decimal('60'))
+        self.assertEqual(order.ukupno, Decimal('81'))
+        self.post(kind='receipt', amount='60')
+        order.refresh_from_db()
+        self.assertFalse(order.stavke.filter(ledger_excess_line__entry__kind=Entry.Kind.COLLECTION).exists())
+        self.assertEqual(order.ukupno, Decimal('21'))
+        self.assertEqual(self.balance(), 0)
+
+    def test_debt_settlement_is_once_and_does_not_deduct_debt_from_stock(self):
+        from .magacin import validate_order_stock
+        payload = self.debt_order_fixture()
+        order = self.create_debt_order(payload)
+        line = order.stavke.get(ledger_excess_line__entry__kind=Entry.Kind.COLLECTION).ledger_excess_line
+        validate_order_stock(order, user=self.user)
+        validate_order_stock(order, user=self.user)
+        self.assertEqual(self.balance(), 0)
+        self.assertEqual(Entry.objects.filter(source_line=line, kind=Entry.Kind.SETTLED).count(), 1)
+        self.stock.refresh_from_db()
+        self.assertEqual(self.stock.kolicina, 9)
+
+    def test_debt_and_excess_are_not_charged_twice(self):
+        from .warehouse_ledger import customer_debt_amount
+        line, _ = self.excess_invoice_fixture()
+        self.post(kind='debit', amount='50')
+        self.assertEqual(customer_debt_amount(self.partner.customer), Decimal('50'))
+        from django.utils import timezone
+        self.product.magacin_sync_at = timezone.now()
+        self.product.save()
+        self.client.force_login(self.user)
+        order = self.create_debt_order({'ime_prezime': self.partner.customer.ime_prezime,
+            'telefon': self.partner.customer.telefon, 'product_id': [str(self.product.pk)],
+            'variation_id': [''], 'kolicina': ['1'], 'mp_ok': ['0'], 'action': 'sacuvaj'})
+        self.assertEqual(order.medjuzbir, Decimal('80'))
+        self.assertEqual(order.stavke.filter(ledger_excess_line__isnull=False).count(), 2)
+
+    def test_credit_balance_does_not_create_debt_charge(self):
+        from .warehouse_ledger import customer_debt_amount
+        payload = self.debt_order_fixture(amount='50')
+        self.post(kind='receipt', amount='75')
+        self.assertEqual(customer_debt_amount(self.partner.customer), 0)
+        order = self.create_debt_order(payload)
+        self.assertFalse(order.stavke.filter(ledger_excess_line__entry__kind=Entry.Kind.COLLECTION).exists())

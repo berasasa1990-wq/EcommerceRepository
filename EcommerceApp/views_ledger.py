@@ -31,7 +31,7 @@ class PartnerForm(forms.ModelForm):
 def partners_with_balance():
     active_articles = Line.objects.filter(
         entry__partner_id=OuterRef('pk'), settled_by__isnull=True, voided_by__isnull=True,
-    ).annotate(returned=Coalesce(Sum('returns__returned_qty'), 0)).filter(quantity__gt=F('returned'))
+    ).exclude(entry__kind=Entry.Kind.COLLECTION).annotate(returned=Coalesce(Sum('returns__returned_qty'), 0)).filter(quantity__gt=F('returned'))
     return WarehousePartner.objects.annotate(
         balance=Coalesce(Sum('entries__amount'), Value(Decimal('0')), output_field=DecimalField(max_digits=14, decimal_places=2)),
         has_active_articles=Exists(active_articles),
@@ -136,7 +136,7 @@ def ledger(request):
     if partner:
         partner.balance_abs = abs(partner.balance)
         partner.resolved_by_payment = partner.balance == 0 and partner.latest_entry_kind in (Entry.Kind.PAYMENT, Entry.Kind.RECEIPT)
-        lines = Line.objects.filter(entry__partner=partner, settled_by__isnull=True, voided_by__isnull=True).select_related('entry__order', 'entry__source_order', 'replacement_order', 'invoice_item__narudzba', 'product', 'variation').prefetch_related('fulfillment_items__narudzba').annotate(returned=Coalesce(Sum('returns__returned_qty'), 0)).filter(quantity__gt=F('returned'))
+        lines = Line.objects.filter(entry__partner=partner, settled_by__isnull=True, voided_by__isnull=True).exclude(entry__kind=Entry.Kind.COLLECTION).select_related('entry__order', 'entry__source_order', 'replacement_order', 'invoice_item__narudzba', 'product', 'variation').prefetch_related('fulfillment_items__narudzba').annotate(returned=Coalesce(Sum('returns__returned_qty'), 0)).filter(quantity__gt=F('returned'))
         entries = partner.entries.select_related('user', 'order', 'source_line__entry__order')
     line_page = Paginator(lines.order_by('-pk'), 30).get_page(request.GET.get('items_page'))
     stock_cache = {}

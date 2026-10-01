@@ -49,6 +49,9 @@ class SitePrepLockMiddleware:
         # B2B ima vlastitu obaveznu prijavu, nezavisnu od javnog sajta.
         if path == '/veleprodaja' or path.startswith('/veleprodaja/'):
             return True
+        # Partner endpoints enforce their own isolated Bearer credential.
+        if path.startswith('/api/partner/v1/products/'):
+            return True
         if path.startswith('/admin/'):
             return True
         # Prijava/odjava moraju raditi i dok je sajt u pripremi — inače loop na login.

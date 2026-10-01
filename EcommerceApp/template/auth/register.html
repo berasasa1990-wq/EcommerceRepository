@@ -29,7 +29,7 @@
         {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
         <p class="auth-lead">Kreirajte nalog i pratite sve svoje narudžbe na jednom mjestu.</p>
 
-        <form method="post" class="auth-form">
+        <form method="post" class="auth-form" data-csrf-refresh-url="{% url 'auth_csrf_token' %}">
             {% csrf_token %}
 
             {% if form.non_field_errors %}

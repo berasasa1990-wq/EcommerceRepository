@@ -5701,13 +5701,14 @@ def recalculate_order_totals(order):
         (Decimal(str(item.cijena or 0)) * int(item.kolicina or 0) for item in items),
         Decimal('0.00'),
     ).quantize(Decimal('0.01'))
+    debt = sum((item.ukupno for item in items if item.ledger_excess_line_id and item.ledger_excess_line.entry.kind == 'collection'), Decimal('0'))
     popust = Decimal(str(order.popust or 0)).quantize(Decimal('0.01'))
     if is_vp_order(order) or is_prenos_mp_order(order):
         dostava = Decimal('0.00')
     elif getattr(order, 'izvor', '') == Order.Izvor.MAGACIN:
         from .pricing import _standardna_dostava
 
-        dostava, _, _, _ = _standardna_dostava(medjuzbir)
+        dostava, _, _, _ = _standardna_dostava(medjuzbir - debt)
     else:
         dostava = Decimal(str(order.dostava or 0)).quantize(Decimal('0.01'))
     ukupno = (medjuzbir - popust + dostava).quantize(Decimal('0.01'))

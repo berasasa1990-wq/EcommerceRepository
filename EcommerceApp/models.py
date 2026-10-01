@@ -6841,6 +6841,7 @@ class WarehouseLedgerEntry(models.Model):
         MISSING = 'missing', 'Mi dugujemo — artikli koji fale'
         EXCESS = 'excess', 'Kupac duguje — više poslato'
         DAMAGED = 'damaged', 'Oštećen artikal — mi dugujemo kupcu'
+        COLLECTION = 'collection', 'Dug dodat na narudžbu'
         SETTLED = 'settled', 'Izmireno — zamjena validatovana'
         VOID = 'void', 'Poništen pogrešan unos'
 

@@ -273,6 +273,7 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.template.context_processors.csrf',
+                'EcommerceApp.context_processors.csrf_settings',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'EcommerceApp.context_processors.nav_categories',
@@ -641,3 +642,6 @@ if DEBUG:
     SITE_PREP_ENABLED = False
     TURNSTILE_SITE_KEY = ''
     TURNSTILE_SECRET_KEY = ''
+
+# Separate partner credential: products and quantities only; no sync-key fallback.
+PARTNER_STOCK_API_KEY = _env('PARTNER_STOCK_API_KEY', '')

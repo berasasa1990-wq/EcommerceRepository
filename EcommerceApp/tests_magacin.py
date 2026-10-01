@@ -6323,7 +6323,13 @@ class MagacinViewTests(TestCase):
                 item.refresh_from_db()
                 self.assertEqual(item.kolicina_faktura, 2)
 
+    def test_webshop_order_stays_editable_and_updates_picking(self):
+        self._check_order_edit_updates_picking(source=Order.Izvor.WEBSHOP)
+
     def test_created_order_stays_editable_and_updates_picking(self):
+        self._check_order_edit_updates_picking(source=Order.Izvor.MAGACIN)
+
+    def _check_order_edit_updates_picking(self, *, source):
         from .views_magacin import apply_order_pick
 
         extra = Product.objects.create(
@@ -6344,6 +6350,8 @@ class MagacinViewTests(TestCase):
         })
         self.assertEqual(created.status_code, 302)
         order = Order.objects.get(ime_prezime='Greska Unos')
+        order.izvor = source
+        order.save(update_fields=['izvor'])
         old_item = order.stavke.get()
         apply_order_pick(order, [{
             'key': f'{old_item.pk}:T-1',
@@ -6378,6 +6386,7 @@ class MagacinViewTests(TestCase):
         self.assertEqual(saved.status_code, 302)
         self.assertEqual(saved['Location'], reverse('staff_magacin_pakuj'))
         order.refresh_from_db()
+        self.assertEqual(order.izvor, source)
         self.assertEqual(order.status, Order.Status.NOVA)
         self.assertEqual(order.lager_status, Order.LagerStatus.REZERVISANO)
         names = list(order.stavke.values_list('naziv', flat=True))
@@ -6389,9 +6398,10 @@ class MagacinViewTests(TestCase):
 
         pick = self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
         self.assertEqual(pick.status_code, 200)
+        self.assertEqual(pick.context['edit_form_url'], f"{reverse('staff_magacin_narudzba_nova')}?broj={order.broj}")
         self.assertTrue(pick.context['can_edit_order'])
         self.assertContains(pick, 'Izmijeni narudžbu')
-        self.assertContains(pick, 'id="pkEditQuery"')
+        self.assertContains(pick, f'href="{pick.context["edit_form_url"]}"')
         queue = json.loads(pick.context['pick_queue_json'])
         nazivi = [row['naziv'] for row in queue]
         self.assertIn('Drugi artikal', nazivi)

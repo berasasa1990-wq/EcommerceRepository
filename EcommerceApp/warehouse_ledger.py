@@ -71,6 +71,8 @@ def post_entry(*, partner_id, data, user):
         line = Line.objects.select_related('entry', 'replacement_order').filter(pk=data['line_id'], entry__partner=partner).first()
         if not line:
             raise MagacinError('Artikal ovog kupca nije pronađen.')
+        if line.entry.kind == Entry.Kind.COLLECTION:
+            raise MagacinError('Dug za naplatu se mijenja kroz uplatu ili otkazivanje narudžbe.')
         if line.voided_by_id:
             return line.voided_by
         if line.voided_by_id:
@@ -242,11 +244,12 @@ def post_entry(*, partner_id, data, user):
     entry = Entry.objects.create(**common, kind=kind,
                                  amount=amount if kind in (Entry.Kind.DEBIT, Entry.Kind.PAYMENT) else -amount,
                                  description=description or Entry.Kind(kind).label)
+    reconcile_pending_debt(partner)
     if previous_balance is not None:
         new_balance = previous_balance + entry.amount
         fully_paid = (kind == Entry.Kind.PAYMENT and previous_balance < 0 <= new_balance) or (kind == Entry.Kind.RECEIPT and previous_balance > 0 >= new_balance)
         if fully_paid:
-            for paid_line in Line.objects.filter(entry__partner=partner, settled_by__isnull=True, invoice_item__isnull=False).exclude(invoice_item__narudzba__lager_status=Order.LagerStatus.VALIDIRANO):
+            for paid_line in Line.objects.filter(entry__partner=partner, settled_by__isnull=True, invoice_item__isnull=False).exclude(entry__kind=Entry.Kind.COLLECTION).exclude(invoice_item__narudzba__lager_status=Order.LagerStatus.VALIDIRANO):
                 remove_pending_excess_invoice(paid_line)
             for paid_line in Line.objects.filter(entry__partner=partner, settled_by__isnull=True, fulfillment_items__isnull=False).distinct():
                 remove_pending_missing_items(paid_line, user=user)
@@ -403,7 +406,8 @@ def settle_invoiced_excess(order, *, user=None):
             'partner_id': line.entry.partner_id, 'kind': Entry.Kind.SETTLED,
             'amount': -line.amount, 'source_line': line, 'returned_qty': line.quantity,
             'source_order': order, 'user': user,
-            'description': f'Višak fakturisan bez pickinga kroz #{order.broj} — {line.name}'[:300],
+            'description': (f'Dug naplaćen kroz #{order.broj}' if line.entry.kind == Entry.Kind.COLLECTION
+                            else f'Višak fakturisan bez pickinga kroz #{order.broj} — {line.name}')[:300],
         })
 
 
@@ -517,3 +521,99 @@ def remove_pending_missing_items(line, *, user=None):
             release_holds_for_product(order, item.artikal, item.varijacija, qty=item.kolicina, user=user)
         _clear_pick_state_for_item(order, item.pk)
         item.delete()
+
+
+def _debt_principal_balance(partner):
+    """Net receivable, excluding excess goods billed through their own invoice lines."""
+    balance = partner.entries.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    excess = Decimal('0')
+    for line in Line.objects.filter(entry__partner=partner, entry__kind=Entry.Kind.EXCESS,
+                                    voided_by__isnull=True, settled_by__isnull=True).annotate(returned_amount=Sum('returns__amount')):
+        excess += max(Decimal('0'), line.amount - abs(line.returned_amount or Decimal('0')))
+    return max(Decimal('0'), balance - excess)
+
+
+def _active_debt_lines(partner):
+    return Line.objects.filter(
+        entry__partner=partner, entry__kind=Entry.Kind.COLLECTION,
+        invoice_item__isnull=False, returns__isnull=True,
+        settled_by__isnull=True, voided_by__isnull=True,
+    ).exclude(invoice_item__narudzba__status=Order.Status.OTKAZANA).exclude(
+        invoice_item__narudzba__lager_status=Order.LagerStatus.OTKAZANO,
+    ).select_related('invoice_item__narudzba').order_by('pk')
+
+
+def customer_debt_amounts(customer_ids):
+    """Batch the customer picker lookup so it does not query once per result."""
+    partners = list(WarehousePartner.objects.filter(customer_id__in=customer_ids)
+                    .annotate(balance=Sum('entries__amount')))
+    totals = {partner.pk: max(Decimal('0'), partner.balance or Decimal('0')) for partner in partners}
+    deductions = {partner.pk: Decimal('0') for partner in partners}
+    for line in Line.objects.filter(entry__partner_id__in=totals,
+            entry__kind__in=[Entry.Kind.EXCESS, Entry.Kind.COLLECTION],
+            voided_by__isnull=True, settled_by__isnull=True).select_related('entry', 'invoice_item__narudzba').annotate(returned_amount=Sum('returns__amount')):
+        if line.entry.kind == Entry.Kind.EXCESS:
+            deductions[line.entry.partner_id] += max(Decimal('0'), line.amount - abs(line.returned_amount or Decimal('0')))
+        elif line.returned_amount is None and hasattr(line, 'invoice_item'):
+            order = line.invoice_item.narudzba
+            if order.status != Order.Status.OTKAZANA and order.lager_status != Order.LagerStatus.OTKAZANO:
+                deductions[line.entry.partner_id] += line.amount
+    return {partner.customer_id: max(Decimal('0.00'), totals[partner.pk] - deductions[partner.pk]).quantize(Decimal('.01')) for partner in partners}
+
+
+def customer_debt_amount(customer):
+    return customer_debt_amounts([customer.pk]).get(customer.pk, Decimal('0.00')) if customer else Decimal('0.00')
+
+
+@transaction.atomic
+def attach_customer_debt(order, customer, *, user=None):
+    """Reserve outstanding debt once, as an invoice-only charge with no stock effects."""
+    from uuid import uuid4
+    from .models import OrderItem
+    if not customer:
+        return None
+    partner = WarehousePartner.objects.select_for_update().filter(customer=customer).first()
+    if not partner:
+        return None
+    if order.stavke.filter(ledger_excess_line__entry__kind=Entry.Kind.COLLECTION).exists():
+        return None
+    amount = customer_debt_amount(customer)
+    if amount <= 0:
+        return None
+    # This zero-value audit entry reserves collection; validation posts the offset.
+    entry = Entry.objects.create(partner=partner, kind=Entry.Kind.COLLECTION, amount=0,
+        description=f'Dug za naplatu kroz narudžbu #{order.broj}', source_order=order,
+        user=user, token=uuid4())
+    line = Line.objects.create(entry=entry, name='Dug iz ranijeg perioda', quantity=1, amount=amount)
+    OrderItem.objects.create(narudzba=order, ledger_excess_line=line,
+        naziv=line.name, product_naziv=line.name, cijena=amount, kolicina=1, kolicina_pokupljeno=1)
+    order.refresh_from_db(fields=['medjuzbir', 'ukupno'])
+    order.medjuzbir += amount
+    order.ukupno += amount
+    order.save(update_fields=['medjuzbir', 'ukupno'])
+    return line
+
+
+def reconcile_pending_debt(partner):
+    """Reduce charges on open orders if debt has been paid separately."""
+    remaining = _debt_principal_balance(partner)
+    for line in _active_debt_lines(partner):
+        item = line.invoice_item
+        order = Order.objects.select_for_update().get(pk=item.narudzba_id)
+        if order.lager_status == Order.LagerStatus.VALIDIRANO:
+            continue
+        amount = min(line.amount, remaining)
+        remaining -= amount
+        difference = line.amount - amount
+        if not difference:
+            continue
+        if amount:
+            line.amount = amount
+            line.save(update_fields=['amount'])
+            item.cijena = amount
+            item.save(update_fields=['cijena'])
+        else:
+            item.delete()
+        order.medjuzbir -= difference
+        order.ukupno = max(Decimal('0'), order.ukupno - difference)
+        order.save(update_fields=['medjuzbir', 'ukupno'])
