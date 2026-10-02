@@ -1,34 +1,23 @@
 """Read-only single-product preview. No HTTP client, persistence or sync hooks."""
 import json
 from types import SimpleNamespace
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin
 
 from django.conf import settings
 
 from .cart import Cart
-
-CATEGORY_CODES = {
-    'štapovi': 'FishingRods',
-    'mašinice': 'Reels',
-    'najloni i strune': 'FishingLinesLeaders',
-    'udice': 'Hooks',
-    'varalice': 'Lures',
-    'plovci': 'FloatsBobbers',
-    'hranilice': 'Feeders',
-    'mušičarski program': 'FlyFishingGear',
-    'primama i mamci': 'GroundbaitsBaits',
-    'dodatna oprema': 'Accessories',
-    'odjeća i obuća za ribolov': 'FishingWear',
-}
-CATEGORY_PREFIX = 'SportRecreation_Equipment_FishingEquipment_'
-
+from .mungos_payload import (
+    CATEGORY_CODES, CATEGORY_PREFIX, is_mungos_image_url, sanitize_mungos_payload,
+    sanitize_mungos_price,
+)
 
 def category_code(category):
     """Exact confirmed names only; nearest mapped ancestor, no fuzzy fallback."""
     visited = set()
     while category is not None and category.pk not in visited:
         visited.add(category.pk)
-        suffix = CATEGORY_CODES.get(category.naziv.strip().casefold())
+        name = category.naziv
+        suffix = CATEGORY_CODES.get(name.strip().casefold()) if isinstance(name, str) else None
         if suffix:
             return CATEGORY_PREFIX + suffix
         category = category.roditelj
@@ -42,17 +31,14 @@ def _images(main, additional, issues):
             continue
         try:
             url = urljoin(settings.SITE_URL.rstrip('/') + '/', field.url)
-            parsed = urlsplit(url)
-            valid = (parsed.scheme in ('http', 'https') and parsed.hostname
-                     and not parsed.username and not parsed.password
-                     and not parsed.query and not parsed.fragment)
+            valid = is_mungos_image_url(url)
         except (ValueError, OSError):
             valid = False
         if not valid:
             issues.append('Image URL nije siguran javni URL; izostavljen iz previewa.')
             continue
         if not any(image['imageUrl'] == url for image in result):
-            result.append({'imageUrl': url, 'isMainImage': is_main})
+            result.append({'imageUrl': url, 'isMainImage': not result})
     return result
 
 
@@ -75,7 +61,7 @@ def build_product_preview(product):
     if not code:
         issues.append('Kategorija nema potvrđeno Mungos mapiranje.')
     sku = product.sifra or ''
-    if not sku.strip():
+    if not isinstance(sku, str) or not sku.strip():
         issues.append('Proizvod nema SKU; Mungos id nije izmišljen.')
     if not product.aktivan or product.sakriven_do_stanja:
         issues.append('Proizvod nije dostupan za kupovinu u webshopu.')
@@ -83,7 +69,7 @@ def build_product_preview(product):
         'id': sku, 'sku': sku, 'name': product.naziv,
         'hasQuantities': True, 'quantityRemaining': quantities['parent'],
         'shortDescription': product.opis, 'details': product.opis,
-        'productType': 'Product', 'price': float(product.prikazna_cijena),
+        'productType': 'Product', 'price': product.prikazna_cijena,
         'currencyIsoCode': 'BAM', 'isNegotiable': False, 'isFree': False,
         'warrantyMonthsCount': None, 'warrantyDescription': None,
         'returnDaysCount': None, 'returnDescription': None,
@@ -95,28 +81,33 @@ def build_product_preview(product):
         'images': _images(product.prikazna_slika, product.dodatne_slike.all(), issues),
         'HasVariants': bool(variations), 'Variants': [],
     }
-    if product.barkod:
-        payload['ean'] = product.barkod
-    seen = {sku}
+    payload['ean'] = product.barkod
+    seen = {sku} if isinstance(sku, str) else set()
     for variation in variations:
         variant_sku = variation.sifra or ''
-        if not variant_sku.strip() or variant_sku in seen:
+        if not isinstance(variant_sku, str) or not variant_sku.strip() or variant_sku in seen:
             issues.append(f'Varijanta {variation.pk}: nedostaje ili se ponavlja SKU.')
-        seen.add(variant_sku)
-        price = float(variation.prikazna_cijena)
+        if isinstance(variant_sku, str):
+            seen.add(variant_sku)
+        # Reuse the same numeric rule even for blocked variant diagnostics.
+        price = sanitize_mungos_price(variation.prikazna_cijena)
         payload['Variants'].append({
             'sku': variant_sku, 'quantityRemaining': quantities[str(variation.pk)],
             'price': price, 'sellingPrice': price,
             'images': _images(variation.slika, [], issues), 'attributes': [],
         })
         issues.append(f'Varijanta {variation.pk} ({variation.naziv}): Mungos attribute codes nisu potvrđeni.')
+    payload, validation_reasons = sanitize_mungos_payload(payload, 'create')
+    issues.extend(validation_reasons)
+    # A non-serializable candidate is blocked and has no outbound body.
+    summary = payload or {}
     return {
         'status': 'NEEDS_REVIEW' if issues else 'READY_FOR_REVIEW',
         'reviewReasons': issues,
         'carpologijaProductId': product.pk, 'name': product.naziv, 'sku': sku,
-        'price': payload['price'], 'quantity': payload['quantityRemaining'],
+        'price': summary.get('price'), 'quantity': summary.get('quantityRemaining'),
         'category': product.kategorija.naziv if product.kategorija else None,
-        'categoryCode': code, 'images': payload['images'],
+        'categoryCode': code, 'images': summary.get('images', []),
         'variantCount': len(variations), 'payload': payload,
     }
 

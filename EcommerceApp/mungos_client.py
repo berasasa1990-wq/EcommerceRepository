@@ -6,6 +6,8 @@ from urllib.parse import urlsplit
 import requests
 from django.conf import settings
 
+from .mungos_payload import sanitize_mungos_payload
+
 
 class MungosError(Exception):
     """Only fixed, credential-free messages may be exposed to the operator."""
@@ -30,7 +32,10 @@ class MungosClient:
     def __init__(self):
         if not settings.MUNGOS_ENABLED:
             raise MungosError('Mungos je isključen: postavite MUNGOS_ENABLED=true.')
-        base_url = settings.MUNGOS_BASE_URL.strip().rstrip('/')
+        configured_url = settings.MUNGOS_BASE_URL
+        if not isinstance(configured_url, str):
+            raise MungosError('MUNGOS_BASE_URL mora biti validan HTTPS URL.')
+        base_url = configured_url.strip().rstrip('/')
         try:
             parsed = urlsplit(base_url)
             valid = (
@@ -45,12 +50,14 @@ class MungosClient:
         if not valid:
             raise MungosError('MUNGOS_BASE_URL mora biti validan HTTPS URL bez credentials, query ili fragmenta.')
         api_key = settings.MUNGOS_API_KEY
-        if not api_key or not api_key.strip():
+        if not isinstance(api_key, str) or not api_key.strip():
             raise MungosError('MUNGOS_API_KEY nije postavljen.')
         if any(ord(char) < 32 or ord(char) > 126 for char in api_key) or api_key != api_key.strip():
             raise MungosError('MUNGOS_API_KEY ima neispravan format za HTTP header.')
         access_code = settings.MUNGOS_ECOMMERCE_ACCESS_CODE
-        if any(ord(char) < 32 or ord(char) > 126 for char in access_code) or access_code != access_code.strip():
+        if (not isinstance(access_code, str)
+                or any(ord(char) < 32 or ord(char) > 126 for char in access_code)
+                or access_code != access_code.strip()):
             raise MungosError('MUNGOS_ECOMMERCE_ACCESS_CODE ima neispravan format za HTTP header.')
         self._base_url = base_url
         self._url = base_url + self.LIVENESS_PATH
@@ -71,6 +78,9 @@ class MungosClient:
             raise MungosError('Slanje je dozvoljeno samo na staging.mungos.ba.')
         if not self._access_code:
             raise MungosError('STAGING slanje zahtijeva MUNGOS_ECOMMERCE_ACCESS_CODE.')
+        payload, reasons = sanitize_mungos_payload(payload, 'create' if method == 'post' else 'update')
+        if reasons:
+            raise MungosError('NOT_SENT | Mungos payload zahtijeva pregled; nema HTTP-a.')
         try:
             with requests.Session() as session:
                 with getattr(session, method)(

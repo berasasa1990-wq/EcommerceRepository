@@ -49,6 +49,36 @@ class MungosProductTests(TestCase):
         with patch.object(Product, 'flash_sale_price', return_value=Decimal('60')):
             self.assertEqual(self.preview()['price'], 60)
 
+    def test_create_ean_sanitization_changes_only_outbound_ean(self):
+        baseline = self.preview()['payload']
+        for value, expected in (
+            ('12345670', '12345670'), ('1234567890128', '1234567890128'),
+            ('14587589654', ''), ('', ''), (None, ''), ('abcdefgh', ''),
+            ('1234567a', ''), (' 12345670', ''), ('１２３４５６７０', ''),
+        ):
+            with self.subTest(ean=value):
+                self.product.barkod = value
+                self.assertEqual(self.preview()['payload'], {**baseline, 'ean': expected})
+                self.assertEqual(self.product.barkod, value)
+
+    def test_invalid_ean_stays_in_database_after_create_and_update_builders(self):
+        from .mungos_update import build_mungos_update_payload
+
+        # Isolated test fixture; never rely on local Product 4455 matching production.
+        Product.objects.filter(pk=self.product.pk).update(barkod='14587589654')
+        self.product.refresh_from_db()
+        with patch('requests.sessions.Session.request', side_effect=AssertionError('HTTP forbidden')) as http:
+            with CaptureQueriesContext(connection) as queries:
+                preview = self.preview()
+                update = build_mungos_update_payload(preview)
+        http.assert_not_called()
+        self.assertTrue(all(query['sql'].lstrip().upper().startswith('SELECT') for query in queries))
+        self.assertEqual(preview['payload']['ean'], '')
+        self.assertEqual(update['payload']['ean'], '')
+        self.assertEqual(self.product.barkod, '14587589654')
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.barkod, '14587589654')
+
     def test_without_stock_and_hidden(self):
         self.product.stanje = 0
         self.assertEqual(self.preview()['quantity'], 0)

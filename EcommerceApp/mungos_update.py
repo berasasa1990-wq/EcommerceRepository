@@ -1,17 +1,7 @@
 """Read-only adapter for the confirmed single-product PUT schema."""
 from copy import deepcopy
 
-
-UPDATE_FIELDS = (
-    'id', 'name', 'categoryUuid', 'categoryCode', 'brandCode',
-    'hasQuantities', 'quantityRemaining', 'shortDescription', 'details',
-    'productType', 'price', 'currencyIsoCode', 'isNegotiable', 'isFree',
-    'sku', 'ean', 'warrantyMonthsCount', 'warrantyDescription',
-    'returnDaysCount', 'returnDescription', 'sellerPaysForReturnShipping',
-    'exchangeAcceptable', 'exchangeComment', 'shippmentDeliveryMethod',
-    'condition', 'countryCode', 'cityCode', 'streetName', 'postalCode',
-    'longitude', 'latitude', 'productAttributes', 'images',
-)
+from .mungos_payload import UPDATE_FIELDS, sanitize_mungos_payload
 
 
 def build_mungos_update_payload(preview):
@@ -21,8 +11,12 @@ def build_mungos_update_payload(preview):
     blocked until their PUT schema is confirmed. Never mutate the CREATE preview.
     """
     result = deepcopy(preview)
-    source = preview['payload']
+    source = preview.get('payload')
     reasons = result['reviewReasons']
+    if not isinstance(source, dict):
+        reasons.append('CREATE preview nema validan payload za UPDATE.')
+        result.update(status='NEEDS_REVIEW', payload=None)
+        return result
     if preview.get('variantCount') or source.get('HasVariants') or source.get('Variants'):
         reasons.append('Mungos PUT schema za varijante nije potvrđena.')
     missing = [field for field in UPDATE_FIELDS
@@ -37,4 +31,8 @@ def build_mungos_update_payload(preview):
         field: deepcopy(source.get(field, '' if field == 'ean' else None))
         for field in UPDATE_FIELDS
     }
+    result['payload'], validation_reasons = sanitize_mungos_payload(result['payload'], 'update')
+    reasons.extend(validation_reasons)
+    if reasons:
+        result.update(status='NEEDS_REVIEW', payload=None)
     return result

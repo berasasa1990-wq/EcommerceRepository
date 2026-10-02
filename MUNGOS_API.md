@@ -208,7 +208,8 @@ postoji. `attributes=[]`: nijedan Color/Size kod se ne izmišlja. Svaki proizvod
 sa varijantama zato dobija `NEEDS_REVIEW` sa lokalnim nazivom i ID-em varijante.
 Prazan/ponovljen SKU takođe traži pregled. Pakovanja se ne preračunavaju;
 jedinicu prodaje i attribute codes treba potvrditi prije budućeg slanja.
-Brand se ne izmišlja; postojeći barkod se opcionalno izvozi kao `ean`.
+Brand se ne izmišlja; postojeći barkod se izvozi kao `ean` samo ako ima
+tačno 8 ili 13 ASCII cifara, inače se šalje prazan string.
 
 Koristi se `condition`, prema novijim/update primjerima, nikada `condidtion`.
 Ostala fiksna polja preuzeta su iz dostavljenog Postman primjera, uključujući
@@ -224,6 +225,7 @@ kataloško stanje 8, kategoriju `Štapovi`, bez slika, barkoda i varijanti:
 {
   "id": "ROD-1",
   "sku": "ROD-1",
+  "ean": "",
   "name": "Test štap",
   "hasQuantities": true,
   "quantityRemaining": 8,
@@ -313,9 +315,10 @@ jedan `PUT /standard/product/{uuid}`. Za postojeću konfiguraciju endpoint je:
 UUID je samo u putanji; `id`/`sku` u body-ju ostaju Carpologija SKU.
 Adapter koristi potvrđeni PUT primjer: zadržava samo njegova polja i casing,
 izostavlja CREATE polja `HasVariants`/`Variants`, dodaje `brandCode=null`,
-a `ean` prenosi iz buildera ili koristi prazan string ako barkod nedostaje.
+a `ean` prolazi zajedničku sanitizaciju (8/13 ASCII cifara ili prazan string).
 `categoryUuid=null` ostaje uz potvrđeni `categoryCode`. Warranty/return vrijednosti
-ostaju iz buildera bez izmišljanja. CREATE builder i POST komanda nisu mijenjani.
+ostaju iz buildera bez izmišljanja. CREATE i UPDATE imaju zasebne scheme i
+zajedničku sanitizaciju/validaciju outbound podataka.
 Varijante su nezavisno blokirane kao NEEDS_REVIEW jer njihova PUT schema nije
 potvrđena, čak i ako bi CREATE preview bio READY_FOR_REVIEW.
 Server prihvatanje body-ja ostaje za naknadni, eksplicitno potvrđeni STAGING test.
@@ -339,3 +342,96 @@ Testovi `EcommerceApp.tests_mungos_update` mockuju sav HTTP i provjeravaju jedan
 PUT, isti UUID, aktuelni builder payload, sigurnosne blokade, HTTP greške,
 UNKNOWN_REMOTE_STATE, redakciju secreta i SELECT-only DB upite. DB fixture zapisi
 postoje isključivo u izolovanoj Django test bazi.
+
+## Lokalni hardening i finalni payload pregled
+
+Izvori za lokalnu provjeru su POST primjer iz ovog dokumenta i postojeći PUT
+primjer (`EXPECTED_PUT` u `tests_mungos_update.py`). Originalna Postman kolekcija
+ili formalna OpenAPI specifikacija nije prisutna u repozitoriju. Provjera prema
+tim primjerima nije potvrda kompletne server scheme ili prihvatanja body-ja.
+Operator je prijavio STAGING PUT HTTP 400 za EAN `14587589654` (11 cifara).
+Adapter sada za taj izvorni podatak šalje `"ean": ""`; original se ne popravlja
+i ne snima. Lokalni Product 4455 nije dokaz produkcijskih podataka.
+
+```sh
+# Bez auth ključeva, MUNGOS_ENABLED može ostati false; samo SELECT upiti.
+python manage.py mungos_product_dry_run <lokalni_product_id> --operation create
+python manage.py mungos_product_dry_run <lokalni_product_id> --operation update
+# Opcionalna lokalna validacija UUID-a; nema HTTP-a ni provjere postojanja oglasa.
+python manage.py mungos_product_dry_run <lokalni_product_id> --operation update --mungos-uuid a9241b59-9e45-4840-9730-c93cb8ad9517
+```
+
+CREATE pregled sadrži finalni sanitized POST kandidat; UPDATE pregled sadrži
+finalni PUT kandidat ili `payload=null` kada je blokiran. `NEEDS_REVIEW` i
+`reviewReasons` označavaju zabranu slanja. Output redaktuje konfigurisane secrets;
+može se razlikovati od body-ja samo po toj redakciji. Pregled nije rezervacija
+stanja: potvrđena send/update komanda ponovo čita aktuelne podatke prije slanja.
+
+### Odvojene outbound scheme
+
+Zajednička 32 polja su: `id`, `sku`, `name`, `ean`, `categoryUuid`,
+`categoryCode`, `hasQuantities`, `quantityRemaining`, `shortDescription`,
+`details`, `productType`, `price`, `currencyIsoCode`, `isNegotiable`, `isFree`,
+`warrantyMonthsCount`, `warrantyDescription`, `returnDaysCount`,
+`returnDescription`, `sellerPaysForReturnShipping`, `exchangeAcceptable`,
+`exchangeComment`, `shippmentDeliveryMethod`, `condition`, `countryCode`,
+`cityCode`, `streetName`, `postalCode`, `longitude`, `latitude`,
+`productAttributes`, `images`.
+
+- CREATE: 34 polja, zajednička polja + `HasVariants=false`, `Variants=[]`;
+  bez `brandCode`. Endpoint `POST /standard/product`.
+- UPDATE: 33 polja, zajednička polja + `brandCode=null`; bez CREATE variant
+  polja. Endpoint `PUT /standard/product/{uuid}`. UUID je isključivo u putanji.
+- `categoryUuid=null` uz potvrđeni `categoryCode`; `condition` i
+  `shippmentDeliveryMethod` koriste casing/spelling dostupnih primjera.
+
+### Transformacije i blokade
+
+`mungos_payload.py` centralizuje potvrđena polja, category kodove i zajedničke
+provjere. Builder i UPDATE adapter ga koriste, a HTTP transport ponovo provjerava
+finalni payload prije otvaranja Session-a. Funkcije vraćaju odvojene podatke;
+nema `save`, stock promjena, modela, migracija ili poziva iz webshop toka.
+
+- EAN: samo string od 8 ili 13 ASCII cifara; sve drugo `""`. Bez trimovanja,
+  dopunjavanja, skraćivanja, checksum računanja ili izmjena barkoda u bazi.
+- `id`/`sku`/`name`: neprazni stringovi bez kontrolnih znakova; identitet se
+  ne izmišlja, `id` mora biti jednak SKU-u. Nevalidan podatak blokira slanje.
+- Cijena: postojeća `prikazna_cijena`, konverzija Decimal u konačan JSON broj;
+  nula dozvoljena, negativna, None, string, bool, NaN/Infinity blokirani.
+- Količina: rezultat postojeće `Cart.availability`, strogo integer;
+  negativan integer postaje 0 samo outbound, pogrešan tip blokira slanje.
+- Opisi: postojeći string bez generisanja; None/nedostajući opis postaje
+  `""`, drugi tip blokira slanje.
+- Kategorija: samo postojećih 11 potvrđenih kodova, bez generičkog fallbacka;
+  nepotvrđen kod ili izmišljeni UUID blokiraju slanje.
+- Slike: samo postojeći builder URL-ovi, postojeći redoslijed; bez uploada ili
+  promjene storagea. Duplikati se uklanjaju, prva postojeća slika jedina je
+  glavna (i kod galerije bez naslovne slike). `images=[]` se zadržava kada
+  slika ne postoji. Nevalidan URL/schema blokiraju slanje; bez credentials,
+  queryja, fragmenta, kontrolnih znakova ili nevalidnog porta.
+- Fiksne vrijednosti: BAM, New, BA, Bijeljina, Product i postojeće bool/null
+  vrijednosti iz primjera. Warranty/return/brand se ne izmišljaju,
+  `productAttributes={}`; odstupanja od primjera blokirana su.
+  `sellerPaysForReturnShipping=true` ostaje iz postojećeg potvrđenog primjera;
+  nije novo komercijalno pravilo uvedeno ovim hardeningom.
+- Varijante uvijek blokiraju CREATE i UPDATE dok kompletna schema, attribute
+  kodovi i jedinica prodaje nisu potvrđeni. Nepotpuna/pogrešna polja i payload
+  koji nije JSON-safe blokiraju transport. UPDATE ne radi POST fallback.
+
+### Granice lokalne potvrde
+
+Mungos može i dalje vratiti 400 za checksum EAN-a koji ima 8/13 cifara,
+neprihvatanje praznog EAN-a/slika/opisa, ograničenje dužine stringova ili broja
+slika, format/preciznost cijene ili dodatna category pravila. Ne popravljamo EAN
+checksum i ne izmišljamo nedostajuće podatke. Kodovi/enumi, null/false vrijednosti,
+semantika nulte cijene, polja iz nepotpune specifikacije i stvarna javna dostupnost
+slika mogu se potpuno potvrditi tek kroz dokumentaciju Mungosa ili zaseban
+eksplicitno odobren STAGING test. Jedinstvenost SKU-a i postojanje/vlasništvo
+UPDATE UUID-a nisu provjerljivi lokalno. HTTP 401/403 zavise i od stvarnih
+credentials, 404 od UUID-a, 409 od udaljenog stanja; 429 od rate limita.
+
+Test skup uključuje `EcommerceApp.tests_mungos_payload` uz četiri postojeća
+Mungos modula. HTTP je mockovan, a fixture upisi su samo u izolovanoj Django
+test bazi. Transport zadržava oba staging auth headera, timeout 5/10 s,
+staging-only write zaštitu, redakciju odgovora i zabranu redirecta/retryja.
+Nema cron/Celery/signals, bulk slanja, DB mappinga ili automatskog synca.

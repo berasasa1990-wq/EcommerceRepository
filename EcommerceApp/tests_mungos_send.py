@@ -10,6 +10,7 @@ from django.test.utils import CaptureQueriesContext
 
 from .models import Category, Product
 from .mungos_product import build_product_preview
+from .tests_mungos_update import EXPECTED_PUT
 
 
 @override_settings(
@@ -33,7 +34,8 @@ class MungosSendTests(SimpleTestCase):
         self.builder = self.builder_patch.start()
         self.addCleanup(self.builder_patch.stop)
         self.preview = {'status': 'READY_FOR_REVIEW', 'reviewReasons': [],
-                        'payload': {'sku': '7889', 'price': 138, 'quantityRemaining': 43}}
+                        'payload': {**{key: value for key, value in EXPECTED_PUT.items() if key != 'brandCode'},
+                                    'HasVariants': False, 'Variants': []}}
         self.builder.return_value = self.preview
         self.output = StringIO()
 
@@ -57,7 +59,8 @@ class MungosSendTests(SimpleTestCase):
             headers={'X-Api-Key': 'test-key', 'ecommerceaccesscode': 'test-access'},
             timeout=(5, 10), allow_redirects=False, stream=True,
         )
-        self.assertIs(self.session.post.call_args.kwargs['json'], self.preview['payload'])
+        self.assertEqual(self.session.post.call_args.kwargs['json'], self.preview['payload'])
+        self.session.put.assert_not_called()
         self.session.get.assert_not_called()
         self.session.request.assert_not_called()
         self.assertIn('SUCCESS', self.output.getvalue())
@@ -71,7 +74,7 @@ class MungosSendTests(SimpleTestCase):
         self.factory.assert_not_called()
 
     def test_http_errors_and_redirects_never_retry_and_redact_response(self):
-        for status in (302, 400, 401, 403, 409, 429, 500):
+        for status in (302, 400, 401, 403, 404, 409, 429, 500):
             with self.subTest(status=status):
                 self.session.post.reset_mock()
                 self.response.status_code = status
@@ -79,6 +82,7 @@ class MungosSendTests(SimpleTestCase):
                 with self.assertRaisesMessage(CommandError, f'HTTP status: {status}') as caught:
                     self.run_command()
                 self.session.post.assert_called_once()
+                self.session.put.assert_not_called()
                 for secret in ('test-key', 'test-access'):
                     self.assertNotIn(secret, self.output.getvalue() + str(caught.exception))
                 self.assertIn('[REDACTED]', self.output.getvalue())

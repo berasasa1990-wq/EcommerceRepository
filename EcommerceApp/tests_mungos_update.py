@@ -103,9 +103,9 @@ class MungosUpdateTests(SimpleTestCase):
     def test_current_builder_payload_is_rebuilt_each_invocation(self):
         self.run_command()
         current = {'status': 'READY_FOR_REVIEW', 'reviewReasons': [],
-                   'payload': {**EXPECTED_PUT, 'sku': 'current', 'name': 'Current', 'price': 99,
+                   'payload': {**EXPECTED_PUT, 'id': 'current', 'sku': 'current', 'name': 'Current', 'price': 99,
                                'quantityRemaining': 7, 'details': 'Current description',
-                               'images': [], 'categoryCode': 'Reels', 'Variants': []}}
+                               'images': [], 'Variants': []}}
         self.builder.return_value = current
         self.session.put.reset_mock()
         self.run_command()
@@ -145,6 +145,7 @@ class MungosUpdateTests(SimpleTestCase):
                 with self.assertRaisesMessage(CommandError, f'HTTP status: {status}') as caught:
                     self.run_command()
                 self.session.put.assert_called_once()
+                self.session.post.assert_not_called()
                 for secret in ('test-key', 'test-access'):
                     self.assertNotIn(secret, self.output.getvalue() + self.logs.getvalue() + str(caught.exception))
                 self.assertIn('[REDACTED]', self.output.getvalue())
@@ -214,6 +215,22 @@ class MungosUpdateReadOnlyTests(TestCase):
 
 
 class MungosUpdateAdapterTests(SimpleTestCase):
+    def test_update_sanitizes_raw_ean_without_changing_other_fields_or_source(self):
+        from copy import deepcopy
+
+        for value, expected in (
+            ('12345670', '12345670'), ('1234567890128', '1234567890128'),
+            ('14587589654', ''), ('', ''), (None, ''), ('abcdefgh', ''),
+            ('1234567a', ''), (' 12345670', ''), ('１２３４５６７０', ''),
+        ):
+            with self.subTest(ean=value):
+                preview = {'status': 'READY_FOR_REVIEW', 'reviewReasons': [],
+                           'payload': {**EXPECTED_PUT, 'ean': value}}
+                original = deepcopy(preview)
+                adapted = build_mungos_update_payload(preview)
+                self.assertEqual(adapted['payload'], {**EXPECTED_PUT, 'ean': expected})
+                self.assertEqual(preview, original)
+
     def test_exact_schema_without_mutating_create_payload(self):
         from copy import deepcopy
         preview = {'status': 'READY_FOR_REVIEW', 'reviewReasons': [],
