@@ -65,3 +65,50 @@ class CategoryMappingTests(TestCase):
         preview = build_product_preview(product)
         self.assertEqual(preview['categoryCode'], CATEGORY_PREFIX.rstrip('_'))
         self.assertEqual(preview['status'], 'READY_FOR_REVIEW')
+
+    def test_production_parents_and_inheritance(self):
+        from .mungos_categories import PRODUCTION_CATEGORY_ID_MAPPING, resolve_category
+        for pk, (name, code) in PRODUCTION_CATEGORY_ID_MAPPING.items():
+            with self.subTest(pk=pk):
+                parent = Category(pk=pk, naziv=name)
+                child = Category(pk=1000 + pk, naziv='Nova podkategorija', roditelj=parent)
+                self.assertEqual(resolve_category(parent), (code, pk))
+                self.assertEqual(resolve_category(child), (code, pk))
+                parent.naziv = 'Nepovezana kategorija'
+                self.assertIsNone(category_code(child))
+
+    def test_production_overrides_prevent_wrong_inheritance(self):
+        from .mungos_categories import PRODUCTION_CATEGORY_OVERRIDES, resolve_category
+        for pk, name in [(143, 'Udice i sitni pribor'), (173, 'Mamci'),
+                         (181, 'Odjeća i obuća'), (167, 'Oprema')]:
+            parent = Category(pk=pk, naziv=name)
+            for index, (child_name, expected) in enumerate(PRODUCTION_CATEGORY_OVERRIDES.items()):
+                with self.subTest(parent=pk, child=child_name):
+                    child = Category(pk=2000 + index, naziv=child_name.upper(), roditelj=parent)
+                    self.assertEqual(resolve_category(child), (expected, child.pk))
+
+    def test_named_production_children_inherit(self):
+        groups = [
+            (143, 'Udice i sitni pribor', 'Hooks', [
+                'Jednokrake Udice', 'Vezane Udice', 'Udice za Teži Ribolov',
+                'Jig udice', 'Worm i Baitholder udice', 'Saranske udice']),
+            (157, 'Feeder oprema', 'Feeders', [
+                'Kavezne hranilice', 'Metod hranilice', 'Feeder Sitnice', 'Feeder dodaci']),
+            (162, 'Kutije i torble', 'Accessories', [
+                'Torbe za štapove', 'Torbe za pribor', 'Kutije za pribor', 'Kante za prihranu']),
+            (167, 'Oprema', 'Accessories', [
+                'Rod pod i držači', 'Meredovi i čuvarke', 'Spod stalci', 'Signalizatori',
+                'Vage i griperi', 'Prostirke', 'Swingeri / Hengeri']),
+            (173, 'Mamci', 'GroundbaitsBaits', [
+                'Boila', 'Wafteri', 'Prihrana', 'Pva Materijali', 'Vještački mamci', 'Pelet']),
+            (181, 'Odjeća i obuća', 'FishingWear', [
+                'Jakne', 'Majice', 'Obuća', 'Pantalone', 'Rukavice', 'Termo odijela',
+                'Kabanice', 'Kape i kacketi', 'Prsluci', 'Wadersi',
+                'Majice i duksevi', 'Pantalone i sorcevi']),
+        ]
+        for pk, name, suffix, children in groups:
+            parent = Category(pk=pk, naziv=name)
+            for index, child_name in enumerate(children):
+                with self.subTest(child=child_name):
+                    child = Category(pk=3000 + index, naziv=child_name, roditelj=parent)
+                    self.assertEqual(category_code(child), CATEGORY_PREFIX + suffix)

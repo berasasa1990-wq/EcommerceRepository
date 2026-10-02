@@ -36,6 +36,33 @@ EXPLICIT_CATEGORY_MAPPING.update({
 })
 
 
+# Production IDs are paired with reviewed names so local ID collisions cannot
+# silently classify unrelated categories. Child overrides take precedence.
+PRODUCTION_CATEGORY_ID_MAPPING = {
+    143: ('udice i sitni pribor', CATEGORY_PREFIX + 'Hooks'),
+    157: ('feeder oprema', CATEGORY_PREFIX + 'Feeders'),
+    162: ('kutije i torble', CATEGORY_PREFIX + 'Accessories'),
+    167: ('oprema', CATEGORY_PREFIX + 'Accessories'),
+    173: ('mamci', CATEGORY_PREFIX + 'GroundbaitsBaits'),
+    181: ('odjeća i obuća', CATEGORY_PREFIX + 'FishingWear'),
+    191: ('kamp', None),
+}
+PRODUCTION_CATEGORY_OVERRIDES = {
+    'plovci za ribolov': CATEGORY_PREFIX + 'FloatsBobbers',
+    **{name: CATEGORY_PREFIX + 'Accessories' for name in (
+        'vrtilice i kopče', 'igle i alati', 'ribolovni sistemi',
+        'krimp i split ring', 'olovo za ribolov', 'sajlice za grabljivice',
+        'stoperi', 'rakete i kobre',
+    )},
+    **{name: None for name in (
+        'naočare', 'kamp', 'šatori', 'stolice', 'upaljaci', 'lampe',
+        'noževi', 'vreće za spavanje', 'kuhinja i kamp program',
+        'baterije', 'suncobrani', 'kreveti', 'stolići',
+    )},
+}
+EXPLICIT_CATEGORY_MAPPING.update(PRODUCTION_CATEGORY_OVERRIDES)
+
+
 def resolve_category(category):
     """Return confirmed code and source ancestor; cycles fail closed."""
     visited = set()
@@ -44,6 +71,10 @@ def resolve_category(category):
         name = category.naziv.strip().casefold()
         if name in EXPLICIT_CATEGORY_MAPPING:
             code = EXPLICIT_CATEGORY_MAPPING[name]
+            return (code if code in CONFIRMED_CATEGORY_CODES else None), category.pk
+        rule = PRODUCTION_CATEGORY_ID_MAPPING.get(category.pk)
+        if rule is not None and name == rule[0]:
+            code = rule[1]
             return (code if code in CONFIRMED_CATEGORY_CODES else None), category.pk
         category = category.roditelj
     return None, None
