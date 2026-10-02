@@ -1,0 +1,72 @@
+{% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block body_class %}{{ block.super }} is-price-print{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-price-print.css' %}?v=20260906-2">
+{% endblock %}
+{% block magacin_content %}
+<div class="sc-page">
+    <div class="mg-page-head">
+        <div><h1>Štampaj cijene — {{ uvoz.naziv }}</h1>
+            <p class="mg-count">Izaberi artikle iz uvoza, broj etiketa i štampač. Na etiketama je trenutna prodajna cijena artikla.</p>
+        </div>
+        <a href="{{ back_url }}" class="mg-btn">← Nazad na uvoz</a>
+    </div>
+    {% if print_error %}<p class="mg-alert" role="alert">{{ print_error }}</p>{% endif %}
+    <form method="post" class="sc-card" id="uvozPriceForm">
+        {% csrf_token %}
+        <fieldset class="sc-papir">
+            <legend class="sc-label">Broj etiketa</legend>
+            <div class="sc-papir-opts">
+                <label class="sc-papir-opt"><input type="radio" name="broj" value="jedna" {% if broj == 'jedna' %}checked{% endif %}> Po jedna cijena od svakog artikla</label>
+                <label class="sc-papir-opt"><input type="radio" name="broj" value="kolicina" {% if broj == 'kolicina' %}checked{% endif %}> Za svaki komad iz uvoza</label>
+            </div>
+        </fieldset>
+        {% include 'staff/magacin/partials/stampa_papir.html' %}
+        <div class="mg-toolbar-actions">
+            <label><input type="checkbox" id="uvozPriceAll" checked> Označi sve</label>
+            <span id="uvozPriceCount" class="mg-count" aria-live="polite"></span>
+            <button type="submit" class="mg-btn mg-btn-primary" {% if not stavke %}disabled{% endif %}>Štampaj odabrane cijene</button>
+        </div>
+        <div class="mg-table-wrap">
+            <table class="mg-table">
+                <thead><tr><th>Izbor</th><th>Artikal</th><th>Šifra</th><th class="num">Količina iz uvoza</th><th class="num">Cijena</th></tr></thead>
+                <tbody>
+                {% for s in stavke %}
+                    <tr>
+                        <td><input type="checkbox" id="uvozRow{{ s.pk }}" name="stavka" value="{{ s.pk }}" {% if s.print_selected %}checked{% endif %} aria-label="Izaberi {{ s.artikal_naziv }}"></td>
+                        <td><label for="uvozRow{{ s.pk }}">{{ s.product.naziv }}</label></td>
+                        <td>{{ s.product.sifra|default:'—' }}</td>
+                        <td class="num">{{ s.kolicina|default_if_none:'—' }}</td>
+                        <td class="num">{{ s.product.prikazna_cijena|floatformat:2 }} KM</td>
+                    </tr>
+                {% empty %}<tr><td colspan="5">Nema artikala povezanih sa katalogom za štampu.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+<script>
+(function () {
+    var form = document.getElementById('uvozPriceForm');
+    var all = document.getElementById('uvozPriceAll');
+    var rows = Array.from(form.querySelectorAll('input[name="stavka"]'));
+    var printer = form.querySelector('input[name="papir"][value="{{ papir|escapejs }}"]');
+    if (printer) printer.checked = true;
+    function update() {
+        var selected = rows.filter(function (row) { return row.checked; });
+        all.checked = rows.length > 0 && selected.length === rows.length;
+        all.indeterminate = selected.length > 0 && selected.length < rows.length;
+        document.getElementById('uvozPriceCount').textContent = 'Odabrano: ' + selected.length + ' stavki';
+        form.querySelector('button[type="submit"]').disabled = selected.length === 0;
+    }
+    all.addEventListener('change', function () {
+        rows.forEach(function (row) { row.checked = all.checked; });
+        update();
+    });
+    rows.forEach(function (row) { row.addEventListener('change', update); });
+    update();
+})();
+</script>
+{% endblock %}

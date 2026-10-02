@@ -1845,7 +1845,8 @@ def search_suggest(request):
     products_qs = _apply_search_filter(_suggest_product_queryset(request), query)
     products_qs = products_qs.annotate(
         _suggest_rel=_suggest_relevance_annotation(query),
-    ).order_by('-na_stanju', '-_suggest_rel', '-prioritet_lagera', 'naziv')
+        _new_created=Case(When(je_novitet=True, then='kreiran')),
+    ).order_by('-na_stanju', '-je_novitet', '-_new_created', '-_suggest_rel', '-prioritet_lagera', 'naziv')
 
     try:
         limit = int(request.GET.get('limit') or SEARCH_SUGGEST_LIMIT)
@@ -1874,6 +1875,8 @@ def search_suggest(request):
         pool,
         key=lambda p: (
             0 if getattr(p, 'na_stanju', False) else 1,
+            0 if p.je_novitet else 1,
+            -p.kreiran.timestamp() if p.je_novitet else 0,
             -_search_relevance_score(p, query),
             -_product_lager_priority(p),
             (p.naziv or '').lower(),
@@ -1956,7 +1959,8 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     if search_q and len(search_q) >= 2:
         products_qs = products_qs.annotate(
             _search_sql_rel=_suggest_relevance_annotation(search_q),
-        ).order_by('-na_stanju', '-_search_sql_rel', '-prioritet_lagera', 'naziv')
+            _new_created=Case(When(je_novitet=True, then='kreiran')),
+        ).order_by('-na_stanju', '-je_novitet', '-_new_created', '-_search_sql_rel', '-prioritet_lagera', 'naziv')
         products = list(products_qs[:SEARCH_FULL_RANK_POOL])
     else:
         products = list(products_qs)
@@ -2036,6 +2040,12 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
             price_sort='rastuca',
         )
 
+    if search_q and len(search_q) >= 2 and sort not in ('rastuca', 'opadajuca'):
+        # Stable sort keeps the existing ranking for products without NOVO.
+        products = sorted(products, key=lambda p: (
+            0 if p.je_novitet else 1,
+            -p.kreiran.timestamp() if p.je_novitet else 0,
+        ))
     products = _oos_at_end(products)
     # Store the actual submitted webshop search, not every autocomplete keystroke.
     if search_q and len(search_q) >= 2 and not request.path.startswith(('/nalog/', '/app/')):

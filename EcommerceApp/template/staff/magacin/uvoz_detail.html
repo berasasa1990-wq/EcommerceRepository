@@ -30,6 +30,7 @@
         <a href="{% url 'staff_magacin_uvoz_popis_stampa' uvoz.pk %}" class="mg-btn" target="_blank" rel="noopener">Štampaj manjak / višak</a>
         {% endif %}
         <a href="{% url 'staff_magacin_uvoz_stampa' uvoz.pk %}" class="mg-btn" target="_blank" rel="noopener">Štampaj</a>
+        <a href="{% url 'staff_magacin_uvoz_cijene' uvoz.pk %}" class="mg-btn">Štampaj cijene</a>
         <form method="post" onsubmit="return confirm('Obrisati ovaj uvoz? Artikli iz ovog uvoza skidaju se s lokacije Uvoz.');">
             {% csrf_token %}
             <input type="hidden" name="action" value="delete">

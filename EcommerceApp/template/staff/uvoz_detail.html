@@ -19,6 +19,7 @@
             </p>
         </div>
         <div class="staff-uvoz-hero__actions">
+            <a href="{% url 'staff_magacin_uvoz_cijene' uvoz.pk %}" class="staff-uvoz-btn staff-uvoz-btn--primary">Štampaj cijene</a>
             <form method="post" onsubmit="return confirm('Ponovo primijeniti sve stavke (kol. > 0) na sajt?');">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="reapply_all">

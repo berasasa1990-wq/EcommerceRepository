@@ -34,3 +34,29 @@ class ProductSearchScopeTests(TestCase):
         data = json.loads(response.content)
         self.assertNotIn(self.category_only.naziv, [row['naziv'] for row in data['results']])
         self.assertIn(self.tagged.naziv, [row['naziv'] for row in data['results']])
+
+    def test_search_prioritizes_new_badges_by_creation_date(self):
+        import json
+        from datetime import timedelta
+        from django.utils import timezone
+        from django.contrib.sessions.backends.signed_cookies import SessionStore
+        from unittest.mock import patch
+        from .views import _apply_product_filters
+
+        older = Product.objects.create(naziv='Unikatpecanje novo starije', cijena=30, je_novitet=True)
+        newer = Product.objects.create(naziv='Unikatpecanje novo novije', cijena=40, je_novitet=True)
+        unrelated = Product.objects.create(naziv='Nepovezan novitet', cijena=10, je_novitet=True)
+        sold = Product.objects.create(naziv='Unikatpecanje rasprodato', cijena=10, je_novitet=True, na_stanju=False)
+        Product.objects.filter(pk=older.pk).update(kreiran=timezone.now() - timedelta(days=2))
+        Product.objects.filter(pk=self.named.pk).update(prioritet_lagera=2)
+        request = RequestFactory().get('/pretraga/', {'q': 'unikatpecanje'})
+        request.user = AnonymousUser()
+        request.session = SessionStore()
+        data = json.loads(search_suggest(request).content)
+        self.assertEqual([row['naziv'] for row in data['results'][:2]], [newer.naziv, older.naziv])
+        with patch('EcommerceApp.views.SiteSearchEvent.objects.create'):
+            products, _ = _apply_product_filters(Product.objects.all(), request)
+        ids = [p.pk for p in products]
+        self.assertEqual(ids[:2], [newer.pk, older.pk])
+        self.assertNotIn(unrelated.pk, ids)
+        self.assertEqual(ids[-1], sold.pk)

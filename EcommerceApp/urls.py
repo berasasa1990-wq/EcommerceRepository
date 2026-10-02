@@ -319,6 +319,7 @@ urlpatterns = [
     path('nalog/magacin/pakuj/<str:broj>/', views_magacin.magacin_pakuj_detail, name='staff_magacin_pakuj_detail'),
     path('nalog/magacin/uvoz/', views_magacin.magacin_uvoz, name='staff_magacin_uvoz'),
     path('nalog/magacin/uvoz/novi/', views_magacin.magacin_uvoz_novi, name='staff_magacin_uvoz_novi'),
+    path('nalog/magacin/uvoz/<int:pk>/cijene/', views_magacin.magacin_uvoz_cijene, name='staff_magacin_uvoz_cijene'),
     path('nalog/magacin/uvoz/<int:pk>/stampa/', views_magacin.magacin_uvoz_stampa, name='staff_magacin_uvoz_stampa'),
     path(
         'nalog/magacin/uvoz/<int:pk>/popis/stampa/',

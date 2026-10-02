@@ -6553,6 +6553,56 @@ def magacin_uvoz_detail(request, pk):
 
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
+def magacin_uvoz_cijene(request, pk):
+    uvoz = get_object_or_404(Uvoz, pk=pk)
+    stavke = list(uvoz.stavke.select_related('product').exclude(product__isnull=True))
+    selected = {str(row.pk) for row in stavke}
+    mode = 'jedna'
+    papir = 'a4'
+    error = ''
+    if request.method == 'POST':
+        selected = set(request.POST.getlist('stavka'))
+        mode = request.POST.get('broj', 'jedna')
+        papir = _papir_kind(request.POST.get('papir'))
+        rows = [row for row in stavke if str(row.pk) in selected]
+        if not rows:
+            error = 'Izaberi barem jedan artikal iz uvoza.'
+        elif mode not in ('jedna', 'kolicina'):
+            error = 'Izaberi broj etiketa.'
+        counts = {}
+        products = {}
+        if not error:
+            for row in rows:
+                products[row.product_id] = row.product
+                if mode == 'jedna':
+                    counts[row.product_id] = 1
+                else:
+                    qty = row.kolicina or Decimal('0')
+                    if qty <= 0 or qty != qty.to_integral_value():
+                        error = f'Artikal „{row.artikal_naziv}” nema pozitivnu cijelu količinu. Izaberi po jednu etiketu ili odznači artikal.'
+                        break
+                    counts[row.product_id] = counts.get(row.product_id, 0) + int(qty)
+            if sum(counts.values()) > 10000:
+                error = 'Za jednu štampu izaberi najviše 10 000 etiketa. Odštampaj uvoz u više dijelova.'
+        if not error:
+            items = []
+            for product_id, count in counts.items():
+                payload = _artikal_etiketa_payload(products[product_id], request=request)
+                items.extend([payload] * count)
+            return _render_etiketa_print(request, items, papir=papir)
+    context = _magacin_context(request, section='uvoz', page_title=f'Štampaj cijene — {uvoz.naziv}')
+    for row in stavke:
+        row.print_selected = str(row.pk) in selected
+    context.update({
+        'uvoz': uvoz, 'stavke': stavke, 'broj': mode, 'papir': papir,
+        'print_error': error, 'zebra_size': '2" × 1,224"',
+        'back_url': reverse('staff_magacin_uvoz_detail' if uvoz.izvor == Uvoz.Izvor.MAGACIN else 'staff_uvoz_detail', args=[uvoz.pk]),
+    })
+    return render(request, 'staff/magacin/uvoz_cijene.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
 def magacin_uvoz_stampa(request, pk):
     uvoz = get_object_or_404(
         Uvoz.objects.select_related('kreirao'),
