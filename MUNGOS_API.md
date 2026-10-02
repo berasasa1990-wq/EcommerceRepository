@@ -108,8 +108,8 @@ venv/bin/python manage.py check
 venv/bin/python manage.py test EcommerceApp.tests_mungos --verbosity 2
 ```
 
-Šalje jedan `GET {MUNGOS_BASE_URL}/api/v1/connector/liveness/check/hello`,
-header `X-Api-Key`, connect timeout 5 s i read timeout 10 s. TLS provjera je
+Šalje jedan `GET {MUNGOS_BASE_URL}/Liveness/check/message`,
+header `x-api-key`, connect timeout 5 s i read timeout 10 s. TLS provjera je
 uključena. Nema automatskih retryja ni praćenja redirecta, tako da se ključ
 ne prosljeđuje preusmjerenom hostu. Tijelo odgovora se ne čita niti ispisuje.
 Nema upita ili upisa u bazu iz Mungos komande/klijenta.

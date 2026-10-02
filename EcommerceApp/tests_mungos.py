@@ -32,8 +32,8 @@ class MungosLivenessTests(SimpleTestCase):
     def test_success_sends_single_get_with_safe_options(self):
         self.assertIn('SUCCESS | HTTP status: 200', self.run_command())
         self.session.get.assert_called_once_with(
-            'https://staging.mungos.example/api/v1/connector/liveness/check/hello',
-            headers={'X-Api-Key': 'test-secret-do-not-print'},
+            'https://staging.mungos.example/Liveness/check/message',
+            headers={'x-api-key': 'test-secret-do-not-print'},
             timeout=(5, 10), allow_redirects=False, stream=True,
         )
         self.session.post.assert_not_called()

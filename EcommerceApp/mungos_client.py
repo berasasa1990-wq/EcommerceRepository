@@ -10,7 +10,7 @@ class MungosError(Exception):
 
 
 class MungosClient:
-    LIVENESS_PATH = '/api/v1/connector/liveness/check/hello'
+    LIVENESS_PATH = '/Liveness/check/message'
     TIMEOUT = (5, 10)  # Connect and socket read timeout, in seconds.
 
     def __init__(self):
@@ -44,7 +44,7 @@ class MungosClient:
             with requests.Session() as session:
                 with session.get(
                     self._url,
-                    headers={'X-Api-Key': self._api_key},
+                    headers={'x-api-key': self._api_key},
                     timeout=self.TIMEOUT,
                     allow_redirects=False,
                     stream=True,
