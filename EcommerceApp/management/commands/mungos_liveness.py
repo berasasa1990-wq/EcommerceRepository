@@ -4,7 +4,7 @@ from EcommerceApp.mungos_client import MungosClient, MungosError
 
 
 class Command(BaseCommand):
-    help = 'Siguran GET liveness test Mungos API-ja, bez promjena podataka.'
+    help = 'GET /Liveness/check/hello sa X-Api-Key i konfigurisanom STAGING zaštitom; ispisuje samo status.'
     requires_system_checks = []
 
     def handle(self, *args, **options):

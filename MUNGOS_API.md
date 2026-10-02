@@ -76,8 +76,9 @@ novih modela, migracija, taskova, webhookova ili poziva iz webshop requestova.
 Postaviti privatno u Render Environment:
 
 ```dotenv
-MUNGOS_BASE_URL=https://STAGING-DOMENA-KOJU-JE-DAO-MUNGOS
+MUNGOS_BASE_URL=https://staging.mungos.ba/api/v1/connector
 MUNGOS_API_KEY=<staging ključ koji je dao Mungos>
+MUNGOS_ECOMMERCE_ACCESS_CODE=<access code koji je dao Mungos>
 MUNGOS_ENABLED=true
 ```
 
@@ -94,6 +95,15 @@ ne pokreće automatsku komunikaciju. Za production zamijeniti `MUNGOS_BASE_URL`
 production URL-om bez izmjene koda; ako Mungos izdaje zaseban production ključ,
 zamijeniti i `MUNGOS_API_KEY` njihovim odgovarajućim ključem.
 
+STAGING nije javno okruženje: svaki zahtjev mora uz `X-Api-Key` slati
+`ecommerceaccesscode`, dodatnu STAGING zaštitu. Vrijednost se čita isključivo
+iz `MUNGOS_ECOMMERCE_ACCESS_CODE` koristeći postojeći env loader projekta.
+Obavezno je postaviti za STAGING; prazna vrijednost izostavlja dodatni header.
+Produkcija može imati drugačiju konfiguraciju: prema uputama Mungosa postaviti
+odgovarajući production access code ili ostaviti prazno ako zaštita nije potrebna.
+Access code se ne hardkodira, ne loguje i ne prikazuje u exception porukama ili
+outputu komande. Ne unositi stvarne vrijednosti u versionisane fajlove.
+
 ## Pokretanje i rezultat
 
 ```sh
@@ -108,8 +118,11 @@ venv/bin/python manage.py check
 venv/bin/python manage.py test EcommerceApp.tests_mungos --verbosity 2
 ```
 
-Šalje jedan `GET {MUNGOS_BASE_URL}/Liveness/check/message`,
-header `x-api-key`, connect timeout 5 s i read timeout 10 s. TLS provjera je
+Šalje jedan `GET {MUNGOS_BASE_URL}/Liveness/check/hello`,
+headere `X-Api-Key: MUNGOS_API_KEY` i, kada je konfigurisan,
+`ecommerceaccesscode: MUNGOS_ECOMMERCE_ACCESS_CODE`, connect timeout 5 s i read
+timeout 10 s. Base URL već sadrži `/api/v1/connector`; kod dodaje samo
+`/Liveness/check/hello` i ne duplira osnovni prefiks. TLS provjera je
 uključena. Nema automatskih retryja ni praćenja redirecta, tako da se ključ
 ne prosljeđuje preusmjerenom hostu. Tijelo odgovora se ne čita niti ispisuje.
 Nema upita ili upisa u bazu iz Mungos komande/klijenta.
@@ -121,10 +134,11 @@ Nema upita ili upisa u bazu iz Mungos komande/klijenta.
 
 Greška završava samo management komandu; klijent nije uključen u web tokove.
 Testovi koriste mock HTTP, zabranjuju DB upite kroz `SimpleTestCase` i
-provjeravaju GET/header/timeout, uspjeh, HTTP greške, redirect, transportne
+provjeravaju GET/oba headera/timeout, uspjeh, HTTP greške, redirect, transportne
 greške, isključenu ili neispravnu konfiguraciju i promjenu base URL-a.
 
-Stvarni STAGING rezultat nije potvrđen: u zadatku nisu dostavljeni stvarni
-base URL i API ključ. Pokretanje bez konfiguracije sigurno vraća FAILED,
-bez mrežnog zahtjeva. Za narednu fazu potrebna je Mungos specifikacija
-endpointa i payloadova; sinhronizacija nije implementirana.
+Mungos je potvrdio da HTTP 403 uz postojeći API ključ uzrokuje nedostajuća
+STAGING zaštita `ecommerceaccesscode`. Testovi koriste isključivo izmišljene
+vrijednosti; stvarni mrežni test nije dio automatskih testova. Za narednu fazu
+potrebna je Mungos specifikacija endpointa i payloadova; product/category
+sinhronizacija nije implementirana.

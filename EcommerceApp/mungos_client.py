@@ -10,7 +10,7 @@ class MungosError(Exception):
 
 
 class MungosClient:
-    LIVENESS_PATH = '/Liveness/check/message'
+    LIVENESS_PATH = '/Liveness/check/hello'
     TIMEOUT = (5, 10)  # Connect and socket read timeout, in seconds.
 
     def __init__(self):
@@ -35,16 +35,23 @@ class MungosClient:
             raise MungosError('MUNGOS_API_KEY nije postavljen.')
         if any(ord(char) < 32 or ord(char) > 126 for char in api_key) or api_key != api_key.strip():
             raise MungosError('MUNGOS_API_KEY ima neispravan format za HTTP header.')
+        access_code = settings.MUNGOS_ECOMMERCE_ACCESS_CODE
+        if any(ord(char) < 32 or ord(char) > 126 for char in access_code) or access_code != access_code.strip():
+            raise MungosError('MUNGOS_ECOMMERCE_ACCESS_CODE ima neispravan format za HTTP header.')
         self._url = base_url + self.LIVENESS_PATH
         self._api_key = api_key
+        self._access_code = access_code
 
     def liveness(self):
         """One GET, no redirects/retries/body consumption; return HTTP status only."""
         try:
+            headers = {'X-Api-Key': self._api_key}
+            if self._access_code:
+                headers['ecommerceaccesscode'] = self._access_code
             with requests.Session() as session:
                 with session.get(
                     self._url,
-                    headers={'x-api-key': self._api_key},
+                    headers=headers,
                     timeout=self.TIMEOUT,
                     allow_redirects=False,
                     stream=True,
