@@ -1,6 +1,6 @@
 # Mungos — audit i prvi korak
 
-Obuhvat: izolovana konfiguracija i ručni GET liveness test. Nema sinhronizacije,
+Obuhvat: izolovana konfiguracija, ručni GET liveness i potvrđeni single-product STAGING POST. Nema automatske sinhronizacije,
 novih modela, migracija, taskova, webhookova ili poziva iz webshop requestova.
 
 ## Audit postojećeg projekta
@@ -139,9 +139,9 @@ greške, isključenu ili neispravnu konfiguraciju i promjenu base URL-a.
 
 Mungos je potvrdio da HTTP 403 uz postojeći API ključ uzrokuje nedostajuća
 STAGING zaštita `ecommerceaccesscode`. Testovi koriste isključivo izmišljene
-vrijednosti; stvarni mrežni test nije dio automatskih testova. Za narednu fazu
-potrebna je Mungos specifikacija endpointa i payloadova; product/category
-sinhronizacija nije implementirana.
+vrijednosti; stvarni mrežni test nije dio automatskih testova. Ručno
+product slanje je opisano u nastavku; automatska product/category sinhronizacija
+nije implementirana.
 
 ## Izolovani product dry-run (Postman specifikacija)
 
@@ -257,3 +257,42 @@ kataloško stanje 8, kategoriju `Štapovi`, bez slika, barkoda i varijanti:
   "Variants": []
 }
 ```
+
+## Ručno slanje jednog proizvoda na STAGING
+
+```sh
+python manage.py mungos_product_send 4455
+# NOT_SENT: bez HTTP-a, DB upita i payload buildera.
+python manage.py mungos_product_send 4455 --confirm
+```
+
+Druga komanda eksplicitno dozvoljava jedan POST. Neposredno prije slanja čita
+jedan proizvod i ponovo poziva postojeći `build_product_preview`; šalje tačno
+`preview['payload']`, bez izmjene cijene, stocka, kategorije ili slika.
+Status mora biti `READY_FOR_REVIEW` i `reviewReasons` prazna lista.
+Nema snimanja modela niti drugih DB upisa; CarpologijaBH ostaje source of truth.
+
+Endpoint je `{MUNGOS_BASE_URL}/standard/product`, odnosno za dokumentovani
+STAGING `https://staging.mungos.ba/api/v1/connector/standard/product`.
+Slanje odbija svaki host osim `staging.mungos.ba`, zahtijeva `MUNGOS_ENABLED=true`
+i oba postojeća headera: `X-Api-Key` i `ecommerceaccesscode`. Liveness ponašanje
+ostaje isto. Nema novih konfiguracionih vrijednosti.
+
+Timeout je connect 5 s / read 10 s, TLS provjera uključena, redirecti isključeni.
+Nema retryja, bulk slanja, signala, taskova ili automatskog synca.
+Komanda prikazuje HTTP status i JSON/text response sa redaktovanim API ključem
+i access codeom, uključujući echoed JSON keys/escaped vrijednosti. Odgovor se
+ograničava na 65536 bytes; skraćivanje se označava. Kontrolni znakovi se JSON
+escapeuju. Tekst transportnih exceptiona i auth headeri se ne ispisuju.
+HTTP 2xx daje SUCCESS; 3xx/4xx/5xx završava FAILED (exit 1), uključujući 409.
+429 posebno navodi rate limit i ne ponavlja poziv.
+
+Timeout/mrežna greška pri POST-u ili čitanju odgovora daje
+`UNKNOWN_REMOTE_STATE` (exit 1). Ako je status već primljen, ostaje prikazan;
+inače je N/A. Ne pokretati novi POST dok se ručno ne provjeri da li je Mungos
+kreirao proizvod. I nakon HTTP greške provjeriti udaljeno stanje prije novog
+POST-a. Komanda nema trajnu evidenciju ni zaštitu od ponovnog ručnog pokretanja.
+
+Testovi: `EcommerceApp.tests_mungos`, `EcommerceApp.tests_mungos_product`,
+`EcommerceApp.tests_mungos_send`. HTTP je mockovan; ne koristiti potvrđenu
+komandu kao implementacioni ili automatski test.

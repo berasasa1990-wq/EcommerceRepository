@@ -1,4 +1,5 @@
-"""Manual, read-only Mungos connectivity probe. No catalog or order access."""
+"""Manual Mungos calls; no persistence or automatic synchronization."""
+import json
 from urllib.parse import urlsplit
 
 import requests
@@ -11,6 +12,8 @@ class MungosError(Exception):
 
 class MungosClient:
     LIVENESS_PATH = '/Liveness/check/hello'
+    PRODUCT_PATH = '/standard/product'
+    MAX_RESPONSE_BYTES = 65536
     TIMEOUT = (5, 10)  # Connect and socket read timeout, in seconds.
 
     def __init__(self):
@@ -38,9 +41,56 @@ class MungosClient:
         access_code = settings.MUNGOS_ECOMMERCE_ACCESS_CODE
         if any(ord(char) < 32 or ord(char) > 126 for char in access_code) or access_code != access_code.strip():
             raise MungosError('MUNGOS_ECOMMERCE_ACCESS_CODE ima neispravan format za HTTP header.')
+        self._base_url = base_url
         self._url = base_url + self.LIVENESS_PATH
         self._api_key = api_key
         self._access_code = access_code
+
+    def send_product(self, payload):
+        """Exactly one staging POST. Never retry an ambiguous remote write."""
+        if urlsplit(self._base_url).hostname != 'staging.mungos.ba':
+            raise MungosError('Slanje je dozvoljeno samo na staging.mungos.ba.')
+        if not self._access_code:
+            raise MungosError('STAGING slanje zahtijeva MUNGOS_ECOMMERCE_ACCESS_CODE.')
+        try:
+            with requests.Session() as session:
+                with session.post(
+                    self._base_url + self.PRODUCT_PATH,
+                    json=payload,
+                    headers={'X-Api-Key': self._api_key,
+                             'ecommerceaccesscode': self._access_code},
+                    timeout=self.TIMEOUT, allow_redirects=False, stream=True,
+                ) as response:
+                    status = response.status_code
+                    body = bytearray()
+                    truncated = False
+                    try:
+                        for chunk in response.iter_content(chunk_size=4096):
+                            remaining = self.MAX_RESPONSE_BYTES - len(body)
+                            body.extend(chunk[:remaining])
+                            if len(chunk) > remaining:
+                                truncated = True
+                                break
+                    except requests.RequestException:
+                        raise MungosError(
+                            f'UNKNOWN_REMOTE_STATE | HTTP status: {status} | '
+                            'Čitanje odgovora nije uspjelo; nema retryja. Provjerite Mungos prije novog POST-a.'
+                        ) from None
+                    decoded = body.decode('utf-8', errors='replace')
+                    try:
+                        result = json.loads(decoded)
+                    except ValueError:
+                        result = decoded
+                    # Redact values AND dictionary keys, including JSON escaped echoes.
+                    safe = json.dumps(result, ensure_ascii=False)
+                    for secret in sorted((self._api_key, self._access_code), key=len, reverse=True):
+                        safe = safe.replace(json.dumps(secret, ensure_ascii=False)[1:-1], '[REDACTED]')
+                    return status, safe, truncated
+        except requests.RequestException:
+            raise MungosError(
+                'UNKNOWN_REMOTE_STATE | HTTP status: N/A | '
+                'Timeout ili mrežna greška; nema retryja. Provjerite Mungos prije novog POST-a.'
+            ) from None
 
     def liveness(self):
         """One GET, no redirects/retries/body consumption; return HTTP status only."""
