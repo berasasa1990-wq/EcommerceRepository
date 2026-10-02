@@ -1,0 +1,66 @@
+:is(.payment-methods-page, .payment-security-page) .info-page-inner {
+    max-width: none;
+    margin: 0;
+    padding-inline: var(--home-product-inset, 12px);
+}
+:is(.payment-methods-page, .payment-security-page) .info-page-body h2 {
+    margin: 32px 0 12px;
+    color: var(--black);
+    font-size: clamp(1.2rem, 2vw, 1.5rem);
+    font-weight: 700;
+    line-height: 1.35;
+}
+:is(.payment-methods-page, .payment-security-page) .info-page-body h2:first-child {
+    margin-top: 0;
+}
+:is(.payment-methods-page, .payment-security-page) .info-page-list {
+    list-style: disc;
+    padding-left: 22px;
+}
+:is(.payment-methods-page, .payment-security-page) .info-page-body a {
+    color: #1d4ed8;
+    overflow-wrap: anywhere;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+@media (max-width: 768px) {
+    :is(.payment-methods-page, .payment-security-page) .info-page-inner {
+        padding-inline: var(--home-mobile-side-inset, 16px);
+    }
+    :is(.payment-methods-page, .payment-security-page) .info-page-body {
+        font-size: 1rem;
+    }
+}
+
+@media (min-width: 1025px) {
+    main .payment-methods-page .info-page-inner {
+        width: 100%;
+        max-width: none;
+        margin-inline: 0;
+        padding-inline: 32px;
+    }
+    .payment-methods-page {
+        padding-top: 32px;
+        padding-bottom: 72px;
+    }
+    .payment-methods-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+        gap: clamp(40px, 5vw, 96px);
+        align-items: start;
+        padding-top: 24px;
+        border-top: 1px solid #e5e5e5;
+    }
+    .payment-methods-layout > section {
+        min-width: 0;
+    }
+    .payment-methods-help {
+        padding: 24px 28px;
+        background: #f7f7f7;
+        border: 1px solid #e5e5e5;
+        border-radius: 12px;
+    }
+    .payment-methods-layout .payment-methods-help h2 {
+        margin-top: 0;
+    }
+}

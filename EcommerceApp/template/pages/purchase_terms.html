@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}<title>{{ seo_title }}</title>{% endblock %}
+{% block meta_description %}<meta name="description" content="{{ seo_description }}">{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/payment-pages.css' %}?v=20261002-desktop-2">
+{% endblock %}
+
+{% block content %}
+<article class="info-page payment-security-page">
+    <div class="info-page-inner">
+        <nav class="info-breadcrumb" aria-label="Navigacija">
+            <a href="{% url 'home' %}">Početna</a>
+            <span class="info-breadcrumb-sep" aria-hidden="true">/</span>
+            <span class="info-breadcrumb-current">Uslovi kupovine</span>
+        </nav>
+        <header class="info-page-header">
+            <h1>USLOVI KUPOVINE</h1>
+        </header>
+        <div class="info-page-body">
+            <p>Ovim se uslovima utvrđuje postupak naručivanja, plaćanja, isporuke te reklamacija proizvoda koji su ponuđeni na ovim stranicama. www.carpologijabh.ba Internet stranice mogu se koristiti za Vašu privatnu upotrebu bez ikakvih naknada za korištenje, a prema sljedećim uslovima i pravilima.</p>
+            <p>Prodavac je Carpologija BH DOO a kupac je posjetitelj ovih stranica koji popuni elektronsku narudžbu, pošalje je prodavcu te izvrši plaćanje putem kreditnih kartica ili pouzećem.</p>
+
+            <h2>NARUČIVANJE</h2>
+            <p>Kupac naručuje proizvod ili proizvode putem elektronskog obrasca narudžbe.</p>
+            <p>Kupcem se smatra svaka osoba koja elektronski naruči barem jedan proizvod, popuni tražene podatke i pošalje narudžbu.</p>
+            <p>Sve cijene izražene su u Bosanskoj nacionalnoj valuti, Konvertibilna marka (KM) s PDV-om.</p>
+            <p>Roba se naručuje elektronskim putem, pritiskom na određeni proizvod te spremanjem istog u korpu.</p>
+            <p>Roba se smatra naručenom u trenutku kada kupac odabere te potvrdi način plaćanja.</p>
+
+            <h2>PLAĆANJE</h2>
+            <p>Naručeni proizvodi ili usluge plaćaju se online jednom od kreditnih kartica: Mastercard, Maestro ili Visa.</p>
+            <p>Monri – member of Payten Upute i pravila za izradu internet prodajnog mjesta</p>
+
+            <h2>ISPORUKA</h2>
+            <p>Naručeni proizvodi pakuju se na način da tokom uobičajene manipulacije ne budu oštećeni. Prilikom preuzimanja kupac je dužan provjeriti stanje pošiljke te u slučaju oštećenja odmah reklamirati proizvod dostavljaču (zaposleniku tvrtke koja vrši dostavu). Prodavac se odriče svake odgovornosti u vezi oštećenja koja mogu nastati prilikom dostave.</p>
+            <p>Ako kupac ne primi robu, ili obavijest o isporuci, nakon što je poslana, u očekivanom vremenu, kupac ima pravo o tome obavijestiti prodavca kako bi se preduzele radnje pronalaska pošiljke ili kako bi se poslala zamjenska pošiljka.</p>
+            <p>Ako kupac odbije primiti robu koju je naručio, prodavac ima pravo tražiti od kupca nadoknadu svih troškova koji su vezani za isporuku.</p>
+            <p>Prodavac se obvezuje poslati pošiljku kupcu onoga trenutka kada zaprimi potvrdu kojom se odobrava online transakcija. Nakon zaprimanja te potvrde prodavac se obvezuje poslati pošiljku u roku do 5 (pet) radnih dana.</p>
+            <p>Nakon što dostavljač (tvrtka koja vrši dostavu) zaprimi pošiljku od strane prodavca, prodavac više nije odgovoran za dalji tok isporuke i eventualna kašnjenja te probleme koji mogu nastati u vezi dalje manipulacije i isporuke robe.</p>
+
+            <h2>REKLAMACIJE</h2>
+            <p>Prodavac se obvezuje isporučiti proizvod koji je tehnički ispravan te odgovara opisu proizvoda navedenom na www.carpologijabh.ba. Slika koja ilustrira proizvod na Internet stranici ne mora odgovarati stvarnom izgledu proizvoda te kupac ne može reklamirati ovaj segment.</p>
+            <p>Prodavac nije odgovoran za eventualna oštećenja i ostale obaveze koje se nalaze u domeni dostavljača (tvrtka koja obavlja poslove dostave proizvoda).</p>
+        </div>
+    </div>
+</article>
+{% endblock %}

@@ -3080,6 +3080,37 @@ def payment_methods(request):
     return render(request, 'pages/payment.html', context)
 
 
+
+def payment_security(request):
+    context = {
+        **_base_context(),
+        'seo_title': 'Sigurnost plaćanja — Carpologija BH',
+        'seo_description': 'Sigurnost plaćanja kreditnim karticama i pomoć kupcu.',
+        'canonical_url': settings.SEO_CANONICAL_URL + reverse('payment_security'),
+    }
+    return render(request, 'pages/payment_security.html', context)
+
+
+def privacy_statement(request):
+    context = {
+        **_base_context(),
+        'seo_title': 'Izjava o privatnosti — Carpologija BH',
+        'seo_description': 'Izjava o zaštiti i prikupljanju osobnih podataka kupaca i korisnika.',
+        'canonical_url': settings.SEO_CANONICAL_URL + reverse('privacy_statement'),
+    }
+    return render(request, 'pages/privacy_statement.html', context)
+
+
+def purchase_terms(request):
+    context = {
+        **_base_context(),
+        'seo_title': 'Uslovi kupovine — Carpologija BH',
+        'seo_description': 'Uslovi naručivanja, plaćanja, isporuke i reklamacija proizvoda.',
+        'canonical_url': settings.SEO_CANONICAL_URL + reverse('purchase_terms'),
+    }
+    return render(request, 'pages/purchase_terms.html', context)
+
+
 def brands_list(request):
     brands_qs = Brand.objects.filter(
         id__in=(

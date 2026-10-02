@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}<title>{{ seo_title }}</title>{% endblock %}
+{% block meta_description %}<meta name="description" content="{{ seo_description }}">{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/payment-pages.css' %}?v=20261002">
+{% endblock %}
+
+{% block content %}
+<article class="info-page payment-security-page">
+    <div class="info-page-inner">
+        <nav class="info-breadcrumb" aria-label="Navigacija">
+            <a href="{% url 'home' %}">Početna</a>
+            <span class="info-breadcrumb-sep" aria-hidden="true">/</span>
+            <span class="info-breadcrumb-current">Sigurnost plaćanja</span>
+        </nav>
+        <header class="info-page-header">
+            <h1>Plaćanje kreditnim karticama</h1>
+        </header>
+        <div class="info-page-body">
+            <h2>Sigurnost plaćanja</h2>
+            <p>Tajnost Vaših podataka je zaštićena i osigurana korištenjem posljednje verzije TLS enkripcije. Stranice za naplatu putem interneta osigurane su korištenjem Secure Socket Layer (SSL) protokola sa 128-bitnom enkripcijom podataka. SSL enkripcija je postupak šifriranja podataka radi sprječavanja neovlaštenog pristupa prilikom njihovog prijenosa.</p>
+            <p>Time je omogućen siguran prijenos informacija te onemogućen nedozvoljen pristup podacima prilikom komunikacije između korisnikovog računala i WebPay servisa, te obratno.</p>
+            <p>WebPay servis i financijske ustanove razmjenjuju podatke uporabom virtualne privatne mreže (VPN), koja je zaštićena od neautoriziranog pristupa.</p>
+            <p>Monri Payment Gateway je certificiran prema PCI DSS Level 1 sigurnosnom standardu propisanom Visa i Mastercard pravilima.</p>
+            <p>Trgovac ne pohranjuje brojeve kreditnih kartica i brojevi nisu dostupni neovlaštenim osobama.</p>
+            <h2>Pomoć kupcu</h2>
+            <p>Kontaktirajte nas ako imate neke poteškoće.</p>
+            <ul class="info-page-list">
+                <li>Email: <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a></li>
+                <li>Mob: <a href="tel:+38765497431">065/497-431</a></li>
+                <li>Mob: <a href="tel:+38765838653">065/838-653</a></li>
+            </ul>
+        </div>
+    </div>
+</article>
+{% endblock %}

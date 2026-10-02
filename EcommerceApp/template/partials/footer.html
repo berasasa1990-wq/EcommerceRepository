@@ -1,3 +1,5 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/footer-payments.css' %}?v=20261002">
 <footer class="footer footer--mockup">
     <div class="footer-main">
         <div class="footer-subscribe">
@@ -76,9 +78,9 @@
                 <ul class="footer-link-list">
                     <li><a href="{% url 'about_us' %}">O nama</a></li>
                     <li><a href="{% url 'payment_methods' %}">Način plaćanja</a></li>
-                    <li><a href="https://carpologijabh.ba/sigurnost-placanja/" target="_blank" rel="noopener noreferrer">Sigurnost plaćanja</a></li>
-                    <li><a href="https://carpologijabh.ba/izjava-o-privatnosti/" target="_blank" rel="noopener noreferrer">Izjava o privatnosti</a></li>
-                    <li><a href="https://carpologijabh.ba/uslovi-kupovine" target="_blank" rel="noopener noreferrer">Uslovi kupovine</a></li>
+                    <li><a href="{% url 'payment_security' %}">Sigurnost plaćanja</a></li>
+                    <li><a href="{% url 'privacy_statement' %}">Izjava o privatnosti</a></li>
+                    <li><a href="{% url 'purchase_terms' %}">Uslovi kupovine</a></li>
                     <li><a href="{% url 'vlog_list' %}">Blog</a></li>
                 </ul>
             </div>
@@ -95,10 +97,35 @@
     </div>
     <div class="footer-bottom footer-bottom--mockup">
         <p>© Copyright Carpologija BH 2015-{% now "Y" %}</p>
-        <p class="footer-version">Verzija {{ site_version }}.2</p>
+        <p class="footer-version">Verzija {{ site_version }}</p>
         <p><strong>Izrada web stranice: 065 838 653</strong></p>
     </div>
 </footer>
+<section class="footer-payment-security" aria-label="Partneri i sigurnost plaćanja">
+    <div class="footer-payment-security__inner">
+        <p class="footer-payment-security__title">Sigurno online plaćanje</p>
+        <div class="footer-payment-security__logos">
+            <a href="https://monri.com/" target="_blank" rel="noopener noreferrer" aria-label="Monri">
+                <img src="{% static 'img/payments/monri.png' %}" alt="Monri" loading="lazy" width="80" height="54">
+            </a>
+            <a href="https://www.raiffeisenbank.ba/" target="_blank" rel="noopener noreferrer" aria-label="Raiffeisen banka">
+                <img src="{% static 'img/payments/raiffeisen.svg' %}" alt="Raiffeisen banka" loading="lazy" width="80" height="54">
+            </a>
+            <a href="https://www.mastercard.com/" target="_blank" rel="noopener noreferrer" aria-label="Mastercard">
+                <img src="{% static 'img/payments/mastercard.png' %}" alt="Mastercard" loading="lazy" width="80" height="54">
+            </a>
+            <a href="https://www.mastercard.com/" target="_blank" rel="noopener noreferrer" aria-label="Maestro">
+                <img src="{% static 'img/payments/maestro.png' %}" alt="Maestro" loading="lazy" width="80" height="54">
+            </a>
+            <a href="https://www.visa.com/" target="_blank" rel="noopener noreferrer" aria-label="Visa Secure">
+                <img src="{% static 'img/payments/visa-secure.jpg' %}" alt="Visa Secure" loading="lazy" width="80" height="54">
+            </a>
+            <a href="https://www.mastercard.com/" target="_blank" rel="noopener noreferrer" aria-label="Mastercard ID Check">
+                <img src="{% static 'img/payments/mastercard-id-check.png' %}" alt="Mastercard ID Check" loading="lazy" width="80" height="54">
+            </a>
+        </div>
+    </div>
+</section>
 <script>
 (function () {
     var form = document.getElementById('footerNewsletterForm');

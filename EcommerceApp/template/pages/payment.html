@@ -1,7 +1,12 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block page_title %}
 <title>{{ seo_title }}</title>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/payment-pages.css' %}?v=20261002-desktop-2">
 {% endblock %}
 
 {% block meta_description %}
@@ -9,7 +14,7 @@
 {% endblock %}
 
 {% block content %}
-<article class="info-page">
+<article class="info-page payment-methods-page">
     <div class="info-page-inner">
         <nav class="info-breadcrumb" aria-label="Navigacija">
             <a href="{% url 'home' %}">Početna</a>
@@ -23,12 +28,29 @@
 
         {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
-        <div class="info-page-body">
+        <div class="info-page-body payment-methods-layout">
+            <section class="payment-methods-options" aria-labelledby="karticno-placanje">
+            <h2 id="karticno-placanje">Kartično plaćanje</h2>
             <ul class="info-page-list">
-                <li>Plaćanje prilikom preuzimanja pošiljke.</li>
-                <li>Dostava brzom poštom na kućnu adresu u roku 24h.</li>
-                <li>Sigurnost slanja je visoka — svaka pošiljka pažljivo se pakuje i šalje provjerenim kurirskim uslugama.</li>
+                <li>Plaćanje gotovinom pri preuzimanju pošiljke ili u radnji.</li>
+                <li>Plaćanje karticama online kao i u radnji — Master i Visa.</li>
             </ul>
+
+            <h2>Kartično plaćanje na rate</h2>
+            <ul class="info-page-list">
+                <li>Plaćanje Shoping karticom na rate Rajfajzen banke.</li>
+            </ul>
+
+            </section>
+            <section class="payment-methods-help" aria-labelledby="payment-help-title">
+            <h2 id="payment-help-title">Pomoć kupcu</h2>
+            <p>Kontaktirajte nas ako imate neke poteškoće.</p>
+            <ul class="info-page-list">
+                <li>Email: <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a></li>
+                <li>Mob: <a href="tel:+38765497431">065/497-431</a></li>
+                <li>Mob: <a href="tel:+38765838653">065/838-653</a></li>
+            </ul>
+            </section>
         </div>
 
         {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
