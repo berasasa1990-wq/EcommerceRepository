@@ -7,21 +7,11 @@ from django.conf import settings
 
 from .cart import Cart
 from .mungos_payload import (
-    CATEGORY_CODES, CATEGORY_PREFIX, is_mungos_image_url, sanitize_mungos_payload,
+    is_mungos_image_url, sanitize_mungos_payload,
     sanitize_mungos_price,
 )
 
-def category_code(category):
-    """Exact confirmed names only; nearest mapped ancestor, no fuzzy fallback."""
-    visited = set()
-    while category is not None and category.pk not in visited:
-        visited.add(category.pk)
-        name = category.naziv
-        suffix = CATEGORY_CODES.get(name.strip().casefold()) if isinstance(name, str) else None
-        if suffix:
-            return CATEGORY_PREFIX + suffix
-        category = category.roditelj
-    return None
+from .mungos_categories import category_code
 
 
 def _images(main, additional, issues):

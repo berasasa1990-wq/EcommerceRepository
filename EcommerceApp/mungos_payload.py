@@ -6,14 +6,8 @@ import math
 from urllib.parse import urlsplit
 
 
-CATEGORY_CODES = {
-    'štapovi': 'FishingRods', 'mašinice': 'Reels',
-    'najloni i strune': 'FishingLinesLeaders', 'udice': 'Hooks',
-    'varalice': 'Lures', 'plovci': 'FloatsBobbers', 'hranilice': 'Feeders',
-    'mušičarski program': 'FlyFishingGear', 'primama i mamci': 'GroundbaitsBaits',
-    'dodatna oprema': 'Accessories', 'odjeća i obuća za ribolov': 'FishingWear',
-}
-CATEGORY_PREFIX = 'SportRecreation_Equipment_FishingEquipment_'
+from .mungos_categories import CATEGORY_CODES, CATEGORY_PREFIX, CONFIRMED_CATEGORY_CODES
+
 UPDATE_FIELDS = (
     'id', 'name', 'categoryUuid', 'categoryCode', 'brandCode',
     'hasQuantities', 'quantityRemaining', 'shortDescription', 'details',
@@ -109,7 +103,7 @@ def sanitize_mungos_payload(source, operation='create'):
     else:
         payload['quantityRemaining'] = max(0, quantity)
     code = payload.get('categoryCode')
-    if not isinstance(code, str) or code not in {CATEGORY_PREFIX + item for item in CATEGORY_CODES.values()}:
+    if not isinstance(code, str) or code not in CONFIRMED_CATEGORY_CODES:
         reasons.append('categoryCode nema potvrđeno Mungos mapiranje.')
     # This adapter has only confirmed code mappings, never fabricated category UUIDs.
     if payload.get('categoryUuid') is not None:
