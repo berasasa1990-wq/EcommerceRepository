@@ -142,3 +142,118 @@ STAGING zaštita `ecommerceaccesscode`. Testovi koriste isključivo izmišljene
 vrijednosti; stvarni mrežni test nije dio automatskih testova. Za narednu fazu
 potrebna je Mungos specifikacija endpointa i payloadova; product/category
 sinhronizacija nije implementirana.
+
+## Izolovani product dry-run (Postman specifikacija)
+
+```sh
+python manage.py mungos_product_dry_run 3215
+# Lokalno:
+venv/bin/python manage.py mungos_product_dry_run 3215
+venv/bin/python manage.py test EcommerceApp.tests_mungos EcommerceApp.tests_mungos_product --noinput
+```
+
+`mungos_product.py` proizvodi kandidat body za **POST /standard/product**,
+ali komanda ne šalje HTTP niti instancira Mungos klijenta. Ne koristi bulk
+`/standard/products/create_or_update`. Radi i uz `MUNGOS_ENABLED=false`, bez
+ključeva. Nema novih URL-ova, modela, migracija, signala ili automatskog synca.
+
+Output je JSON sa `status`, `reviewReasons`, `carpologijaProductId`, `name`,
+`sku`, `price`, `quantity`, `category`, `categoryCode`, `images`,
+`variantCount` i `payload`. `READY_FOR_REVIEW` označava uspješno lokalno
+mapiranje, ne potvrdu server validacije niti dozvolu slanja.
+`NEEDS_REVIEW` je uspješan dijagnostički dry-run (exit 0); nepostojeći
+proizvod završava sa exit 1. Konfigurisane string credentials se redaktuju
+iz kompletnog outputa čak i ako se nađu u opisu ili SKU-u.
+
+### Identitet, cijena i stock
+
+- `id` i `sku` su postojeći `Product.sifra`, kao string. Lokalni PK je samo
+  `carpologijaProductId` izvan body-a. Prazan SKU daje `NEEDS_REVIEW`, bez
+  izmišljanja identiteta. Ovo je eksplicitni kandidat mapiranja externog ID-a;
+  Mungos semantiku identiteta treba potvrditi prije prvog budućeg slanja.
+- Cijena je **Product.prikazna_cijena**, a za varijante
+  **ProductVariation.prikazna_cijena**. Postojeća logika obrađuje akciju,
+  istekao datum i flash cijene; builder ne računa novi popust. JSON ima
+  numerički `price` (BAM), a varijanta isti iznos u `sellingPrice`.
+  Ne primjenjuju se personalizovani kuponi i popusti korpe.
+- Stock se dobija direktnim read-only pozivom **Cart.availability()** nad
+  privremenom korpom u memoriji. Za proizvode sa bilo kojim WarehouseStock
+  zapisom ili `magacin_sync_at`, koristi sumu
+  `max(0, kolicina - max(0, rezervisano))` po konkretnom SKU-u, samo na
+  aktivnim lokacijama koje korpa ne smatra ignorisanim. Nema fallbacka na
+  `Product.stanje` kod takvih proizvoda. Za ostale koristi postojeći
+  `stock_on_hand` (`stanje` artikla ili varijante), uz `na_stanju` zastavice.
+  Neaktivan/sakriven proizvod ima dostupnost 0. Ne oduzima se sadržaj
+  korisničke korpe jer je preview globalan. Roditelj i varijante ostaju
+  zasebni SKU-ovi prema korpi; količine varijanti se ne dodaju roditelju.
+  Nema rezervacija, osvježavanja kataloga ili snimanja modela.
+
+### Kategorije, slike i varijante
+
+Tabela `CATEGORY_CODES` sadrži samo 11 potvrđenih naziva i kodova iz zahtjeva.
+Poređenje ignoriše velika/mala slova i rubne razmake; nema fuzzy matching-a.
+Traži se najbliža kategorija ili roditelj sa tačno potvrđenim nazivom.
+Bez mapiranja: `categoryCode=null` i `NEEDS_REVIEW`; nikada automatski
+Accessories. Originalne kategorije ostaju netaknute.
+
+Glavna slika koristi postojeći `prikazna_slika` (uključujući njegov postojeći
+fallback na sliku varijante), galerija postojeći redoslijed. Relativni storage
+URL se pretvara u apsolutni preko `SITE_URL`; apsolutni javni URL se zadržava.
+Duplikati se izostavljaju. URL sa credentials, query ili fragmentom se
+izostavlja uz `NEEDS_REVIEW`. Ne provjerava se dostupnost preko mreže,
+ne čitaju se image datoteke, nema kopiranja ili uploada.
+
+Varijante čuvaju svoje `sku`, količinu, prikaznu cijenu i vlastitu sliku kada
+postoji. `attributes=[]`: nijedan Color/Size kod se ne izmišlja. Svaki proizvod
+sa varijantama zato dobija `NEEDS_REVIEW` sa lokalnim nazivom i ID-em varijante.
+Prazan/ponovljen SKU takođe traži pregled. Pakovanja se ne preračunavaju;
+jedinicu prodaje i attribute codes treba potvrditi prije budućeg slanja.
+Brand se ne izmišlja; postojeći barkod se opcionalno izvozi kao `ean`.
+
+Koristi se `condition`, prema novijim/update primjerima, nikada `condidtion`.
+Ostala fiksna polja preuzeta su iz dostavljenog Postman primjera, uključujući
+`shippmentDeliveryMethod` spelling i return/shipping zastavice. Ta komercijalna
+pravila i server prihvatanje treba pregledati prije budućeg slanja.
+
+### Tačan primjer body-a
+
+Za artikal `sifra=ROD-1`, naziv `Test štap`, opis `Opis`, cijenu 100 BAM,
+kataloško stanje 8, kategoriju `Štapovi`, bez slika, barkoda i varijanti:
+
+```json
+{
+  "id": "ROD-1",
+  "sku": "ROD-1",
+  "name": "Test štap",
+  "hasQuantities": true,
+  "quantityRemaining": 8,
+  "shortDescription": "Opis",
+  "details": "Opis",
+  "productType": "Product",
+  "price": 100.0,
+  "currencyIsoCode": "BAM",
+  "isNegotiable": false,
+  "isFree": false,
+  "warrantyMonthsCount": null,
+  "warrantyDescription": null,
+  "returnDaysCount": null,
+  "returnDescription": null,
+  "sellerPaysForReturnShipping": true,
+  "exchangeAcceptable": false,
+  "exchangeComment": null,
+  "shippmentDeliveryMethod": "DeliveryByMe",
+  "condition": "New",
+  "countryCode": "BA",
+  "cityCode": "Bijeljina",
+  "streetName": null,
+  "postalCode": null,
+  "longitude": null,
+  "latitude": null,
+  "categoryUuid": null,
+  "categoryCode": "SportRecreation_Equipment_FishingEquipment_FishingRods",
+  "productAttributes": {},
+  "images": [],
+  "HasVariants": false,
+  "Variants": []
+}
+```
