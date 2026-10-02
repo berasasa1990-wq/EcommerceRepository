@@ -12,6 +12,10 @@ from .mungos_payload import sanitize_mungos_payload
 class MungosError(Exception):
     """Only fixed, credential-free messages may be exposed to the operator."""
 
+    def __init__(self, message, http_status=None):
+        super().__init__(message)
+        self.http_status = http_status
+
 
 def validate_product_uuid(value):
     """Require canonical hyphenated UUID text; never accept URL/path fragments."""
@@ -91,6 +95,7 @@ class MungosClient:
                     timeout=self.TIMEOUT, allow_redirects=False, stream=True,
                 ) as response:
                     status = response.status_code
+                    self.retry_after = response.headers.get('Retry-After')
                     body = bytearray()
                     truncated = False
                     try:
@@ -103,7 +108,8 @@ class MungosClient:
                     except requests.RequestException:
                         raise MungosError(
                             f'UNKNOWN_REMOTE_STATE | HTTP status: {status} | '
-                            f'Čitanje odgovora nije uspjelo; nema retryja. Provjerite Mungos prije novog {method.upper()}-a.'
+                            f'Čitanje odgovora nije uspjelo; nema retryja. Provjerite Mungos prije novog {method.upper()}-a.',
+                            http_status=status,
                         ) from None
                     decoded = body.decode('utf-8', errors='replace')
                     try:

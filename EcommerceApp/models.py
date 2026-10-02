@@ -7167,3 +7167,19 @@ class LocationCleaningRequest(models.Model):
     @property
     def reason(self):
         return 'Artikal nije pronađen' if self.picked == 0 else 'Pronađeno manje nego što treba'
+
+
+class MungosProductMapping(models.Model):
+    """Outbound-only identity and durable write guard; never alters catalog data.
+
+    A null UUID is a pending/uncertain CREATE, not a confirmed remote mapping.
+    Persisting it BEFORE HTTP prevents duplicate CREATE after process interruption.
+    """
+    product = models.OneToOneField(Product, on_delete=models.CASCADE, related_name='mungos_mapping')
+    mungos_uuid = models.UUIDField(unique=True, null=True, blank=True)
+    sku_snapshot = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_synced_at = models.DateTimeField(null=True, blank=True)
+    last_sync_status = models.CharField(max_length=32, blank=True)
+    last_sync_error = models.TextField(blank=True)

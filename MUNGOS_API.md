@@ -435,3 +435,56 @@ Mungos modula. HTTP je mockovan, a fixture upisi su samo u izolovanoj Django
 test bazi. Transport zadržava oba staging auth headera, timeout 5/10 s,
 staging-only write zaštitu, redakciju odgovora i zabranu redirecta/retryja.
 Nema cron/Celery/signals, bulk slanja, DB mappinga ili automatskog synca.
+
+## Izolovani STAGING bulk sync
+
+`mungos_bulk_sync` koristi postojeći product preview, update adapter i payload
+sanitizer. Ne mijenja Product, cijene, stock, rezervacije ili webshop flow.
+Jedina nova tabela je `MungosProductMapping` (migration
+`0304_mungos_product_mapping`). OneToOne product i unique UUID trajno povezuju
+artikle; snapshot SKU, timestamps i status/error su isključivo integracijski podaci.
+UUID je nullable radi trajnog čuvanja neizvjesnog CREATE pokušaja, a ne kao dokaz
+uspješnog CREATE-a. `IN_FLIGHT` se snima prije HTTP-a i nakon prekida zahtijeva
+ručni pregled; nema automatskog ponavljanja. Tek validan top-level `productUuid`
+u kompletnom uspješnom odgovoru potvrđuje CREATE mapping.
+
+Prije prvog potvrđenog bulka, primijeniti migration i registrovati već postojeći
+MATE M8 (komanda ne šalje HTTP):
+
+```sh
+python manage.py migrate
+python manage.py mungos_mapping_set 4455 a9241b59-9e45-4840-9730-c93cb8ad9517
+python manage.py mungos_bulk_sync --limit 10
+python manage.py mungos_bulk_sync --limit 10 --confirm
+python manage.py mungos_bulk_sync --all --confirm
+```
+
+Bez `--confirm` je uvijek DRY RUN, uključujući `--all`. Default pregled obuhvata
+prvih 10 ID-eva; `--limit N` i `--all` su međusobno isključivi. `--start-after-id N`
+nastavlja nakon ID-a, a `--delay` je konačan broj najmanje 1.0 sekunda (default
+1.0). Report uključuje pregledane neaktivne/sakrivene artikle kao SKIPPED;
+postojeća webshop pravila `aktivan` / `sakriven_do_stanja` određuju slanje.
+Potvrđene kategorije i proizvodi bez varijanti su obavezni; builder zadržava sve
+postojeće validation gates. Nema fuzzy category mapiranja.
+
+Bulk prihvata samo tačan URL `https://staging.mungos.ba/api/v1/connector`.
+Postojeći UUID uvijek vodi na PUT, nikada POST. Pokušaji bez UUID-a i neizvjesni
+PUT pokušaji se blokiraju do ručne provjere. `mungos_mapping_set` registruje
+provjereni UUID ili otključava provjeren postojeći mapping, ali ne prepisuje drugi
+UUID. Za neuspjeli CREATE bez UUID-a operator mora prvo provjeriti Mungos;
+automatsko brisanje guard zapisa nije podržano.
+
+POST se nikad automatski ne ponavlja, uključujući 429. Za PUT 429 dozvoljena su
+najviše 3 ukupna pokušaja uz `Retry-After` (sekunde ili HTTP datum). Svaki 429
+poštuje server čekanje; timeout/network, nepotpun CREATE response, redirect ili
+5xx vode na UNKNOWN_REMOTE_STATE. 400/404/409 se evidentiraju i bulk nastavlja;
+401/403 i globalna konfiguracijska greška zaustavljaju bulk uz završni report.
+Jedinstveni zapis i zaključavanje reda sprečavaju da konkurentni runovi ponove
+CREATE. Delay je po procesu; bulk pokretati jednim procesom radi zajedničkog
+Mungos rate limita.
+
+Report i per-product log sadrže ID, redigovani SKU, CREATE/UPDATE, UUID, HTTP
+status i rezultat. API response tijela i exception tekst se ne ispisuju;
+konfigurisane tajne se rediguju. READY_CREATE/READY_UPDATE označavaju preflight,
+a CREATED/UPDATED samo potvrđene write rezultate. Skupni razlozi uključuju
+missing_category, variants_not_supported, invalid_sku, invalid_price i api status.
