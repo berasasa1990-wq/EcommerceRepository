@@ -296,3 +296,46 @@ POST-a. Komanda nema trajnu evidenciju ni zaštitu od ponovnog ručnog pokretanj
 Testovi: `EcommerceApp.tests_mungos`, `EcommerceApp.tests_mungos_product`,
 `EcommerceApp.tests_mungos_send`. HTTP je mockovan; ne koristiti potvrđenu
 komandu kao implementacioni ili automatski test.
+
+## Ručni full product update postojećeg STAGING oglasa
+
+```sh
+python manage.py mungos_product_update 4455 a9241b59-9e45-4840-9730-c93cb8ad9517
+# NOT_SENT; nema HTTP-a, DB upita ni buildera.
+python manage.py mungos_product_update 4455 a9241b59-9e45-4840-9730-c93cb8ad9517 --confirm
+```
+
+Potvrđena komanda validira UUID, ponovo čita proizvod iz baze i poziva postojeći
+`build_product_preview`, zatim zaseban `build_mungos_update_payload`. Šalje
+adaptirani puni PUT `payload` kroz
+jedan `PUT /standard/product/{uuid}`. Za postojeću konfiguraciju endpoint je:
+`https://staging.mungos.ba/api/v1/connector/standard/product/a9241b59-9e45-4840-9730-c93cb8ad9517`.
+UUID je samo u putanji; `id`/`sku` u body-ju ostaju Carpologija SKU.
+Adapter koristi potvrđeni PUT primjer: zadržava samo njegova polja i casing,
+izostavlja CREATE polja `HasVariants`/`Variants`, dodaje `brandCode=null`,
+a `ean` prenosi iz buildera ili koristi prazan string ako barkod nedostaje.
+`categoryUuid=null` ostaje uz potvrđeni `categoryCode`. Warranty/return vrijednosti
+ostaju iz buildera bez izmišljanja. CREATE builder i POST komanda nisu mijenjani.
+Varijante su nezavisno blokirane kao NEEDS_REVIEW jer njihova PUT schema nije
+potvrđena, čak i ako bi CREATE preview bio READY_FOR_REVIEW.
+Server prihvatanje body-ja ostaje za naknadni, eksplicitno potvrđeni STAGING test.
+
+Naziv, SKU, prikazna cijena, dostupna količina, opis, slike, mapiranje kategorije
+i varijante dolaze iz trenutnih Carpologija podataka. `NEEDS_REVIEW` ili bilo koji
+`reviewReasons` blokiraju slanje. Varijante sa nepotvrđenim attribute codes zato
+ostaju blokirane prema postojećem builderu. Nema promjena modela ili business logike.
+Za prvi ručni test ne mijenjati Product 4455: očekivano 138 BAM i količina 43.
+
+PUT dijeli sigurni transport sa POST-om: samo STAGING host, oba auth headera,
+connect/read timeout 5/10 s, bez redirecta i retryja, ograničen i redaktovan
+response. HTTP 429 posebno navodi rate limit; ostali ne-2xx statusi daju FAILED.
+Timeout, mrežna greška ili prekid čitanja daju UNKNOWN_REMOTE_STATE. Provjeriti
+Mungos prije ponavljanja. Nema POST fallbacka čak ni za 404; nema kreiranja
+novog oglasa, DB mappinga, automatskog synca ili upisa u Carpologija bazu.
+Komanda adresira navedeni UUID; stvarno stanje oglasa potvrđuje se tek ručnim
+STAGING testom, koji nije izvršen tokom implementacije.
+
+Testovi `EcommerceApp.tests_mungos_update` mockuju sav HTTP i provjeravaju jedan
+PUT, isti UUID, aktuelni builder payload, sigurnosne blokade, HTTP greške,
+UNKNOWN_REMOTE_STATE, redakciju secreta i SELECT-only DB upite. DB fixture zapisi
+postoje isključivo u izolovanoj Django test bazi.

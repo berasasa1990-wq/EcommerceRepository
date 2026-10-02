@@ -1,5 +1,6 @@
 """Manual Mungos calls; no persistence or automatic synchronization."""
 import json
+from uuid import UUID
 from urllib.parse import urlsplit
 
 import requests
@@ -8,6 +9,16 @@ from django.conf import settings
 
 class MungosError(Exception):
     """Only fixed, credential-free messages may be exposed to the operator."""
+
+
+def validate_product_uuid(value):
+    """Require canonical hyphenated UUID text; never accept URL/path fragments."""
+    try:
+        if not isinstance(value, str) or str(UUID(value)) != value.lower():
+            raise ValueError
+    except (ValueError, AttributeError):
+        raise MungosError('NOT_SENT | Mungos UUID mora biti validan UUID format.') from None
+    return value
 
 
 class MungosClient:
@@ -48,14 +59,22 @@ class MungosClient:
 
     def send_product(self, payload):
         """Exactly one staging POST. Never retry an ambiguous remote write."""
+        return self._write_product('post', self.PRODUCT_PATH, payload)
+
+    def update_product(self, mungos_uuid, payload):
+        """Exactly one full staging PUT to an existing UUID, with no create fallback."""
+        mungos_uuid = validate_product_uuid(mungos_uuid)
+        return self._write_product('put', self.PRODUCT_PATH + '/' + mungos_uuid, payload)
+
+    def _write_product(self, method, path, payload):
         if urlsplit(self._base_url).hostname != 'staging.mungos.ba':
             raise MungosError('Slanje je dozvoljeno samo na staging.mungos.ba.')
         if not self._access_code:
             raise MungosError('STAGING slanje zahtijeva MUNGOS_ECOMMERCE_ACCESS_CODE.')
         try:
             with requests.Session() as session:
-                with session.post(
-                    self._base_url + self.PRODUCT_PATH,
+                with getattr(session, method)(
+                    self._base_url + path,
                     json=payload,
                     headers={'X-Api-Key': self._api_key,
                              'ecommerceaccesscode': self._access_code},
@@ -74,7 +93,7 @@ class MungosClient:
                     except requests.RequestException:
                         raise MungosError(
                             f'UNKNOWN_REMOTE_STATE | HTTP status: {status} | '
-                            'Čitanje odgovora nije uspjelo; nema retryja. Provjerite Mungos prije novog POST-a.'
+                            f'Čitanje odgovora nije uspjelo; nema retryja. Provjerite Mungos prije novog {method.upper()}-a.'
                         ) from None
                     decoded = body.decode('utf-8', errors='replace')
                     try:
@@ -89,7 +108,7 @@ class MungosClient:
         except requests.RequestException:
             raise MungosError(
                 'UNKNOWN_REMOTE_STATE | HTTP status: N/A | '
-                'Timeout ili mrežna greška; nema retryja. Provjerite Mungos prije novog POST-a.'
+                f'Timeout ili mrežna greška; nema retryja. Provjerite Mungos prije novog {method.upper()}-a.'
             ) from None
 
     def liveness(self):
