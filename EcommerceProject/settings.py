@@ -48,6 +48,10 @@ def _env(key, default=''):
 
 
 # Render detection vars (used early for ALLOWED_HOSTS, CSRF, sqlite guard, etc.)
+MUNGOS_BASE_URL = _env('MUNGOS_BASE_URL', '').strip()
+MUNGOS_API_KEY = _env('MUNGOS_API_KEY', '')
+MUNGOS_ENABLED = _env('MUNGOS_ENABLED', 'False').strip().lower() in ('true', '1', 'yes')
+
 RENDER_EXTERNAL_HOSTNAME = _env('RENDER_EXTERNAL_HOSTNAME')
 render_disk_path = _env('RENDER_DISK_PATH', '')
 
