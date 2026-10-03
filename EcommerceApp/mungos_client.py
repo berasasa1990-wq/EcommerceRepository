@@ -7,6 +7,7 @@ import requests
 from django.conf import settings
 
 from .mungos_payload import sanitize_mungos_payload
+from .mungos_partial import validate_partial_payload
 
 
 class MungosError(Exception):
@@ -77,12 +78,26 @@ class MungosClient:
         mungos_uuid = validate_product_uuid(mungos_uuid)
         return self._write_product('put', self.PRODUCT_PATH + '/' + mungos_uuid, payload)
 
-    def _write_product(self, method, path, payload):
+    def sync_price(self, mungos_uuid, payload):
+        return self._write_partial(mungos_uuid, payload, 'price')
+
+    def sync_quantity(self, mungos_uuid, payload):
+        return self._write_partial(mungos_uuid, payload, 'quantity')
+
+    def _write_partial(self, mungos_uuid, payload, operation):
+        mungos_uuid = validate_product_uuid(mungos_uuid)
+        return self._write_product('put', self.PRODUCT_PATH + '/' + mungos_uuid + '/' + operation,
+                                   payload, partial_operation=operation)
+
+    def _write_product(self, method, path, payload, partial_operation=None):
         if urlsplit(self._base_url).hostname != 'staging.mungos.ba':
             raise MungosError('Slanje je dozvoljeno samo na staging.mungos.ba.')
         if not self._access_code:
             raise MungosError('STAGING slanje zahtijeva MUNGOS_ECOMMERCE_ACCESS_CODE.')
-        payload, reasons = sanitize_mungos_payload(payload, 'create' if method == 'post' else 'update')
+        if partial_operation:
+            reasons = [] if validate_partial_payload(payload, partial_operation) else ['invalid_partial_payload']
+        else:
+            payload, reasons = sanitize_mungos_payload(payload, 'create' if method == 'post' else 'update')
         if reasons:
             raise MungosError('NOT_SENT | Mungos payload zahtijeva pregled; nema HTTP-a.')
         try:

@@ -1,0 +1,151 @@
+from io import StringIO
+from unittest.mock import patch
+from copy import deepcopy
+
+import requests
+from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.test import TestCase, override_settings
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
+
+from .models import Category, Product, MungosProductMapping, ProductVariation
+from .mungos_partial import PRICE_FIELDS, build_partial_payload
+from .mungos_product import build_product_preview
+
+UUID = 'a9241b59-9e45-4840-9730-c93cb8ad9517'
+
+
+@override_settings(MUNGOS_ENABLED=True, MUNGOS_BASE_URL='https://staging.mungos.ba/api/v1/connector',
+                   MUNGOS_API_KEY='test-key', MUNGOS_ECOMMERCE_ACCESS_CODE='test-access',
+                   SITE_URL='https://example.com')
+class MungosPartialTests(TestCase):
+    def setUp(self):
+        self.product = Product.objects.create(naziv='Reel', sifra='existing-reference', cijena=138,
+            opis='Opis', stanje=43, aktivan=True, na_stanju=True,
+            kategorija=Category.objects.create(naziv='Mašinice'))
+        self.mapping = MungosProductMapping.objects.create(product=self.product, mungos_uuid=UUID,
+                                                          last_sync_status='REGISTERED')
+        self.http = patch('EcommerceApp.mungos_client.requests.Session')
+        self.factory = self.http.start()
+        self.addCleanup(self.http.stop)
+        self.session = self.factory.return_value.__enter__.return_value
+        self.response = self.session.put.return_value.__enter__.return_value
+        self.response.status_code = 200
+        self.response.iter_content.return_value = [b'{}']
+
+    def run_sync(self, operation, confirm=False):
+        output = StringIO()
+        call_command('mungos_' + operation + '_sync', product_id=self.product.pk,
+                     confirm=confirm, stdout=output)
+        return output.getvalue()
+
+    def test_dry_run_is_select_only_and_has_actual_payload(self):
+        for operation in ('price', 'quantity'):
+            with CaptureQueriesContext(connection) as queries:
+                output = self.run_sync(operation)
+            self.assertTrue(all(q['sql'].lstrip().upper().startswith('SELECT') for q in queries))
+            self.assertIn('DRY RUN', output)
+            self.assertIn('existing-reference', output)
+        self.factory.assert_not_called()
+
+    def test_exact_payloads_reuse_builder_without_mutation(self):
+        preview = build_product_preview(self.product)
+        original = deepcopy(preview)
+        for operation in ('price', 'quantity'):
+            expected = ({key: preview['payload'][key] for key in PRICE_FIELDS} if operation == 'price'
+                        else {'id': 'existing-reference', 'quantity': preview['payload']['quantityRemaining']})
+            self.assertEqual(build_partial_payload(preview, operation), expected)
+            self.session.put.reset_mock()
+            self.run_sync(operation, True)
+            self.session.put.assert_called_once_with(
+                'https://staging.mungos.ba/api/v1/connector/standard/product/' + UUID + '/' + operation,
+                json=expected, headers={'X-Api-Key': 'test-key', 'ecommerceaccesscode': 'test-access'},
+                timeout=(5, 10), allow_redirects=False, stream=True)
+            self.session.post.assert_not_called()
+            self.mapping.refresh_from_db()
+            self.assertEqual(self.mapping.last_sync_status, 'UPDATED')
+        self.assertEqual(preview, original)
+        self.product.refresh_from_db()
+        self.assertEqual((self.product.cijena, self.product.stanje, self.product.sifra),
+                         (138, 43, 'existing-reference'))
+
+    def test_unknown_unmapped_and_inflight_are_skipped(self):
+        for operation in ('price', 'quantity'):
+            for status in ('UNKNOWN', 'UNKNOWN_REMOTE_STATE', 'IN_FLIGHT'):
+                self.mapping.last_sync_status = status
+                self.mapping.save()
+                self.assertIn('SKIPPED', self.run_sync(operation, True))
+            self.mapping.last_sync_status = 'REGISTERED'
+            self.mapping.mungos_uuid = None
+            self.mapping.save()
+            self.assertIn('SKIPPED', self.run_sync(operation, True))
+        self.mapping.delete()
+        self.assertIn('SKIPPED', self.run_sync('price', True))
+        self.factory.assert_not_called()
+
+    def test_variants_are_skipped(self):
+        ProductVariation.objects.create(artikal=self.product, naziv='Variant', sifra='variant', cijena=10)
+        for operation in ('price', 'quantity'):
+            self.assertIn('SKIPPED', self.run_sync(operation, True))
+        self.factory.assert_not_called()
+
+    def test_error_responses_never_retry_or_create(self):
+        for operation in ('price', 'quantity'):
+            for status in (400, 401, 403, 404, 409, 429, 302, 500):
+                self.mapping.last_sync_status = 'REGISTERED'
+                self.mapping.save()
+                self.session.put.reset_mock()
+                self.response.status_code = status
+                with self.assertRaisesMessage(CommandError, f'HTTP status: {status}'):
+                    self.run_sync(operation, True)
+                self.session.put.assert_called_once()
+                self.session.post.assert_not_called()
+                self.mapping.refresh_from_db()
+                self.assertEqual(str(self.mapping.mungos_uuid), UUID)
+                self.assertEqual(self.mapping.last_sync_status,
+                                 'UNKNOWN_REMOTE_STATE' if status in (302, 500) else 'FAILED')
+
+    def test_timeout_persists_unknown_and_next_run_skips(self):
+        self.session.put.side_effect = requests.Timeout('secret')
+        with self.assertRaisesMessage(CommandError, 'UNKNOWN_REMOTE_STATE'):
+            self.run_sync('quantity', True)
+        self.assertIn('SKIPPED', self.run_sync('price', True))
+        self.session.put.assert_called_once()
+        self.mapping.refresh_from_db()
+        self.assertEqual(self.mapping.last_sync_status, 'UNKNOWN_REMOTE_STATE')
+
+    def test_disabled_or_production_configuration_never_sends_or_claims(self):
+        for config in ({'MUNGOS_ENABLED': False}, {'MUNGOS_ECOMMERCE_ACCESS_CODE': ''},
+                       {'MUNGOS_BASE_URL': 'https://mungos.ba/api/v1/connector'}):
+            with override_settings(**config), self.assertRaises(CommandError):
+                self.run_sync('price', True)
+        self.factory.assert_not_called()
+        self.mapping.refresh_from_db()
+        self.assertEqual(self.mapping.last_sync_status, 'REGISTERED')
+
+    def test_current_sale_price_and_cart_availability_are_reused(self):
+        Product.objects.filter(pk=self.product.pk).update(akcijska_cijena=99, stanje=17)
+        self.run_sync('price', True)
+        self.assertEqual(self.session.put.call_args.kwargs['json']['price'], 99.0)
+        with patch('EcommerceApp.mungos_product.Cart.availability', return_value={'parent': 6}) as availability:
+            self.run_sync('quantity', True)
+        availability.assert_called_once()
+        self.assertEqual(self.session.put.call_args.kwargs['json'],
+                         {'id': 'existing-reference', 'quantity': 6})
+
+    def test_invalid_partial_bodies_and_uuids_never_reach_transport(self):
+        from .mungos_client import MungosClient, MungosError
+        client = MungosClient()
+        preview = build_product_preview(self.product)
+        for operation in ('price', 'quantity'):
+            valid = build_partial_payload(preview, operation)
+            method = getattr(client, 'sync_' + operation)
+            for invalid in ({}, {**valid, 'invented': 1}, {**valid, 'id': ''},
+                            {**valid, operation: -1}, {**valid, operation: True},
+                            {**valid, operation: float('nan')}):
+                with self.assertRaisesMessage(MungosError, 'NOT_SENT'):
+                    method(UUID, invalid)
+            with self.assertRaisesMessage(MungosError, 'NOT_SENT'):
+                method('../bad', valid)
+        self.factory.assert_not_called()

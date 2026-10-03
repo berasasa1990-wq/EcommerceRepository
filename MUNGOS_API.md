@@ -514,3 +514,41 @@ već potvrđeni proizvodi prelaze na UPDATE, prekinuti IN_FLIGHT i unknown poku�
 ostaju blokirani. HTTP 400/404/409 ne brišu UUID i ne pokreću CREATE fallback.
 Uzrok ranijih UPDATE 400 nije dokazan lokalnim kodom/testovima; sanitizovani
 stvarni response nakon zasebno odobrenog staging runa potreban je za dijagnozu.
+
+## Ručni price / quantity sync postojećeg UUID-a
+
+```sh
+python manage.py mungos_price_sync --product-id 4455
+python manage.py mungos_quantity_sync --product-id 4455
+# Jedan PUT samo uz eksplicitni --confirm:
+python manage.py mungos_price_sync --product-id 4455 --confirm
+python manage.py mungos_quantity_sync --product-id 4455 --confirm
+```
+
+`--product-id` je obavezan lokalni Product ID. Bez `--confirm` komande rade
+SELECT-only dry-run i prikazuju stvarni kandidat bez HTTP-a ili upisa.
+Samo postojeći mapping s UUID-em je dopušten; unmapped, UNKNOWN,
+UNKNOWN_REMOTE_STATE, IN_FLIGHT i varijante se preskaču. Postojeći builder
+validation gates ostaju aktivni. Nikad nema CREATE fallbacka niti retryja.
+
+PUT putanje su `/standard/product/{uuid}/price` i
+`/standard/product/{uuid}/quantity`. Quantity body ima tačno `id` i `quantity`.
+`id` je postojeća `product.sifra` iz CREATE buildera; `quantity` preuzima
+`quantityRemaining` koji builder računa preko `Cart.availability()`.
+Price preuzima builderovu `prikazna_cijena`, `currencyIsoCode = BAM` i postojeće
+fixed vrijednosti: isNegotiable/isFree false, warrantyMonthsCount,
+warrantyDescription, returnDaysCount, returnDescription i exchangeComment null,
+sellerPaysForReturnShipping true, exchangeAcceptable false,
+shippmentDeliveryMethod DeliveryByMe. To namjerno zadržava postojeće vrijednosti
+CREATE/UPDATE adaptera umjesto kopiranja različitih vrijednosti Postman primjera.
+`shippingOption`, `deliveryService` i `productSize` jesu u dostavljenom Postman
+price primjeru, ali ne postoje u trenutnom CREATE/UPDATE builderu: komanda ih
+izostavlja umjesto izmišljanja konfiguracije, dimenzija ili shipping vrijednosti.
+Prihvatanje ovog podskupa nije provjereno stvarnim HTTP pozivom.
+
+Potvrđeni run koristi postojeći bulk lock i trajno snima IN_FLIGHT prije jednog
+staging PUT-a. Mijenja samo integracijski mapping status/error/timestamp.
+Timeout, greška čitanja odgovora, redirect i 5xx ostavljaju UNKNOWN_REMOTE_STATE;
+sljedeći run preskače mapping do ručne provjere. Ostali neuspješni HTTP statusi
+snimaju FAILED i čuvaju UUID. Webshop cijene, stock i rezervacije se ne mijenjaju.
+Razvojni testovi koriste mockovani HTTP i izolovanu test bazu.
