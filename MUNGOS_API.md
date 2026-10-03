@@ -525,7 +525,22 @@ python manage.py mungos_price_sync --product-id 4455 --confirm
 python manage.py mungos_quantity_sync --product-id 4455 --confirm
 ```
 
-`--product-id` je obavezan lokalni Product ID. Bez `--confirm` komande rade
+`--product-id` je opcioni lokalni Product ID: kada je naveden, obrađuje se samo
+izabrani proizvod. Bez njega obrađuju se svi proizvodi s postojećim UUID mappingom,
+uz preskakanje UNKNOWN/UNKNOWN_REMOTE_STATE/IN_FLIGHT i nepodržanih varijanti.
+Bulk koristi iterator s chunkovima po 200 i najmanje 1 sekundu između početaka
+HTTP zahtjeva. `--delay SECONDS` (default 1) mora biti konačan broj najmanje 1;
+`--limit N` ograničava broj mapping kandidata, a `--start-after-id N` bira ID-eve
+veće od N (default 0). Limit i start-after-id primjenjuju se na bulk; eksplicitni
+product-id bira samo taj proizvod. Greška jednog Mungos zahtjeva ne zaustavlja
+obradu ostalih proizvoda; na kraju komanda prijavljuje broj neuspjelih pokušaja.
+
+```sh
+python manage.py mungos_price_sync
+python manage.py mungos_quantity_sync --limit 10 --start-after-id 47
+python manage.py mungos_price_sync --confirm --delay 1
+python manage.py mungos_quantity_sync --confirm --delay 1
+``` Bez `--confirm` komande rade
 SELECT-only dry-run i prikazuju stvarni kandidat bez HTTP-a ili upisa.
 Samo postojeći mapping s UUID-em je dopušten; unmapped, UNKNOWN,
 UNKNOWN_REMOTE_STATE, IN_FLIGHT i varijante se preskaču. Postojeći builder

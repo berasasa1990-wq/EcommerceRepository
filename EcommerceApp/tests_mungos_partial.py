@@ -1,5 +1,5 @@
 from io import StringIO
-from unittest.mock import patch
+from unittest.mock import patch, call
 from copy import deepcopy
 
 import requests
@@ -7,10 +7,12 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from django.db import connection
+from django.db.models.query import QuerySet
 from django.test.utils import CaptureQueriesContext
 
 from .models import Category, Product, MungosProductMapping, ProductVariation
 from .mungos_partial import PRICE_FIELDS, build_partial_payload
+from .mungos_client import MungosError
 from .mungos_product import build_product_preview
 
 UUID = 'a9241b59-9e45-4840-9730-c93cb8ad9517'
@@ -148,4 +150,91 @@ class MungosPartialTests(TestCase):
                     method(UUID, invalid)
             with self.assertRaisesMessage(MungosError, 'NOT_SENT'):
                 method('../bad', valid)
+        self.factory.assert_not_called()
+
+    def make_mapped_product(self, number, status='REGISTERED', mapped=True):
+        product = Product.objects.create(naziv=f'Reel {number}', sifra=f'ref-{number}', cijena=20 + number,
+            opis='Opis', stanje=number, aktivan=True, na_stanju=True, kategorija=self.product.kategorija)
+        if mapped:
+            MungosProductMapping.objects.create(product=product,
+                mungos_uuid=f'00000000-0000-4000-8000-{number:012d}', last_sync_status=status)
+        return product
+
+    def run_bulk(self, operation, **options):
+        output = StringIO()
+        call_command('mungos_' + operation + '_sync', stdout=output, **options)
+        return output.getvalue()
+
+    def test_bulk_both_operations_and_delay_with_chunked_iterator(self):
+        second = self.make_mapped_product(2)
+        third = self.make_mapped_product(3)
+        real_iterator = QuerySet.iterator
+        for operation in ('price', 'quantity'):
+            self.session.put.reset_mock()
+            with patch('EcommerceApp.mungos_partial_command.time.monotonic', return_value=10), \
+                 patch('EcommerceApp.mungos_partial_command.time.sleep') as sleep, \
+                 patch('django.db.models.query.QuerySet.iterator', autospec=True) as iterator:
+                iterator.side_effect = real_iterator
+                self.run_bulk(operation, confirm=True, delay=2)
+                iterator.assert_called_once()
+                self.assertEqual(iterator.call_args.kwargs['chunk_size'], 200)
+            self.assertEqual(self.session.put.call_count, 3)
+            self.assertEqual(sleep.call_args_list, [call(2), call(2)])
+            self.assertEqual([call.kwargs['json']['id'] for call in self.session.put.call_args_list],
+                             ['existing-reference', second.sifra, third.sifra])
+            self.assertTrue(all(call.args[0].endswith('/' + operation)
+                                for call in self.session.put.call_args_list))
+            self.session.post.assert_not_called()
+
+    def test_bulk_scope_limit_resume_and_single_product(self):
+        second = self.make_mapped_product(2)
+        self.make_mapped_product(3)
+        for operation in ('price', 'quantity'):
+            self.session.put.reset_mock()
+            self.run_bulk(operation, confirm=True, start_after_id=self.product.pk, limit=1)
+            self.session.put.assert_called_once()
+            self.assertEqual(self.session.put.call_args.kwargs['json']['id'], second.sifra)
+            self.session.put.reset_mock()
+            self.run_bulk(operation, confirm=True, product_id=second.pk)
+            self.session.put.assert_called_once()
+            self.assertEqual(self.session.put.call_args.kwargs['json']['id'], second.sifra)
+
+    def test_bulk_dry_run_select_only_skips_unknown_unmapped_variants(self):
+        self.make_mapped_product(2, mapped=False)
+        self.make_mapped_product(3, status='UNKNOWN_REMOTE_STATE')
+        self.make_mapped_product(4, status='IN_FLIGHT')
+        variant = self.make_mapped_product(5)
+        ProductVariation.objects.create(artikal=variant, naziv='Variant', sifra='bulk-variant', cijena=10)
+        for operation in ('price', 'quantity'):
+            with CaptureQueriesContext(connection) as queries:
+                output = self.run_bulk(operation)
+            self.assertTrue(all(q['sql'].lstrip().upper().startswith('SELECT') for q in queries))
+            self.assertIn('DRY RUN', output)
+            self.assertIn('existing-reference', output)
+            self.assertIn('SKIPPED', output)
+            self.assertNotIn('ref-2', output)
+            self.assertNotIn('ref-3', output)
+        self.factory.assert_not_called()
+
+    def test_bulk_failure_continues_preserves_catalog_and_never_retries(self):
+        second = self.make_mapped_product(2)
+        before = list(Product.objects.values().order_by('pk'))
+        with patch('EcommerceApp.mungos_partial_command.time.sleep'), \
+             patch('EcommerceApp.mungos_partial_command.MungosClient.sync_quantity',
+                   side_effect=[MungosError(
+                       'UNKNOWN_REMOTE_STATE | Timeout'), (200, '{}', False)]) as sync:
+            with self.assertRaisesMessage(CommandError, '1 neuspješnih'):
+                self.run_bulk('quantity', confirm=True)
+        self.assertEqual(sync.call_count, 2)
+        self.mapping.refresh_from_db()
+        self.assertEqual(self.mapping.last_sync_status, 'UNKNOWN_REMOTE_STATE')
+        self.assertEqual(MungosProductMapping.objects.get(product=second).last_sync_status, 'UPDATED')
+        self.assertEqual(list(Product.objects.values().order_by('pk')), before)
+        self.session.post.assert_not_called()
+
+    def test_bulk_invalid_options_no_http_or_claim(self):
+        for options in ({'delay': 0.9}, {'delay': float('nan')}, {'delay': float('inf')},
+                        {'limit': 0}, {'start_after_id': -1}, {'product_id': 0}):
+            with self.assertRaises(CommandError):
+                self.run_bulk('price', confirm=True, **options)
         self.factory.assert_not_called()
