@@ -479,12 +479,38 @@ najviše 3 ukupna pokušaja uz `Retry-After` (sekunde ili HTTP datum). Svaki 429
 poštuje server čekanje; timeout/network, nepotpun CREATE response, redirect ili
 5xx vode na UNKNOWN_REMOTE_STATE. 400/404/409 se evidentiraju i bulk nastavlja;
 401/403 i globalna konfiguracijska greška zaustavljaju bulk uz završni report.
-Jedinstveni zapis i zaključavanje reda sprečavaju da konkurentni runovi ponove
-CREATE. Delay je po procesu; bulk pokretati jednim procesom radi zajedničkog
-Mungos rate limita.
+Jedinstveni zapis i zaključavanje reda sprečavaju ponovno preuzimanje CREATE-a.
+Potvrđeni bulk drži PostgreSQL session advisory lock za cijeli run (SQLite koristi
+lokalni file lock); drugi potvrđeni proces se odbija prije HTTP-a. Lock se oslobađa
+na izlazu/prekidu procesa. Queryset se obrađuje iteratorom u chunkovima po 200.
 
 Report i per-product log sadrže ID, redigovani SKU, CREATE/UPDATE, UUID, HTTP
-status i rezultat. API response tijela i exception tekst se ne ispisuju;
-konfigurisane tajne se rediguju. READY_CREATE/READY_UPDATE označavaju preflight,
+status i rezultat. Za HTTP 400/404/409 `api_error` prikazuje sanitizovano
+response tijelo uz `api_error_truncated`. Field validation errors se zadržavaju,
+a auth/credentials/header polja, tekstualni credential parovi i konfigurisane
+tajne (uključujući ključeve JSON-a) se rediguju. Exception tekst se ne ispisuje. READY_CREATE/READY_UPDATE označavaju preflight,
 a CREATED/UPDATED samo potvrđene write rezultate. Skupni razlozi uključuju
 missing_category, variants_not_supported, invalid_sku, invalid_price i api status.
+
+
+### Unknown audit i siguran nastavak
+
+`python manage.py mungos_unknown_state_audit` radi samo SELECT, bez HTTP-a.
+Prikazuje Product ID, SKU, naziv, mapping ID, UUID, posljednji status/error i
+created/updated/last-synced timestamps za IN_FLIGHT, UNKNOWN_REMOTE_STATE ili
+mapping bez UUID-a. Error metadata se sanitizuje. Bulk summary broji već
+blokirane unknown proizvode u UNKNOWN_REMOTE_STATE i NEEDS_REVIEW, nikad FAILED.
+
+Nakon ručne provjere udaljenog proizvoda koristite
+`python manage.py mungos_mapping_set PRODUCT_ID POTVRĐENI_UUID`.
+Komanda mijenja samo Mungos mapping: čuva UUID, postavlja REGISTERED i čisti
+last_sync_error. Product ostaje netaknut. Sljedeći spremni bulk koristi UPDATE;
+postojeći drugi UUID se ne prepisuje. Nikad ne uklanjati unknown guard radi
+ponovnog CREATE-a bez udaljene provjere.
+
+Svaki uspješan CREATE odmah snima potvrđeni UUID prije sljedećeg proizvoda.
+Nakon parcijalnog runa isti scope može se ponovo pregledati dry-runom:
+već potvrđeni proizvodi prelaze na UPDATE, prekinuti IN_FLIGHT i unknown pokušaji
+ostaju blokirani. HTTP 400/404/409 ne brišu UUID i ne pokreću CREATE fallback.
+Uzrok ranijih UPDATE 400 nije dokazan lokalnim kodom/testovima; sanitizovani
+stvarni response nakon zasebno odobrenog staging runa potreban je za dijagnozu.

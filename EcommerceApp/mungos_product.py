@@ -117,7 +117,7 @@ def sanitized_json(preview):
                 value = value.replace(secret, '[REDACTED]')
             return value
         if isinstance(value, dict):
-            return {key: clean(item) for key, item in value.items()}
+            return {clean(key): clean(item) for key, item in value.items()}
         if isinstance(value, list):
             return [clean(item) for item in value]
         return value

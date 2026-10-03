@@ -310,3 +310,126 @@ class BulkTests(TestCase):
             result = client.send_product(build_product_preview(self.product)['payload'])
         self.assertEqual(result[0], 429)
         self.assertEqual(client.retry_after, '4')
+
+    def test_error_diagnostics_update_preserves_mapping_and_continues(self):
+        self.mapping()
+        other = self.second()
+        MungosProductMapping.objects.create(product=other, mungos_uuid='12345678-1234-1234-1234-123456789012')
+        for code in (400, 404, 409):
+            with self.subTest(code=code):
+                self.client.update_product.reset_mock()
+                self.client.update_product.return_value = (code, json.dumps({
+                    'errors': {'price': ['Must be positive']},
+                    'X-Api-Key': 'unconfigured-secret',
+                    'Authorization': 'Bearer unconfigured-token',
+                    'credentials': {'password': 'unconfigured-password'},
+                    'detail': 'private-api-secret private-access-secret',
+                    'private-api-secret': 'echoed key',
+                }), False)
+                output = self.run_bulk('--all', '--confirm')
+                self.assertIn('Must be positive', output)
+                self.assertIn('"api_error"', output)
+                self.assertIn(f'api_{code}', output)
+                for secret in ('unconfigured-secret', 'unconfigured-token', 'unconfigured-password',
+                               'private-api-secret', 'private-access-secret'):
+                    self.assertNotIn(secret, output)
+                self.assertEqual(self.client.update_product.call_count, 2)
+                self.client.send_product.assert_not_called()
+                self.assertEqual(str(MungosProductMapping.objects.get(product=self.product).mungos_uuid), REMOTE)
+
+    def test_unknown_summary_and_audit_read_only(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        row = MungosProductMapping.objects.create(product=self.product,
+            last_sync_status='UNKNOWN_REMOTE_STATE', last_sync_error='Authorization: Bearer hidden-value')
+        before_product = Product.objects.values().get(pk=self.product.pk)
+        before_mapping = MungosProductMapping.objects.values().get(pk=row.pk)
+        output = self.run_bulk('--all')
+        self.assertIn('"UNKNOWN_REMOTE_STATE": 1', output)
+        self.assertIn('"FAILED": 0', output)
+        self.assertIn('"unknown_remote_state": 1', output)
+        out = StringIO()
+        with patch('requests.sessions.Session.request', side_effect=AssertionError('HTTP forbidden')) as http:
+            with CaptureQueriesContext(connection) as queries:
+                call_command('mungos_unknown_state_audit', stdout=out)
+        http.assert_not_called()
+        self.assertTrue(all(q['sql'].lstrip().upper().startswith('SELECT') for q in queries))
+        self.assertIn('"product_id": 4455', out.getvalue())
+        self.assertIn('"updated_at"', out.getvalue())
+        self.assertNotIn('hidden-value', out.getvalue())
+        self.assertEqual(Product.objects.values().get(pk=self.product.pk), before_product)
+        self.assertEqual(MungosProductMapping.objects.values().get(pk=row.pk), before_mapping)
+        self.run_bulk('--confirm')
+        self.client.send_product.assert_not_called()
+
+    def test_unknown_mapping_recovery_uses_update_only(self):
+        row = MungosProductMapping.objects.create(product=self.product,
+            last_sync_status='UNKNOWN_REMOTE_STATE', last_sync_error='timeout')
+        before = Product.objects.values().get(pk=self.product.pk)
+        call_command('mungos_mapping_set', self.product.pk, REMOTE, stdout=StringIO())
+        row.refresh_from_db()
+        self.assertEqual(row.last_sync_status, 'REGISTERED')
+        self.assertEqual(row.last_sync_error, '')
+        self.assertEqual(str(row.mungos_uuid), REMOTE)
+        self.run_bulk('--confirm')
+        self.client.update_product.assert_called_once()
+        self.client.send_product.assert_not_called()
+        self.assertEqual(Product.objects.values().get(pk=self.product.pk), before)
+
+    def test_partial_bulk_restart_does_not_duplicate_create(self):
+        other = self.second()
+        def send(payload):
+            if payload['sku'] == self.product.sifra:
+                return 200, json.dumps({'productUuid': REMOTE}), False
+            self.assertEqual(str(MungosProductMapping.objects.get(product=self.product).mungos_uuid), REMOTE)
+            self.assertEqual(MungosProductMapping.objects.get(product=other).last_sync_status, 'IN_FLIGHT')
+            raise KeyboardInterrupt
+        self.client.send_product.side_effect = send
+        with self.assertRaises(KeyboardInterrupt):
+            self.run_bulk('--all', '--confirm')
+        self.client.send_product.reset_mock()
+        self.client.send_product.side_effect = None
+        self.run_bulk('--all', '--confirm')
+        self.client.send_product.assert_not_called()
+        self.client.update_product.assert_called_once()
+
+    def test_bulk_lock_rejects_second_confirmed_process(self):
+        from .mungos_bulk_lock import bulk_lock
+        with bulk_lock():
+            with self.assertRaises(CommandError):
+                self.run_bulk('--confirm')
+        self.client.send_product.assert_not_called()
+        self.run_bulk('--confirm')
+        self.client.send_product.assert_called_once()
+
+    def test_free_text_diagnostics_redacts_credentials(self):
+        from .mungos_diagnostics import safe_api_error
+        value = safe_api_error('price invalid\nX-Api-Key: unknown-key\nAuthorization: Bearer unknown-auth')
+        self.assertIn('price invalid', value)
+        self.assertNotIn('unknown-key', value)
+        self.assertNotIn('unknown-auth', value)
+
+    def test_postgres_bulk_lock_acquire_and_release(self):
+        from .mungos_bulk_lock import bulk_lock, LOCK_ID
+        with patch('EcommerceApp.mungos_bulk_lock.connection') as db:
+            db.vendor = 'postgresql'
+            cursor = db.cursor.return_value.__enter__.return_value
+            cursor.fetchone.return_value = (True,)
+            with self.assertRaises(KeyboardInterrupt):
+                with bulk_lock():
+                    raise KeyboardInterrupt
+            self.assertEqual(cursor.execute.call_args_list[0].args,
+                             ('SELECT pg_try_advisory_lock(%s)', [LOCK_ID]))
+            self.assertEqual(cursor.execute.call_args_list[1].args,
+                             ('SELECT pg_advisory_unlock(%s)', [LOCK_ID]))
+
+    def test_postgres_bulk_lock_denies_concurrent_run(self):
+        from .mungos_bulk_lock import bulk_lock
+        with patch('EcommerceApp.mungos_bulk_lock.connection') as db:
+            db.vendor = 'postgresql'
+            cursor = db.cursor.return_value.__enter__.return_value
+            cursor.fetchone.return_value = (False,)
+            with self.assertRaises(CommandError):
+                with bulk_lock():
+                    self.fail('Concurrent run entered')
+            cursor.execute.assert_called_once()
