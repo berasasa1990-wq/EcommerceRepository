@@ -518,11 +518,11 @@ stvarni response nakon zasebno odobrenog staging runa potreban je za dijagnozu.
 ## Ručni price / quantity sync postojećeg UUID-a
 
 ```sh
-python manage.py mungos_price_sync --product-id 4455
-python manage.py mungos_quantity_sync --product-id 4455
-# Jedan PUT samo uz eksplicitni --confirm:
-python manage.py mungos_price_sync --product-id 4455 --confirm
-python manage.py mungos_quantity_sync --product-id 4455 --confirm
+python manage.py mungos_price_sync --product-id 47
+python manage.py mungos_quantity_sync --product-id 47
+# PUT samo uz eksplicitni --confirm:
+python manage.py mungos_price_sync --product-id 47 --confirm
+python manage.py mungos_quantity_sync --product-id 47 --confirm
 ```
 
 `--product-id` je opcioni lokalni Product ID: kada je naveden, obrađuje se samo
@@ -532,8 +532,8 @@ Bulk koristi iterator s chunkovima po 200 i najmanje 1 sekundu između početaka
 HTTP zahtjeva. `--delay SECONDS` (default 1) mora biti konačan broj najmanje 1;
 `--limit N` ograničava broj mapping kandidata, a `--start-after-id N` bira ID-eve
 veće od N (default 0). Limit i start-after-id primjenjuju se na bulk; eksplicitni
-product-id bira samo taj proizvod. Greška jednog Mungos zahtjeva ne zaustavlja
-obradu ostalih proizvoda; na kraju komanda prijavljuje broj neuspjelih pokušaja.
+product-id bira samo taj proizvod. HTTP 401/403 i konfiguracijska greška prekidaju cijeli run. Ostale pojedinačne
+greške ne zaustavljaju obradu ostalih proizvoda; na kraju komanda prijavljuje broj neuspjelih pokušaja.
 
 ```sh
 python manage.py mungos_price_sync
@@ -544,7 +544,10 @@ python manage.py mungos_quantity_sync --confirm --delay 1
 SELECT-only dry-run i prikazuju stvarni kandidat bez HTTP-a ili upisa.
 Samo postojeći mapping s UUID-em je dopušten; unmapped, UNKNOWN,
 UNKNOWN_REMOTE_STATE, IN_FLIGHT i varijante se preskaču. Postojeći builder
-validation gates ostaju aktivni. Nikad nema CREATE fallbacka niti retryja.
+validation gates ostaju aktivni. Nikad nema CREATE fallbacka. PUT 429 ima najviše tri ukupna pokušaja, uz
+postojeći Retry-After helper (sekunde ili HTTP datum) i delay najmanje 1s.
+HTTP 400/404/409 prikazuje sanitizovani `api_error` i indikator truncation;
+credential polja i konfigurisane tajne se uklanjaju/rediguju.
 
 PUT putanje su `/standard/product/{uuid}/price` i
 `/standard/product/{uuid}/quantity`. Quantity body ima tačno `id` i `quantity`.
@@ -561,9 +564,20 @@ price primjeru, ali ne postoje u trenutnom CREATE/UPDATE builderu: komanda ih
 izostavlja umjesto izmišljanja konfiguracije, dimenzija ili shipping vrijednosti.
 Prihvatanje ovog podskupa nije provjereno stvarnim HTTP pozivom.
 
-Potvrđeni run koristi postojeći bulk lock i trajno snima IN_FLIGHT prije jednog
+Potvrđeni run koristi postojeći bulk lock i trajno snima IN_FLIGHT prije
 staging PUT-a. Mijenja samo integracijski mapping status/error/timestamp.
 Timeout, greška čitanja odgovora, redirect i 5xx ostavljaju UNKNOWN_REMOTE_STATE;
 sljedeći run preskače mapping do ručne provjere. Ostali neuspješni HTTP statusi
 snimaju FAILED i čuvaju UUID. Webshop cijene, stock i rezervacije se ne mijenjaju.
 Razvojni testovi koriste mockovani HTTP i izolovanu test bazu.
+
+
+Automatski price i quantity sync nisu povezani. Postojeći email thread/on_commit
+mehanizam nije opći pouzdani background scheduler; ove komande ostaju spremne
+za zasebni scheduler/cron bez HTTP-a u Product.save(), checkoutu ili stock save-u.
+
+Primjeri za cijeli quantity scope:
+```sh
+python manage.py mungos_quantity_sync
+python manage.py mungos_quantity_sync --confirm
+```

@@ -3,6 +3,10 @@ import math
 import time
 from contextlib import nullcontext
 from urllib.parse import urlsplit
+from django.conf import settings
+
+from .management.commands.mungos_bulk_sync import STAGING_URL, retry_seconds
+from .mungos_diagnostics import safe_api_error
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -17,6 +21,10 @@ from .mungos_product import build_product_preview, sanitized_json
 BLOCKED = {'IN_FLIGHT', 'UNKNOWN_REMOTE_STATE', 'UNKNOWN'}
 
 
+class StopSyncRun(CommandError):
+    """Auth or configuration failures must stop all partial PUTs."""
+
+
 class PartialSyncCommand(BaseCommand):
     requires_system_checks = []
     operation = None
@@ -29,6 +37,8 @@ class PartialSyncCommand(BaseCommand):
         parser.add_argument('--delay', type=float, default=1.0)
 
     def handle(self, *args, **options):
+        if settings.MUNGOS_BASE_URL != STAGING_URL:
+            raise StopSyncRun('STAGING ONLY | Potreban je tačan staging connector URL.')
         if (not math.isfinite(options['delay']) or options['delay'] < 1
                 or options['start_after_id'] < 0
                 or (options['limit'] is not None and options['limit'] < 1)
@@ -54,6 +64,8 @@ class PartialSyncCommand(BaseCommand):
             for product in products.iterator(chunk_size=200):
                 try:
                     self.sync(product, options)
+                except StopSyncRun:
+                    raise
                 except CommandError:
                     if single:
                         raise
@@ -89,16 +101,21 @@ class PartialSyncCommand(BaseCommand):
                 current.last_sync_status = 'IN_FLIGHT'
                 current.last_sync_error = 'review_required_after_interruption'
                 current.save(update_fields=['last_sync_status', 'last_sync_error', 'updated_at'])
-            if self.last_request is not None:
-                time.sleep(max(0, options['delay'] - (time.monotonic() - self.last_request)))
-            self.last_request = time.monotonic()
-            status, _body, _truncated = getattr(client, 'sync_' + self.operation)(str(current.mungos_uuid), payload)
+            for attempt in range(3):
+                if self.last_request is not None:
+                    time.sleep(max(0, options['delay'] - (time.monotonic() - self.last_request)))
+                self.last_request = time.monotonic()
+                status, body, truncated = getattr(client, 'sync_' + self.operation)(str(current.mungos_uuid), payload)
+                if status != 429:
+                    break
+                time.sleep(max(options['delay'], retry_seconds(getattr(client, 'retry_after', None))))
         except MungosError as error:
             if str(error).startswith('UNKNOWN_REMOTE_STATE'):
                 MungosProductMapping.objects.filter(pk=mapping.pk).update(
                     last_sync_status='UNKNOWN_REMOTE_STATE', last_sync_error='network_or_response_error')
             self.stdout.write(str(error))
-            raise CommandError(str(error)) from None
+            error_class = StopSyncRun if error.http_status in (401, 403) or not str(error).startswith('UNKNOWN_REMOTE_STATE') else CommandError
+            raise error_class(str(error)) from None
         success = 200 <= status < 300
         unknown = status >= 500 or 300 <= status < 400
         current.last_sync_status = 'UPDATED' if success else 'UNKNOWN_REMOTE_STATE' if unknown else 'FAILED'
@@ -106,6 +123,11 @@ class PartialSyncCommand(BaseCommand):
         if success:
             current.last_synced_at = timezone.now()
         current.save(update_fields=['last_sync_status', 'last_sync_error', 'last_synced_at', 'updated_at'])
-        self.stdout.write(f'{current.last_sync_status} | HTTP status: {status} | Nema retryja ni CREATE fallbacka.')
+        if status in (400, 404, 409):
+            self.stdout.write(sanitized_json(dict(product_id=product.pk, reason=f'api_{status}',
+                                                  api_error=safe_api_error(body), api_error_truncated=truncated)))
+        self.stdout.write(f'{current.last_sync_status} | HTTP status: {status} | Nema CREATE fallbacka.')
+        if status in (401, 403):
+            raise StopSyncRun(f'Auth failure | HTTP status: {status}')
         if not success:
             raise CommandError(f'{current.last_sync_status} | HTTP status: {status}')

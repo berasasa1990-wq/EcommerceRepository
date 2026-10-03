@@ -94,7 +94,7 @@ class MungosPartialTests(TestCase):
 
     def test_error_responses_never_retry_or_create(self):
         for operation in ('price', 'quantity'):
-            for status in (400, 401, 403, 404, 409, 429, 302, 500):
+            for status in (400, 401, 403, 404, 409, 302, 500):
                 self.mapping.last_sync_status = 'REGISTERED'
                 self.mapping.save()
                 self.session.put.reset_mock()
@@ -237,4 +237,85 @@ class MungosPartialTests(TestCase):
                         {'limit': 0}, {'start_after_id': -1}, {'product_id': 0}):
             with self.assertRaises(CommandError):
                 self.run_bulk('price', confirm=True, **options)
+        self.factory.assert_not_called()
+
+    def test_put_429_three_attempts_and_retry_after(self):
+        for operation in ('price', 'quantity'):
+            self.mapping.last_sync_status = 'REGISTERED'
+            self.mapping.save()
+            self.session.put.reset_mock()
+            self.response.status_code = 429
+            self.response.headers = {'Retry-After': '2'}
+            with patch('EcommerceApp.mungos_partial_command.time.sleep') as sleep:
+                with self.assertRaisesMessage(CommandError, 'HTTP status: 429'):
+                    self.run_sync(operation, True)
+            self.assertEqual(self.session.put.call_count, 3)
+            self.assertEqual(sum(c == call(2) for c in sleep.call_args_list), 3)
+            self.session.post.assert_not_called()
+
+    def test_put_retry_success(self):
+        with patch('EcommerceApp.mungos_partial_command.MungosClient.sync_price',
+                   side_effect=[(429, '{}', False), (200, '{}', False)]) as sync, \
+             patch('EcommerceApp.mungos_partial_command.time.sleep'):
+            self.run_sync('price', True)
+        self.assertEqual(sync.call_count, 2)
+        self.mapping.refresh_from_db()
+        self.assertEqual(self.mapping.last_sync_status, 'UPDATED')
+
+    def test_bulk_auth_stops_immediately_both_endpoints(self):
+        self.make_mapped_product(2)
+        for operation in ('price', 'quantity'):
+            for status in (401, 403):
+                self.mapping.last_sync_status = 'REGISTERED'
+                self.mapping.save()
+                self.session.put.reset_mock()
+                self.response.status_code = status
+                with self.assertRaisesMessage(CommandError, f'HTTP status: {status}'):
+                    self.run_bulk(operation, confirm=True)
+                self.session.put.assert_called_once()
+                self.session.post.assert_not_called()
+
+    def test_http_diagnostics_redacted_and_source_unchanged(self):
+        import json
+        before = list(Product.objects.values())
+        for operation in ('price', 'quantity'):
+            for status in (400, 404, 409):
+                self.mapping.last_sync_status = 'REGISTERED'
+                self.mapping.save()
+                self.response.status_code = status
+                self.response.iter_content.return_value = [json.dumps({
+                    'errors': {'price': ['Validation rejected']},
+                    'Authorization': 'Bearer arbitrary-token',
+                    'detail': 'test-key test-access',
+                }).encode()]
+                output = StringIO()
+                with self.assertRaises(CommandError):
+                    call_command('mungos_' + operation + '_sync', product_id=self.product.pk,
+                                 confirm=True, stdout=output)
+                self.assertIn('Validation rejected', output.getvalue())
+                for secret in ('test-key', 'test-access', 'arbitrary-token'):
+                    self.assertNotIn(secret, output.getvalue())
+                self.assertEqual(list(Product.objects.values()), before)
+                self.session.post.assert_not_called()
+
+    def test_quantity_reservations_and_negative_outbound(self):
+        from .models import WarehouseStock, WarehouseLocation
+        location = WarehouseLocation.objects.create(sifra='PARTIAL', naziv='Partial test')
+        stock = WarehouseStock.objects.create(product=self.product, location=location,
+                                               kolicina=9, rezervisano=4)
+        self.run_sync('quantity', True)
+        self.assertEqual(self.session.put.call_args.kwargs['json']['quantity'], 5)
+        stock.refresh_from_db()
+        self.assertEqual((stock.kolicina, stock.rezervisano), (9, 4))
+        with patch('EcommerceApp.mungos_product.Cart.availability', return_value={'parent': -8}):
+            self.run_sync('quantity', True)
+        self.assertEqual(self.session.put.call_args.kwargs['json']['quantity'], 0)
+
+    def test_nonpublishable_and_invalid_sources_blocked(self):
+        for changes in ({'aktivan': False}, {'sakriven_do_stanja': True}, {'sifra': ''}):
+            Product.objects.filter(pk=self.product.pk).update(aktivan=True, sakriven_do_stanja=False,
+                                                             sifra='existing-reference')
+            Product.objects.filter(pk=self.product.pk).update(**changes)
+            for operation in ('price', 'quantity'):
+                self.assertIn('SKIPPED', self.run_sync(operation, True))
         self.factory.assert_not_called()
