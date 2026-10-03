@@ -34,9 +34,12 @@ FIXED_VALUES = {
 
 
 def sanitize_mungos_ean(value):
-    """Preserve only strings of exactly 8 or 13 ASCII digits; never repair EANs."""
+    """Preserve checksum-valid EAN-8/EAN-13 only; never repair source EANs."""
     if isinstance(value, str) and len(value) in (8, 13) and value.isascii() and value.isdigit():
-        return value
+        weighted_sum = sum(int(digit) * (3 if index % 2 == 0 else 1)
+                           for index, digit in enumerate(reversed(value[:-1])))
+        if (weighted_sum + int(value[-1])) % 10 == 0:
+            return value
     return ''
 
 

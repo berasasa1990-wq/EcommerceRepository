@@ -52,9 +52,31 @@ class MungosPayloadTests(SimpleTestCase):
 
     def test_invalid_ean_never_repaired(self):
         for value in (None, '', '14587589654', 'abcdefgh', '1234567a', 12345678,
-                      ' 96385074', '96385074 ', '１２３４５６７８', '12345678\n'):
+                      ' 96385074', '96385074 ', '１２３４５６７８', '12345678\n', '123456789012', '12345678901234', '٤٠٠٦٣٨١٣٣٣٩٣١'):
             with self.subTest(value=value):
                 self.assertEqual(sanitize_mungos_ean(value), '')
+
+    def test_invalid_ean8_checksum_becomes_empty(self):
+        self.assertEqual(sanitize_mungos_ean('96385075'), '')
+
+    def test_invalid_ean13_checksum_becomes_empty(self):
+        self.assertEqual(sanitize_mungos_ean('4006381333932'), '')
+
+    def test_create_and_update_share_ean_checksum_validation(self):
+        for operation, template in (('create', create_example()), ('update', EXPECTED_PUT)):
+            for value, expected in (
+                ('96385074', '96385074'), ('96385075', ''),
+                ('4006381333931', '4006381333931'), ('4006381333932', ''),
+                ('12345678901', ''), ('123456789012', ''), ('12345678901234', ''),
+                ('１２３４５６７８', ''), ('٤٠٠٦٣٨١٣٣٣٩٣١', ''), ('', ''), (None, ''),
+            ):
+                with self.subTest(operation=operation, value=value):
+                    source = {**deepcopy(template), 'ean': value}
+                    original = deepcopy(source)
+                    payload, reasons = sanitize_mungos_payload(source, operation)
+                    self.assertEqual(reasons, [])
+                    self.assertEqual(payload['ean'], expected)
+                    self.assertEqual(source, original)
 
     def test_decimal_and_zero_price(self):
         for value in (Decimal('138.25'), Decimal('0.00'), 0, 138.25):
@@ -211,7 +233,7 @@ class MungosPayloadTests(SimpleTestCase):
             client = MungosClient()
             for operation, source in (('create', create_example()), ('update', deepcopy(EXPECTED_PUT))):
                 with self.subTest(operation=operation):
-                    source['ean'] = '14587589654'
+                    source['ean'] = '4006381333932'
                     original = deepcopy(source)
                     method = session.post if operation == 'create' else session.put
                     response = method.return_value.__enter__.return_value

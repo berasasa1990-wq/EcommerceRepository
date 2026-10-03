@@ -21,7 +21,7 @@ EXPECTED_PUT = {
     'brandCode': None, 'hasQuantities': True, 'quantityRemaining': 43,
     'shortDescription': 'Opis', 'details': 'Opis', 'productType': 'Product',
     'price': 138.0, 'currencyIsoCode': 'BAM', 'isNegotiable': False,
-    'isFree': False, 'sku': '7889', 'ean': '1234567890123',
+    'isFree': False, 'sku': '7889', 'ean': '1234567890128',
     'warrantyMonthsCount': None, 'warrantyDescription': None,
     'returnDaysCount': None, 'returnDescription': None,
     'sellerPaysForReturnShipping': True, 'exchangeAcceptable': False,
@@ -193,7 +193,7 @@ class MungosUpdateReadOnlyTests(TestCase):
     def test_real_builder_payload_and_select_only(self):
         category = Category.objects.create(naziv='Mašinice')
         product = Product.objects.create(naziv=EXPECTED_PUT['name'], sifra='7889', cijena=138,
-                                         opis='Opis', barkod='1234567890123', slika='reel.jpg',
+                                         opis='Opis', barkod='1234567890128', slika='reel.jpg',
                                          stanje=43, aktivan=True, na_stanju=True, kategorija=category)
         expected = {**EXPECTED_PUT, 'images': [
             {'imageUrl': product.slika.url if product.slika.url.startswith('https://')
@@ -220,7 +220,7 @@ class MungosUpdateAdapterTests(SimpleTestCase):
 
         for value, expected in (
             ('12345670', '12345670'), ('1234567890128', '1234567890128'),
-            ('14587589654', ''), ('', ''), (None, ''), ('abcdefgh', ''),
+            ('12345671', ''), ('1234567890123', ''), ('14587589654', ''), ('', ''), (None, ''), ('abcdefgh', ''),
             ('1234567a', ''), (' 12345670', ''), ('１２３４５６７０', ''),
         ):
             with self.subTest(ean=value):

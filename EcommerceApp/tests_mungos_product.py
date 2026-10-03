@@ -53,7 +53,7 @@ class MungosProductTests(TestCase):
         baseline = self.preview()['payload']
         for value, expected in (
             ('12345670', '12345670'), ('1234567890128', '1234567890128'),
-            ('14587589654', ''), ('', ''), (None, ''), ('abcdefgh', ''),
+            ('12345671', ''), ('1234567890123', ''), ('14587589654', ''), ('', ''), (None, ''), ('abcdefgh', ''),
             ('1234567a', ''), (' 12345670', ''), ('１２３４５６７０', ''),
         ):
             with self.subTest(ean=value):
@@ -65,7 +65,7 @@ class MungosProductTests(TestCase):
         from .mungos_update import build_mungos_update_payload
 
         # Isolated test fixture; never rely on local Product 4455 matching production.
-        Product.objects.filter(pk=self.product.pk).update(barkod='14587589654')
+        Product.objects.filter(pk=self.product.pk).update(barkod='4006381333932')
         self.product.refresh_from_db()
         with patch('requests.sessions.Session.request', side_effect=AssertionError('HTTP forbidden')) as http:
             with CaptureQueriesContext(connection) as queries:
@@ -75,9 +75,9 @@ class MungosProductTests(TestCase):
         self.assertTrue(all(query['sql'].lstrip().upper().startswith('SELECT') for query in queries))
         self.assertEqual(preview['payload']['ean'], '')
         self.assertEqual(update['payload']['ean'], '')
-        self.assertEqual(self.product.barkod, '14587589654')
+        self.assertEqual(self.product.barkod, '4006381333932')
         self.product.refresh_from_db()
-        self.assertEqual(self.product.barkod, '14587589654')
+        self.assertEqual(self.product.barkod, '4006381333932')
 
     def test_without_stock_and_hidden(self):
         self.product.stanje = 0
