@@ -619,15 +619,18 @@ Razvojna provjera koristi isključivo mockovani HTTP i izolovanu test bazu.
 ## Izbor okruženja i prvi production sync
 
 `MUNGOS_ENVIRONMENT` prihvata `staging` (default) ili `production`.
-Endpoint se bira automatski; legacy `MUNGOS_BASE_URL` env vrijednost se ne koristi:
+`MUNGOS_BASE_URL` dolazi iz postojeće environment varijable i mora odgovarati okruženju:
 - staging: `https://staging.mungos.ba/api/v1/connector`
 - production: `https://mungos.ba/api/v1/connector`
 
-Za staging ostaju `MUNGOS_API_KEY` i `MUNGOS_ECOMMERCE_ACCESS_CODE`.
+Staging i production koriste postojeće `MUNGOS_API_KEY` i
+`MUNGOS_ECOMMERCE_ACCESS_CODE`; vrijednosti postavlja operator za izabrano okruženje.
 Za production u Render environment postaviti `MUNGOS_ENABLED=true`,
-`MUNGOS_ENVIRONMENT=production`, `MUNGOS_PRODUCTION_API_KEY` i
-`MUNGOS_PRODUCTION_ECOMMERCE_ACCESS_CODE`, s credentials za produkciju.
-Oba production credential polja su obavezna; nema staging fallbacka.
+`MUNGOS_ENVIRONMENT=production`, postojeća credential polja i
+`MUNGOS_BASE_URL=https://mungos.ba/api/v1/connector`.
+Oba credential polja i tačan production URL su obavezni; nema automatskog
+production URL fallbacka. Nove production credential varijable nisu potrebne.
+Staging URL je default kada base URL nije postavljen i okruženje je staging.
 Vrijednosti iz procesa imaju prednost nad lokalnim `.env` za Mungos konfiguraciju.
 Nepoznato okruženje, nepodudaran endpoint i neispravni credentials blokiraju HTTP.
 

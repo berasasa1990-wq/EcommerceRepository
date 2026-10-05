@@ -37,7 +37,7 @@ def configured_endpoint():
     environment = settings.MUNGOS_ENVIRONMENT
     expected = ENDPOINTS.get(environment)
     configured = settings.MUNGOS_BASE_URL
-    if not expected or not isinstance(configured, str) or configured.rstrip('/') != expected:
+    if not expected or not isinstance(configured, str) or (configured if environment == 'production' else configured.rstrip('/')) != expected:
         raise MungosError('NOT_SENT | Neispravan MUNGOS_ENVIRONMENT ili endpoint za izabrano okruženje.')
     return expected
 
@@ -53,19 +53,18 @@ class MungosClient:
             raise MungosError('Mungos je isključen: postavite MUNGOS_ENABLED=true.')
         base_url = configured_endpoint()
         production = settings.MUNGOS_ENVIRONMENT == 'production'
-        api_key = settings.MUNGOS_PRODUCTION_API_KEY if production else settings.MUNGOS_API_KEY
+        api_key = settings.MUNGOS_API_KEY
         if not isinstance(api_key, str) or not api_key.strip():
             raise MungosError('NOT_SENT | Mungos API key za izabrano okruženje nije postavljen.')
         if any(ord(char) < 32 or ord(char) > 126 for char in api_key) or api_key != api_key.strip():
             raise MungosError('MUNGOS_API_KEY ima neispravan format za HTTP header.')
-        access_code = (settings.MUNGOS_PRODUCTION_ECOMMERCE_ACCESS_CODE if production
-                       else settings.MUNGOS_ECOMMERCE_ACCESS_CODE)
+        access_code = settings.MUNGOS_ECOMMERCE_ACCESS_CODE
         if (not isinstance(access_code, str)
                 or any(ord(char) < 32 or ord(char) > 126 for char in access_code)
                 or access_code != access_code.strip()):
             raise MungosError('MUNGOS_ECOMMERCE_ACCESS_CODE ima neispravan format za HTTP header.')
         if production and not access_code:
-            raise MungosError('NOT_SENT | Production zahtijeva MUNGOS_PRODUCTION_ECOMMERCE_ACCESS_CODE.')
+            raise MungosError('NOT_SENT | Production zahtijeva MUNGOS_ECOMMERCE_ACCESS_CODE.')
         self._base_url = base_url
         self._url = base_url + self.LIVENESS_PATH
         self._api_key = api_key

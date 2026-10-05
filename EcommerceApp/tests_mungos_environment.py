@@ -14,9 +14,7 @@ UUID = 'a9241b59-9e45-4840-9730-c93cb8ad9517'
 
 @override_settings(MUNGOS_ENABLED=True, MUNGOS_ENVIRONMENT='production',
     MUNGOS_BASE_URL='https://mungos.ba/api/v1/connector',
-    MUNGOS_API_KEY='staging-key', MUNGOS_ECOMMERCE_ACCESS_CODE='staging-access',
-    MUNGOS_PRODUCTION_API_KEY='production-key',
-    MUNGOS_PRODUCTION_ECOMMERCE_ACCESS_CODE='production-access', SITE_URL='https://example.com')
+    MUNGOS_API_KEY='production-key', MUNGOS_ECOMMERCE_ACCESS_CODE='production-access', SITE_URL='https://example.com')
 class MungosEnvironmentTests(TestCase):
     def setUp(self):
         self.product = Product.objects.create(naziv='Reel', sifra='env-test', cijena=20,
@@ -72,9 +70,10 @@ class MungosEnvironmentTests(TestCase):
         module = ast.Module(body=assignments, type_ignores=[])
         for environment, url in ((None, 'https://staging.mungos.ba/api/v1/connector'),
                                  ('production', 'https://mungos.ba/api/v1/connector')):
-            values = {'MUNGOS_BASE_URL': 'https://evil.example'}
+            values = {}
             if environment:
                 values['MUNGOS_ENVIRONMENT'] = environment
+                values['MUNGOS_BASE_URL'] = url
             namespace = {'_mungos_env': lambda key, default='': values.get(key, default)}
             exec(compile(module, str(source), 'exec'), namespace)
             self.assertEqual(namespace['MUNGOS_ENVIRONMENT'], environment or 'staging')
@@ -98,16 +97,17 @@ class MungosEnvironmentTests(TestCase):
 
     def test_staging_endpoint_and_existing_auth(self):
         with override_settings(MUNGOS_ENVIRONMENT='staging',
-                MUNGOS_BASE_URL='https://staging.mungos.ba/api/v1/connector'):
+                MUNGOS_BASE_URL='https://staging.mungos.ba/api/v1/connector',
+                MUNGOS_API_KEY='staging-key', MUNGOS_ECOMMERCE_ACCESS_CODE='staging-access'):
             self.run_command('mungos_sale_sync', limit=5, confirm=True)
         request = self.session.put.call_args
         self.assertEqual(request.args[0], 'https://staging.mungos.ba/api/v1/connector/standard/product/' + UUID)
         self.assertEqual(request.kwargs['headers'], {'X-Api-Key': 'staging-key',
                                                    'ecommerceaccesscode': 'staging-access'})
 
-    def test_missing_production_credentials_never_fall_back_or_claim_mapping(self):
+    def test_missing_production_credentials_never_write_or_claim_mapping(self):
         before = list(MungosProductMapping.objects.values())
-        for missing in ('MUNGOS_PRODUCTION_API_KEY', 'MUNGOS_PRODUCTION_ECOMMERCE_ACCESS_CODE'):
+        for missing in ('MUNGOS_API_KEY', 'MUNGOS_ECOMMERCE_ACCESS_CODE'):
             with override_settings(**{missing: ''}):
                 for command in ('mungos_sale_sync', 'mungos_bulk_sync', 'mungos_price_sync', 'mungos_quantity_sync'):
                     with self.assertRaises(CommandError):
@@ -130,13 +130,15 @@ class MungosEnvironmentTests(TestCase):
     def test_invalid_environment_or_mismatched_endpoint_fail_closed(self):
         for config in ({'MUNGOS_ENVIRONMENT': 'invalid'},
                        {'MUNGOS_BASE_URL': 'https://staging.mungos.ba/api/v1/connector'},
-                       {'MUNGOS_BASE_URL': 'https://evil.example/api/v1/connector'}):
+                       {'MUNGOS_BASE_URL': 'https://evil.example/api/v1/connector'},
+                       {'MUNGOS_BASE_URL': ''},
+                       {'MUNGOS_BASE_URL': 'https://mungos.ba/api/v1/connector/'}):
             with override_settings(**config), self.assertRaises(CommandError):
                 self.run_command('mungos_sale_sync', confirm=True, limit=5)
         self.factory.assert_not_called()
 
     def test_invalid_production_credentials_fail_closed(self):
-        for name in ('MUNGOS_PRODUCTION_API_KEY', 'MUNGOS_PRODUCTION_ECOMMERCE_ACCESS_CODE'):
+        for name in ('MUNGOS_API_KEY', 'MUNGOS_ECOMMERCE_ACCESS_CODE'):
             for value in (' bad', 'bad\r\nheader', 'badč'):
                 with override_settings(**{name: value}), self.assertRaises(MungosError):
                     MungosClient()

@@ -62,13 +62,11 @@ def _mungos_env(key, default=''):
 
 # Render detection vars (used early for ALLOWED_HOSTS, CSRF, sqlite guard, etc.)
 MUNGOS_ENVIRONMENT = _mungos_env('MUNGOS_ENVIRONMENT', 'staging').strip().lower()
-# Endpoints are selected by environment; legacy MUNGOS_BASE_URL cannot redirect credentials.
-MUNGOS_BASE_URL = {
-    'staging': 'https://staging.mungos.ba/api/v1/connector',
-    'production': 'https://mungos.ba/api/v1/connector',
-}.get(MUNGOS_ENVIRONMENT, '')
-MUNGOS_PRODUCTION_API_KEY = _mungos_env('MUNGOS_PRODUCTION_API_KEY', '')
-MUNGOS_PRODUCTION_ECOMMERCE_ACCESS_CODE = _mungos_env('MUNGOS_PRODUCTION_ECOMMERCE_ACCESS_CODE', '')
+# Production must explicitly configure the exact connector URL.
+MUNGOS_BASE_URL = _mungos_env(
+    'MUNGOS_BASE_URL',
+    'https://staging.mungos.ba/api/v1/connector' if MUNGOS_ENVIRONMENT == 'staging' else '',
+)
 MUNGOS_API_KEY = _mungos_env('MUNGOS_API_KEY', '')
 MUNGOS_ECOMMERCE_ACCESS_CODE = _mungos_env('MUNGOS_ECOMMERCE_ACCESS_CODE', '')
 MUNGOS_ENABLED = _mungos_env('MUNGOS_ENABLED', 'False').strip().lower() in ('true', '1', 'yes')
