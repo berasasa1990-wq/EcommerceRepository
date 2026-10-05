@@ -126,7 +126,7 @@ class MonriTests(TestCase):
         for metadata in (endpoint, 'amount=2550', 'currency=BAM', 'merchant_key_length=64',
                          'authenticity_token_length=40', 'digest_algorithm=SHA-512', 'digest_encoding=UTF-8'):
             self.assertIn(metadata, output)
-        with override_settings(MONRI_ENVIRONMENT='production'):
+        with override_settings(MONRI_ENVIRONMENT='invalid'):
             with self.assertNoLogs('EcommerceApp.monri'):
                 with self.assertRaises(ValueError):
                     form_data(self.payment)
@@ -231,20 +231,52 @@ class MonriTests(TestCase):
         self.payment.refresh_from_db()
         self.assertEqual(self.payment.status, 'pending')
 
-    def test_production_mode_never_exposes_a_payment_form_or_accepts_callback(self):
+    def test_production_form_and_verified_callback_preserve_security(self):
         from .monri import configured
-        with override_settings(MONRI_ENVIRONMENT='production'):
-            self.assertFalse(configured())
-            with self.assertRaises(ValueError):
-                form_data(self.payment)
-            self.assertEqual(self.callback(self.payload()).status_code, 403)
         self.payment.environment = 'production'
         self.payment.save(update_fields=['environment'])
-        with self.assertRaises(ValueError):
-            form_data(self.payment)
-        self.assertEqual(self.callback(self.payload()).status_code, 400)
+        with override_settings(MONRI_ENVIRONMENT='production'):
+            self.assertTrue(configured())
+            with self.assertLogs('EcommerceApp.monri', level='INFO') as captured:
+                endpoint, fields = form_data(self.payment)
+            self.assertEqual(endpoint, 'https://ipg.monri.com/v2/form')
+            output = '\n'.join(captured.output)
+            for forbidden in ('private-test-key', 'public-test-token', fields['digest'], self.order.email):
+                self.assertTrue(forbidden not in output)
+            for field in ('success_url_override', 'cancel_url_override', 'callback_url_override'):
+                self.assertTrue(fields[field].startswith('https://carpologijabh.ba/'))
+            response = self.client.get(reverse('monri_start', args=[self.payment.token]))
+            self.assertContains(response, 'https://ipg.monri.com/v2/form')
+            self.assertNotContains(response, 'Testno plaćanje')
+            self.test_redirect_and_cancel_never_mark_paid()
+            self.test_forged_wrong_amount_currency_and_declined_do_not_pay()
+            self.test_callback_finalizes_only_once_after_commit()
+            self.payment.refresh_from_db()
+            self.assertEqual(self.payment.status, 'paid')
+
+    @override_settings(MONRI_ENVIRONMENT='production')
+    def test_production_checkout_creates_production_payment(self):
+        self.test_checkout_card_creates_pending_payment_and_defers_purchase_side_effects()
+        payment = CardPayment.objects.exclude(pk=self.payment.pk).get()
+        self.assertEqual(payment.environment, 'production')
+
+    @override_settings(MONRI_ENVIRONMENT='production')
+    def test_production_mode_preserves_cod_and_explicit_disable(self):
+        self.test_card_unavailable_without_complete_configuration_and_requires_email()
+
+    def test_environment_mismatch_and_unknown_environment_are_rejected(self):
+        from .monri import configured
+        for mode in ('production', 'invalid'):
+            with override_settings(MONRI_ENVIRONMENT=mode):
+                with self.assertRaises(ValueError):
+                    form_data(self.payment)
+                self.assertIn(self.callback(self.payload()).status_code, (400, 403))
+        with override_settings(MONRI_ENVIRONMENT='invalid'):
+            self.assertFalse(configured())
         self.payment.refresh_from_db()
         self.assertEqual(self.payment.status, 'pending')
+        with override_settings(MONRI_ENVIRONMENT='production', MONRI_PUBLIC_BASE_URL='https://example.com'):
+            self.assertFalse(configured())
 
     def test_missing_credentials_invalid_url_and_explicit_disable_block_only_card(self):
         from .monri import configured
@@ -276,10 +308,11 @@ class MonriConfigurationTests(SimpleTestCase):
         self.assertTrue(config['MONRI_AUTHENTICITY_TOKEN'] == token)
         self.assertEqual(config['MONRI_PUBLIC_BASE_URL'], 'https://carpologijabh.ba')
 
-    def test_disable_production_and_empty_environment_fail_closed(self):
+    def test_disable_unknown_mode_and_empty_environment_fail_closed(self):
         from EcommerceProject.monri_config import read_monri_config
         self.assertFalse(read_monri_config({'MONRI_ENABLED': 'False'}, {})['MONRI_ENABLED'])
-        self.assertFalse(read_monri_config({'MONRI_ENVIRONMENT': 'production'}, {})['MONRI_ENABLED'])
+        self.assertTrue(read_monri_config({'MONRI_ENVIRONMENT': 'production'}, {})['MONRI_ENABLED'])
+        self.assertFalse(read_monri_config({'MONRI_ENVIRONMENT': 'invalid'}, {})['MONRI_ENABLED'])
         self.assertTrue(read_monri_config({'MONRI_ENVIRONMENT': ' TEST '}, {})['MONRI_ENABLED'])
         self.assertFalse(bool(read_monri_config({'MONRI_MERCHANT_KEY': ''}, {'MONRI_MERCHANT_KEY': 'dummy'})['MONRI_MERCHANT_KEY']))
 
@@ -315,3 +348,11 @@ assert os.environ['MONRI_AUTHENTICITY_TOKEN'] == os.environ['TEST_EXPECTED_TOKEN
         # The child never prints keys; failed assertions also have no values.
         result = subprocess.run([sys.executable, '-c', script], env=environment, capture_output=True, timeout=20)
         self.assertEqual(result.returncode, 0, 'Django Monri environment precedence check failed.')
+
+    def test_credentials_are_read_only_from_process_environment(self):
+        from EcommerceProject.monri_config import read_monri_config
+        from secrets import token_hex
+        config = read_monri_config({}, {'MONRI_MERCHANT_KEY': token_hex(32),
+                                        'MONRI_AUTHENTICITY_TOKEN': token_hex(20)})
+        self.assertFalse(bool(config['MONRI_MERCHANT_KEY']))
+        self.assertFalse(bool(config['MONRI_AUTHENTICITY_TOKEN']))

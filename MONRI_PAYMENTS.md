@@ -2,10 +2,10 @@
 
 Checkout podržava pouzeće i Monri hosted form (Visa/Mastercard). Kartična opcija je uvijek vidljiva u checkoutu; naplata je dostupna tek uz
 potpunu konfiguraciju. Bez konfiguracije checkout prikazuje poruku i odbija
-kartično slanje prije kreiranja narudžbe, dok pouzeće ostaje dostupno. Integracija je isključivo TEST; produkcijska naplata je blokirana.
+kartično slanje prije kreiranja narudžbe, dok pouzeće ostaje dostupno. Default okruženje je TEST; produkcija se eksplicitno uključuje sa MONRI_ENVIRONMENT=production.
 Broj kartice/CVV unose se kod Monrija; aplikacija ih ne prikuplja niti čuva.
 
-## Konfiguracija testnog servera
+## Konfiguracija servera
 
 Primijeniti migration `0305_card_payment` putem standardnog deploymenta i
 postaviti sljedeće environment varijable:
@@ -18,19 +18,28 @@ MONRI_AUTHENTICITY_TOKEN=<token iz Monri merchant profila>
 MONRI_PUBLIC_BASE_URL=https://<javni HTTPS domen testnog webshopa>
 ```
 
+Credentials se čitaju isključivo iz process environmenta (Render), bez .env fallbacka.
 Tajne se ne upisuju u git niti šalju u chat. Public base URL mora odgovarati
 javnom domenu servera i nema path/query. U Monri testnom merchant profilu podesiti
 callback URL `https://<domen>/placanje/monri/potvrda/` i uključiti redirect to
 success URL. Form šalje success/cancel URL za konkretnu narudžbu.
 Testni endpoint: `https://ipgtest.monri.com/v2/form`.
-Produkcijski endpoint nije dostupan u ovoj implementaciji. `MONRI_ENVIRONMENT`
-ima default `test`; vrijednost `production` ili druga nepoznata vrijednost blokira
-kartično plaćanje. Koristiti isključivo ključeve testnog merchant profila.
+Produkcijski endpoint: `https://ipg.monri.com/v2/form`, potvrđen službenom
+Redirect Form dokumentacijom, odjeljak 2.1. `MONRI_ENVIRONMENT` ima default
+`test`; `production` bira produkcijski endpoint, nepoznate vrijednosti blokiraju
+plaćanje. Credentials moraju odgovarati izabranom okruženju. Payment zapis mora
+imati isto okruženje kao aktivna konfiguracija i za formu i za callback.
+Produkcija zahtijeva javni base URL `https://carpologijabh.ba`.
 `MONRI_ENABLED` ima default True, ali za rad su oba ključa i validan HTTPS URL
 obavezni. Eksplicitni `MONRI_ENABLED=False` i dalje isključuje naplatu.
-Render environment varijable imaju prednost nad lokalnim `.env` vrijednostima
-isključivo za Monri konfiguraciju; ostala webshop konfiguracija nije mijenjana.
-Ako su na Renderu samo oba testna ključa, dodatne varijable nisu obavezne.
+Monri flags mogu koristiti .env fallback; credentials nemaju fallback.
+Ostala webshop konfiguracija nije mijenjana.
+Za produkciju na Renderu postaviti `MONRI_ENVIRONMENT=production`; postojeće
+produkcijske credentials zadržati. Ako postoje overrideovi, postaviti
+`MONRI_ENABLED=True` i `MONRI_PUBLIC_BASE_URL=https://carpologijabh.ba`.
+U produkcijskom merchant profilu omogućiti success/cancel i callback.
+Stvarne payment requestove razvojni testovi ne šalju.
+Ako su na Renderu samo oba testna ključa, default ostaje test.
 Ako postoje stariji overrideovi, postaviti `MONRI_ENABLED=True`,
 `MONRI_ENVIRONMENT=test`, `MONRI_PUBLIC_BASE_URL=https://carpologijabh.ba`.
 Callback u Monri merchant profilu: `https://carpologijabh.ba/placanje/monri/potvrda/`.
@@ -39,7 +48,7 @@ Monri formi; samo potpisani approved purchase callback označava uplatu.
 
 Poruka „Kartično plaćanje trenutno nije dostupno. Odaberite plaćanje pouzećem.”
 nastaje u `CheckoutForm.clean_payment_method` kada `configured()` nije prošao:
-flag isključen, nedostaje ključ/token, mode nije test ili javni HTTPS URL nije
+flag isključen, nedostaje ključ/token, mode nije test/production ili javni HTTPS URL nije
 validan. Stari default `MONRI_ENABLED=False` blokirao je instalacije sa samo dva
 ključa. Vrijednosti ključeva se ne loguju niti prikazuju pri dijagnostici.
 
@@ -120,11 +129,11 @@ approved purchase/0000, označava plaćanje. Odbijena transakcija ostaje kod Mon
 U merchant profilu moraju biti omogućeni i podešeni success/cancel endpointi
 da bi overrides radili, prema dokumentaciji 3.6.
 
-TEST-only `MONRI_TEST_FORM_REQUEST` INFO log koristi zaseban console logger.
+`MONRI_FORM_REQUEST` INFO log za test i production koristi zaseban console logger.
 Loguje samo endpoint, order_number, amount, currency, nazive polja,
 dužine credentials, naziv algoritma i encoding. Nema credentials vrijednosti,
 digesta, buyer podataka, kartičnih podataka ili payment UUID/return URLova.
-Blokirani i produkcijski requesti ne emituju taj log. Credentials na Renderu
+Blokirani requesti ne emituju taj log; environment je dio sigurnog loga. Credentials na Renderu
 nisu dostupni lokalnom auditu; nije utvrđen uzrok njihove identifikacije kao
 invalid token na Monri strani. Nakon deploymenta uporediti sigurni log za
 konkretnu testnu narudžbu sa browser requestom lokalno, bez dijeljenja tokena,

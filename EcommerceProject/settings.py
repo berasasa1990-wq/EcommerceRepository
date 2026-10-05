@@ -658,7 +658,7 @@ if DEBUG:
 # Separate partner credential: products and quantities only; no sync-key fallback.
 PARTNER_STOCK_API_KEY = _env('PARTNER_STOCK_API_KEY', '')
 
-# Monri is TEST-only. Two credentials enable the test flow unless explicitly disabled.
+# Monri defaults to test; production requires an explicit environment selection.
 from .monri_config import read_monri_config
 LOGGING = {
     'version': 1,

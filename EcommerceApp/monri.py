@@ -8,6 +8,12 @@ from django.conf import settings
 from django.urls import reverse
 
 
+FORM_ENDPOINTS = {
+    'test': 'https://ipgtest.monri.com/v2/form',
+    'production': 'https://ipg.monri.com/v2/form',
+}
+
+
 def configured():
     try:
         public_url = settings.MONRI_PUBLIC_BASE_URL
@@ -19,7 +25,9 @@ def configured():
     except ValueError:
         return False
     return bool(settings.MONRI_ENABLED and settings.MONRI_MERCHANT_KEY and settings.MONRI_AUTHENTICITY_TOKEN
-                and settings.MONRI_ENVIRONMENT == 'test'
+                and settings.MONRI_ENVIRONMENT in FORM_ENDPOINTS
+                and (settings.MONRI_ENVIRONMENT != 'production'
+                     or public_url.rstrip('/') == 'https://carpologijabh.ba')
                 and url.scheme == 'https' and url.hostname and not url.username and not url.password
                 and not url.query and not url.fragment and not url.path.strip('/'))
 
@@ -35,7 +43,7 @@ def require_paid_for_fulfillment(order):
 
 
 def form_data(payment):
-    if not configured() or payment.environment != 'test':
+    if not configured() or payment.environment != settings.MONRI_ENVIRONMENT:
         raise ValueError('Kartično plaćanje trenutno nije dostupno.')
     order = payment.order
     amount = str(payment.amount)
@@ -54,13 +62,13 @@ def form_data(payment):
     # Sign the exact strings passed to the HTML form, without separators or token.
     fields['digest'] = hashlib.sha512((settings.MONRI_MERCHANT_KEY
         + fields['order_number'] + fields['amount'] + fields['currency']).encode('utf-8')).hexdigest()
-    endpoint = 'https://ipgtest.monri.com/v2/form'
+    endpoint = FORM_ENDPOINTS[settings.MONRI_ENVIRONMENT]
     # Deliberate allowlist: never log the payload, credentials, digest or buyer data.
     logging.getLogger(__name__).info(
-        'MONRI_TEST_FORM_REQUEST endpoint=%s order_number=%s amount=%s currency=%s '
+        'MONRI_FORM_REQUEST environment=%s endpoint=%s order_number=%s amount=%s currency=%s '
         'field_names=%s merchant_key_length=%s authenticity_token_length=%s '
         'digest_algorithm=SHA-512 digest_encoding=UTF-8',
-        endpoint, fields['order_number'], fields['amount'], fields['currency'],
+        settings.MONRI_ENVIRONMENT, endpoint, fields['order_number'], fields['amount'], fields['currency'],
         sorted(fields), len(settings.MONRI_MERCHANT_KEY), len(settings.MONRI_AUTHENTICITY_TOKEN))
     return endpoint, fields
 
