@@ -4912,6 +4912,7 @@ def checkout(request):
                     user_agent = (request.META.get('HTTP_USER_AGENT') or '').lower()
                     device = 'mobile' if any(token in user_agent for token in ('mobile', 'android', 'iphone')) else 'desktop'
                     order = Order.objects.create(
+                        status=(Order.Status.CEKA_PLACANJE if form.cleaned_data['payment_method'] == 'card' else Order.Status.NOVA),
                         korisnik=request.user if request.user.is_authenticated else None,
                         ime_prezime=form.cleaned_data['ime_prezime'],
                         email=form.cleaned_data['email'],
@@ -5070,7 +5071,7 @@ def checkout(request):
             try:
                 from .cart_tracking import get_cart_session_key
                 from .staff_alerts import notify_purchase
-                if not (request.user.is_authenticated and request.user.is_superuser):
+                if form.cleaned_data['payment_method'] != 'card' and not (request.user.is_authenticated and request.user.is_superuser):
                     notify_purchase(
                         ime=order.ime_prezime,
                         email=order.email,
@@ -5175,6 +5176,9 @@ def order_success(request, broj):
         Order.objects.prefetch_related('stavke'),
         broj=broj,
     )
+    payment = getattr(order, 'card_payment', None)
+    if payment and payment.status != 'paid':
+        return redirect('monri_return', token=payment.token)
     purchase_event_id = request.session.pop('meta_purchase_event_id', None)
     track_purchase = request.GET.get('purchase') == '1'
     if track_purchase and not purchase_event_id:
@@ -5612,7 +5616,7 @@ def account(request):
                 return redirect(f"{reverse('account')}#{account_initial_section}")
 
     orders = list(
-        Order.objects.filter(korisnik=request.user)
+        Order.objects.filter(korisnik=request.user).exclude(status=Order.Status.CEKA_PLACANJE)
         .prefetch_related('stavke')
         .order_by('-kreirana')
     )
@@ -5674,6 +5678,9 @@ def account_order_detail(request, broj):
         broj=broj,
         korisnik=request.user,
     )
+    payment = getattr(order, 'card_payment', None)
+    if payment and payment.status != 'paid':
+        return redirect('monri_return', token=payment.token)
     context = {
         **_base_context(),
         'order': order,
@@ -5848,7 +5855,7 @@ def _search_staff_orders(query):
     if not query:
         return Order.objects.none()
 
-    qs = Order.objects.prefetch_related('stavke').order_by('-kreirana')
+    qs = Order.objects.exclude(status=Order.Status.CEKA_PLACANJE).prefetch_related('stavke').order_by('-kreirana')
     broj = query.lstrip('#').strip()
     filters = Q(broj=broj) | Q(email__iexact=query)
 
@@ -8177,7 +8184,7 @@ def staff_active_carts(request):
 @user_passes_test(_superuser_required)
 @require_GET
 def staff_orders_validation(request):
-    orders = Order.objects.filter(izvor=Order.Izvor.WEBSHOP).exclude(
+    orders = Order.objects.filter(izvor=Order.Izvor.WEBSHOP).exclude(status=Order.Status.CEKA_PLACANJE).exclude(
         Q(ime_prezime__iexact='Prenos u MP') | Q(pick_state__kind__isnull=False, pick_state__kind='prenos_mp'),
     ).exclude(
         status__in=[Order.Status.ZAVRSENA, Order.Status.OTKAZANA],
@@ -8275,7 +8282,7 @@ def _staff_online_orders_filter(request):
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_online_orders(request):
-    web_orders = Order.objects.filter(izvor=Order.Izvor.WEBSHOP).exclude(
+    web_orders = Order.objects.filter(izvor=Order.Izvor.WEBSHOP).exclude(status=Order.Status.CEKA_PLACANJE).exclude(
         Q(ime_prezime__iexact='Prenos u MP') | Q(pick_state__kind__isnull=False, pick_state__kind='prenos_mp'),
     )
     filter_status = _staff_online_orders_filter(request)

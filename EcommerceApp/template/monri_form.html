@@ -7,7 +7,8 @@
     <div class="monri-card">
     <div class="monri-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 9h20M6 15h4"/></svg></div>
     <p class="monri-eyebrow">Carpologija · Kartično plaćanje</p>
-    <h1>Plaćanje karticom</h1>
+    <h1>Dovršite plaćanje karticom</h1>
+    <p>Narudžba će biti zaprimljena tek nakon potvrđene uplate. Način plaćanja: <strong>KARTICOM</strong>.</p>
     <div class="monri-summary"><div><span>Broj narudžbe</span><strong>{{ order.broj }}</strong></div><div><span>Ukupno za plaćanje</span><strong class="monri-amount">{{ order.ukupno }} KM</strong></div></div>
     {% if payment.environment == 'test' %}<p class="monri-notice" role="status">Testno plaćanje — koristite Monri testnu karticu.</p>{% endif %}
     <p>Podatke kartice unosite na sigurnoj Monri stranici. Carpologija ne pohranjuje broj kartice ni CVV.</p>

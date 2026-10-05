@@ -106,7 +106,7 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         'broj', 'korisnik', 'ime_prezime', 'email', 'telefon',
-        'ukupno', 'status', 'izvor', 'lager_status', 'xexpress_sifra',
+        'ukupno', 'status', 'web_placanje_label', 'izvor', 'lager_status', 'xexpress_sifra',
         'odstampana', 'zapakovana', 'kreirana',
     )
     list_filter = ('status', 'izvor', 'lager_status', 'odstampana', 'zapakovana', 'kreirana')

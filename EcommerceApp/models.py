@@ -4322,6 +4322,7 @@ class UserProfile(models.Model):
 
 class Order(models.Model):
     class Status(models.TextChoices):
+        CEKA_PLACANJE = 'ceka_placanje', 'Čeka kartično plaćanje'
         NOVA = 'nova', 'Nova'
         REZERVACIJA = 'rezervacija', 'Rezervacija'
         POTVRDJENA = 'potvrdjena', 'Potvrđena'
@@ -4558,6 +4559,11 @@ class Order(models.Model):
                 return True
         note = (self.napomena or '').casefold()
         return 'plaćeno karticom' in note or 'placeno karticom' in note
+
+    def web_placanje_label(self):
+        if getattr(self, 'card_payment', None) or self.placeno_karticom():
+            return 'KARTICOM'
+        return 'POUZEĆEM' if self.izvor == self.Izvor.WEBSHOP else self.packing_placanje_label()
 
     def packing_placanje_label(self):
         for row in (self.popust_detalji or []):

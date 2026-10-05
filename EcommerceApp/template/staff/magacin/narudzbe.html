@@ -161,6 +161,7 @@
                     </td>
                     <td>
                         <strong class="mg-order-name">{{ order.display_customer_name }}</strong>
+                        {% if order.card_payment %}<span class="sub">KARTICOM</span>{% endif %}
                         {% if order.telefon %}<span class="sub">{{ order.telefon }}</span>{% endif %}
                         {% if order.loyalty_popust_info %}
                         <span class="mg-pill is-loyalty">{{ order.loyalty_popust_info.label }}</span>

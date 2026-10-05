@@ -3052,7 +3052,7 @@ def magacin_narudzbe(request):
     prev_day = day - timedelta(days=1)
     next_day = day + timedelta(days=1)
     orders = (
-        Order.objects.exclude(_prenos_mp_q())
+        Order.objects.exclude(status=Order.Status.CEKA_PLACANJE).exclude(_prenos_mp_q())
         .prefetch_related(
             'stavke',
             Prefetch(

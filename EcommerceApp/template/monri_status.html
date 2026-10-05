@@ -11,9 +11,9 @@
     <div class="monri-summary"><div><span>Broj narudžbe</span><strong>{{ order.broj }}</strong></div><div><span>Iznos narudžbe</span><strong class="monri-amount">{{ order.ukupno }} KM</strong></div></div>
     {% if payment_error %}<p class="monri-notice monri-error" role="alert">{{ payment_error }}</p>
     {% elif payment.status == 'paid' %}
-        <p>Vaša kartična uplata je potvrđena. Hvala na narudžbi!</p>
+        <p>Vaša kartična uplata je potvrđena i narudžba je zaprimljena. Način plaćanja: KARTICOM. Hvala na narudžbi!</p>
     {% else %}
-        <p>Kartična uplata još nije potvrđena. Narudžbu šaljemo nakon potvrde uplate.</p>
+        <p>Kartična uplata još nije potvrđena. Narudžba još nije zaprimljena; prihvatamo je tek nakon potvrđene uplate. Način plaćanja: KARTICOM.</p>
         <p>Ako ste već platili, osvježite stranicu nakon nekoliko trenutaka. Ako ste odustali, možete nastaviti plaćanje za istu narudžbu.</p>
         <div class="monri-actions"><a class="monri-button" href="{% url 'monri_start' payment.token %}">Nastavi plaćanje</a>
         <a class="monri-button monri-button--secondary" href="{% url 'monri_return' payment.token %}">Provjeri status uplate</a></div>

@@ -132,7 +132,8 @@
     </div>
 
     <div class="order-footer">
-        Način plaćanja: pouzećem pri preuzimanju pošiljke.
+        {% if order.card_payment or order.placeno_karticom %}Način plaćanja: KARTICOM.
+        {% else %}Način plaćanja: pouzećem pri preuzimanju pošiljke.{% endif %}
         Hvala vam na kupovini.
         Kontakt: <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a>.
     </div>

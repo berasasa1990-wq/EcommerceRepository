@@ -10,13 +10,21 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.cache import never_cache
 
-from .models import CardPayment
+from .models import CardPayment, Order
 from .monri import callback_valid, form_data
 
 
 def finish_paid_order(order):
     from .emails import queue_order_emails
     from .views import azuriraj_loyalty_nakon_narudzbe, sync_korisnik, sync_narudzba
+    from .staff_alerts import notify_purchase
+    from .views_magacin import invalidate_magacin_nav_counts
+    invalidate_magacin_nav_counts()
+    try:
+        notify_purchase(ime=order.ime_prezime, email=order.email, grad=order.grad,
+                        order_number=order.broj, total=str(order.ukupno), shipping=order.dostava_naziv)
+    except Exception:
+        logging.getLogger(__name__).exception('Obavijest za kartičnu narudžbu ID %s nije uspjela.', order.pk)
     queue_order_emails(order)
     try:
         card = azuriraj_loyalty_nakon_narudzbe(order)
@@ -95,9 +103,16 @@ def callback(request):
             return HttpResponse(status=400)
         if payment.status == 'paid':
             return HttpResponse(status=200 if payment.transaction_id == transaction_id else 409)
+        order = Order.objects.select_for_update().get(pk=payment.order_id)
+        if order.status == Order.Status.OTKAZANA:
+            return HttpResponse(status=409)
+        if order.status == Order.Status.CEKA_PLACANJE:
+            order.status = Order.Status.NOVA
+            order.kreirana = timezone.now()
+            order.save(update_fields=['status', 'kreirana'])
         payment.status = 'paid'
         payment.transaction_id = transaction_id
         payment.paid_at = timezone.now()
         payment.save(update_fields=['status', 'transaction_id', 'paid_at'])
-        transaction.on_commit(lambda: finish_paid_order(payment.order))
+        transaction.on_commit(lambda: finish_paid_order(order))
     return JsonResponse({'ok': True})

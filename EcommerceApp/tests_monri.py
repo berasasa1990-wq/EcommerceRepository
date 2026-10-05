@@ -202,18 +202,66 @@ class MonriTests(TestCase):
         with ExitStack() as stack:
             mocks = {name: stack.enter_context(patch('EcommerceApp.views.' + name)) for name in
                      ('queue_order_emails', 'sync_narudzba', 'track_purchase', 'azuriraj_loyalty_nakon_narudzbe')}
-            stack.enter_context(patch('EcommerceApp.staff_alerts.notify_purchase'))
+            notify = stack.enter_context(patch('EcommerceApp.staff_alerts.notify_purchase'))
             response = self.client.get(reverse('checkout'))
             self.assertContains(response, 'Karticom')
             response = self.client.post(reverse('checkout'), dict(ime_prezime='Test Kupac', telefon='061123456',
                 email='test@example.com', adresa='Ulica 1', grad='Sarajevo', payment_method='card'))
             for mock in mocks.values():
                 mock.assert_not_called()
+            notify.assert_not_called()
         payment = CardPayment.objects.exclude(pk=self.payment.pk).get()
         self.assertEqual(payment.status, 'pending')
+        self.assertEqual(payment.order.status, Order.Status.CEKA_PLACANJE)
         self.assertEqual(payment.amount, int(payment.order.ukupno * 100))
         self.assertRedirects(response, reverse('monri_start', args=[payment.token]), fetch_redirect_response=False)
         self.assertFalse(payment.order.placeno_karticom())
+
+    def test_card_draft_is_accepted_only_by_verified_callback(self):
+        self.order.status = Order.Status.CEKA_PLACANJE
+        self.order.save(update_fields=['status'])
+        self.assertEqual(self.order.web_placanje_label(), 'KARTICOM')
+        self.assertRedirects(self.client.get(reverse('order_success', args=[self.order.broj])),
+            reverse('monri_return', args=[self.payment.token]), fetch_redirect_response=False)
+        self.test_redirect_and_cancel_never_mark_paid()
+        self.test_forged_wrong_amount_currency_and_declined_do_not_pay()
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.Status.CEKA_PLACANJE)
+        with patch('EcommerceApp.views_monri.finish_paid_order') as finish:
+            with self.captureOnCommitCallbacks(execute=True):
+                self.assertEqual(self.callback(self.payload()).status_code, 200)
+            self.order.refresh_from_db()
+            accepted_at = self.order.kreirana
+            self.assertEqual(self.order.status, Order.Status.NOVA)
+            self.assertTrue(self.order.placeno_karticom())
+            with self.captureOnCommitCallbacks(execute=True):
+                self.assertEqual(self.callback(self.payload()).status_code, 200)
+            finish.assert_called_once()
+            self.order.refresh_from_db()
+            self.assertEqual(self.order.kreirana, accepted_at)
+
+    def test_card_draft_hidden_from_received_orders_until_paid(self):
+        from django.contrib.auth import get_user_model
+        from .views import _search_staff_orders
+        user = get_user_model().objects.create_superuser(username='monri-staff', email='staff@example.com', password='fixture-only')
+        self.order.status = Order.Status.CEKA_PLACANJE
+        self.order.save(update_fields=['status'])
+        self.assertFalse(_search_staff_orders(self.order.broj).exists())
+        self.client.force_login(user)
+        response = self.client.get(reverse('staff_online_orders'), {'filter': 'sve'})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(self.order.pk, [order.pk for order in response.context['orders']])
+        self.callback(self.payload())
+        response = self.client.get(reverse('staff_online_orders'), {'filter': 'sve'})
+        self.assertIn(self.order.pk, [order.pk for order in response.context['orders']])
+        self.assertContains(response, 'KARTICOM')
+
+    def test_cancelled_card_order_cannot_be_accepted_by_callback(self):
+        self.order.status = Order.Status.OTKAZANA
+        self.order.save(update_fields=['status'])
+        self.assertEqual(self.callback(self.payload()).status_code, 409)
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'pending')
 
     def test_paid_card_has_no_cash_on_delivery_and_cancelled_order_cannot_ship(self):
         from .xexpress_service import order_is_pouzece

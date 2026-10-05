@@ -55,7 +55,17 @@ ključa. Vrijednosti ključeva se ne loguju niti prikazuju pri dijagnostici.
 ## Ponašanje
 
 Iznos se uzima iz serverom izračunatog Order.ukupno, u BAM feningama. Narudžba
-čeka uplatu, lager je rezervisan postojeći checkout flowom. Callback se provjerava
+prije uplate predstavlja interni nacrt u statusu `ceka_placanje`, a ne zaprimljenu
+narudžbu. Nacrt se ne prikazuje u online narudžbama, magacinskoj listi, validaciji
+ili kupčevom pregledu narudžbi. Lager je rezervisan postojećim checkout flowom.
+Tek validan callback označava uplatu, prebacuje nacrt u `nova` i bilježi vrijeme
+prihvatanja narudžbe. Staff obavijest o kupovini, email i finalizacija slijede
+nakon commita, jednom. Success/cancel redirect ne prihvata nacrt; direktan
+order-success URL za neplaćeni kartični zapis preusmjerava na status plaćanja.
+Na webshopu i računu se kartično plaćanje označava `KARTICOM`.
+Migration `0306_card_order_pending_acceptance` postojeće `nova` zapise sa
+pending kartičnom uplatom prebacuje u nacrte; ostale narudžbe ne mijenja.
+Callback se provjerava
 SHA-512 potpisom nad originalnim bodyjem, uz provjeru order number, iznosa, BAM,
 okruženja, purchase, approved/0000. Ponovljeni isti callback ne naplaćuje niti
 finalizuje narudžbu ponovo. Drugi transaction ID za plaćenu narudžbu vraća 409.
