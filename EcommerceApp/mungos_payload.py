@@ -81,7 +81,7 @@ def sanitize_mungos_payload(source, operation='create'):
         return None, ['Mungos payload mora biti objekt.']
     payload = deepcopy(source)
     reasons = []
-    required = set(fields) - {'ean', 'shortDescription', 'details'}
+    required = (set(fields) - {'ean', 'shortDescription', 'details'}) | {'ProductPrice'}
     if required - payload.keys() or payload.keys() - (set(fields) | {'ProductPrice'}):
         reasons.append('Mungos payload ne odgovara potvrđenim poljima scheme.')
     payload['ean'] = sanitize_mungos_ean(payload.get('ean'))

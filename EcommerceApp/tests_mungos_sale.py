@@ -55,7 +55,7 @@ class MungosSaleTests(TestCase):
         self.assertEqual((prices['Price'], prices['SellingPrice'], prices['DiscountEndDate']), (100, 100, None))
         self.assertEqual(preview['payload']['price'], 100)
         self.assertEqual(build_partial_payload(preview, 'price')['price'], 100)
-        self.assertNotIn('SellingPrice', build_partial_payload(preview, 'price'))
+        self.assertEqual(build_partial_payload(preview, 'price')['ProductPrice'], prices)
 
     def test_sale_create_and_update_preserve_regular_and_actual_price(self):
         preview = build_product_preview(self.product)
@@ -68,8 +68,7 @@ class MungosSaleTests(TestCase):
         self.assertEqual(preview, original)
         partial = build_partial_payload(preview, 'price')
         self.assertEqual(partial['price'], 80)
-        self.assertNotIn('ProductPrice', partial)
-        self.assertNotIn('SellingPrice', partial)
+        self.assertEqual(partial['ProductPrice'], prices)
 
     def test_expired_discount_and_non_sale_are_never_sent(self):
         Product.objects.filter(pk=self.product.pk).update(akcija_do=timezone.localdate() - timedelta(days=1))

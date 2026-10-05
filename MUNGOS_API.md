@@ -548,20 +548,14 @@ postojeći Retry-After helper (sekunde ili HTTP datum) i delay najmanje 1s.
 HTTP 400/404/409 prikazuje sanitizovani `api_error` i indikator truncation;
 credential polja i konfigurisane tajne se uklanjaju/rediguju.
 
-PUT putanje su `/standard/product/{uuid}/price` i
-`/standard/product/{uuid}/quantity`. Quantity body ima tačno `id` i `quantity`.
-`id` je postojeća `product.sifra` iz CREATE buildera; `quantity` preuzima
-`quantityRemaining` koji builder računa preko `Cart.availability()`.
-Price preuzima builderovu `prikazna_cijena`, `currencyIsoCode = BAM` i postojeće
-fixed vrijednosti: isNegotiable/isFree false, warrantyMonthsCount,
-warrantyDescription, returnDaysCount, returnDescription i exchangeComment null,
-sellerPaysForReturnShipping true, exchangeAcceptable false,
-shippmentDeliveryMethod DeliveryByMe. To namjerno zadržava postojeće vrijednosti
-CREATE/UPDATE adaptera umjesto kopiranja različitih vrijednosti Postman primjera.
-`shippingOption`, `deliveryService` i `productSize` jesu u dostavljenom Postman
-price primjeru, ali ne postoje u trenutnom CREATE/UPDATE builderu: komanda ih
-izostavlja umjesto izmišljanja konfiguracije, dimenzija ili shipping vrijednosti.
-Prihvatanje ovog podskupa nije provjereno stvarnim HTTP pozivom.
+Price komanda koristi postojeći full PUT `/standard/product/{uuid}` i obavezni
+`ProductPrice`: `Price = Product.bazna_cijena`,
+`SellingPrice = Product.prikazna_cijena`. Za regularnu 20 KM i akcijsku 15 KM
+šalje 20 i 15; bez popusta šalje 20 i 20. Koristi postojeću full UPDATE schemu,
+uključujući postojeće opise, slike i lokalnu dostupnost; nema novog `/quantity`
+poziva. Legacy `/price` transport je blokiran. Nema promjene lokalnih podataka.
+Quantity putanja ostaje `/standard/product/{uuid}/quantity`, body tačno `id` i
+`quantity`, iz postojećeg `Cart.availability()` buildera.
 
 Potvrđeni run koristi postojeći bulk lock i trajno snima IN_FLIGHT prije
 staging PUT-a. Mijenja samo integracijski mapping status/error/timestamp.
@@ -590,15 +584,15 @@ polje `cijena`), `SellingPrice` iz `Product.prikazna_cijena`. Normalan proizvod
 ima jednaku regularnu i prodajnu cijenu. Postojeća legacy polja ostaju ista,
 uključujući top-level `price` s trenutnom prikaznom cijenom, BAM, SKU, quantity,
 kategoriju, opise i slike. Currency je null, IsNegotiable/IsFree false prema
-potvrđenom ProductPrice primjeru. Sanitizer validira i ovu strukturu kada postoji;
-stari full payloadovi bez nje ostaju kompatibilni.
+potvrđenom ProductPrice primjeru. Sanitizer zahtijeva ovu strukturu za svaki CREATE i full PUT;
+payload bez obje cijene se blokira prije HTTP-a.
 
 `DiscountEndDate` je ISO datum iz `akcija_do` samo kada je datum važeći i obična
 akcijska cijena određuje trenutnu prodajnu cijenu. Ako flash daje nižu ili jednaku
 cijenu, datum je null: ne preuzimamo datum obične akcije za flash popust.
 Bez pouzdanog datuma šaljemo null. Webshop discount logika nije mijenjana.
-`/price` komanda ostaje na svojoj potvrđenoj shemi bez SellingPrice/ProductPrice;
-promjena regularne + sale strukture ide full product PUT-om.
+`mungos_price_sync` također koristi full product PUT s obje cijene, pa kasniji
+price sync ne može prepisati akciju samo jednom cijenom. Quantity sync je nepromijenjen.
 
 ```sh
 python manage.py mungos_sale_sync --limit 5
@@ -620,3 +614,6 @@ redakciju secrets. ACTION je CREATED/UPDATED tek nakon uspjeha; dry-run, greške
 nepodržani kandidati imaju SKIPPED uz detaljni RESULT. Jedini upisi su Mungos
 mapping metadata; cijene, lager, checkout, frontend i admin ostaju netaknuti.
 Razvojna provjera koristi isključivo mockovani HTTP i izolovanu test bazu.
+
+Produkcijski hostname trenutno je blokiran postojećom STAGING ONLY zaštitom.
+Ove komande nisu produkcijsko odobrenje niti pokreću automatski sync.

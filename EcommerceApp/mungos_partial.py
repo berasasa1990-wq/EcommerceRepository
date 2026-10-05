@@ -1,14 +1,8 @@
-"""Confirmed partial PUT bodies projected from the existing outbound builder."""
-from copy import deepcopy
+"""Price uses full product PUT; quantity retains its confirmed partial body."""
+from .mungos_payload import UPDATE_FIELDS, sanitize_mungos_payload
+from .mungos_update import build_mungos_update_payload
 
-from .mungos_payload import FIXED_VALUES, sanitize_mungos_price
-
-PRICE_FIELDS = (
-    'id', 'price', 'currencyIsoCode', 'isNegotiable', 'isFree',
-    'warrantyMonthsCount', 'warrantyDescription', 'returnDaysCount',
-    'returnDescription', 'sellerPaysForReturnShipping', 'exchangeAcceptable',
-    'exchangeComment', 'shippmentDeliveryMethod',
-)
+PRICE_FIELDS = UPDATE_FIELDS + ('ProductPrice',)
 QUANTITY_FIELDS = ('id', 'quantity')
 
 
@@ -21,10 +15,8 @@ def validate_partial_payload(payload, operation):
         return False
     if operation == 'quantity':
         return type(payload['quantity']) is int and payload['quantity'] >= 0
-    if type(payload['price']) not in (int, float) or sanitize_mungos_price(payload['price']) is None:
-        return False
-    return all(type(payload[field]) is type(FIXED_VALUES[field]) and payload[field] == FIXED_VALUES[field]
-               for field in PRICE_FIELDS if field not in ('id', 'price'))
+    _, reasons = sanitize_mungos_payload(payload, 'update')
+    return not reasons
 
 
 def build_partial_payload(preview, operation):
@@ -38,5 +30,5 @@ def build_partial_payload(preview, operation):
     if operation == 'quantity':
         payload = {'id': source.get('id'), 'quantity': source.get('quantityRemaining')}
     else:
-        payload = {field: deepcopy(source.get(field)) for field in PRICE_FIELDS}
+        payload = build_mungos_update_payload(preview)['payload']
     return payload if validate_partial_payload(payload, operation) else None

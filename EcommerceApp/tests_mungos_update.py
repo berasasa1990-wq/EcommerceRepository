@@ -20,6 +20,8 @@ EXPECTED_PUT = {
     'categoryCode': 'SportRecreation_Equipment_FishingEquipment_Reels',
     'brandCode': None, 'hasQuantities': True, 'quantityRemaining': 43,
     'shortDescription': 'Opis', 'details': 'Opis', 'productType': 'Product',
+    'ProductPrice': {'Price': 138.0, 'SellingPrice': 138.0, 'Currency': None,
+                     'IsNegotiable': False, 'IsFree': False, 'DiscountEndDate': None},
     'price': 138.0, 'currencyIsoCode': 'BAM', 'isNegotiable': False,
     'isFree': False, 'sku': '7889', 'ean': '1234567890128',
     'warrantyMonthsCount': None, 'warrantyDescription': None,
@@ -104,6 +106,7 @@ class MungosUpdateTests(SimpleTestCase):
         self.run_command()
         current = {'status': 'READY_FOR_REVIEW', 'reviewReasons': [],
                    'payload': {**EXPECTED_PUT, 'id': 'current', 'sku': 'current', 'name': 'Current', 'price': 99,
+                               'ProductPrice': {**EXPECTED_PUT['ProductPrice'], 'Price': 99, 'SellingPrice': 99},
                                'quantityRemaining': 7, 'details': 'Current description',
                                'images': [], 'Variants': []}}
         self.builder.return_value = current

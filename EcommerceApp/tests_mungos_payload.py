@@ -33,14 +33,14 @@ class MungosPayloadTests(SimpleTestCase):
         result, reasons = sanitize_mungos_payload(source)
         self.assertEqual(reasons, [])
         self.assertEqual(result, source)
-        self.assertEqual(set(result), set(CREATE_FIELDS))
+        self.assertEqual(set(result), set(CREATE_FIELDS) | {'ProductPrice'})
 
     def test_confirmed_update_schema_and_values(self):
         source = deepcopy(EXPECTED_PUT)
         result, reasons = sanitize_mungos_payload(source, 'update')
         self.assertEqual(reasons, [])
         self.assertEqual(result, source)
-        self.assertEqual(set(result), set(UPDATE_FIELDS))
+        self.assertEqual(set(result), set(UPDATE_FIELDS) | {'ProductPrice'})
         self.assertNotIn('HasVariants', result)
         self.assertNotIn('Variants', result)
 
@@ -81,7 +81,8 @@ class MungosPayloadTests(SimpleTestCase):
     def test_decimal_and_zero_price(self):
         for value in (Decimal('138.25'), Decimal('0.00'), 0, 138.25):
             with self.subTest(value=value):
-                result, reasons = self.validate(price=value)
+                result, reasons = self.validate(price=value, ProductPrice={
+                    **EXPECTED_PUT['ProductPrice'], 'Price': value, 'SellingPrice': value})
                 self.assertEqual(reasons, [])
                 self.assertEqual(result['price'], float(value))
                 json.dumps(result, allow_nan=False)
@@ -90,7 +91,8 @@ class MungosPayloadTests(SimpleTestCase):
         for value in (None, '', '138.00', -1, True, float('nan'), float('inf'),
                       Decimal('NaN'), Decimal('Infinity'), Decimal('sNaN')):
             with self.subTest(value=value):
-                result, reasons = self.validate(price=value)
+                result, reasons = self.validate(price=value, ProductPrice={
+                    **EXPECTED_PUT['ProductPrice'], 'Price': value, 'SellingPrice': value})
                 self.assertTrue(reasons)
                 self.assertIsNone(result['price'])
                 json.dumps(result, allow_nan=False)

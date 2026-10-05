@@ -55,13 +55,13 @@ class MungosPartialTests(TestCase):
         preview = build_product_preview(self.product)
         original = deepcopy(preview)
         for operation in ('price', 'quantity'):
-            expected = ({key: preview['payload'][key] for key in PRICE_FIELDS} if operation == 'price'
+            expected = ({key: preview['payload'].get(key) for key in PRICE_FIELDS} if operation == 'price'
                         else {'id': 'existing-reference', 'quantity': preview['payload']['quantityRemaining']})
             self.assertEqual(build_partial_payload(preview, operation), expected)
             self.session.put.reset_mock()
             self.run_sync(operation, True)
             self.session.put.assert_called_once_with(
-                'https://staging.mungos.ba/api/v1/connector/standard/product/' + UUID + '/' + operation,
+                'https://staging.mungos.ba/api/v1/connector/standard/product/' + UUID + ('/quantity' if operation == 'quantity' else ''),
                 json=expected, headers={'X-Api-Key': 'test-key', 'ecommerceaccesscode': 'test-access'},
                 timeout=(5, 10), allow_redirects=False, stream=True)
             self.session.post.assert_not_called()
@@ -71,6 +71,37 @@ class MungosPartialTests(TestCase):
         self.product.refresh_from_db()
         self.assertEqual((self.product.cijena, self.product.stanje, self.product.sifra),
                          (138, 43, 'existing-reference'))
+
+    def test_vendor_sale_and_normal_prices_on_product_put_without_local_writes(self):
+        for selling in (15, None):
+            Product.objects.filter(pk=self.product.pk).update(cijena=20, akcijska_cijena=selling)
+            before = list(Product.objects.values())
+            self.session.put.reset_mock()
+            self.run_sync('price', True)
+            request = self.session.put.call_args
+            self.assertTrue(request.args[0].endswith('/standard/product/' + UUID))
+            prices = request.kwargs['json']['ProductPrice']
+            self.assertEqual(prices, {'Price': 20.0, 'SellingPrice': 15.0 if selling else 20.0,
+                'Currency': None, 'IsNegotiable': False, 'IsFree': False, 'DiscountEndDate': None})
+            self.assertEqual(list(Product.objects.values()), before)
+            self.session.post.assert_not_called()
+
+    def test_legacy_price_only_and_missing_productprice_never_reach_http(self):
+        from .mungos_client import MungosClient
+        client = MungosClient()
+        payload = build_partial_payload(build_product_preview(self.product), 'price')
+        missing = {key: value for key, value in payload.items() if key != 'ProductPrice'}
+        one_price = {'id': self.product.sifra, 'price': 15.0}
+        for body in (missing, one_price):
+            for method in (client.sync_price, client.update_product, client.send_product):
+                with self.assertRaisesMessage(MungosError, 'NOT_SENT'):
+                    if method == client.send_product:
+                        method(body)
+                    else:
+                        method(UUID, body)
+        with self.assertRaisesMessage(MungosError, 'NOT_SENT'):
+            client._write_partial(UUID, one_price, 'price')
+        self.factory.assert_not_called()
 
     def test_unknown_unmapped_and_inflight_are_skipped(self):
         for operation in ('price', 'quantity'):
@@ -182,8 +213,10 @@ class MungosPartialTests(TestCase):
             self.assertEqual(sleep.call_args_list, [call(2), call(2)])
             self.assertEqual([call.kwargs['json']['id'] for call in self.session.put.call_args_list],
                              ['existing-reference', second.sifra, third.sifra])
-            self.assertTrue(all(call.args[0].endswith('/' + operation)
-                                for call in self.session.put.call_args_list))
+            for request in self.session.put.call_args_list:
+                mapping = MungosProductMapping.objects.get(product__sifra=request.kwargs['json']['id'])
+                suffix = '/' + str(mapping.mungos_uuid) + ('/quantity' if operation == 'quantity' else '')
+                self.assertTrue(request.args[0].endswith(suffix))
             self.session.post.assert_not_called()
 
     def test_bulk_scope_limit_resume_and_single_product(self):

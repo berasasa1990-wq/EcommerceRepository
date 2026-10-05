@@ -79,12 +79,15 @@ class MungosClient:
         return self._write_product('put', self.PRODUCT_PATH + '/' + mungos_uuid, payload)
 
     def sync_price(self, mungos_uuid, payload):
-        return self._write_partial(mungos_uuid, payload, 'price')
+        # Price updates must preserve the regular/selling pair on product PUT.
+        return self.update_product(mungos_uuid, payload)
 
     def sync_quantity(self, mungos_uuid, payload):
         return self._write_partial(mungos_uuid, payload, 'quantity')
 
     def _write_partial(self, mungos_uuid, payload, operation):
+        if operation != 'quantity':
+            raise MungosError('NOT_SENT | Samo quantity koristi partial endpoint.')
         mungos_uuid = validate_product_uuid(mungos_uuid)
         return self._write_product('put', self.PRODUCT_PATH + '/' + mungos_uuid + '/' + operation,
                                    payload, partial_operation=operation)
