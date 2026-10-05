@@ -53,3 +53,7 @@ body.is-checkout-page .checkout-page {
 .is-checkout-page #id_payment_method input { width: 18px; height: 18px; flex: none; accent-color: #ff6500; }
 .is-checkout-page #id_payment_method label:has(input:checked) { border-color: #ff6500; }
 .is-checkout-page .checkout-payment-note .form-error { color: #b42318; }
+
+/* Highlight the selected payment option without changing its behavior. */
+.is-checkout-page #id_payment_method label:has(input:checked) { background: #fff5ed; box-shadow: 0 0 0 1px #ff6500; }
+.is-checkout-page #id_payment_method label:has(input:focus-visible) { outline: 2px solid #ff6500; outline-offset: 3px; }

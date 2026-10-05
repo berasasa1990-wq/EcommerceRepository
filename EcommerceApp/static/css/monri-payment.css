@@ -1,0 +1,29 @@
+/* Scoped styles for the hosted-card handoff and payment status pages. */
+.monri-page { max-width: 680px; margin: 0 auto; padding: 48px 20px 72px; color: #20242a; }
+.monri-page .monri-card { padding: 36px; border: 1px solid #e5e7eb; border-radius: 22px; background: #fff; box-shadow: 0 12px 40px rgba(25, 30, 40, .06); }
+.monri-page .monri-icon { display: grid; place-items: center; width: 60px; height: 60px; margin-bottom: 24px; border-radius: 18px; background: #fff1e7; color: #f56300; }
+.monri-page .monri-icon svg { width: 30px; height: 30px; }
+.monri-page .monri-eyebrow { margin: 0 0 8px; color: #727782; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.monri-page h1 { margin: 0 0 14px; font-size: clamp(25px, 4vw, 32px); line-height: 1.2; letter-spacing: -.03em; text-transform: none; }
+.monri-page p { font-size: 15px; line-height: 1.65; color: #626772; }
+.monri-page .monri-summary { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin: 24px 0; padding: 20px; border-radius: 14px; background: #f5f6f8; }
+.monri-page .monri-summary span { display: block; font-size: 12px; color: #727782; margin-bottom: 5px; }
+.monri-page .monri-summary strong { font-size: 16px; color: #20242a; }
+.monri-page .monri-summary .monri-amount { font-size: 25px; letter-spacing: -.02em; white-space: nowrap; }
+.monri-page .monri-notice { padding: 12px 16px; border-radius: 10px; background: #fff4e6; color: #885100; font-size: 13px; }
+.monri-page .monri-error { background: #fff0ed; color: #a43224; }
+.monri-page .monri-actions { display: grid; gap: 12px; margin-top: 24px; }
+.monri-page .monri-button { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 54px; padding: 14px 18px; border: 1px solid transparent; border-radius: 12px; background: #ff6500; color: #fff; font: inherit; font-size: 15px; font-weight: 700; line-height: 1.4; text-align: center; text-decoration: none; cursor: pointer; transition: background .15s; }
+.monri-page .monri-button:hover { background: #e65b00; color: #fff; }
+.monri-page .monri-button--secondary { background: #fff; border-color: #dfe2e7; color: #424852; }
+.monri-page .monri-button--secondary:hover { background: #f5f6f8; color: #20242a; }
+.monri-page a:focus-visible, .monri-page button:focus-visible { outline: 3px solid #ff6500; outline-offset: 4px; }
+.monri-page .monri-security { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 18px 0 0; font-size: 12px; color: #727782; }
+.monri-page .monri-security svg { width: 16px; height: 16px; flex: none; }
+.monri-page .monri-back { display: block; margin-top: 24px; text-align: center; color: #626772; font-size: 13px; text-underline-offset: 4px; }
+@media (max-width: 600px) {
+    .monri-page { padding: 24px 14px 40px; }
+    .monri-page .monri-card { padding: 24px 20px; border-radius: 16px; }
+    .monri-page .monri-summary { padding: 16px; }
+    .monri-page .monri-summary .monri-amount { font-size: 22px; }
+}
