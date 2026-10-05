@@ -58,6 +58,79 @@ class MonriTests(TestCase):
         self.assertEqual(self.payment.paid_at, timestamp)
         self.assertEqual(self.callback(self.payload(id=999)).status_code, 409)
 
+    def test_official_digest_example(self):
+        # Public documentation vector, unrelated to any merchant configuration.
+        self.order.broj = 'abcdef'
+        self.payment.amount = 54321
+        self.payment.currency = 'EUR'
+        with override_settings(MONRI_MERCHANT_KEY='2345klj'):
+            _, fields = form_data(self.payment)
+        self.assertTrue(fields['digest'] == (
+            'f71b8c1560bd7511ba2f0307b3823c06dd39042cd77480543e3d7bf9f3eefa6'
+            'debed252979ba8edc7a82d9f111d90f8e31c1c7ab5af39796b26e59a0b2d7cf98'))
+
+    def test_rendered_post_preserves_exact_signed_values_and_token(self):
+        from html.parser import HTMLParser
+        from urllib.parse import urlencode, parse_qsl
+        from secrets import token_hex
+        class FormParser(HTMLParser):
+            fields = None
+            def handle_starttag(self, tag, attrs):
+                attrs = dict(attrs)
+                if tag == 'form':
+                    self.in_monri = attrs.get('action') == 'https://ipgtest.monri.com/v2/form'
+                    if self.in_monri:
+                        self.fields = {}
+                        self.method = attrs.get('method')
+                elif tag == 'input' and getattr(self, 'in_monri', False):
+                    self.fields[attrs['name']] = attrs.get('value', '')
+            def handle_endtag(self, tag):
+                if tag == 'form':
+                    self.in_monri = False
+        # Synthetic edge fixtures exercise HTML escaping, UTF-8 and leading zeroes.
+        key, token = token_hex(32) + 'č', token_hex(20) + '&"<+'
+        self.order.broj = '00562'
+        self.order.save(update_fields=['broj'])
+        self.payment.amount = 1300
+        self.payment.save(update_fields=['amount'])
+        with override_settings(MONRI_MERCHANT_KEY=key, MONRI_AUTHENTICITY_TOKEN=token, LANGUAGE_CODE='bs'):
+            parser = FormParser()
+            parser.feed(self.client.get(reverse('monri_start', args=[self.payment.token])).content.decode('utf-8'))
+        posted = dict(parse_qsl(urlencode(parser.fields), keep_blank_values=True))
+        self.assertEqual(parser.method, 'post')
+        self.assertTrue(posted['authenticity_token'] == token)
+        self.assertEqual(posted['order_number'], '00562')
+        self.assertEqual(posted['amount'], '1300')
+        self.assertEqual(posted['currency'], 'BAM')
+        expected = hashlib.sha512((key + posted['order_number'] + posted['amount'] + posted['currency']).encode('utf-8')).hexdigest()
+        self.assertTrue(posted['digest'] == expected)
+        self.assertEqual(set(posted), {'authenticity_token', 'order_number', 'amount', 'currency',
+            'ch_full_name', 'ch_email', 'ch_address', 'ch_city', 'ch_zip', 'ch_country', 'ch_phone',
+            'order_info', 'transaction_type', 'language', 'success_url_override',
+            'cancel_url_override', 'callback_url_override', 'digest'})
+        for field, route, args in (
+            ('success_url_override', 'monri_return', [self.payment.token]),
+            ('cancel_url_override', 'monri_cancel', [self.payment.token]),
+            ('callback_url_override', 'monri_callback', [])):
+            self.assertEqual(posted[field], 'https://carpologijabh.ba' + reverse(route, args=args))
+
+    def test_diagnostic_log_has_only_allowlisted_metadata(self):
+        from secrets import token_hex
+        key, token = token_hex(32), token_hex(20)
+        with override_settings(MONRI_MERCHANT_KEY=key, MONRI_AUTHENTICITY_TOKEN=token):
+            with self.assertLogs('EcommerceApp.monri', level='INFO') as captured:
+                endpoint, fields = form_data(self.payment)
+        output = '\n'.join(captured.output)
+        for forbidden in (key, token, fields['digest'], self.order.email, self.order.ime_prezime, self.order.telefon):
+            self.assertTrue(forbidden not in output)
+        for metadata in (endpoint, 'amount=2550', 'currency=BAM', 'merchant_key_length=64',
+                         'authenticity_token_length=40', 'digest_algorithm=SHA-512', 'digest_encoding=UTF-8'):
+            self.assertIn(metadata, output)
+        with override_settings(MONRI_ENVIRONMENT='production'):
+            with self.assertNoLogs('EcommerceApp.monri'):
+                with self.assertRaises(ValueError):
+                    form_data(self.payment)
+
     def test_forged_wrong_amount_currency_and_declined_do_not_pay(self):
         self.assertEqual(self.callback(self.payload(), valid=False).status_code, 403)
         for changes in ({'amount': 1}, {'currency': 'EUR'}, {'status': 'declined'},

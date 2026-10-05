@@ -1,6 +1,7 @@
 """Monri hosted form: never collect card numbers, and trust signed callbacks only."""
 import hashlib
 import hmac
+import logging
 from urllib.parse import urlsplit
 
 from django.conf import settings
@@ -48,10 +49,19 @@ def form_data(payment):
         ch_country='BA', ch_phone=order.telefon,
         order_info='Carpologija narudžba ' + order.broj, transaction_type='purchase', language='hr',
         success_url_override=base + reverse('monri_return', args=[payment.token]),
-        cancel_url=base + reverse('monri_cancel', args=[payment.token]),
-        callback_url=base + reverse('monri_callback'))
-    fields['digest'] = hashlib.sha512((settings.MONRI_MERCHANT_KEY + order.broj + amount + payment.currency).encode()).hexdigest()
+        cancel_url_override=base + reverse('monri_cancel', args=[payment.token]),
+        callback_url_override=base + reverse('monri_callback'))
+    # Sign the exact strings passed to the HTML form, without separators or token.
+    fields['digest'] = hashlib.sha512((settings.MONRI_MERCHANT_KEY
+        + fields['order_number'] + fields['amount'] + fields['currency']).encode('utf-8')).hexdigest()
     endpoint = 'https://ipgtest.monri.com/v2/form'
+    # Deliberate allowlist: never log the payload, credentials, digest or buyer data.
+    logging.getLogger(__name__).info(
+        'MONRI_TEST_FORM_REQUEST endpoint=%s order_number=%s amount=%s currency=%s '
+        'field_names=%s merchant_key_length=%s authenticity_token_length=%s '
+        'digest_algorithm=SHA-512 digest_encoding=UTF-8',
+        endpoint, fields['order_number'], fields['amount'], fields['currency'],
+        sorted(fields), len(settings.MONRI_MERCHANT_KEY), len(settings.MONRI_AUTHENTICITY_TOKEN))
     return endpoint, fields
 
 

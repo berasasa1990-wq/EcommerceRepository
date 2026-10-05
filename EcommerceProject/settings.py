@@ -660,6 +660,12 @@ PARTNER_STOCK_API_KEY = _env('PARTNER_STOCK_API_KEY', '')
 
 # Monri is TEST-only. Two credentials enable the test flow unless explicitly disabled.
 from .monri_config import read_monri_config
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'monri_console': {'class': 'logging.StreamHandler', 'level': 'INFO'}},
+    'loggers': {'EcommerceApp.monri': {'handlers': ['monri_console'], 'level': 'INFO', 'propagate': False}},
+}
 _MONRI_CONFIG = read_monri_config(_MONRI_PROCESS_ENV, _ENV_VALUES)
 MONRI_ENABLED = _MONRI_CONFIG['MONRI_ENABLED']
 MONRI_ENVIRONMENT = _MONRI_CONFIG['MONRI_ENVIRONMENT']
