@@ -19,6 +19,7 @@ urlpatterns = [
     path('placanje/monri/potvrda/', views_monri.callback, name='monri_callback'),
     path('placanje/monri/<uuid:token>/', views_monri.start, name='monri_start'),
     path('placanje/monri/<uuid:token>/povratak/', views_monri.payment_return, name='monri_return'),
+    path('placanje/monri/<uuid:token>/status/', views_monri.payment_status, name='monri_status'),
     path('placanje/monri/<uuid:token>/odustajanje/', views_monri.cancel, name='monri_cancel'),
     path('manifest.webmanifest', views.pwa_manifest, name='pwa_manifest'),
     path('service-worker.js', views.pwa_service_worker, name='pwa_service_worker'),

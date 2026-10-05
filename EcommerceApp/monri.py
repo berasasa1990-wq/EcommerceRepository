@@ -61,6 +61,8 @@ def create_checkout_payment(order, items):
 
 
 def form_data(payment):
+    if payment.status == 'paid':
+        raise ValueError('Ova uplata je već potvrđena.')
     if not configured() or payment.environment != settings.MONRI_ENVIRONMENT:
         raise ValueError('Kartično plaćanje trenutno nije dostupno.')
     order = checkout_order(payment)

@@ -72,6 +72,18 @@ okruženja, purchase, approved/0000. Ponovljeni isti callback ne naplaćuje niti
 finalizuje narudžbu ponovo. Drugi transaction ID za plaćenu narudžbu vraća 409.
 Browser success/cancel URL nikad sam ne mijenja status uplate.
 
+Povratak na `monri_return` čita status iz baze: za paid odmah preusmjerava na
+postojeći order-success flow, sa vidljivom kartičnom potvrdom narudžbe.
+Za pending prikazuje „Plaćanje se potvrđuje...“, bez linka za ponovno plaćanje.
+JS čita GET `/placanje/monri/<token>/status/` odmah i potom svake 1.5 sekunde,
+do 30 sekundi (pojedinačni request ima timeout 4 sekunde). Endpoint je read-only,
+bez cachea, prihvata samo GET i vraća status i success URL samo za paid zapis.
+Query parametri nikada nisu autoritet. Nakon isteka automatske provjere
+prikazuje upozorenje da se terećeno plaćanje ne ponavlja, ručnu provjeru statusa
+i povratak u prodavnicu. Bez JS ostaje sigurna poruka i link za provjeru statusa.
+Paid start GET vodi na order-success, POST vraća 405, a builder odbija
+generisanje forme za paid zapis. Callback sigurnost i finalizacija su nepromijenjene.
+
 Kartični checkout šalje email, loyalty/Odoo sync tek nakon potvrđene uplate.
 Validacija/pakovanje i slanje kuriru blokirani su dok uplata nije potvrđena ili
 ako se iznos narudžbe razlikuje od uplate. Plaćena kartična narudžba nema COD

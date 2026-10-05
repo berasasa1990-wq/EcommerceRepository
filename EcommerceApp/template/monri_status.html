@@ -7,11 +7,18 @@
     <div class="monri-card">
     <div class="monri-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 9h20M6 15h4"/></svg></div>
     <p class="monri-eyebrow">Carpologija · Kartično plaćanje</p>
-    <h1>{% if payment.status == 'paid' %}Plaćanje uspješno{% elif cancelled %}Plaćanje nije završeno{% else %}Čekamo potvrdu plaćanja{% endif %}</h1>
+    <h1{% if waiting_return %} id="monriWaitingHeading"{% endif %}>{% if payment.status == 'paid' %}Plaćanje uspješno{% elif waiting_return %}Plaćanje se potvrđuje...{% elif cancelled %}Plaćanje nije završeno{% else %}Čekamo potvrdu plaćanja{% endif %}</h1>
     <div class="monri-summary"><div><span>{% if payment.order_id %}Broj narudžbe{% else %}Referenca plaćanja{% endif %}</span><strong>{{ order.broj }}</strong></div><div><span>Iznos narudžbe</span><strong class="monri-amount">{{ order.ukupno }} KM</strong></div></div>
     {% if payment_error %}<p class="monri-notice monri-error" role="alert">{{ payment_error }}</p>
     {% elif payment.status == 'paid' %}
         <p>Vaša kartična uplata je potvrđena i narudžba je zaprimljena. Način plaćanja: KARTICOM. Hvala na narudžbi!</p>
+    {% elif waiting_return %}
+        <div id="monriWaiting" data-status-url="{% url 'monri_status' payment.token %}">
+            <p id="monriWaitingMessage" role="status" aria-live="polite">Provjeravamo potvrdu uplate. Stranica će se automatski ažurirati.</p>
+            <p id="monriWaitingFallback">Plaćanje još potvrđujemo. Ako je iznos terećen, nemojte ponavljati plaćanje.</p>
+            <button id="monriCheckStatus" type="button" class="monri-button monri-button--secondary" hidden>Provjeri status uplate</button>
+            <noscript><a class="monri-button monri-button--secondary" href="{% url 'monri_return' payment.token %}">Provjeri status uplate</a></noscript>
+        </div>
     {% else %}
         <p>Kartična uplata još nije potvrđena. Narudžba još nije zaprimljena; prihvatamo je tek nakon potvrđene uplate. Način plaćanja: KARTICOM.</p>
         <p>Ako ste već platili, osvježite stranicu nakon nekoliko trenutaka. Ako ste odustali, možete nastaviti plaćanje za istu narudžbu.</p>
@@ -22,3 +29,4 @@
     </div>
 </section>
 {% endblock %}
+{% block extra_js %}{% if waiting_return %}<script src="{% static 'js/monri-payment-status.js' %}?v=20261005" defer></script>{% endif %}{% endblock %}

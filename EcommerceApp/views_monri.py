@@ -3,7 +3,8 @@ import logging
 
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
+from django.urls import reverse
 from django.db import transaction
 from django.db.models import Q
 from django.core import serializers
@@ -50,12 +51,18 @@ def payment_context(payment):
     return {'payment': payment, 'order': checkout_order(payment)}
 
 
+def paid_redirect(payment):
+    response = redirect('order_success', broj=payment.order.broj)
+    response['Referrer-Policy'] = 'no-referrer'
+    return response
+
+
 @never_cache
 @require_GET
 def start(request, token):
     payment = get_object_or_404(CardPayment.objects.select_related('order'), token=token)
     if payment.status == 'paid':
-        return payment_render(request, 'monri_status.html', payment_context(payment))
+        return paid_redirect(payment)
     try:
         endpoint, fields = form_data(payment)
     except ValueError as error:
@@ -68,7 +75,21 @@ def start(request, token):
 def payment_return(request, token):
     # A browser redirect is not proof of payment. Only the signed callback pays.
     payment = get_object_or_404(CardPayment.objects.select_related('order'), token=token)
-    return payment_render(request, 'monri_status.html', payment_context(payment))
+    if payment.status == 'paid':
+        return paid_redirect(payment)
+    return payment_render(request, 'monri_status.html', {**payment_context(payment), 'waiting_return': True})
+
+
+@never_cache
+@require_GET
+def payment_status(request, token):
+    # Read-only: browser input cannot update payment or trigger finalization.
+    payment = get_object_or_404(CardPayment.objects.select_related('order'), token=token)
+    response = JsonResponse({'status': payment.status,
+        'success_url': reverse('order_success', args=[payment.order.broj])
+                       if payment.status == 'paid' and payment.order_id else None})
+    response['Referrer-Policy'] = 'no-referrer'
+    return response
 
 
 @never_cache

@@ -146,6 +146,50 @@ class MonriTests(TestCase):
         self.assertEqual(self.payment.status, 'pending')
         self.assertFalse(Order.objects.get(pk=self.order.pk).placeno_karticom())
 
+    def test_paid_return_redirects_to_visible_order_success(self):
+        self.assertEqual(self.callback(self.payload()).status_code, 200)
+        response = self.client.get(reverse('monri_return', args=[self.payment.token]))
+        self.assertRedirects(response, reverse('order_success', args=[self.order.broj]))
+        success = self.client.get(response.url)
+        self.assertContains(success, 'Plaćanje uspješno')
+        self.assertContains(success, 'KARTICOM')
+        self.assertNotContains(success, 'Nastavi plaćanje')
+
+    def test_pending_return_auto_checks_without_offering_payment_retry(self):
+        response = self.client.get(reverse('monri_return', args=[self.payment.token]),
+            {'status': 'approved', 'approval_code': 'FAKE', 'amount': 2550, 'response_code': '0000'})
+        self.assertContains(response, 'Plaćanje se potvrđuje...')
+        self.assertContains(response, 'monri-payment-status.js')
+        self.assertContains(response, reverse('monri_status', args=[self.payment.token]))
+        self.assertContains(response, 'nemojte ponavljati plaćanje')
+        self.assertNotContains(response, 'Nastavi plaćanje')
+        self.assertNotContains(response, reverse('monri_start', args=[self.payment.token]) + '"')
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'pending')
+
+    def test_status_endpoint_reads_only_callback_verified_state(self):
+        url = reverse('monri_status', args=[self.payment.token])
+        response = self.client.get(url, {'status': 'paid', 'approval_code': 'FAKE'})
+        self.assertEqual(response.json(), {'status': 'pending', 'success_url': None})
+        self.assertIn('no-store', response.headers['Cache-Control'])
+        self.assertEqual(self.client.post(url, {'status': 'paid'}).status_code, 405)
+        self.assertEqual(self.callback(self.payload(), valid=False).status_code, 403)
+        self.assertEqual(self.client.get(url).json()['status'], 'pending')
+        self.assertEqual(self.callback(self.payload()).status_code, 200)
+        self.assertEqual(self.client.get(url).json(), {'status': 'paid',
+            'success_url': reverse('order_success', args=[self.order.broj])})
+
+    def test_paid_payment_cannot_generate_or_post_a_new_monri_form(self):
+        self.callback(self.payload())
+        self.payment.refresh_from_db()
+        with self.assertRaises(ValueError):
+            form_data(self.payment)
+        url = reverse('monri_start', args=[self.payment.token])
+        response = self.client.get(url)
+        self.assertRedirects(response, reverse('order_success', args=[self.order.broj]), fetch_redirect_response=False)
+        self.assertNotIn(b'ipg.monri.com/v2/form', response.content)
+        self.assertEqual(self.client.post(url).status_code, 405)
+
     def test_pending_card_cannot_be_fulfilled_or_sent_to_courier(self):
         with self.assertRaises(MagacinError):
             validate_order_stock(self.order)
