@@ -550,8 +550,8 @@ HTTP 400/404/409 prikazuje sanitizovani `api_error` i indikator truncation;
 credential polja i konfigurisane tajne se uklanjaju/rediguju.
 
 Price komanda koristi postojeći full PUT `/standard/product/{uuid}` i obavezni
-`ProductPrice`: `Price = Product.bazna_cijena`,
-`SellingPrice = Product.prikazna_cijena`. Za regularnu 20 KM i akcijsku 15 KM
+top-level `price = Product.bazna_cijena`,
+`sellingPrice = Product.prikazna_cijena`, bez `ProductPrice`. Za regularnu 20 KM i akcijsku 15 KM
 šalje 20 i 15; bez popusta šalje 20 i 20. Koristi postojeću full UPDATE schemu,
 uključujući postojeće opise, slike i lokalnu dostupnost; nema novog `/quantity`
 poziva. Legacy `/price` transport je blokiran. Nema promjene lokalnih podataka.
@@ -576,45 +576,37 @@ python manage.py mungos_quantity_sync
 python manage.py mungos_quantity_sync --confirm
 ```
 
-## Regularna i SALE cijena (ProductPrice)
+## Regularna i SALE cijena — potvrđeni standard PUT contract
 
-CREATE i full product UPDATE sada dodaju potvrđenu Postman strukturu
-`ProductPrice` s tačno `Price`, `SellingPrice`, `Currency`, `IsNegotiable`,
-`IsFree`, `DiscountEndDate`. `Price` dolazi iz `Product.bazna_cijena` (postojeće
-polje `cijena`), `SellingPrice` iz `Product.prikazna_cijena`. Normalan proizvod
-ima jednaku regularnu i prodajnu cijenu. Postojeća legacy polja ostaju ista,
-uključujući top-level `price` s trenutnom prikaznom cijenom, BAM, SKU, quantity,
-kategoriju, opise i slike. Currency je null, IsNegotiable/IsFree false prema
-potvrđenom ProductPrice primjeru. Sanitizer zahtijeva ovu strukturu za svaki CREATE i full PUT;
-payload bez obje cijene se blokira prije HTTP-a.
+Mungos je potvrdio da `/standard/product/{uuid}` koristi TOP-LEVEL polja:
+`price`, `sellingPrice`, `discountEndDate`, `currencyIsoCode`.
+`ProductPrice` se NE šalje na taj PUT endpoint; transport odbija staru nested schemu.
+`price = Product.bazna_cijena`, `sellingPrice = Product.prikazna_cijena`, valuta BAM.
+Za akciju 6.60/5.28 šalje se:
+```json
+{"price": 6.60, "sellingPrice": 5.28, "discountEndDate": null, "currencyIsoCode": "BAM"}
+```
+Bez popusta, npr. 20/20, oba polja su 20.00 i kraj akcije null.
+Važeći `akcija_do`, kada obična akcija određuje prodajnu cijenu, šalje se kao
+`YYYY-MM-DDT23:59:59Z`. Za istekli popust ili flash cijenu bez pouzdanog kraja,
+`discountEndDate` je null. Postojeća webshop logika nije mijenjana.
 
-`DiscountEndDate` je ISO datum iz `akcija_do` samo kada je datum važeći i obična
-akcijska cijena određuje trenutnu prodajnu cijenu. Ako flash daje nižu ili jednaku
-cijenu, datum je null: ne preuzimamo datum obične akcije za flash popust.
-Bez pouzdanog datuma šaljemo null. Webshop discount logika nije mijenjana.
-`mungos_price_sync` također koristi full product PUT s obje cijene, pa kasniji
-price sync ne može prepisati akciju samo jednom cijenom. Quantity sync je nepromijenjen.
+CREATE/bulk projekcija s `ProductPrice` ostaje nepromijenjena. Standard PUT adapter
+pretvara tu projekciju u top-level polja. Postojeći `mungos_bulk_sync` ne poziva
+poseban bulk endpoint: za mapirani UUID koristi isti standard PUT adapter.
+`mungos_product_update`, bulk UPDATE, `mungos_sale_sync` UPDATE i `mungos_price_sync`
+svi koriste novu standard PUT schemu. Legacy `/price` ostaje blokiran;
+quantity endpoint i logika nisu promijenjeni.
 
 ```sh
 python manage.py mungos_sale_sync --limit 5
 python manage.py mungos_sale_sync --limit 5 --confirm
-python manage.py mungos_sale_sync --product-id 47 --confirm
 ```
 
-Bez confirm je SELECT-only dry-run, bez HTTP-a i upisa. Limit broji samo spremne
-SALE kandidate (`SellingPrice < Price`), ne sve pregledane proizvode. Komanda
-preskače neaktivne, istekle popuste, nepodržane varijante/kategorije i neizvjesne
-mappinge. Postojeći UUID uvijek vodi u full UPDATE; novi spremni proizvod koristi
-postojeći bulk CREATE flow, lock, trajni IN_FLIGHT guard prije HTTP-a i neposredno
-snimanje potvrđenog top-level productUuid. Nema novog POST-a za postojeći UUID.
-Chunkovi od 200, najmanje 1s između zahtjeva i bulk error/retry pravila ostaju.
-
-Report sadrži PRODUCT_ID, SKU, NAME, REGULAR_PRICE, SELLING_PRICE,
-DISCOUNT_PERCENT, ACTION, MUNGOS_UUID, RESULT i REASON; sve prolazi postojeću
-redakciju secrets. ACTION je CREATED/UPDATED tek nakon uspjeha; dry-run, greške i
-nepodržani kandidati imaju SKIPPED uz detaljni RESULT. Jedini upisi su Mungos
-mapping metadata; cijene, lager, checkout, frontend i admin ostaju netaknuti.
-Razvojna provjera koristi isključivo mockovani HTTP i izolovanu test bazu.
+Bez confirm je SELECT-only dry-run, bez HTTP-a i upisa. Limit broji spremne SALE
+kandidate; postojeći lock, IN_FLIGHT guard, UUID i error/retry pravila ostaju.
+Razvojni testovi presreću stvarni Requests serialized body prije mreže, bez API
+poziva. Jedini sync upisi ostaju Mungos mapping metadata; cijene i stock su lokalni.
 
 ## Izbor okruženja i prvi production sync
 
@@ -637,8 +629,8 @@ Nepoznato okruženje, nepodudaran endpoint i neispravni credentials blokiraju HT
 Sve write komande (`mungos_sale_sync`, `mungos_bulk_sync`, `mungos_price_sync`,
 `mungos_quantity_sync`, `mungos_product_send`, `mungos_product_update`) zahtijevaju
 `--confirm`. Bez njega je dry-run bez HTTP-a i upisa. Liveness je zasebni GET.
-Cijene i dalje koriste product PUT s obaveznim `ProductPrice.Price` iz bazne i
-`ProductPrice.SellingPrice` iz prikazne cijene; quantity endpoint je nepromijenjen.
+Standard product PUT koristi top-level `price` iz bazne i `sellingPrice` iz
+prikazne cijene, bez `ProductPrice`; quantity endpoint je nepromijenjen.
 
 Prvo pregledati dry-run, pa potvrditi mali production batch:
 ```sh

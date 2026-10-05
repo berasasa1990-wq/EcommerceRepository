@@ -55,7 +55,7 @@ class MungosSaleTests(TestCase):
         self.assertEqual((prices['Price'], prices['SellingPrice'], prices['DiscountEndDate']), (100, 100, None))
         self.assertEqual(preview['payload']['price'], 100)
         self.assertEqual(build_partial_payload(preview, 'price')['price'], 100)
-        self.assertEqual(build_partial_payload(preview, 'price')['ProductPrice'], prices)
+        self.assertEqual(build_partial_payload(preview, 'price')['sellingPrice'], prices['SellingPrice'])
 
     def test_sale_create_and_update_preserve_regular_and_actual_price(self):
         preview = build_product_preview(self.product)
@@ -64,11 +64,12 @@ class MungosSaleTests(TestCase):
         self.assertEqual(prices, {'Price': 100, 'SellingPrice': 80, 'Currency': None,
             'IsNegotiable': False, 'IsFree': False, 'DiscountEndDate': None})
         self.assertGreater(prices['Price'], prices['SellingPrice'])
-        self.assertEqual(build_mungos_update_payload(preview)['payload']['ProductPrice'], prices)
+        self.assertEqual(build_mungos_update_payload(preview)['payload']['price'], prices['Price'])
         self.assertEqual(preview, original)
         partial = build_partial_payload(preview, 'price')
-        self.assertEqual(partial['price'], 80)
-        self.assertEqual(partial['ProductPrice'], prices)
+        self.assertEqual(partial['price'], 100)
+        self.assertEqual(partial['sellingPrice'], prices['SellingPrice'])
+        self.assertNotIn('ProductPrice', partial)
 
     def test_expired_discount_and_non_sale_are_never_sent(self):
         Product.objects.filter(pk=self.product.pk).update(akcija_do=timezone.localdate() - timedelta(days=1))
@@ -97,7 +98,7 @@ class MungosSaleTests(TestCase):
         self.session.put.assert_called_once()
         self.session.post.assert_not_called()
         self.assertTrue(self.session.put.call_args.args[0].endswith('/standard/product/' + self.uuid))
-        self.assertEqual(self.session.put.call_args.kwargs['json']['ProductPrice']['SellingPrice'], 80)
+        self.assertEqual(self.session.put.call_args.kwargs['json']['sellingPrice'], 80)
         for field in ('PRODUCT_ID', 'SKU', 'NAME', 'REGULAR_PRICE', 'SELLING_PRICE', 'DISCOUNT_PERCENT', 'ACTION', 'MUNGOS_UUID'):
             self.assertIn(field, output)
         self.assertIn('UPDATED', output)

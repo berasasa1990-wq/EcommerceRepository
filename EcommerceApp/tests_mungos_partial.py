@@ -14,6 +14,7 @@ from .models import Category, Product, MungosProductMapping, ProductVariation
 from .mungos_partial import PRICE_FIELDS, build_partial_payload
 from .mungos_client import MungosError
 from .mungos_product import build_product_preview
+from .mungos_update import build_mungos_update_payload
 
 UUID = 'a9241b59-9e45-4840-9730-c93cb8ad9517'
 
@@ -55,7 +56,7 @@ class MungosPartialTests(TestCase):
         preview = build_product_preview(self.product)
         original = deepcopy(preview)
         for operation in ('price', 'quantity'):
-            expected = ({key: preview['payload'].get(key) for key in PRICE_FIELDS} if operation == 'price'
+            expected = (build_mungos_update_payload(preview)['payload'] if operation == 'price'
                         else {'id': 'existing-reference', 'quantity': preview['payload']['quantityRemaining']})
             self.assertEqual(build_partial_payload(preview, operation), expected)
             self.session.put.reset_mock()
@@ -80,9 +81,10 @@ class MungosPartialTests(TestCase):
             self.run_sync('price', True)
             request = self.session.put.call_args
             self.assertTrue(request.args[0].endswith('/standard/product/' + UUID))
-            prices = request.kwargs['json']['ProductPrice']
-            self.assertEqual(prices, {'Price': 20.0, 'SellingPrice': 15.0 if selling else 20.0,
-                'Currency': None, 'IsNegotiable': False, 'IsFree': False, 'DiscountEndDate': None})
+            body = request.kwargs['json']
+            self.assertEqual(body['price'], 20.0)
+            self.assertEqual(body['sellingPrice'], 15.0 if selling else 20.0)
+            self.assertNotIn('ProductPrice', body)
             self.assertEqual(list(Product.objects.values()), before)
             self.session.post.assert_not_called()
 
@@ -90,7 +92,7 @@ class MungosPartialTests(TestCase):
         from .mungos_client import MungosClient
         client = MungosClient()
         payload = build_partial_payload(build_product_preview(self.product), 'price')
-        missing = {key: value for key, value in payload.items() if key != 'ProductPrice'}
+        missing = {key: value for key, value in payload.items() if key != 'sellingPrice'}
         one_price = {'id': self.product.sifra, 'price': 15.0}
         for body in (missing, one_price):
             for method in (client.sync_price, client.update_product, client.send_product):
@@ -160,7 +162,7 @@ class MungosPartialTests(TestCase):
     def test_current_sale_price_and_cart_availability_are_reused(self):
         Product.objects.filter(pk=self.product.pk).update(akcijska_cijena=99, stanje=17)
         self.run_sync('price', True)
-        self.assertEqual(self.session.put.call_args.kwargs['json']['price'], 99.0)
+        self.assertEqual(self.session.put.call_args.kwargs['json']['sellingPrice'], 99.0)
         with patch('EcommerceApp.mungos_product.Cart.availability', return_value={'parent': 6}) as availability:
             self.run_sync('quantity', True)
         availability.assert_called_once()

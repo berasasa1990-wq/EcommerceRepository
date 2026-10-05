@@ -31,8 +31,16 @@ def build_mungos_update_payload(preview):
         field: deepcopy(source.get(field, '' if field == 'ean' else None))
         for field in UPDATE_FIELDS
     }
-    if 'ProductPrice' in source:
-        result['payload']['ProductPrice'] = deepcopy(source['ProductPrice'])
+    prices = source.get('ProductPrice')
+    if isinstance(prices, dict):
+        # CREATE/bulk projection is adapted to the confirmed STANDARD PUT contract.
+        result['payload']['price'] = deepcopy(prices.get('Price'))
+        result['payload']['sellingPrice'] = deepcopy(prices.get('SellingPrice'))
+        end = prices.get('DiscountEndDate')
+        result['payload']['discountEndDate'] = f'{end}T23:59:59Z' if end else None
+    else:
+        result['payload']['sellingPrice'] = deepcopy(source.get('sellingPrice'))
+        result['payload']['discountEndDate'] = deepcopy(source.get('discountEndDate'))
     result['payload'], validation_reasons = sanitize_mungos_payload(result['payload'], 'update')
     reasons.extend(validation_reasons)
     if reasons:

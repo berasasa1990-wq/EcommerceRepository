@@ -13,15 +13,19 @@ from django.test.utils import CaptureQueriesContext
 
 from .models import Category, Product, ProductImage, ProductVariation
 from .mungos_client import MungosClient, MungosError
-from .mungos_payload import CREATE_FIELDS, UPDATE_FIELDS, sanitize_mungos_ean, sanitize_mungos_payload
+from .mungos_payload import CREATE_FIELDS, UPDATE_FIELDS, STANDARD_UPDATE_FIELDS, sanitize_mungos_ean, sanitize_mungos_payload
 from .mungos_product import build_product_preview, sanitized_json
 from .mungos_update import build_mungos_update_payload
 from .tests_mungos_update import EXPECTED_PUT
 
 
 def create_example():
-    return {**{key: deepcopy(value) for key, value in EXPECTED_PUT.items() if key != 'brandCode'},
-            'HasVariants': False, 'Variants': []}
+    source = {key: deepcopy(value) for key, value in EXPECTED_PUT.items()
+              if key not in ('brandCode', 'sellingPrice', 'discountEndDate')}
+    source.update(HasVariants=False, Variants=[], ProductPrice={
+        'Price': source['price'], 'SellingPrice': source['price'], 'Currency': None,
+        'IsNegotiable': False, 'IsFree': False, 'DiscountEndDate': None})
+    return source
 
 
 class MungosPayloadTests(SimpleTestCase):
@@ -40,7 +44,7 @@ class MungosPayloadTests(SimpleTestCase):
         result, reasons = sanitize_mungos_payload(source, 'update')
         self.assertEqual(reasons, [])
         self.assertEqual(result, source)
-        self.assertEqual(set(result), set(UPDATE_FIELDS) | {'ProductPrice'})
+        self.assertEqual(set(result), set(STANDARD_UPDATE_FIELDS))
         self.assertNotIn('HasVariants', result)
         self.assertNotIn('Variants', result)
 
@@ -82,7 +86,7 @@ class MungosPayloadTests(SimpleTestCase):
         for value in (Decimal('138.25'), Decimal('0.00'), 0, 138.25):
             with self.subTest(value=value):
                 result, reasons = self.validate(price=value, ProductPrice={
-                    **EXPECTED_PUT['ProductPrice'], 'Price': value, 'SellingPrice': value})
+                    **create_example()['ProductPrice'], 'Price': value, 'SellingPrice': value})
                 self.assertEqual(reasons, [])
                 self.assertEqual(result['price'], float(value))
                 json.dumps(result, allow_nan=False)
@@ -92,7 +96,7 @@ class MungosPayloadTests(SimpleTestCase):
                       Decimal('NaN'), Decimal('Infinity'), Decimal('sNaN')):
             with self.subTest(value=value):
                 result, reasons = self.validate(price=value, ProductPrice={
-                    **EXPECTED_PUT['ProductPrice'], 'Price': value, 'SellingPrice': value})
+                    **create_example()['ProductPrice'], 'Price': value, 'SellingPrice': value})
                 self.assertTrue(reasons)
                 self.assertIsNone(result['price'])
                 json.dumps(result, allow_nan=False)
@@ -272,14 +276,19 @@ class MungosFinalDryRunTests(TestCase):
                     self.assertEqual(result['status'], 'READY_FOR_REVIEW')
                     self.assertEqual(result['payload']['ean'], '')
                     self.assertEqual(result['payload']['price'], 138.25)
-                    self.assertEqual(set(result['payload']), set(fields) | {'ProductPrice'})
+                    self.assertEqual(set(result['payload']), (set(CREATE_FIELDS) | {'ProductPrice'}) if operation == 'create' else set(STANDARD_UPDATE_FIELDS))
                     expected = {**EXPECTED_PUT, 'ProductPrice': {'Price': 138.25, 'SellingPrice': 138.25,
                                 'Currency': None, 'IsNegotiable': False, 'IsFree': False, 'DiscountEndDate': None},
                                 'price': 138.25, 'images': [],
                                 'shortDescription': '', 'details': '', 'ean': ''}
                     if operation == 'create':
                         del expected['brandCode']
+                        del expected['sellingPrice']
+                        del expected['discountEndDate']
                         expected.update(HasVariants=False, Variants=[])
+                    else:
+                        del expected['ProductPrice']
+                        expected['sellingPrice'] = 138.25
                     self.assertEqual(result['payload'], expected)
             http.assert_not_called()
         self.assertEqual(Product.objects.filter(pk=self.product.pk).values().get(), original)

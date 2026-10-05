@@ -10,7 +10,7 @@ from django.test.utils import CaptureQueriesContext
 
 from .models import Category, Product
 from .mungos_product import build_product_preview
-from .tests_mungos_update import EXPECTED_PUT
+from .tests_mungos_payload import create_example
 
 
 @override_settings(
@@ -34,8 +34,7 @@ class MungosSendTests(SimpleTestCase):
         self.builder = self.builder_patch.start()
         self.addCleanup(self.builder_patch.stop)
         self.preview = {'status': 'READY_FOR_REVIEW', 'reviewReasons': [],
-                        'payload': {**{key: value for key, value in EXPECTED_PUT.items() if key != 'brandCode'},
-                                    'HasVariants': False, 'Variants': []}}
+                        'payload': create_example()}
         self.builder.return_value = self.preview
         self.output = StringIO()
 

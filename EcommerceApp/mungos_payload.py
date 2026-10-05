@@ -3,7 +3,7 @@ from copy import deepcopy
 from decimal import Decimal
 import json
 import math
-from datetime import date
+from datetime import date, datetime
 from urllib.parse import urlsplit
 
 
@@ -20,6 +20,7 @@ UPDATE_FIELDS = (
     'longitude', 'latitude', 'productAttributes', 'images',
 )
 CREATE_FIELDS = tuple(field for field in UPDATE_FIELDS if field != 'brandCode') + ('HasVariants', 'Variants')
+STANDARD_UPDATE_FIELDS = UPDATE_FIELDS + ('sellingPrice', 'discountEndDate')
 
 # Only values already present in the documented single-product examples.
 FIXED_VALUES = {
@@ -76,13 +77,14 @@ def sanitize_mungos_payload(source, operation='create'):
     """
     if operation not in ('create', 'update'):
         raise ValueError('Unknown Mungos payload operation.')
-    fields = CREATE_FIELDS if operation == 'create' else UPDATE_FIELDS
+    fields = CREATE_FIELDS if operation == 'create' else STANDARD_UPDATE_FIELDS
     if not isinstance(source, dict):
         return None, ['Mungos payload mora biti objekt.']
     payload = deepcopy(source)
     reasons = []
-    required = (set(fields) - {'ean', 'shortDescription', 'details'}) | {'ProductPrice'}
-    if required - payload.keys() or payload.keys() - (set(fields) | {'ProductPrice'}):
+    allowed = set(fields) | ({'ProductPrice'} if operation == 'create' else set())
+    required = (set(fields) - {'ean', 'shortDescription', 'details'}) | ({'ProductPrice'} if operation == 'create' else set())
+    if required - payload.keys() or payload.keys() - allowed:
         reasons.append('Mungos payload ne odgovara potvrđenim poljima scheme.')
     payload['ean'] = sanitize_mungos_ean(payload.get('ean'))
     for field in ('id', 'sku', 'name'):
@@ -123,6 +125,20 @@ def sanitize_mungos_payload(source, operation='create'):
                         raise ValueError
                 except (ValueError, TypeError):
                     reasons.append('ProductPrice: neispravan DiscountEndDate.')
+    if operation == 'update':
+        payload['sellingPrice'] = sanitize_mungos_price(payload.get('sellingPrice'))
+        if (payload['sellingPrice'] is None or payload['price'] is None
+                or payload['sellingPrice'] > payload['price']):
+            reasons.append('sellingPrice: neispravna prodajna cijena.')
+        end = payload.get('discountEndDate')
+        if end is not None:
+            try:
+                if not isinstance(end, str) or datetime.strptime(end, '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%dT%H:%M:%SZ') != end:
+                    raise ValueError
+                if payload['sellingPrice'] == payload['price']:
+                    raise ValueError
+            except (ValueError, TypeError):
+                reasons.append('discountEndDate: potreban je ISO UTC datum važeće akcije.')
     quantity = payload.get('quantityRemaining')
     if type(quantity) is not int:
         reasons.append('quantityRemaining: potrebna je integer količina.')

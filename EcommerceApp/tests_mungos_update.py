@@ -20,8 +20,7 @@ EXPECTED_PUT = {
     'categoryCode': 'SportRecreation_Equipment_FishingEquipment_Reels',
     'brandCode': None, 'hasQuantities': True, 'quantityRemaining': 43,
     'shortDescription': 'Opis', 'details': 'Opis', 'productType': 'Product',
-    'ProductPrice': {'Price': 138.0, 'SellingPrice': 138.0, 'Currency': None,
-                     'IsNegotiable': False, 'IsFree': False, 'DiscountEndDate': None},
+    'sellingPrice': 138.0, 'discountEndDate': None,
     'price': 138.0, 'currencyIsoCode': 'BAM', 'isNegotiable': False,
     'isFree': False, 'sku': '7889', 'ean': '1234567890128',
     'warrantyMonthsCount': None, 'warrantyDescription': None,
@@ -106,7 +105,7 @@ class MungosUpdateTests(SimpleTestCase):
         self.run_command()
         current = {'status': 'READY_FOR_REVIEW', 'reviewReasons': [],
                    'payload': {**EXPECTED_PUT, 'id': 'current', 'sku': 'current', 'name': 'Current', 'price': 99,
-                               'ProductPrice': {**EXPECTED_PUT['ProductPrice'], 'Price': 99, 'SellingPrice': 99},
+                               'sellingPrice': 99, 'discountEndDate': None,
                                'quantityRemaining': 7, 'details': 'Current description',
                                'images': [], 'Variants': []}}
         self.builder.return_value = current
@@ -198,8 +197,7 @@ class MungosUpdateReadOnlyTests(TestCase):
         product = Product.objects.create(naziv=EXPECTED_PUT['name'], sifra='7889', cijena=138,
                                          opis='Opis', barkod='1234567890128', slika='reel.jpg',
                                          stanje=43, aktivan=True, na_stanju=True, kategorija=category)
-        expected = {**EXPECTED_PUT, 'ProductPrice': {'Price': 138.0, 'SellingPrice': 138.0,
-            'Currency': None, 'IsNegotiable': False, 'IsFree': False, 'DiscountEndDate': None}, 'images': [
+        expected = {**EXPECTED_PUT, 'images': [
             {'imageUrl': product.slika.url if product.slika.url.startswith('https://')
              else 'https://example.com' + product.slika.url, 'isMainImage': True}]}
         self.assertEqual(build_mungos_update_payload(build_product_preview(product))['payload'], expected)

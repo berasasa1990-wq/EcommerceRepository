@@ -88,8 +88,8 @@ class MungosEnvironmentTests(TestCase):
         self.assertEqual(request.args[0], 'https://mungos.ba/api/v1/connector/standard/product/' + UUID)
         self.assertEqual(request.kwargs['headers'], {'X-Api-Key': 'production-key',
                                                    'ecommerceaccesscode': 'production-access'})
-        self.assertEqual(request.kwargs['json']['ProductPrice']['Price'], 20.0)
-        self.assertEqual(request.kwargs['json']['ProductPrice']['SellingPrice'], 15.0)
+        self.assertEqual(request.kwargs['json']['price'], 20.0)
+        self.assertEqual(request.kwargs['json']['sellingPrice'], 15.0)
         self.session.post.assert_not_called()
         self.assertEqual(list(Product.objects.values()), before)
         for secret in ('production-key', 'production-access', 'staging-key', 'staging-access'):
@@ -124,8 +124,8 @@ class MungosEnvironmentTests(TestCase):
             self.run_command('mungos_price_sync', product_id=self.product.pk, confirm=True)
             request = self.session.put.call_args
             self.assertEqual(request.args[0], 'https://mungos.ba/api/v1/connector/standard/product/' + UUID)
-            self.assertEqual(request.kwargs['json']['ProductPrice']['Price'], 20.0)
-            self.assertEqual(request.kwargs['json']['ProductPrice']['SellingPrice'], 15.0 if sale else 20.0)
+            self.assertEqual(request.kwargs['json']['price'], 20.0)
+            self.assertEqual(request.kwargs['json']['sellingPrice'], 15.0 if sale else 20.0)
 
     def test_invalid_environment_or_mismatched_endpoint_fail_closed(self):
         for config in ({'MUNGOS_ENVIRONMENT': 'invalid'},

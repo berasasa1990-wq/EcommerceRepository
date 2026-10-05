@@ -1,8 +1,8 @@
 """Price uses full product PUT; quantity retains its confirmed partial body."""
-from .mungos_payload import UPDATE_FIELDS, sanitize_mungos_payload
+from .mungos_payload import STANDARD_UPDATE_FIELDS, sanitize_mungos_payload
 from .mungos_update import build_mungos_update_payload
 
-PRICE_FIELDS = UPDATE_FIELDS + ('ProductPrice',)
+PRICE_FIELDS = STANDARD_UPDATE_FIELDS
 QUANTITY_FIELDS = ('id', 'quantity')
 
 
