@@ -8,7 +8,7 @@
     <div class="monri-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 9h20M6 15h4"/></svg></div>
     <p class="monri-eyebrow">Carpologija · Kartično plaćanje</p>
     <h1>{% if payment.status == 'paid' %}Plaćanje uspješno{% elif cancelled %}Plaćanje nije završeno{% else %}Čekamo potvrdu plaćanja{% endif %}</h1>
-    <div class="monri-summary"><div><span>Broj narudžbe</span><strong>{{ order.broj }}</strong></div><div><span>Iznos narudžbe</span><strong class="monri-amount">{{ order.ukupno }} KM</strong></div></div>
+    <div class="monri-summary"><div><span>{% if payment.order_id %}Broj narudžbe{% else %}Referenca plaćanja{% endif %}</span><strong>{{ order.broj }}</strong></div><div><span>Iznos narudžbe</span><strong class="monri-amount">{{ order.ukupno }} KM</strong></div></div>
     {% if payment_error %}<p class="monri-notice monri-error" role="alert">{{ payment_error }}</p>
     {% elif payment.status == 'paid' %}
         <p>Vaša kartična uplata je potvrđena i narudžba je zaprimljena. Način plaćanja: KARTICOM. Hvala na narudžbi!</p>

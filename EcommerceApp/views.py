@@ -4899,19 +4899,28 @@ def checkout(request):
                 popust_detalji.append({'opis': 'Sretni Greb-Greb: poklon uz narudžbu', 'iznos': None})
 
             from .magacin import reserve_web_order_stock, MagacinError
+            is_card = form.cleaned_data['payment_method'] == 'card'
+            draft_items = []
+            def build_item(**values):
+                if is_card:
+                    draft_items.append(OrderItem(**values))
+                else:
+                    OrderItem.objects.create(**values)
             try:
                 with transaction.atomic():
                     from .views_magacin import _save_warehouse_customer
-                    _save_warehouse_customer(
-                        ime=form.cleaned_data['ime_prezime'], telefon=form.cleaned_data['telefon'],
-                        adresa=form.cleaned_data['adresa'], grad=form.cleaned_data['grad'],
-                        email=form.cleaned_data['email'],
-                        postanski_broj=form.cleaned_data.get('postanski_broj', ''), update_existing=False,
-                    )
+                    if not is_card:
+                        _save_warehouse_customer(
+                            ime=form.cleaned_data['ime_prezime'], telefon=form.cleaned_data['telefon'],
+                            adresa=form.cleaned_data['adresa'], grad=form.cleaned_data['grad'],
+                            email=form.cleaned_data['email'],
+                            postanski_broj=form.cleaned_data.get('postanski_broj', ''), update_existing=False,
+                        )
                     visitor = LiveVisitor.objects.filter(session_key=request.session.session_key).only('izvor_dolaska').first()
                     user_agent = (request.META.get('HTTP_USER_AGENT') or '').lower()
                     device = 'mobile' if any(token in user_agent for token in ('mobile', 'android', 'iphone')) else 'desktop'
-                    order = Order.objects.create(
+                    order_builder = Order if is_card else Order.objects.create
+                    order = order_builder(
                         status=(Order.Status.CEKA_PLACANJE if form.cleaned_data['payment_method'] == 'card' else Order.Status.NOVA),
                         korisnik=request.user if request.user.is_authenticated else None,
                         ime_prezime=form.cleaned_data['ime_prezime'],
@@ -4936,7 +4945,7 @@ def checkout(request):
                         invalidate_magacin_nav_counts()
                     except Exception:
                         pass
-                    if request.user.is_authenticated:
+                    if request.user.is_authenticated and not is_card:
                         _save_profile_from_checkout(request.user, form.cleaned_data)
                     for item in cart:
                         product, variation = cart.get_product_and_variation(item)
@@ -5003,7 +5012,7 @@ def checkout(request):
                         elif discounted_unit is not None and bazna > discounted_unit:
                             popust_iznos = (bazna - discounted_unit).quantize(Decimal('0.01'))
 
-                        OrderItem.objects.create(
+                        build_item(
                             narudzba=order,
                             artikal=product,
                             varijacija=variation,
@@ -5023,7 +5032,7 @@ def checkout(request):
                     gift_product = scratch_reward.get('gift_product')
                     if scratch_reward.get('active') and scratch_reward.get('kind') == 'gift' and gift_product:
                         gift_base_price = gift_product.prikazna_cijena or gift_product.cijena
-                        OrderItem.objects.create(
+                        build_item(
                             narudzba=order,
                             artikal=gift_product,
                             naziv=f'{gift_product.naziv} — Sretni Greb-Greb poklon',
@@ -5035,14 +5044,17 @@ def checkout(request):
                             popust_iznos=gift_base_price,
                             kolicina=1,
                         )
-                    reserve_web_order_stock(order)
-                    if form.cleaned_data['payment_method'] == 'card':
-                        from .models import CardPayment
-                        CardPayment.objects.create(order=order, amount=int(order.ukupno * 100),
-                                                   environment=settings.MONRI_ENVIRONMENT)
+                    if is_card:
+                        from .monri import create_checkout_payment
+                        payment = create_checkout_payment(order, draft_items)
+                    else:
+                        reserve_web_order_stock(order)
             except MagacinError as exc:
                 messages.error(request, str(exc))
                 return redirect('cart')
+
+            if is_card:
+                return redirect('monri_start', token=payment.token)
 
             try:
                 from .online_gift import get_session_reward, mark_reward_consumed

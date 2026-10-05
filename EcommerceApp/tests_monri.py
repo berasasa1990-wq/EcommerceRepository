@@ -212,10 +212,12 @@ class MonriTests(TestCase):
             notify.assert_not_called()
         payment = CardPayment.objects.exclude(pk=self.payment.pk).get()
         self.assertEqual(payment.status, 'pending')
-        self.assertEqual(payment.order.status, Order.Status.CEKA_PLACANJE)
-        self.assertEqual(payment.amount, int(payment.order.ukupno * 100))
+        self.assertIsNone(payment.order_id)
+        self.assertEqual(Order.objects.count(), 1)  # Only the setUp fixture exists.
+        from .monri import checkout_order
+        self.assertEqual(payment.amount, int(checkout_order(payment).ukupno * 100))
         self.assertRedirects(response, reverse('monri_start', args=[payment.token]), fetch_redirect_response=False)
-        self.assertFalse(payment.order.placeno_karticom())
+        self.assertFalse(checkout_order(payment).placeno_karticom())
 
     def test_card_draft_is_accepted_only_by_verified_callback(self):
         self.order.status = Order.Status.CEKA_PLACANJE
@@ -307,6 +309,29 @@ class MonriTests(TestCase):
         self.test_checkout_card_creates_pending_payment_and_defers_purchase_side_effects()
         payment = CardPayment.objects.exclude(pk=self.payment.pk).get()
         self.assertEqual(payment.environment, 'production')
+
+    def test_checkout_without_order_creates_one_order_only_after_signed_payment(self):
+        self.test_checkout_card_creates_pending_payment_and_defers_purchase_side_effects()
+        payment = CardPayment.objects.exclude(pk=self.payment.pk).get()
+        for route in ('monri_return', 'monri_cancel', 'monri_start'):
+            self.assertEqual(self.client.get(reverse(route, args=[payment.token])).status_code, 200)
+        payload = self.payload(order_number=payment.reference, amount=payment.amount)
+        self.assertEqual(self.callback(payload, valid=False).status_code, 403)
+        self.assertEqual(self.callback({**payload, 'status': 'declined'}).status_code, 400)
+        self.assertEqual(Order.objects.count(), 1)
+        with patch('EcommerceApp.views_monri.finish_paid_order') as finish:
+            with self.captureOnCommitCallbacks(execute=True):
+                self.assertEqual(self.callback(payload).status_code, 200)
+            payment.refresh_from_db()
+            self.assertIsNotNone(payment.order_id)
+            self.assertEqual(payment.order.status, Order.Status.NOVA)
+            self.assertEqual(payment.order.stavke.count(), 1)
+            self.assertEqual(payment.order.web_placanje_label(), 'KARTICOM')
+            self.assertEqual(Order.objects.count(), 2)
+            with self.captureOnCommitCallbacks(execute=True):
+                self.assertEqual(self.callback(payload).status_code, 200)
+            self.assertEqual(Order.objects.count(), 2)
+            finish.assert_called_once()
 
     @override_settings(MONRI_ENVIRONMENT='production')
     def test_production_mode_preserves_cod_and_explicit_disable(self):

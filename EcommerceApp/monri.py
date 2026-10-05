@@ -1,10 +1,12 @@
 """Monri hosted form: never collect card numbers, and trust signed callbacks only."""
 import hashlib
 import hmac
+import json
 import logging
 from urllib.parse import urlsplit
 
 from django.conf import settings
+from django.core import serializers
 from django.urls import reverse
 
 
@@ -42,10 +44,26 @@ def require_paid_for_fulfillment(order):
         raise ValueError('Iznos narudžbe razlikuje se od kartične uplate. Potrebna je provjera prije isporuke.')
 
 
+def checkout_order(payment):
+    if payment.order_id:
+        return payment.order
+    return next(serializers.deserialize('json', json.dumps(payment.checkout_snapshot))).object
+
+
+def create_checkout_payment(order, items):
+    from .models import CardPayment
+    payment = CardPayment(amount=int(order.ukupno * 100), environment=settings.MONRI_ENVIRONMENT)
+    payment.reference = 'C' + payment.token.hex[:19]
+    order.broj = payment.reference
+    payment.checkout_snapshot = json.loads(serializers.serialize('json', [order, *items]))
+    payment.save()
+    return payment
+
+
 def form_data(payment):
     if not configured() or payment.environment != settings.MONRI_ENVIRONMENT:
         raise ValueError('Kartično plaćanje trenutno nije dostupno.')
-    order = payment.order
+    order = checkout_order(payment)
     amount = str(payment.amount)
     if payment.amount <= 0 or order.status == order.Status.OTKAZANA:
         raise ValueError('Ova narudžba nije dostupna za kartično plaćanje.')

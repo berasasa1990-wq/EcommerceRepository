@@ -7199,8 +7199,10 @@ class MungosProductMapping(models.Model):
 
 class CardPayment(models.Model):
     """No card data: only server-calculated amount and verified payment state."""
-    order = models.OneToOneField(Order, on_delete=models.PROTECT, related_name='card_payment')
+    order = models.OneToOneField(Order, on_delete=models.PROTECT, related_name='card_payment', null=True, blank=True)
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    reference = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    checkout_snapshot = models.JSONField(default=list, blank=True)
     amount = models.PositiveIntegerField()  # BAM minor units, captured at checkout.
     currency = models.CharField(max_length=3, default='BAM')
     environment = models.CharField(max_length=10, default='test')

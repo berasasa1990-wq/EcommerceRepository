@@ -5,13 +5,15 @@ from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.db import transaction
+from django.db.models import Q
+from django.core import serializers
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.cache import never_cache
 
 from .models import CardPayment, Order
-from .monri import callback_valid, form_data
+from .monri import callback_valid, form_data, checkout_order
 
 
 def finish_paid_order(order):
@@ -45,7 +47,7 @@ def payment_render(request, template, context, status=200):
 
 
 def payment_context(payment):
-    return {'payment': payment, 'order': payment.order}
+    return {'payment': payment, 'order': checkout_order(payment)}
 
 
 @never_cache
@@ -84,12 +86,13 @@ def callback(request):
         return HttpResponse(status=403)
     try:
         body = json.loads(request.body)
-        if not isinstance(body, dict) or type(body.get('amount')) is not int:
+        if (not isinstance(body, dict) or type(body.get('amount')) is not int
+                or not isinstance(body.get('order_number'), str) or not body['order_number']):
             return HttpResponse(status=400)
     except (ValueError, UnicodeDecodeError):
         return HttpResponse(status=400)
     with transaction.atomic():
-        payment = CardPayment.objects.select_for_update().filter(order__broj=body.get('order_number')).first()
+        payment = CardPayment.objects.select_for_update().filter(Q(reference=body.get('order_number')) | Q(order__broj=body.get('order_number'))).first()
         if not payment:
             return HttpResponse(status=404)
         if (body.get('amount') != payment.amount or body.get('currency') != payment.currency
@@ -103,7 +106,28 @@ def callback(request):
             return HttpResponse(status=400)
         if payment.status == 'paid':
             return HttpResponse(status=200 if payment.transaction_id == transaction_id else 409)
-        order = Order.objects.select_for_update().get(pk=payment.order_id)
+        if payment.order_id:
+            order = Order.objects.select_for_update().get(pk=payment.order_id)
+        else:
+            snapshot = list(serializers.deserialize('json', json.dumps(payment.checkout_snapshot)))
+            order = snapshot[0].object
+            order.pk = None
+            order.broj = ''  # Assign a real order number only after verified payment.
+            order.status = Order.Status.NOVA
+            order.save()
+            for entry in snapshot[1:]:
+                item = entry.object
+                item.pk = None
+                item.narudzba = order
+                item.save()
+            payment.order = order
+            from .magacin import reserve_web_order_stock, MagacinError
+            try:
+                with transaction.atomic():
+                    reserve_web_order_stock(order)
+            except MagacinError:
+                # Preserve the verified paid order for staff handling, even if stock changed.
+                logging.getLogger(__name__).warning('Plaćena kartična narudžba ID %s zahtijeva provjeru lagera.', order.pk)
         if order.status == Order.Status.OTKAZANA:
             return HttpResponse(status=409)
         if order.status == Order.Status.CEKA_PLACANJE:
@@ -113,6 +137,6 @@ def callback(request):
         payment.status = 'paid'
         payment.transaction_id = transaction_id
         payment.paid_at = timezone.now()
-        payment.save(update_fields=['status', 'transaction_id', 'paid_at'])
+        payment.save(update_fields=['order', 'status', 'transaction_id', 'paid_at'])
         transaction.on_commit(lambda: finish_paid_order(order))
     return JsonResponse({'ok': True})

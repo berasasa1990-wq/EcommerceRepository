@@ -54,17 +54,18 @@ ključa. Vrijednosti ključeva se ne loguju niti prikazuju pri dijagnostici.
 
 ## Ponašanje
 
-Iznos se uzima iz serverom izračunatog Order.ukupno, u BAM feningama. Narudžba
-prije uplate predstavlja interni nacrt u statusu `ceka_placanje`, a ne zaprimljenu
-narudžbu. Nacrt se ne prikazuje u online narudžbama, magacinskoj listi, validaciji
-ili kupčevom pregledu narudžbi. Lager je rezervisan postojećim checkout flowom.
-Tek validan callback označava uplatu, prebacuje nacrt u `nova` i bilježi vrijeme
-prihvatanja narudžbe. Staff obavijest o kupovini, email i finalizacija slijede
-nakon commita, jednom. Success/cancel redirect ne prihvata nacrt; direktan
-order-success URL za neplaćeni kartični zapis preusmjerava na status plaćanja.
+Iznos se uzima iz serverom izračunatog Order.ukupno, u BAM feningama.
+Novi kartični checkout NE upisuje Order ili OrderItem prije uplate. Čuva se
+CardPayment sa snapshotom postojećeg izračuna i stavki, bez podataka kartice,
+i jedinstvenom Monri referencom (nije broj kreirane narudžbe). Cart i rewards
+ne troše se prije uplate. Tek validan approved callback kreira stvarnu narudžbu,
+stavke i rezervacije te veže payment na narudžbu. Ako se lager u međuvremenu
+promijeni, plaćena narudžba ostaje sačuvana za staff provjeru; djelimična
+rezervacija se rollbackuje. Payment zaključavanje i paid guard sprečavaju da
+ponovljeni callback kreira drugu narudžbu. Browser return/cancel ne kreiraju
+narudžbu. Stari pending Order zapisi ostaju kompatibilni i ne brišu se.
+Migration `0307_monri_checkout_before_order` mora biti primijenjena prije rada.
 Na webshopu i računu se kartično plaćanje označava `KARTICOM`.
-Migration `0306_card_order_pending_acceptance` postojeće `nova` zapise sa
-pending kartičnom uplatom prebacuje u nacrte; ostale narudžbe ne mijenja.
 Callback se provjerava
 SHA-512 potpisom nad originalnim bodyjem, uz provjeru order number, iznosa, BAM,
 okruženja, purchase, approved/0000. Ponovljeni isti callback ne naplaćuje niti
