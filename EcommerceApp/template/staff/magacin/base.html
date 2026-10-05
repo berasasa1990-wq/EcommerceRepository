@@ -172,48 +172,9 @@
             {% endif %}
         </nav>
 
-        {% if request.user|warehouse_can:"staff_magacin_sync" or request.user|warehouse_can:"staff_magacin_backup" %}
+        {% if request.user|warehouse_can:"staff_magacin_backup" or request.user|warehouse_can:"staff_magacin_sync_istorija" %}
         <div class="mg-side-foot">
-            <div class="mg-side-label">SINHRONIZACIJA</div>
-            {% if last_sync %}
-            <div class="mg-sync-status{% if last_sync.status == 'greska' %} is-bad{% endif %}">
-                <span class="dot"></span>
-                {{ last_sync.get_status_display }}
-            </div>
-            <p class="mg-sync-meta">Zadnji sync: <strong>{{ last_sync.started_at|date:"d.m.Y H:i" }}</strong></p>
-            <p class="mg-sync-meta mg-sync-extra">Trajanje: <strong>{{ last_sync.trajanje_label }}</strong></p>
-            <p class="mg-sync-meta mg-sync-extra">Izvor: <strong>{{ last_sync.izvor }}</strong></p>
-            {% else %}
-            <div class="mg-sync-status is-idle">
-                <span class="dot"></span>
-                Nije rađena
-            </div>
-            <p class="mg-sync-meta mg-sync-extra">Izvor: <strong>Odoo (ovaj server)</strong></p>
-            {% endif %}
-            <p class="mg-sync-meta mg-sync-extra">Push ne šalje artikle. Sync vuče iz Odoo na ovaj server.</p>
-            {% if request.user|warehouse_can:"staff_magacin_sync" %}<form method="post" action="{% url 'staff_magacin_sync' %}" class="mg-sync-form">
-                {% csrf_token %}
-                <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
-                <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>{% if sync_job %}Sync u toku…{% else %}Sync sada{% endif %}</button>
-            </form>{% endif %}
-            {% if request.user|warehouse_can:"staff_magacin_sync" %}<form method="post" action="{% url 'staff_magacin_sync' %}" class="mg-sync-form">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="stock">
-                <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
-                <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>Sync zaliha</button>
-            </form>{% endif %}
-            {% if request.user|warehouse_can:"staff_magacin_sync" %}<form method="post" action="{% url 'staff_magacin_sync' %}" class="mg-sync-form">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="prices">
-                <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
-                <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>Sync cijena</button>
-            </form>{% endif %}
-            {% if request.user|warehouse_can:"staff_magacin_sync" %}<form method="post" action="{% url 'staff_magacin_sync' %}" class="mg-sync-form">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="sifre">
-                <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
-                <button type="submit" class="mg-history-btn"{% if sync_job %} disabled{% endif %}>Sync šifri</button>
-            </form>{% endif %}
+            <div class="mg-side-label">BAZA I HISTORIJA</div>
             {% if request.user|warehouse_can:"staff_magacin_backup" %}<form method="post" action="{% url 'staff_magacin_backup' %}" class="mg-sync-form" onsubmit="return confirm('Napraviti backup baze? Kasnije ga možeš vratiti Restore-om.');">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="create">
@@ -230,26 +191,6 @@
     </aside>
 
     <div class="mg-main">
-        {% if sync_job and request.user|warehouse_can:"staff_magacin_sync" %}
-        <div class="mg-sync-banner">
-            <strong>Sinhronizacija iz Odoo</strong>
-            <span>{{ sync_job.label }}</span>
-            <div class="mg-sync-bar"><i style="width: {{ sync_job.percent }}%"></i></div>
-            <div class="mg-sync-banner-actions">
-                <form id="mgSyncContinue" method="post" action="{% url 'staff_magacin_sync' %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="continue">
-                    <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
-                </form>
-                <form id="mgSyncCancel" method="post" action="{% url 'staff_magacin_sync' %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="cancel">
-                    <input type="hidden" name="next" value="{% url 'staff_magacin_artikli' %}">
-                    <button type="submit" class="mg-btn mg-btn-danger">Prekini sync</button>
-                </form>
-            </div>
-        </div>
-        {% endif %}
         {% block magacin_before_search %}{% endblock %}
         {% if magacin_section == 'rezervni' or magacin_section == 'popis_test' or magacin_section == 'popis' or magacin_section == 'stampa_deklaracije' or magacin_section == 'stampa_cijena' or magacin_section == 'lokacije' or magacin_section == 'zalihe' or magacin_section == 'mp_dnevno' or magacin_section == 'transferi' or magacin_section == 'provjera_lagera' or magacin_section == 'fali_na_sajtu' %}
         <button type="button" class="mg-menu-standalone" id="mgNavToggle" aria-label="Meni magacina" aria-expanded="false">

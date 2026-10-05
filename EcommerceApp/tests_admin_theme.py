@@ -61,9 +61,9 @@ class StorefrontAdminThemeTests(TestCase):
         self.assertNotContains(response, 'id_browse_interest_mode')
         self.assertContains(response, 'name="_save"')
 
-    def test_custom_quick_entry_and_import_share_theme(self):
+    def test_custom_quick_entry_shares_theme(self):
         self.client.force_login(self.user)
-        for name in ['admin:EcommerceApp_product_brzi_unos', 'admin:EcommerceApp_product_odoo_import']:
+        for name in ['admin:EcommerceApp_product_brzi_unos']:
             with self.subTest(name=name):
                 self.assert_theme(reverse(name))
 

@@ -817,7 +817,7 @@
             }
         }
 
-        /* Upozorenje: nema Odoo zalihe → provjeri MP prije puštanja */
+        /* Upozorenje: nema lokalne zalihe → provjeri MP prije puštanja */
         .mp-check-overlay {
             position: fixed;
             inset: 0;
@@ -1062,7 +1062,7 @@
             markPrinted();
         });
 
-        // Auto-print samo ako je sve u Odoo na stanju i nije već odštampana
+        // Auto-print samo ako je sve na lokalnom stanju i nije već odštampana
         // (ako jeste — traži potvrdu)
         window.addEventListener('load', function () {
             if (requiresMp) return;

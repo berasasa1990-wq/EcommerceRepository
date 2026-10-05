@@ -380,7 +380,6 @@ urlpatterns = [
     path('ponuda/<str:token>/', views_magacin.ponuda_javna, name='ponuda_javna'),
     path('nalog/magacin/izvjestaji/', views_magacin.magacin_izvjestaji, name='staff_magacin_izvjestaji'),
     path('nalog/magacin/podesavanja/', views_magacin.magacin_podesavanja, name='staff_magacin_podesavanja'),
-    path('nalog/magacin/sync/', views_magacin.magacin_sync, name='staff_magacin_sync'),
     path('nalog/magacin/sync/istorija/', views_magacin.magacin_sync_istorija, name='staff_magacin_sync_istorija'),
     path('nalog/magacin/backup/', views_magacin.magacin_backup, name='staff_magacin_backup'),
     path(

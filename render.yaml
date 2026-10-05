@@ -61,14 +61,6 @@ services:
         sync: false
       - key: SYNC_API_KEY
         sync: false
-      - key: ODOO_URL
-        sync: false
-      - key: ODOO_DB
-        sync: false
-      - key: ODOO_USERNAME
-        sync: false
-      - key: ODOO_API_KEY
-        sync: false
       - key: XEXPRESS_USERNAME
         sync: false
       - key: XEXPRESS_PASSWORD

@@ -299,7 +299,7 @@ def create_and_activate_product(
     from django.utils import timezone
 
     from .models import SIFRA_MAX_LENGTH
-    from .odoo_import import _sifra_zauzeta
+    from .product_identifiers import _sifra_zauzeta
 
     naziv = (naziv or '').strip()[:200]
     if not naziv:

@@ -61,7 +61,7 @@ python manage.py runserver
      - `SITE_URL=https://tvoja-app.onrender.com`
      - `RENDER_DISK_PATH=/var/data`
      - `DJANGO_SUPERUSER_*` (za automatsko kreiranje admina)
-     - Sve ostale iz tvog .env (EMAIL, ODOO, SYNC, TURNSTILE...)
+     - Sve ostale iz tvog .env (EMAIL, SYNC, TURNSTILE...)
 
    Render automatski postavlja `RENDER_EXTERNAL_HOSTNAME` i `DATABASE_URL` (ako je povezan Postgres).
 
@@ -144,3 +144,5 @@ Sve je pokriveno u `.gitignore`.
 - Ručna narudžba u Magacinu za VP kupca koristi isti B2B obračun po brendu i akcijski popust. Stavke se prikazuju netto, PDV 17% i iznos sa PDV-om u zbiru; sačuvane stavke koriste postojeću bruto konvenciju narudžbi.
 
 - **Magacin → Dupli barkodovi** prikazuje postojeće duplikate i blokirane pokušaje dodjele, sa oba artikla i linkovima za izmjenu. Provjera barkoda u Magacinu i adminu prikazuje poruku pri unosu, a serverska provjera sprečava čuvanje. Prazni barkodovi i vlastiti nepromijenjeni barkod su dozvoljeni. Migracija 0265 evidentira ranije duplikate bez izmjene artikala.
+
+Odoo integracija je uklonjena. Lokalni read-only audit prije/poslije deploya: `python manage.py audit_odoo_detach`. Postupak je u `ODOO_DETACH.md`.

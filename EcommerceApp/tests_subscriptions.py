@@ -57,7 +57,7 @@ class WarehouseAccessTests(TestCase):
         self.assertFalse(warehouse_user_required(self.admin))
         self.client.force_login(self.user)
         self.assertEqual(self.client.get(reverse('staff_magacin')).status_code, 302)
-        self.assertEqual(self.client.post(reverse('staff_magacin_sync')).status_code, 302)
+        self.assertEqual(self.client.post('/nalog/magacin/sync/').status_code, 404)
 
     def test_menu_has_full_controls_and_no_subscription_locks(self):
         request = RequestFactory().get('/')
@@ -65,7 +65,7 @@ class WarehouseAccessTests(TestCase):
         html = render_to_string('staff/magacin/base.html', {
             'request': request, 'user': self.admin, 'site_settings': SiteSettings.load(),
         })
-        for name in ['uvoz', 'backup', 'sync', 'zalihe', 'duguje', 'stampa_cijena']:
+        for name in ['uvoz', 'backup', 'zalihe', 'duguje', 'stampa_cijena']:
             self.assertIn(reverse('staff_magacin_' + name), html)
         self.assertNotIn('mg-menu-lock', html)
         self.assertNotIn('Pretplate', html)

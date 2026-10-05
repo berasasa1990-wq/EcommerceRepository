@@ -619,11 +619,6 @@ OLX_CITY_ID = int(_env('OLX_CITY_ID', '77'))
 OLX_COUNTRY_ID = int(_env('OLX_COUNTRY_ID', '49'))
 OLX_DEFAULT_CATEGORY_ID = int(_env('OLX_DEFAULT_CATEGORY_ID', '1260'))
 
-# Odoo import (XML-RPC, API ključ kao lozinka)
-ODOO_URL = _env('ODOO_URL', '').rstrip('/')
-ODOO_DB = _env('ODOO_DB', '')
-ODOO_USERNAME = _env('ODOO_USERNAME', '')
-ODOO_API_KEY = _env('ODOO_API_KEY', '')
 
 # Cloudflare Turnstile (https://developers.cloudflare.com/turnstile/)
 TURNSTILE_SITE_KEY = _env('TURNSTILE_SITE_KEY', '')

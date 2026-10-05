@@ -28,10 +28,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from .magacin import (
-    DISCOVER_SYNC_BATCH,
     is_maloprodaja_pick_location,
     _location_for_pick_label,
-    MAGACIN_SYNC_SESSION_KEY,
     MagacinError,
     active_popis,
     add_popis_stavka,
@@ -95,9 +93,6 @@ from .magacin import (
     maloprodaja_locations,
     ignored_location_q,
     last_sync,
-    load_running_sync_job,
-    persist_sync_job,
-    run_sync_until,
     location_rows,
     maloprodaja_location_rows,
     missing_maloprodaja_rows,
@@ -119,17 +114,11 @@ from .magacin import (
     usable_locations,
     location_stock_qty,
     set_location_counted_qty,
-    cancel_sync,
-    run_sync_chunk,
     validate_order_stock,
     search_products,
     search_products_for_lookup,
     lookup_stock_payload,
     seed_default_locations,
-    start_full_sync,
-    start_price_sync,
-    start_sifra_sync,
-    start_stock_sync,
     stock_totals,
     vp_cijena,
 )
@@ -178,7 +167,6 @@ from .db_backup import (
     restore_backup,
     save_uploaded_backup,
 )
-from .odoo_client import odoo_je_konfigurisan
 from .views import _base_context
 from .warehouse_access import warehouse_user_required, warehouse_landing
 
@@ -248,57 +236,9 @@ def _movement_korisnik_label(movement):
 def _ensure_magacin_locations():
     if WarehouseLocation.objects.exists():
         return
-    if not odoo_je_konfigurisan():
-        seed_default_locations()
+    seed_default_locations()
 
 
-def _sync_job_view(job):
-    if not job:
-        return None
-    template_ids = job.get('template_ids') or []
-    stock_ids = job.get('stock_ids') or []
-    phase = job.get('phase') or 'catalog'
-    if phase == 'discover':
-        total = max(1, int(job.get('discover_offset') or 0) + DISCOVER_SYNC_BATCH)
-        current = int(job.get('discover_offset') or 0)
-        label = f'Čitam Odoo katalog: {len(job.get("discovered_ids") or [])} artikala'
-    elif phase == 'prices':
-        total = max(1, len(template_ids))
-        current = int(job.get('position') or 0)
-        label = f'Usklađujem cijene s Odoo: {current} / {len(template_ids)}'
-    elif phase == 'sifre':
-        total = max(1, len(template_ids))
-        current = int(job.get('position') or 0)
-        label = f'Ažuriram šifre po nazivu: {current} / {len(template_ids)}'
-    elif phase == 'catalog':
-        total = max(1, len(template_ids))
-        current = int(job.get('position') or 0)
-        label = (
-            f'Dodajem {current} / {len(template_ids)} artikala kojih nema na sajtu'
-        )
-    elif phase == 'locations':
-        total = 1
-        current = 1
-        label = 'Lokacije iz Odoo'
-    elif phase == 'stock':
-        total = max(1, len(stock_ids))
-        current = int(job.get('stock_position') or 0)
-        label = (
-            f'Usklađujem količine s Odoo: {current} / {len(stock_ids)}'
-            if job.get('stock_only')
-            else f'Zalihe {current} / {len(stock_ids)}'
-        )
-    else:
-        total = 1
-        current = 1
-        label = 'Završavam…'
-    percent = int((current / total) * 100) if total else 100
-    return {
-        'phase': phase,
-        'label': label,
-        'percent': min(100, percent),
-        'artikala': job.get('artikala') or 0,
-    }
 
 
 def _prenos_mp_q():
@@ -405,16 +345,12 @@ def _magacin_context(request, *, section='artikli', page_title='Magacin', hide_t
         'page_title': page_title,
         'hide_top_search': hide_top_search,
         'last_sync': sync,
-        'odoo_configured': odoo_je_konfigurisan(),
         'notify_count': counts['notify_count'],
         'staff_display_name': _user_display(request.user),
         'staff_role': 'Admin' if request.user.is_superuser else 'Staff',
         'search_query': '',
         'magacin_search': _magacin_search_query(request),
         'include_zero': (request.GET.get('bez_zalihe') or '') == '1',
-        'sync_job': _sync_job_view(
-            request.session.get(MAGACIN_SYNC_SESSION_KEY) or load_running_sync_job()
-        ),
         'last_backup': last_backup(),
         'new_magacin_orders_count': counts['new_magacin_orders_count'],
         'new_pack_orders_count': counts['new_pack_orders_count'],
@@ -2122,7 +2058,7 @@ def _check_barcode_input(request, product, barcode):
 
 
 def _save_product_edit(request, product):
-    from .odoo_import import _sifra_zauzeta
+    from .product_identifiers import _sifra_zauzeta
 
     naziv = (request.POST.get('naziv') or '').strip()[:200]
     if not naziv:
@@ -3670,13 +3606,13 @@ def _build_picked_packing_lines(order):
 
 
 def _order_packing_job(order):
-    packing_lines, odoo_error = _build_picked_packing_lines(order)
+    packing_lines, packing_error = _build_picked_packing_lines(order)
     created = timezone.localtime(order.kreirana)
     order.is_vp = is_vp_order(order)
     return {
         'order': order,
         'packing_lines': packing_lines,
-        'odoo_error': odoo_error,
+        'packing_error': packing_error,
         'datum': created.strftime('%d.%m.%Y.'),
         'vrijeme': created.strftime('%H:%M'),
     }
@@ -4923,7 +4859,7 @@ def magacin_pakovanje(request):
 
     packing_order = None
     packing_lines = []
-    odoo_error = ''
+    packing_error = ''
     datum = ''
     vrijeme = ''
     if selected_broj:
@@ -4931,7 +4867,7 @@ def magacin_pakovanje(request):
             Order.objects.exclude(status=Order.Status.OTKAZANA).prefetch_related('stavke'),
             broj=selected_broj,
         )
-        packing_lines, odoo_error = _build_order_packing_lines(packing_order)
+        packing_lines, packing_error = _build_order_packing_lines(packing_order)
         packing_order.is_vp = is_vp_order(packing_order)
         created = timezone.localtime(packing_order.kreirana)
         datum = created.strftime('%d.%m.%Y.')
@@ -4944,7 +4880,7 @@ def magacin_pakovanje(request):
         'selected_broj': selected_broj,
         'order': packing_order,
         'packing_lines': packing_lines,
-        'odoo_error': odoo_error,
+        'packing_error': packing_error,
         'datum': datum,
         'vrijeme': vrijeme,
     })
@@ -6245,7 +6181,7 @@ def magacin_pakuj_detail(request, broj):
                 messages.error(request, str(exc))
                 return redirect('staff_magacin_pakuj_detail', broj=order.broj)
 
-    queue, location_groups, odoo_error = _order_pick_bundle(order)
+    queue, location_groups, packing_error = _order_pick_bundle(order)
     mp_count = sum(1 for item in queue if item.get('is_mp'))
     prenos_items = list(
         order.stavke.select_related('artikal', 'varijacija')
@@ -6283,7 +6219,7 @@ def magacin_pakuj_detail(request, broj):
             for row in order.stavke.filter(ledger_excess_line__isnull=True)
             if row.kolicina_pokupljeno is not None
         ),
-        'odoo_error': odoo_error,
+        'packing_error': packing_error,
         'pick_fullscreen': True,
         'mp_count': mp_count,
         'is_prenos_mp': prenos_mp,
@@ -8897,7 +8833,6 @@ def _backup_page_context(request, *, page_title='Backup baze — Magacin'):
 def magacin_podesavanja(request):
     context = _backup_page_context(request, page_title='Podešavanja — Magacin')
     context.update({
-        'odoo_configured': odoo_je_konfigurisan(),
         'location_count': WarehouseLocation.objects.count(),
         'sync_count': WarehouseSyncLog.objects.count(),
     })
@@ -9004,67 +8939,6 @@ def magacin_backup_download_current(request):
     return FileResponse(path.open('rb'), as_attachment=True, filename=path.name)
 
 
-@login_required(login_url='login')
-@user_passes_test(warehouse_user_required)
-@require_POST
-def magacin_sync(request):
-    next_url = request.POST.get('next') or reverse('staff_magacin_artikli')
-    action = (request.POST.get('action') or 'start').strip()
-    try:
-        if action == 'cancel':
-            job = request.session.get(MAGACIN_SYNC_SESSION_KEY) or load_running_sync_job()
-            if job:
-                cancel_sync(job, user=request.user)
-                persist_sync_job(job)
-            request.session.pop(MAGACIN_SYNC_SESSION_KEY, None)
-            request.session.modified = True
-            messages.info(request, 'Sinhronizacija je prekinuta.')
-            return HttpResponseRedirect(next_url.split('?')[0] if next_url else reverse('staff_magacin_artikli'))
-        if action == 'continue':
-            job = request.session.get(MAGACIN_SYNC_SESSION_KEY) or load_running_sync_job()
-            if not job:
-                raise MagacinError('Sync sesija je istekla. Pokreni Sync ponovo.')
-            if job.get('cancelled'):
-                request.session.pop(MAGACIN_SYNC_SESSION_KEY, None)
-                request.session.modified = True
-                messages.info(request, 'Sinhronizacija je prekinuta.')
-                return HttpResponseRedirect(next_url.split('?')[0] if next_url else reverse('staff_magacin_artikli'))
-            job = run_sync_until(job, user=request.user)
-        else:
-            product = None
-            product_id = request.POST.get('product_id')
-            if product_id:
-                product = get_object_or_404(Product, pk=product_id)
-            if action == 'stock':
-                job = start_stock_sync(user=request.user, product=product)
-            elif action == 'prices':
-                job = start_price_sync(user=request.user, product=product)
-            elif action == 'sifre':
-                job = start_sifra_sync(user=request.user)
-            else:
-                job = start_full_sync(user=request.user, product=product)
-            persist_sync_job(job)
-            job = run_sync_until(job, user=request.user)
-
-        persist_sync_job(job)
-        if job.get('done'):
-            request.session.pop(MAGACIN_SYNC_SESSION_KEY, None)
-            request.session.modified = True
-            if job.get('error'):
-                messages.error(request, job['error'])
-            else:
-                log = last_sync()
-                messages.success(request, (log.poruka if log else '') or 'Sinhronizacija je završena.')
-            return HttpResponseRedirect(next_url.split('?')[0] if next_url else reverse('staff_magacin_artikli'))
-
-        request.session[MAGACIN_SYNC_SESSION_KEY] = job
-        request.session.modified = True
-        return redirect(f"{reverse('staff_magacin_artikli')}?sync=1")
-    except MagacinError as exc:
-        request.session.pop(MAGACIN_SYNC_SESSION_KEY, None)
-        request.session.modified = True
-        messages.error(request, str(exc))
-        return HttpResponseRedirect(next_url)
 
 
 @login_required(login_url='login')

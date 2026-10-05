@@ -13,21 +13,16 @@ from django.utils import timezone
 
 from .cart import izracunaj_pdv
 from .magacin import (
-    MAGACIN_SYNC_SESSION_KEY,
     MagacinError,
     NOVI_UVOZ_NAZIV,
     parse_vp_bulk_text,
-    _apply_quant_batch,
-    _odoo_id_to_local,
     apply_magacin_uvoz,
     apply_movement,
-    attach_site_odoo_products_to_magacin,
     cancel_order_stock,
     create_prenos_mp_pick,
     drop_prenos_mp_item,
     deduct_for_order,
     deduct_mp_daily_stock,
-    local_odoo_template_ids,
     location_rows,
     maloprodaja_location_rows,
     display_stock_totals,
@@ -43,13 +38,6 @@ from .magacin import (
     reserve_for_order,
     seed_default_locations,
     stock_totals,
-    run_sync_chunk,
-    start_price_sync,
-    start_sifra_sync,
-    start_stock_sync,
-    sync_catalog_chunk,
-    sync_price_chunk,
-    sync_sifra_chunk,
     validate_order_stock,
 )
 from .models import (
@@ -668,165 +656,13 @@ class MagacinStockTests(TestCase):
         self.assertEqual(stock_totals(self.product)['dostupno'], 5)
 
 
-class FakeOdooClient:
-    def __init__(self, templates, variants=None):
-        self.templates = {int(row['id']): row for row in templates}
-        self.variants = {int(row['id']): row for row in (variants or [])}
-        self.image_requests = []
-
-    def get_templates_by_ids(self, template_ids):
-        return [self.templates[int(tid)] for tid in template_ids if int(tid) in self.templates]
-
-    def get_template_images(self, template_ids, *, batch_size=5):
-        self.image_requests.extend(int(tid) for tid in template_ids)
-        return {}
-
-    def get_product_variants(self, variant_ids, *, with_images=False):
-        return [self.variants[int(vid)] for vid in variant_ids if int(vid) in self.variants]
-
-    def get_all_sale_template_ids(self):
-        return list(self.templates)
 
 
-class MagacinCatalogSyncTests(TestCase):
-    def test_updates_existing_by_odoo_id_without_duplicate(self):
-        product = Product.objects.create(
-            naziv='Stari naziv',
-            sifra='FOX-OLD',
-            barkod='111',
-            cijena=Decimal('10.00'),
-            odoo_template_id=501,
-            stanje=4,
-        )
-        client = FakeOdooClient([{
-            'id': 501,
-            'name': 'Novi naziv',
-            'default_code': 'FOX-NEW',
-            'barcode': '999',
-            'list_price': '19.50',
-            'qty_available': 8,
-            'product_variant_ids': [501],
-        }])
-        stats = sync_catalog_chunk(client, [501], start=0, limit=10)
-        self.assertEqual(stats['azurirano'], 1)
-        self.assertEqual(stats['kreirano'], 0)
-        self.assertEqual(Product.objects.filter(odoo_template_id=501).count(), 1)
-        product.refresh_from_db()
-        self.assertEqual(product.naziv, 'Novi naziv')
-        self.assertEqual(product.sifra, 'FOX-NEW')
-        self.assertEqual(product.barkod, '999')
-        self.assertEqual(product.cijena, Decimal('19.50'))
-        self.assertEqual(Product.objects.count(), 1)
+class MagacinHistoricalLocalRecordsTests(TestCase):
 
-    def test_skips_unchanged_existing_product(self):
-        product = Product.objects.create(
-            naziv='Isti naziv',
-            sifra='SAME-1',
-            barkod='B1',
-            cijena=Decimal('10.00'),
-            odoo_template_id=444,
-            magacin_sync_at=timezone.now(),
-        )
-        product.slika = 'products/vec-tu.jpg'
-        product.save(update_fields=['slika'])
-        before = product.azuriran
-        client = FakeOdooClient([{
-            'id': 444,
-            'name': 'Isti naziv',
-            'default_code': 'SAME-1',
-            'barcode': 'B1',
-            'list_price': '10.00',
-            'qty_available': 3,
-            'product_variant_ids': [444],
-        }])
-        stats = sync_catalog_chunk(client, [444], start=0, limit=10)
-        self.assertEqual(stats['preskoceno'], 1)
-        self.assertEqual(stats['azurirano'], 0)
-        product.refresh_from_db()
-        self.assertEqual(product.azuriran, before)
 
-    def test_discover_phase_queues_missing_odoo_products(self):
-        Product.objects.create(
-            naziv='Već tu',
-            sifra='HAS-1',
-            cijena=Decimal('1.00'),
-            odoo_template_id=10,
-            magacin_sync_at=timezone.now(),
-        )
-        log = WarehouseSyncLog.objects.create(
-            status=WarehouseSyncLog.Status.U_TOKU,
-            izvor='Odoo',
-        )
 
-        class PageClient:
-            def get_sale_template_ids_page(self, *, offset=0, limit=250):
-                ids = [10, 88]
-                return ids[offset:offset + limit]  # 2 < 300 → discover gotov
 
-        job = {
-            'log_id': log.pk,
-            'started': time.time(),
-            'phase': 'discover',
-            'discovered_ids': [],
-            'discover_offset': 0,
-            'changed_ids': [],
-            'incremental': True,
-        }
-        with patch('EcommerceApp.odoo_client.OdooClient.from_settings', return_value=PageClient()):
-            job = run_sync_chunk(job)
-        self.assertEqual(job['phase'], 'catalog')
-        self.assertEqual(job['template_ids'], [88])
-
-    def test_updates_product_matched_by_sifra_even_with_other_odoo_id(self):
-        product = Product.objects.create(
-            naziv='Drugi artikal',
-            sifra='SAME-CODE',
-            cijena=Decimal('1.00'),
-            odoo_template_id=10,
-        )
-        client = FakeOdooClient([{
-            'id': 88,
-            'name': 'Novi iz Odoo',
-            'default_code': 'SAME-CODE',
-            'barcode': '',
-            'list_price': '2.00',
-            'qty_available': 1,
-            'product_variant_ids': [88],
-        }])
-        stats = sync_catalog_chunk(client, [88], start=0, limit=10)
-        self.assertEqual(stats['kreirano'], 0)
-        self.assertEqual(stats['azurirano'], 1)
-        self.assertEqual(Product.objects.count(), 1)
-        product.refresh_from_db()
-        self.assertEqual(product.odoo_template_id, 88)
-        self.assertEqual(product.naziv, 'Novi iz Odoo')
-        self.assertEqual(product.sifra, 'SAME-CODE')
-        self.assertEqual(product.cijena, Decimal('2.00'))
-
-    def test_updates_existing_by_name_from_odoo(self):
-        product = Product.objects.create(
-            naziv='Gift Card',
-            sifra='GC-1',
-            cijena=Decimal('1.00'),
-        )
-        client = FakeOdooClient([{
-            'id': 88,
-            'name': 'gift card',
-            'default_code': 'GC-NEW',
-            'barcode': 'B-88',
-            'list_price': '2.00',
-            'qty_available': 0,
-            'product_variant_ids': [88],
-        }])
-        stats = sync_catalog_chunk(client, [88], start=0, limit=10)
-        self.assertEqual(stats['kreirano'], 0)
-        self.assertEqual(stats['azurirano'], 1)
-        self.assertEqual(Product.objects.filter(naziv__iexact='gift card').count(), 1)
-        product.refresh_from_db()
-        self.assertEqual(product.odoo_template_id, 88)
-        self.assertEqual(product.sifra, 'GC-NEW')
-        self.assertEqual(product.barkod, 'B-88')
-        self.assertEqual(product.cijena, Decimal('2.00'))
 
     def test_cleanup_deletes_duplicate_names(self):
         from EcommerceApp.magacin import cleanup_duplicate_identities
@@ -852,95 +688,9 @@ class MagacinCatalogSyncTests(TestCase):
         self.assertTrue(Product.objects.filter(pk=keep.pk).exists())
         self.assertFalse(Product.objects.filter(pk=extra.pk).exists())
 
-    def test_variation_other_odoo_id_does_not_block_new_product(self):
-        parent = Product.objects.create(
-            naziv='Parent',
-            sifra='PAR-88',
-            cijena=Decimal('1.00'),
-            odoo_template_id=10,
-        )
-        ProductVariation.objects.create(
-            artikal=parent,
-            naziv='var',
-            sifra='PAR-88-V',
-            odoo_template_id=88,
-        )
-        client = FakeOdooClient([{
-            'id': 88,
-            'name': 'Treba novi artikal',
-            'default_code': 'NEW-88-T',
-            'barcode': '',
-            'list_price': '3.00',
-            'qty_available': 0,
-            'product_variant_ids': [88],
-        }])
-        stats = sync_catalog_chunk(client, [88], start=0, limit=10)
-        self.assertEqual(stats['kreirano'], 1)
-        self.assertEqual(Product.objects.filter(odoo_template_id=88).count(), 1)
-        self.assertEqual(Product.objects.filter(odoo_template_id=10).count(), 1)
 
-    def test_persist_and_load_running_sync_job(self):
-        from EcommerceApp.magacin import load_running_sync_job, persist_sync_job
 
-        log = WarehouseSyncLog.objects.create(
-            status=WarehouseSyncLog.Status.U_TOKU,
-            izvor='Odoo',
-        )
-        job = {
-            'log_id': log.pk,
-            'phase': 'catalog',
-            'template_ids': [88, 99],
-            'position': 1,
-            'done': False,
-        }
-        persist_sync_job(job)
-        loaded = load_running_sync_job()
-        self.assertIsNotNone(loaded)
-        self.assertEqual(loaded['template_ids'], [88, 99])
-        self.assertEqual(loaded['position'], 1)
-        job['done'] = True
-        persist_sync_job(job)
-        self.assertIsNone(load_running_sync_job())
 
-    def test_creates_unknown_odoo_product(self):
-        client = FakeOdooClient([{
-            'id': 777,
-            'name': 'Novi iz Odoo',
-            'default_code': 'EMPTY-1',
-            'barcode': 'B777',
-            'list_price': '5.00',
-            'qty_available': 0,
-            'product_variant_ids': [777],
-        }])
-        stats = sync_catalog_chunk(client, [777], start=0, limit=10)
-        self.assertEqual(stats['kreirano'], 1)
-        self.assertEqual(stats['preskoceno'], 0)
-        product = Product.objects.get(odoo_template_id=777)
-        self.assertEqual(product.naziv, 'Novi iz Odoo')
-        self.assertEqual(product.sifra, 'EMPTY-1')
-        self.assertEqual(product.barkod, 'B777')
-        self.assertIsNotNone(product.magacin_sync_at)
-        self.assertEqual(Product.objects.count(), 1)
-
-    def test_does_not_duplicate_when_creating_existing_odoo_id(self):
-        Product.objects.create(
-            naziv='Već tu',
-            sifra='EMPTY-1',
-            cijena=Decimal('5.00'),
-            odoo_template_id=777,
-        )
-        client = FakeOdooClient([{
-            'id': 777,
-            'name': 'Već tu',
-            'default_code': 'EMPTY-1',
-            'barcode': '',
-            'list_price': '5.00',
-            'qty_available': 2,
-            'product_variant_ids': [777],
-        }])
-        stats = sync_catalog_chunk(client, [777], start=0, limit=10)
-        self.assertEqual(stats['kreirano'], 0)
-        self.assertEqual(Product.objects.filter(odoo_template_id=777).count(), 1)
 
     def test_creates_variation_without_normalized_null(self):
         product = Product.objects.create(
@@ -958,555 +708,25 @@ class MagacinCatalogSyncTests(TestCase):
         self.assertEqual(variation.naziv_normalized, '0.30mm')
         self.assertEqual(variation.sifra_normalized, 'par-1-030')
 
-    def test_odoo_variant_id_maps_to_template_product(self):
-        product = Product.objects.create(
-            naziv='Fox braid',
-            sifra='FOX-V',
-            cijena=Decimal('10.00'),
-            odoo_template_id=501,
-            magacin_sync_at=timezone.now(),
-        )
-        mapping = _odoo_id_to_local([9001], variant_to_template={9001: 501})
-        self.assertIn(9001, mapping)
-        self.assertEqual(mapping[9001][0].pk, product.pk)
-        self.assertIsNone(mapping[9001][1])
 
-    def test_odoo_template_id_is_not_treated_as_variant_id(self):
-        shorts = Product.objects.create(
-            naziv='CFX343 FOX LW Combat Short Khaki XXL',
-            sifra='ODOO-T5117',
-            cijena=Decimal('79.90'),
-            odoo_template_id=5117,
-            magacin_sync_at=timezone.now(),
-        )
-        feeder = Product.objects.create(
-            naziv='AS221 feeder 60gr',
-            sifra='4626',
-            cijena=Decimal('3.00'),
-            odoo_template_id=5080,
-            magacin_sync_at=timezone.now(),
-        )
-        mapping = _odoo_id_to_local(
-            [5117],
-            variant_to_template={5117: 5080},
-        )
-        self.assertEqual(mapping[5117][0].pk, feeder.pk)
-        self.assertNotEqual(mapping[5117][0].pk, shorts.pk)
-        unmapped = _odoo_id_to_local([5117])
-        self.assertNotIn(5117, unmapped)
 
-    def test_quant_sync_zeros_stale_odoo_stock(self):
-        product = Product.objects.create(
-            naziv='CFX343 FOX LW Combat Short Khaki XXL',
-            sifra='ODOO-T5117',
-            cijena=Decimal('79.90'),
-            odoo_template_id=5117,
-            stanje=150,
-            na_stanju=True,
-            magacin_sync_at=timezone.now(),
-        )
-        loc = WarehouseLocation.objects.create(
-            sifra='Magacin',
-            naziv='Magacin',
-            odoo_location_id=327,
-            odoo_location_path='WH/VP/Magacin',
-        )
-        WarehouseStock.objects.create(product=product, location=loc, kolicina=150)
-        local = WarehouseLocation.objects.create(sifra='RUCNA', naziv='Ručna polica')
-        WarehouseStock.objects.create(product=product, location=local, kolicina=2)
 
-        class QuantClient:
-            def get_internal_stock_quants(self, product_ids, *, for_packing=False):
-                return {}
 
-            def get_template_ids_for_variants(self, variant_ids):
-                return {5154: 5117}
 
-        updated, touched = _apply_quant_batch(
-            QuantClient(), [5154], variant_to_template={5154: 5117},
-        )
-        self.assertIn(product.pk, touched)
-        self.assertGreaterEqual(updated, 1)
-        product.refresh_from_db()
-        self.assertEqual(
-            WarehouseStock.objects.get(product=product, location=loc).kolicina,
-            0,
-        )
-        self.assertEqual(
-            WarehouseStock.objects.get(product=product, location=local).kolicina,
-            2,
-        )
-        self.assertEqual(product.stanje, 2)
-        self.assertTrue(product.na_stanju)
 
-    def test_quant_sync_sets_qty_from_odoo_id(self):
-        product = Product.objects.create(
-            naziv='Fox braid Odoo',
-            sifra='FOX-OD-1',
-            cijena=Decimal('12.00'),
-            odoo_template_id=88,
-            stanje=3,
-            na_stanju=True,
-            magacin_sync_at=timezone.now(),
-        )
-        loc = WarehouseLocation.objects.create(
-            sifra='A-10',
-            naziv='Glavni magacin',
-            odoo_location_id=10,
-            odoo_location_path='WH/Stock/A-10',
-        )
-        WarehouseStock.objects.create(product=product, location=loc, kolicina=3)
 
-        class QuantClient:
-            def get_internal_stock_quants(self, product_ids, *, for_packing=False):
-                return {
-                    88: [{
-                        'location_id': 10,
-                        'location_name': 'A-10',
-                        'location_path': 'WH/Stock/A-10',
-                        'quantity': 25,
-                        'on_hand': 25,
-                        'reserved_quantity': 2,
-                    }],
-                }
 
-            def get_template_ids_for_variants(self, variant_ids):
-                return {88: 88}
 
-        updated, touched = _apply_quant_batch(
-            QuantClient(), [88], variant_to_template={88: 88},
-        )
-        self.assertIn(product.pk, touched)
-        self.assertGreaterEqual(updated, 1)
-        stock = WarehouseStock.objects.get(product=product, location=loc)
-        self.assertEqual(stock.kolicina, 25)
-        self.assertEqual(stock.rezervisano, 2)
-        product.refresh_from_db()
-        self.assertEqual(product.stanje, 25)
 
-    def test_quant_sync_maps_by_name_when_odoo_id_missing(self):
-        product = Product.objects.create(
-            naziv='Fox braid Odoo',
-            sifra='STARA-SIFRA',
-            cijena=Decimal('12.00'),
-            stanje=3,
-            na_stanju=True,
-            magacin_sync_at=timezone.now(),
-        )
-        loc = WarehouseLocation.objects.create(
-            sifra='A-10',
-            naziv='Glavni magacin',
-            odoo_location_id=10,
-            odoo_location_path='WH/Stock/A-10',
-        )
-        WarehouseStock.objects.create(product=product, location=loc, kolicina=3)
 
-        class QuantClient:
-            def get_internal_stock_quants(self, product_ids, *, for_packing=False):
-                return {
-                    88: [{
-                        'location_id': 10,
-                        'location_name': 'A-10',
-                        'location_path': 'WH/Stock/A-10',
-                        'quantity': 25,
-                        'on_hand': 25,
-                        'reserved_quantity': 0,
-                    }],
-                }
 
-            def get_template_ids_for_variants(self, variant_ids):
-                return {88: 88}
 
-            def get_templates_by_ids(self, template_ids):
-                return [{
-                    'id': 88,
-                    'name': 'Fox braid Odoo',
-                    'default_code': 'FOX-OD-1',
-                    'barcode': '',
-                    'list_price': '12.00',
-                    'product_variant_ids': [88],
-                }]
 
-        updated, touched = _apply_quant_batch(
-            QuantClient(), [88], variant_to_template={88: 88},
-        )
-        self.assertIn(product.pk, touched)
-        self.assertGreaterEqual(updated, 1)
-        product.refresh_from_db()
-        self.assertEqual(product.odoo_template_id, 88)
-        stock = WarehouseStock.objects.get(product=product, location=loc)
-        self.assertEqual(stock.kolicina, 25)
 
-    def test_start_stock_sync_skips_catalog(self):
-        with patch('EcommerceApp.odoo_client.odoo_je_konfigurisan', return_value=True), patch(
-            'EcommerceApp.magacin.attach_site_odoo_products_to_magacin',
-        ):
-            job = start_stock_sync()
-        self.assertEqual(job['phase'], 'locations')
-        self.assertTrue(job.get('stock_only'))
-        self.assertFalse(job.get('incremental'))
-        log = WarehouseSyncLog.objects.get(pk=job['log_id'])
-        self.assertEqual(log.izvor, 'Odoo zalihe')
 
-    def test_price_sync_updates_cijena_from_odoo_id(self):
-        product = Product.objects.create(
-            naziv='Fox braid Odoo',
-            sifra='FOX-OD-P',
-            cijena=Decimal('10.00'),
-            odoo_template_id=88,
-            magacin_sync_at=timezone.now(),
-        )
-        var = ProductVariation.objects.create(
-            artikal=product,
-            naziv='300m',
-            sifra='FOX-OD-P-300',
-            cijena=Decimal('10.00'),
-            odoo_variant_id=881,
-        )
-        client = FakeOdooClient([{
-            'id': 88,
-            'name': 'Ime se ne dira',
-            'default_code': 'DRUGA-SIFRA',
-            'barcode': 'XXX',
-            'list_price': '19.90',
-            'product_variant_ids': [881, 882],
-        }])
-        client.get_product_variants = lambda ids, with_images=False: [
-            {'id': 881, 'lst_price': '21.50', 'display_name': '300m', 'default_code': 'FOX-OD-P-300'},
-        ]
-        stats = sync_price_chunk(client, [88])
-        self.assertEqual(stats['azurirano'], 1)
-        product.refresh_from_db()
-        var.refresh_from_db()
-        self.assertEqual(product.cijena, Decimal('19.90'))
-        self.assertEqual(product.naziv, 'Fox braid Odoo')
-        self.assertEqual(product.sifra, 'DRUGA-SIFRA')
-        self.assertEqual(product.barkod, 'XXX')
-        self.assertEqual(var.cijena, Decimal('21.50'))
 
-    def test_start_price_sync_skips_catalog(self):
-        Product.objects.create(
-            naziv='Ima odoo', sifra='HAS-P', cijena=Decimal('1.00'),
-            odoo_template_id=10, magacin_sync_at=timezone.now(),
-        )
-        with patch('EcommerceApp.odoo_client.odoo_je_konfigurisan', return_value=True), patch(
-            'EcommerceApp.magacin.attach_site_odoo_products_to_magacin',
-        ):
-            job = start_price_sync()
-        self.assertEqual(job['phase'], 'prices')
-        self.assertTrue(job.get('price_only'))
-        self.assertEqual(job['template_ids'], [10])
-        log = WarehouseSyncLog.objects.get(pk=job['log_id'])
-        self.assertEqual(log.izvor, 'Odoo cijene')
 
-    def test_sifra_sync_updates_existing_by_name_without_duplicate(self):
-        product = Product.objects.create(
-            naziv='Fox Submerge Sinking Braid',
-            sifra='STARA-1',
-            cijena=Decimal('10.00'),
-        )
-        other = Product.objects.create(
-            naziv='Drugi artikal',
-            sifra='OSTAJE',
-            cijena=Decimal('4.00'),
-        )
-        client = FakeOdooClient([{
-            'id': 77,
-            'name': 'Fox Submerge Sinking Braid',
-            'default_code': 'FOX-OD-77',
-            'list_price': '99.00',
-            'product_variant_ids': [77],
-        }])
-        stats = sync_sifra_chunk(client, [77])
-        self.assertEqual(stats['azurirano'], 1)
-        self.assertEqual(Product.objects.count(), 2)
-        product.refresh_from_db()
-        other.refresh_from_db()
-        self.assertEqual(product.sifra, 'FOX-OD-77')
-        self.assertEqual(product.naziv, 'Fox Submerge Sinking Braid')
-        self.assertEqual(product.cijena, Decimal('10.00'))
-        self.assertEqual(product.odoo_template_id, 77)
-        self.assertEqual(other.sifra, 'OSTAJE')
 
-    def test_sifra_sync_matches_name_case_insensitive(self):
-        product = Product.objects.create(
-            naziv='fox SUBMERGE sinking braid',
-            sifra='STARA-CI',
-            cijena=Decimal('10.00'),
-        )
-        client = FakeOdooClient([{
-            'id': 78,
-            'name': 'Fox Submerge Sinking Braid',
-            'default_code': 'FOX-CI-78',
-            'product_variant_ids': [78],
-        }])
-        stats = sync_sifra_chunk(client, [78])
-        self.assertEqual(stats['azurirano'], 1)
-        self.assertEqual(Product.objects.count(), 1)
-        product.refresh_from_db()
-        self.assertEqual(product.sifra, 'FOX-CI-78')
-
-    def test_sifra_sync_does_not_create_when_name_missing(self):
-        Product.objects.create(
-            naziv='Lokalni artikal',
-            sifra='LOK-1',
-            cijena=Decimal('3.00'),
-        )
-        client = FakeOdooClient([{
-            'id': 90,
-            'name': 'Samo u Odoo',
-            'default_code': 'ODOO-90',
-            'product_variant_ids': [90],
-        }])
-        stats = sync_sifra_chunk(client, [90])
-        self.assertEqual(stats['azurirano'], 0)
-        self.assertEqual(stats['preskoceno'], 1)
-        self.assertEqual(Product.objects.count(), 1)
-        self.assertFalse(Product.objects.filter(sifra='ODOO-90').exists())
-        self.assertFalse(Product.objects.filter(naziv='Samo u Odoo').exists())
-
-    def test_sifra_sync_skips_when_odoo_code_already_taken(self):
-        Product.objects.create(
-            naziv='Fox braid',
-            sifra='STARA-FOX',
-            cijena=Decimal('10.00'),
-        )
-        taken = Product.objects.create(
-            naziv='Drugi',
-            sifra='FOX-TAKEN',
-            cijena=Decimal('2.00'),
-        )
-        client = FakeOdooClient([{
-            'id': 91,
-            'name': 'Fox braid',
-            'default_code': 'FOX-TAKEN',
-            'product_variant_ids': [91],
-        }])
-        stats = sync_sifra_chunk(client, [91])
-        self.assertEqual(stats['azurirano'], 0)
-        self.assertEqual(Product.objects.count(), 2)
-        self.assertEqual(Product.objects.get(naziv='Fox braid').sifra, 'STARA-FOX')
-        taken.refresh_from_db()
-        self.assertEqual(taken.sifra, 'FOX-TAKEN')
-
-    def test_sifra_sync_uses_odoo_reference_on_variant(self):
-        product = Product.objects.create(
-            naziv='Fox braid',
-            sifra='STARA-VAR',
-            cijena=Decimal('10.00'),
-        )
-        client = FakeOdooClient(
-            [{
-                'id': 92,
-                'name': 'Fox braid',
-                'default_code': False,
-                'product_variant_ids': [920],
-            }],
-            variants=[{
-                'id': 920,
-                'default_code': 'REF-920',
-                'display_name': '[REF-920] Fox braid',
-            }],
-        )
-        stats = sync_sifra_chunk(client, [92])
-        self.assertEqual(stats['azurirano'], 1)
-        self.assertEqual(Product.objects.count(), 1)
-        product.refresh_from_db()
-        self.assertEqual(product.sifra, 'REF-920')
-
-    def test_sifra_sync_matches_name_ignoring_spaces_and_ref_prefix(self):
-        product = Product.objects.create(
-            naziv='  [OLD]  Fox   Submerge Sinking Braid ',
-            sifra='STARA-WS',
-            cijena=Decimal('10.00'),
-        )
-        client = FakeOdooClient([{
-            'id': 93,
-            'name': 'Fox Submerge Sinking Braid',
-            'default_code': False,
-            'reference': 'FOX-REF-93',
-            'product_variant_ids': [93],
-        }])
-        stats = sync_sifra_chunk(client, [93])
-        self.assertEqual(stats['azurirano'], 1)
-        self.assertEqual(Product.objects.count(), 1)
-        product.refresh_from_db()
-        self.assertEqual(product.sifra, 'FOX-REF-93')
-
-    def test_start_sifra_sync_skips_catalog(self):
-        with patch('EcommerceApp.odoo_client.odoo_je_konfigurisan', return_value=True), patch(
-            'EcommerceApp.magacin.attach_site_odoo_products_to_magacin',
-        ):
-            job = start_sifra_sync()
-        self.assertEqual(job['phase'], 'discover')
-        self.assertTrue(job.get('sifra_only'))
-        self.assertEqual(job['template_ids'], [])
-        log = WarehouseSyncLog.objects.get(pk=job['log_id'])
-        self.assertEqual(log.izvor, 'Odoo šifre')
-
-    def test_discover_sifra_only_uses_all_odoo_ids(self):
-        Product.objects.create(
-            naziv='Već tu',
-            sifra='HAS-1',
-            cijena=Decimal('1.00'),
-            odoo_template_id=10,
-            magacin_sync_at=timezone.now(),
-        )
-        log = WarehouseSyncLog.objects.create(
-            status=WarehouseSyncLog.Status.U_TOKU,
-            izvor='Odoo šifre',
-        )
-
-        class PageClient:
-            def get_sale_template_ids_page(self, *, offset=0, limit=250):
-                ids = [10, 88]
-                return ids[offset:offset + limit]
-
-        job = {
-            'log_id': log.pk,
-            'started': time.time(),
-            'phase': 'discover',
-            'discovered_ids': [],
-            'discover_offset': 0,
-            'sifra_only': True,
-        }
-        with patch('EcommerceApp.odoo_client.OdooClient.from_settings', return_value=PageClient()):
-            job = run_sync_chunk(job)
-        self.assertEqual(job['phase'], 'sifre')
-        self.assertEqual(job['template_ids'], [10, 88])
-        self.assertEqual(job['position'], 0)
-
-    def test_sifre_phase_never_creates_products(self):
-        product = Product.objects.create(
-            naziv='Fox braid',
-            sifra='STARA-PH',
-            cijena=Decimal('10.00'),
-        )
-        log = WarehouseSyncLog.objects.create(
-            status=WarehouseSyncLog.Status.U_TOKU,
-            izvor='Odoo šifre',
-        )
-        client = FakeOdooClient([{
-            'id': 77,
-            'name': 'Fox braid',
-            'default_code': 'FOX-PH-77',
-            'product_variant_ids': [77],
-        }, {
-            'id': 88,
-            'name': 'Samo u Odoo',
-            'default_code': 'NEW-88',
-            'product_variant_ids': [88],
-        }])
-        job = {
-            'log_id': log.pk,
-            'started': time.time(),
-            'phase': 'sifre',
-            'template_ids': [77, 88],
-            'position': 0,
-            'azurirano': 0,
-            'preskoceno': 0,
-        }
-        with patch('EcommerceApp.odoo_client.OdooClient.from_settings', return_value=client):
-            job = run_sync_chunk(job)
-        self.assertTrue(job['done'])
-        self.assertEqual(job['phase'], 'done')
-        self.assertEqual(job['azurirano'], 1)
-        self.assertEqual(Product.objects.count(), 1)
-        product.refresh_from_db()
-        self.assertEqual(product.sifra, 'FOX-PH-77')
-        self.assertFalse(Product.objects.filter(naziv='Samo u Odoo').exists())
-
-    def test_updates_imported_product_by_sifra_without_duplicate(self):
-        product = Product.objects.create(
-            naziv='Stari import',
-            sifra='NEW-88',
-            cijena=Decimal('3.00'),
-        )
-        client = FakeOdooClient([{
-            'id': 888,
-            'name': 'Novi na stanju',
-            'default_code': 'NEW-88',
-            'barcode': 'BAR-88',
-            'list_price': '12.00',
-            'qty_available': 6,
-            'product_variant_ids': [888],
-        }])
-        stats = sync_catalog_chunk(client, [888], start=0, limit=10)
-        self.assertEqual(stats['kreirano'], 0)
-        self.assertEqual(stats['azurirano'], 1)
-        self.assertEqual(Product.objects.count(), 1)
-        product.refresh_from_db()
-        self.assertEqual(product.naziv, 'Novi na stanju')
-        self.assertEqual(product.sifra, 'NEW-88')
-        self.assertEqual(product.barkod, 'BAR-88')
-        self.assertEqual(product.odoo_template_id, 888)
-
-    def test_site_odoo_products_are_magacin_without_duplicate(self):
-        site = Product.objects.create(
-            naziv='Fox braid shop',
-            sifra='FOX-SHOP',
-            cijena=Decimal('11.00'),
-            odoo_template_id=1201,
-        )
-        web_only = Product.objects.create(
-            naziv='Samo web',
-            sifra='WEB-ONLY',
-            cijena=Decimal('2.00'),
-        )
-        self.assertIn(site, magacin_products_qs())
-        self.assertNotIn(web_only, magacin_products_qs())
-        self.assertEqual(local_odoo_template_ids(), [1201])
-        marked = attach_site_odoo_products_to_magacin()
-        self.assertEqual(marked, 1)
-        site.refresh_from_db()
-        self.assertIsNotNone(site.magacin_sync_at)
-        client = FakeOdooClient([{
-            'id': 1201,
-            'name': 'Fox braid shop',
-            'default_code': 'FOX-SHOP',
-            'barcode': '',
-            'list_price': '11.00',
-            'qty_available': 4,
-            'product_variant_ids': [1201],
-        }, {
-            'id': 9999,
-            'name': 'Nepoznat u shopu',
-            'default_code': 'GHOST-9',
-            'barcode': '',
-            'list_price': '1.00',
-            'qty_available': 9,
-            'product_variant_ids': [9999],
-        }])
-        stats = sync_catalog_chunk(client, [1201, 9999], start=0, limit=10)
-        self.assertEqual(stats['kreirano'], 1)
-        self.assertEqual(Product.objects.filter(sifra='GHOST-9').count(), 1)
-        ghost = Product.objects.get(odoo_template_id=9999)
-        self.assertEqual(ghost.naziv, 'Nepoznat u shopu')
-        self.assertEqual(Product.objects.filter(odoo_template_id=1201).count(), 1)
-        self.assertEqual(Product.objects.count(), 3)
-
-    def test_skips_image_download_when_product_already_has_image(self):
-        product = Product.objects.create(
-            naziv='Ima sliku',
-            sifra='IMG-1',
-            cijena=Decimal('3.00'),
-            odoo_template_id=333,
-        )
-        product.slika = 'products/vec-tu.jpg'
-        product.save(update_fields=['slika'])
-        client = FakeOdooClient([{
-            'id': 333,
-            'name': 'Ima sliku',
-            'default_code': 'IMG-1',
-            'barcode': '',
-            'list_price': '3.00',
-            'qty_available': 2,
-            'product_variant_ids': [333],
-        }])
-        sync_catalog_chunk(client, [333], start=0, limit=10)
-        product.refresh_from_db()
-        self.assertEqual(product.slika.name, 'products/vec-tu.jpg')
-        self.assertEqual(client.image_requests, [])
 
 
 class MagacinViewTests(TestCase):
@@ -4430,56 +3650,20 @@ class MagacinViewTests(TestCase):
         self.assertFalse(any((item.get('loc') or '').startswith('T-') for item in queue))
         self.assertContains(pick, 'id="pkLocKicker"')
 
-    def test_sync_can_be_cancelled(self):
-        self.client.force_login(self.user)
-        log = WarehouseSyncLog.objects.create(
-            status=WarehouseSyncLog.Status.U_TOKU,
-            izvor='Odoo',
-            poruka='Katalog: 20 / 400',
-            artikala=12,
-        )
-        session = self.client.session
-        session[MAGACIN_SYNC_SESSION_KEY] = {
-            'log_id': log.pk,
-            'started': timezone.now().timestamp(),
-            'phase': 'catalog',
-            'template_ids': [1, 2, 3],
-            'position': 20,
-            'artikala': 12,
-            'azurirano': 5,
-            'preskoceno': 15,
-            'done': False,
-        }
-        session.save()
-        listed = self.client.get(reverse('staff_magacin_artikli'))
-        self.assertContains(listed, 'Prekini sync')
-        self.assertContains(listed, 'mgSyncCancel')
-        stopped = self.client.post(reverse('staff_magacin_sync'), {
-            'action': 'cancel',
-            'next': reverse('staff_magacin_artikli'),
-        })
-        self.assertEqual(stopped.status_code, 302)
-        log.refresh_from_db()
-        self.assertEqual(log.status, WarehouseSyncLog.Status.PREKINUT)
-        self.assertIn('prekinut', log.poruka.lower())
-        self.assertNotIn(MAGACIN_SYNC_SESSION_KEY, self.client.session)
-        after = self.client.get(reverse('staff_magacin_artikli'))
-        self.assertNotContains(after, 'mgSyncCancel')
-        self.assertContains(after, 'Sinhronizacija je prekinuta')
 
-    def test_artikli_has_stock_sync_button(self):
+    def test_artikli_has_no_remote_sync_buttons_and_keeps_backups(self):
         self.client.force_login(self.user)
         page = self.client.get(reverse('staff_magacin_artikli'))
-        self.assertContains(page, 'Sync zaliha')
-        self.assertContains(page, 'Sync cijena')
-        self.assertContains(page, 'Sync šifri')
-        self.assertContains(page, 'name="action" value="stock"')
-        self.assertContains(page, 'name="action" value="prices"')
-        self.assertContains(page, 'name="action" value="sifre"')
+        self.assertNotContains(page, 'Sync zaliha')
+        self.assertNotContains(page, 'Sync cijena')
+        self.assertNotContains(page, 'Sync šifri')
+        self.assertNotContains(page, 'name="action" value="stock"')
+        self.assertNotContains(page, 'name="action" value="prices"')
+        self.assertNotContains(page, 'name="action" value="sifre"')
         settings_page = self.client.get(reverse('staff_magacin_podesavanja'))
-        self.assertContains(settings_page, 'Sync zaliha iz Odoo')
-        self.assertContains(settings_page, 'Sync cijena iz Odoo')
-        self.assertContains(settings_page, 'Sync šifri po nazivu')
+        self.assertNotContains(settings_page, 'Sync zaliha iz Odoo')
+        self.assertNotContains(settings_page, 'Sync cijena iz Odoo')
+        self.assertNotContains(settings_page, 'Sync šifri po nazivu')
         self.assertContains(settings_page, 'Backup baze')
         self.assertContains(settings_page, 'Preuzmi bazu na disk')
         self.assertContains(settings_page, 'Upload i restore')
@@ -8108,69 +7292,6 @@ class MagacinViewTests(TestCase):
         self.assertNotContains(vp_compared, 'B-03')
 
 
-class OdooCustomerAddressTests(TestCase):
-    def test_phone_goes_to_street2_on_create(self):
-        from .odoo_client import OdooClient
-
-        class DummyClient:
-            def __init__(self):
-                self.created = None
-
-            def execute(self, model, method, *args):
-                self.created = args[0] if args else None
-                return 42
-
-        dummy = DummyClient()
-        partner_id, created = OdooClient.find_or_create_customer(
-            dummy,
-            name='Ana Ribić',
-            street='Ulica 12',
-            city='Sarajevo',
-            phone='061111111',
-            email='ana@example.com',
-            zip_code='71000',
-        )
-        self.assertTrue(created)
-        self.assertEqual(partner_id, 42)
-        self.assertEqual(dummy.created['name'], 'Ana Ribić')
-        self.assertEqual(dummy.created['street'], 'Ulica 12')
-        self.assertEqual(dummy.created['street2'], '061111111')
-        self.assertEqual(dummy.created['phone'], '061111111')
-        self.assertEqual(dummy.created['mobile'], '061111111')
-
-    def test_repeated_phone_still_creates_new_partner_with_order_data(self):
-        from .odoo_client import OdooClient, OdooError
-
-        class DummyClient:
-            def __init__(self):
-                self.attempts = []
-
-            def execute(self, model, method, *args):
-                vals = args[0] if args else {}
-                self.attempts.append(vals)
-                if 'phone' in vals:
-                    raise OdooError('Telefon već postoji')
-                return 88
-
-        dummy = DummyClient()
-        partner_id, created = OdooClient.find_or_create_customer(
-            dummy,
-            name='Marko Novi',
-            street='Druga 5',
-            city='Mostar',
-            phone='061111111',
-            email='carpologijabh@gmail.com',
-        )
-        self.assertTrue(created)
-        self.assertEqual(partner_id, 88)
-        first, second = dummy.attempts
-        self.assertEqual(first['name'], 'Marko Novi')
-        self.assertEqual(first['street'], 'Druga 5')
-        self.assertEqual(first['street2'], '061111111')
-        self.assertNotIn('email', first)
-        self.assertEqual(second['street2'], '061111111')
-        self.assertNotIn('phone', second)
-        self.assertNotIn('mobile', second)
 
 
 @override_settings(STORAGES={

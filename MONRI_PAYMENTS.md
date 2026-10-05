@@ -84,7 +84,7 @@ i povratak u prodavnicu. Bez JS ostaje sigurna poruka i link za provjeru statusa
 Paid start GET vodi na order-success, POST vraća 405, a builder odbija
 generisanje forme za paid zapis. Callback sigurnost i finalizacija su nepromijenjene.
 
-Kartični checkout šalje email, loyalty/Odoo sync tek nakon potvrđene uplate.
+Kartični checkout šalje email i loyalty obradu tek nakon potvrđene uplate.
 Migration `0308_monri_durable_finalization` dodaje snapshot browser konteksta,
 `finalization_steps` i `finalized_at`. Nakon potpisa i provjera callback
 atomarno kreira Order/stavke/rezervacije i označava payment paid. Postojeće
@@ -93,7 +93,7 @@ Monri magacina, skidanja lagera ili automatskog slanja kuriru.
 
 `finish_paid_order` koristi postojeće helper funkcije za kupca, nagrade,
 čišćenje iste korpe/sesije, Greb-Greb, staff obavijest, email queue,
-loyalty i Odoo, server purchase tracking te cache navigacije. Purchase event
+loyalty, server purchase tracking te cache navigacije. Purchase event
 ima stabilan ID `purchase-<broj>`. Svaki korak ima payment row lock i trajni
 marker. Ako korak padne, safe log bilježi samo ID i naziv koraka, callback
 vraća 503, a idući validan isti callback nastavlja nedovršene korake.

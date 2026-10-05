@@ -49,7 +49,7 @@ class ExactPickingLocationTests(TestCase):
     def test_empty_local_stock_does_not_fall_back_to_remote_locations(self):
         from unittest.mock import patch
         from .views import _build_order_packing_lines
-        with patch('EcommerceApp.odoo_client.odoo_je_konfigurisan', return_value=True), patch('EcommerceApp.odoo_client.OdooClient.from_settings') as client:
+        with patch('xmlrpc.client.ServerProxy', side_effect=AssertionError('Remote RPC forbidden')) as client:
             lines, _ = _build_order_packing_lines(self.order)
         client.assert_not_called()
         self.assertFalse(any(p.get('location_id') for p in lines[0]['picks']))

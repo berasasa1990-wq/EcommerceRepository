@@ -5918,34 +5918,6 @@ def staff_order_lookup(request):
     return redirect(url)
 
 
-def _create_odoo_sale_order_from_web(request, broj, *, force=False):
-    """Staff: kreiraj Odoo Sales narudžbu iz web narudžbe."""
-    from .odoo_client import OdooError
-    from .odoo_sales import create_odoo_sale_order_for_web_order
-
-    order = Order.objects.filter(broj=broj).prefetch_related('stavke').first()
-    if not order:
-        messages.error(request, f'Narudžba #{broj} nije pronađena.')
-        return None
-    force = force or (request.POST.get('force') in ('1', 'true', 'yes', 'on'))
-    try:
-        result = create_odoo_sale_order_for_web_order(order, force=force)
-    except OdooError as exc:
-        messages.error(request, f'Odoo greška: {exc}')
-        return None
-    except Exception as exc:
-        logger.exception('Odoo SO create failed for #%s', broj)
-        messages.error(request, f'Odoo greška: {exc}')
-        return None
-
-    if result.get('ok'):
-        if result.get('existing') and not force:
-            messages.info(request, result.get('message') or 'Već postoji u Odoo.')
-        else:
-            messages.success(request, result.get('message') or 'Odoo narudžba kreirana.')
-    else:
-        messages.error(request, result.get('message') or 'Odoo narudžba nije kreirana.')
-    return result
 
 
 @login_required(login_url='login')
@@ -5961,9 +5933,6 @@ def staff_order_detail(request, broj):
         if action == 'zavrsi':
             _mark_order_completed(request, broj)
             return redirect('staff_magacin_narudzbe')
-        if action == 'odoo_narudzba':
-            _create_odoo_sale_order_from_web(request, broj)
-            return redirect('staff_order_detail', broj=broj)
         if action == 'xexpress':
             _send_order_to_xexpress(request, broj)
             return redirect('staff_order_detail', broj=broj)
@@ -6045,7 +6014,7 @@ def staff_order_xexpress(request, broj):
 
 
 def _order_print_job(order):
-    packing_lines, odoo_error = _build_order_packing_lines(order)
+    packing_lines, packing_error = _build_order_packing_lines(order)
     packing_missing = [
         line for line in packing_lines
         if line.get('check_mp') or not line.get('picks')
@@ -6053,7 +6022,7 @@ def _order_print_job(order):
     job = get_order_email_context(order)
     job.update({
         'packing_lines': packing_lines,
-        'odoo_error': odoo_error,
+        'packing_error': packing_error,
         'packing_missing': packing_missing,
         'requires_mp_check': False,
     })
@@ -6108,150 +6077,18 @@ def staff_order_mark_printed(request, broj):
     })
 
 
-def _deduct_order_stock_from_packing(order):
-    """
-    Skini zalihu iz Odoa po packing lokacijama (abecedno, kao na listi pakovanja).
-    Vraća (ok, message, details).
-    """
-    from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
-
-    if order.stanje_skinuto:
-        return False, 'Stanje je već skinuto za ovu narudžbu.', []
-
-    packing_lines, odoo_error = _build_order_packing_lines(order)
-    if odoo_error and not packing_lines:
-        return False, f'Odoo: {odoo_error}', []
-
-    picks = []
-    skipped = []
-    for line in packing_lines:
-        product_id = line.get('odoo_product_id')
-        line_picks = line.get('picks') or []
-        if not product_id or not line_picks:
-            skipped.append({
-                'naziv': line.get('naziv'),
-                'sifra': line.get('sifra'),
-                'reason': line.get('pick_text') or 'Provjeri u MP',
-            })
-            continue
-        for pick in line_picks:
-            loc_id = pick.get('location_id')
-            if not loc_id:
-                skipped.append({
-                    'naziv': line.get('naziv'),
-                    'sifra': line.get('sifra'),
-                    'reason': f"Nema location_id za {pick.get('location_name')}",
-                })
-                continue
-            picks.append({
-                'product_id': product_id,
-                'location_id': loc_id,
-                'location_name': pick.get('location_name'),
-                'take': pick.get('take'),
-                'naziv': line.get('naziv'),
-                'sifra': line.get('sifra'),
-            })
-
-    if not picks:
-        return False, 'Nema Odoo lokacija za skidanje (sve je „Provjeri u MP” ili nema zalihe).', skipped
-
-    if not odoo_je_konfigurisan():
-        return False, 'Odoo nije konfigurisan.', []
-
-    try:
-        client = OdooClient.from_settings()
-        results = client.deduct_stock_picks(
-            picks,
-            origin=f'Online narudžba #{order.broj}',
-        )
-    except OdooError as exc:
-        return False, str(exc), []
-    except Exception as exc:
-        return False, f'Odoo greška: {exc}', []
-
-    ok_results = [r for r in results if r.get('ok')]
-    fail_results = [r for r in results if not r.get('ok')]
-
-    # Ažuriraj lokalno stanje artikala (samo uspješno skinute količine)
-    from .models import Product, ProductVariation
-
-    qty_by_product = {}
-    for pick, res in zip(picks, results):
-        if not res.get('ok'):
-            continue
-        pid = pick.get('product_id')
-        qty_by_product[pid] = qty_by_product.get(pid, 0) + int(res.get('quantity') or 0)
-
-    for odoo_pid, qty in qty_by_product.items():
-        variation = ProductVariation.objects.filter(odoo_variant_id=odoo_pid).select_related('artikal').first()
-        if variation:
-            variation.stanje = max(0, int(variation.stanje or 0) - qty)
-            if variation.stanje == 0:
-                variation.na_stanju = False
-            variation.save(update_fields=['stanje', 'na_stanju'])
-            continue
-        product = Product.objects.filter(odoo_template_id=odoo_pid).first()
-        if product:
-            product.stanje = max(0, int(product.stanje or 0) - qty)
-            if product.stanje == 0:
-                product.na_stanju = False
-            product.save(update_fields=['stanje', 'na_stanju'])
-
-    details = {
-        'ok': ok_results,
-        'fail': fail_results,
-        'skipped': skipped,
-    }
-
-    if not ok_results:
-        msg = 'Ništa nije skinuto iz Odoa.'
-        if fail_results:
-            msg += ' ' + '; '.join(
-                f"{f.get('location_name')}: {f.get('error')}" for f in fail_results[:5]
-            )
-        return False, msg, details
-
-    # Označi gotovo čim je nešto skinuto — da se ne dupla pri ponovnom kliku
-    from django.utils import timezone
-    order.stanje_skinuto = True
-    order.stanje_skinuto_at = timezone.now()
-    order.save(update_fields=['stanje_skinuto', 'stanje_skinuto_at'])
-
-    msg = f'Skinuto {len(ok_results)} stavk(e/i) sa Odoo lokacija.'
-    if fail_results:
-        msg += (
-            f' Greške ({len(fail_results)}): '
-            + '; '.join(f"{f.get('location_name')}: {f.get('error')}" for f in fail_results[:3])
-            + ' — provjeri ručno u Odoo (ne skidaj ponovo ovdje).'
-        )
-    if skipped:
-        msg += f' Preskočeno (MP/bez zalihe): {len(skipped)}.'
-    return True, msg, details
 
 
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
 def staff_order_brza_posta(request, broj):
-    """Podaci za unos u Brzu poštu + dugme Skini sa stanja (Odoo lokacije)."""
+    """Podaci za unos u Brzu poštu iz lokalne narudžbe."""
     from django.utils import timezone
     from django.contrib import messages as dj_messages
 
     order = get_object_or_404(Order, broj=broj)
     deduct_details = None
     deduct_ok = None
-
-    if request.method == 'POST' and request.POST.get('action') == 'skini_stanje':
-        if order.stanje_skinuto:
-            dj_messages.warning(request, 'Stanje je već skinuto za ovu narudžbu.')
-        else:
-            ok, msg, details = _deduct_order_stock_from_packing(order)
-            deduct_ok = ok
-            deduct_details = details
-            order.refresh_from_db()
-            if ok:
-                dj_messages.success(request, msg)
-            else:
-                dj_messages.error(request, msg)
 
     packing_lines, packing_error = _build_order_packing_lines(order)
     created = timezone.localtime(order.kreirana)
@@ -6272,39 +6109,6 @@ def staff_order_brza_posta(request, broj):
 
 
 
-def _order_item_odoo_product_id(item, template_variants):
-    """
-    Pronađi product.product id za stavku narudžbe.
-    1) varijacija.odoo_variant_id
-    2) artikal.odoo_template_id → varijante (match šifre ili prva ako je jedna)
-    """
-    variation = getattr(item, 'varijacija', None)
-    if variation and variation.odoo_variant_id:
-        return int(variation.odoo_variant_id)
-
-    product = getattr(item, 'artikal', None)
-    template_id = None
-    if variation and variation.odoo_template_id:
-        template_id = int(variation.odoo_template_id)
-    elif product and product.odoo_template_id:
-        template_id = int(product.odoo_template_id)
-
-    if not template_id:
-        return None
-
-    variants = template_variants.get(template_id) or []
-    if not variants:
-        return None
-    if len(variants) == 1:
-        return int(variants[0]['id'])
-
-    sifra = (getattr(item, 'sifra', None) or '').strip().casefold()
-    if sifra:
-        for variant in variants:
-            code = (variant.get('default_code') or '')
-            if str(code).strip().casefold() == sifra:
-                return int(variant['id'])
-    return None
 
 
 def _allocate_packing_locations(needed_qty, stock_locations):
@@ -6580,19 +6384,16 @@ def _fill_remaining_physical_picks(order, item, picks, shortfall):
 
 def _build_order_packing_lines(order):
     """
-    Stavke pakovanja: prvo Magacin rezervacije, inače Odoo lokacije.
+    Stavke pakovanja iz lokalnih Magacin rezervacija i fizičkih zaliha.
     Lokacije se čiste abecedno; količina se uzima redom s prvih lokacija.
     """
-    from .odoo_client import OdooClient, OdooError, odoo_je_konfigurisan
     from .magacin import NIJE_POPISAN_LABEL, maloprodaja_last_sort_key, order_has_nije_popisan
 
     items = list(
         order.stavke.filter(ledger_excess_line__isnull=True).select_related('artikal', 'artikal__brend', 'artikal__kategorija', 'varijacija').all()
     )
     lines = []
-    odoo_error = None
-    stock_by_product = {}
-    template_variants = {}
+    packing_error = None
     exact_items = {e.get("item_id") for e in (order.pick_short_events or [])}
     already_picked = _short_picked_qty_by_item(order)
     magacin_picks = _magacin_hold_picks(order, items)
@@ -6610,38 +6411,6 @@ def _build_order_packing_lines(order):
     mp_confirmed = _mp_confirmed_item_ids(order)
     pick_state = order.pick_state if isinstance(getattr(order, 'pick_state', None), dict) else {}
 
-    if odoo_je_konfigurisan() and items and not magacin_picks:
-        try:
-            client = OdooClient.from_settings()
-            template_ids = set()
-            direct_product_ids = set()
-
-            for item in items:
-                variation = item.varijacija
-                if variation and variation.odoo_variant_id:
-                    direct_product_ids.add(int(variation.odoo_variant_id))
-                if variation and variation.odoo_template_id:
-                    template_ids.add(int(variation.odoo_template_id))
-                elif item.artikal and item.artikal.odoo_template_id:
-                    template_ids.add(int(item.artikal.odoo_template_id))
-
-            if template_ids:
-                template_variants = client.get_product_ids_for_templates(list(template_ids))
-                for variants in template_variants.values():
-                    for variant in variants:
-                        direct_product_ids.add(int(variant['id']))
-
-            if direct_product_ids:
-                # for_packing: bez „Prenos u MP” i sličnih transfer lokacija
-                stock_by_product = client.get_internal_stock_quants(
-                    list(direct_product_ids),
-                    for_packing=True,
-                )
-        except OdooError as exc:
-            odoo_error = str(exc)
-        except Exception as exc:
-            odoo_error = f'Odoo greška: {exc}'
-
     for index, item in enumerate(items, start=1):
         if getattr(item, 'rezervni_dio', False) and not item.artikal_id:
             qty = int(item.kolicina or 0)
@@ -6657,7 +6426,6 @@ def _build_order_packing_lines(order):
                 'brend': '',
                 'kategorija': '',
                 'kolicina': qty,
-                'odoo_product_id': None,
                 'picks': [{
                     'location_name': 'Rezervni dio',
                     'location_id': None,
@@ -6672,14 +6440,13 @@ def _build_order_packing_lines(order):
                 'rezervni': True,
             })
             continue
-        odoo_product_id = _order_item_odoo_product_id(item, template_variants)
-        stock_locations = stock_by_product.get(odoo_product_id, []) if odoo_product_id else []
+        stock_locations = []
         if item.pk in magacin_picks:
             picks, shortfall = magacin_picks[item.pk]
         elif item.pk in mp_confirmed:
             picks, shortfall = [], int(item.kolicina or 0)
         else:
-            picks, shortfall = _allocate_packing_locations(item.kolicina, stock_locations)
+            picks, shortfall = [], _item_remaining_pick_qty(item, already_picked)
         if shortfall > 0 and item.artikal_id:
             picks, shortfall = _fill_remaining_physical_picks(order, item, picks, shortfall)
         if item.pk in mp_confirmed and shortfall > 0:
@@ -6776,7 +6543,6 @@ def _build_order_packing_lines(order):
             'brend': brend,
             'kategorija': kategorija,
             'kolicina': item.kolicina,
-            'odoo_product_id': odoo_product_id,
             'picks': picks,
             'pick_text': pick_text,
             'shortfall': shortfall,
@@ -6790,24 +6556,24 @@ def _build_order_packing_lines(order):
             'rezervni': bool(getattr(item, 'rezervni_dio', False)),
         })
 
-    return lines, odoo_error
+    return lines, packing_error
 
 
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
 def staff_order_packing(request, broj):
-    """Pakovanje: artikli narudžbe + Odoo lokacije (abecedno, quantity on hand)."""
+    """Pakovanje: artikli narudžbe i lokalne lokacije."""
     from django.utils import timezone
 
     order = get_object_or_404(Order, broj=broj)
-    packing_lines, odoo_error = _build_order_packing_lines(order)
+    packing_lines, packing_error = _build_order_packing_lines(order)
     created = timezone.localtime(order.kreirana)
     from .magacin import is_vp_order
     order.is_vp = is_vp_order(order)
     context = {
         'order': order,
         'packing_lines': packing_lines,
-        'odoo_error': odoo_error,
+        'packing_error': packing_error,
         'datum': created.strftime('%d.%m.%Y.'),
         'vrijeme': created.strftime('%H:%M'),
         'site_name': 'Carpologija BH',
@@ -8315,8 +8081,6 @@ def staff_online_orders(request):
         broj = (request.POST.get('broj') or '').strip()
         if action == 'zavrsi' and broj:
             _mark_order_completed(request, broj)
-        elif action == 'odoo_narudzba' and broj:
-            _create_odoo_sale_order_from_web(request, broj)
         params = {}
         if filter_status != 'nove':
             params['filter'] = filter_status

@@ -250,13 +250,13 @@
     </div>
 
     <div class="card">
-        <h2>Skini sa stanja</h2>
+        <h2>Lokalno pakovanje</h2>
         <p class="sub">
-            Kada je zapakovano i poslato — skida količine s Odoo lokacija iz pakovanja (abecedno).
+            Stanje se obrađuje kroz postojeći Magacin / Picking postupak.
         </p>
 
         {% if packing_error %}
-        <div class="msg msg-err">Odoo: {{ packing_error }}</div>
+        <div class="msg msg-err">Pakovanje: {{ packing_error }}</div>
         {% endif %}
 
         <ul class="pack-list">
@@ -271,25 +271,6 @@
             {% endfor %}
         </ul>
 
-        {% if order.stanje_skinuto %}
-        <button type="button" class="btn-skini is-done" disabled>
-            Skini sa stanja ✓
-        </button>
-        <p class="hint">
-            Već skinuto{% if order.stanje_skinuto_at %} — {{ order.stanje_skinuto_at|date:"d.m.Y. H:i" }}{% endif %}.
-            Ne može se ponoviti automatski.
-        </p>
-        {% else %}
-        <form method="post" id="skiniStanjeForm">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="skini_stanje">
-            <button type="submit" class="btn-skini" id="skiniStanjeBtn">Skini sa stanja</button>
-        </form>
-        <p class="hint">
-            Skida se samo sa lokacija koje pišu na packing listi (npr. 1× Vrata-2).
-            Artikli „Provjeri u MP” se ne diraju u Odoo.
-        </p>
-        {% endif %}
     </div>
 
     <div class="toast" id="copyToast">Kopirano</div>
@@ -344,25 +325,6 @@
             });
         });
 
-        var form = document.getElementById('skiniStanjeForm');
-        if (form) {
-            form.addEventListener('submit', function (event) {
-                var ok = window.confirm(
-                    'Skini sa stanja u Odoo?\n\n' +
-                    'To znači da je zapakovano i poslato.\n' +
-                    'Količine se skidaju s lokacija sa packing liste.'
-                );
-                if (!ok) {
-                    event.preventDefault();
-                    return;
-                }
-                var btn = document.getElementById('skiniStanjeBtn');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.textContent = 'Skidam…';
-                }
-            });
-        }
     })();
     </script>
 </body>

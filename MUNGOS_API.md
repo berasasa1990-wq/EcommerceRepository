@@ -62,11 +62,10 @@ novih modela, migracija, taskova, webhookova ili poziva iz webshop requestova.
    rezervacija mijenja rezervisano. `reserve_web_order_stock` rezerviše na
    checkoutu; `validate_order_stock` provodi skidanje nakon pickinga;
    `cancel_order_stock` oslobađa rezervacije. `restore_unfinished_web_stock`
-   obrađuje starija prerana skidanja. Uvoz, popis, dnevno MP skidanje i
-   Odoo sinhronizacija imaju svoje funkcije u `magacin.py`; B2B ima
+   obrađuje starija prerana skidanja. Uvoz, popis i dnevno MP skidanje
+   imaju svoje funkcije u `magacin.py`; B2B ima
    `b2b_orders.finish_pick`. Mungos ih ne poziva niti mijenja.
-10. **Vanjske integracije:** `odoo_client.py` je zaseban XML-RPC klijent sa
-    settings konfiguracijom, timeoutom i `OdooError`; `olx_api.py` koristi
+10. **Vanjske integracije:** Odoo klijent i sync su uklonjeni; `olx_api.py` koristi
     `requests.Session`. Postoje i API-ji za katalog/sync te zaseban
     `views_partner_stock.py` read-only partner API. Mungos koristi vlastiti
     klijent i vlastiti ključ, bez povezivanja sa ovim tokovima.
