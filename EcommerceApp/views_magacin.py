@@ -3768,7 +3768,7 @@ def magacin_kupci_lookup(request):
             for row in WarehouseCustomer.objects.order_by('-azuriran'):
                 if row.pk in seen:
                     continue
-                if digits in _phone_digits(row.telefon):
+                if digits in _phone_digits(row.telefon) or _customer_phone_key(query) == _customer_phone_key(row.telefon):
                     matches.append(row)
                     seen.add(row.pk)
                 if len(matches) >= 40:
@@ -3899,8 +3899,6 @@ def _save_warehouse_customer(
             raise MagacinError('Već postoji kupac s tim telefonom.')
     elif matching_ids:
         customer = WarehouseCustomer.objects.get(pk=matching_ids[0])
-    if customer and not update_existing:
-        return customer
     fields = {
         'ime_prezime': ime[:200],
         'telefon': telefon[:30],
@@ -3909,6 +3907,16 @@ def _save_warehouse_customer(
         'email': (email or '').strip()[:254],
         'postanski_broj': (postanski_broj or '').strip()[:20],
     }
+    if customer and not update_existing:
+        # Checkout fills missing contact details, preserving manual data and flags.
+        missing = []
+        for key, value in fields.items():
+            if value and not (getattr(customer, key) or '').strip():
+                setattr(customer, key, value)
+                missing.append(key)
+        if missing:
+            customer.save(update_fields=missing)
+        return customer
     if odbio_posiljku is not None:
         fields['odbio_posiljku'] = bool(odbio_posiljku)
     if vp_kupac is not None:
@@ -3964,7 +3972,7 @@ def magacin_kupci(request):
         return redirect('staff_magacin_kupci')
 
     query = (request.GET.get('q') or '').strip()
-    qs = WarehouseCustomer.objects.order_by('ime_prezime', 'id')
+    qs = WarehouseCustomer.objects.order_by('-kreiran', '-id')
     if query:
         digits = _phone_digits(query)
         filt = (
@@ -3975,17 +3983,23 @@ def magacin_kupci(request):
         )
         if digits:
             filt |= Q(telefon__icontains=digits)
+            canonical = _customer_phone_key(query)
+            matching_ids = [pk for pk, phone in WarehouseCustomer.objects.values_list('pk', 'telefon')
+                            if canonical and _customer_phone_key(phone) == canonical]
+            filt |= Q(pk__in=matching_ids)
         qs = qs.filter(filt)
     editing = None
     edit_id = (request.GET.get('id') or '').strip()
     if edit_id:
         editing = WarehouseCustomer.objects.filter(pk=edit_id).first()
+    page = Paginator(qs, 300).get_page(request.GET.get('page'))
     context = _magacin_context(request, section='kupci', page_title='Kupci — Magacin')
     context.update({
-        'customers': list(qs[:300]),
+        'customers': page,
+        'customer_page': page,
         'customer_query': query,
         'editing': editing,
-        'customer_count': qs.count(),
+        'customer_count': page.paginator.count,
     })
     return render(request, 'staff/magacin/kupci.html', context)
 
@@ -6048,7 +6062,13 @@ def magacin_pakuj_detail(request, broj):
                 return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
             queue, _, _ = _order_pick_bundle(order)
             invalidate_magacin_nav_counts()
+            next_pick = next((row for row in queue
+                              if row.get('item_id') == int(request.POST.get('item_id') or 0)
+                              and not row.get('already_picked')
+                              and not (order.pick_state or {}).get(row['key'], {}).get('done')
+                              and row.get('loc') != (request.POST.get('loc') or '').strip()), None)
             return JsonResponse({'ok': True, 'queue': queue, 'state': order.pick_state,
+                                 'next_pick_key': next_pick['key'] if next_pick else None,
                                  'message': f'Potvrđeno {got} kom. Zahtjev za čišćenje poslan je u Lokacije. Zaliha nije očišćena.'})
         if action == 'pick_ocisti':
             password = request.POST.get('lozinka') or ''

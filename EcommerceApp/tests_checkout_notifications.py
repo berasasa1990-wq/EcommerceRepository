@@ -3,10 +3,19 @@ from unittest.mock import Mock, patch
 from django.db import transaction
 from django.test import SimpleTestCase, TestCase
 
-from .emails import _send_order_emails_in_background, queue_order_emails
+from .emails import _send_order_emails_in_background, queue_order_emails, queue_admin_order_notification
 
 
 class CheckoutNotificationTransactionTests(TestCase):
+    def test_b2b_rollback_does_not_send_notification(self):
+        with patch('EcommerceApp.emails.Thread') as thread:
+            with self.captureOnCommitCallbacks(execute=True):
+                with self.assertRaises(ValueError):
+                    with transaction.atomic():
+                        queue_admin_order_notification(Mock(pk=123))
+                        raise ValueError('Order failed')
+            thread.assert_not_called()
+
     def test_rollback_does_not_send_confirmation(self):
         with patch('EcommerceApp.emails.Thread') as thread:
             with self.captureOnCommitCallbacks(execute=True):
@@ -24,6 +33,16 @@ class CheckoutNotificationTransactionTests(TestCase):
 
 
 class CheckoutEmailWorkerTests(SimpleTestCase):
+    def test_b2b_worker_sends_only_shop_notification(self):
+        with patch('EcommerceApp.emails.Order.objects.get') as get_order, \
+             patch('EcommerceApp.emails.send_admin_order_notification') as notify, \
+             patch('EcommerceApp.emails.send_order_emails') as send, \
+             patch('EcommerceApp.emails.close_old_connections'), \
+             patch('EcommerceApp.emails.connections.close_all'):
+            _send_order_emails_in_background(123, admin_only=True)
+            notify.assert_called_once_with(get_order.return_value)
+            send.assert_not_called()
+
     def test_worker_loads_saved_order_and_closes_its_connections(self):
         with patch('EcommerceApp.emails.Order.objects.get') as get_order, \
              patch('EcommerceApp.emails.send_order_emails') as send, \

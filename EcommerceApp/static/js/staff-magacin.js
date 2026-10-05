@@ -3589,6 +3589,14 @@ function initArticleScanner() {
     });
     current = queue.findIndex(function (item) { return !itemState(item).done; });
     if (current < 0) current = queue.length;
+    try {
+        var nextPickKey = window.sessionStorage.getItem(storageKey + '-next');
+        window.sessionStorage.removeItem(storageKey + '-next');
+        var nextPickIndex = queue.findIndex(function (item) {
+            return item.key === nextPickKey && !itemState(item).done;
+        });
+        if (nextPickIndex >= 0) current = nextPickIndex;
+    } catch (err) {}
 
     var els = {
         card: document.getElementById('pkCard'),
@@ -4067,6 +4075,10 @@ function initArticleScanner() {
                 }
                 if (!data.ok) throw Error(data.error || 'Količina nije potvrđena.');
                 try { window.localStorage.removeItem(storageKey); } catch (err) {}
+                try {
+                    window.sessionStorage.removeItem(storageKey + '-next');
+                    if (data.next_pick_key) window.sessionStorage.setItem(storageKey + '-next', data.next_pick_key);
+                } catch (err) {}
                 leavingPicking = true;
                 window.location.reload();
             }).catch(function (error) {

@@ -4012,6 +4012,24 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False, placanje=''):
 
 
 @transaction.atomic
+def ensure_web_product_stock(product):
+    """Use the existing checkout stock initialization for a newly ordered SKU."""
+    product = Product.objects.select_for_update().get(pk=product.pk)
+    if not WarehouseStock.objects.filter(product=product).exists():
+        # Give catalog-only inventory a physical stock record so reservations
+        # and later picking use the same accounting as warehouse products.
+        location, _ = WarehouseLocation.objects.get_or_create(
+            sifra='WEB', defaults={'naziv': 'Webshop — bez magacinske lokacije'},
+        )
+        variants = list(product.varijacije.select_for_update())
+        for target in variants or [product]:
+            WarehouseStock.objects.create(product=product,
+                variation=target if variants else None, location=location,
+                kolicina=max(0, int(target.stanje or 0)) if target.na_stanju else 0)
+    return product
+
+
+@transaction.atomic
 def reserve_web_order_stock(order):
     """Reserve checkout quantities; physical stock is sold only after picking."""
     locked = Order.objects.select_for_update().get(pk=order.pk)
@@ -4027,17 +4045,7 @@ def reserve_web_order_stock(order):
         product = products.get(item.artikal_id)
         if product is None:
             raise MagacinError('Artikal više nije dostupan. Osvježite korpu.')
-        if not WarehouseStock.objects.filter(product=product).exists():
-            # Give catalog-only inventory a physical stock record so reservations
-            # and later picking use the same accounting as warehouse products.
-            location, _ = WarehouseLocation.objects.get_or_create(
-                sifra='WEB', defaults={'naziv': 'Webshop — bez magacinske lokacije'},
-            )
-            variants = list(product.varijacije.select_for_update())
-            for target in variants or [product]:
-                WarehouseStock.objects.create(product=product,
-                    variation=target if variants else None, location=location,
-                    kolicina=max(0, int(target.stanje or 0)) if target.na_stanju else 0)
+        product = ensure_web_product_stock(product)
         if reserve_for_order(locked, product, int(item.kolicina), variation=item.varijacija,
                              napomena=f'Web rezervacija #{locked.broj}'):
             raise MagacinError(f'Artikal „{product.naziv}” nema dovoljnu količinu. Provjerite korpu.')

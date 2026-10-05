@@ -619,11 +619,14 @@ def send_order_emails(order):
         raise
 
 
-def _send_order_emails_in_background(order_id):
+def _send_order_emails_in_background(order_id, admin_only=False):
     close_old_connections()
     try:
         order = Order.objects.get(pk=order_id)
-        send_order_emails(order)
+        if admin_only:
+            send_admin_order_notification(order)
+        else:
+            send_order_emails(order)
     except Exception:
         logger.exception('Slanje emaila za narudžbu ID %s nije uspjelo.', order_id)
     finally:
@@ -642,6 +645,19 @@ def queue_order_emails(order):
             logger.exception('Pokretanje email obavijesti za narudžbu ID %s nije uspjelo.', order_id)
 
     transaction.on_commit(start_delivery)
+
+
+def queue_admin_order_notification(order):
+    """B2B notifications go to the shop, never to the synthetic customer email."""
+    order_id = order.pk
+    def start_delivery():
+        try:
+            Thread(target=_send_order_emails_in_background, args=(order_id, True),
+                   name=f'b2b-order-email-{order_id}', daemon=False).start()
+        except Exception:
+            logger.exception('Pokretanje B2B email obavijesti za narudžbu ID %s nije uspjelo.', order_id)
+    transaction.on_commit(start_delivery)
+
 
 def send_order_complaint(*, user, order, item, problem):
     """Pošalji reklamaciju prodavnici, uz odgovor direktno kupcu."""

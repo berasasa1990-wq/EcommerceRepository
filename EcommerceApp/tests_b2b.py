@@ -372,6 +372,23 @@ class B2BTests(TestCase):
         self.assertContains(response, 'Narudžba se nije mogla poslati')
         self.assertIn('b2b_cart', self.client.session)
 
+    def test_order_email_is_scheduled_once_after_commit(self):
+        import uuid
+        from unittest.mock import patch
+        from .b2b_orders import submit_order
+        token = uuid.uuid4()
+        with patch('EcommerceApp.emails.Thread') as thread:
+            with self.captureOnCommitCallbacks(execute=True):
+                first = submit_order(self.account, {f'{self.product.pk}:0': '2'}, token,
+                                     {'payment': 'gotovina', 'napomena': ''})
+                second = submit_order(self.account, {f'{self.product.pk}:0': '2'}, token,
+                                      {'payment': 'gotovina', 'napomena': ''})
+                thread.assert_not_called()
+            self.assertEqual(first.order_id, second.order_id)
+            thread.assert_called_once()
+            self.assertEqual(thread.call_args.kwargs['args'], (first.order_id, True))
+            thread.return_value.start.assert_called_once()
+
     def test_submit_order_accepts_string_quantity(self):
         import uuid
         from .b2b_orders import submit_order

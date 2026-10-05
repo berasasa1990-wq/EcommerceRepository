@@ -3210,9 +3210,30 @@ class MagacinViewTests(TestCase):
         response = self.client.post(url, {'action': 'pick_short', 'item_id': item.pk, 'loc': 'T-1', 'got': '0'},
                                     HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual([(r['loc'], r['need']) for r in response.json()['queue']], [('T-2', 1)])
-        self.assertEqual(response.json()['shortages'], [])
+        data = response.json()
+        pending = [r for r in data['queue'] if not data['state'].get(r['key'], {}).get('done')]
+        self.assertEqual([(r['loc'], r['need']) for r in pending], [('T-2', 1)])
+        self.assertEqual(data['next_pick_key'], pending[0]['key'])
         self.assertTrue(order.stavke.filter(pk=item.pk).exists())
+
+    def test_partial_pick_immediately_targets_next_available_location(self):
+        loc2 = WarehouseLocation.objects.create(sifra='T-2', naziv='Druga lokacija')
+        loc3 = WarehouseLocation.objects.create(sifra='T-3', naziv='Treća lokacija')
+        for location in (loc2, loc3):
+            apply_movement(product=self.product, location=location, tip='prijem', kolicina=5)
+        self.client.force_login(self.user)
+        order = Order.objects.create(ime_prezime='Preostala količina', ukupno=Decimal('30.00'))
+        item = OrderItem.objects.create(narudzba=order, artikal=self.product,
+            naziv=self.product.naziv, kolicina=3, cijena=Decimal('10.00'))
+        url = reverse('staff_magacin_pakuj_detail', args=[order.broj])
+        for source, got, destination, need in [('T-1', 1, 'T-2', 2), ('T-2', 0, 'T-3', 2)]:
+            response = self.client.post(url, {'action': 'pick_short', 'item_id': item.pk,
+                'loc': source, 'got': str(got)}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            self.assertEqual(response.status_code, 200)
+            data = response.json()
+            target = next(row for row in data['queue'] if row['key'] == data['next_pick_key'])
+            self.assertEqual((target['item_id'], target['loc'], target['need']), (item.pk, destination, need))
+        self.assertEqual(WarehouseStock.objects.get(product=self.product, location=loc2).kolicina, 5)
 
     @override_settings(STORAGES={
         'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},

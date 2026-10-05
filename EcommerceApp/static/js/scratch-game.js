@@ -108,14 +108,29 @@
           document.getElementById('scratchSkipProduct').onclick = () => {
             window.location.assign(modal.dataset.afterCloseUrl || '/');
           };
-          document.getElementById('scratchAddToOrder').onclick = async () => {
-            const response = await fetch(addToOrderUrl, {
-              method: 'POST', credentials: 'same-origin', headers: { 'X-CSRFToken': csrfToken },
-            });
-            const added = await response.json();
-            if (added.ok) {
-              window.location.assign(modal.dataset.afterCloseUrl || '/');
-            } else result.textContent = added.detail || 'Artikal trenutno nije moguće dodati u narudžbu.';
+          const addButton = document.getElementById('scratchAddToOrder');
+          addButton.onclick = async () => {
+            if (addButton.disabled) return;
+            addButton.disabled = true;
+            const label = addButton.textContent;
+            addButton.textContent = 'Dodajem…';
+            try {
+              const response = await fetch(addToOrderUrl, {
+                method: 'POST', credentials: 'same-origin', headers: { 'X-CSRFToken': csrfToken },
+              });
+              const added = await response.json();
+              if (response.ok && added.ok) {
+                window.location.assign(modal.dataset.afterCloseUrl || '/');
+                return;
+              }
+              result.hidden = false;
+              result.textContent = added.detail || 'Artikal trenutno nije moguće dodati u narudžbu.';
+            } catch (_) {
+              result.hidden = false;
+              result.textContent = 'Dodavanje nije potvrđeno. Provjerite vezu i pokušajte ponovo.';
+            }
+            addButton.disabled = false;
+            addButton.textContent = label;
           };
         }
       }

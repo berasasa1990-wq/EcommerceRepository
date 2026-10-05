@@ -147,6 +147,8 @@ def _submit_order(account, cart, token, details):
     except Exception:
         import logging
         logging.getLogger(__name__).exception('B2B nav cache nije osvježen nakon narudžbe')
+    from .emails import queue_admin_order_notification
+    queue_admin_order_notification(order)
     return submission
 
 

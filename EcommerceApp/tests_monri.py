@@ -313,10 +313,13 @@ class MonriTests(TestCase):
         self.assertEqual(self.payment.status, 'pending')
 
     def test_paid_card_has_no_cash_on_delivery_and_cancelled_order_cannot_ship(self):
-        from .xexpress_service import order_is_pouzece
+        from .xexpress_service import order_is_pouzece, build_shipment_payload
         self.assertEqual(self.callback(self.payload()).status_code, 200)
         order = Order.objects.get(pk=self.order.pk)
         self.assertFalse(order_is_pouzece(order))
+        payload = build_shipment_payload(order)
+        self.assertFalse(payload['otkupnina'])
+        self.assertEqual(payload['iznosOtkupnine'], 0.0)
         self.assertEqual(order.packing_placanje_label(), 'KARTICA')
         order.status = Order.Status.OTKAZANA
         with self.assertRaises(XExpressError):

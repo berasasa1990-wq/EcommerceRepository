@@ -1,6 +1,6 @@
 /**
  * Live obavijesti za superusere.
- * Samo nova narudžba — korpa i registracija se ne prikazuju.
+ * Brojači i prisutnost; obavijesti o narudžbama stižu emailom.
  */
 (function () {
     const root = document.getElementById('staffAlertsRoot');
@@ -8,7 +8,7 @@
 
     const pollUrl = root.dataset.pollUrl || '/nalog/uzivo-obavijesti/';
     const analyticsUrl = root.dataset.analyticsUrl || '/nalog/uzivo-analitika/';
-    // Na uživo analitici: bez online toast-a, ali celebration za novu narudžbu i badge rade.
+    // Na uživo analitici: bez online toast-a, brojači ostaju aktivni.
     const path = window.location.pathname || '';
     const quietMode = (
         path.indexOf('/nalog/uzivo-analitika') === 0
@@ -432,16 +432,7 @@
             if (!data || !data.ok) return;
 
             const nextId = parseInt(data.latest_id || sinceId, 10) || sinceId;
-            const events = data.events || [];
-            if (events.length) {
-                let lastPurchase = null;
-                events.forEach(function (event) {
-                    if ((event.tip || '') === 'purchase') lastPurchase = event;
-                });
-                if (lastPurchase) {
-                    showEventToast(lastPurchase, data.new_orders_count);
-                }
-            }
+            // Order notifications are delivered by email; no purchase popup.
 
             // Online sticky summary isključen — ne prikazuj „kupac je na sajtu”
 

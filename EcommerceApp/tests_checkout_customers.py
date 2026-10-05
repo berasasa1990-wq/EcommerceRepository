@@ -67,6 +67,68 @@ class CheckoutCustomerTests(TestCase):
         self.assertFalse(Order.objects.exists())
         self.assertFalse(WarehouseCustomer.objects.exists())
 
+    def test_webshop_customer_is_available_for_manual_order_entry(self):
+        from django.contrib.auth import get_user_model
+        self.checkout()
+        customer = WarehouseCustomer.objects.get()
+        staff = get_user_model().objects.create_user(
+            username='customer-lookup-staff', is_staff=True, is_superuser=True,
+        )
+        self.client.force_login(staff)
+        for query in ('Online kupac', '061123456'):
+            response = self.client.get(reverse('staff_magacin_kupci_lookup'), {'q': query})
+            self.assertEqual(response.status_code, 200)
+            results = response.json()['results']
+            self.assertEqual(len(results), 1)
+            self.assertEqual(results[0]['id'], customer.pk)
+            self.assertEqual(results[0]['adresa'], 'Ulica 1')
+            self.assertEqual(results[0]['postanski_broj'], '71000')
+            self.assertEqual(results[0]['email'], 'kupac@example.com')
+
+    @override_settings(STORAGES={'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
+    def test_new_checkout_customer_is_visible_with_more_than_300_saved_customers(self):
+        from django.contrib.auth import get_user_model
+        WarehouseCustomer.objects.bulk_create([
+            WarehouseCustomer(ime_prezime=f'A kupac {i}', telefon=f'old-{i}') for i in range(301)
+        ])
+        self.checkout()
+        staff = get_user_model().objects.create_superuser('directory-staff', 'staff@example.com', 'pass')
+        self.client.force_login(staff)
+        first = self.client.get(reverse('staff_magacin_kupci'))
+        self.assertEqual(first.status_code, 200)
+        self.assertContains(first, 'Online kupac')
+        self.assertEqual(first.context['customer_count'], 302)
+        second = self.client.get(reverse('staff_magacin_kupci'), {'page': 2})
+        self.assertEqual(len(second.context['customers']), 2)
+        ids = {row.pk for row in first.context['customers']} | {row.pk for row in second.context['customers']}
+        self.assertEqual(len(ids), 302)
+
+    def test_checkout_fills_missing_customer_details_without_overwriting_manual_data(self):
+        existing = WarehouseCustomer.objects.create(ime_prezime='Sačuvano ime', telefon='061123456',
+            odbio_posiljku=True, vp_kupac=True)
+        self.checkout()
+        existing.refresh_from_db()
+        self.assertEqual(WarehouseCustomer.objects.count(), 1)
+        self.assertEqual(existing.ime_prezime, 'Sačuvano ime')
+        self.assertEqual((existing.adresa, existing.grad, existing.email, existing.postanski_broj),
+                         ('Ulica 1', 'Sarajevo', 'kupac@example.com', '71000'))
+        self.assertTrue(existing.odbio_posiljku)
+        self.assertTrue(existing.vp_kupac)
+
+    @override_settings(STORAGES={'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
+    def test_checkout_customer_with_international_phone_is_found_by_local_phone(self):
+        from django.contrib.auth import get_user_model
+        customer = WarehouseCustomer.objects.create(ime_prezime='Sačuvani kupac', telefon='+387 61 123 456')
+        self.checkout()
+        self.client.force_login(get_user_model().objects.create_superuser('phone-staff', 'phone@example.com', 'pass'))
+        lookup = self.client.get(reverse('staff_magacin_kupci_lookup'), {'q': '061123456'})
+        self.assertEqual([row['id'] for row in lookup.json()['results']], [customer.pk])
+        listed = self.client.get(reverse('staff_magacin_kupci'), {'q': '061123456'})
+        self.assertEqual([row.pk for row in listed.context['customers']], [customer.pk])
+        self.assertEqual(WarehouseCustomer.objects.count(), 1)
+
 
 class CheckoutPostalCodeTests(TestCase):
     def test_postal_code_is_required_in_browser_and_server(self):

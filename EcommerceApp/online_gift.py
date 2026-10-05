@@ -295,8 +295,8 @@ def add_scratch_discount_product_to_order(request):
         percent = Decimal(str(reward.get('percent') or 0))
     except (TypeError, ValueError, InvalidOperation):
         return None, None, 'Nagrada nije ispravno podešena.'
-    from .models import Order, OrderItem
-    from .magacin import reserve_for_order
+    from .models import Order, OrderItem, CardPayment
+    from .magacin import reserve_for_order, ensure_web_product_stock
     with transaction.atomic():
         order = Order.objects.select_for_update().get(pk=claim.scratch_trigger_order_id)
         if order.status != Order.Status.NOVA or order.zapakovana or order.stanje_skinuto:
@@ -314,7 +314,12 @@ def add_scratch_discount_product_to_order(request):
         # redovne cijene artikla.
         regular = Decimal(str(product.bazna_cijena))
         discounted = (regular * (Decimal('1') - percent / Decimal('100'))).quantize(Decimal('0.01'))
+        # A paid card amount cannot be increased by a post-payment offer.
+        if discounted > 0 and CardPayment.objects.filter(order=order).exists():
+            return None, None, 'Artikal s doplatom nije moguće dodati na već kartično plaćenu narudžbu.'
+        product = ensure_web_product_stock(product)
         if reserve_for_order(order, product, 1, napomena=f'Sretni Greb-Greb #{order.broj}'):
+            transaction.set_rollback(True)
             return None, None, 'Osvojeni artikal više nije dostupan na lageru.'
         OrderItem.objects.create(
             narudzba=order, artikal=product, naziv=f'{product.naziv} — Sretni Greb-Greb',

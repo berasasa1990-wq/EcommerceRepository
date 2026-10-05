@@ -56,6 +56,13 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% if customer_page.has_other_pages %}
+        <nav class="mg-toolbar-actions" aria-label="Stranice kupaca" style="margin-top:14px;">
+            {% if customer_page.has_previous %}<a class="mg-btn" href="?page={{ customer_page.previous_page_number }}&amp;q={{ customer_query|urlencode }}">Prethodna</a>{% endif %}
+            <span>Stranica {{ customer_page.number }} / {{ customer_page.paginator.num_pages }}</span>
+            {% if customer_page.has_next %}<a class="mg-btn" href="?page={{ customer_page.next_page_number }}&amp;q={{ customer_query|urlencode }}">Sljedeća</a>{% endif %}
+        </nav>
+        {% endif %}
     </section>
     <section class="mg-card">
         <h2 class="mg-h" id="custTitle">{% if editing %}Izmijeni kupca{% else %}Novi kupac{% endif %}</h2>
