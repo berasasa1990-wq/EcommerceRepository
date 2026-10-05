@@ -45,3 +45,11 @@ body.is-checkout-page .checkout-page {
 @media (max-width: 600px) {
     .is-checkout-page .checkout-form { grid-template-columns: minmax(0, 1fr); }
 }
+
+.is-checkout-page fieldset.checkout-payment-note { border: 0; min-width: 0; }
+.is-checkout-page .checkout-payment-note legend { font-size: 14px; font-weight: 700; padding: 0; }
+.is-checkout-page #id_payment_method { display: grid; gap: 10px; margin: 8px 0 12px; }
+.is-checkout-page #id_payment_method label { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 10px; border: 1px solid #dfe1e6; border-radius: 8px; background: #fff; font-size: 14px; cursor: pointer; }
+.is-checkout-page #id_payment_method input { width: 18px; height: 18px; flex: none; accent-color: #ff6500; }
+.is-checkout-page #id_payment_method label:has(input:checked) { border-color: #ff6500; }
+.is-checkout-page .checkout-payment-note .form-error { color: #b42318; }

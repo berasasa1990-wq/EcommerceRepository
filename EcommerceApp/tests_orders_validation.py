@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from django.template.loader import render_to_string
 from django.test import RequestFactory, TestCase
-from .models import Order
+from .models import OnlineGiftCampaign, OnlineGiftClaim, Order
 from .views import staff_orders_validation, staff_online_orders
 
 
@@ -36,6 +36,21 @@ class WebOrdersOnlyTests(TestCase):
         self.assertEqual([o.pk for o in context['orders']], [self.web.pk])
         self.assertEqual(context['nova_count'], 1)
         self.assertEqual(self.context(staff_online_orders, {'q': self.transfer.broj})['orders'], [])
+
+    def test_scratch_is_green_only_when_used_on_this_order(self):
+        campaign = OnlineGiftCampaign.objects.create(naziv='Test greb')
+        claim = OnlineGiftClaim.objects.create(
+            campaign=campaign, scratch_tracking_enabled=True,
+            scratch_trigger_order=self.web,
+        )
+        self.assertFalse(list(self.context(staff_orders_validation)['orders'])[0].scratch_used)
+        claim.reward_consumed = True
+        claim.order = self.manual
+        claim.save()
+        self.assertFalse(list(self.context(staff_orders_validation)['orders'])[0].scratch_used)
+        claim.order = self.web
+        claim.save()
+        self.assertTrue(list(self.context(staff_orders_validation)['orders'])[0].scratch_used)
 
     def test_transfer_document_label_including_legacy_records(self):
         for order in (self.transfer, self.legacy_transfer, self.marked_transfer):

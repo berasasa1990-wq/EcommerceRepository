@@ -1,3 +1,4 @@
+import uuid
 import re
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -4544,6 +4545,9 @@ class Order(models.Model):
         return f'mg-st-{self.status}'
 
     def placeno_karticom(self):
+        payment = getattr(self, 'card_payment', None)
+        if payment:
+            return payment.status == 'paid'
         for row in (self.popust_detalji or []):
             if not isinstance(row, dict):
                 continue
@@ -4561,6 +4565,8 @@ class Order(models.Model):
                 continue
             if str(row.get('placanje') or '').strip().lower() == 'ziralno':
                 return 'ŽIRALNO'
+        if getattr(self, 'card_payment', None) and not self.placeno_karticom():
+            return 'KARTICA — ČEKA UPLATU'
         return 'KARTICA' if self.placeno_karticom() else 'GOTOVINSKI'
 
     def loyalty_popust_info(self):
@@ -7183,3 +7189,16 @@ class MungosProductMapping(models.Model):
     last_synced_at = models.DateTimeField(null=True, blank=True)
     last_sync_status = models.CharField(max_length=32, blank=True)
     last_sync_error = models.TextField(blank=True)
+
+
+class CardPayment(models.Model):
+    """No card data: only server-calculated amount and verified payment state."""
+    order = models.OneToOneField(Order, on_delete=models.PROTECT, related_name='card_payment')
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    amount = models.PositiveIntegerField()  # BAM minor units, captured at checkout.
+    currency = models.CharField(max_length=3, default='BAM')
+    environment = models.CharField(max_length=10, default='test')
+    status = models.CharField(max_length=16, default='pending', choices=[('pending', 'Čeka uplatu'), ('paid', 'Plaćeno')])
+    transaction_id = models.CharField(max_length=64, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)

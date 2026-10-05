@@ -886,6 +886,29 @@ class CouponForm(forms.Form):
 
 
 class CheckoutForm(forms.Form):
+    payment_method = forms.ChoiceField(label='Način plaćanja', required=False,
+        choices=[('cod', 'Pouzećem — plaćanje prilikom preuzimanja'),
+                 ('card', 'Karticom — Visa / Mastercard (Monri)')], initial='cod',
+        widget=forms.RadioSelect)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .monri import configured
+        self.card_payment_available = configured()
+
+    def clean_payment_method(self):
+        method = self.cleaned_data.get('payment_method') or 'cod'
+        if method == 'card' and not self.card_payment_available:
+            raise forms.ValidationError(
+                'Kartično plaćanje trenutno nije dostupno. Odaberite plaćanje pouzećem.')
+        return method
+
+    def clean(self):
+        data = super().clean()
+        if data.get('payment_method') == 'card' and not data.get('email'):
+            self.add_error('payment_method', 'Za kartično plaćanje unesite email adresu.')
+        return data
+
     ime_prezime = forms.CharField(
         label='Ime i prezime', max_length=200,
         widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Ime i prezime'}),

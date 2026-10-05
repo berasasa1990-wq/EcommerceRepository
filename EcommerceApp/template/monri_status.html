@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<section class="container" style="max-width:640px;padding:40px 20px">
+    <h1>{% if payment.status == 'paid' %}Plaćanje uspješno{% elif cancelled %}Plaćanje nije završeno{% else %}Čekamo potvrdu plaćanja{% endif %}</h1>
+    <p>Narudžba {{ order.broj }} — {{ order.ukupno }} KM</p>
+    {% if payment_error %}<p role="alert">{{ payment_error }}</p>
+    {% elif payment.status == 'paid' %}
+        <p>Vaša kartična uplata je potvrđena. Hvala na narudžbi!</p>
+    {% else %}
+        <p>Kartična uplata još nije potvrđena. Narudžbu šaljemo nakon potvrde uplate.</p>
+        <p>Ako ste već platili, osvježite stranicu nakon nekoliko trenutaka. Ako ste odustali, možete nastaviti plaćanje za istu narudžbu.</p>
+        <a class="btn btn-primary" href="{% url 'monri_start' payment.token %}">Nastavi plaćanje</a>
+        <a href="{% url 'monri_return' payment.token %}">Provjeri status uplate</a>
+    {% endif %}
+    <p><a href="{% url 'home' %}">Nazad u prodavnicu</a></p>
+</section>
+{% endblock %}

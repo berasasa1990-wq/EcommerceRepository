@@ -1,5 +1,18 @@
 (() => {
     if (!document.body.classList.contains('product-mobile-reference')) return;
+    const details = document.querySelector('.product-detail > .pd-reference-details');
+    const trust = document.querySelector('.pd-desktop-trust');
+    if (details && trust) {
+        const origin = document.createComment('product details original position');
+        details.before(origin);
+        const desktop = window.matchMedia('(min-width: 1025px)');
+        const placeDetails = () => {
+            if (desktop.matches) trust.after(details);
+            else origin.after(details);
+        };
+        placeDetails();
+        desktop.addEventListener('change', placeDetails);
+    }
     const actions = document.querySelector('.header .nav-actions');
     if (actions) {
         const search = document.createElement('button');
@@ -7,31 +20,6 @@
         search.setAttribute('aria-label', 'Pretraga'); search.setAttribute('data-mobile-home-search', '');
         search.innerHTML = document.querySelector('.header-search-icon')?.innerHTML || '⌕';
         actions.prepend(search);
-    }
-    const gallery = document.getElementById('mainProductImageWrap');
-    const trust = document.querySelector('.pd-desktop-trust');
-    const info = document.getElementById('productDetailInfo');
-    if (gallery && trust && info) {
-        const desktop = window.matchMedia('(min-width: 1025px)');
-        let alignmentFrame;
-        const alignGallery = () => {
-            cancelAnimationFrame(alignmentFrame);
-            alignmentFrame = requestAnimationFrame(() => {
-                if (!desktop.matches) {
-                    gallery.style.removeProperty('--pd-aligned-gallery-height');
-                    return;
-                }
-                const height = trust.getBoundingClientRect().bottom - gallery.getBoundingClientRect().top;
-                if (height > 0) gallery.style.setProperty('--pd-aligned-gallery-height', `${height}px`);
-            });
-        };
-        const alignmentObserver = new ResizeObserver(alignGallery);
-        alignmentObserver.observe(info);
-        alignmentObserver.observe(trust);
-        window.addEventListener('resize', alignGallery);
-        desktop.addEventListener('change', alignGallery);
-        document.fonts.ready.then(alignGallery);
-        alignGallery();
     }
     const thumbs = document.getElementById('productThumbnails');
     if (thumbs) {

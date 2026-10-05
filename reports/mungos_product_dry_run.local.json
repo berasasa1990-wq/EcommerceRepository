@@ -1,0 +1,59 @@
+{
+  "status": "READY_FOR_REVIEW",
+  "reviewReasons": [],
+  "carpologijaProductId": 1370,
+  "name": "9061-NP BN #5/0-119 BKK 9061-NP BN #5/0-119",
+  "sku": "ODOO-T6230",
+  "price": 0.4,
+  "quantity": 3000,
+  "category": "Stalci za spod PROD",
+  "categoryCode": "SportRecreation_Equipment_FishingEquipment_Accessories",
+  "images": [
+    {
+      "imageUrl": "https://your-app-name.onrender.com/media/products/odoo-template-6230_0dbmDZ4.avif",
+      "isMainImage": true
+    }
+  ],
+  "variantCount": 0,
+  "payload": {
+    "id": "ODOO-T6230",
+    "sku": "ODOO-T6230",
+    "name": "9061-NP BN #5/0-119 BKK 9061-NP BN #5/0-119",
+    "hasQuantities": true,
+    "quantityRemaining": 3000,
+    "shortDescription": "",
+    "details": "",
+    "productType": "Product",
+    "price": 0.4,
+    "currencyIsoCode": "BAM",
+    "isNegotiable": false,
+    "isFree": false,
+    "warrantyMonthsCount": null,
+    "warrantyDescription": null,
+    "returnDaysCount": null,
+    "returnDescription": null,
+    "sellerPaysForReturnShipping": true,
+    "exchangeAcceptable": false,
+    "exchangeComment": null,
+    "shippmentDeliveryMethod": "DeliveryByMe",
+    "condition": "New",
+    "countryCode": "BA",
+    "cityCode": "Bijeljina",
+    "streetName": null,
+    "postalCode": null,
+    "longitude": null,
+    "latitude": null,
+    "categoryUuid": null,
+    "categoryCode": "SportRecreation_Equipment_FishingEquipment_Accessories",
+    "productAttributes": {},
+    "images": [
+      {
+        "imageUrl": "https://your-app-name.onrender.com/media/products/odoo-template-6230_0dbmDZ4.avif",
+        "isMainImage": true
+      }
+    ],
+    "HasVariants": false,
+    "Variants": [],
+    "ean": ""
+  }
+}

@@ -1,3 +1,4 @@
+from . import views_monri
 from . import views_partner_stock
 from django.urls import path
 from django.contrib.auth import views as auth_views
@@ -15,6 +16,10 @@ from . import views_site_prep
 from . import views_sync
 
 urlpatterns = [
+    path('placanje/monri/potvrda/', views_monri.callback, name='monri_callback'),
+    path('placanje/monri/<uuid:token>/', views_monri.start, name='monri_start'),
+    path('placanje/monri/<uuid:token>/povratak/', views_monri.payment_return, name='monri_return'),
+    path('placanje/monri/<uuid:token>/odustajanje/', views_monri.cancel, name='monri_cancel'),
     path('manifest.webmanifest', views.pwa_manifest, name='pwa_manifest'),
     path('service-worker.js', views.pwa_service_worker, name='pwa_service_worker'),
     path('nagrade/greb-greb/dogadjaj/', views.scratch_event, name='scratch_event'),

@@ -1,4 +1,6 @@
 import logging
+import ipaddress
+from urllib.parse import urlsplit
 
 from django import forms
 from django.contrib import admin, messages
@@ -320,10 +322,24 @@ class CustomerUserAdmin(UserAdmin):
             from django.core.exceptions import PermissionDenied
             raise PermissionDenied
         if request.method == 'POST':
+            domain = get_current_site(request).domain
+            hostname = urlsplit(f'//{domain}').hostname or ''
+            try:
+                local_host = ipaddress.ip_address(hostname).is_loopback
+            except ValueError:
+                local_host = hostname.lower() == 'localhost' or hostname.lower().endswith('.localhost')
+            if local_host:
+                self.message_user(
+                    request,
+                    'Email nije poslan: lokalni admin ne može promijeniti lozinku na javnom sajtu. '
+                    'Pošaljite reset iz admina na carpologijabh.ba ili zatražite reset na tom sajtu.',
+                    messages.ERROR,
+                )
+                return redirect('admin:auth_user_change', user.pk)
             if user.email and user.is_active and user.has_usable_password():
                 body = render_to_string('auth/admin_password_reset_email.txt', {
                     'protocol': 'https' if request.is_secure() else 'http',
-                    'domain': get_current_site(request).domain,
+                    'domain': domain,
                     'uid': urlsafe_base64_encode(force_bytes(user.pk)),
                     'token': default_token_generator.make_token(user),
                 })

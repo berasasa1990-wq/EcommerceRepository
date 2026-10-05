@@ -6240,6 +6240,12 @@ def wipe_product_location_stock(product, location, *, variation=None, user=None,
 
 @transaction.atomic
 def mark_order_packed(order):
+    from .monri import require_paid_for_fulfillment
+    try:
+        require_paid_for_fulfillment(order)
+    except ValueError as error:
+        raise MagacinError(str(error)) from None
+
     if order.lager_status != Order.LagerStatus.VALIDIRANO:
         raise MagacinError('Prvo validatuj narudžbu.')
     if order.zapakovana and order.status == Order.Status.ZAVRSENA:
@@ -6784,6 +6790,12 @@ def _warehouse_qty_still_needed(order, pick_rows):
 @transaction.atomic
 def validate_order_stock(order, *, user=None):
     """Skini količine s picking lokacija (ručna, VP, webshop). Nikad ne ostavi validirano bez skidanja."""
+    from .monri import require_paid_for_fulfillment
+    try:
+        require_paid_for_fulfillment(order)
+    except ValueError as error:
+        raise MagacinError(str(error)) from None
+
     if hasattr(order, "b2b_submission"):
         from .b2b_orders import finish_pick
         return finish_pick(order, user=user)
@@ -6793,6 +6805,10 @@ def validate_order_stock(order, *, user=None):
             raise MagacinError('Prvo potvrdi pokupljene količine na pickingu.')
         sync_webshop_charges_to_picked(order)
         order.refresh_from_db()
+        try:
+            require_paid_for_fulfillment(order)
+        except ValueError as error:
+            raise MagacinError(str(error)) from None
     if order.lager_status == Order.LagerStatus.VALIDIRANO:
         from .warehouse_ledger import settle_replacement, settle_invoiced_excess, settle_picked_missing
         settle_replacement(order, user=user)

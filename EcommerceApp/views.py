@@ -4873,6 +4873,9 @@ def checkout(request):
         form = CheckoutForm(request.POST)
         if form.is_valid():
             summary = cart.sazetak(user=request.user)
+            if form.cleaned_data['payment_method'] == 'card' and summary['ukupno'] <= 0:
+                messages.error(request, 'Za kartično plaćanje iznos narudžbe mora biti veći od 0 KM.')
+                return redirect('checkout')
             popust_detalji = []
             for p_label in (summary.get('pogodnosti') or []):
                 popust_detalji.append({'opis': str(p_label), 'iznos': None})
@@ -5032,6 +5035,10 @@ def checkout(request):
                             kolicina=1,
                         )
                     reserve_web_order_stock(order)
+                    if form.cleaned_data['payment_method'] == 'card':
+                        from .models import CardPayment
+                        CardPayment.objects.create(order=order, amount=int(order.ukupno * 100),
+                                                   environment=settings.MONRI_ENVIRONMENT)
             except MagacinError as exc:
                 messages.error(request, str(exc))
                 return redirect('cart')
@@ -5076,34 +5083,38 @@ def checkout(request):
             except Exception:
                 pass
 
-            queue_order_emails(order)
+            if form.cleaned_data['payment_method'] != 'card':
+                queue_order_emails(order)
 
-            # Email obavijesti se šalju u pozadini; lokalna evidencija ostaje ažurna.
-            # Evidentiraj potrošnju i bez unesenog loyalty koda / popusta (email ili telefon).
-            logger.info("Checkout završen, pripremam sync za narudžbu #%s", order.broj)
-            try:
-                card = azuriraj_loyalty_nakon_narudzbe(order)
-                if card:
-                    logger.info(
-                        "Loyalty potrošnja ažurirana za karticu %s (narudžba #%s, kod nije obavezan)",
-                        card.kod,
+                # Email obavijesti se šalju u pozadini; lokalna evidencija ostaje ažurna.
+                # Evidentiraj potrošnju i bez unesenog loyalty koda / popusta (email ili telefon).
+                logger.info("Checkout završen, pripremam sync za narudžbu #%s", order.broj)
+                try:
+                    card = azuriraj_loyalty_nakon_narudzbe(order)
+                    if card:
+                        logger.info(
+                            "Loyalty potrošnja ažurirana za karticu %s (narudžba #%s, kod nije obavezan)",
+                            card.kod,
+                            order.broj,
+                        )
+                        sync_korisnik(card.user)
+                    elif request.user.is_authenticated:
+                        card = getattr(request.user, 'loyalty_kartica', None)
+                        if card:
+                            sync_korisnik(request.user)
+                except Exception:
+                    logger.exception(
+                        'Loyalty ažuriranje nije uspjelo za narudžbu #%s',
                         order.broj,
                     )
-                    sync_korisnik(card.user)
-                elif request.user.is_authenticated:
-                    card = getattr(request.user, 'loyalty_kartica', None)
-                    if card:
-                        sync_korisnik(request.user)
-            except Exception:
-                logger.exception(
-                    'Loyalty ažuriranje nije uspjelo za narudžbu #%s',
-                    order.broj,
-                )
-            result = sync_narudzba(order)
-            if result is None:
-                logger.warning("sync_narudzba vratio None (vjerovatno SYNC nije aktivan)")
-            elif isinstance(result, dict) and not result.get('ok', True):
-                logger.error("sync_narudzba nije uspio: %s", result)
+                result = sync_narudzba(order)
+                if result is None:
+                    logger.warning("sync_narudzba vratio None (vjerovatno SYNC nije aktivan)")
+                elif isinstance(result, dict) and not result.get('ok', True):
+                    logger.error("sync_narudzba nije uspio: %s", result)
+
+            if form.cleaned_data['payment_method'] == 'card':
+                return redirect('monri_start', token=order.card_payment.token)
 
             purchase_event_id = f'purchase-{order.broj}'
             logger.warning('Meta CAPI Purchase call reached (event_id=%s)', purchase_event_id)
@@ -8234,6 +8245,10 @@ def staff_orders_validation(request):
     for order in page_orders:
         order.scratch_details = rewards_by_order[order.pk]
         order.scratch_count = len(order.scratch_details)
+        order.scratch_used = any(
+            claim.reward_consumed and claim.order_id == order.pk
+            for claim in order.scratch_details
+        )
     page.object_list = page_orders
     params = request.GET.copy()
     params.pop('page', None)

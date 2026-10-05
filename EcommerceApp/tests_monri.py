@@ -1,0 +1,159 @@
+import hashlib
+import json
+from decimal import Decimal
+from unittest.mock import patch
+
+from django.test import TestCase, override_settings
+from django.urls import reverse
+
+from .models import Order, CardPayment
+from .forms import CheckoutForm
+from .monri import form_data
+from .magacin import validate_order_stock, MagacinError
+from .xexpress_service import create_shipment, XExpressError
+
+
+@override_settings(ALLOWED_HOSTS=['testserver'], MONRI_ENABLED=True, MONRI_ENVIRONMENT='test',
+    MONRI_MERCHANT_KEY='private-test-key', MONRI_AUTHENTICITY_TOKEN='public-test-token',
+    MONRI_PUBLIC_BASE_URL='https://carpologijabh.ba',
+    STORAGES={'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+              'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
+class MonriTests(TestCase):
+    def setUp(self):
+        self.order = Order.objects.create(ime_prezime='Test Kupac', email='test@example.com', telefon='061123456',
+            adresa='Ulica 1', grad='Sarajevo', ukupno=Decimal('25.50'))
+        self.payment = CardPayment.objects.create(order=self.order, amount=2550)
+
+    def payload(self, **changes):
+        return {'id': 123, 'order_number': self.order.broj, 'amount': 2550, 'currency': 'BAM',
+                'status': 'approved', 'response_code': '0000', 'transaction_type': 'purchase', **changes}
+
+    def callback(self, payload, valid=True):
+        body = json.dumps(payload)
+        signature = hashlib.sha512(('private-test-key' + body).encode()).hexdigest()
+        return self.client.post(reverse('monri_callback'), body, content_type='application/json',
+            HTTP_AUTHORIZATION='WP3-callback ' + (signature if valid else 'bad'))
+
+    def test_form_uses_server_amount_test_endpoint_and_never_exposes_key(self):
+        endpoint, fields = form_data(self.payment)
+        self.assertEqual(endpoint, 'https://ipgtest.monri.com/v2/form')
+        self.assertEqual(fields['amount'], '2550')
+        self.assertEqual(fields['currency'], 'BAM')
+        expected = hashlib.sha512(('private-test-key' + self.order.broj + '2550BAM').encode()).hexdigest()
+        self.assertEqual(fields['digest'], expected)
+        response = self.client.get(reverse('monri_start', args=[self.payment.token]))
+        self.assertContains(response, 'Nastavi na plaćanje')
+        self.assertContains(response, 'Testno plaćanje')
+        self.assertNotContains(response, 'private-test-key')
+        self.assertIn('no-store', response.headers['Cache-Control'])
+
+    def test_verified_callback_pays_once_and_preserves_amount(self):
+        self.assertEqual(self.callback(self.payload()).status_code, 200)
+        self.payment.refresh_from_db()
+        timestamp = self.payment.paid_at
+        self.assertEqual(self.payment.status, 'paid')
+        self.assertTrue(Order.objects.get(pk=self.order.pk).placeno_karticom())
+        self.assertEqual(self.callback(self.payload()).status_code, 200)
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.paid_at, timestamp)
+        self.assertEqual(self.callback(self.payload(id=999)).status_code, 409)
+
+    def test_forged_wrong_amount_currency_and_declined_do_not_pay(self):
+        self.assertEqual(self.callback(self.payload(), valid=False).status_code, 403)
+        for changes in ({'amount': 1}, {'currency': 'EUR'}, {'status': 'declined'},
+                        {'response_code': '1000'}, {'transaction_type': 'authorize'}, {'amount': '2550'}):
+            self.assertEqual(self.callback(self.payload(**changes)).status_code, 400)
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'pending')
+
+    def test_redirect_and_cancel_never_mark_paid(self):
+        for route in ('monri_return', 'monri_cancel'):
+            self.client.get(reverse(route, args=[self.payment.token]), {'status': 'approved', 'response_code': '0000'})
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'pending')
+        self.assertFalse(Order.objects.get(pk=self.order.pk).placeno_karticom())
+
+    def test_pending_card_cannot_be_fulfilled_or_sent_to_courier(self):
+        with self.assertRaises(MagacinError):
+            validate_order_stock(self.order)
+        with patch('EcommerceApp.xexpress_service.requests.post') as http:
+            with self.assertRaises(XExpressError):
+                create_shipment(self.order)
+            http.assert_not_called()
+
+    def test_card_record_overrides_unverified_note_and_amount_changes(self):
+        self.order.napomena = 'plaćeno karticom'
+        self.assertFalse(self.order.placeno_karticom())
+        self.callback(self.payload())
+        self.order = Order.objects.get(pk=self.order.pk)
+        self.order.ukupno = Decimal('99')
+        with self.assertRaises(XExpressError):
+            create_shipment(self.order)
+
+    def test_card_unavailable_without_complete_configuration_and_requires_email(self):
+        data = dict(ime_prezime='Test Kupac', telefon='061123456', adresa='Ulica 1', grad='Sarajevo', payment_method='card')
+        form = CheckoutForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('payment_method', form.errors)
+        with override_settings(MONRI_ENABLED=False):
+            form = CheckoutForm({**data, 'email': 'test@example.com'})
+            self.assertFalse(form.is_valid())
+            self.assertIn('card', dict(form.fields['payment_method'].choices))
+            self.assertFalse(form.card_payment_available)
+            self.assertIn('trenutno nije dostupno', form.errors['payment_method'][0])
+            self.assertIn('Karticom', str(form['payment_method']))
+            self.assertEqual(self.client.get(reverse('monri_start', args=[self.payment.token])).status_code, 503)
+        data.pop('payment_method')
+        form = CheckoutForm(data)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['payment_method'], 'cod')
+
+    def test_callback_finalizes_only_once_after_commit(self):
+        with patch('EcommerceApp.views_monri.finish_paid_order') as finish:
+            with self.captureOnCommitCallbacks(execute=True):
+                self.assertEqual(self.callback(self.payload()).status_code, 200)
+            finish.assert_called_once()
+            with self.captureOnCommitCallbacks(execute=True):
+                self.assertEqual(self.callback(self.payload()).status_code, 200)
+            finish.assert_called_once()
+
+    def test_checkout_card_creates_pending_payment_and_defers_purchase_side_effects(self):
+        from contextlib import ExitStack
+        from .models import Product
+        product = Product.objects.create(naziv='Artikal', cijena=10, stanje=5, aktivan=True, na_stanju=True)
+        session = self.client.session
+        session['cart'] = {f'{product.pk}:0': {'product_id': product.pk, 'variation_id': None,
+            'quantity': 1, 'cijena': '10.00', 'bazna_cijena': '10.00', 'na_akciji': False,
+            'naziv': product.naziv, 'product_naziv': product.naziv, 'sifra': 'TEST-SKU'}}
+        session.save()
+        with ExitStack() as stack:
+            mocks = {name: stack.enter_context(patch('EcommerceApp.views.' + name)) for name in
+                     ('queue_order_emails', 'sync_narudzba', 'track_purchase', 'azuriraj_loyalty_nakon_narudzbe')}
+            stack.enter_context(patch('EcommerceApp.staff_alerts.notify_purchase'))
+            response = self.client.get(reverse('checkout'))
+            self.assertContains(response, 'Karticom')
+            response = self.client.post(reverse('checkout'), dict(ime_prezime='Test Kupac', telefon='061123456',
+                email='test@example.com', adresa='Ulica 1', grad='Sarajevo', payment_method='card'))
+            for mock in mocks.values():
+                mock.assert_not_called()
+        payment = CardPayment.objects.exclude(pk=self.payment.pk).get()
+        self.assertEqual(payment.status, 'pending')
+        self.assertEqual(payment.amount, int(payment.order.ukupno * 100))
+        self.assertRedirects(response, reverse('monri_start', args=[payment.token]), fetch_redirect_response=False)
+        self.assertFalse(payment.order.placeno_karticom())
+
+    def test_paid_card_has_no_cash_on_delivery_and_cancelled_order_cannot_ship(self):
+        from .xexpress_service import order_is_pouzece
+        self.assertEqual(self.callback(self.payload()).status_code, 200)
+        order = Order.objects.get(pk=self.order.pk)
+        self.assertFalse(order_is_pouzece(order))
+        self.assertEqual(order.packing_placanje_label(), 'KARTICA')
+        order.status = Order.Status.OTKAZANA
+        with self.assertRaises(XExpressError):
+            create_shipment(order)
+
+    def test_callback_requires_post_and_unknown_order_is_rejected(self):
+        self.assertEqual(self.client.get(reverse('monri_callback')).status_code, 405)
+        self.assertEqual(self.callback(self.payload(order_number='UNKNOWN')).status_code, 404)
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'pending')

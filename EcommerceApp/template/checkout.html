@@ -13,7 +13,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20260916-checkout">
-<link rel="stylesheet" href="{% static 'css/checkout-page.css' %}?v=20260916-checkout">
+<link rel="stylesheet" href="{% static 'css/checkout-page.css' %}?v=20261005-monri">
 {% endblock %}
 
 {% block content %}
@@ -36,6 +36,7 @@
             <h2>Podaci za dostavu</h2>
             {% if form.non_field_errors %}<div class="checkout-form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
             {% for field in form %}
+            {% if field.name != "payment_method" %}
             <div class="form-group{% if field.errors %} form-group--error{% endif %}">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {{ field }}
@@ -43,10 +44,19 @@
                 <p class="form-error">{{ error }}</p>
                 {% endfor %}
             </div>
+            {% endif %}
             {% endfor %}
-            <div class="checkout-payment-note"><h2>Način plaćanja</h2><p>Plaćanje pouzećem prilikom preuzimanja pošiljke.</p></div>
+            <fieldset class="checkout-payment-note"><legend>Način plaćanja</legend>
+                {{ form.payment_method }}
+                {% for error in form.payment_method.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                {% if form.card_payment_available %}
+                <p>Za kartično plaćanje podatke kartice unosite na sigurnoj Monri stranici.</p>
+                {% else %}
+                <p>Kartično plaćanje trenutno nije dostupno. Narudžbu možete platiti pouzećem.</p>
+                {% endif %}
+            </fieldset>
             <button type="submit" class="btn btn-primary btn-add-to-bag">Potvrdi narudžbu</button>
-            <p class="checkout-secure-note">Sigurna kupovina i plaćanje pouzećem</p>
+            <p class="checkout-secure-note">Sigurna kupovina</p>
         </form>
 
         <aside class="checkout-summary">

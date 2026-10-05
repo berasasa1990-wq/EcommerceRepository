@@ -1,0 +1,62 @@
+{
+  "status": "NEEDS_REVIEW",
+  "reviewReasons": [
+    "Kategorija nema potvrđeno Mungos mapiranje.",
+    "categoryCode nema potvrđeno Mungos mapiranje."
+  ],
+  "carpologijaProductId": 1374,
+  "name": "A-ES-8946 BKK LONESNIPER #2",
+  "sku": "9476",
+  "price": 7.5,
+  "quantity": 34,
+  "category": null,
+  "categoryCode": null,
+  "images": [
+    {
+      "imageUrl": "https://your-app-name.onrender.com/media/products/odoo-template-6195_kFg3vKd.avif",
+      "isMainImage": true
+    }
+  ],
+  "variantCount": 0,
+  "payload": {
+    "id": "9476",
+    "sku": "9476",
+    "name": "A-ES-8946 BKK LONESNIPER #2",
+    "hasQuantities": true,
+    "quantityRemaining": 34,
+    "shortDescription": "",
+    "details": "",
+    "productType": "Product",
+    "price": 7.5,
+    "currencyIsoCode": "BAM",
+    "isNegotiable": false,
+    "isFree": false,
+    "warrantyMonthsCount": null,
+    "warrantyDescription": null,
+    "returnDaysCount": null,
+    "returnDescription": null,
+    "sellerPaysForReturnShipping": true,
+    "exchangeAcceptable": false,
+    "exchangeComment": null,
+    "shippmentDeliveryMethod": "DeliveryByMe",
+    "condition": "New",
+    "countryCode": "BA",
+    "cityCode": "Bijeljina",
+    "streetName": null,
+    "postalCode": null,
+    "longitude": null,
+    "latitude": null,
+    "categoryUuid": null,
+    "categoryCode": null,
+    "productAttributes": {},
+    "images": [
+      {
+        "imageUrl": "https://your-app-name.onrender.com/media/products/odoo-template-6195_kFg3vKd.avif",
+        "isMainImage": true
+      }
+    ],
+    "HasVariants": false,
+    "Variants": [],
+    "ean": "6939067007360"
+  }
+}

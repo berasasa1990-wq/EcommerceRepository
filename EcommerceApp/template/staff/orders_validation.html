@@ -3,7 +3,7 @@
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block page_title %}<title>Narudžbe za validaciju — opremazaribolov.ba</title>{% endblock %}
 {% block body_class %}validation-orders-page{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/staff-orders-validation.css' %}?v=20260929-reward-popup">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/staff-orders-validation.css' %}?v=20261002-payment-scratch">{% endblock %}
 {% block content %}
 <section class="validation-orders">
     <a class="vo-back" href="{% url 'staff_admin_panel' %}">← Nazad na Admin panel</a>
@@ -19,14 +19,15 @@
         <label class="vo-search"><span class="vo-sr">Pretraga narudžbi</span><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg><input type="search" name="q" value="{{ search_query }}" placeholder="Pretraži po imenu, telefonu, emailu..."></label>
         <input type="hidden" name="sort" value="{{ sort }}"><button type="submit" class="vo-button">Filtriraj</button>
     </form>
-    <div class="vo-table-wrap"><table class="vo-table"><thead><tr><th scope="col">#</th><th scope="col">Kupac</th><th scope="col">Način naručivanja</th><th scope="col">Iznos</th><th scope="col">Greb-Greb</th><th scope="col" aria-sort="{% if sort == 'oldest' %}ascending{% else %}descending{% endif %}"><a href="?{{ sort_query }}">Datum {% if sort == 'oldest' %}↑{% else %}↓{% endif %}</a></th><th scope="col">Akcija</th></tr></thead><tbody>
+    <div class="vo-table-wrap"><table class="vo-table"><thead><tr><th scope="col">#</th><th scope="col">Kupac</th><th scope="col">Način naručivanja</th><th scope="col">Iznos</th><th scope="col">Način plaćanja</th><th scope="col">Greb-Greb</th><th scope="col" aria-sort="{% if sort == 'oldest' %}ascending{% else %}descending{% endif %}"><a href="?{{ sort_query }}">Datum {% if sort == 'oldest' %}↑{% else %}↓{% endif %}</a></th><th scope="col">Akcija</th></tr></thead><tbody>
     {% for order in orders %}<tr>
         <td><a class="vo-number" href="{% url 'staff_order_detail' broj=order.broj %}">#{{ order.broj }}</a></td>
         <td><strong>{{ order.ime_prezime }}</strong><div class="vo-contact"><span>{{ order.telefon }}</span><span>{{ order.email }}</span></div></td>
         <td><span class="vo-source"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 3h3l3 13h11l3-10H6M9 20h.01M18 20h.01"/></svg>{% if order.izvor == 'webshop' %}Web shop{% else %}Ručni unos{% endif %}</span></td>
         <td class="vo-amount">{{ order.ukupno|floatformat:2 }} KM</td>
+        <td><span class="vo-source">{% if order.placeno_karticom %}Karticom{% else %}Gotovinski{% endif %}</span></td>
         <td>
-                <button type="button" class="vo-reward-trigger" data-reward-template="vo-reward-{{ order.pk }}" aria-haspopup="dialog" aria-controls="vo-reward-dialog" aria-label="Prikaži Greb-Greb nagradu za narudžbu {{ order.broj }}"><span class="vo-gift {% if order.scratch_count %}vo-gift-yes{% else %}vo-gift-no{% endif %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8C3 8 6 0 10 4l2 4c9 0 6-8 2-4z"/></svg><span>{% if order.scratch_count %}DA<small>{{ order.scratch_count }} nagrada</small>{% else %}NE{% endif %}</span></span><small class="vo-reward-hint">Prikaži nagradu</small></button>
+                <button type="button" class="vo-reward-trigger" data-reward-template="vo-reward-{{ order.pk }}" aria-haspopup="dialog" aria-controls="vo-reward-dialog" aria-label="Prikaži Greb-Greb nagradu za narudžbu {{ order.broj }}"><span class="vo-gift {% if order.scratch_used %}vo-gift-yes{% else %}vo-gift-no{% endif %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8C3 8 6 0 10 4l2 4c9 0 6-8 2-4z"/></svg><span>{% if order.scratch_used %}DA<small>{{ order.scratch_count }} nagrada</small>{% else %}NE{% endif %}</span></span><small class="vo-reward-hint">Prikaži nagradu</small></button>
                 <template id="vo-reward-{{ order.pk }}">
                 <p class="vo-reward-order">Narudžba #{{ order.broj }}</p>
                 <div class="vo-reward-panel">
@@ -44,7 +45,7 @@
         </td>
         <td class="vo-date">{{ order.kreirana|date:'d.m.Y.' }}<small>{{ order.kreirana|date:'H:i' }}</small></td>
         <td><a class="vo-button" href="{% url 'staff_order_detail' broj=order.broj %}" aria-label="Pogledaj narudžbu {{ order.broj }}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Pogledaj</a></td>
-    </tr>{% empty %}<tr><td colspan="7" class="vo-empty">Nema nevalidovanih narudžbi za odabrane filtere.</td></tr>{% endfor %}
+    </tr>{% empty %}<tr><td colspan="8" class="vo-empty">Nema nevalidovanih narudžbi za odabrane filtere.</td></tr>{% endfor %}
     </tbody></table></div>
     {% if orders.has_other_pages %}<nav class="vo-pagination" aria-label="Stranice narudžbi">{% if orders.has_previous %}<a href="?{{ page_query }}&amp;page={{ orders.previous_page_number }}">← Prethodna</a>{% endif %}<span>Stranica {{ orders.number }} od {{ orders.paginator.num_pages }}</span>{% if orders.has_next %}<a href="?{{ page_query }}&amp;page={{ orders.next_page_number }}">Sljedeća →</a>{% endif %}</nav>{% endif %}
     <dialog id="vo-reward-dialog" class="vo-reward-dialog" aria-labelledby="vo-reward-title">

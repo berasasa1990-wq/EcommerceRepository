@@ -9,6 +9,7 @@ from django.urls import reverse
 from .models import Coupon, UserProfile
 from .emails import send_coupon_reward_email
 from .pricing import izracunaj_sazetak
+from .forms import LoginForm
 
 
 @override_settings(
@@ -65,10 +66,25 @@ class CustomerAdminTests(TestCase):
         self.assertRedirects(response, '/lozinka/gotovo/')
         self.customer.refresh_from_db()
         self.assertTrue(self.customer.check_password('new-secret-12345'))
+        self.assertFalse(self.customer.check_password('secret12345'))
+        with override_settings(TURNSTILE_SITE_KEY='', TURNSTILE_SECRET_KEY=''):
+            old_login = LoginForm({'email': self.customer.email, 'lozinka': 'secret12345'})
+            self.assertFalse(old_login.is_valid())
+            new_login = LoginForm({'email': self.customer.email, 'lozinka': 'new-secret-12345'})
+            self.assertTrue(new_login.is_valid(), new_login.errors)
+            self.assertEqual(new_login.user.pk, self.customer.pk)
 
     def test_first_login_is_recorded(self):
         self.client.force_login(self.customer)
         self.assertIsNotNone(UserProfile.objects.get(user=self.customer).prva_prijava)
+
+    @override_settings(ALLOWED_HOSTS=['127.0.0.1', 'localhost', '[::1]'])
+    def test_local_admin_does_not_email_loopback_reset_links(self):
+        url = reverse('admin:customer_reset_password', args=[self.customer.pk])
+        for host in ('127.0.0.1:8002', 'localhost:8002', '[::1]:8002'):
+            response = self.client.post(url, HTTP_HOST=host)
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(len(mail.outbox), 0)
 
     def test_personal_fixed_coupon_changes_total(self):
         coupon = Coupon.objects.create(kod='KUPAC10', naziv='Poklon', vlasnik=self.customer,

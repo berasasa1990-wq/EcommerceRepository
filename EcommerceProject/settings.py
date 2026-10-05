@@ -650,3 +650,10 @@ if DEBUG:
 
 # Separate partner credential: products and quantities only; no sync-key fallback.
 PARTNER_STOCK_API_KEY = _env('PARTNER_STOCK_API_KEY', '')
+
+# Monri WebPay: opt-in, test environment by default. Keys stay on the server.
+MONRI_ENABLED = _env('MONRI_ENABLED', 'False').lower() in ('true', '1', 'yes')
+MONRI_ENVIRONMENT = _env('MONRI_ENVIRONMENT', 'test')
+MONRI_MERCHANT_KEY = _env('MONRI_MERCHANT_KEY', '')
+MONRI_AUTHENTICITY_TOKEN = _env('MONRI_AUTHENTICITY_TOKEN', '')
+MONRI_PUBLIC_BASE_URL = _env('MONRI_PUBLIC_BASE_URL', 'https://carpologijabh.ba').rstrip('/')

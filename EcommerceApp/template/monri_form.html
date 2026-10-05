@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<section class="container" style="max-width:640px;padding:40px 20px">
+    <h1>Plaćanje karticom</h1>
+    <p>Narudžba {{ order.broj }} — <strong>{{ order.ukupno }} KM</strong></p>
+    {% if payment.environment == 'test' %}<p role="status">Testno plaćanje — koristite Monri testnu karticu.</p>{% endif %}
+    <p>Podatke kartice unosite na sigurnoj Monri stranici. Carpologija ne pohranjuje broj kartice ni CVV.</p>
+    <form method="post" action="{{ endpoint }}">
+        {% for name, value in fields.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+        <button type="submit" class="btn btn-primary">Nastavi na plaćanje — {{ order.ukupno }} KM</button>
+    </form>
+</section>
+{% endblock %}

@@ -340,6 +340,11 @@ def _missing_recipient_fields(data: dict) -> list[str]:
 
 
 def build_shipment_payload(order) -> dict:
+    from .monri import require_paid_for_fulfillment
+    try:
+        require_paid_for_fulfillment(order)
+    except ValueError as error:
+        raise XExpressError(str(error)) from None
     dest = recipient_from_order(order)
     missing = _missing_recipient_fields(dest)
     if missing:
@@ -593,6 +598,12 @@ def _response_error_message(response: requests.Response) -> str:
 
 def create_shipment(order) -> dict:
     """Pošalji narudžbu na POST /najava/v2 i snimi X-Express šifru na narudžbu."""
+    from .monri import require_paid_for_fulfillment
+    try:
+        require_paid_for_fulfillment(order)
+    except ValueError as error:
+        raise XExpressError(str(error)) from None
+
     existing = (getattr(order, 'xexpress_sifra', None) or '').strip()
     if existing:
         raise XExpressAlreadySent(
