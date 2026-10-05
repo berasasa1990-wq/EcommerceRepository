@@ -936,7 +936,7 @@ class CheckoutForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Grad'}),
     )
     postanski_broj = forms.CharField(
-        label='Poštanski broj', max_length=20, required=False,
+        label='Poštanski broj', max_length=20, required=True,
         widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': '71000'}),
     )
     napomena = forms.CharField(

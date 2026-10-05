@@ -66,3 +66,18 @@ class CheckoutCustomerTests(TestCase):
         self.checkout(fail=True)
         self.assertFalse(Order.objects.exists())
         self.assertFalse(WarehouseCustomer.objects.exists())
+
+
+class CheckoutPostalCodeTests(TestCase):
+    def test_postal_code_is_required_in_browser_and_server(self):
+        from .forms import CheckoutForm
+        data = dict(ime_prezime='Test Kupac', telefon='061123456',
+                    adresa='Ulica 1', grad='Sarajevo', payment_method='cod')
+        self.assertTrue(CheckoutForm.base_fields['postanski_broj'].required)
+        self.assertIn('required', str(CheckoutForm()['postanski_broj']))
+        for value in (None, '', '   '):
+            form = CheckoutForm({**data, 'postanski_broj': value})
+            self.assertFalse(form.is_valid())
+            self.assertIn('postanski_broj', form.errors)
+        form = CheckoutForm({**data, 'postanski_broj': '71000'})
+        self.assertTrue(form.is_valid())

@@ -87,7 +87,7 @@ class WebStockTests(TestCase):
         from .views import checkout
         request = RequestFactory().post('/narudzba/', {
             'ime_prezime': 'Web Kupac', 'email': 'kupac@example.com',
-            'telefon': '061234567', 'adresa': 'Test 1', 'grad': 'Sarajevo',
+            'telefon': '061234567', 'adresa': 'Test 1', 'grad': 'Sarajevo', 'postanski_broj': '71000',
         })
         request.user = AnonymousUser()
         session = self.client.session

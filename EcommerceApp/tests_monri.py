@@ -209,7 +209,7 @@ class MonriTests(TestCase):
             create_shipment(self.order)
 
     def test_card_unavailable_without_complete_configuration_and_requires_email(self):
-        data = dict(ime_prezime='Test Kupac', telefon='061123456', adresa='Ulica 1', grad='Sarajevo', payment_method='card')
+        data = dict(ime_prezime='Test Kupac', telefon='061123456', adresa='Ulica 1', grad='Sarajevo', postanski_broj='71000', payment_method='card')
         form = CheckoutForm(data)
         self.assertFalse(form.is_valid())
         self.assertIn('payment_method', form.errors)
@@ -252,7 +252,7 @@ class MonriTests(TestCase):
             response = self.client.get(reverse('checkout'))
             self.assertContains(response, 'Karticom')
             response = self.client.post(reverse('checkout'), dict(ime_prezime='Test Kupac', telefon='061123456',
-                email='test@example.com', adresa='Ulica 1', grad='Sarajevo', payment_method='card'))
+                email='test@example.com', adresa='Ulica 1', grad='Sarajevo', postanski_broj='71000', payment_method='card'))
             for mock in mocks.values():
                 mock.assert_not_called()
             notify.assert_not_called()
@@ -410,7 +410,7 @@ class MonriTests(TestCase):
             with self.subTest(flags=list(config)), override_settings(**config):
                 self.assertFalse(configured())
                 form = CheckoutForm(dict(ime_prezime='Test Kupac', telefon='061123456',
-                    adresa='Ulica 1', grad='Sarajevo', payment_method='cod'))
+                    adresa='Ulica 1', grad='Sarajevo', postanski_broj='71000', payment_method='cod'))
                 self.assertTrue(form.is_valid())
                 self.assertEqual(form.cleaned_data['payment_method'], 'cod')
 
