@@ -31,6 +31,8 @@ def build_mungos_update_payload(preview):
         field: deepcopy(source.get(field, '' if field == 'ean' else None))
         for field in UPDATE_FIELDS
     }
+    if 'ProductPrice' in source:
+        result['payload']['ProductPrice'] = deepcopy(source['ProductPrice'])
     result['payload'], validation_reasons = sanitize_mungos_payload(result['payload'], 'update')
     reasons.extend(validation_reasons)
     if reasons:

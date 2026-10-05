@@ -22,7 +22,7 @@ from EcommerceApp.mungos_diagnostics import safe_api_error
 from EcommerceApp.mungos_bulk_lock import bulk_lock
 
 STAGING_URL = 'https://staging.mungos.ba/api/v1/connector'
-BLOCKED = {'IN_FLIGHT', 'UNKNOWN_REMOTE_STATE'}
+BLOCKED = {'IN_FLIGHT', 'UNKNOWN_REMOTE_STATE', 'UNKNOWN'}
 
 
 def retry_seconds(value):
@@ -94,6 +94,9 @@ class Command(BaseCommand):
                 self.run_products(products, options, client, counts, reasons)
         finally:
             self.stdout.write(sanitized_json({'summary': dict(counts), 'reasons': dict(reasons)}))
+
+    def format_product_row(self, product, row):
+        return row
 
     def run_products(self, products, options, client, counts, reasons):
         last_request = None
@@ -204,7 +207,7 @@ class Command(BaseCommand):
             if api_error is not None:
                 row['api_error'] = api_error
                 row['api_error_truncated'] = truncated
-            self.stdout.write(sanitized_json(row))
+            self.stdout.write(sanitized_json(self.format_product_row(product, row)))
             if stop:
                 break
         if stop:

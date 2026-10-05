@@ -6,6 +6,7 @@ from urllib.parse import urljoin
 from django.conf import settings
 
 from .cart import Cart
+from .mungos_sale import product_price
 from .mungos_payload import (
     is_mungos_image_url, sanitize_mungos_payload,
     sanitize_mungos_price,
@@ -55,11 +56,12 @@ def build_product_preview(product):
         issues.append('Proizvod nema SKU; Mungos id nije izmišljen.')
     if not product.aktivan or product.sakriven_do_stanja:
         issues.append('Proizvod nije dostupan za kupovinu u webshopu.')
+    selling_price = product.prikazna_cijena
     payload = {
         'id': sku, 'sku': sku, 'name': product.naziv,
         'hasQuantities': True, 'quantityRemaining': quantities['parent'],
         'shortDescription': product.opis, 'details': product.opis,
-        'productType': 'Product', 'price': product.prikazna_cijena,
+        'productType': 'Product', 'price': selling_price,
         'currencyIsoCode': 'BAM', 'isNegotiable': False, 'isFree': False,
         'warrantyMonthsCount': None, 'warrantyDescription': None,
         'returnDaysCount': None, 'returnDescription': None,
@@ -71,6 +73,7 @@ def build_product_preview(product):
         'images': _images(product.prikazna_slika, product.dodatne_slike.all(), issues),
         'HasVariants': bool(variations), 'Variants': [],
     }
+    payload['ProductPrice'] = product_price(product, selling_price)
     payload['ean'] = product.barkod
     seen = {sku} if isinstance(sku, str) else set()
     for variation in variations:

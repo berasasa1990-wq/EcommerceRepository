@@ -581,3 +581,43 @@ Primjeri za cijeli quantity scope:
 python manage.py mungos_quantity_sync
 python manage.py mungos_quantity_sync --confirm
 ```
+
+## Regularna i SALE cijena (ProductPrice)
+
+CREATE i full product UPDATE sada dodaju potvrđenu Postman strukturu
+`ProductPrice` s tačno `Price`, `SellingPrice`, `Currency`, `IsNegotiable`,
+`IsFree`, `DiscountEndDate`. `Price` dolazi iz `Product.bazna_cijena` (postojeće
+polje `cijena`), `SellingPrice` iz `Product.prikazna_cijena`. Normalan proizvod
+ima jednaku regularnu i prodajnu cijenu. Postojeća legacy polja ostaju ista,
+uključujući top-level `price` s trenutnom prikaznom cijenom, BAM, SKU, quantity,
+kategoriju, opise i slike. Currency je null, IsNegotiable/IsFree false prema
+potvrđenom ProductPrice primjeru. Sanitizer validira i ovu strukturu kada postoji;
+stari full payloadovi bez nje ostaju kompatibilni.
+
+`DiscountEndDate` je ISO datum iz `akcija_do` samo kada je datum važeći i obična
+akcijska cijena određuje trenutnu prodajnu cijenu. Ako flash daje nižu ili jednaku
+cijenu, datum je null: ne preuzimamo datum obične akcije za flash popust.
+Bez pouzdanog datuma šaljemo null. Webshop discount logika nije mijenjana.
+`/price` komanda ostaje na svojoj potvrđenoj shemi bez SellingPrice/ProductPrice;
+promjena regularne + sale strukture ide full product PUT-om.
+
+```sh
+python manage.py mungos_sale_sync --limit 5
+python manage.py mungos_sale_sync --limit 5 --confirm
+python manage.py mungos_sale_sync --product-id 47 --confirm
+```
+
+Bez confirm je SELECT-only dry-run, bez HTTP-a i upisa. Limit broji samo spremne
+SALE kandidate (`SellingPrice < Price`), ne sve pregledane proizvode. Komanda
+preskače neaktivne, istekle popuste, nepodržane varijante/kategorije i neizvjesne
+mappinge. Postojeći UUID uvijek vodi u full UPDATE; novi spremni proizvod koristi
+postojeći bulk CREATE flow, lock, trajni IN_FLIGHT guard prije HTTP-a i neposredno
+snimanje potvrđenog top-level productUuid. Nema novog POST-a za postojeći UUID.
+Chunkovi od 200, najmanje 1s između zahtjeva i bulk error/retry pravila ostaju.
+
+Report sadrži PRODUCT_ID, SKU, NAME, REGULAR_PRICE, SELLING_PRICE,
+DISCOUNT_PERCENT, ACTION, MUNGOS_UUID, RESULT i REASON; sve prolazi postojeću
+redakciju secrets. ACTION je CREATED/UPDATED tek nakon uspjeha; dry-run, greške i
+nepodržani kandidati imaju SKIPPED uz detaljni RESULT. Jedini upisi su Mungos
+mapping metadata; cijene, lager, checkout, frontend i admin ostaju netaknuti.
+Razvojna provjera koristi isključivo mockovani HTTP i izolovanu test bazu.

@@ -270,8 +270,10 @@ class MungosFinalDryRunTests(TestCase):
                     self.assertEqual(result['status'], 'READY_FOR_REVIEW')
                     self.assertEqual(result['payload']['ean'], '')
                     self.assertEqual(result['payload']['price'], 138.25)
-                    self.assertEqual(set(result['payload']), set(fields))
-                    expected = {**EXPECTED_PUT, 'price': 138.25, 'images': [],
+                    self.assertEqual(set(result['payload']), set(fields) | {'ProductPrice'})
+                    expected = {**EXPECTED_PUT, 'ProductPrice': {'Price': 138.25, 'SellingPrice': 138.25,
+                                'Currency': None, 'IsNegotiable': False, 'IsFree': False, 'DiscountEndDate': None},
+                                'price': 138.25, 'images': [],
                                 'shortDescription': '', 'details': '', 'ean': ''}
                     if operation == 'create':
                         del expected['brandCode']

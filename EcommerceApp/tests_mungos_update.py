@@ -195,7 +195,8 @@ class MungosUpdateReadOnlyTests(TestCase):
         product = Product.objects.create(naziv=EXPECTED_PUT['name'], sifra='7889', cijena=138,
                                          opis='Opis', barkod='1234567890128', slika='reel.jpg',
                                          stanje=43, aktivan=True, na_stanju=True, kategorija=category)
-        expected = {**EXPECTED_PUT, 'images': [
+        expected = {**EXPECTED_PUT, 'ProductPrice': {'Price': 138.0, 'SellingPrice': 138.0,
+            'Currency': None, 'IsNegotiable': False, 'IsFree': False, 'DiscountEndDate': None}, 'images': [
             {'imageUrl': product.slika.url if product.slika.url.startswith('https://')
              else 'https://example.com' + product.slika.url, 'isMainImage': True}]}
         self.assertEqual(build_mungos_update_payload(build_product_preview(product))['payload'], expected)

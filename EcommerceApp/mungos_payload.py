@@ -3,6 +3,7 @@ from copy import deepcopy
 from decimal import Decimal
 import json
 import math
+from datetime import date
 from urllib.parse import urlsplit
 
 
@@ -81,7 +82,7 @@ def sanitize_mungos_payload(source, operation='create'):
     payload = deepcopy(source)
     reasons = []
     required = set(fields) - {'ean', 'shortDescription', 'details'}
-    if required - payload.keys() or payload.keys() - set(fields):
+    if required - payload.keys() or payload.keys() - (set(fields) | {'ProductPrice'}):
         reasons.append('Mungos payload ne odgovara potvrđenim poljima scheme.')
     payload['ean'] = sanitize_mungos_ean(payload.get('ean'))
     for field in ('id', 'sku', 'name'):
@@ -99,6 +100,29 @@ def sanitize_mungos_payload(source, operation='create'):
     payload['price'] = sanitize_mungos_price(payload.get('price'))
     if payload['price'] is None:
         reasons.append('price: potrebna je konačna nenegativna numerička cijena.')
+    if 'ProductPrice' in payload:
+        prices = payload['ProductPrice']
+        expected = {'Price', 'SellingPrice', 'Currency', 'IsNegotiable', 'IsFree', 'DiscountEndDate'}
+        if not isinstance(prices, dict) or set(prices) != expected:
+            reasons.append('ProductPrice: neispravna potvrđena schema.')
+        else:
+            for field in ('Price', 'SellingPrice'):
+                prices[field] = sanitize_mungos_price(prices[field])
+            if (prices['Price'] is None or prices['SellingPrice'] is None
+                    or prices['SellingPrice'] > prices['Price']
+                    or prices['SellingPrice'] != payload['price']
+                    or prices['Currency'] is not None
+                    or prices['IsNegotiable'] is not False or prices['IsFree'] is not False):
+                reasons.append('ProductPrice: neispravne cijene ili fixed vrijednosti.')
+            end = prices['DiscountEndDate']
+            if end is not None:
+                try:
+                    if not isinstance(end, str) or date.fromisoformat(end).isoformat() != end:
+                        raise ValueError
+                    if prices['Price'] == prices['SellingPrice']:
+                        raise ValueError
+                except (ValueError, TypeError):
+                    reasons.append('ProductPrice: neispravan DiscountEndDate.')
     quantity = payload.get('quantityRemaining')
     if type(quantity) is not int:
         reasons.append('quantityRemaining: potrebna je integer količina.')
