@@ -313,6 +313,8 @@ def _validated_orders_q():
 def _unvalidated_orders_qs():
     return (
         Order.objects.exclude(status=Order.Status.OTKAZANA)
+        .exclude(status=Order.Status.CEKA_PLACANJE)
+        .exclude(card_payment__status='pending')
         .exclude(status=Order.Status.REZERVACIJA)
         .exclude(_validated_orders_q())
     )

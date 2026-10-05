@@ -50,9 +50,10 @@ def checkout_order(payment):
     return next(serializers.deserialize('json', json.dumps(payment.checkout_snapshot))).object
 
 
-def create_checkout_payment(order, items):
+def create_checkout_payment(order, items, context=None):
     from .models import CardPayment
     payment = CardPayment(amount=int(order.ukupno * 100), environment=settings.MONRI_ENVIRONMENT)
+    payment.checkout_context = context or {}
     payment.reference = 'C' + payment.token.hex[:19]
     order.broj = payment.reference
     payment.checkout_snapshot = json.loads(serializers.serialize('json', [order, *items]))
@@ -97,4 +98,5 @@ def callback_valid(request):
     if not configured() or len(request.body) > 65536:
         return False
     expected = 'WP3-callback ' + hashlib.sha512(settings.MONRI_MERCHANT_KEY.encode() + request.body).hexdigest()
-    return hmac.compare_digest(request.headers.get('Authorization', ''), expected)
+    signatures = (request.headers.get('Authorization', ''), request.headers.get('Http-Authorization', ''))
+    return any(hmac.compare_digest(signature.encode('utf-8'), expected.encode('ascii')) for signature in signatures)

@@ -85,6 +85,46 @@ Paid start GET vodi na order-success, POST vraća 405, a builder odbija
 generisanje forme za paid zapis. Callback sigurnost i finalizacija su nepromijenjene.
 
 Kartični checkout šalje email, loyalty/Odoo sync tek nakon potvrđene uplate.
+Migration `0308_monri_durable_finalization` dodaje snapshot browser konteksta,
+`finalization_steps` i `finalized_at`. Nakon potpisa i provjera callback
+atomarno kreira Order/stavke/rezervacije i označava payment paid. Postojeće
+fulfillment liste tada vide normalnu plaćenu web narudžbu; nema posebnog
+Monri magacina, skidanja lagera ili automatskog slanja kuriru.
+
+`finish_paid_order` koristi postojeće helper funkcije za kupca, nagrade,
+čišćenje iste korpe/sesije, Greb-Greb, staff obavijest, email queue,
+loyalty i Odoo, server purchase tracking te cache navigacije. Purchase event
+ima stabilan ID `purchase-<broj>`. Svaki korak ima payment row lock i trajni
+marker. Ako korak padne, safe log bilježi samo ID i naziv koraka, callback
+vraća 503, a idući validan isti callback nastavlja nedovršene korake.
+Završeni koraci i kreiranje narudžbe se ne ponavljaju; druga transakcija za
+isti paid zapis vraća 409. Email i analytics koriste postojeće asinhrone
+dispatchere: marker potvrđuje zakazivanje, ne dokazuje SMTP/API isporuku.
+
+Pronađene prepreke produkcijskom callbacku:
+
+- Nullable order JOIN zajedno sa običnim SELECT FOR UPDATE pada na PostgreSQL-u.
+  Lock sada koristi `of=('self',)`; test kompajlira SQL PostgreSQL backendom
+  i potvrđuje da se zaključava samo CardPayment. [Django specifikacija](https://docs.djangoproject.com/en/6.0/ref/models/querysets/#select-for-update).
+- SitePrep lock je preusmjeravao callback na unlock stranicu ako je zaštita
+  uključena: Monri nema browser session. Samo tačan callback URL je sada
+  izuzet iz te zaštite; nevažeći/odsutan Monri potpis i dalje vraća 403.
+- Paid guard je ranije vraćao 200 bez mogućnosti nastavka finalizacije koja
+  padne poslije commita. Sada postoje trajni progress markeri i nastavak.
+
+Authorization i dokumentovani Http-Authorization potpis se provjeravaju
+istom formulom SHA-512(key UTF-8 + originalni body), constant-time poređenjem.
+Zahtjev bez validnog potpisa ne može upisati paid, kreirati narudžbu ili
+pokrenuti finalizaciju. [Monri callback specifikacija](https://docs.monri.com/docs/en/form-redirect).
+Logovi: MONRI_CALLBACK_RECEIVED, MONRI_CALLBACK_VERIFIED,
+MONRI_PAYMENT_MARKED_PAID, MONRI_ORDER_FINALIZED. Rejection logovi imaju
+samo fiksni razlog i payment ID, bez bodyja, Authorization, secrets ili kartice.
+
+Audit nema pristup Render logovima konkretne prethodno odobrene transakcije.
+Za nju nakon deploymenta zatražiti ponovni potpisani callback na
+`https://carpologijabh.ba/placanje/monri/potvrda/`, ne novu naplatu. Ne prihvatati
+browser poruku o odobrenju kao dokaz uplate. Istorijske isporuke emailova i
+ostalih efekata prije uvođenja progress markera ne mogu se dokazati markerima.
 Validacija/pakovanje i slanje kuriru blokirani su dok uplata nije potvrđena ili
 ako se iznos narudžbe razlikuje od uplate. Plaćena kartična narudžba nema COD
 naplatu. Ručne kartične narudžbe zadržavaju dosadašnje ponašanje.

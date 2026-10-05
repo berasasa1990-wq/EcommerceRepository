@@ -3,7 +3,8 @@ import json
 from decimal import Decimal
 from unittest.mock import patch
 
-from django.test import SimpleTestCase, TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, TransactionTestCase, override_settings
+from django.utils import timezone
 from django.urls import reverse
 
 from .models import Order, CardPayment
@@ -230,6 +231,7 @@ class MonriTests(TestCase):
             with self.captureOnCommitCallbacks(execute=True):
                 self.assertEqual(self.callback(self.payload()).status_code, 200)
             finish.assert_called_once()
+            CardPayment.objects.filter(pk=self.payment.pk).update(finalized_at=timezone.now())
             with self.captureOnCommitCallbacks(execute=True):
                 self.assertEqual(self.callback(self.payload()).status_code, 200)
             finish.assert_called_once()
@@ -280,6 +282,7 @@ class MonriTests(TestCase):
             accepted_at = self.order.kreirana
             self.assertEqual(self.order.status, Order.Status.NOVA)
             self.assertTrue(self.order.placeno_karticom())
+            CardPayment.objects.filter(pk=self.payment.pk).update(finalized_at=timezone.now())
             with self.captureOnCommitCallbacks(execute=True):
                 self.assertEqual(self.callback(self.payload()).status_code, 200)
             finish.assert_called_once()
@@ -372,6 +375,7 @@ class MonriTests(TestCase):
             self.assertEqual(payment.order.stavke.count(), 1)
             self.assertEqual(payment.order.web_placanje_label(), 'KARTICOM')
             self.assertEqual(Order.objects.count(), 2)
+            CardPayment.objects.filter(pk=payment.pk).update(finalized_at=timezone.now())
             with self.captureOnCommitCallbacks(execute=True):
                 self.assertEqual(self.callback(payload).status_code, 200)
             self.assertEqual(Order.objects.count(), 2)
@@ -473,3 +477,128 @@ assert os.environ['MONRI_AUTHENTICITY_TOKEN'] == os.environ['TEST_EXPECTED_TOKEN
                                         'MONRI_AUTHENTICITY_TOKEN': token_hex(20)})
         self.assertFalse(bool(config['MONRI_MERCHANT_KEY']))
         self.assertFalse(bool(config['MONRI_AUTHENTICITY_TOKEN']))
+
+
+@override_settings(ALLOWED_HOSTS=['testserver'], MONRI_ENABLED=True, MONRI_ENVIRONMENT='production',
+    MONRI_MERCHANT_KEY='private-test-key', MONRI_AUTHENTICITY_TOKEN='public-test-token',
+    MONRI_PUBLIC_BASE_URL='https://carpologijabh.ba',
+    STORAGES={'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+              'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
+class MonriProductionFinalizationTests(TransactionTestCase):
+    def setUp(self):
+        from .models import Product, OrderItem
+        from .monri import create_checkout_payment
+        product = Product.objects.create(naziv='Production callback fixture', cijena=10,
+            stanje=5, aktivan=True, na_stanju=True)
+        order = Order(ime_prezime='Test Kupac', email='test@example.com', telefon='061123456',
+                      adresa='Ulica 1', grad='Sarajevo', ukupno=Decimal('10.00'))
+        item = OrderItem(narudzba=order, artikal=product, naziv=product.naziv,
+                        product_naziv=product.naziv, sifra='TEST', cijena=10, kolicina=1)
+        session = self.client.session
+        session['cart'] = {'fixture': {'quantity': 1}}
+        session.save()
+        self.payment = create_checkout_payment(order, [item], context={
+            'session_key': session.session_key, 'cart': dict(session['cart'])})
+
+    def callback(self, alternate_header=False):
+        payload = {'id': 123, 'order_number': self.payment.reference, 'amount': 1000,
+                   'currency': 'BAM', 'status': 'approved', 'response_code': '0000',
+                   'transaction_type': 'purchase'}
+        body = json.dumps(payload).encode('utf-8')
+        signature = 'WP3-callback ' + hashlib.sha512(b'private-test-key' + body).hexdigest()
+        header = 'HTTP_HTTP_AUTHORIZATION' if alternate_header else 'HTTP_AUTHORIZATION'
+        return self.client.post(reverse('monri_callback'), body, content_type='application/json', **{header: signature})
+
+    @override_settings(SITE_PREP_ENABLED=True, SITE_PREP_PASSWORD='fixture-site-lock')
+    def test_production_callback_finalizes_existing_fulfillment_once(self):
+        from contextlib import ExitStack
+        from django.contrib.auth import get_user_model
+        from .models import StaffSiteEvent, OrderStockHold
+        from .views_magacin import collect_pick_jobs
+        self.assertFalse(Order.objects.exists())
+        with ExitStack() as stack:
+            email = stack.enter_context(patch('EcommerceApp.emails.queue_order_emails'))
+            loyalty = stack.enter_context(patch('EcommerceApp.views.azuriraj_loyalty_nakon_narudzbe', return_value=None))
+            sync = stack.enter_context(patch('EcommerceApp.views.sync_narudzba', return_value=None))
+            analytics = stack.enter_context(patch('EcommerceApp.meta_conversions.track_purchase'))
+            courier = stack.enter_context(patch('EcommerceApp.xexpress_service.requests.post'))
+            with self.assertLogs('EcommerceApp.monri', level='INFO') as captured:
+                self.assertEqual(self.callback(alternate_header=True).status_code, 200)
+            self.payment.refresh_from_db()
+            order = self.payment.order
+            self.assertEqual(self.payment.status, 'paid')
+            self.assertIsNotNone(self.payment.paid_at)
+            self.assertIsNotNone(self.payment.finalized_at)
+            self.assertEqual(self.client.session['cart'], {})
+            self.assertTrue(order.placeno_karticom())
+            self.assertEqual(order.status, Order.Status.NOVA)
+            self.assertEqual(Order.objects.count(), 1)
+            holds = OrderStockHold.objects.filter(narudzba=order).count()
+            self.assertGreater(holds, 0)
+            self.assertIn(order.pk, [job.pk for job in collect_pick_jobs()])
+            staff = get_user_model().objects.create_superuser(username='callback-staff', email='staff@example.com', password='fixture-only')
+            self.client.force_login(staff)
+            for route in ('staff_online_orders', 'staff_magacin_narudzbe'):
+                response = self.client.get(reverse(route))
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(order.pk, [entry.pk for entry in response.context['orders']])
+            self.assertEqual(self.callback().status_code, 200)
+            self.assertEqual(self.callback().status_code, 200)
+            self.assertEqual(Order.objects.count(), 1)
+            self.assertEqual(OrderStockHold.objects.filter(narudzba=order).count(), holds)
+            self.assertEqual(StaffSiteEvent.objects.filter(tip='purchase').count(), 1)
+            email.assert_called_once()
+            loyalty.assert_called_once()
+            sync.assert_called_once()
+            analytics.assert_called_once()
+            self.assertEqual(analytics.call_args.kwargs['event_id'], f'purchase-{order.broj}')
+            courier.assert_not_called()
+            output = '\n'.join(captured.output)
+            for event in ('MONRI_CALLBACK_RECEIVED', 'MONRI_CALLBACK_VERIFIED',
+                          'MONRI_PAYMENT_MARKED_PAID', 'MONRI_ORDER_FINALIZED'):
+                self.assertIn(event, output)
+            for secret in ('private-test-key', 'public-test-token', 'WP3-callback', order.email):
+                self.assertTrue(secret not in output)
+
+    @override_settings(SITE_PREP_ENABLED=True, SITE_PREP_PASSWORD='fixture-site-lock')
+    def test_site_lock_exempts_only_signed_callback_not_public_pages(self):
+        response = self.client.post(reverse('monri_callback'), '{}', content_type='application/json')
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.client.get(reverse('home')).status_code, 302)
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'pending')
+        self.assertFalse(Order.objects.exists())
+
+    def test_duplicate_callback_resumes_failure_without_repeating_completed_steps(self):
+        from .models import StaffSiteEvent
+        with patch('EcommerceApp.emails.queue_order_emails') as email, \
+             patch('EcommerceApp.views.azuriraj_loyalty_nakon_narudzbe', side_effect=[RuntimeError('fixture failure'), None]) as loyalty, \
+             patch('EcommerceApp.views.sync_narudzba', return_value=None) as sync, \
+             patch('EcommerceApp.meta_conversions.track_purchase') as analytics:
+            self.assertEqual(self.callback().status_code, 503)
+            self.payment.refresh_from_db()
+            self.assertEqual(self.payment.status, 'paid')
+            self.assertIsNone(self.payment.finalized_at)
+            self.assertTrue(self.payment.finalization_steps['email'])
+            self.assertEqual(self.callback().status_code, 200)
+            self.payment.refresh_from_db()
+            self.assertIsNotNone(self.payment.finalized_at)
+            self.assertEqual(self.callback().status_code, 200)
+            self.assertEqual(Order.objects.count(), 1)
+            self.assertEqual(StaffSiteEvent.objects.filter(tip='purchase').count(), 1)
+            email.assert_called_once()
+            self.assertEqual(loyalty.call_count, 2)  # First attempt failed before completion.
+            sync.assert_called_once()
+            analytics.assert_called_once()
+
+
+class MonriPostgresQueryTests(SimpleTestCase):
+    def test_nullable_order_join_locks_only_payment_on_postgres(self):
+        from django.db.backends.postgresql.base import DatabaseWrapper
+        from .views_monri import callback_payment_queryset
+        connection = DatabaseWrapper({'ENGINE': 'django.db.backends.postgresql', 'NAME': 'fixture',
+            'OPTIONS': {}, 'AUTOCOMMIT': True, 'TIME_ZONE': None}, alias='compiler-only')
+        with patch.object(connection, 'get_autocommit', return_value=False):
+            sql, _ = callback_payment_queryset('Cfixture').query.get_compiler(connection=connection).as_sql()
+        self.assertIn('LEFT OUTER JOIN', sql)
+        self.assertIn('FOR UPDATE OF "EcommerceApp_cardpayment"', sql)

@@ -37,6 +37,9 @@ class SitePrepLockMiddleware:
         return HttpResponseRedirect(f'{unlock_url}?next={next_url}')
 
     def _is_exempt(self, path):
+        # Monri has no shopper session; the callback verifies its own signature.
+        if path == reverse('monri_callback'):
+            return True
         static_url = settings.STATIC_URL
         media_url = settings.MEDIA_URL or ''
         if static_url and path.startswith(static_url):

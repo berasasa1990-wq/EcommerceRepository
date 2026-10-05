@@ -5046,7 +5046,16 @@ def checkout(request):
                         )
                     if is_card:
                         from .monri import create_checkout_payment
-                        payment = create_checkout_payment(order, draft_items)
+                        from .online_gift import get_session_reward
+                        reward = get_session_reward(request) or {}
+                        payment = create_checkout_payment(order, draft_items, context={
+                            'session_key': request.session.session_key,
+                            'cart': dict(request.session.get('cart', {})),
+                            'reward': reward,
+                            'consume_reward': not reward.get('scratch_kind') or bool(scratch_reward.get('active')),
+                            'meta': {key: request.META.get(key, '') for key in ('REMOTE_ADDR', 'HTTP_USER_AGENT', 'HTTP_X_FORWARDED_FOR')},
+                            'cookies': {key: request.COOKIES.get(key, '') for key in ('_fbp', '_fbc')},
+                        })
                     else:
                         reserve_web_order_stock(order)
             except MagacinError as exc:

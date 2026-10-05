@@ -7203,6 +7203,9 @@ class CardPayment(models.Model):
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     reference = models.CharField(max_length=20, unique=True, null=True, blank=True)
     checkout_snapshot = models.JSONField(default=list, blank=True)
+    checkout_context = models.JSONField(default=dict, blank=True)
+    finalization_steps = models.JSONField(default=dict, blank=True)
+    finalized_at = models.DateTimeField(null=True, blank=True)
     amount = models.PositiveIntegerField()  # BAM minor units, captured at checkout.
     currency = models.CharField(max_length=3, default='BAM')
     environment = models.CharField(max_length=10, default='test')
