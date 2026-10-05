@@ -2,7 +2,7 @@
 
 Checkout podržava pouzeće i Monri hosted form (Visa/Mastercard). Kartična opcija je uvijek vidljiva u checkoutu; naplata je dostupna tek uz
 potpunu konfiguraciju. Bez konfiguracije checkout prikazuje poruku i odbija
-kartično slanje prije kreiranja narudžbe, dok pouzeće ostaje dostupno. Testno okruženje je default.
+kartično slanje prije kreiranja narudžbe, dok pouzeće ostaje dostupno. Integracija je isključivo TEST; produkcijska naplata je blokirana.
 Broj kartice/CVV unose se kod Monrija; aplikacija ih ne prikuplja niti čuva.
 
 ## Konfiguracija testnog servera
@@ -23,8 +23,25 @@ javnom domenu servera i nema path/query. U Monri testnom merchant profilu podesi
 callback URL `https://<domen>/placanje/monri/potvrda/` i uključiti redirect to
 success URL. Form šalje success/cancel URL za konkretnu narudžbu.
 Testni endpoint: `https://ipgtest.monri.com/v2/form`.
-Produkcija se uključuje zasebno nakon Monri odobrenja, s produkcijskim ključevima
-te `MONRI_ENVIRONMENT=production`; endpoint tada postaje `https://ipg.monri.com/v2/form`.
+Produkcijski endpoint nije dostupan u ovoj implementaciji. `MONRI_ENVIRONMENT`
+ima default `test`; vrijednost `production` ili druga nepoznata vrijednost blokira
+kartično plaćanje. Koristiti isključivo ključeve testnog merchant profila.
+`MONRI_ENABLED` ima default True, ali za rad su oba ključa i validan HTTPS URL
+obavezni. Eksplicitni `MONRI_ENABLED=False` i dalje isključuje naplatu.
+Render environment varijable imaju prednost nad lokalnim `.env` vrijednostima
+isključivo za Monri konfiguraciju; ostala webshop konfiguracija nije mijenjana.
+Ako su na Renderu samo oba testna ključa, dodatne varijable nisu obavezne.
+Ako postoje stariji overrideovi, postaviti `MONRI_ENABLED=True`,
+`MONRI_ENVIRONMENT=test`, `MONRI_PUBLIC_BASE_URL=https://carpologijabh.ba`.
+Callback u Monri merchant profilu: `https://carpologijabh.ba/placanje/monri/potvrda/`.
+Monri mora imati uključen redirect to success URL. Odbijene transakcije ostaju na
+Monri formi; samo potpisani approved purchase callback označava uplatu.
+
+Poruka „Kartično plaćanje trenutno nije dostupno. Odaberite plaćanje pouzećem.”
+nastaje u `CheckoutForm.clean_payment_method` kada `configured()` nije prošao:
+flag isključen, nedostaje ključ/token, mode nije test ili javni HTTPS URL nije
+validan. Stari default `MONRI_ENABLED=False` blokirao je instalacije sa samo dva
+ključa. Vrijednosti ključeva se ne loguju niti prikazuju pri dijagnostici.
 
 ## Ponašanje
 

@@ -9,11 +9,16 @@ from django.urls import reverse
 
 def configured():
     try:
-        url = urlsplit(settings.MONRI_PUBLIC_BASE_URL)
+        public_url = settings.MONRI_PUBLIC_BASE_URL
+        if any(char.isspace() for char in public_url) or '\\' in public_url:
+            return False
+        url = urlsplit(public_url)
+        if url.port == 0:
+            return False
     except ValueError:
         return False
     return bool(settings.MONRI_ENABLED and settings.MONRI_MERCHANT_KEY and settings.MONRI_AUTHENTICITY_TOKEN
-                and settings.MONRI_ENVIRONMENT in ('test', 'production')
+                and settings.MONRI_ENVIRONMENT == 'test'
                 and url.scheme == 'https' and url.hostname and not url.username and not url.password
                 and not url.query and not url.fragment and not url.path.strip('/'))
 
@@ -29,7 +34,7 @@ def require_paid_for_fulfillment(order):
 
 
 def form_data(payment):
-    if not configured() or payment.environment != settings.MONRI_ENVIRONMENT:
+    if not configured() or payment.environment != 'test':
         raise ValueError('Kartično plaćanje trenutno nije dostupno.')
     order = payment.order
     amount = str(payment.amount)
@@ -46,7 +51,7 @@ def form_data(payment):
         cancel_url=base + reverse('monri_cancel', args=[payment.token]),
         callback_url=base + reverse('monri_callback'))
     fields['digest'] = hashlib.sha512((settings.MONRI_MERCHANT_KEY + order.broj + amount + payment.currency).encode()).hexdigest()
-    endpoint = 'https://ipgtest.monri.com/v2/form' if payment.environment == 'test' else 'https://ipg.monri.com/v2/form'
+    endpoint = 'https://ipgtest.monri.com/v2/form'
     return endpoint, fields
 
 

@@ -1,6 +1,5 @@
 import json
 import logging
-from django.conf import settings
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -85,7 +84,7 @@ def callback(request):
         if not payment:
             return HttpResponse(status=404)
         if (body.get('amount') != payment.amount or body.get('currency') != payment.currency
-                or payment.environment != settings.MONRI_ENVIRONMENT
+                or payment.environment != 'test'
                 or body.get('transaction_type') != 'purchase'):
             return HttpResponse(status=400)
         if body.get('status') != 'approved' or body.get('response_code') != '0000':

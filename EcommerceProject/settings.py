@@ -20,6 +20,10 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+# Capture Render's Monri environment before the development dotenv loader runs.
+_MONRI_PROCESS_ENV = {name: value for name, value in os.environ.items() if name.startswith('MONRI_')}
+
+
 def _load_env_file():
     env_path = BASE_DIR / '.env'
     if not env_path.exists():
@@ -33,7 +37,10 @@ def _load_env_file():
         key = key.strip()
         value = value.strip().strip('"').strip("'")
         values[key] = value
-        os.environ[key] = value
+        if key.startswith('MONRI_'):
+            os.environ.setdefault(key, value)
+        else:
+            os.environ[key] = value
     return values
 
 
@@ -651,9 +658,12 @@ if DEBUG:
 # Separate partner credential: products and quantities only; no sync-key fallback.
 PARTNER_STOCK_API_KEY = _env('PARTNER_STOCK_API_KEY', '')
 
-# Monri WebPay: opt-in, test environment by default. Keys stay on the server.
-MONRI_ENABLED = _env('MONRI_ENABLED', 'False').lower() in ('true', '1', 'yes')
-MONRI_ENVIRONMENT = _env('MONRI_ENVIRONMENT', 'test')
-MONRI_MERCHANT_KEY = _env('MONRI_MERCHANT_KEY', '')
-MONRI_AUTHENTICITY_TOKEN = _env('MONRI_AUTHENTICITY_TOKEN', '')
-MONRI_PUBLIC_BASE_URL = _env('MONRI_PUBLIC_BASE_URL', 'https://carpologijabh.ba').rstrip('/')
+# Monri is TEST-only. Two credentials enable the test flow unless explicitly disabled.
+from .monri_config import read_monri_config
+_MONRI_CONFIG = read_monri_config(_MONRI_PROCESS_ENV, _ENV_VALUES)
+MONRI_ENABLED = _MONRI_CONFIG['MONRI_ENABLED']
+MONRI_ENVIRONMENT = _MONRI_CONFIG['MONRI_ENVIRONMENT']
+MONRI_MERCHANT_KEY = _MONRI_CONFIG['MONRI_MERCHANT_KEY']
+MONRI_AUTHENTICITY_TOKEN = _MONRI_CONFIG['MONRI_AUTHENTICITY_TOKEN']
+MONRI_PUBLIC_BASE_URL = _MONRI_CONFIG['MONRI_PUBLIC_BASE_URL']
+del _MONRI_CONFIG, _MONRI_PROCESS_ENV

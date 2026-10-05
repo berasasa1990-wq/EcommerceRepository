@@ -3,7 +3,7 @@ import json
 from decimal import Decimal
 from unittest.mock import patch
 
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 from .models import Order, CardPayment
@@ -157,3 +157,88 @@ class MonriTests(TestCase):
         self.assertEqual(self.callback(self.payload(order_number='UNKNOWN')).status_code, 404)
         self.payment.refresh_from_db()
         self.assertEqual(self.payment.status, 'pending')
+
+    def test_production_mode_never_exposes_a_payment_form_or_accepts_callback(self):
+        from .monri import configured
+        with override_settings(MONRI_ENVIRONMENT='production'):
+            self.assertFalse(configured())
+            with self.assertRaises(ValueError):
+                form_data(self.payment)
+            self.assertEqual(self.callback(self.payload()).status_code, 403)
+        self.payment.environment = 'production'
+        self.payment.save(update_fields=['environment'])
+        with self.assertRaises(ValueError):
+            form_data(self.payment)
+        self.assertEqual(self.callback(self.payload()).status_code, 400)
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'pending')
+
+    def test_missing_credentials_invalid_url_and_explicit_disable_block_only_card(self):
+        from .monri import configured
+        for config in ({'MONRI_MERCHANT_KEY': ''}, {'MONRI_AUTHENTICITY_TOKEN': ''},
+                       {'MONRI_ENABLED': False}, {'MONRI_ENVIRONMENT': 'invalid'},
+                       {'MONRI_PUBLIC_BASE_URL': 'http://carpologijabh.ba'},
+                       {'MONRI_PUBLIC_BASE_URL': 'https://example.com/path'},
+                       {'MONRI_PUBLIC_BASE_URL': 'https://example.com:invalid'},
+                       {'MONRI_PUBLIC_BASE_URL': 'https:// bad.example.com'}):
+            with self.subTest(flags=list(config)), override_settings(**config):
+                self.assertFalse(configured())
+                form = CheckoutForm(dict(ime_prezime='Test Kupac', telefon='061123456',
+                    adresa='Ulica 1', grad='Sarajevo', payment_method='cod'))
+                self.assertTrue(form.is_valid())
+                self.assertEqual(form.cleaned_data['payment_method'], 'cod')
+
+
+class MonriConfigurationTests(SimpleTestCase):
+    def test_render_credentials_alone_enable_test_and_process_environment_wins(self):
+        from EcommerceProject.monri_config import read_monri_config
+        # Generated fixtures only; never read real merchant keys in tests.
+        from secrets import token_hex
+        key, token = token_hex(32), token_hex(20)
+        config = read_monri_config({'MONRI_MERCHANT_KEY': key, 'MONRI_AUTHENTICITY_TOKEN': token},
+                                  {'MONRI_MERCHANT_KEY': '', 'MONRI_AUTHENTICITY_TOKEN': '', 'MONRI_ENVIRONMENT': 'test'})
+        self.assertTrue(config['MONRI_ENABLED'])
+        self.assertEqual(config['MONRI_ENVIRONMENT'], 'test')
+        self.assertTrue(config['MONRI_MERCHANT_KEY'] == key)
+        self.assertTrue(config['MONRI_AUTHENTICITY_TOKEN'] == token)
+        self.assertEqual(config['MONRI_PUBLIC_BASE_URL'], 'https://carpologijabh.ba')
+
+    def test_disable_production_and_empty_environment_fail_closed(self):
+        from EcommerceProject.monri_config import read_monri_config
+        self.assertFalse(read_monri_config({'MONRI_ENABLED': 'False'}, {})['MONRI_ENABLED'])
+        self.assertFalse(read_monri_config({'MONRI_ENVIRONMENT': 'production'}, {})['MONRI_ENABLED'])
+        self.assertTrue(read_monri_config({'MONRI_ENVIRONMENT': ' TEST '}, {})['MONRI_ENABLED'])
+        self.assertFalse(bool(read_monri_config({'MONRI_MERCHANT_KEY': ''}, {'MONRI_MERCHANT_KEY': 'dummy'})['MONRI_MERCHANT_KEY']))
+
+    def test_django_settings_read_process_credentials_before_dotenv_override(self):
+        import os
+        import subprocess
+        import sys
+        from secrets import token_hex
+        environment = {name: value for name, value in os.environ.items() if not name.startswith('MONRI_')}
+        environment.update(MONRI_MERCHANT_KEY=token_hex(32), MONRI_AUTHENTICITY_TOKEN=token_hex(20))
+        environment['TEST_EXPECTED_KEY'] = environment['MONRI_MERCHANT_KEY']
+        environment['TEST_EXPECTED_TOKEN'] = environment['MONRI_AUTHENTICITY_TOKEN']
+        script = r'''
+import os
+from pathlib import Path
+from unittest.mock import patch
+original_exists, original_read = Path.exists, Path.read_text
+def exists(path):
+    return True if path.name == '.env' else original_exists(path)
+def read(path, *args, **kwargs):
+    if path.name == '.env':
+        return 'MONRI_MERCHANT_KEY=\nMONRI_AUTHENTICITY_TOKEN=\n'
+    return original_read(path, *args, **kwargs)
+with patch.object(Path, 'exists', exists), patch.object(Path, 'read_text', read):
+    from EcommerceProject import settings
+assert settings.MONRI_MERCHANT_KEY == os.environ['TEST_EXPECTED_KEY']
+assert settings.MONRI_AUTHENTICITY_TOKEN == os.environ['TEST_EXPECTED_TOKEN']
+assert settings.MONRI_ENABLED is True
+assert settings.MONRI_ENVIRONMENT == 'test'
+assert os.environ['MONRI_MERCHANT_KEY'] == os.environ['TEST_EXPECTED_KEY']
+assert os.environ['MONRI_AUTHENTICITY_TOKEN'] == os.environ['TEST_EXPECTED_TOKEN']
+'''
+        # The child never prints keys; failed assertions also have no values.
+        result = subprocess.run([sys.executable, '-c', script], env=environment, capture_output=True, timeout=20)
+        self.assertEqual(result.returncode, 0, 'Django Monri environment precedence check failed.')
