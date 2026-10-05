@@ -1,4 +1,4 @@
-"""Sale-only staging test, reusing the durable bulk CREATE/full UPDATE flow."""
+"""Sale-only manual sync, reusing the durable bulk CREATE/full UPDATE flow."""
 from collections import Counter
 from contextlib import nullcontext
 
@@ -7,13 +7,13 @@ from django.core.management.base import CommandError
 
 from EcommerceApp.models import Product
 from EcommerceApp.mungos_bulk_lock import bulk_lock
-from EcommerceApp.mungos_client import MungosClient, MungosError
+from EcommerceApp.mungos_client import MungosClient, MungosError, configured_endpoint
 from EcommerceApp.mungos_product import build_product_preview, sanitized_json
-from .mungos_bulk_sync import Command as BulkCommand, BLOCKED, STAGING_URL
+from .mungos_bulk_sync import Command as BulkCommand, BLOCKED
 
 
 class Command(BulkCommand):
-    help = 'SALE proizvodi: dry-run; --confirm koristi siguran staging CREATE/full PUT.'
+    help = 'SALE proizvodi: dry-run; --confirm koristi siguran CREATE/full PUT.'
 
     def add_arguments(self, parser):
         parser.add_argument('--product-id', type=int)
@@ -33,8 +33,10 @@ class Command(BulkCommand):
         if ((options['limit'] is not None and options['limit'] < 1)
                 or (options['product_id'] is not None and options['product_id'] < 1)):
             raise CommandError('limit/product-id mora biti pozitivan.')
-        if settings.MUNGOS_BASE_URL != STAGING_URL:
-            raise CommandError('STAGING ONLY | Potreban je staging connector URL.')
+        try:
+            configured_endpoint()
+        except MungosError as error:
+            raise CommandError(str(error)) from None
         products = Product.objects.order_by('pk').select_related('kategorija', 'mungos_mapping').prefetch_related(
             'varijacije', 'dodatne_slike')
         if options['product_id'] is not None:
@@ -71,9 +73,9 @@ class Command(BulkCommand):
             try:
                 client = MungosClient()
                 if not client._access_code:
-                    raise MungosError('STAGING zahtijeva access code.')
+                    raise MungosError('Slanje zahtijeva access code za izabrano okruženje.')
             except MungosError as error:
                 raise CommandError(str(error)) from None
-        self.stdout.write('CONFIRMED STAGING' if client else 'DRY RUN | bez HTTP-a')
+        self.stdout.write(f'CONFIRMED {settings.MUNGOS_ENVIRONMENT.upper()}' if client else 'DRY RUN | bez HTTP-a')
         with bulk_lock() if client else nullcontext():
             self.run_products(SaleSelection(), {'delay': 1.0}, client, Counter(), Counter())

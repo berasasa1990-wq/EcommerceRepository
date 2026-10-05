@@ -21,6 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Capture Render's Monri environment before the development dotenv loader runs.
+_MUNGOS_PROCESS_ENV = {name: value for name, value in os.environ.items() if name.startswith('MUNGOS_')}
 _MONRI_PROCESS_ENV = {name: value for name, value in os.environ.items() if name.startswith('MONRI_')}
 
 
@@ -54,11 +55,23 @@ def _env(key, default=''):
     return value or default
 
 
+def _mungos_env(key, default=''):
+    # Explicit Render process values take precedence over a development .env.
+    return _MUNGOS_PROCESS_ENV.get(key, _env(key, default))
+
+
 # Render detection vars (used early for ALLOWED_HOSTS, CSRF, sqlite guard, etc.)
-MUNGOS_BASE_URL = _env('MUNGOS_BASE_URL', '').strip()
-MUNGOS_API_KEY = _env('MUNGOS_API_KEY', '')
-MUNGOS_ECOMMERCE_ACCESS_CODE = _env('MUNGOS_ECOMMERCE_ACCESS_CODE', '')
-MUNGOS_ENABLED = _env('MUNGOS_ENABLED', 'False').strip().lower() in ('true', '1', 'yes')
+MUNGOS_ENVIRONMENT = _mungos_env('MUNGOS_ENVIRONMENT', 'staging').strip().lower()
+# Endpoints are selected by environment; legacy MUNGOS_BASE_URL cannot redirect credentials.
+MUNGOS_BASE_URL = {
+    'staging': 'https://staging.mungos.ba/api/v1/connector',
+    'production': 'https://mungos.ba/api/v1/connector',
+}.get(MUNGOS_ENVIRONMENT, '')
+MUNGOS_PRODUCTION_API_KEY = _mungos_env('MUNGOS_PRODUCTION_API_KEY', '')
+MUNGOS_PRODUCTION_ECOMMERCE_ACCESS_CODE = _mungos_env('MUNGOS_PRODUCTION_ECOMMERCE_ACCESS_CODE', '')
+MUNGOS_API_KEY = _mungos_env('MUNGOS_API_KEY', '')
+MUNGOS_ECOMMERCE_ACCESS_CODE = _mungos_env('MUNGOS_ECOMMERCE_ACCESS_CODE', '')
+MUNGOS_ENABLED = _mungos_env('MUNGOS_ENABLED', 'False').strip().lower() in ('true', '1', 'yes')
 
 RENDER_EXTERNAL_HOSTNAME = _env('RENDER_EXTERNAL_HOSTNAME')
 render_disk_path = _env('RENDER_DISK_PATH', '')

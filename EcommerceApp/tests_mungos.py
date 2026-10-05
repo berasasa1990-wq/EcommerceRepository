@@ -11,7 +11,7 @@ from .mungos_client import MungosClient
 
 @override_settings(
     MUNGOS_ENABLED=True,
-    MUNGOS_BASE_URL='https://staging.mungos.example/api/v1/connector/',
+    MUNGOS_BASE_URL='https://staging.mungos.ba/api/v1/connector/',
     MUNGOS_API_KEY='test-secret-do-not-print',
     MUNGOS_ECOMMERCE_ACCESS_CODE='test-access-code-do-not-print',
 )
@@ -33,7 +33,7 @@ class MungosLivenessTests(SimpleTestCase):
     def test_success_sends_single_get_with_safe_options(self):
         self.assertIn('SUCCESS | HTTP status: 200', self.run_command())
         self.session.get.assert_called_once_with(
-            'https://staging.mungos.example/api/v1/connector/Liveness/check/hello',
+            'https://staging.mungos.ba/api/v1/connector/Liveness/check/hello',
             headers={'X-Api-Key': 'test-secret-do-not-print',
                      'ecommerceaccesscode': 'test-access-code-do-not-print'},
             timeout=(5, 10), allow_redirects=False, stream=True,
@@ -96,11 +96,11 @@ class MungosLivenessTests(SimpleTestCase):
                 self.assertNotIn('test-access-code-do-not-print', str(caught.exception))
         self.session_factory.assert_not_called()
 
-    def test_production_switch_only_changes_base_url(self):
-        with override_settings(MUNGOS_BASE_URL='https://production.mungos.example'):
-            self.run_command()
-        self.assertEqual(self.session.get.call_args.args[0],
-                         'https://production.mungos.example' + MungosClient.LIVENESS_PATH)
+    def test_url_alone_cannot_switch_to_production(self):
+        with override_settings(MUNGOS_BASE_URL='https://mungos.ba/api/v1/connector'):
+            with self.assertRaises(CommandError):
+                self.run_command()
+        self.session_factory.assert_not_called()
 
     def test_success_output_does_not_contain_key(self):
         output = self.run_command()

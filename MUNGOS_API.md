@@ -1,6 +1,7 @@
-# Mungos — audit i prvi korak
+# Mungos — integracija i konfiguracija
 
-Obuhvat: izolovana konfiguracija, ručni GET liveness i potvrđeni single-product STAGING POST. Nema automatske sinhronizacije,
+Trenutna konfiguracija staging/production opisana je u završnoj sekciji ovog dokumenta.
+Obuhvat: izolovana konfiguracija, ručni GET liveness i eksplicitno potvrđeni POST/PUT. Nema automatske sinhronizacije,
 novih modela, migracija, taskova, webhookova ili poziva iz webshop requestova.
 
 ## Audit postojećeg projekta
@@ -328,7 +329,7 @@ i varijante dolaze iz trenutnih Carpologija podataka. `NEEDS_REVIEW` ili bilo ko
 ostaju blokirane prema postojećem builderu. Nema promjena modela ili business logike.
 Za prvi ručni test ne mijenjati Product 4455: očekivano 138 BAM i količina 43.
 
-PUT dijeli sigurni transport sa POST-om: samo STAGING host, oba auth headera,
+PUT dijeli sigurni transport sa POST-om: endpoint izabranog okruženja, oba auth headera,
 connect/read timeout 5/10 s, bez redirecta i retryja, ograničen i redaktovan
 response. HTTP 429 posebno navodi rate limit; ostali ne-2xx statusi daju FAILED.
 Timeout, mrežna greška ili prekid čitanja daju UNKNOWN_REMOTE_STATE. Provjeriti
@@ -432,7 +433,7 @@ credentials, 404 od UUID-a, 409 od udaljenog stanja; 429 od rate limita.
 Test skup uključuje `EcommerceApp.tests_mungos_payload` uz četiri postojeća
 Mungos modula. HTTP je mockovan, a fixture upisi su samo u izolovanoj Django
 test bazi. Transport zadržava oba staging auth headera, timeout 5/10 s,
-staging-only write zaštitu, redakciju odgovora i zabranu redirecta/retryja.
+zaštitu endpointa izabranog okruženja, redakciju odgovora i zabranu redirecta/retryja.
 Nema cron/Celery/signals, bulk slanja, DB mappinga ili automatskog synca.
 
 ## Izolovani STAGING bulk sync
@@ -466,7 +467,7 @@ postojeća webshop pravila `aktivan` / `sakriven_do_stanja` određuju slanje.
 Potvrđene kategorije i proizvodi bez varijanti su obavezni; builder zadržava sve
 postojeće validation gates. Nema fuzzy category mapiranja.
 
-Bulk prihvata samo tačan URL `https://staging.mungos.ba/api/v1/connector`.
+Bulk prihvata samo tačan endpoint izabranog `MUNGOS_ENVIRONMENT`, prema završnoj sekciji.
 Postojeći UUID uvijek vodi na PUT, nikada POST. Pokušaji bez UUID-a i neizvjesni
 PUT pokušaji se blokiraju do ručne provjere. `mungos_mapping_set` registruje
 provjereni UUID ili otključava provjeren postojeći mapping, ali ne prepisuje drugi
@@ -615,5 +616,33 @@ nepodržani kandidati imaju SKIPPED uz detaljni RESULT. Jedini upisi su Mungos
 mapping metadata; cijene, lager, checkout, frontend i admin ostaju netaknuti.
 Razvojna provjera koristi isključivo mockovani HTTP i izolovanu test bazu.
 
-Produkcijski hostname trenutno je blokiran postojećom STAGING ONLY zaštitom.
-Ove komande nisu produkcijsko odobrenje niti pokreću automatski sync.
+## Izbor okruženja i prvi production sync
+
+`MUNGOS_ENVIRONMENT` prihvata `staging` (default) ili `production`.
+Endpoint se bira automatski; legacy `MUNGOS_BASE_URL` env vrijednost se ne koristi:
+- staging: `https://staging.mungos.ba/api/v1/connector`
+- production: `https://mungos.ba/api/v1/connector`
+
+Za staging ostaju `MUNGOS_API_KEY` i `MUNGOS_ECOMMERCE_ACCESS_CODE`.
+Za production u Render environment postaviti `MUNGOS_ENABLED=true`,
+`MUNGOS_ENVIRONMENT=production`, `MUNGOS_PRODUCTION_API_KEY` i
+`MUNGOS_PRODUCTION_ECOMMERCE_ACCESS_CODE`, s credentials za produkciju.
+Oba production credential polja su obavezna; nema staging fallbacka.
+Vrijednosti iz procesa imaju prednost nad lokalnim `.env` za Mungos konfiguraciju.
+Nepoznato okruženje, nepodudaran endpoint i neispravni credentials blokiraju HTTP.
+
+Sve write komande (`mungos_sale_sync`, `mungos_bulk_sync`, `mungos_price_sync`,
+`mungos_quantity_sync`, `mungos_product_send`, `mungos_product_update`) zahtijevaju
+`--confirm`. Bez njega je dry-run bez HTTP-a i upisa. Liveness je zasebni GET.
+Cijene i dalje koriste product PUT s obaveznim `ProductPrice.Price` iz bazne i
+`ProductPrice.SellingPrice` iz prikazne cijene; quantity endpoint je nepromijenjen.
+
+Prvo pregledati dry-run, pa potvrditi mali production batch:
+```sh
+python manage.py mungos_sale_sync --limit 5
+python manage.py mungos_sale_sync --limit 5 --confirm
+```
+
+Postojeći UUID mapping mora odgovarati izabranom Mungos okruženju. Konfiguracija
+ne mijenja niti briše postojeće mappinge; pogrešan UUID nema CREATE fallback.
+Lokalne webshop cijene, lager i poslovni podaci ostaju nepromijenjeni.

@@ -7,7 +7,7 @@ from EcommerceApp.mungos_update import build_mungos_update_payload
 
 
 class Command(BaseCommand):
-    help = 'Ručno ažuriranje postojećeg proizvoda na Mungos STAGING; zahtijeva --confirm.'
+    help = 'Ručno ažuriranje postojećeg proizvoda na Mungos; zahtijeva --confirm.'
     requires_system_checks = []
 
     def add_arguments(self, parser):
@@ -17,7 +17,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if not options['confirm']:
-            self.stdout.write('NOT_SENT | Slanje nije izvršeno. Za jedan PUT potreban je --confirm.')
+            self.stdout.write('DRY RUN | NOT_SENT | Slanje nije izvršeno. Za jedan PUT potreban je --confirm.')
             return
         try:
             mungos_uuid = validate_product_uuid(options['mungos_uuid'])

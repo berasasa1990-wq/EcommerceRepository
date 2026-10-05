@@ -2,10 +2,9 @@
 import math
 import time
 from contextlib import nullcontext
-from urllib.parse import urlsplit
 from django.conf import settings
 
-from .management.commands.mungos_bulk_sync import STAGING_URL, retry_seconds
+from .management.commands.mungos_bulk_sync import retry_seconds
 from .mungos_diagnostics import safe_api_error
 
 from django.core.management.base import BaseCommand, CommandError
@@ -14,7 +13,7 @@ from django.utils import timezone
 
 from .models import Product, MungosProductMapping
 from .mungos_bulk_lock import bulk_lock
-from .mungos_client import MungosClient, MungosError
+from .mungos_client import MungosClient, MungosError, configured_endpoint
 from .mungos_partial import build_partial_payload
 from .mungos_product import build_product_preview, sanitized_json
 
@@ -37,8 +36,10 @@ class PartialSyncCommand(BaseCommand):
         parser.add_argument('--delay', type=float, default=1.0)
 
     def handle(self, *args, **options):
-        if settings.MUNGOS_BASE_URL != STAGING_URL:
-            raise StopSyncRun('STAGING ONLY | Potreban je tačan staging connector URL.')
+        try:
+            configured_endpoint()
+        except MungosError as error:
+            raise StopSyncRun(str(error)) from None
         if (not math.isfinite(options['delay']) or options['delay'] < 1
                 or options['start_after_id'] < 0
                 or (options['limit'] is not None and options['limit'] < 1)
@@ -91,8 +92,8 @@ class PartialSyncCommand(BaseCommand):
             return
         try:
             client = MungosClient()
-            if not client._access_code or urlsplit(client._base_url).hostname != 'staging.mungos.ba':
-                raise MungosError('NOT_SENT | Potreban je STAGING i access code.')
+            if not client._access_code:
+                raise MungosError('NOT_SENT | Potreban je access code za izabrano okruženje.')
             with transaction.atomic():
                 current = MungosProductMapping.objects.select_for_update().get(pk=mapping.pk)
                 if current.last_sync_status in BLOCKED or current.mungos_uuid != mapping.mungos_uuid:

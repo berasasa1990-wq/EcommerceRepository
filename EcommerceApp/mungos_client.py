@@ -1,7 +1,6 @@
 """Manual Mungos calls; no persistence or automatic synchronization."""
 import json
 from uuid import UUID
-from urllib.parse import urlsplit
 
 import requests
 from django.conf import settings
@@ -28,6 +27,21 @@ def validate_product_uuid(value):
     return value
 
 
+ENDPOINTS = {
+    'staging': 'https://staging.mungos.ba/api/v1/connector',
+    'production': 'https://mungos.ba/api/v1/connector',
+}
+
+
+def configured_endpoint():
+    environment = settings.MUNGOS_ENVIRONMENT
+    expected = ENDPOINTS.get(environment)
+    configured = settings.MUNGOS_BASE_URL
+    if not expected or not isinstance(configured, str) or configured.rstrip('/') != expected:
+        raise MungosError('NOT_SENT | Neispravan MUNGOS_ENVIRONMENT ili endpoint za izabrano okruženje.')
+    return expected
+
+
 class MungosClient:
     LIVENESS_PATH = '/Liveness/check/hello'
     PRODUCT_PATH = '/standard/product'
@@ -37,44 +51,32 @@ class MungosClient:
     def __init__(self):
         if not settings.MUNGOS_ENABLED:
             raise MungosError('Mungos je isključen: postavite MUNGOS_ENABLED=true.')
-        configured_url = settings.MUNGOS_BASE_URL
-        if not isinstance(configured_url, str):
-            raise MungosError('MUNGOS_BASE_URL mora biti validan HTTPS URL.')
-        base_url = configured_url.strip().rstrip('/')
-        try:
-            parsed = urlsplit(base_url)
-            valid = (
-                parsed.scheme == 'https' and parsed.hostname and parsed.port != 0
-                and not parsed.username and not parsed.password
-                and not parsed.query and not parsed.fragment
-                and not any(char.isspace() for char in base_url)
-                and not any(char in base_url for char in ('?', '#', '\\'))
-            )
-        except ValueError:
-            valid = False
-        if not valid:
-            raise MungosError('MUNGOS_BASE_URL mora biti validan HTTPS URL bez credentials, query ili fragmenta.')
-        api_key = settings.MUNGOS_API_KEY
+        base_url = configured_endpoint()
+        production = settings.MUNGOS_ENVIRONMENT == 'production'
+        api_key = settings.MUNGOS_PRODUCTION_API_KEY if production else settings.MUNGOS_API_KEY
         if not isinstance(api_key, str) or not api_key.strip():
-            raise MungosError('MUNGOS_API_KEY nije postavljen.')
+            raise MungosError('NOT_SENT | Mungos API key za izabrano okruženje nije postavljen.')
         if any(ord(char) < 32 or ord(char) > 126 for char in api_key) or api_key != api_key.strip():
             raise MungosError('MUNGOS_API_KEY ima neispravan format za HTTP header.')
-        access_code = settings.MUNGOS_ECOMMERCE_ACCESS_CODE
+        access_code = (settings.MUNGOS_PRODUCTION_ECOMMERCE_ACCESS_CODE if production
+                       else settings.MUNGOS_ECOMMERCE_ACCESS_CODE)
         if (not isinstance(access_code, str)
                 or any(ord(char) < 32 or ord(char) > 126 for char in access_code)
                 or access_code != access_code.strip()):
             raise MungosError('MUNGOS_ECOMMERCE_ACCESS_CODE ima neispravan format za HTTP header.')
+        if production and not access_code:
+            raise MungosError('NOT_SENT | Production zahtijeva MUNGOS_PRODUCTION_ECOMMERCE_ACCESS_CODE.')
         self._base_url = base_url
         self._url = base_url + self.LIVENESS_PATH
         self._api_key = api_key
         self._access_code = access_code
 
     def send_product(self, payload):
-        """Exactly one staging POST. Never retry an ambiguous remote write."""
+        """Exactly one POST. Never retry an ambiguous remote write."""
         return self._write_product('post', self.PRODUCT_PATH, payload)
 
     def update_product(self, mungos_uuid, payload):
-        """Exactly one full staging PUT to an existing UUID, with no create fallback."""
+        """Exactly one full PUT to an existing UUID, with no create fallback."""
         mungos_uuid = validate_product_uuid(mungos_uuid)
         return self._write_product('put', self.PRODUCT_PATH + '/' + mungos_uuid, payload)
 
@@ -93,10 +95,10 @@ class MungosClient:
                                    payload, partial_operation=operation)
 
     def _write_product(self, method, path, payload, partial_operation=None):
-        if urlsplit(self._base_url).hostname != 'staging.mungos.ba':
-            raise MungosError('Slanje je dozvoljeno samo na staging.mungos.ba.')
+        if self._base_url != configured_endpoint():
+            raise MungosError('NOT_SENT | Konfiguracija okruženja je promijenjena.')
         if not self._access_code:
-            raise MungosError('STAGING slanje zahtijeva MUNGOS_ECOMMERCE_ACCESS_CODE.')
+            raise MungosError('Slanje zahtijeva access code za izabrano okruženje.')
         if partial_operation:
             reasons = [] if validate_partial_payload(payload, partial_operation) else ['invalid_partial_payload']
         else:

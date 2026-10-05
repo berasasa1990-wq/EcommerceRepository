@@ -6,7 +6,7 @@ from EcommerceApp.mungos_product import build_product_preview
 
 
 class Command(BaseCommand):
-    help = 'Ručno slanje jednog proizvoda na Mungos STAGING; zahtijeva --confirm.'
+    help = 'Ručno slanje jednog proizvoda na Mungos; zahtijeva --confirm.'
     requires_system_checks = []
 
     def add_arguments(self, parser):
@@ -15,7 +15,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if not options['confirm']:
-            self.stdout.write('NOT_SENT | Slanje nije izvršeno. Za jedan POST potreban je --confirm.')
+            self.stdout.write('DRY RUN | NOT_SENT | Slanje nije izvršeno. Za jedan POST potreban je --confirm.')
             return
         try:
             product = Product.objects.select_related('kategorija').prefetch_related(
@@ -37,4 +37,4 @@ class Command(BaseCommand):
             raise CommandError('FAILED | HTTP status: 429 | Rate limit; nema automatskog retryja.')
         if not 200 <= status < 300:
             raise CommandError(f'FAILED | HTTP status: {status} | Nema retryja; provjerite Mungos prije novog POST-a.')
-        self.stdout.write('SUCCESS | Jedan proizvod poslan na Mungos STAGING.')
+        self.stdout.write('SUCCESS | Jedan proizvod poslan na Mungos.')

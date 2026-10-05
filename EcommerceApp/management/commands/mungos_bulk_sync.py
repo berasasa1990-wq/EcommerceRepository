@@ -1,4 +1,4 @@
-"""Explicit staging writes with durable guards and no ambiguous-write retries."""
+"""Explicit environment-selected writes with durable guards and no ambiguous-write retries."""
 import json
 import math
 import time
@@ -14,14 +14,13 @@ from django.db import transaction
 from django.utils import timezone
 
 from EcommerceApp.models import Product, MungosProductMapping
-from EcommerceApp.mungos_client import MungosClient, MungosError
+from EcommerceApp.mungos_client import MungosClient, MungosError, configured_endpoint
 from EcommerceApp.mungos_product import build_product_preview, sanitized_json
 from EcommerceApp.mungos_update import build_mungos_update_payload
 
 from EcommerceApp.mungos_diagnostics import safe_api_error
 from EcommerceApp.mungos_bulk_lock import bulk_lock
 
-STAGING_URL = 'https://staging.mungos.ba/api/v1/connector'
 BLOCKED = {'IN_FLIGHT', 'UNKNOWN_REMOTE_STATE', 'UNKNOWN'}
 
 
@@ -53,7 +52,7 @@ def response_uuid(body, truncated):
 
 
 class Command(BaseCommand):
-    help = 'Mungos STAGING bulk: default DRY RUN; HTTP samo uz --confirm.'
+    help = 'Mungos bulk: default DRY RUN; HTTP samo uz --confirm.'
     requires_system_checks = []
 
     def add_arguments(self, parser):
@@ -65,8 +64,10 @@ class Command(BaseCommand):
         parser.add_argument('--delay', type=float, default=1.0)
 
     def handle(self, *args, **options):
-        if settings.MUNGOS_BASE_URL != STAGING_URL:
-            raise CommandError('STAGING ONLY | MUNGOS_BASE_URL nije tačan staging connector URL.')
+        try:
+            configured_endpoint()
+        except MungosError as error:
+            raise CommandError(str(error)) from None
         if (not math.isfinite(options['delay']) or options['delay'] < 1
                 or options['start_after_id'] < 0 or (options['limit'] is not None and options['limit'] < 1)):
             raise CommandError('Delay mora biti najmanje 1s; limit pozitivan; start-after-id nenegativan.')
@@ -75,7 +76,7 @@ class Command(BaseCommand):
             try:
                 client = MungosClient()
                 if not client._access_code:
-                    raise MungosError('STAGING zahtijeva access code.')
+                    raise MungosError('Slanje zahtijeva access code za izabrano okruženje.')
             except MungosError as error:
                 raise CommandError(str(error)) from None
         counts = Counter({key: 0 for key in (
@@ -88,7 +89,7 @@ class Command(BaseCommand):
         ).prefetch_related('varijacije', 'dodatne_slike')
         if not options['all']:
             products = products[:options['limit'] if options['limit'] is not None else 10]
-        self.stdout.write('CONFIRMED STAGING' if client else 'DRY RUN | bez HTTP-a')
+        self.stdout.write(f'CONFIRMED {settings.MUNGOS_ENVIRONMENT.upper()}' if client else 'DRY RUN | bez HTTP-a')
         try:
             with bulk_lock() if client else nullcontext():
                 self.run_products(products, options, client, counts, reasons)
