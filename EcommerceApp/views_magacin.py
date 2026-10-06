@@ -2649,16 +2649,28 @@ def magacin_zalihe(request):
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
 def magacin_rezervni_dijelovi(request):
+    from django.db.models import Exists, OuterRef, Subquery
+    from .models import WarehouseLedgerLine, WarehouseLedgerEntry
+    damaged = WarehouseLedgerLine.objects.filter(
+        order_item_id=OuterRef('pk'), entry__kind=WarehouseLedgerEntry.Kind.DAMAGED,
+        replacement_order__isnull=False, voided_by__isnull=True,
+    ).exclude(replacement_order__status=Order.Status.OTKAZANA).exclude(
+        replacement_order__lager_status=Order.LagerStatus.OTKAZANO,
+    ).order_by('-pk')
     query = _magacin_search_query(request)
     qs = (
-        OrderItem.objects.filter(rezervni_dio=True)
+        OrderItem.objects.annotate(
+            damaged_replaced=Exists(damaged),
+            damage_note=Subquery(damaged.values('entry__description')[:1]),
+            damage_quantity=Subquery(damaged.values('quantity')[:1]),
+        ).filter(Q(rezervni_dio=True) | Q(damaged_replaced=True))
         .exclude(narudzba__status=Order.Status.OTKAZANA)
         .select_related('artikal', 'narudzba')
         .order_by('-narudzba__kreirana', '-id')
     )
     if query:
         qs = qs.filter(
-            Q(naziv__icontains=query)
+            Q(damage_note__icontains=query) | Q(naziv__icontains=query)
             | Q(artikal__naziv__icontains=query)
             | Q(artikal__sifra__icontains=query)
             | Q(narudzba__broj__icontains=query)
@@ -8589,6 +8601,42 @@ def magacin_provjera_lagera_stampa(request):
 def magacin_fali_na_sajtu(request):
     _ensure_magacin_locations()
     query = (request.GET.get('q') or request.POST.get('q') or '').strip()
+    if request.method == 'POST' and request.POST.get('action') == 'bulk_prenos_mp':
+        try:
+            selected = request.POST.getlist('selected')
+            if not selected or len(selected) > 40 or len(set(selected)) != len(selected):
+                raise MagacinError('Označi od 1 do 40 različitih artikala za prenos.')
+            if not maloprodaja_locations().exists():
+                raise MagacinError('Nema maloprodajne lokacije za prenos u MP.')
+            with transaction.atomic():
+                total_qty = 0
+                for key in selected:
+                    product_id, variation_id = key.split(':')
+                    product = get_object_or_404(magacin_products_qs(), pk=int(product_id))
+                    variation = get_object_or_404(
+                        ProductVariation, pk=int(variation_id), artikal=product,
+                    ) if variation_id else None
+                    location = get_object_or_404(
+                        usable_locations(), pk=int(request.POST.get(f'location_{key}') or 0),
+                    )
+                    if is_uncountable_stock_location(location):
+                        raise MagacinError('Prenos u MP ide s magacinske lokacije, ne s maloprodaje.')
+                    raw_qty = request.POST.get(f'quantity_{key}', '')
+                    if not raw_qty.isascii() or not raw_qty.isdigit() or int(raw_qty) <= 0:
+                        raise MagacinError('Za svaki označeni artikal unesi pozitivnu cijelu količinu.')
+                    qty = int(raw_qty)
+                    order = create_prenos_mp_pick(
+                        product=product, variation=variation, location=location,
+                        qty=qty, user=request.user,
+                    )
+                    total_qty += qty
+            messages.success(request, f'{len(selected)} artikala ({total_qty} kom) dodano na Picking #{order.broj} za prenos u MP.')
+        except (MagacinError, Http404, TypeError, ValueError):
+            messages.error(request, 'Bulk prenos nije izvršen. Provjeri označene artikle, lokacije i dostupne količine; nijedna stavka nije dodana.')
+        url = reverse('staff_magacin_fali_na_sajtu')
+        if query:
+            url = f'{url}?{urlencode({"q": query})}'
+        return redirect(url)
     if request.method == 'POST' and (request.POST.get('action') or '').strip() == 'prenos_mp':
         try:
             product = get_object_or_404(

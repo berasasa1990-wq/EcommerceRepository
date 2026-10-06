@@ -29,7 +29,9 @@ from django.urls import reverse
 from django.utils.html import escape, mark_safe, strip_tags
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode, url_has_allowed_host_and_scheme
 from django.utils.encoding import force_bytes, force_str
-from django.contrib.auth.tokens import default_token_generator
+from .account_verification import (
+    VerificationEmailError, send_verification_email, verification_token_generator,
+)
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.templatetags.static import static
@@ -5291,13 +5293,13 @@ def register(request):
                 email = form.cleaned_data['email']
                 try:
                     with transaction.atomic():
-                        # Odmah aktivan — bez email aktivacije / bez slanja maila
+                        # Prijava je dozvoljena tek nakon potvrde email adrese.
                         user = User.objects.create_user(
                             username=email,
                             email=email,
                             password=form.cleaned_data['lozinka'],
                             first_name=form.cleaned_data['ime_prezime'],
-                            is_active=True,
+                            is_active=False,
                         )
                         UserProfile.objects.create(
                             user=user,
@@ -5305,6 +5307,10 @@ def register(request):
                         )
                         Order.objects.filter(email__iexact=email, korisnik__isnull=True).update(korisnik=user)
                         kreiraj_loyalty_karticu(user)
+                        send_verification_email(request, user)
+                except VerificationEmailError:
+                    logger.warning("Registration verification email delivery failed")
+                    form.add_error(None, 'Email za potvrdu nije poslan. Nalog nije kreiran; molimo pokušajte ponovo.')
                 except IntegrityError:
                     logger.exception('Registration could not create a complete account')
                     form.add_error(None, 'Nalog nije kreiran. Ako već imate nalog, prijavite se ili obnovite lozinku.')
@@ -5331,34 +5337,13 @@ def register(request):
                     except Exception:
                         pass
 
-                    # Odmah prijavi korisnika (nema čekanja na email)
-                    from django.contrib.auth import login as auth_login
-                    auth_login(
+                    messages.success(
                         request,
-                        user,
-                        backend='django.contrib.auth.backends.ModelBackend',
+                        'Poslali smo verifikacioni link na vaš email. '
+                        'Potvrdite email adresu da biste se mogli prijaviti. '
+                        'Provjerite i spam folder.',
                     )
-
-                    if reg_reward and reg_reward.get('percent'):
-                        messages.success(
-                            request,
-                            f'Dobrodošli! Nalog je spreman. '
-                            f'Imate {reg_reward["percent"]}% popusta na prvu narudžbu.',
-                        )
-                    elif reg_reward:
-                        messages.success(
-                            request,
-                            'Dobrodošli! Nalog je spreman — besplatna dostava na prvu narudžbu.',
-                        )
-                    else:
-                        messages.success(
-                            request,
-                            'Dobrodošli! Nalog je kreiran i odmah ste prijavljeni.',
-                        )
-                    next_url = request.GET.get('next') or request.POST.get('next') or '/'
-                    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
-                        next_url = '/'
-                    return redirect(next_url)
+                    return redirect('login')
 
     context = {
         **_base_context(),
@@ -5373,6 +5358,8 @@ def register(request):
     return render(request, 'auth/register.html', context)
 
 
+@never_cache
+@require_GET
 def activate(request, uidb64, token):
     UserModel = User
     try:
@@ -5381,9 +5368,9 @@ def activate(request, uidb64, token):
     except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
         user = None
 
-    if user is not None and default_token_generator.check_token(user, token):
+    if user is not None and not user.is_active and verification_token_generator.check_token(user, token):
         user.is_active = True
-        user.save()
+        user.save(update_fields=['is_active'])
         messages.success(request, 'Vaš nalog je aktiviran! Sada se možete prijaviti.')
         return redirect('login')
     else:

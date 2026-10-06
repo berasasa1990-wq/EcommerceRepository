@@ -101,6 +101,15 @@
   var form = document.getElementById('ldMissingForm'); if (!form) return;
   var dialog = document.getElementById('ldMissing'), select = document.getElementById('ldMissingOrder');
   var body = document.getElementById('ldMissingRows'), error = document.getElementById('ldMissingError');
+  var damageDialog = document.getElementById('ldDamageNote');
+  var damageNote = document.getElementById('ldDamageDescription');
+  document.getElementById('ldDamageConfirm').addEventListener('click', function () {
+    damageNote.value = damageNote.value.trim();
+    if (!damageNote.reportValidity()) return;
+    form.querySelector('[name=description]').value = damageNote.value;
+    damageDialog.close();
+    form.requestSubmit();
+  });
   var version = 0, listVersion = 0, timer, chosen = null, damagedMode = false;
   function loadItems(saved) {
     var current = ++version; chosen = null; body.replaceChildren(); error.textContent = '';
@@ -127,7 +136,12 @@
               if (action[0] !== 'excess' && Number(input.value) > item.remaining) { error.textContent = 'Za ovaj artikal možeš evidentirati još ' + item.remaining + ' komada za evidenciju oštećenja ili nedostajuće robe.'; return; }
               chosen = {item_id:item.id, quantity:input.value};
               form.querySelector('[name=action]').value = action[0];
-              form.requestSubmit();
+              if (action[0] === 'damaged') {
+                damageNote.value = form.querySelector('[name=description]').value;
+                document.getElementById('ldDamageItem').textContent = item.name + ' · ' + input.value + ' kom.';
+                damageDialog.showModal();
+                damageNote.focus();
+              } else { form.requestSubmit(); }
             }); actions.appendChild(button);
           });
           tr.appendChild(actions); body.appendChild(tr);

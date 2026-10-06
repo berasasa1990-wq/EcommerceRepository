@@ -12,7 +12,7 @@ from .models import UserProfile
 
 @override_settings(
     TURNSTILE_SITE_KEY='', TURNSTILE_SECRET_KEY='', SITE_PREP_ENABLED=False,
-    SECURE_SSL_REDIRECT=False,
+    SECURE_SSL_REDIRECT=False, EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
     STORAGES={
         'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
         'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
@@ -71,14 +71,15 @@ class AuthReliabilityTests(TestCase):
         self.assertFalse(LoginForm(self.payload).is_valid())
         self.assertFalse(LoginForm(dict(self.payload, lozinka='incorrect')).is_valid())
 
-    def test_registration_preserves_password_and_logs_in(self):
+    def test_registration_preserves_password_and_waits_for_verification(self):
         response = self.client.post(reverse('register'), self.payload)
         self.assertEqual(response.status_code, 302)
         user = User.objects.get(username=self.payload['email'])
         self.assertTrue(user.check_password(self.password))
         self.assertFalse(user.check_password(self.password.strip()))
         self.assertTrue(UserProfile.objects.filter(user=user).exists())
-        self.assertEqual(int(self.client.session['_auth_user_id']), user.pk)
+        self.assertFalse(user.is_active)
+        self.assertNotIn('_auth_user_id', self.client.session)
         self.assertFalse(RegisterForm(self.payload).is_valid())
 
     def test_password_confirmation_does_not_ignore_spaces(self):
@@ -116,7 +117,7 @@ class AuthReliabilityTests(TestCase):
         self.client.logout()
         payload = dict(self.payload, email='new@example.com', next='//evil.example/')
         response = self.client.post(reverse('register'), payload)
-        self.assertEqual(response['Location'], '/')
+        self.assertEqual(response['Location'], reverse('login'))
 
     def test_real_csrf_rotation_recovery_keeps_protection(self):
         self.user()

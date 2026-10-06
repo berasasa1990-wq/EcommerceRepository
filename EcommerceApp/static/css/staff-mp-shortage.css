@@ -40,3 +40,8 @@ body.magacin-page.is-mp-shortage{--mp-metal:linear-gradient(115deg,#e8e8e9,#bfc1
 .magacin-page.is-mp-shortage .mg-fali-page{margin:0;padding-top:0}
 .magacin-page.is-mp-shortage .mg-page-head{margin-top:0;margin-bottom:8px}
 @media(max-width:600px){.magacin-page.is-mp-shortage .mg-main{padding:4px 6px 70px}}
+
+.mg-fali-bulk{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:12px 0;padding:12px;border:1px solid #969faa;background:#fff}
+.mg-fali-bulk p{width:100%;margin:0}
+.mg-fali-bulk input[type=checkbox],.magacin-page.is-mp-shortage .mg-fali-prenos input[data-fali-select]{width:20px;height:20px;min-height:20px;vertical-align:middle}
+.magacin-page.is-mp-shortage .mg-fali-prenos .mg-fali-select-label{flex-direction:row;align-items:center;gap:8px}

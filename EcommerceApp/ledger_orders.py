@@ -2,13 +2,15 @@
 from django.db.models import Q, Value
 from django.db.models.functions import Replace
 
-from .models import Order
+from .models import Order, WarehouseCustomer
 
 
 def customer_orders(partner):
-    if not partner or not partner.customer_id:
+    if not partner:
         return Order.objects.none()
-    customer = partner.customer
+    customer = partner.customer if partner.customer_id else partner
+    name = customer.ime_prezime if partner.customer_id else partner.naziv
+    email = getattr(customer, "email", "")
     phone = customer.telefon or ''
     expression = 'telefon'
     for character in [' ', '+', '-', '(', ')', '/', '.']:
@@ -27,11 +29,19 @@ def customer_orders(partner):
     contact = Q(pk__in=[])
     if phones:
         contact |= Q(ledger_phone__in=phones)
-    if customer.email:
-        contact |= Q(email__iexact=customer.email)
+    if email:
+        contact |= Q(email__iexact=email)
     # Explicit links take precedence over contact snapshots on older/webshop orders.
-    fallback = Q(ime_prezime__iexact=customer.ime_prezime) & contact
-    conflicting = Order.objects.filter(vp_nacrti__customer__isnull=False).exclude(vp_nacrti__customer=customer).values('pk')
+    fallback = Q(ime_prezime__iexact=name) & contact
+    if email and not email.endswith('.local') and WarehouseCustomer.objects.filter(email__iexact=email).count() == 1:
+        fallback |= Q(email__iexact=email) | Q(korisnik__email__iexact=email)
+    if not phones and not email:
+        fallback = Q(ime_prezime__iexact=name, telefon='', email='')
+    conflicting = Order.objects.filter(vp_nacrti__customer__isnull=False)
+    if partner.customer_id:
+        conflicting = conflicting.exclude(vp_nacrti__customer=customer)
+    conflicting = conflicting.values('pk')
+    explicit = Q(vp_nacrti__customer=customer) if partner.customer_id else Q(pk__in=[])
     return (Order.objects.annotate(ledger_phone=expression)
-            .filter(Q(ledger_replacement_line__entry__partner=partner) | Q(vp_nacrti__customer=customer) | (fallback & ~Q(pk__in=conflicting)))
+            .filter(Q(ledger_replacement_line__entry__partner=partner) | explicit | (fallback & ~Q(pk__in=conflicting)))
             .distinct().order_by('-kreirana', '-pk'))

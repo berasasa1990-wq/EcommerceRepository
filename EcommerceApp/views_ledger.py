@@ -19,6 +19,7 @@ from .models import WarehouseCustomer, WarehousePartner, WarehouseLedgerEntry as
 from .warehouse_access import warehouse_user_required
 from .warehouse_ledger import post_entry, create_replacement
 from .ledger_orders import customer_orders
+from .warehouse_customers_ledger import ensure_order_partners
 from .views_magacin import _magacin_context
 
 
@@ -48,6 +49,7 @@ def safe_csv(value):
 @user_passes_test(warehouse_user_required)
 @require_http_methods(['GET', 'POST'])
 def ledger(request):
+    ensure_order_partners()
     partner_id = request.POST.get('partner_id') if request.method == 'POST' else request.GET.get('partner')
     partner = get_object_or_404(partners_with_balance(), pk=partner_id) if str(partner_id or '').isdigit() else None
     if request.method == 'GET' and request.GET.get('orders_lookup') == '1':
@@ -68,7 +70,7 @@ def ledger(request):
         if query:
             qs = qs.filter(broj__icontains=query)
         return JsonResponse({'orders': [{'id': order.pk, 'number': order.broj, 'status': order.get_status_display(),
-                                         'date': order.kreirana.strftime('%d.%m.%Y.'), 'amount': str(order.ukupno)} for order in qs[:50]]})
+                                         'date': order.kreirana.strftime('%d.%m.%Y.'), 'amount': str(order.ukupno)} for order in qs]})
     form = PartnerForm()
     error = ''
     if request.method == 'POST':
@@ -112,8 +114,6 @@ def ledger(request):
     partners = partners_with_balance()
     if query:
         partners = partners.filter(Q(naziv__icontains=query) | Q(grad__icontains=query) | Q(telefon__icontains=query) | Q(pdv_broj__icontains=query) | Q(customer__email__icontains=query))
-    else:
-        partners = partners.filter(latest_entry_kind__isnull=False)
     if request.GET.get('export') == '1':
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="duguje-potrazuje.csv"'
@@ -156,6 +156,8 @@ def ledger(request):
     context = _magacin_context(request, section='duguje', page_title='Duguje / Potražuje', hide_top_search=True)
     context.update(partner=partner, partners=partner_page, lines=line_page,
                    orders=Paginator(customer_orders(partner), 20).get_page(request.GET.get('orders_page')),
+                   return_orders=customer_orders(partner),
+                   return_lines=(lines.annotate(remaining=F('quantity') - F('returned')).exclude(entry__kind__in=[Entry.Kind.MISSING, Entry.Kind.EXCESS, Entry.Kind.DAMAGED]) if partner else Line.objects.none()),
                    displayed_total=sum((line.amount for line in line_page), Decimal("0")),
                    entries=Paginator(entries, 20).get_page(request.GET.get('history_page')),
                    partner_form=form, ledger_error=error, submitted=request.POST.dict() if error else {}, query=query,

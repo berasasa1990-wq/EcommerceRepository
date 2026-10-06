@@ -390,6 +390,30 @@ class WarehouseLedgerTests(TestCase):
         self.client.force_login(self.user)
         self.assertContains(self.client.get(reverse('staff_magacin_duguje'), {'partner':self.partner.pk}), 'Zamjena #' + order.broj)
 
+    def test_damaged_replacement_shows_original_and_note_in_spares(self):
+        import json
+        from .warehouse_ledger import create_replacement
+        original, item = self.linked_order()
+        note = 'Oštećena lijeva noga <stola>'
+        entry = self.post(action='damaged', order_id=original.pk, description=note,
+                          missing_json=json.dumps([{'item_id': item.pk, 'quantity': '1'}]))
+        line = entry.lines.get()
+        self.assertEqual(entry.description, note)
+        self.client.force_login(self.user)
+        url = reverse('staff_magacin_rezervni_dijelovi')
+        self.assertNotContains(self.client.get(url), 'Oštećena lijeva noga')
+        replacement = create_replacement(partner_id=self.partner.pk, line_id=line.pk, user=self.user)
+        response = self.client.get(url, {'pretraga': 'lijeva noga'})
+        self.assertContains(response, 'Oštećena lijeva noga &lt;stola&gt;')
+        self.assertEqual(list(response.context['page']), [item])
+        self.assertEqual(response.context['page'][0].damage_quantity, 1)
+        self.assertFalse(replacement.stavke.get().rezervni_dio)
+        item.refresh_from_db()
+        self.assertEqual(item.kolicina, 3)
+        replacement.status = Order.Status.OTKAZANA
+        replacement.save(update_fields=['status'])
+        self.assertNotContains(self.client.get(url), 'Oštećena lijeva noga')
+
     def test_replacement_short_stock_rolls_back_partial_reservation_and_order(self):
         from .warehouse_ledger import create_replacement
         line = self.damaged_line()
@@ -587,14 +611,14 @@ class WarehouseLedgerTests(TestCase):
         response = self.client.get(url, {'partner': self.partner.pk})
         self.assertNotContains(response, 'Dug riješen uplatom')
 
-    def test_default_partners_only_with_history_search_includes_others(self):
+    def test_default_partners_include_customers_without_ledger_history(self):
         untouched = WarehousePartner.objects.create(naziv='Kupac bez promjena')
         self.post(kind='debit', amount='10')
         self.post(kind='receipt', amount='10')
         self.client.force_login(self.user)
         url = reverse('staff_magacin_duguje')
         response = self.client.get(url)
-        self.assertEqual([p.pk for p in response.context['partners']], [self.partner.pk])
+        self.assertEqual({p.pk for p in response.context['partners']}, {self.partner.pk, untouched.pk})
         response = self.client.get(url, {'q': 'Kupac bez promjena'})
         self.assertEqual([p.pk for p in response.context['partners']], [untouched.pk])
 

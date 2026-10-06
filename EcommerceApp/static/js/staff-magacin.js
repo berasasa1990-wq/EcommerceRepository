@@ -4577,6 +4577,53 @@ function initArticleScanner() {
 function initFaliPrenos() {
     var root = document.getElementById('mgFaliPage');
     if (!root) return;
+    var bulk = root.querySelector('#mgFaliBulk');
+    if (bulk) {
+        var checks = Array.from(root.querySelectorAll('[data-fali-select]'));
+        var all = bulk.querySelector('[data-fali-select-all]');
+        var submit = bulk.querySelector('[data-fali-bulk-submit]');
+        function updateSelection() {
+            var count = checks.filter(function (check) { return check.checked; }).length;
+            bulk.querySelector('[data-fali-selected-count]').textContent = String(count);
+            submit.disabled = count === 0;
+            all.checked = checks.length > 0 && count === checks.length;
+            all.indeterminate = count > 0 && count < checks.length;
+        }
+        checks.forEach(function (check) { check.addEventListener('change', updateSelection); });
+        all.addEventListener('change', function () {
+            checks.forEach(function (check) { check.checked = all.checked; });
+            updateSelection();
+        });
+        bulk.addEventListener('submit', function (event) {
+            bulk.querySelectorAll('[data-bulk-value]').forEach(function (input) { input.remove(); });
+            var selected = checks.filter(function (check) { return check.checked; });
+            var valid = selected.length > 0;
+            selected.forEach(function (check) {
+                var form = check.closest('[data-fali-prenos]');
+                var qty = form.querySelector('[data-fali-qty]');
+                var loc = form.querySelector('[data-fali-loc]');
+                if (!qty.checkValidity()) {
+                    valid = false;
+                    qty.reportValidity();
+                    return;
+                }
+                [['quantity_', qty.value], ['location_', loc.value]].forEach(function (pair) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = pair[0] + check.value;
+                    input.value = pair[1];
+                    input.setAttribute('data-bulk-value', '1');
+                    bulk.appendChild(input);
+                });
+            });
+            if (!valid || !window.confirm('Prenijeti ' + selected.length + ' označenih artikala u MP? Stavke idu na Picking.')) {
+                event.preventDefault();
+                return;
+            }
+            submit.disabled = true;
+        });
+        updateSelection();
+    }
     root.querySelectorAll('[data-fali-prenos]').forEach(function (form) {
         var loc = form.querySelector('[data-fali-loc]');
         var qty = form.querySelector('[data-fali-qty]');

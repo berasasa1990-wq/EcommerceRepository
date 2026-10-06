@@ -17,7 +17,7 @@
     </form>
 </div>
 
-<div class="spares-notice"><p>Prikazani su artikli kojima je na narudžbi poslan rezervni dio. U koloni „Fali / Poslano“ navedeno je šta je poslano kupcu.</p><span>Ukupno: <strong>{{ page.paginator.count }}</strong></span></div>
+<div class="spares-notice"><p>Prikazani su poslani rezervni dijelovi i oštećeni artikli za koje je kreirana zamjena. U koloni „Fali / Poslano“ prikazana je napomena o oštećenju ili poslani dio.</p><span>Ukupno: <strong>{{ page.paginator.count }}</strong></span></div>
 
 <section class="mg-card">
     <table class="mg-table">
@@ -42,13 +42,13 @@
                 </td>
                 <td>{% if item.artikal %}{{ item.artikal.sifra|default:"—" }}{% else %}{{ item.sifra|default:"—" }}{% endif %}</td>
                 <td>
-                    <span class="mg-spare-missing">{{ item.naziv }}{% if item.kolicina %} × {{ item.kolicina }}{% endif %}</span>
+                    <span class="mg-spare-missing">{% if item.damaged_replaced %}{{ item.damage_note }} × {{ item.damage_quantity }}{% else %}{{ item.naziv }}{% if item.kolicina %} × {{ item.kolicina }}{% endif %}{% endif %}</span>
                 </td>
                 <td>#{{ item.narudzba.broj }}</td>
                 <td>{{ item.narudzba.ime_prezime }}</td>
                 <td>{{ item.narudzba.kreirana|date:"d.m.Y." }}<br>{{ item.narudzba.kreirana|date:"H:i" }}</td>
                 <td class="spares-price">{{ item.cijena|floatformat:2 }} KM</td>
-                <td class="spares-qty">{{ item.kolicina }}</td>
+                <td class="spares-qty">{% if item.damaged_replaced %}{{ item.damage_quantity }}{% else %}{{ item.kolicina }}{% endif %}</td>
                 <td><a class="mg-btn" href="{% url 'staff_order_detail' item.narudzba.broj %}">Detalji <span aria-hidden="true">›</span></a></td>
             </tr>
             {% empty %}

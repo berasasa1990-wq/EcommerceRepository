@@ -3,7 +3,7 @@
 {% block body_class %}{{ block.super }} is-mp-shortage{% endblock %}
 {% block extra_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'css/staff-mp-shortage.css' %}?v=20260906-2">
+<link rel="stylesheet" href="{% static 'css/staff-mp-shortage.css' %}?v=20261005-bulk">
 {% endblock %}
 
 {% block magacin_content %}
@@ -25,6 +25,16 @@
         <button type="submit" class="mg-btn mg-btn-primary">Pronađi</button>
     </form>
 
+    {% if has_mp_location %}
+    <form method="post" id="mgFaliBulk" class="mg-fali-bulk">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="bulk_prenos_mp">
+        <input type="hidden" name="q" value="{{ fali_q }}">
+        <label><input type="checkbox" data-fali-select-all> Označi sve na ovoj stranici</label>
+        <button type="submit" class="mg-btn mg-btn-primary" data-fali-bulk-submit disabled>Prenesi označene u MP (<span data-fali-selected-count>0</span>)</button>
+        <p>Koriste se unesene količine i izabrane lokacije. Prenos se dodaje na Picking.</p>
+    </form>
+    {% endif %}
     <ul class="mg-fali-list">
         {% for row in page %}
         <li class="mg-fali-card{% if row.pending_prenos %} is-pending{% endif %}">
@@ -49,6 +59,7 @@
             <p class="mg-fali-pending">Prenos je već na Pickingu.</p>
             {% elif has_mp_location %}
             <form method="post" class="mg-fali-prenos" data-fali-prenos>
+                <label class="mg-fali-select-label"><input type="checkbox" name="selected" value="{{ row.product.pk }}:{{ row.variation.pk|default:'' }}" form="mgFaliBulk" data-fali-select> Označi za bulk prenos</label>
                 {% csrf_token %}
                 <input type="hidden" name="action" value="prenos_mp">
                 {% if fali_q %}<input type="hidden" name="q" value="{{ fali_q }}">{% endif %}
