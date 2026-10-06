@@ -135,3 +135,36 @@ class ScratchOrderAddTests(TestCase):
         self.assertFalse(WarehouseStock.objects.exists())
         self.order.refresh_from_db()
         self.assertEqual(self.order.ukupno, Decimal('61.00'))
+
+    def test_confirmed_open_order_accepts_reward(self):
+        self.order.status = Order.Status.POTVRDJENA
+        self.order.save(update_fields=['status'])
+        response = self.add()
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertTrue(self.order.stavke.filter(artikal=self.product).exists())
+
+    def test_closed_or_validated_orders_reject_reward(self):
+        for changes in ({'status': Order.Status.OTKAZANA},
+                        {'status': Order.Status.POSLANA},
+                        {'status': Order.Status.ZAVRSENA},
+                        {'zapakovana': True}, {'stanje_skinuto': True},
+                        {'lager_status': Order.LagerStatus.VALIDIRANO},
+                        {'lager_status': Order.LagerStatus.OTKAZANO}):
+            with self.subTest(changes=changes):
+                Order.objects.filter(pk=self.order.pk).update(
+                    status=Order.Status.NOVA, zapakovana=False, stanje_skinuto=False,
+                    lager_status=Order.LagerStatus.REZERVISANO)
+                Order.objects.filter(pk=self.order.pk).update(**changes)
+                response = self.add()
+                self.assertEqual(response.status_code, 400)
+                self.assertFalse(self.order.stavke.exists())
+
+    def test_pending_chances_choose_latest_open_order(self):
+        from .online_gift import _next_pending_order, SCRATCH_PENDING_ORDERS_KEY
+        older = Order.objects.create(ime_prezime='Starija', ukupno=20)
+        newest = Order.objects.create(ime_prezime='Nova', ukupno=20)
+        cancelled = Order.objects.create(ime_prezime='Otkazana', ukupno=20,
+                                          status=Order.Status.OTKAZANA)
+        request = SimpleNamespace(session={SCRATCH_PENDING_ORDERS_KEY:
+            [older.pk, newest.pk, cancelled.pk]})
+        self.assertEqual(_next_pending_order(request, self.campaign), newest.pk)

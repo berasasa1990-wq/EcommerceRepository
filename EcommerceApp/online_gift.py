@@ -90,13 +90,22 @@ def grant_scratch_chance(request, order):
 
 
 def _next_pending_order(request, campaign):
+    from .models import Order
     order_ids = _pending_scratch_order_ids(request)
     if not order_ids:
         return None
     claimed_ids = set(OnlineGiftClaim.objects.filter(
         campaign=campaign, scratch_trigger_order_id__in=order_ids,
     ).values_list('scratch_trigger_order_id', flat=True))
-    return next((order_id for order_id in order_ids if order_id not in claimed_ids), None)
+    open_ids = set(Order.objects.filter(
+        pk__in=order_ids, izvor=Order.Izvor.WEBSHOP,
+        status__in=(Order.Status.NOVA, Order.Status.REZERVACIJA, Order.Status.POTVRDJENA),
+        zapakovana=False, stanje_skinuto=False,
+        lager_status__in=(Order.LagerStatus.NIJE, Order.LagerStatus.REZERVISANO),
+    ).values_list('pk', flat=True))
+    # The post-checkout offer belongs to the newest open order, never a cancelled one.
+    return next((order_id for order_id in reversed(order_ids)
+                 if order_id in open_ids and order_id not in claimed_ids), None)
 
 
 def _remove_pending_order(request, order_id):
@@ -364,7 +373,9 @@ def add_scratch_discount_product_to_order(request):
     from .magacin import reserve_for_order, ensure_web_product_stock
     with transaction.atomic():
         order = Order.objects.select_for_update().get(pk=claim.scratch_trigger_order_id)
-        if order.status != Order.Status.NOVA or order.zapakovana or order.stanje_skinuto:
+        if (order.status not in (Order.Status.NOVA, Order.Status.REZERVACIJA, Order.Status.POTVRDJENA)
+                or order.zapakovana or order.stanje_skinuto
+                or order.lager_status in (Order.LagerStatus.VALIDIRANO, Order.LagerStatus.OTKAZANO)):
             return None, None, 'Narudžba je već obrađena i artikal se više ne može dodati.'
         prize = ScratchPrize.objects.select_related('product').filter(
             campaign=claim.campaign, product_id=product_id,
