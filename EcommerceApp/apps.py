@@ -38,6 +38,13 @@ class EcommerceappConfig(AppConfig):
 
         from django.db.models.signals import post_delete, post_save
 
+        from .product_sets import refresh_dependent_sets
+        from .models import Product, ProductVariation, ProductSetComponent, WarehouseStock
+        for model in (Product, ProductVariation, ProductSetComponent, WarehouseStock):
+            post_save.connect(refresh_dependent_sets, sender=model, dispatch_uid='set_stock_' + model.__name__)
+        for model in (ProductSetComponent, WarehouseStock):
+            post_delete.connect(refresh_dependent_sets, sender=model, dispatch_uid='set_stock_delete_' + model.__name__)
+
         from .warehouse_customers_ledger import sync_customer_partner
         from .models import WarehouseCustomer
         post_save.connect(sync_customer_partner, sender=WarehouseCustomer, dispatch_uid='warehouse_customer_ledger')

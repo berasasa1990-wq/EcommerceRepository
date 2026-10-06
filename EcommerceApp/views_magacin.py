@@ -895,6 +895,8 @@ def magacin_artikli(request):
             'rezervisano': 0,
             'dostupno': 0,
         }
+        if product.is_set:
+            totals = display_stock_totals(product)
         prices = [net_price(product, variant, discounts, divisors) for variant in list(product.varijacije.all()) or [None]]
         rows.append({'product': product, **totals, 'locations': [],
                      'vpc_netto': min(prices), 'vpc_netto_max': max(prices)})
@@ -3570,13 +3572,13 @@ def _picks_from_pick_state(order):
 def _build_picked_packing_lines(order):
     from .views import _magacin_hold_picks
 
-    items = list(order.stavke.select_related('artikal', 'varijacija').all())
+    items = list(order.stavke.filter(is_set_parent=False).select_related('artikal', 'varijacija').all())
     from_state = _picks_from_pick_state(order)
     hold_picks = _magacin_hold_picks(order, items)
     lines = []
     rb = 0
     for item in items:
-        qty = int(item.kolicina_faktura or 0)
+        qty = int((item.kolicina_pokupljeno if item.kolicina_pokupljeno is not None else item.kolicina) if item.set_parent_id else item.kolicina_faktura or 0)
         if qty <= 0:
             continue
         if item.pk in from_state:
@@ -3728,6 +3730,7 @@ def magacin_artikli_lookup(request):
             continue
         var_stock = totals.get('varijacije') or {}
         results.append({
+            'is_set': product.is_set,
             'id': product.pk,
             'naziv': product.naziv,
             'sifra': product.sifra or '',
@@ -4302,6 +4305,13 @@ def _posted_display_lines(request):
 def _held_qty_on_order(order, product, variation):
     if order is None or product is None:
         return 0
+    if product.is_set:
+        parent = order.stavke.filter(artikal=product, is_set_parent=True).first()
+        if not parent:
+            return 0
+        values = [_held_qty_on_order(order, child.artikal, child.varijacija) // child.set_component_quantity
+                  for child in parent.set_children.select_related('artikal', 'varijacija')]
+        return min(values) if values else 0
     filt = {'product': product, 'status': OrderStockHold.Status.REZERVISANO}
     if variation is None:
         filt['variation__isnull'] = True
@@ -4314,7 +4324,7 @@ def _order_display_lines(order):
     divisors = brand_divisors()
     discounts = discounts_for(order.stavke.values_list('artikal_id', flat=True))
     lines = []
-    for item in order.stavke.filter(ledger_excess_line__isnull=True, ledger_missing_line__isnull=True).select_related('artikal', 'varijacija'):
+    for item in order.stavke.filter(ledger_excess_line__isnull=True, ledger_missing_line__isnull=True, set_parent__isnull=True).select_related('artikal', 'varijacija'):
         product = item.artikal
         variation = item.varijacija
         available = 0
@@ -4631,7 +4641,7 @@ def _clear_order_items_and_holds(order, user=None, *, retained=None, keep_item_i
     for item in list(order.stavke.filter(ledger_excess_line__isnull=True, ledger_missing_line__isnull=True).exclude(pk__in=keep_item_ids)):
         product = item.artikal
         variation = item.varijacija
-        if product is not None:
+        if product is not None and not item.is_set_parent:
             keep = (retained or {}).get((product.pk, variation.pk if variation else None), 0)
             held = _held_qty_on_order(order, product, variation)
             release_holds_for_product(order, product, variation, qty=min(item.kolicina, max(0, held - keep)), user=user)
@@ -4709,7 +4719,7 @@ def _save_manual_order(
     kept_items = {}
     if existing is not None:
         candidates = list(existing.stavke.filter(
-            ledger_excess_line__isnull=True, ledger_missing_line__isnull=True,
+            ledger_excess_line__isnull=True, ledger_missing_line__isnull=True, set_parent__isnull=True,
         ).order_by('pk'))
         for index, line in enumerate(lines):
             product = line.get('product')
@@ -4730,13 +4740,17 @@ def _save_manual_order(
             variation = line.get('variation')
             key = (product.pk, variation.pk if variation else None)
             retained[key] = retained.get(key, 0) + max(0, line['qty'] - line['shortfall'])
-        _clear_order_items_and_holds(existing, user=request.user, retained=retained,
-                                     keep_item_ids=[item.pk for item in kept_items.values()])
+        keep_ids = [item.pk for item in kept_items.values()]
+        for item in kept_items.values():
+            for child in item.set_children.select_related('artikal', 'varijacija'):
+                keep_ids.append(child.pk)
+                component_key = (child.artikal_id, child.varijacija_id)
+                retained[component_key] = retained.get(component_key, 0) + child.kolicina
+        _clear_order_items_and_holds(existing, user=request.user, retained=retained, keep_item_ids=keep_ids)
         for key in retained:
-            retained[key] = sum(existing.magacin_holds.filter(
-                product_id=key[0], variation_id=key[1],
-                status=OrderStockHold.Status.REZERVISANO,
-            ).values_list('kolicina', flat=True))
+            retained_product = Product.objects.get(pk=key[0])
+            retained_variation = ProductVariation.objects.filter(pk=key[1]).first() if key[1] else None
+            retained[key] = _held_qty_on_order(existing, retained_product, retained_variation)
         existing.ime_prezime = ime[:200]
         existing.email = email[:254]
         existing.telefon = telefon[:30]
@@ -5575,6 +5589,12 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
             item_id = saved['item_id']
             picked_by_item[item_id] = picked_by_item.get(item_id, 0) + max(0, int(saved.get('got') or 0))
 
+    if finalize:
+        for child in order.stavke.filter(set_parent__isnull=False):
+            got = picked_by_item.get(child.pk, child.kolicina_pokupljeno)
+            if got != child.kolicina:
+                raise MagacinError('Set nije kompletan. Pokupi sve artikle i količine iz seta prije završetka pickinga.')
+
     order.pick_state = state
     order.save(update_fields=['pick_state'])
 
@@ -5613,7 +5633,7 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
             if result.get('cancelled'):
                 return state
 
-    items = {item.pk: item for item in order.stavke.filter(ledger_excess_line__isnull=True)}
+    items = {item.pk: item for item in order.stavke.filter(ledger_excess_line__isnull=True, is_set_parent=False)}
     if finalize:
         for item in items.values():
             if item.pk in picked_by_item:
@@ -5643,6 +5663,8 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
             qty = max(0, min(int(item.kolicina), int(qty)))
             item.kolicina_pokupljeno = qty
             item.save(update_fields=['kolicina_pokupljeno'])
+    from .product_sets import sync_set_picked
+    sync_set_picked(order, require_complete=finalize)
     return state
 
 
@@ -6264,10 +6286,10 @@ def magacin_pakuj_detail(request, broj):
         'pick_queue_json': json.dumps(queue, ensure_ascii=False).replace('<', '\\u003c'),
         'pick_state_json': json.dumps(order.pick_state or {}, ensure_ascii=False).replace('<', '\\u003c'),
         'pick_total': len(queue),
-        'pick_ordered': sum(int(row.kolicina or 0) for row in order.stavke.filter(ledger_excess_line__isnull=True)),
+        'pick_ordered': sum(int(row.kolicina or 0) for row in order.stavke.filter(ledger_excess_line__isnull=True, is_set_parent=False)),
         'pick_picked': sum(
             int(row.kolicina_pokupljeno or 0)
-            for row in order.stavke.filter(ledger_excess_line__isnull=True)
+            for row in order.stavke.filter(ledger_excess_line__isnull=True, is_set_parent=False)
             if row.kolicina_pokupljeno is not None
         ),
         'packing_error': packing_error,

@@ -17,13 +17,25 @@
             <span>{{ cat.naziv }}</span>
         </a>
         {% endfor %}
-        <a href="{% url 'brands_list' %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M3 3h9l9 9-9 9-9-9Z"/><circle cx="8" cy="8" r="1.5"/></svg><span>Brendovi</span></a>
+        <a href="{% url 'set_builder' %}" class="home-category-sets" data-set-builder-gate aria-label="Setovi — BETA">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            <span class="home-category-sets-label"><span class="home-category-sets-beta">BETA</span>Setovi</span>
+        </a>
     </div>
 </section>
 
 <script src="{% static 'js/home-mobile-reference.js' %}?v=20260917-category-icons" defer></script>
 
 <style>
+#mobileHomeCategories .home-category-sets-label {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+#mobileHomeCategories .home-category-sets-beta {
+    display: inline-block; padding: 2px 4px; border-radius: 3px;
+    background: #111; color: #ff5a00; border: 1px solid #ff5a00;
+    font-size: 8px; font-weight: 800; line-height: 1; letter-spacing: .08em;
+}
+
 #mobileHomeCategories .mobile-home-category-icon[hidden],
 #mobileHomeCategories [data-category-icon-fallback][hidden] { display: none !important; }
 #mobileHomeCategories .mobile-home-category-grid {

@@ -3233,6 +3233,7 @@ def _build_unique_slug(model_cls, source_text, *, pk=None, max_length=SLUG_MAX_L
 
 
 class Product(models.Model):
+    is_set = models.BooleanField(default=False, db_index=True, verbose_name="Artikal je set")
     naziv = models.CharField(max_length=200)
     slug = models.SlugField(max_length=SLUG_MAX_LENGTH, unique=True, blank=True)
     sifra = models.CharField(
@@ -3840,6 +3841,17 @@ class ProductImage(models.Model):
         if not self.slika:
             return None
         return product_image_responsive_meta(self.slika)
+
+
+class ProductSetComponent(models.Model):
+    set_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='set_components')
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='used_in_sets')
+    variation = models.ForeignKey('ProductVariation', null=True, blank=True, on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        ordering = ['pk']
+        constraints = [models.CheckConstraint(condition=models.Q(quantity__gte=1), name='set_component_positive_qty')]
 
 
 class ProductVariation(models.Model):
@@ -4625,6 +4637,9 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
+    is_set_parent = models.BooleanField(default=False)
+    set_parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='set_children')
+    set_component_quantity = models.PositiveIntegerField(default=0)
     ledger_missing_line = models.ForeignKey('WarehouseLedgerLine', null=True, blank=True, on_delete=models.PROTECT, related_name='fulfillment_items')
     ledger_excess_line = models.OneToOneField('WarehouseLedgerLine', null=True, blank=True, on_delete=models.PROTECT, related_name='invoice_item')
     narudzba = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='stavke')
@@ -4684,7 +4699,7 @@ class OrderItem(models.Model):
 
     @property
     def kolicina_faktura(self):
-        if self.ledger_missing_line_id:
+        if self.ledger_missing_line_id or self.set_parent_id:
             return 0
         if self.kolicina_pokupljeno is not None:
             return self.kolicina_pokupljeno

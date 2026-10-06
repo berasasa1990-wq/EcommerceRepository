@@ -10,6 +10,9 @@ def stock_on_hand(product=None, variation=None):
     """Količina na stanju za SKU (varijacija ima prednost)."""
     if variation is not None:
         return max(0, int(getattr(variation, 'stanje', 0) or 0))
+    if product is not None and product.is_set:
+        from .product_sets import set_stock_totals
+        return set_stock_totals(product)['dostupno']
     if product is not None:
         return max(0, int(getattr(product, 'stanje', 0) or 0))
     return 0
@@ -214,6 +217,9 @@ class Cart:
             variant = variants.get(variant_id) if variant_id else None
             if not product or not product.aktivan or product.sakriven_do_stanja or (variant_id and (not variant or variant.artikal_id != product.pk)):
                 result[key] = 0
+            elif product.is_set:
+                from .product_sets import set_stock_totals
+                result[key] = set_stock_totals(product)['dostupno']
             elif product.pk in tracked or product.magacin_sync_at:
                 result[key] = quantities.get((product.pk, variant_id or None), 0)
             else:

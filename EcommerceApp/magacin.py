@@ -328,6 +328,9 @@ def _stock_scope(product, variation=None):
 
 
 def stock_totals(product, variation=None):
+    if getattr(product, 'is_set', False):
+        from .product_sets import set_stock_totals
+        return set_stock_totals(product)
     qs, _ = _stock_scope(product, variation)
     return _agg_stock(qs)
 
@@ -423,6 +426,9 @@ def maloprodaja_location_rows(product, variation=None):
 
 def display_stock_totals(product, variation=None):
     """Ukupno na stanju i dostupno, uključujući maloprodaju kao ostale lokacije."""
+    if getattr(product, 'is_set', False):
+        from .product_sets import set_stock_totals
+        return set_stock_totals(product)
     totals = dict(stock_totals(product, variation))
     for row in maloprodaja_location_rows(product, variation):
         totals['na_stanju'] += int(row.get('kolicina') or 0)
@@ -637,6 +643,9 @@ def maybe_unhide_on_restock(product, *, now_in_stock, new_qty):
 
 def refresh_catalog_qty(product):
     """Na sajtu dok ima količinu na bilo kojoj lokaciji (magacin + MP). Bez zalihe = skini sa sajta."""
+    if product.is_set:
+        from .product_sets import refresh_set
+        return refresh_set(product)
     variations = list(ProductVariation.objects.filter(artikal_id=product.pk))
     if not variations:
         coalesce_unassigned_stock(product)
@@ -692,7 +701,7 @@ def sync_site_visibility_from_locations(*, product_ids=None):
         int(row['product_id']): max(0, _int(row['qty']))
         for row in qty_rows
     }
-    qs = Product.objects.only('id', 'na_stanju', 'stanje')
+    qs = Product.objects.filter(is_set=False).only('id', 'na_stanju', 'stanje')
     if id_set is not None:
         qs = qs.filter(pk__in=id_set)
 
@@ -719,6 +728,13 @@ def sync_site_visibility_from_locations(*, product_ids=None):
 
     for pk in refresh_ids:
         refresh_catalog_qty(Product.objects.get(pk=pk))
+
+    from .product_sets import refresh_set
+    sets = Product.objects.filter(is_set=True)
+    if id_set is not None:
+        sets = sets.filter(Q(pk__in=id_set) | Q(set_components__product_id__in=id_set)).distinct()
+    for product in sets:
+        refresh_set(product)
 
     return {
         'off': len(off_ids),
@@ -751,6 +767,9 @@ def apply_movement(
         product = Product.objects.select_for_update().get(pk=product)
     else:
         product = Product.objects.select_for_update().get(pk=product.pk)
+
+    if product.is_set:
+        raise MagacinError('Zaliha seta računa se iz artikala u setu. Promijeni zalihu njegovih artikala.')
 
     if variation:
         if not isinstance(variation, ProductVariation):
@@ -1541,18 +1560,15 @@ def move_uvoz_leftovers_to_mp(*, user=None):
 def magacin_products_qs():
     """Postojeći lokalni Magacin katalog; historijska polja zadržavaju obuhvat."""
     return Product.objects.filter(
-        Q(magacin_sync_at__isnull=False) | Q(odoo_template_id__isnull=False)
+        Q(magacin_sync_at__isnull=False) | Q(odoo_template_id__isnull=False) | Q(is_set=True)
     )
 
 
 def magacin_in_stock_q():
-    """Artikal ima zalihu na barem jednoj lokaciji (magacin ili maloprodaja; ne Prenos)."""
+    """Physical stock for articles; computed component availability for sets."""
     from django.db.models import Exists, OuterRef
-
-    return Exists(
-        recorded_stock_qs(
-            WarehouseStock.objects.filter(product_id=OuterRef('pk'), kolicina__gt=0)
-        )
+    return Q(is_set=True, na_stanju=True, stanje__gt=0) | Exists(
+        recorded_stock_qs(WarehouseStock.objects.filter(product_id=OuterRef('pk'), kolicina__gt=0))
     )
 
 
@@ -1834,6 +1850,10 @@ def lookup_stock_payload(products):
             'dostupno': max(0, na_stanju - rezervisano),
             'varijacije': var_map,
         }
+    for product in products:
+        if product.is_set:
+            totals = display_stock_totals(product)
+            payload[product.pk] = {'na_stanju': totals['na_stanju'], 'dostupno': totals['dostupno'], 'varijacije': {}}
     return payload
 
 
@@ -4014,6 +4034,8 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False, placanje=''):
 @transaction.atomic
 def ensure_web_product_stock(product):
     """Use the existing checkout stock initialization for a newly ordered SKU."""
+    if product.is_set:
+        return product
     product = Product.objects.select_for_update().get(pk=product.pk)
     if not WarehouseStock.objects.filter(product=product).exists():
         # Give catalog-only inventory a physical stock record so reservations
@@ -4037,17 +4059,20 @@ def reserve_web_order_stock(order):
         raise MagacinError('Ova rezervacija je samo za web narudžbe.')
     if locked.lager_status != Order.LagerStatus.NIJE or locked.stanje_skinuto:
         return
-    items = list(locked.stavke.select_related('artikal', 'varijacija').order_by('artikal_id', 'pk'))
-    products = {p.pk: p for p in Product.objects.select_for_update().filter(
-        pk__in=[item.artikal_id for item in items if item.artikal_id],
-    ).order_by('pk')}
+    from .product_sets import prepare_order_sets
+    prepare_order_sets(locked)
+    items = list(locked.stavke.filter(set_parent__isnull=True).select_related('artikal', 'varijacija').order_by('artikal_id', 'pk'))
+    physical_ids = locked.stavke.filter(is_set_parent=False).values_list('artikal_id', flat=True)
+    physical = list(Product.objects.select_for_update().filter(pk__in=physical_ids).order_by('pk'))
+    products = {p.pk: p for p in Product.objects.filter(pk__in=[i.artikal_id for i in items])}
+    products.update({p.pk: p for p in physical})
     for item in items:
         product = products.get(item.artikal_id)
         if product is None:
             raise MagacinError('Artikal više nije dostupan. Osvježite korpu.')
         product = ensure_web_product_stock(product)
         if reserve_for_order(locked, product, int(item.kolicina), variation=item.varijacija,
-                             napomena=f'Web rezervacija #{locked.broj}'):
+                             napomena=f'Web rezervacija #{locked.broj}', set_item=item):
             raise MagacinError(f'Artikal „{product.naziv}” nema dovoljnu količinu. Provjerite korpu.')
     locked.lager_status = Order.LagerStatus.REZERVISANO
     locked.save(update_fields=['lager_status'])
@@ -4145,8 +4170,13 @@ def deduct_for_order(product, qty, *, variation=None, user=None, napomena='', we
     return remaining
 
 
-def reserve_for_order(order, product, qty, *, variation=None, user=None, napomena='', location=None, exact=False):
+def reserve_for_order(order, product, qty, *, variation=None, user=None, napomena='', location=None, exact=False, set_item=None):
     """Rezerviši slobodnu zalihu za narudžbu. Vraća koliko nije rezervisano."""
+    if getattr(product, 'is_set', False):
+        if qty <= 0:
+            return 0
+        from .product_sets import reserve_set
+        return reserve_set(order, product, qty, user=user, napomena=napomena, set_item=set_item)
     remaining = max(0, _int(qty))
     if remaining <= 0:
         return 0
@@ -4284,6 +4314,8 @@ def sync_webshop_charges_to_picked(order):
         return order
     if is_prenos_mp_order(order) or is_vp_order(order):
         return order
+    from .product_sets import sync_set_picked
+    sync_set_picked(order, require_complete=True)
     items = _fresh_order_items(order)
     if not any(item.kolicina_pokupljeno is not None for item in items):
         return order
@@ -4331,7 +4363,16 @@ def recalculate_order_totals(order):
     return order
 
 
-def release_holds_for_product(order, product, variation=None, qty=None, *, user=None, napomena=None):
+def release_holds_for_product(order, product, variation=None, qty=None, *, user=None, napomena=None, set_item=None):
+    if getattr(product, 'is_set', False):
+        parents = order.stavke.filter(artikal=product, is_set_parent=True)
+        if set_item is not None:
+            parents = parents.filter(pk=set_item.pk)
+        for parent in parents:
+            for child in parent.set_children.select_related('artikal', 'varijacija'):
+                amount = child.kolicina if qty is None else qty * child.set_component_quantity
+                release_holds_for_product(order, child.artikal, child.varijacija, amount, user=user, napomena=napomena)
+        return
     holds = list(
         order.magacin_holds.filter(
             product=product,
@@ -4438,14 +4479,14 @@ def add_item_to_order(order, *, product, qty, variation=None, mp_ok=False, user=
         raise MagacinError('Varijacija ne pripada artiklu.')
     available = display_stock_totals(product, variation)['dostupno']
     shortfall = max(0, qty - available)
-    if shortfall > 0 and not mp_ok:
+    if shortfall > 0 and (not mp_ok or product.is_set):
         raise MagacinError(
             f'„{product.naziv}” nema dostupnog artikla ({available}). '
             f'Označi {NIJE_POPISAN_LABEL} da ga dodaš, ili makni stavku.'
         )
     cijena, bazna = _order_item_unit_price(order, product, variation)
     existing = OrderItem.objects.filter(
-        narudzba_id=order.pk, artikal=product, ledger_excess_line__isnull=True, ledger_missing_line__isnull=True, **_item_variation_filter(variation),
+        narudzba_id=order.pk, artikal=product, set_parent__isnull=True, ledger_excess_line__isnull=True, ledger_missing_line__isnull=True, **_item_variation_filter(variation),
     ).first()
     if existing:
         existing.kolicina += qty
@@ -4473,11 +4514,20 @@ def add_item_to_order(order, *, product, qty, variation=None, mp_ok=False, user=
         variation=variation,
         user=user,
         napomena=f'Izmjena #{order.broj}',
+        set_item=item,
     )
     if leftover and not mp_ok:
         raise MagacinError(f'Nije rezervisana puna količina za {product.naziv}.')
     if shortfall > 0:
         _note_nije_popisan(order, product, variation)
+    if product.is_set:
+        item.refresh_from_db(fields=['is_set_parent'])
+    if item.is_set_parent:
+        for child in item.set_children.all():
+            child.kolicina = item.kolicina * child.set_component_quantity
+            child.kolicina_pokupljeno = None
+            child.save(update_fields=['kolicina', 'kolicina_pokupljeno'])
+            _clear_pick_state_for_item(order, child.pk)
     _clear_pick_state_for_item(order, item.pk)
     recalculate_order_totals(order)
     return item
@@ -4486,6 +4536,8 @@ def add_item_to_order(order, *, product, qty, variation=None, mp_ok=False, user=
 @transaction.atomic
 def set_order_item_qty(order, item, qty, *, mp_ok=False, user=None):
     _assert_order_editable(order)
+    if item.set_parent_id:
+        raise MagacinError('Artikal je dio seta. Promijeni količinu ili ukloni cijeli set.')
     if item.ledger_excess_line_id or item.ledger_missing_line_id:
         raise MagacinError('Ova stavka je povezana s dugovanjem kupca. Uredi je kroz Duguje / Potražuje.')
     qty = max(1, _int(qty))
@@ -4502,7 +4554,7 @@ def set_order_item_qty(order, item, qty, *, mp_ok=False, user=None):
     available = display_stock_totals(product, variation)['dostupno']
     if delta > 0:
         shortfall = max(0, delta - available)
-        if shortfall > 0 and not mp_ok:
+        if shortfall > 0 and (not mp_ok or product.is_set):
             raise MagacinError(
                 f'„{product.naziv}” nema dostupnog artikla ({available}). '
                 f'Označi {NIJE_POPISAN_LABEL} da ga dodaš, ili makni stavku.'
@@ -4514,16 +4566,23 @@ def set_order_item_qty(order, item, qty, *, mp_ok=False, user=None):
             variation=variation,
             user=user,
             napomena=f'Izmjena #{order.broj}',
+            set_item=item,
         )
         if leftover and not mp_ok:
             raise MagacinError(f'Nije rezervisana puna količina za {product.naziv}.')
         if shortfall > 0:
             _note_nije_popisan(order, product, variation)
     elif delta < 0:
-        release_holds_for_product(order, product, variation, -delta, user=user)
+        release_holds_for_product(order, product, variation, -delta, user=user, set_item=item)
     item.kolicina = qty
     item.kolicina_pokupljeno = None
     item.save(update_fields=['kolicina', 'kolicina_pokupljeno'])
+    if item.is_set_parent:
+        for child in item.set_children.all():
+            child.kolicina = qty * child.set_component_quantity
+            child.kolicina_pokupljeno = None
+            child.save(update_fields=['kolicina', 'kolicina_pokupljeno'])
+            _clear_pick_state_for_item(order, child.pk)
     _clear_pick_state_for_item(order, item.pk)
     recalculate_order_totals(order)
     return item
@@ -4532,16 +4591,20 @@ def set_order_item_qty(order, item, qty, *, mp_ok=False, user=None):
 @transaction.atomic
 def remove_item_from_order(order, item, *, user=None):
     _assert_order_editable(order)
+    if item.set_parent_id:
+        raise MagacinError('Artikal je dio seta. Promijeni količinu ili ukloni cijeli set.')
     if item.ledger_excess_line_id or item.ledger_missing_line_id:
         raise MagacinError('Ova stavka je povezana s dugovanjem kupca. Uredi je kroz Duguje / Potražuje.')
     if item.narudzba_id != order.pk:
         raise MagacinError('Stavka nije na ovoj narudžbi.')
-    if OrderItem.objects.filter(narudzba_id=order.pk).count() <= 1:
+    if OrderItem.objects.filter(narudzba_id=order.pk, set_parent__isnull=True).count() <= 1:
         raise MagacinError('Narudžba mora imati barem jedan artikal.')
     product = item.artikal
     variation = item.varijacija
     if product is not None:
-        release_holds_for_product(order, product, variation, user=user)
+        release_holds_for_product(order, product, variation, qty=item.kolicina if item.is_set_parent else None, user=user, set_item=item)
+    for child in item.set_children.all():
+        _clear_pick_state_for_item(order, child.pk)
     item_id = item.pk
     item.delete()
     _clear_pick_state_for_item(order, item_id)
@@ -5127,7 +5190,7 @@ def _clearable_pick_locations(loc, product=None, variation=None):
 def _iter_pick_deduct_rows(order):
     """Pokupljene količine po lokaciji iz pickinga. MP/rezervni se ne skidaju s magacina."""
     state = order.pick_state if isinstance(getattr(order, 'pick_state', None), dict) else {}
-    items = {item.pk: item for item in order.stavke.filter(ledger_excess_line__isnull=True).select_related('artikal', 'varijacija')}
+    items = {item.pk: item for item in order.stavke.filter(ledger_excess_line__isnull=True, is_set_parent=False).select_related('artikal', 'varijacija')}
     rows = []
     for key, row in state.items():
         if not isinstance(row, dict):
@@ -5299,7 +5362,7 @@ def _sell_remaining_holds(order, *, user=None):
     holds = list(order.magacin_holds.filter(status=OrderStockHold.Status.REZERVISANO))
     for hold in holds:
         reserved[(hold.product_id, hold.variation_id)] += int(hold.kolicina or 0)
-    items = list(order.stavke.filter(ledger_excess_line__isnull=True))
+    items = list(order.stavke.filter(ledger_excess_line__isnull=True, is_set_parent=False))
     picked = defaultdict(int)
     for item in items:
         if item.kolicina_pokupljeno is None:
@@ -5382,7 +5445,7 @@ def _warehouse_qty_still_needed(order, pick_rows):
         for row in pick_rows:
             needed[_stock_key(row['product'], row['variation'])] += int(row['qty'] or 0)
         return needed
-    for item in order.stavke.filter(ledger_excess_line__isnull=True):
+    for item in order.stavke.filter(ledger_excess_line__isnull=True, is_set_parent=False):
         if not item.artikal_id:
             continue
         if item.kolicina_pokupljeno is None:
@@ -5406,12 +5469,14 @@ def validate_order_stock(order, *, user=None):
     except ValueError as error:
         raise MagacinError(str(error)) from None
 
+    from .product_sets import sync_set_picked
+    sync_set_picked(order, require_complete=True)
     if hasattr(order, "b2b_submission"):
         from .b2b_orders import finish_pick
         return finish_pick(order, user=user)
     if order.izvor == Order.Izvor.WEBSHOP:
         restore_unfinished_web_stock(order, user=user)
-        if order.lager_status != Order.LagerStatus.VALIDIRANO and order.stavke.filter(kolicina_pokupljeno__isnull=True, ledger_excess_line__isnull=True).exists():
+        if order.lager_status != Order.LagerStatus.VALIDIRANO and order.stavke.filter(kolicina_pokupljeno__isnull=True, ledger_excess_line__isnull=True, is_set_parent=False).exists():
             raise MagacinError('Prvo potvrdi pokupljene količine na pickingu.')
         sync_webshop_charges_to_picked(order)
         order.refresh_from_db()

@@ -1,0 +1,82 @@
+.mg-saved-sets { min-width: 0; }
+.mg-set-list { display: grid; gap: 22px; }
+.mg-set-card {
+    min-width: 0;
+    border: 2px solid #cbd5e1;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, .05);
+}
+.mg-set-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 18px;
+    background: #f1f5f9;
+    border-bottom: 1px solid #cbd5e1;
+}
+.mg-set-card-head > div { flex: 1 1 180px; min-width: 0; }
+.mg-set-eyebrow {
+    display: block;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    overflow-wrap: anywhere;
+}
+.mg-set-card-head h3 { margin: 5px 0 0; font-size: 19px; line-height: 1.35; }
+.mg-set-card-head h3 a { color: #0f172a; text-decoration: none; overflow-wrap: anywhere; }
+.mg-set-card-head h3 a:hover { text-decoration: underline; }
+.mg-set-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    background: #f0fdf4;
+    color: #166534;
+    font-size: 12px;
+    font-weight: 700;
+}
+.mg-set-status.is-out { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+.mg-set-prices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 14px 18px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.mg-set-prices dt { color: #64748b; font-size: 12px; }
+.mg-set-prices dd { margin: 5px 0 0; color: #334155; font-size: 17px; font-weight: 700; }
+.mg-set-prices .mg-set-sale { color: #c2410c; }
+.mg-set-components { padding: 16px 18px 6px; }
+.mg-set-components h4 { margin: 0 0 12px; color: #334155; font-size: 13px; }
+.mg-set-stock-scroll { overflow-x: auto; }
+.mg-set-card .mg-set-stock-table { width: 100%; min-width: 390px; margin: 0; }
+.mg-set-card .mg-set-stock-table th {
+    padding: 9px 8px;
+    color: #64748b;
+    font-size: 11px;
+    background: #f8fafc;
+    white-space: nowrap;
+}
+.mg-set-card .mg-set-stock-table td { padding: 12px 8px; font-size: 12px; vertical-align: middle; }
+.mg-set-card .mg-set-stock-table th:not(:first-child),
+.mg-set-card .mg-set-stock-table td:not(:first-child) { text-align: center; white-space: nowrap; }
+.mg-set-card .mg-set-stock-table td:first-child { min-width: 130px; overflow-wrap: anywhere; }
+.mg-set-card .mg-set-stock-table tbody tr:last-child td { border-bottom: 0; }
+.mg-set-variation, .mg-set-code { display: block; margin-top: 4px; color: #64748b; font-size: 11px; }
+.mg-set-stock { display: inline-block; padding: 4px 7px; border-radius: 6px; background: #f0fdf4; color: #166534; font-weight: 700; }
+.mg-set-stock.is-short { background: #fef2f2; color: #b91c1c; }
+.mg-set-card-foot { display: flex; justify-content: flex-end; padding: 12px 18px; border-top: 1px solid #e2e8f0; background: #fafafa; }
+@media (max-width: 600px) {
+    .mg-set-card-head { padding: 14px; }
+    .mg-set-card-head h3 { font-size: 17px; }
+    .mg-set-prices { padding: 12px 14px; }
+    .mg-set-components { padding: 14px 10px 6px; }
+    .mg-set-card-foot { padding: 10px 14px; }
+}

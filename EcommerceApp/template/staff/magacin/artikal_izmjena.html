@@ -9,6 +9,7 @@
     </div>
 </div>
 
+<section class="mg-card"><h2 class="mg-h">Artikli u setu</h2><a class="mg-btn" href="{% url 'staff_magacin_setovi' %}?id={{ product.pk }}">{% if product.is_set %}Izmijeni artikle i količine u setu{% else %}Unesi artikle i količine za ovaj set{% endif %}</a></section>
 <form method="post" enctype="multipart/form-data" class="mg-edit-form">
     {% csrf_token %}
     {% if magacin_search %}<input type="hidden" name="pretraga" value="{{ magacin_search }}">{% endif %}

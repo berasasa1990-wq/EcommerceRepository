@@ -15,7 +15,7 @@
         ← Nazad na rezultate
     </a>
     <div class="mg-toolbar-actions">
-        <button type="button" class="mg-btn mg-btn-zalihe" id="mgZaliheBtn">Zalihe</button>
+        {% if not product.is_set %}<button type="button" class="mg-btn mg-btn-zalihe" id="mgZaliheBtn">Zalihe</button>{% endif %}
         <a class="mg-btn" href="{% url 'staff_magacin_stampa_cijena_ista' %}?artikal={{ product.pk }}{% if variation %}&varijacija={{ variation.pk }}{% endif %}">Štampaj Cijenu</a>
         <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_artikal_izmjena' product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">Izmijeni artikal</a>
         <form method="post" class="mg-obrisi-artikal-form" onsubmit="return confirm('OBRISATI artikal „{{ product.naziv|escapejs }}”{% if product.sifra %} ({{ product.sifra|escapejs }}){% endif %} SKROZ iz baze?\n\nOvo nije skidanje sa sajta — artikal se briše trajno i ne može se vratiti.');">
@@ -26,6 +26,9 @@
         </form>
     </div>
 </div>
+{% if product.is_set %}
+<section class="mg-card"><h2 class="mg-h">Artikli u setu</h2><p>Dostupno: <strong>{{ totals.dostupno }} setova</strong>. Zaliha se računa iz slobodnih količina svih artikala u setu.</p><table class="mg-table"><thead><tr><th>Artikal</th><th>Varijacija</th><th>Količina u setu</th></tr></thead><tbody>{% for component in product.set_components.all %}<tr><td><a href="{% url 'staff_magacin_artikal' component.product.pk %}">{{ component.product.naziv }}</a></td><td>{{ component.variation.naziv|default:'—' }}</td><td>{{ component.quantity }}</td></tr>{% endfor %}</tbody></table><a class="mg-btn" href="{% url 'staff_magacin_setovi' %}?id={{ product.pk }}">Izmijeni set</a></section>
+{% endif %}
 {% if artikal_error %}
 <p class="mg-mp-alert" role="alert">{{ artikal_error }}</p>
 {% endif %}
@@ -41,6 +44,7 @@
                 {% endif %}
             </div>
             <div class="mg-stock-actions">
+                {% if product.is_set %}<a class="mg-btn" href="{% url 'staff_magacin_setovi' %}?id={{ product.pk }}">Artikli u setu</a>{% else %}
                 <form method="post" class="mg-skini-form">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="skini">
@@ -53,6 +57,7 @@
                     {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
                     <button type="submit" class="mg-btn{% if not product.na_stanju %} mg-btn-primary{% endif %}">Dodaj na stanje</button>
                 </form>
+                {% endif %}
             </div>
         </div>
         <h1>{{ product.naziv }}</h1>
@@ -96,6 +101,7 @@
                 {% endif %}
             </div>
             <div class="mg-stock-actions">
+                {% if product.is_set %}<a class="mg-btn" href="{% url 'staff_magacin_setovi' %}?id={{ product.pk }}">Artikli u setu</a>{% else %}
                 <form method="post" class="mg-skini-form">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="skini">
@@ -108,6 +114,7 @@
                     {% if variation %}<input type="hidden" name="variation_id" value="{{ variation.pk }}">{% endif %}
                     <button type="submit" class="mg-btn{% if not product.na_stanju %} mg-btn-primary{% endif %}">Dodaj na stanje</button>
                 </form>
+                {% endif %}
             </div>
         </div>
         <div>

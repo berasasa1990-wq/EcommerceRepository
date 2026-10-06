@@ -12,10 +12,12 @@ from . import views_catalog_api
 from . import views_feed
 from . import views_ledger
 from . import views_magacin
+from . import views_product_sets
 from . import views_site_prep
 from . import views_sync
 
 urlpatterns = [
+    path("nalog/magacin/setovi/", views_product_sets.product_sets, name="staff_magacin_setovi"),
     path('placanje/monri/potvrda/', views_monri.callback, name='monri_callback'),
     path('placanje/monri/<uuid:token>/', views_monri.start, name='monri_start'),
     path('placanje/monri/<uuid:token>/povratak/', views_monri.payment_return, name='monri_return'),

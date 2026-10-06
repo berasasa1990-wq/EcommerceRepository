@@ -43,6 +43,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
                 Artikli
             </a>
+            <a href="{% url 'staff_magacin_setovi' %}" class="{% if magacin_section == 'setovi' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                Artikli u setu
+            </a>
             {% endif %}
             {% if request.user|warehouse_can:"staff_magacin_narudzbe" %}
             <a href="{% url 'staff_magacin_narudzbe' %}" class="{% if magacin_section == 'narudzbe' %}is-active{% endif %}">

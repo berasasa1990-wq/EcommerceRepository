@@ -6377,7 +6377,7 @@ def _build_order_packing_lines(order):
     from .magacin import NIJE_POPISAN_LABEL, maloprodaja_last_sort_key, order_has_nije_popisan
 
     items = list(
-        order.stavke.filter(ledger_excess_line__isnull=True).select_related('artikal', 'artikal__brend', 'artikal__kategorija', 'varijacija').all()
+        order.stavke.filter(ledger_excess_line__isnull=True, is_set_parent=False).select_related('artikal', 'artikal__brend', 'artikal__kategorija', 'varijacija', 'set_parent').all()
     )
     lines = []
     packing_error = None
@@ -6481,6 +6481,8 @@ def _build_order_packing_lines(order):
         display_name = item.product_naziv or item.naziv
         if item.varijacija_naziv:
             display_name = f'{display_name} — {item.varijacija_naziv}'
+        if item.set_parent_id:
+            display_name = f'{display_name} · set: {item.set_parent.naziv}'
         if getattr(item, 'rezervni_dio', False):
             parent_name = ''
             if item.artikal_id:
