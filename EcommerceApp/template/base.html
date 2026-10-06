@@ -9,7 +9,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="icon" type="image/svg+xml" href="{% static 'img/pwa-icon.svg' %}">
-    <link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.2.6-white-gold-card">
+    <link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.2.7-product-choice">
     <link rel="preconnect" href="https://media.opremazaribolov.ba">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <script>
@@ -865,7 +865,7 @@
         <button type="button" id="scratchContinue" class="scratch-game__continue" hidden>NASTAVI KUPOVINU</button>
       </div>
     </section>
-    <script src="{% static 'js/scratch-game.js' %}?v=1.2.6-white-gold-card" defer></script>
+    <script src="{% static 'js/scratch-game.js' %}?v=1.2.7-product-choice" defer></script>
     <script>
       if ('serviceWorker' in navigator && window.isSecureContext) {
         window.addEventListener('load', function () {

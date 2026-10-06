@@ -124,17 +124,18 @@
           highlight.textContent = Number(prize.reward_percent) > 0 ? 'popust ' + Number(prize.reward_percent) + '%' : prize.label;
           subtitle.appendChild(highlight);
         }
-        if (prize.product_offer) modal.classList.add('scratch-game--product-result');
-        document.getElementById('scratchContinue').hidden = prize.product_offer;
-        result.hidden = prize.product_offer;
-        if (!prize.product_offer) result.textContent = prize.won
+        const offerProduct = Boolean(prize.won && prize.product_offer);
+        const choice = document.getElementById('scratchProductChoice');
+        choice.hidden = !offerProduct;
+        if (offerProduct) modal.classList.add('scratch-game--product-result');
+        document.getElementById('scratchContinue').hidden = offerProduct;
+        result.hidden = offerProduct;
+        if (!offerProduct) result.textContent = prize.won
           ? (prize.coupon_code
             ? `Vaš kod: ${prize.coupon_code}. ${prize.saved_to_account ? 'Sačuvan je na vašem nalogu.' : 'Kod šaljemo na email iz narudžbe.'} Unesite ga u korpi pri sljedećoj narudžbi. Kod nema roka isteka.`
             : 'Nagrada je sačuvana i nema roka isteka.')
           : 'Više sreće sljedeći put!';
-        if (prize.won && prize.product_offer) {
-          const choice = document.getElementById('scratchProductChoice');
-          choice.hidden = false;
+        if (offerProduct) {
           choice.querySelector('p').textContent = 'Želite li ovaj artikal dodati u kreiranu narudžbu po sniženoj cijeni?';
           document.getElementById('scratchSkipProduct').onclick = () => {
             window.location.assign(modal.dataset.afterCloseUrl || '/');
@@ -177,6 +178,7 @@
             addButton.disabled = false;
             addButton.textContent = label;
           };
+          choice.scrollIntoView({ block: 'nearest' });
         }
       }
 
