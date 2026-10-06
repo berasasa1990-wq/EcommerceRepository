@@ -545,7 +545,6 @@
                 </details>
                 {% else %}<a href="{{ nav_cat.get_absolute_url }}">{{ nav_cat.naziv }}</a>{% endif %}
                 {% endfor %}
-                <a href="{% url 'brands_list' %}">Brendovi</a>
             </nav>
             <nav class="header-row header-row--categories" aria-label="Kategorije">
                 <div class="cats-dropdown{% if cats_sidebar_open %} is-open cats-dropdown--locked{% endif %}" id="catsDropdown">
@@ -644,9 +643,6 @@
                     {% endfor %}
                     <li class="nav-item nav-item--akcija">
                         <a href="{% url 'home' %}?akcija=1#product-showcase" class="nav-link-akcija">AKCIJE</a>
-                    </li>
-                    <li class="nav-item nav-item--brendovi">
-                        <a href="{% url 'brands_list' %}" class="nav-link-brendovi{% if request.resolver_match.url_name == 'brands_list' %} is-current{% endif %}">BRENDOVI</a>
                     </li>
                     <li class="nav-item nav-item--set">
                         <a href="{% url 'set_builder' %}" class="nav-link-set{% if request.resolver_match.url_name == 'set_builder' %} is-current{% endif %}" data-set-builder-gate>
