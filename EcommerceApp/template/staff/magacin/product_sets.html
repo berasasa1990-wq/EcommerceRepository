@@ -45,7 +45,7 @@
 <div class="mg-form-grid">
 <div class="mg-field"><label for="setName">Naziv seta *</label><input id="setName" name="naziv" maxlength="200" required value="{{ form_data.naziv }}"></div>
 <div class="mg-field"><label for="setCode">Šifra</label><input id="setCode" name="sifra" value="{{ form_data.sifra }}"></div>
-<div class="mg-field"><label for="setRegular">Regularna cijena (KM) *</label><input id="setRegular" name="cijena" inputmode="decimal" required value="{{ form_data.cijena }}"></div>
+<div class="mg-field"><label for="setRegular">Regularna cijena (KM) *</label><input id="setRegular" name="cijena" inputmode="decimal" readonly aria-live="polite" value="{{ form_data.cijena }}"></div>
 <div class="mg-field"><label for="setSale">Snižena cijena (KM)</label><input id="setSale" name="akcijska_cijena" inputmode="decimal" value="{{ form_data.akcijska_cijena }}"></div>
 <div class="mg-field"><label for="setCategory">Kategorija</label><select id="setCategory" name="kategorija_id"><option value="">—</option>{% for cat in categories %}<option value="{{ cat.pk }}"{% if form_data.kategorija_id == cat.pk|stringformat:'s' %} selected{% endif %}>{{ cat.naziv }}</option>{% endfor %}</select></div>
 <div class="mg-field"><label for="setBrand">Brend</label><select id="setBrand" name="brend_id"><option value="">—</option>{% for brand in brands %}<option value="{{ brand.pk }}"{% if form_data.brend_id == brand.pk|stringformat:'s' %} selected{% endif %}>{{ brand.naziv }}</option>{% endfor %}</select></div>
@@ -59,4 +59,4 @@
 <p id="setError" role="alert"></p><button class="mg-btn mg-btn-primary" type="submit">Sačuvaj set</button>
 </form></section></div>
 {% endblock %}
-{% block magacin_js %}{{ components|json_script:'setSavedComponents' }}<script src="{% static 'js/staff-product-sets.js' %}?v=20261006-1" defer></script>{% endblock %}
+{% block magacin_js %}{{ components|json_script:'setSavedComponents' }}<script src="{% static 'js/staff-product-sets.js' %}?v=20261006-2" defer></script>{% endblock %}

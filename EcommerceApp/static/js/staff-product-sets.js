@@ -6,6 +6,12 @@
   var body = document.getElementById('setComponentRows'), search = document.getElementById('setSearch');
   var results = document.getElementById('setSearchResults'), error = document.getElementById('setError');
   var timer, controller, version = 0;
+  function updatePrice() {
+    var total = rows.reduce(function (sum, row) {
+      return sum + Math.round(Number(row.unit_price) * 100) * (Number(row.quantity) || 0);
+    }, 0);
+    document.getElementById('setRegular').value = (total / 100).toFixed(2);
+  }
   function render() {
     body.replaceChildren();
     rows.forEach(function (row, index) {
@@ -14,12 +20,13 @@
       var qtyCell = document.createElement('td'), qty = document.createElement('input');
       qty.type = 'number'; qty.min = '1'; qty.max = '1000000'; qty.step = '1'; qty.required = true;
       qty.value = row.quantity; qty.setAttribute('aria-label', 'Količina: ' + name.textContent);
-      qty.addEventListener('input', function () { row.quantity = qty.value; }); qtyCell.appendChild(qty); tr.appendChild(qtyCell);
+      qty.addEventListener('input', function () { row.quantity = qty.value; updatePrice(); }); qtyCell.appendChild(qty); tr.appendChild(qtyCell);
       var cell = document.createElement('td'), remove = document.createElement('button');
       remove.type = 'button'; remove.className = 'mg-btn'; remove.textContent = 'Ukloni';
       remove.addEventListener('click', function () { rows.splice(index, 1); render(); }); cell.appendChild(remove); tr.appendChild(cell);
       body.appendChild(tr);
     });
+    updatePrice();
   }
   search.addEventListener('input', function () {
     clearTimeout(timer); var current = ++version;
@@ -42,7 +49,7 @@
                 if (rows.some(function (row) { return String(row.product_id) === String(product.id) && String(row.variation_id || '') === String(variationId); })) {
                   error.textContent = 'Artikal je već u setu. Promijeni njegovu količinu.'; return;
                 }
-                rows.push({product_id:product.id, variation_id:variationId, quantity:1, label:label});
+                rows.push({product_id:product.id, variation_id:variationId, quantity:1, label:label, unit_price:variation ? variation.regular_price : product.regular_price});
                 error.textContent = ''; render(); results.replaceChildren(); search.value = ''; search.focus();
               }); results.appendChild(button);
             });

@@ -3766,6 +3766,14 @@ class ScratchPrizeAdmin(admin.ModelAdmin):
     fields = ('campaign', 'code', 'label', 'kind', 'weight', 'minimum', 'discount_percent', 'product', 'active', 'sort_order')
 
 
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'discount_percent':
+            kwargs['help_text'] = ('Za nagradu „Artikal + popust” procenat se uvijek računa od regularne '
+                                   'cijene odabranog artikla, čak i kada je već snižen. '
+                                   'Primjer: regularna cijena 100 KM i popust 20% daju 80 KM.')
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
+
 @admin.register(B2BSubmission)
 class B2BSubmissionAdmin(admin.ModelAdmin):
     list_display = ['order', 'account', 'payment', 'netto_total', 'created_at']

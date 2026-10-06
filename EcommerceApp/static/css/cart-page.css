@@ -628,3 +628,24 @@ body.is-cart-page .cart-page {
 .cart-page .coupon-price-old { color: #858a96; font-size: 12px; text-decoration: line-through; }
 .cart-page .coupon-line-prices { display: flex; flex-direction: column; gap: 3px; }
 .cart-page .coupon-line-prices small { font-size: 10px; color: #666973; }
+
+/* Use desktop space for the cart and the shared checkout shell. */
+@media (min-width: 1025px) {
+    body.is-cart-page main { width: 100%; max-width: none; }
+    body.is-cart-page .cart-page { max-width: 1600px; padding: 16px 32px 40px; }
+    .cart-page .cart-layout { grid-template-columns: minmax(0, 1fr) minmax(320px, 380px); gap: 24px; }
+    .cart-page .cart-head { margin-bottom: 14px; }
+    .cart-page .cart-item { padding: 12px 0; }
+    .cart-page .cart-summary { padding: 16px; }
+}
+@media (min-width: 1280px) {
+    .cart-page .cart-item {
+        grid-template-columns: 72px minmax(0, 1fr) minmax(90px, 120px) auto minmax(80px, 100px);
+        grid-template-areas: "img info price controls total";
+        align-items: center;
+        gap: 12px;
+    }
+    .cart-page .cart-item-image { width: 72px; height: 72px; }
+    .cart-page .cart-item-price { margin: 0; font-size: 16px; }
+    .cart-page .cart-item-total { align-self: center; }
+}

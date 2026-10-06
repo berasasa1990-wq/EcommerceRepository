@@ -3736,6 +3736,7 @@ def magacin_artikli_lookup(request):
             'sifra': product.sifra or '',
             'barkod': product.barkod or '',
             'cijena': str(product.prikazna_cijena),
+            'regular_price': str(product.bazna_cijena),
             'vpc_netto': str(net_price(product, None, discounts, divisors)),
             'na_stanju': totals['na_stanju'],
             'dostupno': totals['dostupno'],
@@ -3745,6 +3746,7 @@ def magacin_artikli_lookup(request):
                     'naziv': var.naziv,
                     'sifra': var.sifra or '',
                     'cijena': str(var.prikazna_cijena),
+                    'regular_price': str(var.bazna_cijena),
                     'vpc_netto': str(net_price(product, var, discounts, divisors)),
                     'na_stanju': (var_stock.get(var.pk) or {}).get('dostupno', 0),
                 }

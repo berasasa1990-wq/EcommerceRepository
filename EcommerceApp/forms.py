@@ -914,7 +914,7 @@ class CheckoutForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Ime i prezime'}),
     )
     email = forms.EmailField(
-        label='Email', required=False,
+        label='Email', required=True,
         widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'email@primjer.ba'}),
     )
     telefon = forms.CharField(

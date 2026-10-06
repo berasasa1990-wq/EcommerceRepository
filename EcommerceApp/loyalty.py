@@ -1589,7 +1589,7 @@ def _pronadji_loyalty_karticu_po_kodu(kod):
     )
 
 
-def validiraj_kupon(kod, user=None):
+def validiraj_kupon(kod, user=None, *, subtotal=None):
     """
     Validira kupon / broj loyalty kartice.
 
@@ -1628,6 +1628,12 @@ def validiraj_kupon(kod, user=None):
 
     if not coupon:
         return None, 'Broj kartice / kupon nije pronađen ili nije aktivan.'
+
+    if coupon.scratch_claim_id:
+        if coupon.scratch_claim.reward_consumed:
+            return None, 'Ovaj Greb-Greb kod je već iskorišten.'
+        if subtotal is not None and Decimal(str(subtotal)) < coupon.minimum:
+            return None, f'Za ovaj kod korpa mora imati najmanje {coupon.minimum:.2f} KM.'
 
     # Loyalty kartica: broj kartice u korpi = popust, bez obavezne prijave
     if coupon.automatski or coupon.loyalty_kartica_id:

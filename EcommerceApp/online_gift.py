@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
 from decimal import Decimal, InvalidOperation
-from secrets import randbelow
+from secrets import randbelow, token_hex
+from threading import Thread
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
@@ -106,12 +106,78 @@ def _remove_pending_order(request, order_id):
     request.session.modified = True
 
 
+def ensure_scratch_coupon(claim):
+    """Persist one non-expiring, single-use code for the won percentage reward."""
+    from .models import Coupon
+    selected = _scratch_prize_for_claim(claim)
+    if not selected or selected[3] != 'percent' or not claim.won or claim.reward_consumed:
+        return None
+    with transaction.atomic():
+        claim = OnlineGiftClaim.objects.select_for_update().get(pk=claim.pk)
+        coupon, _ = Coupon.objects.get_or_create(scratch_claim=claim, defaults={
+            'kod': 'GREB-' + token_hex(7).upper(), 'naziv': 'Sretni Greb-Greb',
+            'postotak': claim.discount_percent, 'minimum': selected[5], 'vlasnik_id': claim.user_id,
+        })
+    return coupon
+
+
+def send_scratch_coupon_email(claim_id):
+    import logging
+    from django.core.mail import send_mail
+    from django.conf import settings
+    from .models import Coupon
+    try:
+        claim = OnlineGiftClaim.objects.select_related('scratch_trigger_order', 'user').get(pk=claim_id)
+        if claim.coupon_emailed_at:
+            return
+        coupon = Coupon.objects.get(scratch_claim=claim)
+        email = (claim.user.email if claim.user_id else '') or (claim.scratch_trigger_order.email if claim.scratch_trigger_order_id else '')
+        if not email:
+            return
+        minimum = f' Minimalna korpa: {coupon.minimum:.2f} KM.' if coupon.minimum else ''
+        sent = send_mail('Vaš Greb-Greb kod za popust',
+            f'Osvojili ste popust {coupon.postotak}%!\n\nVaš kod: {coupon.kod}\n'
+            f'Unesite kod u korpi prije naručivanja. Kod nema rok isteka i koristi se jednom.{minimum}\n'
+            'Popust se računa od regularnih cijena artikala i ne sabira se s postojećim sniženjem.\n',
+            settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
+        if sent:
+            OnlineGiftClaim.objects.filter(pk=claim_id).update(coupon_emailed_at=timezone.now())
+    except Exception:
+        logging.getLogger(__name__).exception('Slanje Greb-Greb koda nije uspjelo: claim=%s', claim_id)
+
+
+def _send_scratch_coupon_in_background(claim_id):
+    from django.db import close_old_connections, connections
+    close_old_connections()
+    try:
+        send_scratch_coupon_email(claim_id)
+    finally:
+        connections.close_all()
+
+
+def queue_scratch_coupon_email(claim_id):
+    """Deliver after commit without making the scratch card wait for SMTP."""
+    def start_delivery():
+        try:
+            Thread(target=_send_scratch_coupon_in_background, args=(claim_id,),
+                   name=f'scratch-email-{claim_id}', daemon=False).start()
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                'Pokretanje Greb-Greb emaila nije uspjelo: claim=%s', claim_id)
+
+    transaction.on_commit(start_delivery)
+
+
 def _set_scratch_session_reward(request, claim):
     """Obnovi serverski sačuvanu nagradu iz postojećeg zapisa, bez izvlačenja."""
     selected = _scratch_prize_for_claim(claim)
     if not selected:
         return False
     _, _, label, kind, percent, minimum, product_id = selected
+    coupon = ensure_scratch_coupon(claim)
+    if coupon and not claim.coupon_emailed_at:
+        queue_scratch_coupon_email(claim.pk)
     request.session[SCRATCH_SESSION_KEY] = claim.pk
     request.session[SESSION_REWARD_KEY] = {
         'claim_id': claim.pk,
@@ -122,7 +188,7 @@ def _set_scratch_session_reward(request, claim):
         'scratch_kind': kind,
         'minimum': str(minimum),
         'product_id': product_id,
-        'expires_at': (claim.kreirano + timedelta(hours=24)).isoformat(),
+        'coupon_code': coupon.kod if coupon else '',
     }
     return True
 
@@ -137,7 +203,7 @@ def _scratch_claim_from_request(request):
     if not claim_id:
         return None
     claim = OnlineGiftClaim.objects.filter(pk=claim_id, campaign__naziv=SCRATCH_CAMPAIGN_NAME).first()
-    if not claim or claim.reward_consumed or claim.kreirano + timedelta(hours=24) <= timezone.now():
+    if not claim or claim.reward_consumed:
         return None
     return claim
 
@@ -154,7 +220,7 @@ def scratch_status(request):
     current_reward = get_session_reward(request) or {}
     if (
         _scratch_claim_from_request(request)
-        and current_reward.get('scratch_kind') not in (None, '', 'none')
+        and current_reward.get('scratch_kind') not in (None, '', 'none', 'percent')
     ):
         return False
     return bool(_next_pending_order(request, campaign))
@@ -164,7 +230,6 @@ def scratch_claim(request):
     """Atomically select and persist one reward for one completed order."""
     if not request.session.session_key:
         request.session.create()
-    now = timezone.now()
     with transaction.atomic():
         campaign = _scratch_campaign()
         prizes = _available_scratch_prizes(campaign)
@@ -225,7 +290,7 @@ def scratch_cart_reward(request, subtotal):
     minimum = Decimal(str(reward.get('minimum') or 0))
     remaining = max(Decimal('0'), minimum - Decimal(str(subtotal or 0)))
     kind = reward.get('scratch_kind')
-    active = remaining == 0 and kind != 'none'
+    active = remaining == 0 and kind not in ('none', 'percent')
     if kind == 'product_discount':
         # Prag je provjeren pri dodavanju artikla po redovnoj cijeni; sam
         # popust potom ne smije poništiti već validiranu nagradu.
@@ -318,15 +383,15 @@ def add_scratch_discount_product_to_order(request):
         if discounted > 0 and CardPayment.objects.filter(order=order).exists():
             return None, None, 'Artikal s doplatom nije moguće dodati na već kartično plaćenu narudžbu.'
         product = ensure_web_product_stock(product)
-        if reserve_for_order(order, product, 1, napomena=f'Sretni Greb-Greb #{order.broj}'):
-            transaction.set_rollback(True)
-            return None, None, 'Osvojeni artikal više nije dostupan na lageru.'
-        OrderItem.objects.create(
-            narudzba=order, artikal=product, naziv=f'{product.naziv} — Sretni Greb-Greb',
+        item = OrderItem.objects.create(
+            narudzba=order, artikal=product, naziv=product.naziv,
             product_naziv=product.naziv, sifra=product.sifra or '', cijena=discounted,
             bazna_cijena=regular, popust_opis='Sretni Greb-Greb — osvojeni artikal',
             popust_postotak=percent, popust_iznos=(regular - discounted), kolicina=1,
         )
+        if reserve_for_order(order, product, 1, napomena=f'Sretni Greb-Greb #{order.broj}', set_item=item):
+            transaction.set_rollback(True)
+            return None, None, 'Osvojeni artikal više nije dostupan na lageru.'
         details = list(order.popust_detalji or [])
         details.append({'opis': f'Sretni Greb-Greb: {product.naziv} −{percent}%', 'iznos': str(regular - discounted)})
         order.medjuzbir = (order.medjuzbir + discounted).quantize(Decimal('0.01'))

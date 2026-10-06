@@ -222,6 +222,8 @@ class MonriTests(TestCase):
             self.assertIn('Karticom', str(form['payment_method']))
             self.assertEqual(self.client.get(reverse('monri_start', args=[self.payment.token])).status_code, 503)
         data.pop('payment_method')
+        self.assertFalse(CheckoutForm(data).is_valid())
+        data['email'] = 'test@example.com'
         form = CheckoutForm(data)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['payment_method'], 'cod')
@@ -413,7 +415,7 @@ class MonriTests(TestCase):
             with self.subTest(flags=list(config)), override_settings(**config):
                 self.assertFalse(configured())
                 form = CheckoutForm(dict(ime_prezime='Test Kupac', telefon='061123456',
-                    adresa='Ulica 1', grad='Sarajevo', postanski_broj='71000', payment_method='cod'))
+                    adresa='Ulica 1', grad='Sarajevo', postanski_broj='71000', payment_method='cod', email='test@example.com'))
                 self.assertTrue(form.is_valid())
                 self.assertEqual(form.cleaned_data['payment_method'], 'cod')
 

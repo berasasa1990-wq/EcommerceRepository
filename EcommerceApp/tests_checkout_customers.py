@@ -133,7 +133,7 @@ class CheckoutCustomerTests(TestCase):
 class CheckoutPostalCodeTests(TestCase):
     def test_postal_code_is_required_in_browser_and_server(self):
         from .forms import CheckoutForm
-        data = dict(ime_prezime='Test Kupac', telefon='061123456',
+        data = dict(ime_prezime='Test Kupac', telefon='061123456', email='test@example.com',
                     adresa='Ulica 1', grad='Sarajevo', payment_method='cod')
         self.assertTrue(CheckoutForm.base_fields['postanski_broj'].required)
         self.assertIn('required', str(CheckoutForm()['postanski_broj']))

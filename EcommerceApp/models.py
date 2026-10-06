@@ -4283,6 +4283,9 @@ class Coupon(models.Model):
         verbose_name='Automatski (loyalty)',
         help_text='Kreiran i ažuriran iz loyalty kartice.',
     )
+    scratch_claim = models.OneToOneField('OnlineGiftClaim', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='coupon')
+    minimum = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     kreiran = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -5602,6 +5605,7 @@ class OnlineGiftClaim(models.Model):
         verbose_name='Narudžba',
         help_text='Popunjava se kad kupac iskoristi nagradu u checkoutu.',
     )
+    coupon_emailed_at = models.DateTimeField(null=True, blank=True)
     kreirano = models.DateTimeField(auto_now_add=True)
 
     class Meta:

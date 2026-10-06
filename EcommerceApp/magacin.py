@@ -4074,6 +4074,22 @@ def reserve_web_order_stock(order):
         if reserve_for_order(locked, product, int(item.kolicina), variation=item.varijacija,
                              napomena=f'Web rezervacija #{locked.broj}', set_item=item):
             raise MagacinError(f'Artikal „{product.naziv}” nema dovoljnu količinu. Provjerite korpu.')
+    if locked.kupon_kod:
+        from .models import Coupon, OnlineGiftClaim
+        coupon = Coupon.objects.select_for_update().filter(kod__iexact=locked.kupon_kod, scratch_claim__isnull=False).first()
+        if coupon:
+            claim = OnlineGiftClaim.objects.select_for_update().get(pk=coupon.scratch_claim_id)
+            if not coupon.aktivan or claim.reward_consumed:
+                raise MagacinError('Ovaj Greb-Greb kod je već iskorišten.')
+            if coupon.vlasnik_id and coupon.vlasnik_id != locked.korisnik_id:
+                raise MagacinError('Ovaj Greb-Greb kod pripada drugom nalogu.')
+            if locked.medjuzbir < coupon.minimum:
+                raise MagacinError(f'Za ovaj kod korpa mora imati najmanje {coupon.minimum:.2f} KM.')
+            coupon.aktivan = False
+            coupon.save(update_fields=['aktivan'])
+            claim.reward_consumed = True
+            claim.order = locked
+            claim.save(update_fields=['reward_consumed', 'order'])
     locked.lager_status = Order.LagerStatus.REZERVISANO
     locked.save(update_fields=['lager_status'])
     order.lager_status = locked.lager_status

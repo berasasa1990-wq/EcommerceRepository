@@ -120,13 +120,24 @@ class ProductSetTests(TestCase):
         response = self.client.get(url, {'id':self.product.pk})
         self.assertContains(response, 'Artikli u setu')
         self.assertContains(response, 'setComponentsJson')
-        result = self.client.post(url, {'naziv':'Novi set', 'cijena':'100', 'akcijska_cijena':'80',
+        result = self.client.post(url, {'naziv':'Novi set', 'cijena':'100', 'akcijska_cijena':'45',
                                        'components_json':json.dumps(self.rows), 'aktivan':'1'})
         self.assertEqual(result.status_code, 302)
         saved = Product.objects.get(naziv='Novi set')
+        self.assertEqual(saved.cijena, Decimal("50.00"))
+        self.assertEqual(saved.akcijska_cijena, Decimal("45.00"))
         self.assertTrue(saved.is_set)
         self.assertEqual(saved.set_components.count(), 2)
         self.assertEqual(saved.stanje, 4)
+
+    def test_automatic_regular_price_uses_variation_and_quantity(self):
+        variation = ProductVariation.objects.create(artikal=self.rod, naziv='Duži', cijena=60)
+        saved = save_set(name='Automatska cijena', regular_price=None, sale_price='100', rows=[
+            {'product_id': self.rod.pk, 'variation_id': variation.pk, 'quantity': 2},
+            {'product_id': self.hook.pk, 'quantity': 3, 'unit_price': '999'},
+        ])
+        self.assertEqual(saved.cijena, Decimal('135.00'))
+        self.assertEqual(saved.akcijska_cijena, Decimal('100.00'))
 
     def test_invalid_duplicate_and_nested_components_are_rejected(self):
         with self.assertRaises(MagacinError):

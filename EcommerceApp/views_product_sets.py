@@ -3,7 +3,7 @@ from django.db.models import Prefetch
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404, redirect, render
-from .models import Product, ProductSetComponent, Category, Brand
+from .models import Product, ProductVariation, ProductSetComponent, Category, Brand
 from .magacin import MagacinError
 from .warehouse_access import warehouse_user_required
 from .product_sets import save_set, refresh_set, component_stock_totals
@@ -24,6 +24,7 @@ def product_sets(request):
             'brend_id': str(product.brend_id or '') if product else ''}
     if product:
         rows = [{'product_id': c.product_id, 'variation_id': c.variation_id or '', 'quantity': c.quantity,
+                 'unit_price': str(c.variation.bazna_cijena if c.variation else c.product.bazna_cijena),
                  'label': c.product.naziv + (' — ' + c.variation.naziv if c.variation else '')}
                 for c in product.set_components.select_related('product', 'variation')]
     error = ''
@@ -33,7 +34,7 @@ def product_sets(request):
         try:
             rows = json.loads(request.POST.get('components_json', '[]'))
             saved = save_set(product_id=product.pk if product else None, name=data['naziv'], code=data['sifra'],
-                             regular_price=data['cijena'], sale_price=data['akcijska_cijena'], rows=rows,
+                             regular_price=None, sale_price=data['akcijska_cijena'], rows=rows,
                              category_id=data['kategorija_id'], brand_id=data['brend_id'],
                              description=data['opis'], active=data['aktivan'], image=request.FILES.get('slika'))
             messages.success(request, f'Set „{saved.naziv}” je sačuvan.')
@@ -42,6 +43,17 @@ def product_sets(request):
             error = str(exc) if isinstance(exc, MagacinError) else 'Podaci seta nisu ispravni.'
             if not isinstance(rows, list):
                 rows = []
+    if request.method == 'POST':
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            try:
+                component = Product.objects.get(pk=row.get('product_id'))
+                variation = ProductVariation.objects.get(pk=row['variation_id'], artikal=component) if row.get('variation_id') else None
+                row['unit_price'] = str(variation.bazna_cijena if variation else component.bazna_cijena)
+            except (Product.DoesNotExist, ProductVariation.DoesNotExist, ValueError, TypeError):
+                row['unit_price'] = '0.00'
+        rows = [row for row in rows if isinstance(row, dict)]
     sets = list(Product.objects.filter(is_set=True).order_by('naziv').prefetch_related(Prefetch('set_components', queryset=ProductSetComponent.objects.select_related('product', 'variation'))))
     for item in sets:
         refresh_set(item)

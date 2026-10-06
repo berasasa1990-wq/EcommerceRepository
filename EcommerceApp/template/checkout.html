@@ -12,8 +12,8 @@
 {% block body_class %}is-cart-page is-checkout-page{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20260916-checkout">
-<link rel="stylesheet" href="{% static 'css/checkout-page.css' %}?v=20261005-monri-style">
+<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20261006-desktop-wide">
+<link rel="stylesheet" href="{% static 'css/checkout-page.css' %}?v=20261006-desktop-wide">
 {% endblock %}
 
 {% block content %}
@@ -38,7 +38,7 @@
             {% for field in form %}
             {% if field.name != "payment_method" %}
             <div class="form-group{% if field.errors %} form-group--error{% endif %}">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
                 {{ field }}
                 {% for error in field.errors %}
                 <p class="form-error">{{ error }}</p>

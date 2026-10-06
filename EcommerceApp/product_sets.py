@@ -121,15 +121,6 @@ def save_set(*, product_id=None, name, regular_price, sale_price=None, code='', 
     name = (name or '').strip()
     if not name or len(name) > 200:
         raise MagacinError('Unesi naziv seta (najviše 200 znakova).')
-    try:
-        regular = Decimal(str(regular_price).replace(',', '.'))
-        sale = Decimal(str(sale_price).replace(',', '.')) if sale_price not in (None, '') else None
-        if not regular.is_finite() or not 0 < regular <= Decimal('99999999.99') or regular != regular.quantize(Decimal('.01')):
-            raise ValueError
-        if sale is not None and (not sale.is_finite() or not 0 < sale < regular or sale != sale.quantize(Decimal('.01'))):
-            raise ValueError
-    except (InvalidOperation, ValueError, ArithmeticError):
-        raise MagacinError('Unesi ispravnu regularnu cijenu i sniženu cijenu manju od regularne.')
     product = Product.objects.select_for_update().get(pk=product_id) if product_id else Product()
     if product.pk and (product.varijacije.exists() or product.used_in_sets.exists() or WarehouseStock.objects.filter(product=product, kolicina__gt=0).exists()):
         raise MagacinError('Set ne može imati vlastitu zalihu, varijacije ili biti dio drugog seta.')
@@ -150,6 +141,17 @@ def save_set(*, product_id=None, name, regular_price, sale_price=None, code='', 
             raise MagacinError('Artikal je ponovljen ili je set dodan sam sebi.')
         seen.add(key)
         components.append((component, variation, qty))
+    try:
+        regular = (sum(((v.bazna_cijena if v else p.bazna_cijena) * q
+                        for p, v, q in components), Decimal('0.00')) if regular_price is None
+                   else Decimal(str(regular_price).replace(',', '.')))
+        sale = Decimal(str(sale_price).replace(',', '.')) if sale_price not in (None, '') else None
+        if not regular.is_finite() or not 0 < regular <= Decimal('99999999.99') or regular != regular.quantize(Decimal('.01')):
+            raise ValueError
+        if sale is not None and (not sale.is_finite() or not 0 < sale < regular or sale != sale.quantize(Decimal('.01'))):
+            raise ValueError
+    except (InvalidOperation, ValueError, ArithmeticError):
+        raise MagacinError('Unesi ispravnu regularnu cijenu i sniženu cijenu manju od regularne.')
     code = (code or '').strip() or None
     if code and Product.objects.filter(sifra=code).exclude(pk=product.pk).exists():
         raise MagacinError('Šifra je već zauzeta.')

@@ -155,6 +155,8 @@ def scratch_claim(request):
         'product_image': product_image,
         'product_pack': product.pakovanje_label if product and product.je_pakovanje else '',
         'product_discount': reward.get('percent') or '0',
+        'reward_percent': reward.get('percent') or '0',
+        'coupon_code': reward.get('coupon_code') or '',
         'product_price': str(product_price),
         'product_regular_price': str(product_regular_price)})
 
@@ -197,7 +199,14 @@ def scratch_add_product(request):
 @require_POST
 def scratch_add_product_to_order(request):
     from .online_gift import add_scratch_discount_product_to_order
-    product, order, error = add_scratch_discount_product_to_order(request)
+    from .magacin import MagacinError
+    try:
+        product, order, error = add_scratch_discount_product_to_order(request)
+    except MagacinError as exc:
+        return JsonResponse({'ok': False, 'detail': str(exc)}, status=400)
+    except Exception:
+        logger.exception('Greb-Greb dodavanje nije uspjelo: claim=%s', request.session.get('sretni_greb_greb_claim'))
+        return JsonResponse({'ok': False, 'detail': 'Dodavanje nije uspjelo na serveru. Pokušajte ponovo; ako se ponovi, kontaktirajte prodavnicu.'}, status=500)
     if error:
         return JsonResponse({'ok': False, 'detail': error}, status=400)
     try:
@@ -4724,7 +4733,7 @@ def apply_coupon(request):
         kod = form.cleaned_data['kod']
 
     if kod:
-        coupon, error = validiraj_kupon(kod, request.user)
+        coupon, error = validiraj_kupon(kod, request.user, subtotal=cart.ukupno)
         if error:
             messages.error(request, error)
         else:
@@ -5651,7 +5660,6 @@ def account(request):
         campaign__naziv=SCRATCH_CAMPAIGN_NAME,
         won=True,
         reward_consumed=False,
-        kreirano__gt=timezone.now() - timedelta(hours=24),
     ).order_by('-kreirano').first()
 
     context = {
@@ -5663,7 +5671,7 @@ def account(request):
         'welcome_name': welcome_name,
         'account_scratch_reward': account_scratch_reward,
         'account_scratch_reward_label': scratch_label_for_claim(account_scratch_reward) if account_scratch_reward else '',
-        'account_scratch_reward_expires': (account_scratch_reward.kreirano + timedelta(hours=24)) if account_scratch_reward else None,
+        'account_scratch_reward_expires': None,
         'account_stock_notices': request.user.stock_notifies.filter(notified_at__isnull=True).select_related('product'),
         'account_initial_section': account_initial_section,
         'complaint_order': complaint_order,

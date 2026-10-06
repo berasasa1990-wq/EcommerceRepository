@@ -49,6 +49,61 @@ class ScratchOrderAddTests(TestCase):
         stock.refresh_from_db()
         self.assertEqual(stock.rezervisano, 1)
 
+    def test_reward_discount_uses_regular_price_when_product_is_on_sale(self):
+        self.product.akcijska_cijena = Decimal('12.00')
+        self.product.save()
+        response = self.add()
+        self.assertEqual(response.status_code, 200, response.content)
+        item = OrderItem.objects.get(narudzba=self.order, artikal=self.product)
+        self.assertEqual(item.bazna_cijena, Decimal('20.00'))
+        self.assertEqual(item.cijena, Decimal('10.00'))
+        self.assertEqual(item.popust_iznos, Decimal('10.00'))
+
+    def test_cart_reward_discount_uses_regular_price_when_product_is_on_sale(self):
+        self.product.akcijska_cijena = Decimal('12.00')
+        self.product.save()
+        response = self.client.post(reverse('scratch_add_product'))
+        self.assertEqual(response.status_code, 200, response.content)
+        from .cart import Cart
+        cart = Cart(SimpleNamespace(session=self.client.session))
+        self.assertEqual(cart.ukupno, Decimal('10.00'))
+
+    def test_add_with_refreshed_csrf_token(self):
+        self.client.handler.enforce_csrf_checks = True
+        token = self.client.get(reverse('auth_csrf_token')).json()['csrfToken']
+        response = self.client.post(reverse('scratch_add_product_to_order'),
+                                    HTTP_X_CSRFTOKEN=token,
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(self.order.stavke.get().cijena, Decimal('10.00'))
+
+    def test_reward_set_is_created_before_component_reservation(self):
+        from .product_sets import save_set
+        prize = ScratchPrize.objects.get(campaign=self.campaign, code='offer')
+        bundle = save_set(name='Nagradni set', regular_price='40', rows=[
+            {'product_id': self.product.pk, 'quantity': 2},
+        ])
+        prize.product = bundle
+        prize.save()
+        session = self.client.session
+        _set_scratch_session_reward(SimpleNamespace(session=session), self.claim)
+        session.save()
+        response = self.add()
+        self.assertEqual(response.status_code, 200, response.content)
+        parent = self.order.stavke.get(artikal=bundle)
+        self.assertTrue(parent.is_set_parent)
+        self.assertEqual(parent.set_children.get().kolicina, 2)
+        self.assertEqual(WarehouseStock.objects.get(product=self.product).rezervisano, 2)
+
+    def test_long_product_name_fits_order_item_field(self):
+        self.product.naziv = 'A' * 200
+        self.product.save()
+        response = self.add()
+        self.assertEqual(response.status_code, 200, response.content)
+        item = self.order.stavke.get()
+        self.assertEqual(item.naziv, self.product.naziv)
+        self.assertLessEqual(len(item.naziv), OrderItem._meta.get_field('naziv').max_length)
+
     def test_existing_physical_stock_is_not_rebuilt_from_catalog(self):
         location = WarehouseLocation.objects.create(sifra='A01', naziv='A01')
         stock = WarehouseStock.objects.create(product=self.product, location=location, kolicina=7)

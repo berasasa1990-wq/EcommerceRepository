@@ -57,3 +57,21 @@ body.is-checkout-page .checkout-page {
 /* Highlight the selected payment option without changing its behavior. */
 .is-checkout-page #id_payment_method label:has(input:checked) { background: #fff5ed; box-shadow: 0 0 0 1px #ff6500; }
 .is-checkout-page #id_payment_method label:has(input:focus-visible) { outline: 2px solid #ff6500; outline-offset: 3px; }
+
+/* Keep delivery, payment and order review compact on desktop. */
+@media (min-width: 1025px) {
+    body.is-checkout-page .checkout-page { max-width: 1600px; box-sizing: border-box; padding: 16px 32px 40px; }
+    .is-checkout-page .checkout-grid { grid-template-columns: minmax(0, 1fr) minmax(340px, 420px); gap: 24px; }
+    .is-checkout-page .checkout-heading { margin-bottom: 12px; }
+    .is-checkout-page .checkout-auth-note { margin-bottom: 12px; padding: 10px 14px; }
+    .is-checkout-page .checkout-form { padding: 18px; }
+    .is-checkout-page .form-group { margin-bottom: 10px; }
+    .is-checkout-page .form-input { min-height: 42px; padding: 9px 12px; }
+    .is-checkout-page .form-textarea { min-height: 68px; height: 68px; resize: vertical; }
+    .is-checkout-page .checkout-payment-note { margin-bottom: 12px; padding: 12px; }
+    .is-checkout-page #id_payment_method { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 8px; }
+    .is-checkout-page .checkout-items li { padding: 9px 0; }
+}
+@media (min-width: 1280px) {
+    .is-checkout-page .checkout-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
