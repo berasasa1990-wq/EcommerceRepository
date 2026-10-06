@@ -19,16 +19,18 @@ def ensure_order_partners():
     from django.db import transaction
     from django.db.models import Q
     from .models import Order, WarehouseCustomer, SiteSettings
-    from .views_magacin import _customer_phone_key
+    from .views_magacin import _customer_phone_key, _customer_name_key
 
     with transaction.atomic():
         SiteSettings.objects.get_or_create(pk=1)
         SiteSettings.objects.select_for_update().get(pk=1)
         customers = list(WarehouseCustomer.objects.all())
         partner_customer_ids = set(WarehousePartner.objects.exclude(customer_id=None).values_list('customer_id', flat=True))
+        names = {}
         contacts = {}
         emails = {}
         for customer in customers:
+            names.setdefault(_customer_name_key(customer.ime_prezime), customer)
             name = customer.ime_prezime.strip().casefold()
             phone = _customer_phone_key(customer.telefon)
             if phone:
@@ -45,7 +47,7 @@ def ensure_order_partners():
             phone = _customer_phone_key(order.telefon)
             email = (order.email or '').strip().casefold()
             email_matches = emails.get(email, []) if email else []
-            customer = linked or contacts.get((name.casefold(), phone))
+            customer = linked or contacts.get((name.casefold(), phone)) or names.get(_customer_name_key(name))
             if customer is None and len(email_matches) == 1 and not email.endswith('.local'):
                 customer = email_matches[0]
             if customer is None:
@@ -60,6 +62,7 @@ def ensure_order_partners():
                         grad=(order.grad or '')[:100], postanski_broj=(order.postanski_broj or '')[:20],
                     )
                     customers.append(customer)
+                    names.setdefault(_customer_name_key(name), customer)
                     if phone:
                         contacts[(name.casefold(), phone)] = customer
                     if email:

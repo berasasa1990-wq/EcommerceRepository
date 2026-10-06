@@ -3875,6 +3875,10 @@ def magacin_kupci_save(request):
         )
 
 
+def _customer_name_key(name):
+    return ' '.join((name or '').split()).casefold()
+
+
 def _customer_phone_key(phone):
     from .loyalty import ba_mobile_e164
     canonical = ba_mobile_e164(phone)
@@ -3902,13 +3906,19 @@ def _save_warehouse_customer(
         return None
     matching_ids = [pk for pk, phone in WarehouseCustomer.objects.order_by('pk').values_list('pk', 'telefon')
                     if _customer_phone_key(phone) == phone_key]
+    name_ids = [pk for pk, name in WarehouseCustomer.objects.order_by('pk').values_list('pk', 'ime_prezime')
+                if _customer_name_key(name) == _customer_name_key(ime)]
     customer = None
     if customer_id:
         customer = WarehouseCustomer.objects.filter(pk=int(customer_id)).first()
         if customer is None:
             return None
+        if any(pk != customer.pk for pk in name_ids):
+            raise MagacinError('Već postoji kupac s tim imenom.')
         if any(pk != customer.pk for pk in matching_ids):
             raise MagacinError('Već postoji kupac s tim telefonom.')
+    elif name_ids:
+        customer = WarehouseCustomer.objects.get(pk=name_ids[0])
     elif matching_ids:
         customer = WarehouseCustomer.objects.get(pk=matching_ids[0])
     fields = {
@@ -4000,6 +4010,15 @@ def magacin_kupci(request):
                             if canonical and _customer_phone_key(phone) == canonical]
             filt |= Q(pk__in=matching_ids)
         qs = qs.filter(filt)
+    # Deduplicate before pagination so a customer name appears only once across pages.
+    unique_ids = []
+    seen_names = set()
+    for pk, name in WarehouseCustomer.objects.order_by('pk').values_list('pk', 'ime_prezime'):
+        key = _customer_name_key(name)
+        if key not in seen_names:
+            unique_ids.append(pk)
+            seen_names.add(key)
+    qs = qs.filter(pk__in=unique_ids)
     editing = None
     edit_id = (request.GET.get('id') or '').strip()
     if edit_id:
