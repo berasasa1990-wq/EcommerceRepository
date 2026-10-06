@@ -4636,6 +4636,49 @@ class MagacinViewTests(TestCase):
         self.assertIn('Nepostojeci Artikal XYZ', data['skipped'][0]['naziv'])
         self.assertFalse(Order.objects.filter(izvor=Order.Izvor.MAGACIN).exists())
 
+    @override_settings(STORAGES={'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'}, 'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
+    def test_orders_release_button_allows_another_packer(self):
+        from html.parser import HTMLParser
+        class FormParser(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.depth = 0
+                self.nested = False
+            def handle_starttag(self, tag, attrs):
+                if tag == 'form':
+                    self.nested |= self.depth > 0
+                    self.depth += 1
+            def handle_endtag(self, tag):
+                if tag == 'form':
+                    self.depth -= 1
+        self.client.force_login(self.user)
+        self.client.post(reverse('staff_magacin_narudzba_nova'), {
+            'ime_prezime': 'Ana Ribić', 'telefon': '061111111',
+            'product_id': [str(self.product.pk)], 'variation_id': [''],
+            'kolicina': ['1'], 'mp_ok': ['0'],
+        })
+        order = Order.objects.get(izvor=Order.Izvor.MAGACIN)
+        self.client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        listing = self.client.get(reverse('staff_magacin_narudzbe'))
+        self.assertContains(listing, f'form="releasePick{order.pk}"')
+        self.assertContains(listing, f'<form id="releasePick{order.pk}" method="post"')
+        parser = FormParser()
+        parser.feed(listing.content.decode())
+        self.assertFalse(parser.nested)
+        other = User.objects.create_superuser('other-packer', 'other@example.com', 'pass')
+        other_client = self.client_class()
+        other_client.force_login(other)
+        released = other_client.post(reverse('staff_magacin_pakuj_oslobodi', args=[order.broj]),
+                                     {'next': reverse('staff_magacin_narudzbe')})
+        self.assertRedirects(released, reverse('staff_magacin_narudzbe'))
+        order.refresh_from_db()
+        self.assertIsNone(order.pick_claimed_by_id)
+        self.assertEqual(order.pick_claimed_name, '')
+        taken = other_client.get(reverse('staff_magacin_pakuj_detail', args=[order.broj]))
+        self.assertEqual(taken.status_code, 200)
+        order.refresh_from_db()
+        self.assertEqual(order.pick_claimed_by_id, other.pk)
+
     def test_order_barcode_opens_picking(self):
         self.client.force_login(self.user)
         created = self.client.post(reverse('staff_magacin_narudzba_nova'), {

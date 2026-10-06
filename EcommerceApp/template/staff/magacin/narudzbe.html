@@ -169,11 +169,7 @@
                         {% if order.pick_claimed_name %}
                         <span class="mg-pick-claim">
                             Preuzeo {{ order.pick_claimed_name }}
-                            <form method="post" action="{% url 'staff_magacin_pakuj_oslobodi' order.broj %}" data-stop-row>
-                                {% csrf_token %}
-                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                <button type="submit" class="mg-pick-release">Skini</button>
-                            </form>
+                            <button type="submit" form="releasePick{{ order.pk }}" class="mg-pick-release" data-stop-row title="Oslobodi narudžbu da je može pakovati drugi radnik">Skini</button>
                         </span>
                         {% endif %}
                         {% if order.needs_mp_check %}
@@ -300,6 +296,12 @@
     <input type="hidden" name="lozinka" value="">
 </form>
 {% for order in orders %}
+{% if order.pick_claimed_name %}
+<form id="releasePick{{ order.pk }}" method="post" action="{% url 'staff_magacin_pakuj_oslobodi' order.broj %}" hidden>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+</form>
+{% endif %}
 {% if order.lager_status == 'rezervisano' %}
 <form id="cancelOrder{{ order.pk }}" method="post" action="{% url 'staff_order_detail' order.broj %}" onsubmit="return confirm('Otkazati narudžbu?');" hidden>
     {% csrf_token %}
