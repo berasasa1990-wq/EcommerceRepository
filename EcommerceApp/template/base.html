@@ -8,7 +8,10 @@
     <meta name="theme-color" content="#ff6500">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="icon" type="image/svg+xml" href="{% static 'img/pwa-icon.svg' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'img/carpologija-favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/carpologija-favicon-32.png' %}">
+    <link rel="icon" type="image/png" sizes="128x128" href="{% static 'img/carpologija-favicon.png' %}">
+    <link rel="apple-touch-icon" sizes="128x128" href="{% static 'img/carpologija-favicon.png' %}">
     <link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.2.7-product-choice">
     <link rel="preconnect" href="https://media.opremazaribolov.ba">
     <meta name="csrf-token" content="{{ csrf_token }}">
@@ -158,11 +161,6 @@
     {% endif %}
     {% endblock %}
     {% endwith %}
-
-    {% if site_settings.favicon %}
-    <link rel="icon" href="{{ site_settings.favicon.url }}" type="image/png" sizes="32x32">
-    <link rel="apple-touch-icon" href="{{ site_settings.favicon.url }}">
-    {% endif %}
 
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
