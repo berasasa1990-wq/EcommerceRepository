@@ -26,6 +26,9 @@ _MONRI_PROCESS_ENV = {name: value for name, value in os.environ.items() if name.
 
 
 def _load_env_file():
+    # Isolated Render test settings must never inherit local credentials.
+    if os.environ.get('DJANGO_SETTINGS_MODULE') == 'EcommerceProject.settings_render_test':
+        return {}
     env_path = BASE_DIR / '.env'
     if not env_path.exists():
         return {}

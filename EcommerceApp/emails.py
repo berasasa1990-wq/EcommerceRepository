@@ -699,6 +699,8 @@ def _send_order_emails_in_background(order_id, admin_only=False):
 
 def queue_order_emails(order):
     """Start email delivery after commit without making checkout wait for SMTP."""
+    if getattr(settings, 'ECOMMERCE_TEST_MODE', False):
+        return
     order_id = order.pk
 
     def start_delivery():
@@ -713,6 +715,8 @@ def queue_order_emails(order):
 
 def queue_admin_order_notification(order):
     """B2B notifications go to the shop, never to the synthetic customer email."""
+    if getattr(settings, 'ECOMMERCE_TEST_MODE', False):
+        return
     order_id = order.pk
     def start_delivery():
         try:

@@ -8,6 +8,7 @@ from decimal import Decimal, InvalidOperation
 from secrets import randbelow, token_hex
 from threading import Thread
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
@@ -168,6 +169,8 @@ def _send_scratch_coupon_in_background(claim_id):
 
 def queue_scratch_coupon_email(claim_id):
     """Deliver after commit without making the scratch card wait for SMTP."""
+    if getattr(settings, 'ECOMMERCE_TEST_MODE', False):
+        return
     def start_delivery():
         try:
             Thread(target=_send_scratch_coupon_in_background, args=(claim_id,),

@@ -69,6 +69,10 @@ class EcommerceappConfig(AppConfig):
 
         from django.conf import settings
 
+        if getattr(settings, 'ECOMMERCE_TEST_MODE', False):
+            logger.info('Testni režim: slanje emailova i integracije su isključeni.')
+            return
+
         if not settings.EMAIL_HOST_PASSWORD:
             if not settings.DEBUG:
                 logger.error(
