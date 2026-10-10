@@ -8,6 +8,7 @@ services:
     region: frankfurt  # or oregon, ohio etc.
     plan: free  # promijeni u starter ili higher po potrebi
     buildCommand: |
+      set -e
       pip install -r requirements.txt
       python scripts/minify_assets.py
       python manage.py collectstatic --noinput
@@ -17,7 +18,7 @@ services:
       # Jednom ručno: python manage.py createsuperuser
     # Starter 0.5 CPU / 512 MB: 1 worker. max-requests 80 + pollovi = restart svakih ~2 min (CPU spike).
     healthCheckPath: /healthz
-    startCommand: gunicorn EcommerceProject.wsgi:application --workers 1 --threads 4 --timeout 60 --graceful-timeout 20 --max-requests 400 --max-requests-jitter 50
+    startCommand: bash scripts/render_start.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.12  # ili 3.11, 3.13

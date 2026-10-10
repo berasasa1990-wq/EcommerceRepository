@@ -19,3 +19,7 @@
 .product-wms-stock-square{display:inline-flex!important;align-items:center;justify-content:center;width:36px;height:36px;padding:0!important;border:1px solid #0089c2!important;border-radius:7px;background:linear-gradient(115deg,#00bddd,#007bb8)!important;color:#fff!important;font-size:25px!important;line-height:1;cursor:pointer}
 .product-wms-stock-square:hover{background:#0076ac!important;color:#fff!important}
 .product-wms-stock-square:focus-visible{outline:2px solid #006ca5;outline-offset:3px}
+
+/* Center both warehouse popups within the available viewport. */
+dialog.product-wms-location-dialog,dialog.wms-stock-location-dialog{position:fixed!important;inset:0!important;margin:auto!important;max-height:calc(100dvh - 32px);overflow:auto;box-sizing:border-box}
+@media(max-width:480px){.product-wms-add-fields{grid-template-columns:1fr}.product-wms-location-dialog{padding:20px}}

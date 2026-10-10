@@ -1,4 +1,6 @@
 {% extends 'staff/wms/base.html' %}
+{% load static %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/product-wms-location.css' %}?v=20261010-single-location-choice">{% endblock %}
 {% block wms_content %}
 <header class="wms-page-heading"><h1>Zalihe</h1></header>
 <form method="get" class="wms-card wms-stock-search" role="search">
@@ -12,10 +14,10 @@
 <article class="wms-stock-result">
 <div class="wms-stock-result-image">{% if product.prikazna_slika %}<img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" loading="lazy">{% else %}{% include 'staff/wms/icon.html' with key='pakovanje' %}{% endif %}</div>
 <div class="wms-stock-result-info"><h3>{{ product.naziv }}</h3><div class="wms-stock-result-codes"><span>Šifra <strong>{{ product.sifra|default:'—' }}</strong></span><span>Barkod <strong>{{ product.barkod|default:'—' }}</strong></span></div></div>
-{% if product.stanje <= 1 or not wms_locations_enabled %}
+{% if not wms_locations_enabled %}
 <div class="wms-stock-result-quantity{% if not product.stanje %} is-empty{% endif %}"><span>Količina</span><strong>{{ product.stanje }} <small>kom</small></strong></div>
 {% else %}
-<button type="button" class="wms-stock-result-quantity{% if not product.stanje %} is-empty{% endif %}" data-stock-location="wmsStockLocation{{ product.pk }}" aria-haspopup="dialog" aria-label="Prikaži lokaciju artikla {{ product.naziv }}"><span>Količina</span><strong>{{ product.stanje }} <small>kom</small></strong></button>
+<button type="button" class="wms-stock-result-quantity{% if not product.stanje %} is-empty{% endif %}" data-stock-location="wmsStockLocation{{ product.pk }}" data-add-stock-url="{% url 'panel_admin:EcommerceApp_product_add_stock' product.pk %}" aria-haspopup="dialog" aria-label="Prikaži lokaciju artikla {{ product.naziv }}"><span>Količina</span><strong>{{ product.stanje }} <small>kom</small></strong></button>
 {% endif %}
 {% if wms_locations_enabled %}<template id="wmsStockLocation{{ product.pk }}">
 {% for stock in product.wms_zalihe.all %}{% include 'staff/wms/location_transfer_row.html' with source_location=stock.lokacija source_location_id=stock.lokacija_id stock_id=stock.pk %}{% empty %}{% include 'staff/wms/location_transfer_row.html' with source_location=product.wms_lokacija source_location_id=product.wms_lokacija_id stock_id='' %}{% endfor %}
@@ -25,7 +27,7 @@
 </div>
 {% if products.has_other_pages %}<nav class="wms-type-options" aria-label="Stranice rezultata">{% if products.has_previous %}<a class="wms-button" href="?q={{ query|urlencode }}&amp;page={{ products.previous_page_number }}">← Prethodna</a>{% endif %}<span>{{ products.number }} / {{ products.paginator.num_pages }}</span>{% if products.has_next %}<a class="wms-button" href="?q={{ query|urlencode }}&amp;page={{ products.next_page_number }}">Sljedeća →</a>{% endif %}</nav>{% endif %}
 {% endif %}
-<dialog id="wmsStockLocationDialog" class="wms-card wms-stock-location-dialog" aria-labelledby="wmsLocationTitle"><header><h2 id="wmsLocationTitle">Lokacija zalihe</h2><form method="dialog"><button class="wms-close" aria-label="Zatvori">×</button></form></header><div id="wmsStockLocationContent"></div></dialog>
+<dialog id="wmsStockLocationDialog" class="wms-card wms-stock-location-dialog" aria-labelledby="wmsLocationTitle"><header><h2 id="wmsLocationTitle">Lokacija zalihe</h2>{% if wms_locations_enabled %}<button type="button" id="wmsAddStock" class="wms-order-action" data-list-add-stock="" data-stock-action="add" title="Dodaj količinu na lokaciju" aria-label="Dodaj količinu na lokaciju" aria-haspopup="dialog">{% include 'staff/wms/icon.html' with key='pakovanje' %}</button>{% endif %}<form method="dialog"><button class="wms-close" aria-label="Zatvori">×</button></form></header><div id="wmsStockLocationContent"></div></dialog>
 {% endblock %}
 {% block extra_js %}<script>
 (() => {
@@ -33,6 +35,8 @@
  const content = document.getElementById('wmsStockLocationContent');
  document.querySelectorAll('[data-stock-location]').forEach(button => button.addEventListener('click', () => {
   content.replaceChildren(document.getElementById(button.dataset.stockLocation).content.cloneNode(true));
+  const addButton = document.getElementById('wmsAddStock');
+  if (addButton) addButton.dataset.listAddStock = button.dataset.addStockUrl;
   dialog.showModal();
  }));
  content.addEventListener('click', event => {
@@ -55,4 +59,4 @@
   if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
  });
 })();
-</script>{% endblock %}
+</script><script src="{% static 'js/product-wms-list-add.js' %}?v=20261010-single-location-choice" defer></script>{% endblock %}
