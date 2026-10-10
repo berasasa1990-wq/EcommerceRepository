@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/account-mobile.css' %}?v=20260915-account-complaints">{% endblock %}
+{% block storefront_theme %}<link rel="stylesheet" href="{% static 'css/bera-account.css' %}?v=20261008-loyalty-blue-text">{% endblock %}
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {% block body_class %}page-account catalog-header-reference{% endblock %}
 
-{% block title %}Moj nalog — Carpologija BH{% endblock %}
+{% block title %}Moj nalog — {{ shop_name }}{% endblock %}
 
 {% block content %}
 <section
@@ -24,7 +25,7 @@
         <div class="acc-dash-welcome">
             <p class="acc-dash-kicker">Moj nalog</p>
             <h1>Dobrodošli nazad, <span class="acc-dash-name">{{ welcome_name }}</span></h1>
-            <p class="acc-dash-welcome-sub">Pregled narudžbi, loyalty kartice i podataka naloga.</p>
+            <p class="acc-dash-welcome-sub">Pregled narudžbi{% if loyalty %}, loyalty kartice{% endif %} i podataka naloga.</p>
         </div>
         {% if loyalty %}
         <aside class="acc-loyalty-mini" aria-label="Loyalty kartica">
@@ -50,9 +51,9 @@
     <div class="acc-dash-layout">
         <nav class="acc-dash-nav" aria-label="Nalog">
             {% if user.is_superuser or user.is_staff %}
-            <a href="{% url 'staff_admin_panel' %}" class="acc-dash-nav-link acc-dash-nav-link--staff">
+            <a href="{% url 'staff_panel' %}" class="acc-dash-nav-link acc-dash-nav-link--staff">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                Admin panel
+                Panel
             </a>
             {% endif %}
             <a href="#pregled" class="acc-dash-nav-link is-active" data-acc-nav="pregled">
@@ -119,6 +120,7 @@
                             <p class="acc-stat-sub">{{ active_orders_count }} aktivnih</p>
                         </div>
                     </article>
+                    {% if loyalty %}
                     <article class="acc-stat">
                         <span class="acc-stat-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
@@ -129,6 +131,7 @@
                             <p class="acc-stat-sub">{{ loyalty.tier.label }} · {{ loyalty.tier.postotak|floatformat:0 }}%</p>
                         </div>
                     </article>
+                    {% endif %}
                     <article class="acc-stat">
                         <span class="acc-stat-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>

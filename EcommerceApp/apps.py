@@ -56,11 +56,15 @@ class EcommerceappConfig(AppConfig):
 
         from django.contrib import admin
 
+        from .panel_admin import install_panel_editors
+        install_panel_editors()
+
         from .admin_forms import TurnstileAdminAuthenticationForm
 
         admin.site.login_form = TurnstileAdminAuthenticationForm
-        admin.site.site_header = 'opremazaribolov.ba Admin'
-        admin.site.site_title = 'opremazaribolov.ba'
+        from django.conf import settings
+        admin.site.site_header = settings.SITE_NAME + ' Admin'
+        admin.site.site_title = settings.SITE_NAME
         admin.site.index_title = 'Upravljanje trgovinom'
 
         from django.conf import settings

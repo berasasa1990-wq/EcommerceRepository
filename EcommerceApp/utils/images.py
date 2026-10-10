@@ -1608,11 +1608,11 @@ def product_image_filename_base(text, *, fallback='artikal', max_length=100):
     return base[:max_length].rstrip('-') or fallback
 
 
-PRODUCT_IMAGE_SEO_PREFIX = 'oprema-za-ribolov-carpologijabh'
+PRODUCT_IMAGE_SEO_PREFIX = 'webshop-product'
 
 
 def product_image_seo_label(product_name, *, extra='', fallback='artikal', max_length=70):
-    """Ime fajla: oprema-za-ribolov-carpologijabh-{naziv-artikla}[-extra]."""
+    """Ime fajla: webshop-product-{naziv-artikla}[-extra]."""
     extra_slug = ''
     if extra:
         extra_slug = product_image_filename_base(str(extra), fallback='', max_length=24)

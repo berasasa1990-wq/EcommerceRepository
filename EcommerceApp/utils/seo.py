@@ -25,17 +25,14 @@ from django.utils.html import strip_tags
 
 from EcommerceApp.models import PageSEO
 
-SITE_BRAND = 'Carpologija BH'
+SITE_BRAND = 'Webshop'
 SHOP_PHRASE = 'Oprema za ribolov'
 
 
 def public_brand(text: str) -> str:
     """Ukloni stari webshop brand iz SEO polja spremljenih u bazi."""
-    return re.sub(
-        r'(?i)(?:www\.)?opremazaribolov(?:\.ba)?',
-        SITE_BRAND,
-        text or '',
-    )
+    from EcommerceApp.branding import shop_name
+    return (text or '').replace('Webshop', shop_name()).replace('shop.example', shop_name())
 
 
 def get_page_seo(page_key: str) -> PageSEO | None:
@@ -113,7 +110,8 @@ def _title_suffix(site_settings=None) -> str:
         s = public_brand((getattr(site_settings, 'seo_title_suffix', None) or '').strip())
         if s:
             return s
-    return SITE_BRAND
+    from EcommerceApp.branding import shop_name
+    return shop_name()
 
 
 def with_title_suffix(title: str, site_settings=None) -> str:
@@ -220,14 +218,14 @@ def auto_category_seo_description(category) -> str:
 
 
 def site_url_base() -> str:
-    return settings.SEO_CANONICAL_URL.rstrip('/')
+    return settings.SITE_URL.rstrip('/')
 
 
 def absolute_url(path_or_url: str, *, request=None) -> str:
     """
     Jedan validan apsolutni URL (za JSON-LD / OG / SEO).
 
-    - Ako je već http(s)://… (npr. Cloudflare R2: https://media.opremazaribolov.ba/…)
+    - Ako je već http(s)://… (npr. Cloudflare R2: https://media.example/…)
       → vrati kako jeste, bez dodavanja SITE_URL.
     - Ako je //host/path → dodaj scheme.
     - Ako je relativan (/media/… ili media/…) → apsolutni preko canonical domena.
@@ -487,24 +485,24 @@ def collection_page_json_ld(
 # title max 70, meta_description max 160 (DB CharField limits — PostgreSQL rejectuje duže!)
 PAGE_SEO_DEFAULTS: dict[str, dict[str, str]] = {
     'home': {
-        'seo_title': 'Oprema za ribolov | Online shop BiH | Carpologija BH',
+        'seo_title': 'Oprema za ribolov | Online shop BiH | Webshop',
         'meta_description': (
             'Online shop opreme za ribolov u BiH: štapovi, mašinice, varalice, najloni i pribor. '
-            'Brza dostava, akcije i podrška — Carpologija BH.'
+            'Brza dostava, akcije i podrška — Webshop.'
         ),
         'h1_naslov': 'Oprema za ribolov — online shop',
         'seo_tekst_iznad': '',
         'seo_tekst_ispod': (
-            'Carpologija BH je online trgovina ribolovačke opreme za bosanskohercegovačke '
+            'Webshop je online trgovina ribolovačke opreme za bosanskohercegovačke '
             'ribare. U ponudi su štapovi, mašinice, varalice, najloni, hranilice i pribor '
             'provjerenih brendova. Naručite online — brza dostava širom BiH i savjeti pri kupovini.'
         ),
     },
     'akcija': {
-        'seo_title': 'Akcija opreme za ribolov | Snižene cijene — Carpologija BH',
+        'seo_title': 'Akcija opreme za ribolov | Snižene cijene — Webshop',
         'meta_description': (
             'Akcijska ponuda ribolovačke opreme: snižene cijene na štapove, mašinice, varalice '
-            'i pribor. Iskoristite popuste i brzu dostavu u BiH — Carpologija BH.'
+            'i pribor. Iskoristite popuste i brzu dostavu u BiH — Webshop.'
         ),
         'h1_naslov': 'Akcija — snižena oprema za ribolov',
         'seo_tekst_iznad': (
@@ -513,7 +511,7 @@ PAGE_SEO_DEFAULTS: dict[str, dict[str, str]] = {
         'seo_tekst_ispod': '',
     },
     'noviteti': {
-        'seo_title': 'Noviteti opreme za ribolov | Novo u ponudi — Carpologija BH',
+        'seo_title': 'Noviteti opreme za ribolov | Novo u ponudi — Webshop',
         'meta_description': (
             'Novi artikli u ponudi: najnovija oprema za ribolov, brendovi i modeli. '
             'Otkrijte novitete i naručite online s brzim slanjem u BiH.'
@@ -523,7 +521,7 @@ PAGE_SEO_DEFAULTS: dict[str, dict[str, str]] = {
         'seo_tekst_ispod': '',
     },
     'about': {
-        'seo_title': 'O nama | Carpologija BH — oprema za ribolov iz prakse',
+        'seo_title': 'O nama | Webshop — oprema za ribolov iz prakse',
         'meta_description': (
             'Saznajte ko smo: dugogodišnje iskustvo u ribolovu i opremi, online shop za ribare '
             'u Bosni i Hercegovini. Kvalitet, savjet i pouzdana dostava.'
@@ -533,41 +531,41 @@ PAGE_SEO_DEFAULTS: dict[str, dict[str, str]] = {
         'seo_tekst_ispod': '',
     },
     'payment': {
-        'seo_title': 'Način plaćanja i dostava | Carpologija BH',
+        'seo_title': 'Način plaćanja i dostava | Webshop',
         'meta_description': (
             'Plaćanje pouzećem, brza dostava poštom u roku do 48h i sigurno pakovanje. '
-            'Sve o plaćanju i slanju na Carpologija BH.'
+            'Sve o plaćanju i slanju na Webshop.'
         ),
         'h1_naslov': 'Način plaćanja i dostava',
         'seo_tekst_iznad': '',
         'seo_tekst_ispod': '',
     },
     'vlog': {
-        'seo_title': 'Blog i vlog o ribolovu | Savjeti — Carpologija BH',
+        'seo_title': 'Blog i vlog o ribolovu | Savjeti — Webshop',
         'meta_description': (
             'Blog i vlog: savjeti, priče i novosti iz svijeta ribolova. '
-            'Korisni sadržaji za početnike i iskusne ribare — Carpologija BH.'
+            'Korisni sadržaji za početnike i iskusne ribare — Webshop.'
         ),
         'h1_naslov': 'Blog i vlog',
         'seo_tekst_iznad': 'Savjeti, priče i novosti iz svijeta ribolova.',
         'seo_tekst_ispod': '',
     },
     'search': {
-        'seo_title': 'Pretraga artikala | Carpologija BH',
+        'seo_title': 'Pretraga artikala | Webshop',
         'meta_description': 'Pronađite opremu za ribolov po nazivu, brendu ili šifri.',
         'h1_naslov': 'Rezultati pretrage',
         'seo_tekst_iznad': '',
         'seo_tekst_ispod': '',
     },
     'cart': {
-        'seo_title': 'Korpa | Carpologija BH',
+        'seo_title': 'Korpa | Webshop',
         'meta_description': 'Pregled artikala u korpi prije narudžbe.',
         'h1_naslov': 'Korpa',
         'seo_tekst_iznad': '',
         'seo_tekst_ispod': '',
     },
     'checkout': {
-        'seo_title': 'Narudžba | Carpologija BH',
+        'seo_title': 'Narudžba | Webshop',
         'meta_description': 'Završite narudžbu — podaci za dostavu.',
         'h1_naslov': 'Narudžba',
         'seo_tekst_iznad': '',

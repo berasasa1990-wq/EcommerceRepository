@@ -15,7 +15,7 @@
         ← Nazad na rezultate
     </a>
     <div class="mg-toolbar-actions">
-        {% if not product.is_set %}<button type="button" class="mg-btn mg-btn-zalihe" id="mgZaliheBtn">Zalihe</button>{% endif %}
+        {% if product.pracenje_zaliha and not product.is_set %}<button type="button" class="mg-btn mg-btn-zalihe" id="mgZaliheBtn">Zalihe</button>{% endif %}
         <a class="mg-btn" href="{% url 'staff_magacin_stampa_cijena_ista' %}?artikal={{ product.pk }}{% if variation %}&varijacija={{ variation.pk }}{% endif %}">Štampaj Cijenu</a>
         <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_artikal_izmjena' product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">Izmijeni artikal</a>
         <form method="post" class="mg-obrisi-artikal-form" onsubmit="return confirm('OBRISATI artikal „{{ product.naziv|escapejs }}”{% if product.sifra %} ({{ product.sifra|escapejs }}){% endif %} SKROZ iz baze?\n\nOvo nije skidanje sa sajta — artikal se briše trajno i ne može se vratiti.');">
@@ -27,14 +27,14 @@
     </div>
 </div>
 {% if product.is_set %}
-<section class="mg-card"><h2 class="mg-h">Artikli u setu</h2><p>Dostupno: <strong>{{ totals.dostupno }} setova</strong>. Zaliha se računa iz slobodnih količina svih artikala u setu.</p><table class="mg-table"><thead><tr><th>Artikal</th><th>Varijacija</th><th>Količina u setu</th></tr></thead><tbody>{% for component in product.set_components.all %}<tr><td><a href="{% url 'staff_magacin_artikal' component.product.pk %}">{{ component.product.naziv }}</a></td><td>{{ component.variation.naziv|default:'—' }}</td><td>{{ component.quantity }}</td></tr>{% endfor %}</tbody></table><a class="mg-btn" href="{% url 'staff_magacin_setovi' %}?id={{ product.pk }}">Izmijeni set</a></section>
+<section class="mg-card"><h2 class="mg-h">Artikli u setu</h2><p>Dostupno: <strong>{% if quantity_unknown %}/{% else %}{{ totals.dostupno }}{% endif %} setova</strong>. Zaliha se računa iz slobodnih količina svih artikala u setu.</p><table class="mg-table"><thead><tr><th>Artikal</th><th>Varijacija</th><th>Količina u setu</th></tr></thead><tbody>{% for component in product.set_components.all %}<tr><td><a href="{% url 'staff_magacin_artikal' component.product.pk %}">{{ component.product.naziv }}</a></td><td>{{ component.variation.naziv|default:'—' }}</td><td>{{ component.quantity }}</td></tr>{% endfor %}</tbody></table><a class="mg-btn" href="{% url 'staff_magacin_setovi' %}?id={{ product.pk }}">Izmijeni set</a></section>
 {% endif %}
 {% if artikal_error %}
 <p class="mg-mp-alert" role="alert">{{ artikal_error }}</p>
 {% endif %}
 
 <section class="mg-card mg-artikal-top" id="itemOverview">
-    <div class="mg-phone-artikal{% if totals.dostupno > 0 %} is-stock{% else %} is-out{% endif %}">
+    <div class="mg-phone-artikal{% if quantity_unknown or totals.dostupno > 0 %} is-stock{% else %} is-out{% endif %}">
         <div class="mg-phone-visual">
             <div class="mg-phone-shot">
                 {% if product.prikazna_slika %}
@@ -87,11 +87,11 @@
             </li>
             {% endfor %}
             {% if not location_rows and not mp_location_rows %}
-            <li class="is-empty">Nema zalihe</li>
+            <li{% if not quantity_unknown %} class="is-empty"{% endif %}>{% if quantity_unknown %}Na stanju · /{% else %}Nema zalihe{% endif %}</li>
             {% endif %}
         </ul>
     </div>
-    <div class="mg-hero{% if totals.dostupno > 0 %} is-stock{% else %} is-out{% endif %}">
+    <div class="mg-hero{% if quantity_unknown or totals.dostupno > 0 %} is-stock{% else %} is-out{% endif %}">
         <div class="mg-hero-visual">
             <div class="mg-hero-img">
                 {% if product.prikazna_slika %}
@@ -146,7 +146,7 @@
         <div class="item-mobile-summary">
             <div class="item-mobile-available">
                 <span>Dostupno</span>
-                <strong class="{% if totals.dostupno <= 0 %}is-out{% endif %}">{{ totals.dostupno }} <small>{{ meta.jedinica_mjere|default:"kom" }}</small></strong>
+                <strong class="{% if not quantity_unknown and totals.dostupno <= 0 %}is-out{% endif %}">{% if quantity_unknown %}/{% else %}{{ totals.dostupno }}{% endif %} <small>{{ meta.jedinica_mjere|default:"kom" }}</small></strong>
             </div>
             <div class="item-mobile-price">
                 <span>Cijena</span>
@@ -162,15 +162,15 @@
             <div class="mg-stats">
                 <div class="mg-stat">
                     <span class="mg-stat-label">UKUPNO NA STANJU</span>
-                    <div class="mg-stat-value {% if totals.na_stanju > 0 %}is-ok{% else %}is-out{% endif %}">{{ totals.na_stanju }} <small>{{ meta.jedinica_mjere|default:"kom" }}</small></div>
+                    <div class="mg-stat-value {% if quantity_unknown or totals.na_stanju > 0 %}is-ok{% else %}is-out{% endif %}">{% if quantity_unknown %}/{% else %}{{ totals.na_stanju }}{% endif %} <small>{{ meta.jedinica_mjere|default:"kom" }}</small></div>
                 </div>
                 <div class="mg-stat">
                     <span class="mg-stat-label">REZERVISANO</span>
-                    <div class="mg-stat-value">{{ totals.rezervisano }} <small>{{ meta.jedinica_mjere|default:"kom" }}</small></div>
+                    <div class="mg-stat-value">{% if not product.pracenje_zaliha %}/{% else %}{{ totals.rezervisano }}{% endif %} <small>{{ meta.jedinica_mjere|default:"kom" }}</small></div>
                 </div>
                 <div class="mg-stat">
                     <span class="mg-stat-label">DOSTUPNO</span>
-                    <div class="mg-stat-value{% if totals.dostupno <= 0 %} is-out{% endif %}">{{ totals.dostupno }} <small>{{ meta.jedinica_mjere|default:"kom" }}</small></div>
+                    <div class="mg-stat-value{% if not quantity_unknown and totals.dostupno <= 0 %} is-out{% endif %}">{% if quantity_unknown %}/{% else %}{{ totals.dostupno }}{% endif %} <small>{{ meta.jedinica_mjere|default:"kom" }}</small></div>
                 </div>
             </div>
         </div>
@@ -179,6 +179,7 @@
 
 
 <div class="mg-artikal-main">
+    {% if product.pracenje_zaliha %}
     <section class="mg-card mg-artikal-stock" id="itemLocations">
         <div class="mg-card-head">
             <h2 class="mg-h">Zalihe po lokacijama</h2>
@@ -207,7 +208,7 @@
                 </tr>
                 {% empty %}
                 {% if not mp_location_rows %}
-                <tr><td data-label="Lokacija" colspan="4" class="mg-muted">Nema zalihe na nijednoj lokaciji.</td></tr>
+                <tr><td data-label="Lokacija" colspan="4" class="mg-muted">{% if quantity_unknown %}Na stanju — količina i lokacija nisu evidentirane.{% else %}Nema zalihe na nijednoj lokaciji.{% endif %}</td></tr>
                 {% endif %}
                 {% endfor %}
                 {% for row in mp_location_rows %}
@@ -226,15 +227,16 @@
             <tfoot>
                 <tr>
                     <td data-label="Lokacija">UKUPNO</td>
-                    <td data-label="Na stanju" class="num">{{ totals.na_stanju }}</td>
+                    <td data-label="Na stanju" class="num">{% if quantity_unknown %}/{% else %}{{ totals.na_stanju }}{% endif %}</td>
                     <td data-label="Rezervisano" class="num">{{ totals.rezervisano }}</td>
-                    <td data-label="Dostupno" class="num num-ok">{{ totals.dostupno }}</td>
+                    <td data-label="Dostupno" class="num num-ok">{% if quantity_unknown %}/{% else %}{{ totals.dostupno }}{% endif %}</td>
                 </tr>
             </tfoot>
             {% endif %}
         </table>
     </section>
 
+    {% endif %}
     <section class="mg-card mg-artikal-price-history">
         <div class="mg-card-head">
             <h2 class="mg-h">Promjene cijena i marže (uvoz)</h2>
@@ -361,7 +363,7 @@
                 <tr>
                     <td data-label="Naziv">{{ product.naziv }}</td>
                     <td data-label="Šifra">{{ product.sifra|default:"—" }}</td>
-                    <td data-label="Količina" class="num">{{ totals.na_stanju }} {{ meta.jedinica_mjere|default:"kom" }}</td>
+                    <td data-label="Količina" class="num">{% if quantity_unknown %}/{% else %}{{ totals.na_stanju }}{% endif %} {{ meta.jedinica_mjere|default:"kom" }}</td>
                     <td data-label="Cijena" class="num">{{ product.cijena }} KM</td>
                 </tr>
                 {% endfor %}
@@ -374,6 +376,7 @@
 </div>
 </div>
 
+{% if product.pracenje_zaliha %}
 <div class="mg-modal" id="mgZaliheModal" hidden>
     <div class="mg-modal-bg" data-mg-zalihe-close></div>
     <div class="mg-modal-panel mg-zalihe-panel" role="dialog" aria-labelledby="mgZaliheTitle">
@@ -447,6 +450,7 @@
         </form>
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block magacin_js %}

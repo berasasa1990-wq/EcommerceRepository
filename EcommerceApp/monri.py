@@ -28,8 +28,6 @@ def configured():
         return False
     return bool(settings.MONRI_ENABLED and settings.MONRI_MERCHANT_KEY and settings.MONRI_AUTHENTICITY_TOKEN
                 and settings.MONRI_ENVIRONMENT in FORM_ENDPOINTS
-                and (settings.MONRI_ENVIRONMENT != 'production'
-                     or public_url.rstrip('/') == 'https://carpologijabh.ba')
                 and url.scheme == 'https' and url.hostname and not url.username and not url.password
                 and not url.query and not url.fragment and not url.path.strip('/'))
 
@@ -76,7 +74,7 @@ def form_data(payment):
         ch_full_name=order.ime_prezime, ch_email=order.email,
         ch_address=order.adresa, ch_city=order.grad, ch_zip=order.postanski_broj,
         ch_country='BA', ch_phone=order.telefon,
-        order_info='Carpologija narudžba ' + order.broj, transaction_type='purchase', language='hr',
+        order_info='Narudžba ' + order.broj, transaction_type='purchase', language='hr',
         success_url_override=base + reverse('monri_return', args=[payment.token]),
         cancel_url_override=base + reverse('monri_cancel', args=[payment.token]),
         callback_url_override=base + reverse('monri_callback'))

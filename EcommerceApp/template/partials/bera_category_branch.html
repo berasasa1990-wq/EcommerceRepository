@@ -1,0 +1,13 @@
+{% with children=cat.podkategorije.all %}
+{% if children %}
+<details class="bera-category-branch">
+  <summary>{{ cat.naziv }} <span aria-hidden="true">›</span></summary>
+  <div class="bera-subcategories">
+    <a href="{{ cat.get_absolute_url }}">Svi artikli: {{ cat.naziv }}</a>
+    {% for child in children %}{% include 'partials/bera_category_branch.html' with cat=child %}{% endfor %}
+  </div>
+</details>
+{% else %}
+<a href="{{ cat.get_absolute_url }}">{{ cat.naziv }}</a>
+{% endif %}
+{% endwith %}

@@ -3,13 +3,17 @@
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
-{% block page_title %}<title>{{ seo_title|default:"Korpa — Carpologija BH" }}</title>{% endblock %}
+{% block page_title %}<title>{{ seo_title|default:"Korpa — " }}</title>{% endblock %}
 
 {% block meta_description %}
 {% if seo_description %}<meta name="description" content="{{ seo_description }}">{% endif %}
 {% endblock %}
 
 {% block body_class %}is-cart-page{% endblock %}
+
+{% block storefront_theme %}
+<link rel="stylesheet" href="{% static 'css/bera-cart.css' %}?v=20261008-cart-restored-text">
+{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20261006-desktop-wide">
@@ -18,6 +22,7 @@
 
 {% block content %}
 <section class="cart-page">
+    <nav class="bera-cart-breadcrumb" aria-label="Putanja"><a href="{% url 'home' %}">Početna</a><span>›</span><span>Korpa</span></nav>
     <header class="cart-head">
         <div class="cart-head-title">
             <span class="cart-head-ico" aria-hidden="true">
@@ -53,6 +58,8 @@
             <form method="post" action="{% url 'update_cart' %}" class="cart-form">
                 {% csrf_token %}
                 <div class="cart-items" data-cart-stock-url="{% url 'cart_stock' %}">
+                <div class="bera-cart-columns" aria-hidden="true"><span>Proizvod</span><span>Cijena</span><span>Količina</span><span>Ukupno</span><span></span></div>
+                <div class="bera-cart-scroll" tabindex="0" aria-label="Artikli u korpi">
                 {% for item in cart_items %}
                 <article class="cart-item" data-cart-key="{{ item.key }}" data-unit-price="{% if item.deal_info and item.deal_info.has_discount and item.deal_info.discounted_unit_price %}{{ item.deal_info.discounted_unit_price }}{% elif item.discounted_unit_price %}{{ item.discounted_unit_price }}{% else %}{{ item.cijena_decimal }}{% endif %}">
                     <div class="cart-item-image">
@@ -107,6 +114,7 @@
                                 {{ item.cijena_decimal }} KM
                             {% endif %}
                         </p>
+                        {% include 'partials/product_brand_logo.html' with brand=item.brand %}
                         {% if summary.kupon_primijenjen %}
                             {% if item.na_akciji or item.deal_info.has_discount or item.discounted_unit_price %}
                             <p class="cart-item-sale-notice" role="status">Artikal je već na sniženju.</p>
@@ -147,6 +155,24 @@
                     </div>
                 </article>
                 {% endfor %}
+                </div>
+                </div>
+            </form>
+        </div>
+
+        <aside class="cart-summary">
+            <div class="cart-review">
+                <h2>Pregled narudžbe</h2>
+                {% include 'partials/order_totals.html' with summary=summary %}<p class="cart-mobile-only cart-tax-note">PDV je uključen u cijenu.</p>
+            </div>
+            {% include 'partials/coupon_form.html' with coupon_next='cart' %}
+            <div class="cart-summary-actions">
+                <a href="{% url 'checkout' %}" class="btn btn-primary btn-add-to-bag btn-cart-checkout" aria-disabled="{{ cart_has_sold_out|yesno:'true,false' }}">Nastavi na plaćanje</a>
+            </div>
+            <div class="cart-shipping-mobile">{% include 'partials/cart_free_shipping_bar.html' with summary=summary %}</div>
+            <a class="cart-mobile-only cart-bottom-continue" href="{% url 'home' %}">Nastavi kupovinu</a>
+            {% include 'partials/upsell_cart_banner.html' with position='banner_ispod' upsell_offers=upsell_banners_below %}
+        </aside>
                 <div class="cart-trust" aria-hidden="true">
                     <div class="cart-trust-item">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 3v6c0 5-3.4 8.4-8 9.5C7.4 20.4 4 17 4 12V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
@@ -164,27 +190,9 @@
                         <span>Bez dodatnih pitanja</span>
                     </div>
                 </div>
-                </div>
-            </form>
-        </div>
 
-        <aside class="cart-summary">
-            {% include 'partials/coupon_form.html' with coupon_next='cart' %}
-            <div class="cart-review">
-                <h2>Pregled narudžbe</h2>
-                {% include 'partials/order_totals.html' with summary=summary %}<p class="cart-mobile-only cart-tax-note">PDV je uključen u cijenu.</p>
-            </div>
-            <div class="cart-summary-actions">
-                <a href="{% url 'checkout' %}" class="btn btn-primary btn-add-to-bag btn-cart-checkout" aria-disabled="{{ cart_has_sold_out|yesno:'true,false' }}">Nastavi na plaćanje</a>
-                <span class="cart-checkout-lock" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-                </span>
-            </div>
-            <div class="cart-shipping-mobile">{% include 'partials/cart_free_shipping_bar.html' with summary=summary %}</div>
-            <p class="cart-secure-note">Sigurna kupovina i plaćanje pouzećem</p><a class="cart-mobile-only cart-bottom-continue" href="{% url 'home' %}">Nastavi kupovinu</a>
-            {% include 'partials/upsell_cart_banner.html' with position='banner_ispod' upsell_offers=upsell_banners_below %}
-        </aside>
     </div>
+    {% include 'partials/bera_cart_recommendations.html' %}
     {% else %}
     <p class="cart-empty">Korpa je prazna.</p>
     <a href="{% url 'home' %}" class="btn btn-primary">Nastavi kupovinu</a>
@@ -195,6 +203,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/bera-cart-layout.js' %}?v=20261008-cart-restored-text" defer></script>
 <script src="{% static 'js/coupon-choice.js' %}?v=20260920" defer></script>
 <script src="{% static 'js/cart-qty.js' %}?v=20260925-mobile-qty" defer></script>
 <script src="{% static 'js/cart-stock.js' %}?v=20260907" defer></script>

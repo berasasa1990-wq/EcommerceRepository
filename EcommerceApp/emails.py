@@ -1,3 +1,4 @@
+from EcommerceApp.branding import shop_name, site_identity
 import logging
 from threading import Thread
 from decimal import Decimal
@@ -6,7 +7,7 @@ from email.utils import formataddr
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.db import close_old_connections, connections, transaction
-from django.template.loader import render_to_string
+from django.template.loader import render_to_string as django_render_to_string
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils import timezone
@@ -19,23 +20,27 @@ from .pricing import pripremi_stavke_za_racun, sazetak_iz_narudzbe
 
 logger = logging.getLogger(__name__)
 
+def render_to_string(template_name, context=None, **kwargs):
+    return django_render_to_string(template_name, {**site_identity(), **(context or {})}, **kwargs)
+
+
 class EmailNotConfiguredError(Exception):
     pass
 
 
 def _ensure_email_configured():
-    if not settings.EMAIL_HOST_PASSWORD:
+    if settings.EMAIL_BACKEND == 'django.core.mail.backends.smtp.EmailBackend' and not settings.EMAIL_HOST_PASSWORD:
         raise EmailNotConfiguredError(
             'EMAIL_APP_PASSWORD (Proton SMTP token) nije postavljen u okruženju.',
         )
-    if not settings.EMAIL_HOST_USER:
+    if settings.EMAIL_BACKEND == 'django.core.mail.backends.smtp.EmailBackend' and not settings.EMAIL_HOST_USER:
         raise EmailNotConfiguredError('EMAIL_HOST_USER nije postavljen u okruženju.')
     if not settings.ORDER_NOTIFICATION_EMAIL:
         raise EmailNotConfiguredError('ORDER_NOTIFICATION_EMAIL nije postavljen u okruženju.')
 
 
 def _from_email():
-    return formataddr(('opremazaribolov.ba', settings.DEFAULT_FROM_EMAIL))
+    return formataddr((f'{shop_name()}', settings.DEFAULT_FROM_EMAIL))
 
 
 def send_coupon_reward_email(coupon):
@@ -61,7 +66,7 @@ def send_coupon_reward_email(coupon):
         'login_url': login_url,
     }
     mail = EmailMultiAlternatives(
-        subject=f'Dobili ste nagradu: {reward_label} — opremazaribolov.ba',
+        subject=f'Dobili ste nagradu: {reward_label} — {shop_name()}',
         body=render_to_string('emails/coupon_reward.txt', context),
         from_email=_from_email(),
         to=[user.email],
@@ -153,21 +158,79 @@ def _email_context(order):
         'datum': created.strftime('%d.%m.%Y.'),
         'datum_kratko': f'{created.day}. {created.month}. {created.year}.',
         'vrijeme': created.strftime('%H:%M'),
-        'site_name': 'opremazaribolov.ba',
+        'site_name': f'{shop_name()}',
         'site_url': settings.SITE_URL,
         'logo_url': logo_url,
-        'store_email': settings.STORE_EMAIL,
-        'store_phone': settings.STORE_PHONE,
+        'store_email': site_identity()['contact_email'],
+        'store_phone': site_identity()['contact_phone'],
         'dostava_naziv': site_settings.dostava_naziv,
         'politika_garancija': site_settings.politika_garancija,
     }
 
 
+def _order_visual_context(order, *, customer=False):
+    from urllib.parse import urljoin
+    from .pricing import order_paid_by_card
+    context = _email_context(order)
+    base = settings.SITE_URL.rstrip('/') + '/'
+    site_settings = SiteSettings.load()
+    if site_settings.logo:
+        context['logo_url'] = urljoin(base, site_settings.logo.url)
+    source_items = [item for item in order.stavke.select_related('artikal', 'varijacija').all() if item.kolicina_faktura > 0]
+    for row, item in zip(context['stavke'], source_items):
+        image = getattr(item.varijacija, 'slika', None) or (item.artikal.prikazna_slika if item.artikal else None)
+        row['image_url'] = urljoin(base, image.url) if image else ''
+        row['unit_charged'] = row['ukupno'] / row['kolicina']
+    context['goods_after_discount'] = context['summary']['medjuzbir'] - context['summary']['popust']
+    context['admin_order_url'] = urljoin(base, reverse('staff_order_detail', args=[order.broj])) + '?preview=email'
+    context['customer_order_url'] = urljoin(base, reverse('account_order_detail', args=[order.broj]))
+    context['paid_by_card'] = order_paid_by_card(order)
+    context['customer_email'] = customer
+    context['email_icon_base'] = urljoin(base, 'static/img/email/')
+    return context
+
+
 def _render_order_html(order):
-    return render_to_string(
-        'emails/order_customer.html',
-        _email_context(order),
-    )
+    return render_to_string('emails/order_admin.html', _order_visual_context(order, customer=True))
+
+
+def _render_admin_order_html(order):
+    return render_to_string('emails/order_admin.html', _order_visual_context(order))
+
+
+def _attach_order_html(mail, html):
+    """Embed local artwork so email clients can display it outside the dev server."""
+    import re
+    from pathlib import Path
+    from urllib.parse import unquote, urlparse
+    from email.mime.image import MIMEImage
+    from django.contrib.staticfiles import finders
+
+    for index, url in enumerate(dict.fromkeys(re.findall(r'<img[^>]+src="([^"]+)"', html))):
+        parsed = urlparse(url)
+        if parsed.netloc != urlparse(settings.SITE_URL).netloc:
+            continue
+        path = unquote(parsed.path)
+        local = None
+        if path.startswith(settings.STATIC_URL):
+            local = finders.find(path[len(settings.STATIC_URL):])
+        elif path.startswith(settings.MEDIA_URL):
+            root = Path(settings.MEDIA_ROOT).resolve()
+            candidate = (root / path[len(settings.MEDIA_URL):]).resolve()
+            if candidate.is_relative_to(root):
+                local = candidate
+        if not local or not Path(local).is_file():
+            continue
+        try:
+            attachment = MIMEImage(Path(local).read_bytes())
+        except (OSError, TypeError):
+            continue
+        cid = f'order-image-{index}'
+        attachment.add_header('Content-ID', f'<{cid}>')
+        attachment.add_header('Content-Disposition', 'inline', filename=Path(local).name)
+        mail.attach(attachment)
+        html = html.replace(url, f'cid:{cid}')
+    mail.attach_alternative(html, 'text/html')
 
 
 def send_admin_order_notification(order):
@@ -176,13 +239,13 @@ def send_admin_order_notification(order):
 
     recipient = settings.ORDER_NOTIFICATION_EMAIL
     admin_mail = EmailMultiAlternatives(
-        subject=f'Nova narudžba #{order.broj} — opremazaribolov.ba',
+        subject=f'Nova narudžba #{order.broj} — {shop_name()}',
         body=_admin_order_text(order),
         from_email=_from_email(),
         to=[recipient],
         reply_to=[order.email],
     )
-    admin_mail.attach_alternative(_render_order_html(order), 'text/html')
+    _attach_order_html(admin_mail, _render_admin_order_html(order))
     admin_mail.send(fail_silently=False)
     logger.info(
         'Admin obavijest za narudžbu #%s poslana na %s (SMTP: %s)',
@@ -202,13 +265,13 @@ def send_customer_order_confirmation(order):
         f'U prilogu emaila nalazi se potvrda narudžbe i garantni list.\n'
     )
     customer_mail = EmailMultiAlternatives(
-        subject=f'Potvrda narudžbe #{order.broj} — opremazaribolov.ba',
+        subject=f'Potvrda narudžbe #{order.broj} — {shop_name()}',
         body=customer_text,
         from_email=_from_email(),
         to=[order.email],
         reply_to=[settings.ORDER_NOTIFICATION_EMAIL],
     )
-    customer_mail.attach_alternative(_render_order_html(order), 'text/html')
+    _attach_order_html(customer_mail, _render_order_html(order))
     customer_mail.send(fail_silently=False)
     logger.info(
         'Potvrda narudžbe #%s poslana kupcu na %s',
@@ -228,7 +291,7 @@ def send_chat_notification(conversation, message):
     created = timezone.localtime(message.created_at)
 
     body_lines = [
-        'Nova poruka u chatu na opremazaribolov.ba',
+        f'Nova poruka u chatu na {shop_name()}',
         '',
         f'Ime: {name}',
         f'Email: {email}',
@@ -329,7 +392,7 @@ def send_cart_add_notification(
     cart_total = cart.ukupno if cart is not None else line_total
 
     body_lines = [
-        'Artikal je dodan u korpu na opremazaribolov.ba',
+        f'Artikal je dodan u korpu na {shop_name()}',
         '',
         f'Korisnik: {user_label}',
         f'Email: {user_email or "—"}',
@@ -358,7 +421,7 @@ def send_cart_add_notification(
     recipient = settings.ORDER_NOTIFICATION_EMAIL
 
     mail = EmailMultiAlternatives(
-        subject=f'Korpa: {label} — opremazaribolov.ba',
+        subject=f'Korpa: {label} — {shop_name()}',
         body='\n'.join(body_lines),
         from_email=_from_email(),
         to=[recipient],
@@ -427,7 +490,7 @@ def send_live_offer_email(*, to_email, visitor_name='', offer=None):
     free_shipping = bool(getattr(offer, 'besplatna_dostava', False))
 
     if tip == LiveVisitorOffer.Tip.ARTIKAL and product:
-        subject = f'Posebna ponuda: {product_name} — opremazaribolov.ba'
+        subject = f'Posebna ponuda: {product_name} — {shop_name()}'
         headline = 'Imate posebnu ponudu na sajtu'
         parts = []
         if percent > 0:
@@ -439,25 +502,25 @@ def send_live_offer_email(*, to_email, visitor_name='', offer=None):
         body_lead = 'Pripremili smo Vam ' + ' i '.join(parts) + '.'
     elif tip == LiveVisitorOffer.Tip.NARUDZBA:
         if free_shipping and percent <= 0:
-            subject = 'Besplatna dostava na prvu kupovinu — opremazaribolov.ba'
+            subject = f'Besplatna dostava na prvu kupovinu — {shop_name()}'
             headline = 'Besplatna dostava na prvu kupovinu'
             body_lead = (
                 f'Prihvatite ponudu na sajtu — na prvu narudžbu dostava vam je besplatna'
                 f'{f" (kod: {code})" if code else ""}.'
             )
         elif free_shipping and percent > 0:
-            subject = f'{percent:g}% popusta + besplatna dostava — opremazaribolov.ba'
+            subject = f'{percent:g}% popusta + besplatna dostava — {shop_name()}'
             headline = 'Popust i besplatna dostava'
             body_lead = (
                 f'Vaš kod za {percent:g}% popusta na narudžbu: {code or "—"}. '
                 f'Uz to, na prvu kupovinu imate besplatnu dostavu.'
             )
         else:
-            subject = f'Vaš kod za {percent:g}% popusta — opremazaribolov.ba'
+            subject = f'Vaš kod za {percent:g}% popusta — {shop_name()}'
             headline = 'Popust na vašu narudžbu'
             body_lead = f'Vaš aktivacioni kod za {percent:g}% popusta na narudžbu: {code or "—"}.'
     else:
-        subject = 'Posebna ponuda — opremazaribolov.ba'
+        subject = f'Posebna ponuda — {shop_name()}'
         headline = 'Imate posebnu ponudu'
         body_lead = 'Otvorite sajt da vidite personalizovanu ponudu.'
 
@@ -476,7 +539,7 @@ def send_live_offer_email(*, to_email, visitor_name='', offer=None):
     text_lines.extend([
         '',
         'Lijep pozdrav,',
-        'opremazaribolov.ba',
+        f'{shop_name()}',
     ])
 
     mail = EmailMultiAlternatives(
@@ -496,7 +559,7 @@ def send_live_offer_email(*, to_email, visitor_name='', offer=None):
             'free_shipping': free_shipping,
             'activation_code': code,
             'site_url': site_url,
-            'store_email': settings.STORE_EMAIL,
+            'store_email': site_identity()['contact_email'],
         }),
         'text/html',
     )
@@ -580,7 +643,7 @@ def send_stock_back_email(*, to_email, product):
         return
 
     ctx = stock_back_email_context(product=product, to_email=to_email)
-    subject = f'{product.naziv} je ponovo na stanju — opremazaribolov.ba'
+    subject = f'{product.naziv} je ponovo na stanju — {shop_name()}'
     text = '\n'.join([
         f'{product.naziv} je ponovo na stanju.',
         '',
@@ -590,7 +653,7 @@ def send_stock_back_email(*, to_email, product):
         f'Poruči: {ctx["product_url"]}',
         '',
         'Lijep pozdrav,',
-        'opremazaribolov.ba',
+        f'{shop_name()}',
     ])
     mail = EmailMultiAlternatives(
         subject=subject,
@@ -602,21 +665,22 @@ def send_stock_back_email(*, to_email, product):
         render_to_string('emails/stock_back.html', ctx),
         'text/html',
     )
-    mail.send(fail_silently=False)
+    if mail.send(fail_silently=False) != 1:
+        raise RuntimeError('Email obavijesti o stanju nije prihvaćen za slanje.')
     logger.info('Obavijest o stanju poslana na %s za artikal %s', to_email, product.pk)
 
 
 def send_order_emails(order):
-    """Prvo obavijest trgovini, zatim potvrda kupcu."""
-    send_admin_order_notification(order)
-    try:
-        send_customer_order_confirmation(order)
-    except Exception:
-        logger.exception(
-            'Potvrda kupcu za narudžbu #%s nije poslana, admin obavijest je poslana.',
-            order.broj,
-        )
-        raise
+    """Attempt shop and customer delivery independently."""
+    errors = []
+    for label, sender in (('trgovini', send_admin_order_notification), ('kupcu', send_customer_order_confirmation)):
+        try:
+            sender(order)
+        except Exception as exc:
+            errors.append(exc)
+            logger.exception('Email %s za narudžbu #%s nije poslan.', label, order.broj)
+    if errors:
+        raise errors[0]
 
 
 def _send_order_emails_in_background(order_id, admin_only=False):

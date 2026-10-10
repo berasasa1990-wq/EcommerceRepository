@@ -1,0 +1,40 @@
+/* Offer dialogs share the storefront blue palette. */
+#qtyDealOfferOverlay,#gratisOfferOverlay{background:rgba(7,28,53,.48);backdrop-filter:blur(5px);padding:20px;box-sizing:border-box;align-items:center;justify-content:center}
+#qtyDealOfferOverlay .qty-deal-offer-popup,#gratisOfferOverlay .gratis-offer-popup{width:100%;max-width:480px;max-height:calc(100dvh - 40px);overflow:auto;background:#fff;border:1px solid #cde7f7;border-radius:20px;padding:28px 24px 18px;color:#102343;box-shadow:0 24px 80px #052b4b40;background-image:linear-gradient(120deg,#00c5e2,#007ab7);background-size:100% 6px;background-position:top;background-repeat:no-repeat;animation:none}
+#qtyDealOfferOverlay .site-popup-close,#gratisOfferOverlay .site-popup-close{top:14px;right:14px;width:34px;height:34px;border:1px solid #d7ebf9;border-radius:50%;background:#edf8ff;color:#007db7;box-shadow:none}
+#qtyDealOfferOverlay .site-popup-close:hover,#gratisOfferOverlay .site-popup-close:hover{background:#d9efff;color:#00669b}
+#qtyDealOfferOverlay .qty-deal-offer-inner{gap:14px}
+#qtyDealOfferOverlay .qty-deal-offer-kicker{color:#007db7;font-size:12px;padding:0 36px;line-height:1.5;letter-spacing:.05em}
+#qtyDealOfferOverlay .qty-deal-offer-product{padding:12px;border-radius:12px;background:#f5faff;border:1px solid #e0edf8;gap:14px}
+#qtyDealOfferOverlay .qty-deal-offer-image{width:74px;height:74px;background:#fff;border-color:#dcebf7;border-radius:10px}
+#qtyDealOfferOverlay .qty-deal-offer-title{font-size:17px;line-height:1.4;color:#102343;overflow-wrap:anywhere}
+#qtyDealOfferOverlay .qty-deal-offer-base{font-size:13px;line-height:1.5;color:#54718a}
+#qtyDealOfferOverlay .qty-deal-offer-message{font-size:14px;line-height:1.6;color:#54718a}
+#qtyDealOfferOverlay .qty-deal-offer-save{color:#007db7;background:#eaf7ff;border-radius:9px;padding:10px;font-size:15px}
+#qtyDealOfferOverlay .qty-deal-offer-tiers{gap:10px}
+#qtyDealOfferOverlay .qty-deal-offer-tier{padding:14px 16px;gap:8px;border:1px solid #d2e5f4;background:#fff;border-radius:12px;color:#102343;box-shadow:none}
+#qtyDealOfferOverlay .qty-deal-offer-tier.is-best{border:2px solid #009fd5;background:linear-gradient(120deg,#f1fbff,#eaf5ff)}
+#qtyDealOfferOverlay .qty-deal-offer-tier:hover,#qtyDealOfferOverlay .qty-deal-offer-tier:focus-visible{background:#eaf7ff;border-color:#008bc3;box-shadow:0 4px 16px #008bc318;outline:2px solid #8edbfa;outline-offset:2px}
+#qtyDealOfferOverlay .qty-deal-offer-tier-best-tag{font-size:10px;letter-spacing:.06em;color:#007db7}
+#qtyDealOfferOverlay .qty-deal-offer-tier-qty{font-size:18px;color:#102343}
+#qtyDealOfferOverlay .qty-deal-offer-tier-badge{background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;border-radius:7px;padding:5px 9px;font-size:12px}
+#qtyDealOfferOverlay .qty-deal-offer-tier-now{color:#008bc3;font-size:21px}
+#qtyDealOfferOverlay .qty-deal-offer-tier-was{color:#7c91a5;font-size:13px}
+#qtyDealOfferOverlay .qty-deal-offer-tier-meta{font-size:12px;color:#54718a;line-height:1.5}
+#qtyDealOfferOverlay .qty-deal-offer-decline{color:#54718a;font-size:13px;line-height:1.5;padding:12px;border-radius:9px;background:transparent}
+#qtyDealOfferOverlay .qty-deal-offer-decline:hover{background:#edf7ff;color:#007db7}
+#gratisOfferOverlay .ponuda-dwell-card{background:transparent;border:0;box-shadow:none;padding:16px 0 0;animation:none;color:#102343}
+#gratisOfferOverlay .card-dwell-label,#gratisOfferOverlay .card-dwell-badge{background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;animation:none;box-shadow:none}
+#gratisOfferOverlay .ponuda-dwell-media{background:#f5faff;border:1px solid #e0edf8;border-radius:14px;padding:14px;margin:14px auto;max-width:210px}
+#gratisOfferOverlay .ponuda-dwell-image{object-fit:contain;max-height:170px}
+#gratisOfferOverlay .ponuda-dwell-name{color:#102343;font-size:20px;line-height:1.4;margin:12px 0}
+#gratisOfferOverlay .ponuda-dwell-headline,#gratisOfferOverlay .ponuda-dwell-question{color:#54718a;font-size:14px;line-height:1.6}
+#gratisOfferOverlay .card-dwell-now{color:#008bc3;font-size:24px}
+#gratisOfferOverlay .card-dwell-was{color:#7c91a5;font-size:14px}
+#gratisOfferOverlay .ponuda-dwell-actions{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+#gratisOfferOverlay .gratis-offer-btn{width:100%;padding:12px 16px;border-radius:10px;font-size:14px;box-shadow:none;animation:none}
+#gratisOfferOverlay .gratis-offer-btn--accept{background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;border:1px solid #009bd0}
+#gratisOfferOverlay .gratis-offer-btn--accept:hover{background:linear-gradient(115deg,#009fc6,#006ca6)}
+#gratisOfferOverlay .gratis-offer-btn--decline{background:#edf7ff;color:#007db7;border:1px solid #d5e9f7}
+#gratisOfferOverlay .gratis-offer-btn--decline:hover{background:#dcefff}
+@media(max-width:480px){#qtyDealOfferOverlay,#gratisOfferOverlay{padding:12px}#qtyDealOfferOverlay .qty-deal-offer-popup,#gratisOfferOverlay .gratis-offer-popup{padding:26px 16px 14px;border-radius:15px;max-height:calc(100dvh - 24px)}#qtyDealOfferOverlay .qty-deal-offer-image{width:60px;height:60px}#qtyDealOfferOverlay .qty-deal-offer-title{font-size:15px}#qtyDealOfferOverlay .qty-deal-offer-tier-now{font-size:19px}}

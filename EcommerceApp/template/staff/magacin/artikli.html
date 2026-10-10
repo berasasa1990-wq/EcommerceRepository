@@ -15,14 +15,12 @@
             {% if searched %}
             Rezultati za „{{ magacin_search }}” — {{ result_count }} artikl{{ result_count|pluralize:"a,a" }}{% if not include_zero %} na stanju{% endif %}
             {% else %}
-            Pretraži ili skeniraj artikal. Lista se ne otvara dok ne potražiš.
+            Zajednički katalog panela i Magacina — {{ result_count }} artikl{{ result_count|pluralize:"a,a" }}
             {% endif %}
         </p>
     </div>
     <div class="article-title-actions">
         <a class="mg-btn" href="{% url 'staff_magacin_pregled' %}">‹ Nazad</a>
-        <a class="mg-btn" href="{% url 'staff_magacin_setovi' %}">Artikli u setu</a>
-        <a class="mg-btn article-new" href="{% url 'staff_magacin_brzi_unos_novi' %}">＋ Novi artikal</a>
     </div>
 </div>
 {% endblock %}
@@ -32,7 +30,7 @@
 <p class="mg-mp-alert is-ok" role="status">{{ magacin_notice }}</p>
 {% endif %}
 
-{% if searched %}
+{% if page %}
 <section class="mg-card mg-articles-results" style="padding:14px 10px;">
     <h2 class="mg-h">Pronađeni artikli ({{ result_count }})</h2>
     <div class="mg-list-head">
@@ -43,7 +41,7 @@
         <span>MPC</span>
     </div>
     {% for row in page %}
-    <a class="mg-product-row{% if row.na_stanju <= 0 %} is-out{% endif %}" href="{% url 'staff_magacin_artikal' row.product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">
+    <a class="mg-product-row{% if not row.quantity_unknown and row.na_stanju <= 0 %} is-out{% endif %}" href="{% url 'staff_magacin_artikal' row.product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">
         {% if row.product.prikazna_slika %}
         <img src="{{ row.product.prikazna_slika.url }}" alt="" loading="lazy" decoding="async">
         {% else %}
@@ -55,7 +53,9 @@
         </span>
         <span class="article-result-code">{{ row.product.sifra|default:"—" }}</span>
         <span class="mg-loc-inline article-result-stock">
-            {% if row.na_stanju > 0 %}
+            {% if row.quantity_unknown %}
+            <i title="Količina nije upisana">Na stanju · /</i>
+            {% elif row.na_stanju > 0 %}
             <i>{{ row.na_stanju }}</i>
             {% else %}
             <i class="is-empty">Nema zalihe</i>
@@ -65,7 +65,7 @@
     </a>
     {% empty %}
     <div class="mg-empty">
-        Nema sinhronizovanih artikala za ovu pretragu.
+        Nema artikala za prikaz.
     </div>
     {% endfor %}
 </section>

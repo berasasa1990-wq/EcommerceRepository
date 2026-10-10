@@ -1,0 +1,24 @@
+<div class="bera-product-details">
+  <div class="bera-product-tabs" role="tablist" aria-label="Detalji proizvoda">
+    <button type="button" role="tab" id="bera-tab-description" aria-controls="bera-panel-description" aria-selected="true">Opis proizvoda</button>
+    <button type="button" role="tab" id="bera-tab-specs" aria-controls="bera-panel-specs" aria-selected="false" tabindex="-1">Specifikacije</button>
+    {% if site_settings.politika_dostava or site_settings.politika_povrat %}<button type="button" role="tab" id="bera-tab-delivery" aria-controls="bera-panel-delivery" aria-selected="false" tabindex="-1">Dostava i povrat</button>{% endif %}
+    <button type="button" role="tab" id="bera-tab-reviews" aria-controls="bera-panel-reviews" aria-selected="false" tabindex="-1">Recenzije</button>
+  </div>
+  <div class="bera-product-lower-grid">
+    <div>
+      <div id="bera-panel-description" role="tabpanel" aria-labelledby="bera-tab-description" tabindex="0">
+        <h2>Opis proizvoda</h2>
+        <div class="product-detail-description">{% if product_description %}{% if '<' in product_description and '>' in product_description %}{{ product_description|safe }}{% else %}{{ product_description|linebreaks }}{% endif %}{% else %}<p>Opis proizvoda trenutno nije dostupan.</p>{% endif %}</div>
+        {% if product_description_features %}<div class="product-detail-description"><ul class="bera-description-features">{% for feature in product_description_features %}<li>{{ feature }}</li>{% endfor %}</ul></div>{% endif %}
+      </div>
+      <div id="bera-panel-specs" role="tabpanel" aria-labelledby="bera-tab-specs" tabindex="0" hidden>
+        <h2>Specifikacije</h2>
+        <dl><dt>Šifra</dt><dd>{{ product.sifra }}</dd>{% if product.brend %}<dt>Brend</dt><dd>{{ product.brend.naziv }}</dd>{% endif %}{% if product.kategorija %}<dt>Kategorija</dt><dd>{{ product.kategorija.naziv }}</dd>{% endif %}</dl>
+      </div>
+      {% if site_settings.politika_dostava or site_settings.politika_povrat %}<div id="bera-panel-delivery" role="tabpanel" aria-labelledby="bera-tab-delivery" tabindex="0" hidden><h2>Dostava i povrat</h2>{% if site_settings.politika_dostava %}<h3>Dostava</h3><p>{{ site_settings.politika_dostava }}</p>{% endif %}{% if site_settings.politika_povrat %}<h3>Povrat</h3><p>{{ site_settings.politika_povrat }}</p>{% endif %}</div>{% endif %}
+      <div id="bera-panel-reviews" role="tabpanel" aria-labelledby="bera-tab-reviews" tabindex="0" hidden><h2>Recenzije</h2><p>Recenzije za ovaj proizvod trenutno nisu dostupne.</p></div>
+    </div>
+    {% include 'partials/bera_product_related.html' %}
+  </div>
+</div>

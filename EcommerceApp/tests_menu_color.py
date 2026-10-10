@@ -25,14 +25,16 @@ class MenuColorTests(TestCase):
 
     def test_admin_shows_choice_and_saves_only_valid_colors(self):
         self.client.force_login(self.user)
-        response = self.client.get(reverse('admin:EcommerceApp_sitesettings_change', args=[self.site.pk]))
+        response = self.client.get(reverse('staff_site_settings'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'name="boja_menija"')
         self.assertContains(response, 'Crna')
         self.assertContains(response, 'Bijela')
         request = RequestFactory().post('/')
         request.user = self.user
-        form_class = admin.site._registry[SiteSettings].get_form(request, self.site, fields=('boja_menija',))
+        from django.forms import modelform_factory
+        from .admin import SiteSettingsAdminForm
+        form_class = modelform_factory(SiteSettings, form=SiteSettingsAdminForm, fields=('boja_menija',))
         form = form_class(data={'boja_menija': 'black'}, instance=self.site)
         self.assertTrue(form.is_valid(), form.errors)
         form.save()

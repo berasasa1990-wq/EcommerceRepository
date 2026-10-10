@@ -18,14 +18,14 @@
 <span>{% if record.existing_duplicate %}Prvi artikal{% else %}Pokušaj dodjele barkoda{% endif %}</span>
 <h3>{{ record.product.naziv|default:record.product_name }}</h3><p>Šifra: {{ record.product.sifra|default:record.product_sku|default:'—' }}</p>
 <p>{% if record.existing_duplicate %}Evidentirani{% else %}Uneseni{% endif %} barkod: <strong>{{ record.barcode }}</strong></p>
-{% if record.product %}<p>Trenutni barkod: {{ record.product.barkod|default:'Nije unesen' }}</p><a class="mg-btn" href="{% if record.product.magacin_sync_at or record.product.odoo_template_id %}{% url 'staff_magacin_artikal_izmjena' record.product.pk %}{% else %}{% url 'admin:EcommerceApp_product_change' record.product.pk %}{% endif %}">Otvori artikal</a>{% else %}<p>Artikal nije sačuvan ili je obrisan.</p>{% endif %}
+{% if record.product %}<p>Trenutni barkod: {{ record.product.barkod|default:'Nije unesen' }}</p><a class="mg-btn" href="{% if record.product.magacin_sync_at or record.product.odoo_template_id %}{% url 'staff_magacin_artikal_izmjena' record.product.pk %}{% else %}{% url 'panel_admin:EcommerceApp_product_change' record.product.pk %}{% endif %}">Otvori artikal</a>{% else %}<p>Artikal nije sačuvan ili je obrisan.</p>{% endif %}
 </article>
 <article class="barcode-product">
 {% if record.other_product.prikazna_slika %}<img src="{{ record.other_product.prikazna_slika.url }}" alt="">{% endif %}
 <span>Artikal sa istim barkodom</span>
 <h3>{{ record.other_product.naziv|default:record.other_name }}</h3><p>Šifra: {{ record.other_product.sifra|default:record.other_sku|default:'—' }}</p>
 <p>Evidentirani barkod: <strong>{{ record.barcode }}</strong></p>
-{% if record.other_product %}<p>Trenutni barkod: {{ record.other_product.barkod|default:'Nije unesen' }}</p><a class="mg-btn" href="{% if record.other_product.magacin_sync_at or record.other_product.odoo_template_id %}{% url 'staff_magacin_artikal_izmjena' record.other_product.pk %}{% else %}{% url 'admin:EcommerceApp_product_change' record.other_product.pk %}{% endif %}">Otvori artikal</a>{% else %}<p>Artikal je obrisan.</p>{% endif %}
+{% if record.other_product %}<p>Trenutni barkod: {{ record.other_product.barkod|default:'Nije unesen' }}</p><a class="mg-btn" href="{% if record.other_product.magacin_sync_at or record.other_product.odoo_template_id %}{% url 'staff_magacin_artikal_izmjena' record.other_product.pk %}{% else %}{% url 'panel_admin:EcommerceApp_product_change' record.other_product.pk %}{% endif %}">Otvori artikal</a>{% else %}<p>Artikal je obrisan.</p>{% endif %}
 </article>
 </div>
 <small>{{ record.last_seen|date:'d.m.Y. H:i' }}{% if record.reported_by %} · {{ record.reported_by.get_username }}{% endif %}{% if not record.existing_duplicate %} · Broj pokušaja: {{ record.attempts }}{% endif %}</small>

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="robots" content="noindex, nofollow">
     <meta name="theme-color" content="#0a1210">
-    <title>Trenutno radimo na poboljšanju — opremazaribolov.ba</title>
+    <title>Trenutno radimo na poboljšanju — {{ public_site_url }}</title>
     {% if logo_url %}
     <link rel="icon" href="{{ logo_url }}">
     {% endif %}
@@ -116,8 +116,8 @@
 <body>
     <img
         class="prep-hero"
-        src="{% static 'img/site-prep.jpg' %}"
-        alt="Trenutno radimo na poboljšanju vašeg iskustva — opremazaribolov.ba"
+        src="{% static 'img/maintenance-generic.svg' %}"
+        alt="Trenutno radimo na poboljšanju vašeg iskustva — {{ public_site_url }}"
         width="1536"
         height="1024"
     >

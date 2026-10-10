@@ -15,7 +15,7 @@ from .online_gift import active_reward_label
 from .upsell import get_active_upsell_offer
 from .utils.seo import absolute_url
 
-_CONTACT_MESSAGE = 'Zdravo, imam pitanje sa opremazaribolov.ba'
+_CONTACT_MESSAGE = 'Zdravo, imam pitanje o vašoj ponudi'
 
 
 def _phone_digits(phone):
@@ -154,8 +154,8 @@ def nav_categories(request):
         except Exception:
             site_settings = SiteSettings()
         return {
-            'site_url': settings.SEO_CANONICAL_URL,
-            'site_brand': 'Carpologija BH',
+            'site_url': settings.SITE_URL,
+            'site_brand': 'Webshop',
             'site_og_image_url': '',
             'nav_categories': [],
             'site_settings': site_settings,
@@ -207,7 +207,7 @@ def nav_categories(request):
     messenger_page = (
         getattr(site_settings, 'kontakt_messenger', None)
         or getattr(settings, 'MESSENGER_PAGE', '')
-        or 'opremazaribolov.ba'
+        or ''
     ).strip()
 
     try:
@@ -265,8 +265,8 @@ def nav_categories(request):
     try:
         from django.core.cache import cache
         from .utils.seo import json_ld, organization_json_ld as _org_ld, website_json_ld as _web_ld
-        org_key = 'seo_org_json_ld_carpologija_v1'
-        web_key = 'seo_web_json_ld_carpologija_v1'
+        org_key = 'seo_org_json_ld_webshop_v1'
+        web_key = 'seo_web_json_ld_webshop_v1'
         organization_json_ld = cache.get(org_key)
         website_json_ld = cache.get(web_key)
         if organization_json_ld is None or website_json_ld is None:
@@ -278,12 +278,12 @@ def nav_categories(request):
         pass
 
     return {
-        'site_url': settings.SEO_CANONICAL_URL,
-        'site_brand': 'Carpologija BH',
-        # Dijeljeni linkovi uvijek nose Carpologija BH identitet, a ne staru
+        'site_url': settings.SITE_URL,
+        'site_brand': 'Webshop',
+        # Dijeljeni linkovi uvijek nose Webshop identitet, a ne staru
         # Oprema za ribolov OG sliku iz podešavanja.
         'site_og_image_url': absolute_url(
-            site_settings.logo.url if site_settings.logo else static('img/carpologija-nav-logo.jpg')
+            site_settings.logo.url if site_settings.logo else static('img/webshop-logo.svg')
         ),
         'nav_categories': categories,
         'site_settings': site_settings,

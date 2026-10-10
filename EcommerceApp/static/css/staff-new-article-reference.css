@@ -42,3 +42,7 @@ body.magacin-page.is-new-article{--new-metal:linear-gradient(115deg,#e8e8e9,#bfc
  .is-new-article .bu-field input:not([type=hidden]),.is-new-article .bu-field select{min-height:44px}
  .is-new-article .bu-btn-primary{width:100%;min-width:0}
 }
+
+.is-new-article .bu-stock-mode #id_rezim_zaliha{display:flex;flex-wrap:wrap;gap:12px 24px;margin:10px 0}
+.is-new-article .bu-stock-mode #id_rezim_zaliha label{display:flex;align-items:center;gap:8px;margin:0;font-size:14px;font-weight:600;cursor:pointer}
+.is-new-article .bu-stock-mode #id_rezim_zaliha input[type=radio]{width:18px;min-width:18px;height:18px;min-height:18px;padding:0;border:0;background:none;box-shadow:none;accent-color:#287946}

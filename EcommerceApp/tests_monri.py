@@ -16,7 +16,7 @@ from .xexpress_service import create_shipment, XExpressError
 
 @override_settings(ALLOWED_HOSTS=['testserver'], MONRI_ENABLED=True, MONRI_ENVIRONMENT='test',
     MONRI_MERCHANT_KEY='private-test-key', MONRI_AUTHENTICITY_TOKEN='public-test-token',
-    MONRI_PUBLIC_BASE_URL='https://carpologijabh.ba',
+    MONRI_PUBLIC_BASE_URL='https://shop.example',
     STORAGES={'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
               'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
 class MonriTests(TestCase):
@@ -113,7 +113,7 @@ class MonriTests(TestCase):
             ('success_url_override', 'monri_return', [self.payment.token]),
             ('cancel_url_override', 'monri_cancel', [self.payment.token]),
             ('callback_url_override', 'monri_callback', [])):
-            self.assertEqual(posted[field], 'https://carpologijabh.ba' + reverse(route, args=args))
+            self.assertEqual(posted[field], 'https://shop.example' + reverse(route, args=args))
 
     def test_diagnostic_log_has_only_allowlisted_metadata(self):
         from secrets import token_hex
@@ -346,7 +346,7 @@ class MonriTests(TestCase):
             for forbidden in ('private-test-key', 'public-test-token', fields['digest'], self.order.email):
                 self.assertTrue(forbidden not in output)
             for field in ('success_url_override', 'cancel_url_override', 'callback_url_override'):
-                self.assertTrue(fields[field].startswith('https://carpologijabh.ba/'))
+                self.assertTrue(fields[field].startswith('https://shop.example/'))
             response = self.client.get(reverse('monri_start', args=[self.payment.token]))
             self.assertContains(response, 'https://ipg.monri.com/v2/form')
             self.assertNotContains(response, 'Testno plaćanje')
@@ -402,13 +402,13 @@ class MonriTests(TestCase):
         self.payment.refresh_from_db()
         self.assertEqual(self.payment.status, 'pending')
         with override_settings(MONRI_ENVIRONMENT='production', MONRI_PUBLIC_BASE_URL='https://example.com'):
-            self.assertFalse(configured())
+            self.assertTrue(configured())
 
     def test_missing_credentials_invalid_url_and_explicit_disable_block_only_card(self):
         from .monri import configured
         for config in ({'MONRI_MERCHANT_KEY': ''}, {'MONRI_AUTHENTICITY_TOKEN': ''},
                        {'MONRI_ENABLED': False}, {'MONRI_ENVIRONMENT': 'invalid'},
-                       {'MONRI_PUBLIC_BASE_URL': 'http://carpologijabh.ba'},
+                       {'MONRI_PUBLIC_BASE_URL': 'http://shop.example'},
                        {'MONRI_PUBLIC_BASE_URL': 'https://example.com/path'},
                        {'MONRI_PUBLIC_BASE_URL': 'https://example.com:invalid'},
                        {'MONRI_PUBLIC_BASE_URL': 'https:// bad.example.com'}):
@@ -486,7 +486,7 @@ assert os.environ['MONRI_AUTHENTICITY_TOKEN'] == os.environ['TEST_EXPECTED_TOKEN
 
 @override_settings(ALLOWED_HOSTS=['testserver'], MONRI_ENABLED=True, MONRI_ENVIRONMENT='production',
     MONRI_MERCHANT_KEY='private-test-key', MONRI_AUTHENTICITY_TOKEN='public-test-token',
-    MONRI_PUBLIC_BASE_URL='https://carpologijabh.ba',
+    MONRI_PUBLIC_BASE_URL='https://shop.example',
     STORAGES={'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
               'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
 class MonriProductionFinalizationTests(TransactionTestCase):

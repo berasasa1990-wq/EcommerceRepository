@@ -1,36 +1,23 @@
 {% if product_bundle and product_bundle.items %}
 {% with akcija=product_bundle.akcija items=product_bundle.items pricing=product_bundle.pricing %}
-<section class="pd-inline-bundle" aria-label="Bundle set za ovaj artikal">
-    <header class="pd-inline-bundle__header">
-    <form method="post" action="{% url 'add_to_cart' items.0.product.slug %}" class="pd-bundle__form">
-        {% csrf_token %}
-        <input type="hidden" name="quantity" value="1">
-        <input type="hidden" name="stay" value="1">
-        <input type="hidden" name="akcija_id" value="{{ akcija.pk }}">
-        <button type="submit" class="pd-inline-bundle__button">
-            <span>Kupi sve iz seta za</span>
-            <strong>{{ pricing.total_snizena|floatformat:"-2" }} KM</strong>
-            {% if pricing.has_discount %}<s>{{ pricing.total_bazna|floatformat:"-2" }} KM</s>{% endif %}
-        </button>
-    </form>
-    </header>
-    <div class="pd-inline-bundle__items">
-        {% for item in items %}
-        <article class="pd-inline-bundle__item">
-            <a href="{{ item.product.get_absolute_url }}" class="pd-inline-bundle__image" tabindex="-1" aria-hidden="true">
-                {% if item.product.prikazna_slika %}
-                <img src="{{ item.product.prikazna_slika.url }}" alt="" width="80" height="80" loading="lazy" decoding="async">
-                {% else %}<span>📦</span>{% endif %}
-            </a>
-            <div class="pd-inline-bundle__copy">
-                <h3><a href="{{ item.product.get_absolute_url }}">{{ item.product.naziv }}</a></h3>
-                <span class="pd-inline-bundle__quantity">{{ item.quantity }} kom.</span>
-                <strong>{{ item.line_snizena|floatformat:2 }} KM</strong>
-                {% if item.has_discount %}<s>{{ item.line_bazna|floatformat:2 }} KM</s>{% endif %}
-            </div>
-        </article>
-        {% endfor %}
+<section class="pd-inline-bundle pd-inline-bundle--offer" aria-label="Posebna ponuda uz ovaj artikal">
+    <div class="pd-inline-bundle__content">
+        <header class="pd-inline-bundle__header"><span class="pd-inline-bundle__gift" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10h18v11H3zM2 6h20v4H2zM12 6v15"/><path d="M12 6H8a2.5 2.5 0 1 1 2.5-2.5L12 6Zm0 0h4a2.5 2.5 0 1 0-2.5-2.5L12 6Z"/></svg></span><div><h2>Posebna ponuda uz ovaj artikal</h2><p>Dodaj preporučeni artikal i uštedi uz specijalnu cijenu!</p></div></header>
+        <div class="pd-inline-bundle__items">
+            {% for item in items %}
+            {% if not forloop.first %}<span class="pd-inline-bundle__plus" aria-hidden="true">+</span>{% endif %}
+            <article class="pd-inline-bundle__item">
+                <a href="{{ item.product.get_absolute_url }}" class="pd-inline-bundle__image" aria-label="{{ item.product.naziv }}">{% if item.product.prikazna_slika %}<img src="{{ item.product.prikazna_slika.url }}" alt="{{ item.product.naziv }}" width="110" height="110" loading="lazy" decoding="async">{% endif %}</a>
+                <div class="pd-inline-bundle__copy">{% if not forloop.first %}<span class="pd-inline-bundle__recommended">Preporučujemo</span>{% endif %}<h3><a href="{{ item.product.get_absolute_url }}">{{ item.product.naziv }}</a></h3>{% if item.quantity > 1 %}<span class="pd-inline-bundle__quantity">{{ item.quantity }} kom.</span>{% endif %}<div class="pd-inline-bundle__prices"><strong>{{ item.line_snizena|floatformat:2 }} KM</strong>{% if item.has_discount %}<s>{{ item.line_bazna|floatformat:2 }} KM</s>{% endif %}</div></div>
+            </article>
+            {% endfor %}
+        </div>
     </div>
+    <aside class="pd-inline-bundle__summary">
+        {% if pricing.has_discount %}<p class="pd-inline-bundle__saving">✓ Uštedite {{ pricing.usteda|floatformat:2 }} KM</p><p class="pd-inline-bundle__regular">Umjesto: <s>{{ pricing.total_bazna|floatformat:2 }} KM</s></p>{% endif %}
+        <p class="pd-inline-bundle__total"><span>Samo:</span><strong>{{ pricing.total_snizena|floatformat:2 }} KM</strong></p>
+        <form method="post" action="{% url 'add_to_cart' items.0.product.slug %}" class="pd-bundle__form">{% csrf_token %}<input type="hidden" name="quantity" value="1"><input type="hidden" name="stay" value="1"><input type="hidden" name="gratis_akcija_id" value="{{ akcija.pk }}"><input type="hidden" name="gratis_choice" value="yes"><input type="hidden" name="gratis_quantity" value="1">{% if product_bundle.variation_id %}<input type="hidden" name="variation_id" value="{{ product_bundle.variation_id }}">{% endif %}<button type="submit" class="pd-inline-bundle__button">{% if items|length == 2 %}Dodaj oba u korpu{% else %}Dodaj sve u korpu{% endif %}</button></form>
+    </aside>
 </section>
 {% endwith %}
 {% endif %}

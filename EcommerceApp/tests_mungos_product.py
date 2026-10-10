@@ -15,7 +15,7 @@ from .models import Category, Product, ProductImage, ProductVariation, Warehouse
 from .mungos_product import build_product_preview, category_code
 
 
-@override_settings(SITE_URL='https://carpologijabh.ba', MUNGOS_ENABLED=False)
+@override_settings(SITE_URL='https://shop.example', MUNGOS_ENABLED=False)
 class MungosProductTests(TestCase):
     def setUp(self):
         self.category = Category.objects.create(naziv='Štapovi')

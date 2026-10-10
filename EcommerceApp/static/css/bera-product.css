@@ -1,0 +1,223 @@
+body.bera-product-reference{--ozr-orange:#008bc5;--ozr-orange-hover:#006eab;--btn-cart:#008bc5;--btn-cart-hover:#006eab;color:#07192e;background:linear-gradient(180deg,#f7fbfe 0,#fff 380px)}
+body.bera-product-reference .product-detail{max-width:1440px!important;width:calc(100% - 80px)!important;margin:24px auto 48px!important;padding:0!important}
+body.bera-product-reference .bera-product-meta{display:flex;align-items:center;justify-content:flex-end;gap:16px;margin-bottom:12px;font-size:13px;color:#3b5271}
+.bera-product-new{margin-right:auto;padding:6px 18px;border-radius:12px;background:linear-gradient(135deg,#00d5ed,#0076b8);color:#fff;font-weight:700}
+.bera-product-stock{padding:6px 12px;border-radius:12px;background:#ecfaf6;color:#009b6b;white-space:nowrap}
+.bera-product-stock.is-out{background:#fff0f0;color:#bc3542}
+body.bera-product-reference .bera-product-intro{font-size:16px;line-height:1.55;color:#344965;margin:16px 0}
+body.bera-product-reference .pd-mobile-meta,body.bera-product-reference .pd-price-stock,body.bera-product-reference .pd-desktop-price-brand{display:none!important}
+body.bera-product-reference .product-detail .pd-options-price .price-current,body.bera-product-reference .product-detail .pd-options-price .price-sale,body.bera-product-reference .product-detail .pd-options-price .card-dwell-now{color:#008dc3!important;font-size:clamp(24px,2.1vw,32px)!important;font-weight:800}
+body.bera-product-reference .product-detail .pd-options-price .card-dwell-badge{background:#ef2545!important;border-radius:8px}
+body.bera-product-reference .product-detail-purchase .btn-add-to-bag,body.bera-product-reference .btn-detail-variation-add{background:linear-gradient(140deg,#00cfea,#0074b5)!important;border:0!important;border-radius:16px!important;color:#fff!important;box-shadow:inset 0 1px 3px #ffffff65;font-weight:700}
+body.bera-product-reference .product-detail-purchase .btn-add-to-bag:hover,body.bera-product-reference .btn-detail-variation-add:hover{filter:brightness(.94)}
+body.bera-product-reference .product-thumbnail.active{border-color:#0099d1!important}
+body.bera-product-reference .pd-desktop-dot.is-active{background:#0099d1}
+body.bera-product-reference .pd-reference-buy{display:none!important}
+body.bera-product-reference .bera-purchase-heart{position:static;display:grid;place-items:center;width:54px;height:54px;border:1px solid #e1edf5;border-radius:50%;background:#fff;color:#07192e;font-size:32px;box-shadow:0 1px 5px #12345610}
+body.bera-product-reference .bera-purchase-heart[aria-pressed=true]{color:#008bc5;background:#edf8ff}
+body.bera-product-reference .product-detail-purchase{grid-template-columns:140px minmax(0,1fr) 54px!important;gap:16px}
+body.bera-product-reference .product-detail-purchase:has(.btn-add-to-bag--notify){grid-template-columns:1fr!important}
+body.bera-product-reference .product-detail-purchase .product-qty-selector{background:#f6f9fc;border-color:#e1edf5}
+body.bera-product-reference .product-detail-purchase .btn-add-to-bag{font-size:17px;min-height:54px;height:54px;max-height:none}
+body.bera-product-reference .product-detail-variation-row{border:1px solid #e1edf5;border-radius:12px;padding:12px;background:#f8fbfd;margin-bottom:8px}
+body.bera-product-reference .pd-desktop-trust{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:22px}
+body.bera-product-reference .pd-desktop-trust li{border:0;border-radius:0;padding:8px 10px;border-right:1px solid #e7eff6}
+body.bera-product-reference .pd-desktop-trust li:last-child{display:none}
+body.bera-product-reference .pd-desktop-trust li:nth-child(3){border:0}
+body.bera-product-reference .pd-desktop-trust svg{stroke:#009ace;width:36px;height:36px}
+body.bera-product-reference .pd-desktop-trust strong{color:#07192e;font-size:14px}
+.bera-product-details{margin-top:42px}
+.bera-product-tabs{display:flex;gap:28px;border-bottom:1px solid #e1edf5;overflow-x:auto}
+.bera-product-tabs button{border:0;border-bottom:3px solid transparent;background:none;padding:14px 8px;color:#314762;font-size:15px;white-space:nowrap;cursor:pointer}
+.bera-product-tabs button[aria-selected=true]{color:#007eb7;border-bottom-color:#008fc9;font-weight:700}
+.bera-product-lower-grid{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:30px;padding-top:24px}
+.bera-product-lower-grid>div{min-width:0}
+.bera-product-details h2{font-size:24px;font-weight:750;letter-spacing:-.6px;margin:0 0 12px;color:#07192e}
+.bera-product-details p,.bera-product-details .product-detail-description{font-size:15px;line-height:1.6;color:#344965}
+.bera-product-details img{max-width:100%;height:auto}
+.bera-product-details dl{display:grid;grid-template-columns:100px 1fr;gap:12px;font-size:15px}
+.bera-product-details dd{margin:0;color:#344965}
+body.bera-product-reference .bera-product-related{min-width:0;margin:0;padding:16px;border:1px solid #e8f1f7;border-radius:14px;background:#f6faff}
+.bera-product-related-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.bera-product-related-heading h2{font-size:21px;margin:0}
+.bera-product-related-heading>a{color:#008ed0;font-size:13px;white-space:nowrap}
+body.bera-product-reference .bera-product-related .product-card{background:#fff;border:1px solid #e5eef6;border-radius:12px;box-shadow:none}
+body.bera-product-reference .bera-product-related .price-current,body.bera-product-reference .bera-product-related .price-sale{color:#008ed0!important}
+body.bera-product-reference :is(button,a,[role=tabpanel]):focus-visible{outline:3px solid #009bd0;outline-offset:3px}
+@media(min-width:1025px){body.bera-product-reference .product-detail-grid{grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:40px}
+body.bera-product-reference .product-gallery{--pd-thumbnail-width:88px;--pd-thumbnail-gap:16px;display:grid;grid-template-columns:88px minmax(0,1fr);gap:16px}
+body.bera-product-reference .product-gallery-main{aspect-ratio:1.36;background:linear-gradient(135deg,#eff4f8,#e8eef5);border:0;border-radius:12px;padding:24px;overflow:hidden}
+body.bera-product-reference .product-gallery-main #mainProductImage{mix-blend-mode:multiply}
+body.bera-product-reference .pd-gallery-bar,body.bera-product-reference .pd-gallery-bar .product-thumbnails{width:88px;max-height:490px}
+body.bera-product-reference .product-gallery .product-thumbnail,body.bera-product-reference .product-gallery .product-thumbnail.pd-mobile-primary{width:88px;min-width:88px;height:72px;background:#edf3f8;border-radius:8px}
+body.bera-product-reference .pd-reference-heart,body.bera-product-reference .pd-desktop-dots{display:none!important}
+body.bera-product-reference .pd-zoom-button{top:14px;right:14px;bottom:auto;background:#fff;border:0;border-radius:50%}
+body.bera-product-reference .product-detail-title-row h1{font-size:clamp(24px,2.2vw,32px);font-weight:800;line-height:1.15;color:#07192e}
+body.bera-product-reference .product-detail-info{padding:0}
+body.bera-product-reference .pd-reference-breadcrumb{color:#425c79;margin-bottom:18px;font-size:13px}
+body.bera-product-reference .pd-reference-breadcrumb a{color:#425c79}
+body.bera-product-reference .pd-crumb-mobile{display:inline-flex;gap:10px}
+body.bera-product-reference .product-detail>.pd-reference-details,body.bera-product-reference .product-detail>.product-detail-policies{display:none!important}
+}
+@media(max-width:1024px){body.bera-product-reference .product-detail{width:calc(100% - 32px)!important;margin:16px auto 32px!important}
+body.bera-product-reference .bera-product-lower-grid{grid-template-columns:1fr}
+body.bera-product-reference .product-detail>.pd-reference-details,body.bera-product-reference .product-detail>.product-detail-policies{display:none!important}
+body.bera-product-reference .product-detail-title-row h1{font-size:24px!important;color:#07192e}
+body.bera-product-reference .product-detail-purchase{grid-template-columns:100px minmax(0,1fr) 48px!important;gap:8px}
+body.bera-product-reference .bera-purchase-heart{width:48px;height:52px}
+body.bera-product-reference .product-detail-purchase .btn-add-to-bag{font-size:14px;padding:0 10px}
+body.bera-product-reference .bera-product-meta{gap:8px;font-size:11px;flex-wrap:wrap}
+body.bera-product-reference .bera-product-intro{font-size:14px}
+.bera-product-tabs{gap:12px}
+.bera-product-tabs button{font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){body.bera-product-reference .is-pulse{animation:none!important}
+}
+body.bera-product-reference .pd-reference-breadcrumb{margin-left:0!important}
+body.bera-product-reference .product-gallery-main .product-detail-corner-badge--novitet{display:none}
+@media(min-width:1025px){
+body.bera-product-reference main{padding-top:0!important;margin-top:0!important}
+body.bera-product-reference .product-detail{max-width:1380px!important;width:89.5%!important;margin-top:18px!important}
+body.bera-product-reference .product-detail-grid{grid-template-columns:minmax(0,1.37fr) minmax(0,1fr)!important;gap:40px!important;background:transparent!important;border:0!important;box-shadow:none!important}
+body.bera-product-reference .product-gallery{--pd-thumbnail-width:96px;--pd-thumbnail-gap:16px;grid-template-columns:96px minmax(0,1fr)!important}
+body.bera-product-reference .pd-gallery-bar,body.bera-product-reference .pd-gallery-bar .product-thumbnails{width:96px!important}
+body.bera-product-reference .product-gallery .product-thumbnail,body.bera-product-reference .product-gallery .product-thumbnail.pd-mobile-primary{width:96px!important;min-width:96px!important;height:74px!important}
+body.bera-product-reference .product-detail-title-row h1{font-size:clamp(24px,2.2vw,32px)!important;letter-spacing:-.6px}
+body.bera-product-reference .product-gallery-main{aspect-ratio:1.37!important}
+body.bera-product-reference .product-detail-body{display:flex;flex-direction:column}
+body.bera-product-reference .pd-options-price{margin:4px 0 18px!important}
+body.bera-product-reference .pd-desktop-trust{order:5}
+body.bera-product-reference .bera-product-details{margin-top:40px}
+body.bera-product-reference .bera-product-lower-grid{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:30px}
+}
+.bera-variant-choices{display:flex;align-items:center;gap:18px;margin:0 0 18px}
+.bera-variant-choices[hidden]{display:none}
+.bera-variant-choices>strong{font-size:14px;min-width:70px}
+.bera-variant-choices>div{display:flex;gap:10px;flex-wrap:wrap}
+.bera-variant-choices button{display:flex;align-items:center;gap:6px;min-height:44px;padding:6px 12px;border:1px solid #e1edf5;background:#fff;border-radius:8px;color:#07192e;cursor:pointer;font-size:14px}
+.bera-variant-choices button[aria-pressed=true]{border-color:#0094cd;background:linear-gradient(130deg,#00ccea,#008ac5);color:#fff}
+.bera-variant-choices button img{object-fit:contain;border-radius:5px}
+body.bera-product-reference .bera-variants-ready .product-detail-variation-row[hidden]{display:none!important}
+body.bera-product-reference .bera-variants-ready .product-detail-variation-row{display:block;border:0;padding:0;margin:0;background:none}
+body.bera-product-reference .bera-variants-ready .product-detail-variation-name{display:none}
+body.bera-product-reference .bera-variants-ready .product-detail-variation-price-wrap{display:block;margin-bottom:14px}
+body.bera-product-reference .bera-variants-ready .product-detail-variation-form{display:flex;gap:16px;align-items:center;margin-top:12px}
+body.bera-product-reference .bera-variants-ready .product-detail-variation-form>.btn{flex:1;height:54px;font-size:17px}
+body.bera-product-reference .bera-variants-ready .product-qty-selector{width:140px;flex-shrink:0;height:54px;background:#f6f9fc;border:1px solid #e1edf5;border-radius:12px}
+body.bera-product-reference .bera-product-related .home-product-carousel__slide{flex:0 0 calc((100% - 30px)/4)!important;min-width:0}
+body.bera-product-reference .bera-product-related .home-product-carousel__track{gap:10px!important}
+body.bera-product-reference .bera-product-related .product-card{padding:8px!important}
+body.bera-product-reference .bera-product-related .product-image{aspect-ratio:1!important;height:auto!important;background:#fff}
+body.bera-product-reference .bera-product-related .product-image img{object-fit:contain;padding:8px}
+body.bera-product-reference .bera-product-related .product-name{font-size:13px!important;color:#07192e}
+body.bera-product-reference .bera-product-related .price-current,body.bera-product-reference .bera-product-related .price-sale{font-size:18px!important}
+@media(max-width:1024px){body.bera-product-reference .bera-product-related .home-product-carousel__slide{flex-basis:calc((100% - 10px)/2)!important}
+}
+@media(min-width:1025px){body.bera-product-reference .product-detail-grid{margin-top:0!important;padding-top:0!important}
+body.bera-product-reference .pd-reference-breadcrumb{padding-bottom:0!important;margin-bottom:20px!important}
+}
+@media(max-width:1024px){body.bera-product-reference{overflow-x:hidden}
+body.bera-product-reference main{min-width:0;max-width:100%;overflow-x:clip}
+body.bera-product-reference .product-detail-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-areas:none!important;width:100%!important;min-width:0!important;gap:20px!important}
+body.bera-product-reference .product-gallery{position:relative!important;display:grid!important;grid-template-columns:52px minmax(0,1fr)!important;gap:10px!important;width:100%!important;min-width:0!important;max-width:100%!important}
+body.bera-product-reference .product-gallery-main{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;aspect-ratio:1!important;padding:12px!important;background:#edf3f8!important;border-radius:12px!important;overflow:hidden!important}
+body.bera-product-reference .product-gallery-main #mainProductImage{width:100%!important;height:100%!important;max-width:100%!important;min-width:0!important;object-fit:contain!important;mix-blend-mode:multiply}
+body.bera-product-reference .pd-gallery-bar{position:static!important;grid-column:1!important;grid-row:1!important;width:52px!important;min-width:0!important;max-height:300px;overflow:auto!important}
+body.bera-product-reference .pd-gallery-bar .product-thumbnails{width:52px!important;flex-direction:column!important;padding:0!important}
+body.bera-product-reference .product-detail-info{width:100%!important;max-width:100%!important;min-width:0!important;grid-column:auto!important;grid-row:auto!important}
+body.bera-product-reference .product-detail-body{width:100%!important;min-width:0!important;max-width:100%!important}
+body.bera-product-reference .product-detail-purchase{display:grid!important;width:100%!important;max-width:100%!important;grid-template-columns:80px minmax(0,1fr) 44px!important;gap:8px!important}
+body.bera-product-reference .product-detail-purchase .product-qty-selector{width:80px!important;min-width:0!important}
+body.bera-product-reference .product-detail-purchase .product-qty-input{width:30px!important;min-width:0!important;font-size:14px}
+body.bera-product-reference .product-detail-purchase .product-qty-btn{width:24px!important;min-width:0!important}
+body.bera-product-reference .product-detail-purchase__cta{width:100%!important;min-width:0!important}
+body.bera-product-reference .bera-purchase-heart{width:44px!important;height:52px!important}
+body.bera-product-reference .product-detail-purchase .btn-add-to-bag{min-width:0!important;width:100%!important}
+body.bera-product-reference .pd-reference-brand{display:none!important}
+}
+
+/* Compact purchase controls on product pages. */
+body.bera-product-reference .product-detail-purchase .btn-add-to-bag,
+body.bera-product-reference .product-detail-purchase .product-qty-selector,
+body.bera-product-reference .bera-variants-ready .product-detail-variation-form>.btn,
+body.bera-product-reference .bera-variants-ready .product-qty-selector{
+ height:46px!important;min-height:46px!important;max-height:none;border-radius:12px!important;
+}
+body.bera-product-reference .product-detail-purchase{align-items:center}
+body.bera-product-reference .bera-purchase-heart{width:46px!important;height:46px!important;padding:11px!important;box-sizing:border-box;line-height:1}
+body.bera-product-reference .bera-purchase-heart svg{display:block;width:24px;height:24px;flex-shrink:0;fill:none;stroke:currentColor}
+body.bera-product-reference .bera-purchase-heart[aria-pressed="true"] svg{fill:currentColor;stroke:currentColor}
+body.bera-product-reference .bera-purchase-heart:hover{background:#edf8ff;color:#008bc5}
+@media(min-width:1025px){
+ body.bera-product-reference .product-gallery-main{height:var(--bera-gallery-height,auto)!important;aspect-ratio:1.65!important;min-height:0!important}
+ body.bera-product-reference .pd-gallery-bar .product-thumbnails{max-height:var(--bera-gallery-height,400px)!important}
+}
+
+body.bera-product-reference .bera-product-intro{position:relative}
+body.bera-product-reference .bera-product-intro-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;min-height:3.1em;line-height:1.55;padding-right:110px;margin:0}
+body.bera-product-reference .bera-product-read-more{position:absolute;right:0;bottom:0;color:#008bc5;font-size:14px;line-height:1.55;font-weight:600;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+body.bera-product-reference #bera-panel-description{scroll-margin-top:calc(var(--site-chrome-height,120px) + 20px)}
+
+body.bera-product-reference .bera-product-lower-grid{grid-template-columns:minmax(0,.82fr) minmax(0,1fr);align-items:start;gap:30px}
+body.bera-product-reference .bera-product-related .product-card__cart-row,
+body.bera-product-reference .bera-product-related .home-card-stock{display:none}
+body.bera-product-reference .bera-product-related .product-card__title{font-size:13px;line-height:1.35;font-weight:700;color:#07192e}
+body.bera-product-reference .bera-product-related .home-card-heart{color:#7597b5}
+body.bera-product-reference .bera-product-details .product-detail-description ul{list-style:none;padding:0}
+body.bera-product-reference .bera-product-details .product-detail-description li{position:relative;padding-left:32px;margin:10px 0}
+body.bera-product-reference .bera-product-details .product-detail-description li::before{content:"✓";position:absolute;left:0;top:2px;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#009bd5;color:#fff;font-size:13px}
+@media(max-width:1024px){body.bera-product-reference .bera-product-lower-grid{grid-template-columns:minmax(0,1fr)}}
+
+body.bera-product-reference .bera-related-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%;min-width:0}
+body.bera-product-reference .bera-related-card{position:relative;display:flex;flex-direction:column;min-width:0;padding:12px 10px;background:#fff;border:1px solid #e3edf6;border-radius:10px;overflow:hidden}
+body.bera-product-reference .bera-related-image{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:1.1;min-width:0;margin:10px 0 12px}
+body.bera-product-reference .bera-related-image img{display:block;width:100%;height:100%;object-fit:contain}
+body.bera-product-reference .bera-related-placeholder{width:48px;height:48px;color:#a1b7c9}
+body.bera-product-reference .bera-related-name{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:2.7em;margin:0 0 6px;font-size:13px;line-height:1.35;font-weight:700;color:#07192e;overflow-wrap:anywhere}
+body.bera-product-reference .bera-related-price{display:flex;flex-wrap:wrap;gap:3px 8px;margin-top:auto;line-height:1.3}
+body.bera-product-reference .bera-related-price strong{font-size:clamp(14px,1.2vw,18px);color:#008ed0;white-space:nowrap}
+body.bera-product-reference .bera-related-price del{font-size:11px;color:#8393a5;white-space:nowrap}
+body.bera-product-reference .bera-related-heart{position:absolute;top:8px;right:8px;display:grid;place-items:center;width:26px;height:26px;padding:3px;border:0;background:#fff;color:#7597b5;box-shadow:none}
+body.bera-product-reference .bera-related-heart svg{width:20px;height:20px}
+body.bera-product-reference .bera-related-heart[aria-pressed="true"] svg{fill:#008bc5;stroke:#008bc5}
+@media(max-width:1250px){body.bera-product-reference .bera-related-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Smaller main product heading and price. */
+body.bera-product-reference .product-detail-title-row h1 {
+    font-size: clamp(22px, 1.8vw, 27px) !important;
+}
+body.bera-product-reference .product-detail .pd-options-price .price-current,
+body.bera-product-reference .product-detail .pd-options-price .price-sale,
+body.bera-product-reference .product-detail .pd-options-price .card-dwell-now {
+    font-size: clamp(22px, 1.8vw, 27px) !important;
+}
+@media (max-width: 767px) {
+    body.bera-product-reference .product-detail-title-row h1,
+    body.bera-product-reference .product-detail .pd-options-price .price-current,
+    body.bera-product-reference .product-detail .pd-options-price .price-sale,
+    body.bera-product-reference .product-detail .pd-options-price .card-dwell-now {
+        font-size: 22px !important;
+    }
+}
+body.bera-product-reference .pd-inline-bundle--offer{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:0;margin:20px 0;padding:0;border:1px solid #cce9fc;border-radius:14px;background:linear-gradient(120deg,#f4faff,#edf8ff);box-shadow:0 3px 16px #008bc50a;color:#10243b}
+.pd-inline-bundle--offer .pd-inline-bundle__content{min-width:0;padding:18px 22px}
+.pd-inline-bundle--offer .pd-inline-bundle__header{display:flex;justify-content:flex-start;gap:16px;margin-bottom:16px}
+.pd-inline-bundle--offer .pd-inline-bundle__header h2{font-size:23px;font-weight:750;color:#10243b;margin:0}
+.pd-inline-bundle--offer .pd-inline-bundle__header p{margin:4px 0 0;color:#426581;font-size:15px}
+.pd-inline-bundle__gift{display:grid;place-items:center;width:58px;height:58px;border-radius:12px;background:#e0f2ff;color:#009ace;flex-shrink:0}.pd-inline-bundle__gift svg{width:38px;height:38px}
+.pd-inline-bundle--offer .pd-inline-bundle__items{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.pd-inline-bundle--offer .pd-inline-bundle__item{display:flex;flex:1 1 260px;align-items:center;flex-wrap:nowrap;padding:12px;border:1px solid #e4eff8;border-radius:12px;gap:14px;min-width:0}
+.pd-inline-bundle--offer .pd-inline-bundle__image{width:100px;height:110px;flex:0 0 100px}
+.pd-inline-bundle--offer .pd-inline-bundle__copy{min-width:0}.pd-inline-bundle--offer .pd-inline-bundle__copy h3{font-size:15px;margin:8px 0 16px}.pd-inline-bundle--offer .pd-inline-bundle__copy h3 a{color:#10243b}.pd-inline-bundle--offer .pd-inline-bundle__copy h3 a:hover{color:#007caf}
+.pd-inline-bundle__prices{display:flex;align-items:baseline;gap:8px;white-space:nowrap}.pd-inline-bundle--offer .pd-inline-bundle__prices strong{font-size:21px;color:#008bc5}.pd-inline-bundle--offer .pd-inline-bundle__prices s{font-size:12px;color:#8399ab}
+.pd-inline-bundle__plus{display:grid;place-items:center;flex:0 0 48px;height:48px;border-radius:50%;background:#dff1ff;color:#009ace;font-size:38px;font-weight:600}.pd-inline-bundle__recommended{display:inline-block;background:linear-gradient(120deg,#00cdec,#007bbc);color:#fff;border-radius:6px;padding:4px 8px;font-size:11px}
+.pd-inline-bundle__summary{padding:24px 22px;border-left:1px solid #d6eafb;display:flex;flex-direction:column;justify-content:center;gap:14px}.pd-inline-bundle--offer .pd-inline-bundle__saving{color:#009b6b;font-size:17px;margin:0}.pd-inline-bundle--offer .pd-inline-bundle__regular,.pd-inline-bundle--offer .pd-inline-bundle__total{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0;color:#64819b;font-size:15px}.pd-inline-bundle--offer .pd-inline-bundle__total strong{color:#008bc5;font-size:28px}.pd-inline-bundle--offer .pd-bundle__form{width:100%;margin:0}.pd-inline-bundle--offer .pd-inline-bundle__button{width:100%;padding:15px 10px;background:linear-gradient(120deg,#00cdec,#007bbc);color:white;border-radius:10px;font-size:16px}.pd-inline-bundle--offer .pd-inline-bundle__button:hover{background:linear-gradient(120deg,#00acd5,#006ba4)}
+body.bera-product-reference .pd-bundle-trust .pd-desktop-trust{display:flex!important;justify-content:space-around;gap:20px;border-top:1px solid #e1edf6;padding:20px 0;margin:0}body.bera-product-reference .pd-bundle-trust .pd-desktop-trust li{flex:1}body.bera-product-reference .pd-bundle-trust .pd-desktop-trust li:last-child{display:none}
+@media(max-width:1050px){body.bera-product-reference .pd-inline-bundle--offer{grid-template-columns:minmax(0,1fr)}.pd-inline-bundle__summary{border-left:0;border-top:1px solid #d6eafb}.pd-inline-bundle--offer .pd-inline-bundle__prices strong{font-size:18px}}
+@media(max-width:540px){.pd-inline-bundle--offer .pd-inline-bundle__header h2{font-size:18px}.pd-inline-bundle--offer .pd-inline-bundle__content{padding:14px}.pd-inline-bundle--offer .pd-inline-bundle__item{flex-basis:100%}.pd-inline-bundle__plus{margin:auto}.pd-inline-bundle--offer .pd-inline-bundle__header p{font-size:13px}body.bera-product-reference .pd-bundle-trust .pd-desktop-trust{flex-wrap:wrap}body.bera-product-reference .pd-bundle-trust .pd-desktop-trust li{flex-basis:100%}}
+body.bera-product-reference .pd-inline-qty--offer{width:100%;box-sizing:border-box;padding:16px;margin:20px 0 14px;border:1px solid #cce9fc;border-radius:14px;background:linear-gradient(120deg,#f4faff,#edf8ff);color:#10243b}
+.pd-quantity-heading{display:flex;align-items:center;gap:16px;margin-bottom:14px}.pd-quantity-heading>span{display:grid;place-items:center;width:50px;height:50px;border-radius:12px;background:#dff1ff;color:#009ace;font-size:30px;font-weight:750}.pd-quantity-heading h2{font-size:22px;margin:0;color:#10243b}.pd-quantity-heading p{font-size:14px;color:#54718a;margin:4px 0 0}
+body.bera-product-reference .pd-inline-qty--offer .pd-inline-qty__grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.pd-quantity-option{position:relative;display:flex;align-items:center;gap:12px;min-width:0;margin:0;padding:12px;background:#fff;border:2px solid transparent;border-radius:11px;box-sizing:border-box}.pd-quantity-option--single{border-color:#009ace}.pd-quantity-select{display:flex;align-items:center;gap:12px;width:100%;min-width:0;padding:0;border:0;background:transparent;color:#10243b;text-align:left;cursor:pointer}.pd-quantity-option:has(.pd-quantity-select:hover){border-color:#92d7f4}.pd-quantity-select:focus-visible{outline:2px solid #008bc5;outline-offset:5px}
+.pd-quantity-option img{width:65px;height:85px;object-fit:contain;flex-shrink:0}.pd-quantity-radio{width:18px;height:18px;border:2px solid #bacbd8;border-radius:50%;flex-shrink:0;align-self:flex-start;margin-top:3px}.pd-quantity-option--single .pd-quantity-radio{border-color:#009ace;background:radial-gradient(circle,#009ace 0 40%,transparent 45%)}.pd-quantity-copy{display:flex;flex-direction:column;gap:5px;min-width:0}.pd-quantity-copy h3,.pd-quantity-copy b{font-size:14px;margin:0;color:#10243b}.pd-quantity-copy strong{font-size:19px;color:#008bc5;white-space:nowrap}.pd-quantity-copy small{font-size:12px;color:#426581}.pd-quantity-copy s{font-size:11px;color:#8399ab}.pd-quantity-discount{position:absolute;top:8px;right:8px;background:linear-gradient(135deg,#00cdec,#007bbc);color:#fff;font-size:11px;padding:4px 7px;border-radius:6px}.pd-quantity-copy{padding-top:16px}
+@media(max-width:540px){.pd-quantity-heading h2{font-size:18px}.pd-quantity-heading p{font-size:12px}.pd-quantity-heading{gap:10px}.pd-inline-qty--offer .pd-inline-qty__grid{grid-template-columns:minmax(0,1fr)!important}}

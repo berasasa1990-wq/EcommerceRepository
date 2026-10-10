@@ -4,7 +4,7 @@
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {% block page_title %}
-<title>Članovi / Kartice — Admin — opremazaribolov.ba</title>
+<title>Članovi / Kartice — Admin — {{ public_site_url }}</title>
 {% endblock %}
 
 {% block extra_css %}
@@ -177,7 +177,7 @@ body.loy-full main{padding-top:28px!important;max-width:none}
 
 {% block content %}
 <section class="loy-desk">
-    <a class="loy-back" href="{% url 'staff_admin_panel' %}">← Admin panel</a>
+    <a class="loy-back" href="{% url 'staff_loyalty_workspace' %}">← Loyalty</a>
     <div class="loy-grid">
         <div>
             <nav class="loy-tabs">

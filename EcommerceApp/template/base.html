@@ -1,26 +1,25 @@
-{% load static %}
+{% load static warehouse_access %}
+{% panel_tool_locked 'staff_scratch_workspace' as scratch_module_locked %}
 <!DOCTYPE html>
 <html lang="bs">
 <head>
     <meta charset="UTF-8">
+    {% if media_origin %}<link rel="preconnect" href="{{ media_origin }}">{% endif %}
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <link rel="manifest" href="{% url 'pwa_manifest' %}">
     <meta name="theme-color" content="#ff6500">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="icon" type="image/x-icon" href="{% static 'img/carpologija-favicon.ico' %}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/carpologija-favicon-32.png' %}">
-    <link rel="icon" type="image/png" sizes="128x128" href="{% static 'img/carpologija-favicon.png' %}">
-    <link rel="apple-touch-icon" sizes="128x128" href="{% static 'img/carpologija-favicon.png' %}">
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/pwa-icon.svg' %}">
     <link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.2.7-product-choice">
-    <link rel="preconnect" href="https://media.opremazaribolov.ba">
+
     <meta name="csrf-token" content="{{ csrf_token }}">
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-5GVT50WMXB');
-      gtag('config', 'AW-18301637370');
+      {% if google_analytics_id %}gtag('config', '{{ google_analytics_id|escapejs }}');{% endif %}
+      {% if google_ads_id %}gtag('config', '{{ google_ads_id|escapejs }}');{% endif %}
       window.trackGooglePurchase = function (data) {
         if (!data || typeof gtag !== 'function') return false;
         var transactionId = String(data.transaction_id || '');
@@ -65,13 +64,13 @@
           window.addEventListener('load', function () { window.setTimeout(go, 800); });
         }
       };
-      (function loadGtagLater() {
+      {% if google_tag_id %}(function loadGtagLater() {
         function go() {
           if (window._gtagSrcLoaded) return;
           window._gtagSrcLoaded = true;
           var s = document.createElement('script');
           s.async = true;
-          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-5GVT50WMXB';
+          s.src = 'https://www.googletagmanager.com/gtag/js?id={{ google_tag_id|escapejs }}';
           document.head.appendChild(s);
         }
         if ('requestIdleCallback' in window) {
@@ -79,19 +78,19 @@
         } else {
           window.addEventListener('load', function () { window.setTimeout(go, 1200); });
         }
-      })();
+      })();{% endif %}
     </script>
-    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+    {% if google_tag_id %}<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.google-analytics.com">
-    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com">{% endif %}
     <style>@media(max-width:1024px){.desktop-category-extra,.desktop-category-nav,.desktop-sale-link{display:none!important}}</style>
-    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20260919-wishlist-heart" media="(min-width: 1025px)">
+    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20261008-account-desktop-fix" media="(min-width: 1025px)">
 
     {% if meta_pixel_id %}
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin>
     <link rel="dns-prefetch" href="https://www.facebook.com">
     {% endif %}
-    <meta name="facebook-domain-verification" content="xvfl8evgib41rm02m6jdtd7tvruqy0" />
+    {% if facebook_domain_verification %}<meta name="facebook-domain-verification" content="{{ facebook_domain_verification }}">{% endif %}
     {% if site_settings.google_site_verification %}
     <meta name="google-site-verification" content="{{ site_settings.google_site_verification }}">
     {% endif %}
@@ -162,6 +161,11 @@
     {% endblock %}
     {% endwith %}
 
+    {% if site_settings.favicon %}
+    <link rel="icon" href="{{ site_settings.favicon.url }}" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="{{ site_settings.favicon.url }}">
+    {% endif %}
+
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
@@ -212,7 +216,7 @@
         body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
     </style>
     {% endif %}
-    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20260919-wishlist-heart">
+    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20261008-shared-header">
     <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20260919-wishlist-badge">
     <link rel="stylesheet" href="{% static 'css/wishlist.css' %}?v=20260919-mobile-sheet">
 
@@ -352,8 +356,18 @@
         .desktop-trust-bar nav a.site-wholesale-link { animation:none; }
     }
     </style>
+{% block storefront_theme %}{% endblock %}
+<link rel="stylesheet" href="{% static 'css/bera-home.css' %}?v=20261010-product-name-three-lines-plus1">
+<link rel="stylesheet" href="{% static 'css/bera-offer-popup.css' %}?v=20261008-blue-offers">
+
 </head>
-<body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
+<body data-shop-name="{{ shop_name }}" data-site-url="{{ public_site_url }}" data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="bera-storefront-header {% if request.path == '/panel' or request.path|slice:':7' == '/panel/' %}panel-blue-workspace {% endif %}{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
+    {% if request.path == '/panel' or request.path|slice:':7' == '/panel/' %}
+    <link rel="stylesheet" href="{% static 'css/panel-shell.css' %}?v=20261007-compact">
+    <link rel="stylesheet" href="{% static 'css/panel-blue.css' %}?v=20261008-all-panel">
+    <script src="{% static 'js/panel-articles-fit.js' %}?v=20261008-all-panel" defer></script>
+    <nav class="panel-back-nav" aria-label="Povratak"><a class="panel-back-arrow" href="{% if request.path == '/panel' or request.path == '/panel/' %}{% url 'home' %}{% elif request.path == '/panel/sekcija/scratchprize/' %}{% url 'staff_scratch_workspace' %}{% elif request.path == '/panel/sekcija/loyaltycard/' %}{% url 'staff_loyalty_workspace' %}{% elif request.path == '/panel/sekcija/warehousecustomer/' or request.path == '/panel/sekcija/warehouselocation/' or request.path == '/panel/sekcija/productwarehousemeta/' or request.path == '/panel/sekcija/warehousesynclog/' %}{% url 'staff_wms_workspace' %}{% else %}{% url 'staff_panel' %}{% endif %}" aria-label="Nazad" title="Nazad">←</a></nav>
+    {% else %}
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
     <div class="site-chrome-backdrop" aria-hidden="true"></div>
 
@@ -384,38 +398,16 @@
                             <line x1="3" y1="18" x2="21" y2="18"/>
                         </svg>
                     </button>
-                    {% if user.is_superuser or user.is_staff %}
-                    <a href="{% url 'staff_admin_panel' %}" class="nav-action-link staff-orders-btn staff-admin-nav-btn" aria-label="Admin Panel" title="Admin Panel">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <rect x="3" y="3" width="7" height="7" rx="1"/>
-                            <rect x="14" y="3" width="7" height="7" rx="1"/>
-                            <rect x="3" y="14" width="7" height="7" rx="1"/>
-                            <rect x="14" y="14" width="7" height="7" rx="1"/>
-                        </svg>
-                        <span class="nav-action-label">Admin Panel</span>
-                    </a>
-                    {% endif %}
                 </div>
 
                 <div class="logo-brand">
-                    <a href="{% url 'home' %}" class="logo" aria-label="Carpologija BH">
+                    <a href="{% url 'home' %}" class="logo" aria-label="{{ shop_name }}">
                         {% if site_settings.logo %}
-                        <img src="{{ site_settings.logo.url }}" alt="Carpologija BH" class="logo-image" width="480" height="76" loading="eager" fetchpriority="low" decoding="async">
+                        <img src="{{ site_settings.logo.url }}" alt="{{ shop_name }}" class="logo-image{% if site_settings.logo.width == site_settings.logo.height %} bera-logo-symbol{% endif %}" width="480" height="76" loading="eager" fetchpriority="low" decoding="async">
                         {% else %}
-                        <svg class="logo-icon" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-                            <circle cx="18" cy="18" r="17" stroke="currentColor" stroke-width="1.5"/>
-                            <path d="M10 22c4-6 8-9 14-10-2 4-2 8 0 12-5-1-9-1-14-2z" fill="currentColor"/>
-                            <path d="M24 12c2 2 3 5 2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                            <circle cx="13" cy="19" r="1" fill="currentColor"/>
-                        </svg>
-                        <span class="logo-text">
-                            <span class="logo-name">opremaza<span class="logo-accent">ribolov</span></span><span class="logo-tld">.ba</span>
-                        </span>
+                        <img src="{{ brand_logo_url }}" alt="{{ shop_name }}" class="logo-image" width="320" height="96">
                         {% endif %}
                     </a>
-                    {% if user.is_superuser %}
-                    <a href="{% url 'staff_admin_panel' %}" class="logo-admin-panel">Admin<br>panel</a>
-                    {% endif %}
                 </div>
 
                 <div class="header-search" id="headerSearch">
@@ -427,7 +419,7 @@
                             </svg>
                         </span>
                         <div class="search-combobox" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-haspopup="listbox">
-                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, brandu ili kategoriji..." autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
+                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži proizvode..." autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
                         </div>
                         <select name="kategorija" class="header-category-select" aria-label="Kategorija pretrage">
                             <option value="">Sve kategorije</option>
@@ -467,7 +459,7 @@
                             <path d="M4 21v-1a8 7 0 0 1 16 0v1Z"/>
                             <circle cx="12" cy="6" r="4"/>
                         </svg>
-                        <span class="nav-action-label">Nalog</span>
+                        <span class="nav-action-label">Moj nalog</span>
                     </a>
                     {% else %}
                     <a href="{% url 'login' %}" class="nav-action-link account-btn" aria-label="Prijava">
@@ -475,14 +467,7 @@
                             <path d="M4 21v-1a8 7 0 0 1 16 0v1Z"/>
                             <circle cx="12" cy="6" r="4"/>
                         </svg>
-                        <span class="nav-action-label">Prijava</span>
-                    </a>
-                    {% endif %}
-                    {% if not user.is_authenticated %}
-                    <a class="nav-action-link header-register" href="{% url 'register' %}">
-                        <span class="header-register-badge">REGISTRUJ SE</span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="6" r="4"/><path d="M2 22v-3a8 7 0 0 1 16 0v3zM20 8v8M16 12h8"/></svg>
-                        <span class="nav-action-label">Registracija</span>
+                        <span class="nav-action-label">Moj nalog</span>
                     </a>
                     {% endif %}
                     <div class="wishlist-menu">
@@ -529,6 +514,7 @@
                 </div>
             </div>
 
+            {% include 'partials/bera_home_nav.html' %}
             <nav class="desktop-category-nav" aria-label="Kategorije proizvoda" hidden>
                 {% for nav_cat in nav_categories %}
                 {% if nav_cat.podkategorije.all %}
@@ -742,6 +728,8 @@
     })();
     </script>
 
+    {% endif %}
+
     {% block flash_messages %}
     {% if messages %}
     <div class="flash-messages">
@@ -779,7 +767,7 @@
     {% include 'partials/social_proof_toast.html' %}
 
     {% include 'partials/mobile_dock.html' %}
-    {% include 'partials/footer.html' %}
+    {% block site_footer %}{% include 'partials/footer.html' %}{% endblock %}
     {% include 'partials/contact_float.html' %}
     {% if site_settings.javno_online_posjetioci %}
     {% include 'partials/public_online_visitors.html' %}
@@ -821,7 +809,7 @@
     {% if user.is_authenticated and user.is_superuser %}
     <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260909ordercard">
     <div id="staffAlertsRoot" hidden
-         data-logo-url="{% static 'img/carpologija-nav-logo-dark.jpg' %}"
+         data-logo-url="{{ brand_logo_url }}"
          data-poll-url="{% url 'staff_site_events_poll' %}"
          data-analytics-url="{% url 'staff_live_analytics' %}"
          data-orders-url="{% url 'staff_online_orders' %}"
@@ -854,6 +842,7 @@
     </div>
     <script src="{% static 'js/set-builder-gate.js' %}?v=20260903beta" defer></script>
     {% include 'partials/permanent_input_history.html' %}
+    {% if not scratch_module_locked %}
     <section class="scratch-game{% if scratch_game_immediate %} scratch-game--immediate scratch-game--loading{% endif %}" id="scratchGame" data-csrf-refresh-url="{% url 'auth_csrf_token' %}" data-status-url="{% url 'scratch_status' %}" data-event-url="{% url 'scratch_event' %}" data-claim-url="{% url 'scratch_claim' %}" data-add-to-order-url="{% url 'scratch_add_product_to_order' %}"{% if scratch_game_immediate %} data-immediate="1"{% endif %}{% if scratch_game_return_url %} data-after-close-url="{{ scratch_game_return_url }}"{% endif %}{% if not scratch_game_immediate %} hidden{% endif %} aria-modal="true" role="dialog" aria-labelledby="scratchGameTitle">
       <div class="scratch-game__panel"><button class="scratch-game__close" type="button" aria-label="Zatvori">×</button>
         <h2 id="scratchGameTitle">GREB-GREB</h2>
@@ -864,6 +853,7 @@
       </div>
     </section>
     <script src="{% static 'js/scratch-game.js' %}?v=1.2.7-product-choice" defer></script>
+    {% endif %}
     <script>
       if ('serviceWorker' in navigator && window.isSecureContext) {
         window.addEventListener('load', function () {
@@ -872,5 +862,6 @@
       }
     </script>
     {% block extra_js %}{% endblock %}
+<script src="{% static 'js/bera-brand-logo-align.js' %}?v=20261008-small" defer></script>
 </body>
 </html>

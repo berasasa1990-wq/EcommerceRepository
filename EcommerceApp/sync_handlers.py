@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 
 from .loyalty import sync_loyalty_coupon, tier_info
+from .panel_modules import module_locked
 from .models import Coupon, LoyaltyCard, Order, OrderItem, Product, ProductVariation, UserProfile
 
 
@@ -25,7 +26,7 @@ def serialize_korisnik(user):
         'password_hash': user.password,
         'loyalty': None,
     }
-    if card:
+    if card and not module_locked('loyalty'):
         tier = tier_info(card.nivo)
         payload['loyalty'] = {
             'kod': card.kod,
@@ -71,7 +72,7 @@ def serialize_narudzba(order):
     }
     # Pokušaj attach-ovati loyalty podatke (i za guest narudžbe po emailu)
     # jer remote loyalty pretraga očekuje loyalty kod uz narudžbu
-    if 'loyalty' not in payload:
+    if 'loyalty' not in payload and not module_locked('loyalty'):
         user = None
         if order.korisnik_id:
             user = order.korisnik
@@ -127,7 +128,7 @@ def upsert_korisnik(payload):
     ).update(korisnik=user)
 
     loyalty = payload.get('loyalty')
-    if not loyalty:
+    if not loyalty or module_locked('loyalty'):
         return {'ok': True, 'email': email, 'loyalty': False}
 
     kod = loyalty['kod']

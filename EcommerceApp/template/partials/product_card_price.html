@@ -1,15 +1,23 @@
+{% if home_reference_card %}
+<div class="home-card-prices" data-product-price>
+    <span class="home-card-prices__current">{% if show_od_prefix %}Od {% endif %}{{ product.katalog_prikazna_cijena }} KM</span>
+    {% if product.katalog_na_akciji %}
+    <s class="home-card-prices__original">{% if show_od_prefix %}Od {% endif %}{{ product.katalog_bazna_cijena }} KM</s>
+    {% endif %}
+</div>
+{% else %}
 {% if product.katalog_na_akciji %}
 <div class="card-dwell-deal is-active is-pulse product-sale-card-deal">
     <div class="product-sale-row" data-product-price>
         <div class="product-sale-box">
-            <span class="card-dwell-label">AKCIJA{% if product.katalog_akcija_postotak %} -{{ product.katalog_akcija_postotak }}%{% endif %}</span>
             <span class="price-sale card-dwell-now">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }}<span class="price-currency"> KM</span></span>
         </div>
-        <span class="price-original card-dwell-was">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_bazna_cijena }}<span class="price-currency"> KM</span></span>
+        <s class="price-original card-dwell-was">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_bazna_cijena }}<span class="price-currency"> KM</span></s>
     </div>
 </div>
 {% else %}
 <div class="product-price product-card__price" data-product-price>
     <span class="price-current">{% if show_od_prefix %}<span class="price-prefix">Od </span>{% endif %}{{ product.katalog_prikazna_cijena }}<span class="price-currency"> KM</span></span>
 </div>
+{% endif %}
 {% endif %}

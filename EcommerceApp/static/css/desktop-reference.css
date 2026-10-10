@@ -526,41 +526,7 @@
 
 .product-card.product-card--catalog .product-card-add-btn--notify > span { font-size: inherit; white-space: normal; }
 
- .page-account .acc-dash-crumb, .page-account .acc-dash-hero, .page-account .acc-dash-nav, .page-account .home-trust-bar { display:none; }
- .page-account .account-page { padding: 8px 16px 24px; margin: 0; width:100%; max-width:none; box-sizing:border-box; background:white; }
- .page-account .acc-dash-layout { display:block; }
- .page-account .acc-dash-main { min-width:0; }
- .page-account [data-acc-panel="pregled"] > :not(.account-mobile-overview) { display:none; }
- .account-mobile-overview { display:block; color:#080808; }
- .account-mobile-overview h1 { font-size:28px; line-height:1.15; letter-spacing:-.8px; margin:5px 0; overflow-wrap:anywhere; }
- .account-mobile-overview header > p { font-size:13px; color:#737783; margin:0 0 12px; }
- .am-profile { display:flex; align-items:center; gap:10px; padding:10px; background:#f5f5f7; border-radius:10px; margin-bottom:8px; }
- .am-avatar { display:grid; place-items:center; border-radius:50%; background:#999da7; color:white; font-size:19px; width:42px; height:42px; flex-shrink:0; }
- .am-profile > div { flex:1; min-width:0; }
- .am-profile strong { font-size:14px; display:block; }
- .am-profile div > span { display:block; color:#737783; font-size:11px; overflow-wrap:anywhere; }
- .am-profile > a { border:1px solid #666973; border-radius:7px; padding:8px; color:#111; font-size:11px; white-space:nowrap; }
- .am-loyalty { padding:14px; border-radius:10px; background:linear-gradient(115deg,#080808,#252525); color:#fff; }
- .am-loyalty > small { font-size:9px; letter-spacing:2px; color:#b9bbc1; }
- .am-loyalty h2 { font-size:24px; margin:3px 0 8px; color:white; }
- .am-loyalty h2 span, .am-loyalty a { color:#ff7900; }
- .am-loyalty p { margin:0 0 7px; font-size:11px; }
- .am-progress { height:7px; background:#494949; border-radius:9px; overflow:hidden; }
- .am-progress span { display:block; height:100%; background:#ff7900; border-radius:9px; }
- .am-loyalty footer { display:flex; justify-content:space-between; gap:8px; font-size:10px; margin-top:8px; }
- .am-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:8px 0; }
- .am-stats a { display:flex; align-items:center; gap:9px; padding:10px 8px; border-radius:9px; background:#f5f5f7; color:#111; }
- .account-mobile-overview svg { width:24px; height:24px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
- .am-stats strong { font-size:16px; display:block; }
- .am-stats div > span { font-size:9px; color:#737783; display:block; }
- .am-menu a { display:flex; align-items:center; gap:16px; min-height:44px; padding:8px 14px; border:1px solid #e6e8ed; border-radius:7px; color:#111; box-sizing:border-box; }
- .am-menu strong { display:block; font-size:12px; font-weight:650; }
- .am-menu div > span { display:block; color:#737783; font-size:10px; margin-top:2px; }
- .am-menu b { margin-left:auto; font-size:23px; font-weight:400; color:#737783; }
- .am-menu .am-logout { margin-top:9px; color:#e01020; }
- .account-mobile-back { display:block; color:#656976; margin-bottom:12px; font-size:13px; }
- .acc-dash-main:has([data-acc-panel="pregled"]:not([hidden])) > .account-mobile-back { display:none; }
- .page-account .acc-panel[hidden] { display:none !important; }
+
 
 }
 @media (min-width: 1025px) {

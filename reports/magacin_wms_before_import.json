@@ -1,0 +1,9755 @@
+{
+  "summary": {
+    "legacy_locations": 513,
+    "products": 2434,
+    "stock_rows": 3368,
+    "physical_quantity": 11280959,
+    "legacy_reserved_quantity": 3
+  },
+  "wms_locations": [
+    {
+      "id": 1,
+      "naziv": "Garaza",
+      "opis": ""
+    }
+  ],
+  "product_locations": [
+    {
+      "id": 7556,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7549,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7490,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7489,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7488,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7472,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7471,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7470,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7427,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7426,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7425,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7424,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7423,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7422,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7421,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7420,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7419,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7418,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7417,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7416,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7415,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7414,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7413,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7412,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7411,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7410,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7312,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7289,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7288,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7282,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7281,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7280,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7279,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7278,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7277,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7276,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7275,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7274,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7270,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7269,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7267,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7266,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7265,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7264,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7263,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7262,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7261,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7260,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7259,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7258,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7257,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7252,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7249,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7248,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7247,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7246,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7245,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7244,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7243,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7242,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7230,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7227,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7226,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7225,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7224,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7223,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7213,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7209,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7207,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7206,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7205,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7204,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7203,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7202,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7191,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7190,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7189,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7177,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7176,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7175,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7174,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7173,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7172,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7171,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7166,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7165,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7161,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7141,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7135,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7133,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7131,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7130,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7128,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7126,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7125,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7122,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7121,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7120,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7119,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7117,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7116,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7115,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7114,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7113,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7112,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7111,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7109,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7108,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7107,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7106,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7105,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7104,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7103,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7102,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7101,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7094,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7093,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 7092,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6868,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6867,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6865,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6863,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6856,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6854,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6851,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6850,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6849,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6848,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6847,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6846,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6845,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6844,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6843,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6842,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6840,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6839,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6838,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6836,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6835,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6834,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6833,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6832,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6828,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6826,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6825,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6824,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6823,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6822,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6821,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6820,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6819,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6818,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6778,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6761,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6760,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6759,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6753,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6748,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6747,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6746,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6744,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6743,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6742,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6741,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6739,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6738,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6737,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6736,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6735,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6734,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6733,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6732,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6731,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6730,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6728,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6727,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6726,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6725,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6724,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6723,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6722,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6721,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6719,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6718,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6713,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6712,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6711,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6710,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6708,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6696,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6585,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6183,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 6128,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5862,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5861,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5857,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5786,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5776,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5749,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5748,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5743,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5724,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5712,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5688,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5687,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5686,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5506,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5063,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 5020,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4740,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4723,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4722,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4721,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4720,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4719,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4612,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4599,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4459,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4374,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4373,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4372,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4371,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4370,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4369,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4368,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4367,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4366,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4365,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4364,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4363,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4362,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4361,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4360,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4359,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4358,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4357,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4356,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4355,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4354,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4353,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4352,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4351,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4350,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4349,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4348,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4347,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4346,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4345,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4344,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4343,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4342,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4341,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4340,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4339,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4338,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4337,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4336,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4335,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4334,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4333,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4332,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4331,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4330,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4329,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4328,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4327,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4326,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4325,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4324,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4323,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4322,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4321,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4320,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4319,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4318,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4317,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4316,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4315,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4314,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4313,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4312,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4311,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4310,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4309,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4308,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4307,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4306,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4305,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4304,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4303,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4302,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4301,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4300,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4299,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4298,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4297,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4296,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4295,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4294,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4293,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4292,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4291,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4290,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4289,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4288,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4287,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4286,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4285,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4284,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4283,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4282,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4281,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4280,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4279,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4278,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4277,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4276,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4275,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4274,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4273,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4272,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4271,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4270,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4269,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4268,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4267,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4266,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4265,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4264,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4263,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4262,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4261,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4260,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4259,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4258,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4257,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4256,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4255,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4254,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4253,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4252,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4251,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4250,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4249,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4248,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4247,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4246,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4245,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4244,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4243,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4242,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4241,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4240,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4239,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4238,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4237,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4236,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4235,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4234,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4233,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4232,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4231,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4230,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4229,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4228,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4227,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4226,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4225,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4224,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4223,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4222,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4221,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4220,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4219,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4218,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4217,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4216,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4215,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4213,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4212,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4211,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4210,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4209,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4208,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4207,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4206,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4205,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4204,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4203,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4202,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4201,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4200,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4199,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4198,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4197,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4196,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4195,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4194,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4193,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4192,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4191,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4190,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4189,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4188,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4187,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4186,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4185,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4184,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4183,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4182,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4181,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4180,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4179,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4178,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4177,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4176,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4175,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4174,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4173,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4172,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4171,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4170,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4169,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4168,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4167,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4166,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4165,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4164,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4163,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4162,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4161,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4160,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4159,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4158,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4157,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4156,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4155,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4154,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4153,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4152,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4151,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4150,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4149,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4148,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4147,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4146,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4145,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4144,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4143,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4142,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4141,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4140,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4139,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4138,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4137,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4136,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4135,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4134,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4133,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4132,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4131,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4130,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4129,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4128,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4127,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4126,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4125,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4124,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4123,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4122,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4121,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4120,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4119,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4118,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4117,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4116,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4115,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4114,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4113,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4112,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4111,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4110,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4109,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4108,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4107,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4106,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4105,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4104,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4103,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4102,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4101,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4100,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4099,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4098,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4097,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4096,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4095,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4094,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4093,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4092,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4091,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4090,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4089,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4088,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4087,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4086,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4085,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4084,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4083,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4082,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4081,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4080,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4079,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4078,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4077,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4076,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4075,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4074,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4073,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4072,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4071,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4070,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4069,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4068,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4067,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4066,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4065,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4064,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4063,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4062,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4061,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4060,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4059,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4058,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4057,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4056,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4055,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4054,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4053,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4052,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4051,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4050,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4049,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4048,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4047,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4046,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4045,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4044,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4043,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4042,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4041,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4040,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4039,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4038,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4037,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4036,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4035,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4034,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4033,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4032,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4031,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4030,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4029,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4028,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4027,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4026,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4025,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4024,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4023,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4022,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4021,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4020,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4019,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4018,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4017,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4016,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4015,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4014,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4013,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4012,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4011,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4010,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4009,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4008,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4007,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4006,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4005,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4004,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4003,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4002,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4001,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 4000,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3999,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3998,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3997,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3996,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3995,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3994,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3993,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3992,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3991,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3990,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3989,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3988,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3987,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3986,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3985,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3984,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3983,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3982,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3981,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3980,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3979,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3978,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3977,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3976,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3975,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3974,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3973,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3972,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3971,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3970,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3969,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3968,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3967,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3966,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3965,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3964,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3963,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3962,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3961,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3960,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3959,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3958,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3957,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3956,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3955,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3954,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3953,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3952,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3951,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3950,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3949,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3948,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3947,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3946,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3945,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3944,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3943,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3942,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3941,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3940,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3939,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3938,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3937,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3936,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3935,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3934,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3933,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3932,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3931,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3930,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3929,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3928,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3927,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3926,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3925,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3924,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3923,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3922,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3921,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3920,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3919,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3918,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3917,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3916,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3915,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3914,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3913,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3912,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3911,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3910,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3909,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3908,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3907,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3906,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3905,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3904,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3903,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3902,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3901,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3900,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3899,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3898,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3897,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3896,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3895,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3894,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3893,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3892,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3891,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3890,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3889,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3888,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3887,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3886,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3885,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3884,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3883,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3882,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3881,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3880,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3879,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3878,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3877,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3876,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3875,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3874,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3873,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3872,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3871,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3870,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3869,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3868,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3867,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3866,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3865,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3864,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3863,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3862,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3861,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3860,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3859,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3858,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3857,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3856,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3855,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3854,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3853,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3852,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3851,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3850,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3849,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3848,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3847,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3846,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3845,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3844,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3843,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3842,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3841,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3840,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3839,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3838,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3837,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3836,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3835,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3834,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3833,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3832,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3831,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3830,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3829,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3828,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3827,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3826,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3825,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3824,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3823,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3822,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3821,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3820,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3819,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3818,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3817,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3816,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3815,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3814,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3813,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3812,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3811,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3810,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3809,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3808,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3807,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3806,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3805,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3804,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3803,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3802,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3801,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3800,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3799,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3798,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3797,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3796,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3795,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3794,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3793,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3792,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3791,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3790,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3789,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3788,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3787,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3786,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3785,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3784,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3783,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3782,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3781,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3780,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3779,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3778,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3777,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3776,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3775,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3774,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3773,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3772,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3771,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3770,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3769,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3768,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3767,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3766,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3765,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3764,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3763,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3762,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3761,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3760,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3759,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3758,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3757,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3756,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3755,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3754,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3753,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3752,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3751,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3750,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3749,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3748,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3747,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3746,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3745,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3744,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3743,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3742,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3741,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3740,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3739,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3738,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3737,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3736,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3735,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3734,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3733,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3732,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3731,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3730,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3729,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3728,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3727,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3726,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3725,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3724,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3723,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3722,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3721,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3720,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3719,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3718,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3717,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3716,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3715,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3714,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3713,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3712,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3711,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3710,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3709,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3708,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3707,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3706,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3705,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3704,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3703,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3702,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3701,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3700,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3699,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3698,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3697,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3696,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3695,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3694,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3693,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3692,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3691,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3690,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3689,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3688,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3687,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3686,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3685,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3684,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3683,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3682,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3681,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3680,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3679,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3678,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3677,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3676,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3675,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3674,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3673,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3672,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3671,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3670,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3669,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3668,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3667,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3666,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3665,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3664,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3663,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3662,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3661,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3660,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3659,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3658,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3657,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3656,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3655,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3654,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3653,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3652,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3651,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3650,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3649,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3648,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3647,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3646,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3645,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3644,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3643,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3642,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3641,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3640,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3639,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3638,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3637,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3636,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3635,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3634,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3633,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3632,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3631,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3630,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3629,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3628,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3627,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3626,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3625,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3624,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3623,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3622,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3621,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3620,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3619,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3618,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3617,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3616,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3615,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3614,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3613,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3612,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3611,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3610,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3609,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3608,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3607,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3606,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3605,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3604,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3603,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3602,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3601,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3600,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3599,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3598,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3597,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3596,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3595,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3594,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3593,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3592,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3591,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3590,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3589,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3588,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3587,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3586,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3585,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3584,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3583,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3582,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3581,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3580,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3579,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3578,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3577,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3576,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3575,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3574,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3573,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3572,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3571,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3570,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3569,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3568,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3567,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3566,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3565,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3564,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3563,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3562,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3561,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3560,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3559,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3558,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3557,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3556,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3555,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3554,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3553,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3552,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3551,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3550,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3549,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3548,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3547,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3546,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3545,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3544,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3543,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3542,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3541,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3540,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3539,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3538,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3537,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3536,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3535,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3534,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3533,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3532,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3531,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3530,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3529,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3528,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3527,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3526,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3525,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3524,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3523,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3522,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3521,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3520,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3519,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3518,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3517,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3516,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3515,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3514,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3513,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3512,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3511,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3510,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3509,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3508,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3507,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3506,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3505,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3504,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3503,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3502,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3501,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3500,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3499,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3498,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3497,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3496,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3495,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3494,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3493,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3492,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3491,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3490,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3489,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3488,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3487,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3486,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3485,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3484,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3483,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3482,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3481,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3480,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3479,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3478,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3477,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3476,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3475,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3474,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3473,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3472,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3471,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3470,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3469,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3468,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3467,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3466,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3465,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3464,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3463,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3462,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3461,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3460,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3459,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3458,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3457,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3456,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3455,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3454,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3453,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3452,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3451,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3450,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3449,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3448,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3447,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3446,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3445,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3444,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3443,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3442,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3441,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3440,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3439,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3438,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3437,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3436,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3435,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3434,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3433,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3432,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3431,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3430,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3429,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3428,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3427,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3426,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3425,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3424,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3423,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3422,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3421,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3420,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3419,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3418,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3417,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3416,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3415,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3414,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3413,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3412,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3411,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3410,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3409,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3408,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3407,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3406,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3405,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3404,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3403,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3402,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3401,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3400,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3399,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3398,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3397,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3396,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3395,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3394,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3393,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3392,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3391,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3390,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3389,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3388,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3387,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3386,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3385,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3384,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3383,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3382,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3381,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3380,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3379,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3378,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3377,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3376,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3375,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3374,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3373,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3372,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3371,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3370,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3369,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3368,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3367,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3366,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3365,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3364,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3363,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3362,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3361,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3360,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3359,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3358,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3357,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3356,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3355,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3354,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3353,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3352,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3351,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3350,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3349,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3348,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3347,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3346,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3345,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3344,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3343,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3342,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3341,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3340,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3339,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3338,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3337,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3336,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3335,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3334,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3333,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3332,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3331,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3330,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3329,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3328,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3327,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3326,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3325,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3324,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3323,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3322,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3321,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3320,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3319,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3318,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3317,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3316,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3315,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3314,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3313,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3312,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3311,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3310,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3309,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3308,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3307,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3306,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3305,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3304,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3303,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3302,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3301,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3300,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3299,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3298,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3297,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3296,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3295,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3294,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3293,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3292,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3291,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3290,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3289,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3288,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3287,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3286,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3285,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3284,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3283,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3282,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3281,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3280,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3279,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3278,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3277,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3276,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3275,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3274,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3273,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3272,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3271,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3270,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3269,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3268,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3267,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3266,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3265,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3264,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3263,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3262,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3261,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3260,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3259,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3258,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3257,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3256,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3255,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3254,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3253,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3252,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3251,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3250,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3249,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3248,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3247,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3246,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3245,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3244,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3243,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3242,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3241,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3240,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3239,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3238,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3237,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3236,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3235,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3234,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3233,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3232,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3231,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3230,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3229,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3228,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3227,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3226,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3225,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3224,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3223,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3222,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3221,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3220,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3219,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3218,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3217,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3216,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3215,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3214,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3213,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3212,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3211,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3210,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3209,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3208,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3207,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3206,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3205,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3204,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3203,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3202,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3201,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3200,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3199,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3198,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3197,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3196,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3195,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3194,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3193,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3192,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3191,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3190,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3189,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3188,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3187,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3186,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3185,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3184,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3183,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3182,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3181,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3180,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3179,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3178,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3177,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3176,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3175,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3174,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3173,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3172,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3171,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3170,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3169,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3168,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3167,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3166,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3165,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3164,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3163,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3162,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3161,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3160,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3159,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3158,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3157,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3156,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3155,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3154,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3153,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3152,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3151,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3150,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3149,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3148,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3147,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3146,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3145,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3144,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3143,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3142,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3141,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3140,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3139,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3138,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3137,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3136,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3135,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3134,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3133,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3132,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3131,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3130,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3129,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3128,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3127,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3126,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3125,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3124,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3123,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3122,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3121,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3120,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3119,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3118,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3117,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3116,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3115,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3114,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3113,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3112,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3111,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3110,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3109,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3108,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3107,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3106,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3105,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3104,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3103,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3102,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3101,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3100,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3099,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3098,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3097,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3096,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3095,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3094,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3093,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3092,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3091,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3090,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3089,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3088,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3087,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3086,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3085,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3084,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3083,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3082,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3081,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3080,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3079,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3078,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3077,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3076,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3075,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3074,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3073,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3072,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3071,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3070,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3069,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3068,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3067,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3066,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3065,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3064,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3063,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3062,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3061,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3060,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3059,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3058,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3057,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3056,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3055,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3054,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3053,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3052,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3051,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3050,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3049,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3048,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3047,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3046,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3045,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3044,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3043,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3042,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3041,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3040,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3039,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3038,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3037,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3036,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3035,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3034,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3033,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3032,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3031,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3030,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3029,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3028,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3027,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3026,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3025,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3024,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3023,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3022,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3021,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3020,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3019,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3018,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3017,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3016,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3015,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3014,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3013,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3012,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3011,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3010,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3009,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3008,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3007,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3006,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3005,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3004,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3003,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3002,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3001,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 3000,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2999,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2998,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2997,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2996,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2995,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2994,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2993,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2992,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2991,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2990,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2989,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2988,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2987,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2986,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2985,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2984,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2983,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2982,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2981,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2980,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2979,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2978,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2977,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2976,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2975,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2974,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2973,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2972,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2971,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2970,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2969,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2968,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2967,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2966,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2965,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2964,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2963,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2962,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2961,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2960,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2959,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2958,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2957,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2956,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2955,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2954,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2953,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2952,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2951,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2950,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2949,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2948,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2947,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2946,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2945,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2944,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2943,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2942,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2941,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2940,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2939,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2938,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2937,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2936,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2935,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2934,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2933,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2932,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2931,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2930,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2929,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2928,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2927,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2926,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2925,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2924,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2923,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2922,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2921,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2920,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2919,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2918,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2917,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2916,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2915,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2914,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2913,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2912,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2911,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2910,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2909,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2908,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2907,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2906,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2905,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2904,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2903,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2902,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2901,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2900,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2899,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2898,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2897,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2896,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2895,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2894,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2893,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2892,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2891,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2890,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2889,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2888,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2887,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2886,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2885,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2884,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2883,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2882,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2881,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2880,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2879,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2878,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2877,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2876,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2875,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2874,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2873,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2872,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2871,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2870,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2869,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2868,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2867,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2866,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2865,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2864,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2863,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2862,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2861,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2860,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2859,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2858,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2857,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2856,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2855,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2854,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2853,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2852,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2851,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2850,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2849,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2848,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2847,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2846,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2845,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2844,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2843,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2842,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2841,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2840,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2839,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2838,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2837,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2836,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2835,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2834,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2833,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2832,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2831,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2830,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2829,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2828,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2827,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2826,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2825,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2824,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2823,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2822,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2821,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2820,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2819,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2818,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2817,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2816,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2815,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2814,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2813,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2812,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2811,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2810,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2809,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2808,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2807,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2806,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2805,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2804,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2803,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2802,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2801,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2800,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2799,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2798,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2797,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2796,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2795,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2794,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2793,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2792,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2791,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2790,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2789,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2788,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2787,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2786,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2785,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2784,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2783,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2782,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2781,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2780,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2779,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2778,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2777,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2776,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2775,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2774,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2773,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2772,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2771,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2770,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2769,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2768,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2767,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2766,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2765,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2764,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2763,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2762,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2761,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2760,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2759,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2758,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2757,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2754,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2745,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2740,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2739,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2738,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2737,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2731,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2730,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2728,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2725,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2723,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2722,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2721,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2720,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2719,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2718,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2717,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2716,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2715,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2714,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2713,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2711,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2710,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2709,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2707,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2706,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2705,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2703,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2699,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2694,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2691,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2689,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2688,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2680,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2679,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2678,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2669,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2668,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2664,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2662,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2661,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2656,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2655,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2654,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2653,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2650,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2649,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2648,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2647,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2644,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2642,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2638,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2637,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2636,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2635,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2634,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2633,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2632,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2631,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2630,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2624,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2621,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2619,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2618,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2617,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2616,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2615,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2614,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2613,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2611,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2610,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2609,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2607,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2605,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2601,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2600,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2599,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2598,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2597,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2596,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2594,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2584,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2583,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2582,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2581,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2580,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2579,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2578,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2577,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2576,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2572,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2571,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2570,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2569,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2568,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2567,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2566,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2565,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2562,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2561,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2560,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2559,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2558,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2557,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2556,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2555,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2554,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2553,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2552,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2551,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2550,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2549,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2548,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2547,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2546,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2545,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2544,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2543,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2542,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2541,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2540,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2539,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2538,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2537,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2536,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2535,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2534,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2533,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2532,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2531,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2530,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2529,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2528,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2527,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2526,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2525,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2524,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2523,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2522,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2520,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2519,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2517,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2509,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2508,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2506,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2504,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2503,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2500,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2498,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2496,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2495,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2493,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2492,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2490,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2489,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2488,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2486,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2485,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2484,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2483,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2481,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2480,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2479,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2478,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2467,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2464,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2457,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2456,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2454,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2453,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2449,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2448,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2447,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2444,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2437,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2435,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2434,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2432,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2431,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2430,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2429,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2425,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2421,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2420,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2414,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2413,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2408,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2407,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2405,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2404,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2403,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2400,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2398,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2397,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2387,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2384,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2382,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2375,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2373,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2372,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2371,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2370,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2369,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2360,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2356,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2349,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2348,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2345,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2344,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2343,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2342,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2341,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2340,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2339,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2338,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2337,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2336,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2335,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2334,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2333,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2331,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2330,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2329,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2328,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2327,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2326,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2325,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2324,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2323,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2322,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2321,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2320,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2313,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2312,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2311,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2310,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2309,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2308,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2307,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2306,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2305,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2304,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2303,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2302,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2298,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2297,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2296,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2292,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2286,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2284,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2283,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2282,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2239,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2050,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2048,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2041,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2036,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2031,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2030,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2029,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2028,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2027,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2026,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2025,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2024,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2023,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2022,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2021,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2020,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2019,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2018,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2017,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2016,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2015,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2014,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2013,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2012,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2011,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2010,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2009,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2008,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2007,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2006,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2005,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2004,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2003,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2002,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2001,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 2000,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1999,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1993,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1989,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1988,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1986,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1985,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1983,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1982,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1981,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1979,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1978,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1977,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1976,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1975,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1969,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1953,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1949,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1948,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1947,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1946,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1943,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1942,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1941,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1940,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1939,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1938,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1937,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1936,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1935,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1933,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1932,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1931,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1930,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1927,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1926,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1925,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1924,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1923,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1922,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1921,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1920,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1919,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1918,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1917,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1916,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1915,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1914,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1910,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1909,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1908,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1903,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1902,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1896,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1895,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1894,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1893,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1892,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1891,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1890,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1889,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1888,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1887,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1886,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1885,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1884,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1883,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1881,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1880,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1879,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1878,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1877,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1876,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1875,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1874,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1873,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1872,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1871,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1870,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1869,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1868,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1867,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1866,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1865,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1854,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1840,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1839,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1838,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1837,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1835,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1834,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1833,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1831,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1830,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1829,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1816,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1806,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1805,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1804,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1803,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1802,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1801,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1788,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1782,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1777,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1771,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1769,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1767,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1763,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1762,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1761,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1760,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1759,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1758,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1757,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1756,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1755,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1754,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1753,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1752,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1751,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1750,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1749,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1748,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1747,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1746,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1745,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1744,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1743,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1742,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1741,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1740,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1739,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1738,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1737,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1735,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1734,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1733,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1721,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1720,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1718,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1717,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1716,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1715,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1714,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1713,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1712,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1711,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1710,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1709,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1708,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1707,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1702,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1701,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1700,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1699,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1698,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1697,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1696,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1695,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1694,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1693,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1692,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1691,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1690,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1689,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1688,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1687,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1684,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1680,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1679,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1678,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1676,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1675,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1674,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1673,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1672,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1671,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1670,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1664,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1658,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1650,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1634,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1621,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1617,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1616,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1615,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1604,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1595,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1594,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1593,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1592,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1591,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1590,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1589,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1586,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1585,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1583,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1582,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1579,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1578,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1571,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1570,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1569,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1568,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1566,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1565,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1564,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1563,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1562,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1560,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1559,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1558,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1557,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1556,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1548,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1540,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1528,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1527,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1524,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1522,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1521,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1517,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1516,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1515,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1505,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1500,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1495,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1488,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1486,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1478,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1477,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1476,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1475,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1473,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1472,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1471,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1470,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1469,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1468,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1467,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1466,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1465,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1464,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1463,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1462,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1461,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1460,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1459,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1458,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1457,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1456,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1455,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1454,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1453,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1452,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1451,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1450,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1449,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1448,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1447,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1446,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1445,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1444,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1443,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1442,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1441,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1440,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1435,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1423,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1422,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1421,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1420,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1419,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1417,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1416,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1415,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1414,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1412,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1411,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1410,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1409,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1402,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1401,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1398,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1397,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1396,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1393,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1392,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1391,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1390,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1389,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1388,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1387,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1386,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1385,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1384,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1383,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1382,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1381,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1380,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1379,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1378,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1377,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1376,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1375,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1374,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1373,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1372,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1371,
+      "wms_lokacija_id": null
+    },
+    {
+      "id": 1370,
+      "wms_lokacija_id": null
+    }
+  ],
+  "wms_stocks": []
+}

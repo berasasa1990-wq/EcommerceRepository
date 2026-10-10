@@ -1,0 +1,16 @@
+{% if cart_recommendations %}
+<section class="bera-cart-recommendations" aria-label="Preporučeni proizvodi">
+  <header><h2>Možda će vam se svidjeti</h2><a href="{% url 'home' %}">Pogledaj sve →</a></header>
+  <div class="bera-cart-recommendation-grid">
+    {% for item in cart_recommendations %}
+    <article>
+      <a href="{{ item.get_absolute_url }}" class="bera-cart-recommendation-image">{% if item.prikazna_slika %}<img src="{{ item.prikazna_slika_responsive.src }}" alt="{{ item.naziv }}" width="180" height="150" loading="lazy">{% endif %}</a>
+      <a href="{{ item.get_absolute_url }}" class="bera-cart-recommendation-name">{{ item.naziv }}</a>
+      <strong>{{ item.katalog_prikazna_cijena|floatformat:2 }} KM</strong>
+      {% include 'partials/product_brand_logo.html' with brand=item.brend %}
+      <a href="{{ item.get_absolute_url }}" class="bera-cart-recommendation-link">Pogledaj proizvod →</a>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}

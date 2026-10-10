@@ -485,7 +485,7 @@
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.font = '800 14px "Segoe UI", Inter, system-ui, sans-serif';
-        ctx.fillText('www.opremazaribolov.ba', W / 2, H - 58);
+        ctx.fillText(document.body.dataset.siteUrl || window.location.origin, W / 2, H - 58);
 
         ctx.font = '800 11px "Segoe UI", Inter, system-ui, sans-serif';
         const cols = [
@@ -871,7 +871,7 @@
         ctx.font = '700 13px "Segoe UI", Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('www.opremazaribolov.ba', W / 2, 22);
+        ctx.fillText(document.body.dataset.siteUrl || window.location.origin, W / 2, 22);
 
         // 3) VRHUNSKI IZBOR! badge
         ctx.save();

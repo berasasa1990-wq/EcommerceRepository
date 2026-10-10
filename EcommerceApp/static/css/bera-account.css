@@ -1,0 +1,74 @@
+body.page-account { --ozr-orange: #008bc5; --ozr-orange-hover: #0079b0; color: #10243b; }
+body.page-account main { width: 100%; max-width: none; background: linear-gradient(135deg, #f4faff, #fff); }
+body.page-account .account-page { width: 100%; max-width: 1440px; margin: 0 auto; padding: 24px 24px 48px; box-sizing: border-box; }
+body.page-account .account-page * { box-sizing: border-box; }
+body.page-account .acc-dash-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; }
+body.page-account :is(.acc-dash-main, .acc-panel, .acc-card, .acc-form, .acc-form .form-group) { min-width: 0; }
+body.page-account .acc-dash-hero { gap: 24px; padding: 22px 24px; border: 1px solid #dcebf5; border-radius: 18px; background: linear-gradient(120deg, #e9f7ff, #fff); margin-bottom: 24px; }
+body.page-account .acc-dash-hero h1 { color: #10243b; font-size: clamp(24px, 2.2vw, 32px); overflow-wrap: anywhere; }
+body.page-account :is(.acc-dash-kicker, .acc-dash-name, .acc-stat-value, .acc-card-more, .acc-coupon-pct) { color: #008dbc; }
+body.page-account :is(.acc-card, .acc-stat, .acc-dash-nav, .acc-address-card, .acc-coupon, .acc-loyalty-mini) { border: 1px solid #dcebf5; border-radius: 14px; background: #fff; box-shadow: 0 4px 20px rgb(15 83 122 / 4%); }
+body.page-account .acc-dash-nav { padding: 10px; }
+body.page-account .acc-dash-nav-link { color: #426581; border-radius: 9px; }
+body.page-account .acc-dash-nav-link:hover { background: #edf8fd; color: #007caf; }
+body.page-account .acc-dash-nav-link.is-active { background: linear-gradient(120deg, #0abce2, #0084ba); color: #fff; }
+body.page-account .acc-dash-nav-count { background: #e2f3fc; color: #007caf; }
+body.page-account .acc-stat-icon { background: #e8f7fe; color: #009ace; }
+body.page-account .acc-card-head { flex-wrap: wrap; align-items: center; }
+body.page-account .acc-card-head h2 { color: #10243b; font-size: 19px; }
+body.page-account .acc-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+body.page-account .acc-address-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body.page-account .acc-table-wrap { overflow-x: visible; }
+body.page-account .acc-table { width: 100%; table-layout: fixed; }
+body.page-account .acc-table :is(th, td) { white-space: normal; overflow-wrap: anywhere; border-color: #e1edf6; padding: 12px 10px; }
+body.page-account .acc-table th { color: #426581; background: #edf7fd; }
+body.page-account .acc-table td { color: #234963; }
+body.page-account .acc-btn-orange { background: linear-gradient(120deg, #0ac4e8, #0084ba) !important; color: #fff !important; border: 0; border-radius: 10px; }
+body.page-account .acc-btn-orange:hover { background: linear-gradient(120deg, #00acd5, #0079b0) !important; }
+body.page-account :is(.acc-copy-btn, .acc-form .form-input) { border: 1px solid #d6e8f4; border-radius: 9px; background: #f4faff; color: #234963; }
+body.page-account .acc-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+body.page-account .acc-form .form-input { width: 100%; max-width: 100%; min-width: 0; }
+body.page-account .acc-form > button { grid-column: 1 / -1; justify-self: start; }
+body.page-account .acc-form .form-input:focus-visible { outline: 2px solid #009ace; outline-offset: 2px; }
+body.page-account .acc-loyalty-ring-fg { stroke: #009ace; }
+body.page-account .acc-loyalty-mini { color: #007caf; }
+body.page-account .acc-loyalty-mini :is(.acc-loyalty-mini-label, .acc-loyalty-mini-tier, .acc-loyalty-mini-spend, .acc-loyalty-mini-next, .acc-loyalty-ring > span) { color: #007caf; }
+body.page-account .acc-loyalty-ring-bg { stroke: #dceef8; }
+body.page-account .acc-coupon-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 14px; }
+body.page-account .acc-coupon { background: #eff8ff; margin: 0; flex-wrap: wrap; gap: 12px; }
+@media (max-width: 1024px) {
+    body.page-account .acc-dash-layout { grid-template-columns: 200px minmax(0, 1fr); gap: 16px; }
+    body.page-account .acc-stats { gap: 10px; }
+}
+@media (max-width: 767px) {
+    body.page-account .account-page { padding: 16px 12px 32px; }
+    body.page-account .acc-dash-layout { display: block; }
+    body.page-account :is(.acc-form, .acc-address-grid) { grid-template-columns: minmax(0, 1fr); }
+    body.page-account :is(.am-profile, .am-menu, .am-stats > *, .am-loyalty) { border: 1px solid #dcebf5; border-radius: 12px; background: #fff; }
+    body.page-account .am-loyalty { background: linear-gradient(120deg, #e5f6ff, #f4faff); color: #234963; }
+    body.page-account .am-avatar { background: #e5f6ff; color: #008dbc; }
+    body.page-account .am-menu a { border-color: #e5eff6; color: #234963; }
+    body.page-account .am-menu svg { stroke: #009ace; }
+    body.page-account .am-profile { flex-wrap: wrap; }
+    body.page-account .am-profile > div { min-width: 0; overflow-wrap: anywhere; }
+    body.page-account .acc-table { font-size: 12px; }
+    body.page-account .acc-table :is(th, td) { padding: 10px 5px; }
+}
+
+/* Keep the compact account overview exclusive to phones. */
+@media (min-width: 768px) {
+    body.page-account .account-mobile-overview,
+    body.page-account .account-mobile-back { display: none !important; }
+    body.page-account .acc-dash-crumb { display: flex; }
+    body.page-account .acc-dash-hero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    body.page-account .acc-dash-welcome { flex: 1 1 380px; min-width: 0; }
+    body.page-account .acc-dash-nav { display: flex; }
+    body.page-account .acc-dash-main { width: 100%; }
+    body.page-account .acc-panel:not([hidden]) { display: flex; flex-direction: column; width: 100%; }
+}
+@media (max-width: 767px) {
+    body.page-account .account-mobile-overview { display: block; width: 100%; }
+    body.page-account .am-loyalty h2 { color: #10243b; }
+    body.page-account .am-loyalty :is(h2 span, a) { color: #008dbc; }
+    body.page-account .am-progress span { background: #009ace; }
+}

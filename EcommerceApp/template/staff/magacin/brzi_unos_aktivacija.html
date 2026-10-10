@@ -1522,7 +1522,7 @@
       ctx.font = '800 18px "Segoe UI", Inter, system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('www.opremazaribolov.ba', W / 2, 36);
+      ctx.fillText('{{ public_site_url|escapejs }}', W / 2, 36);
 
       // Badge
       roundRect(ctx, W / 2 - 110, 58, 220, 34, 17);

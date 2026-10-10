@@ -1,3 +1,4 @@
+from EcommerceApp.branding import shop_name
 import json
 import logging
 import random
@@ -88,8 +89,8 @@ logger = logging.getLogger(__name__)
 def pwa_manifest(request):
     """Web app manifest served dynamically so hashed static icon URLs stay valid."""
     payload = {
-        'name': 'Carpologija BH — Oprema za ribolov',
-        'short_name': 'Carpologija',
+        'name': f'{shop_name()} — Oprema za ribolov',
+        'short_name': f'{shop_name()}',
         'lang': 'bs',
         'start_url': '/',
         'scope': '/',
@@ -233,6 +234,7 @@ from .models import (
     HomeCategoryShowcase,
     HomeFeaturedProduct,
     HomeNovoProduct,
+    HomeBestsellerProduct,
     HomePromoCard,
     HomeTrustItem,
     HomeVlog,
@@ -328,13 +330,13 @@ def _product_queryset(request=None):
     """Aktivni artikli na sajtu — i oni koji nisu na stanju (bez korpe)."""
     qs = Product.objects.filter(aktivan=True)
     if not _staff_edit_mode_enabled(request):
-        qs = qs.filter(sakriven_do_stanja=False)
+        qs = qs.filter(sakriven_do_stanja=False, modul_sakriven=False)
     return _prefetch_product_cards(qs)
 
 
 def _home_product_queryset(request=None):
-    """Početna: samo artikli koji su na stanju, s količinom iz magacina."""
-    return _product_queryset(request).filter(na_stanju=True, stanje__gt=0)
+    """Početna uključuje rasprodate artikle s opcijom obavijesti."""
+    return _product_queryset(request)
 
 
 def _bind_variation_parents(product):
@@ -407,7 +409,7 @@ def _filter_size_scope_qs(filter_params, base_qs=None, *, request=None):
     if filter_params.get('izdvojeno'):
         qs = _featured_catalog_qs(qs, request)
     if filter_params.get('noviteti'):
-        qs = qs.filter(na_stanju=True, stanje__gt=0)
+        qs = qs.filter(Q(stanje__gt=0) | Q(pracenje_zaliha=False), na_stanju=True)
     if filter_params.get('brend'):
         brand = Brand.objects.filter(slug=filter_params['brend']).first()
         if brand:
@@ -721,7 +723,7 @@ def _showcase_brands():
 
     # Brži put: brendovi koji imaju logo, pa filter po postojanju artikla
     brand_ids = (
-        Product.objects.filter(aktivan=True, sakriven_do_stanja=False)
+        Product.objects.filter(aktivan=True, sakriven_do_stanja=False, modul_sakriven=False)
         .exclude(brend_id__isnull=True)
         .values_list('brend_id', flat=True)
         .distinct()
@@ -1737,7 +1739,7 @@ def _suggest_product_queryset(request=None):
     from .models import AkcijaFlashLine
     qs = Product.objects.filter(aktivan=True)
     if not _staff_edit_mode_enabled(request):
-        qs = qs.filter(sakriven_do_stanja=False)
+        qs = qs.filter(sakriven_do_stanja=False, modul_sakriven=False)
     return qs.defer(
         'opis', 'meta_title', 'meta_description',
         'olx_listing_url', 'olx_listing_slug', 'olx_listing_id',
@@ -1855,9 +1857,10 @@ def search_suggest(request):
     # SQL filter + SQL order (širi pool), pa Python re-rank: naziv/šifra > tag
     products_qs = _apply_search_filter(_suggest_product_queryset(request), query)
     products_qs = products_qs.annotate(
+        _forced_search=Case(When(prioritet_lagera=3, then=Value(1)), default=Value(0), output_field=IntegerField()),
         _suggest_rel=_suggest_relevance_annotation(query),
         _new_created=Case(When(je_novitet=True, then='kreiran')),
-    ).order_by('-na_stanju', '-je_novitet', '-_new_created', '-_suggest_rel', '-prioritet_lagera', 'naziv')
+    ).order_by('-_forced_search', '-na_stanju', '-je_novitet', '-_new_created', '-_suggest_rel', '-prioritet_lagera', 'naziv')
 
     try:
         limit = int(request.GET.get('limit') or SEARCH_SUGGEST_LIMIT)
@@ -1885,6 +1888,7 @@ def search_suggest(request):
     pool = sorted(
         pool,
         key=lambda p: (
+            0 if p.prioritet_lagera == 3 else 1,
             0 if getattr(p, 'na_stanju', False) else 1,
             0 if p.je_novitet else 1,
             -p.kreiran.timestamp() if p.je_novitet else 0,
@@ -1909,7 +1913,7 @@ def search_suggest(request):
             'sifra': product.sifra,
             'brand': product.brend.naziv if product.brend else '',
             'in_stock': bool(product.na_stanju),
-            'stock': product.stanje,
+            'stock': product.stanje if product.pracenje_zaliha else None,
             'variation_ids': [v.pk for v in product.varijacije.all()],
             'category': {'name': product.kategorija.naziv, 'url': product.kategorija.get_absolute_url()} if product.kategorija else None,
             'url': product.get_absolute_url(),
@@ -1953,7 +1957,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     if params.get('izdvojeno'):
         products_qs = _featured_catalog_qs(products_qs, request)
     if params.get('noviteti'):
-        products_qs = products_qs.filter(na_stanju=True, stanje__gt=0)
+        products_qs = products_qs.filter(Q(stanje__gt=0) | Q(pracenje_zaliha=False), na_stanju=True)
     if params.get('brend'):
         brand = Brand.objects.filter(slug=params['brend']).first()
         products_qs = products_qs.filter(brend_id=brand.pk) if brand else products_qs.none()
@@ -1969,9 +1973,10 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     # SQL pre-order za pretragu — naziv/šifra gore; NE sijeći na 200 (fali ostatak)
     if search_q and len(search_q) >= 2:
         products_qs = products_qs.annotate(
+            _forced_search=Case(When(prioritet_lagera=3, then=Value(1)), default=Value(0), output_field=IntegerField()),
             _search_sql_rel=_suggest_relevance_annotation(search_q),
             _new_created=Case(When(je_novitet=True, then='kreiran')),
-        ).order_by('-na_stanju', '-je_novitet', '-_new_created', '-_search_sql_rel', '-prioritet_lagera', 'naziv')
+        ).order_by('-_forced_search', '-na_stanju', '-je_novitet', '-_new_created', '-_search_sql_rel', '-prioritet_lagera', 'naziv')
         products = list(products_qs[:SEARCH_FULL_RANK_POOL])
     else:
         products = list(products_qs)
@@ -2022,7 +2027,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
         products = [product for product in products if _product_is_on_sale(product)]
 
     if params['noviteti']:
-        products = [product for product in products if product.na_stanju and product.stanje > 0]
+        products = [product for product in products if product.na_stanju and (not product.pracenje_zaliha or product.stanje > 0)]
 
     if params['velicina']:
         size_label = params['velicina']
@@ -2059,6 +2064,8 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
         ))
     products = _oos_at_end(products)
     # Store the actual submitted webshop search, not every autocomplete keystroke.
+    if search_q:
+        products.sort(key=lambda product: 0 if product.prioritet_lagera == 3 else 1)
     if search_q and len(search_q) >= 2 and not request.path.startswith(('/nalog/', '/app/')):
         if request.session.session_key is None:
             request.session.create()
@@ -2216,7 +2223,7 @@ def _banner_secondary_href(link):
             pass
         local_hosts = {
             'localhost', '127.0.0.1', '0.0.0.0',
-            'www.opremazaribolov.ba', 'opremazaribolov.ba',
+
         }
         if site_host:
             local_hosts.add(site_host)
@@ -2224,7 +2231,7 @@ def _banner_secondary_href(link):
                 local_hosts.add(site_host[4:])
             else:
                 local_hosts.add(f'www.{site_host}')
-        if host in local_hosts or host.endswith('.onrender.com'):
+        if host in local_hosts:
             path = parsed.path or '/'
             if parsed.query:
                 path = f'{path}?{parsed.query}'
@@ -2363,7 +2370,7 @@ def _fill_home_section_products(products, request=None):
     """Dopuni sekciju do HOME_SECTION_PRODUCT_LIMIT da karusel ima 5 u nizu."""
     items = [
         p for p in (products or [])
-        if getattr(p, 'na_stanju', False) and int(getattr(p, 'stanje', 0) or 0) > 0
+        if p.na_stanju and (not p.pracenje_zaliha or int(p.stanje or 0) > 0)
     ]
     if len(items) >= HOME_SECTION_PRODUCT_LIMIT:
         return items[:HOME_SECTION_PRODUCT_LIMIT]
@@ -2384,9 +2391,9 @@ def _home_latest_products(request=None):
 
 
 def _home_latest_products_uncached(request=None):
-    candidates = Product.objects.filter(aktivan=True, na_stanju=True, stanje__gt=0)
+    candidates = Product.objects.filter(Q(stanje__gt=0) | Q(pracenje_zaliha=False), aktivan=True, na_stanju=True)
     if not _staff_edit_mode_enabled(request):
-        candidates = candidates.filter(sakriven_do_stanja=False)
+        candidates = candidates.filter(sakriven_do_stanja=False, modul_sakriven=False)
     # IDs do not need product-card joins, variation counts or prefetches.
     recent_ids = list(candidates.order_by('-kreiran', '-pk').values_list('pk', flat=True)[:50])
     selected_ids = random.sample(recent_ids, min(HOME_SECTION_PRODUCT_LIMIT, len(recent_ids)))
@@ -2396,19 +2403,17 @@ def _home_latest_products_uncached(request=None):
 
 def _featured_catalog_qs(products_qs, request=None):
     base_qs = _home_product_queryset(request)
-    marked = base_qs.filter(je_hit=True)
-    if marked.exists():
-        return products_qs.filter(pk__in=marked.values('pk'))
     selected_ids = HomeFeaturedProduct.objects.filter(aktivan=True).values('artikal_id')
-    return products_qs.filter(pk__in=base_qs.filter(pk__in=selected_ids).values('pk'))
+    if HomeFeaturedProduct.objects.filter(aktivan=True).exists():
+        return products_qs.filter(pk__in=base_qs.filter(pk__in=selected_ids).values('pk'))
+    return products_qs.filter(pk__in=base_qs.filter(je_hit=True).values('pk'))
 
 
 def _home_featured_products(request=None):
     """
     Izdvojeni na početnoj:
-    1) Artikli označeni „HIT / Izdvojeno” (je_hit)
-    2) Fallback: ručni HomeFeaturedProduct
-    Među njima: redukovanje lagera ima prednost.
+    1) Ručno odabrani HomeFeaturedProduct po redoslijedu
+    2) Fallback: artikli označeni „HIT / Izdvojeno” (je_hit)
     """
     return _home_cache_get(
         'home_featured_products_v4',
@@ -2418,29 +2423,25 @@ def _home_featured_products(request=None):
 
 def _home_featured_products_uncached(request=None):
     base_qs = _home_product_queryset(request)
-    marked = list(
-        _order_qs_by_lager_priority(
-            base_qs.filter(je_hit=True),
-            '-kreiran', '-id',
-        )[:HOME_SECTION_PRODUCT_LIMIT],
-    )
-    if marked:
-        return marked
+    if not HomeFeaturedProduct.objects.filter(aktivan=True).exists():
+        return list(_order_qs_by_lager_priority(
+            base_qs.filter(je_hit=True), '-kreiran', '-id',
+        )[:HOME_SECTION_PRODUCT_LIMIT])
 
     entries_qs = HomeFeaturedProduct.objects.filter(
+        Q(artikal__stanje__gt=0) | Q(artikal__pracenje_zaliha=False),
         aktivan=True,
         artikal__aktivan=True,
         artikal__na_stanju=True,
-        artikal__stanje__gt=0,
     )
     if not _staff_edit_mode_enabled(request):
-        entries_qs = entries_qs.filter(artikal__sakriven_do_stanja=False)
+        entries_qs = entries_qs.filter(artikal__sakriven_do_stanja=False, artikal__modul_sakriven=False)
     entries = entries_qs.select_related(
         'artikal', 'artikal__kategorija', 'artikal__brend',
     ).prefetch_related(
         Prefetch('artikal__varijacije', queryset=_in_stock_variations_qs()),
     ).order_by(
-        '-artikal__prioritet_lagera', 'redoslijed', '-id',
+        'redoslijed', 'id',
     )[:HOME_SECTION_PRODUCT_LIMIT]
     return [entry.artikal for entry in entries]
 
@@ -2657,7 +2658,11 @@ def _vlog_seo_description(sadrzaj, max_len=160):
 def newsletter_subscribe(request):
     """AJAX pretplata na newsletter sa početne stranice."""
     email = (request.POST.get('email') or '').strip().lower()
-    if not email or '@' not in email or '.' not in email.split('@')[-1]:
+    from django.core.validators import validate_email
+    from django.core.exceptions import ValidationError
+    try:
+        validate_email(email)
+    except ValidationError:
         return JsonResponse(
             {'ok': False, 'message': 'Unesite ispravnu e-mail adresu.'},
             status=400,
@@ -2696,7 +2701,7 @@ def newsletter_subscribe(request):
     })
 
 
-FACEBOOK_DOMAIN_VERIFICATION = 'xvfl8evgib41rm02m6jdtd7tvruqy0'
+FACEBOOK_DOMAIN_VERIFICATION = settings.FACEBOOK_DOMAIN_VERIFICATION
 
 
 @require_GET
@@ -2829,7 +2834,12 @@ def home(request):
             else:
                 catalog_subtitle = f'Nema artikala za {size_label}.'
     else:
-        latest_products = _home_latest_products(request)
+        if HomeBestsellerProduct.objects.filter(aktivan=True).exists():
+            latest_products = list(_home_product_queryset(request).filter(
+                najprodavaniji_na_pocetnoj__aktivan=True
+            ).order_by('najprodavaniji_na_pocetnoj__redoslijed', 'najprodavaniji_na_pocetnoj__id').distinct()[:6])
+        else:
+            latest_products = _home_latest_products(request)
         featured_products = _home_featured_products(request)
         featured_desktop_extra_ids = []
         if site_settings.prikazi_akcijsku_sekciju:
@@ -2917,8 +2927,15 @@ def home(request):
         'hero_slides': [_banner_to_hero_slide(b) for b in hero_banners_list],
         'grid_banners': [_banner_to_card(b) for b in grid_banners],
         'featured_cards': [_banner_to_card(b) for b in featured_banners],
+        'home_offer_slots': [next((_banner_to_card(b) for b in featured_banners if b.redoslijed == slot), None) for slot in (0, 1)],
+        'footer_promo_card': next((_banner_to_card(b) for b in featured_banners if b.redoslijed == 2), None),
         'spotlight': spotlight,
         'latest_products': latest_products,
+        'home_new_offer_products': list(_home_product_queryset(request).filter(
+            pk__in=HomeNovoProduct.objects.filter(aktivan=True).values('artikal_id')
+        ).order_by('noviteti_na_pocetnoj__redoslijed', 'noviteti_na_pocetnoj__id').filter(
+            noviteti_na_pocetnoj__aktivan=True
+        ).distinct()[:6]) if not filters_active else [],
         'featured_products': featured_products,
         'featured_desktop_extra_ids': featured_desktop_extra_ids if not filters_active else [],
         'sale_products': sale_products,
@@ -2943,7 +2960,7 @@ def home(request):
         'selected_brand': Brand.objects.filter(slug=filter_params['brend']).first() if filter_params.get('brend') else None,
         'home_section_product_visible': HOME_SECTION_PRODUCT_VISIBLE,
         'home_section_product_visible_mobile': HOME_SECTION_PRODUCT_VISIBLE_MOBILE,
-        'canonical_url': settings.SEO_CANONICAL_URL + '/',
+        'canonical_url': settings.SITE_URL + '/',
     }
     # SEO: početna ili filtrirani katalog (akcija / noviteti / pretraga / brend)
     selected_brand = context['selected_brand']
@@ -2952,27 +2969,27 @@ def home(request):
         secondary = [key for key in ('q', 'kategorija', 'velicina', 'cijena_od', 'cijena_do', 'izdvojeno', 'nedostaje') if filter_params.get(key)]
         if len(primary) == 1 and not secondary:
             key = primary[0]
-            context['canonical_url'] = settings.SEO_CANONICAL_URL + '/?' + urlencode({key: filter_params[key]})
+            context['canonical_url'] = settings.SITE_URL + '/?' + urlencode({key: filter_params[key]})
         else:
             context['meta_robots_content'] = 'noindex, follow'
         if page_obj and page_obj.number > 1 and not context.get('meta_robots_content'):
             context['canonical_url'] += ('&' if '?' in context['canonical_url'] else '?') + f'page={page_obj.number}'
         if filter_params.get('nedostaje'):
             context.update({
-                'seo_title': f'{catalog_title} | Carpologija BH',
+                'seo_title': f'{catalog_title} | {shop_name()}',
                 'seo_description': catalog_subtitle,
                 'seo_h1': catalog_title,
             })
         elif filter_params.get('akcija'):
             context.update(page_seo_context('akcija', defaults={
                 'seo_title': 'Akcija | Oprema za ribolov',
-                'seo_description': 'Artikli na sniženoj cijeni — Carpologija BH',
+                'seo_description': f'Artikli na sniženoj cijeni — {shop_name()}',
                 'seo_h1': catalog_title or 'Akcija',
             }))
         elif filter_params.get('noviteti'):
             context.update(page_seo_context('noviteti', defaults={
                 'seo_title': 'Noviteti | Oprema za ribolov',
-                'seo_description': 'Novi artikli u ponudi — Carpologija BH',
+                'seo_description': f'Novi artikli u ponudi — {shop_name()}',
                 'seo_h1': catalog_title or 'Noviteti',
             }))
         elif filter_params.get('q'):
@@ -3006,9 +3023,9 @@ def home(request):
             context['catalog_title'] = context['seo_h1']
     else:
         context.update(page_seo_context('home', defaults={
-            'seo_title': public_brand(site_settings.seo_title) or 'Oprema za ribolov | Online shop BiH | Carpologija BH',
-            'seo_description': public_brand(site_settings.meta_description) or 'Štapovi, mašinice, varalice i pribor za ribolov. Istražite ponudu Carpologija BH i naručite online uz dostavu širom BiH.',
-            'seo_h1': 'Oprema za ribolov — Carpologija BH',
+            'seo_title': public_brand(site_settings.seo_title) or f'Oprema za ribolov | Online shop BiH | {shop_name()}',
+            'seo_description': public_brand(site_settings.meta_description) or f'Štapovi, mašinice, varalice i pribor za ribolov. Istražite ponudu {shop_name()} i naručite online uz dostavu širom BiH.',
+            'seo_h1': f'Oprema za ribolov — {shop_name()}',
         }))
     return render(request, 'home.html', context)
 
@@ -3049,9 +3066,9 @@ def vlog_detail(request, slug):
         'vlog_image': vlog_image,
         'image_width': vlog_image['width'],
         'image_height': vlog_image['height'],
-        'seo_title': f'{vlog.naslov} | Vlog — Carpologija BH',
+        'seo_title': f'{vlog.naslov} | Vlog — {shop_name()}',
         'seo_description': seo_description,
-        'canonical_url': settings.SEO_CANONICAL_URL + vlog.get_absolute_url(),
+        'canonical_url': settings.SITE_URL + vlog.get_absolute_url(),
         'og_image': request.build_absolute_uri(vlog_image['src']),
     }
     return render(request, 'vlog_detail.html', context)
@@ -3061,14 +3078,14 @@ def about_us(request):
     context = {
         **_base_context(),
         **page_seo_context('about', defaults={
-            'seo_title': 'O nama — Carpologija BH',
+            'seo_title': f'O nama — {shop_name()}',
             'seo_description': (
-                'Saznajte više o Carpologija BH — dugogodišnje iskustvo u ribolovu '
+                f'Saznajte više o {shop_name()} — dugogodišnje iskustvo u ribolovu '
                 'i opremi, sada u online prodaji za ribare u Bosni i Hercegovini.'
             ),
             'seo_h1': 'O nama',
         }),
-        'canonical_url': settings.SEO_CANONICAL_URL + reverse('about_us'),
+        'canonical_url': settings.SITE_URL + reverse('about_us'),
     }
     return render(request, 'pages/about.html', context)
 
@@ -3077,11 +3094,11 @@ def wishlist(request):
     context = {
         **_base_context(),
         **page_seo_context('wishlist', defaults={
-            'seo_title': 'Lista želja — Carpologija BH',
+            'seo_title': f'Lista želja — {shop_name()}',
             'seo_description': 'Sačuvani proizvodi na listi želja.',
             'seo_h1': 'Lista želja',
         }),
-        'canonical_url': settings.SEO_CANONICAL_URL + reverse('wishlist'),
+        'canonical_url': settings.SITE_URL + reverse('wishlist'),
     }
     return render(request, 'wishlist.html', context)
 
@@ -3090,13 +3107,13 @@ def payment_methods(request):
     context = {
         **_base_context(),
         **page_seo_context('payment', defaults={
-            'seo_title': 'Način plaćanja — Carpologija BH',
+            'seo_title': f'Način plaćanja — {shop_name()}',
             'seo_description': (
                 'Plaćanje prilikom preuzimanja, dostava brzom poštom u roku 48h i sigurno slanje pošiljki.'
             ),
             'seo_h1': 'Način plaćanja',
         }),
-        'canonical_url': settings.SEO_CANONICAL_URL + reverse('payment_methods'),
+        'canonical_url': settings.SITE_URL + reverse('payment_methods'),
     }
     return render(request, 'pages/payment.html', context)
 
@@ -3105,9 +3122,9 @@ def payment_methods(request):
 def payment_security(request):
     context = {
         **_base_context(),
-        'seo_title': 'Sigurnost plaćanja — Carpologija BH',
+        'seo_title': f'Sigurnost plaćanja — {shop_name()}',
         'seo_description': 'Sigurnost plaćanja kreditnim karticama i pomoć kupcu.',
-        'canonical_url': settings.SEO_CANONICAL_URL + reverse('payment_security'),
+        'canonical_url': settings.SITE_URL + reverse('payment_security'),
     }
     return render(request, 'pages/payment_security.html', context)
 
@@ -3115,9 +3132,9 @@ def payment_security(request):
 def privacy_statement(request):
     context = {
         **_base_context(),
-        'seo_title': 'Izjava o privatnosti — Carpologija BH',
+        'seo_title': f'Izjava o privatnosti — {shop_name()}',
         'seo_description': 'Izjava o zaštiti i prikupljanju osobnih podataka kupaca i korisnika.',
-        'canonical_url': settings.SEO_CANONICAL_URL + reverse('privacy_statement'),
+        'canonical_url': settings.SITE_URL + reverse('privacy_statement'),
     }
     return render(request, 'pages/privacy_statement.html', context)
 
@@ -3125,9 +3142,9 @@ def privacy_statement(request):
 def purchase_terms(request):
     context = {
         **_base_context(),
-        'seo_title': 'Uslovi kupovine — Carpologija BH',
+        'seo_title': f'Uslovi kupovine — {shop_name()}',
         'seo_description': 'Uslovi naručivanja, plaćanja, isporuke i reklamacija proizvoda.',
-        'canonical_url': settings.SEO_CANONICAL_URL + reverse('purchase_terms'),
+        'canonical_url': settings.SITE_URL + reverse('purchase_terms'),
     }
     return render(request, 'pages/purchase_terms.html', context)
 
@@ -3135,7 +3152,7 @@ def purchase_terms(request):
 def brands_list(request):
     brands_qs = Brand.objects.filter(
         id__in=(
-            Product.objects.filter(aktivan=True, sakriven_do_stanja=False)
+            Product.objects.filter(aktivan=True, sakriven_do_stanja=False, modul_sakriven=False)
             .exclude(brend_id__isnull=True)
             .values_list('brend_id', flat=True)
             .distinct()
@@ -3152,7 +3169,7 @@ def brands_list(request):
     total = page_obj.paginator.count
     start = page_obj.start_index() if total else 0
     end = page_obj.end_index() if total else 0
-    canonical = settings.SEO_CANONICAL_URL + reverse('brands_list')
+    canonical = settings.SITE_URL + reverse('brands_list')
     context = {
         **_base_context(),
         'brands': page_obj.object_list,
@@ -3163,16 +3180,16 @@ def brands_list(request):
         'brands_shown_end': end,
         'brands_total': total,
         **page_seo_context('brands', defaults={
-            'seo_title': 'Brendovi — Carpologija BH',
+            'seo_title': f'Brendovi — {shop_name()}',
             'seo_description': (
-                'Svi brendovi ribolovne opreme na Carpologija BH — Fox, Shimano, '
+                f'Svi brendovi ribolovne opreme na {shop_name()} — Fox, Shimano, '
                 'Daiwa, Korda i drugi. Pronađite vrhunsku opremu poznatih brendova.'
             ),
             'seo_h1': 'Svi brendovi',
         }),
         'canonical_url': canonical,
         'breadcrumb_json_ld': json_ld(breadcrumb_json_ld([
-            {'name': 'Početna', 'url': settings.SEO_CANONICAL_URL + '/'},
+            {'name': 'Početna', 'url': settings.SITE_URL + '/'},
             {'name': 'Brendovi', 'url': canonical},
         ])),
     }
@@ -3184,13 +3201,13 @@ def vlog_list(request):
         **_base_context(),
         'vlogs': _vlog_cards(),
         **page_seo_context('vlog', defaults={
-            'seo_title': 'Blog — Carpologija BH',
+            'seo_title': f'Blog — {shop_name()}',
             'seo_description': (
-                'Blog i vlog Carpologija BH — savjeti, priče i novosti iz svijeta ribolova.'
+                f'Blog i vlog {shop_name()} — savjeti, priče i novosti iz svijeta ribolova.'
             ),
             'seo_h1': 'Blog',
         }),
-        'canonical_url': settings.SEO_CANONICAL_URL + reverse('vlog_list'),
+        'canonical_url': settings.SITE_URL + reverse('vlog_list'),
     }
     return render(request, 'vlog_list.html', context)
 
@@ -3224,7 +3241,7 @@ def category_detail(request, slug):
         default_description=auto_category_seo_description(category),
         default_h1=category.naziv,
     )
-    cat_canonical = settings.SEO_CANONICAL_URL + category.get_absolute_url()
+    cat_canonical = settings.SITE_URL + category.get_absolute_url()
     if direct_subs and show_all:
         cat_canonical += '?all=1'
     category_ld = {
@@ -3234,7 +3251,7 @@ def category_detail(request, slug):
             url=cat_canonical,
         )),
         'breadcrumb_json_ld': json_ld(breadcrumb_json_ld([
-            {'name': 'Početna', 'url': settings.SEO_CANONICAL_URL + '/'},
+            {'name': 'Početna', 'url': settings.SITE_URL + '/'},
             {'name': category.naziv, 'url': cat_canonical},
         ])),
     }
@@ -3390,7 +3407,7 @@ def product_detail(request, slug):
     if _can_view_out_of_stock(request):
         product_qs = Product.objects.all()
     else:
-        product_qs = Product.objects.filter(aktivan=True, sakriven_do_stanja=False)
+        product_qs = Product.objects.filter(aktivan=True, sakriven_do_stanja=False, modul_sakriven=False)
     product = get_object_or_404(
         product_qs
         .select_related('kategorija', 'brend')
@@ -3440,28 +3457,28 @@ def product_detail(request, slug):
             default_description=product.seo_description,
             default_h1=product.naziv,
         ),
-        'canonical_url': settings.SEO_CANONICAL_URL + product.get_absolute_url(),
+        'canonical_url': settings.SITE_URL + product.get_absolute_url(),
         'product_back_url': _product_back_url(request, product),
         # Van stanja: ne indeksiraj (i dalje otvoren link za stare bookmarke)
         'meta_robots_content': None if product_available else 'noindex, follow',
         'product_json_ld': json_ld(product_json_ld(
             product,
-            canonical_url=settings.SEO_CANONICAL_URL + product.get_absolute_url(),
+            canonical_url=settings.SITE_URL + product.get_absolute_url(),
             site_settings=site_settings,
             request=request,
         )),
         'breadcrumb_json_ld': json_ld(breadcrumb_json_ld([
-            {'name': 'Početna', 'url': settings.SEO_CANONICAL_URL + '/'},
+            {'name': 'Početna', 'url': settings.SITE_URL + '/'},
             *(
                 [{
                     'name': product.kategorija.naziv,
-                    'url': settings.SEO_CANONICAL_URL + product.kategorija.get_absolute_url(),
+                    'url': settings.SITE_URL + product.kategorija.get_absolute_url(),
                 }]
                 if product.kategorija_id else []
             ),
             {
                 'name': product.naziv,
-                'url': settings.SEO_CANONICAL_URL + product.get_absolute_url(),
+                'url': settings.SITE_URL + product.get_absolute_url(),
             },
         ])),
     }
@@ -3479,6 +3496,7 @@ def product_detail(request, slug):
 
     # X+1 deal promo for product detail (pulsating red box)
     from .upsell import get_deal_promo_data
+    from .models import Akcija
     from .gratis import build_gratis_offer_response, get_active_gratis_akcija_for_product
 
     deal_promo = get_deal_promo_data(product)
@@ -3486,8 +3504,8 @@ def product_detail(request, slug):
         context['deal_promo'] = deal_promo
 
     gratis_akcija = get_active_gratis_akcija_for_product(product)
-    if gratis_akcija and build_gratis_offer_response(gratis_akcija):
-        # Samo tekstualni hint pored dugmeta; popup pri svakom dodavanju u korpu
+    if gratis_akcija and gratis_akcija.tip != Akcija.Tip.PONUDA and build_gratis_offer_response(gratis_akcija):
+        # Legacy Gratis retains its hint; + Ponuda uses the inline offer section.
         context['gratis_akcija_hint'] = True
 
     from .gratis import get_active_qty_deal_for_product
@@ -3504,10 +3522,42 @@ def product_detail(request, slug):
     context['product_urgency'] = build_product_urgency(product)
     context['olx_configured'] = bool(settings.OLX_API_TOKEN)
     context['staff_product_tools'] = _staff_edit_mode_enabled(request)
-    context['product_bundle'] = _product_page_bundle(product)
+    context['product_bundle'] = _product_page_plus_offer(product)
     context['flash_offer'] = _product_page_flash_offer(product)
 
+    from .product_features import extract_product_features
+    context['product_description'] = (product.opis or '').replace('**', '').replace('##', '')
+    context['product_description_features'] = extract_product_features(context['product_description'])
+    context['product360_frames'] = [frame.image.url for frame in product.images_360.all()] if product.enabled_360 else []
+    context['bera_product_reference'] = True
     return render(request, 'product_detail.html', context)
+
+
+def _product_page_plus_offer(product):
+    """Inline offer for the panel action type + Ponuda."""
+    from .models import Akcija
+    from .gratis import _resolve_product_variation, _product_is_available, _gratis_discounted_price
+    trigger_variation = _resolve_product_variation(product)
+    if not _product_is_available(product, trigger_variation):
+        return None
+    for akcija in Akcija.objects.filter(aktivan=True, tip=Akcija.Tip.PONUDA, artikal=product).select_related('gratis_artikal').order_by('redoslijed', '-id'):
+        offered = akcija.gratis_artikal
+        if not akcija.jos_traje() or not offered or not offered.aktivan or offered.modul_sakriven or offered.sakriven_do_stanja:
+            continue
+        variation = _resolve_product_variation(offered)
+        if not _product_is_available(offered, variation):
+            continue
+        items = []
+        for article, variant in ((product, trigger_variation), (offered, variation)):
+            current = variant.prikazna_cijena if variant else article.prikazna_cijena
+            regular = variant.bazna_cijena if variant else article.bazna_cijena
+            price = _gratis_discounted_price(akcija, article, variant) if article == offered else current
+            items.append({'product': article, 'quantity': 1, 'line_bazna': regular, 'line_snizena': price, 'has_discount': price < regular})
+        total = sum(item['line_snizena'] for item in items)
+        regular = sum(item['line_bazna'] for item in items)
+        return {'akcija': akcija, 'items': items, 'variation_id': trigger_variation.pk if trigger_variation else None,
+                'pricing': {'total_bazna': regular, 'total_snizena': total, 'usteda': regular - total, 'has_discount': total < regular}}
+    return None
 
 
 def _product_page_bundle(product):
@@ -3642,7 +3692,7 @@ def _product_page_flash_offer(product):
 @require_POST
 def stock_notify(request, slug):
     product = get_object_or_404(
-        Product.objects.filter(aktivan=True, sakriven_do_stanja=False),
+        Product.objects.filter(aktivan=True, sakriven_do_stanja=False, modul_sakriven=False),
         slug=slug,
     )
     user = request.user if request.user.is_authenticated else None
@@ -3712,7 +3762,7 @@ def stock_notify_unsubscribe(request, token):
 def add_to_cart(request, slug):
     # Fetch product allowing sold-out (we validate stock below)
     product = get_object_or_404(
-        Product.objects.filter(aktivan=True, sakriven_do_stanja=False).select_related('kategorija'),
+        Product.objects.filter(aktivan=True, sakriven_do_stanja=False, modul_sakriven=False).select_related('kategorija'),
         slug=slug,
     )
     cart = Cart(request)
@@ -4433,7 +4483,7 @@ def add_upsell_to_cart(request, offer_id, product_id):
         return _upsell_add_error_response(request, 'Ponuda više nije dostupna.')
 
     product = Product.objects.filter(
-        aktivan=True, sakriven_do_stanja=False, na_stanju=True, pk=product_id,
+        aktivan=True, sakriven_do_stanja=False, modul_sakriven=False, na_stanju=True, pk=product_id,
     ).first()
     if not product:
         return _upsell_add_error_response(request, 'Artikal nije dostupan.')
@@ -4567,6 +4617,9 @@ def _check_and_set_pending_upsell(request, added_product):
 
 
 def _loyalty_za_kupon(request):
+    from .panel_modules import module_locked
+    if module_locked('loyalty'):
+        return None
     if not request.user.is_authenticated:
         return None
     card = getattr(request.user, 'loyalty_kartica', None)
@@ -4579,9 +4632,14 @@ def _coupon_choices(request):
     if not request.user.is_authenticated:
         return []
     card = _loyalty_za_kupon(request)
-    candidates = Coupon.objects.filter(aktivan=True).filter(
-        Q(vlasnik=request.user) | Q(loyalty_kartica=card)
-    ).distinct().order_by('automatski', '-kreiran')
+    from .panel_modules import module_locked
+    ownership = Q(vlasnik=request.user)
+    if card is not None:
+        ownership |= Q(loyalty_kartica=card)
+    candidates = Coupon.objects.filter(aktivan=True).filter(ownership)
+    if module_locked('loyalty'):
+        candidates = candidates.filter(loyalty_kartica__isnull=True, automatski=False)
+    candidates = candidates.distinct().order_by('automatski', '-kreiran')
     choices = []
     seen_ids = set()
     for candidate in candidates:
@@ -4619,7 +4677,7 @@ def _cart_context(request, cart):
     loyalty_progress = 0
     if loyalty_card is not None:
         loyalty = loyalty_kontekst(loyalty_card)
-        spend = loyalty_card.ukupna_potrosnja or Decimal('0')
+        spend = (loyalty_card.ukupna_potrosnja if loyalty_card else None) or Decimal('0')
         nxt = loyalty.get('next_tier') or {}
         tier = loyalty.get('tier') or {}
         end = nxt.get('od')
@@ -4676,11 +4734,16 @@ def cart_view(request):
         'upsell_banners_above': get_cart_banner_upsell_offers(UpsellOffer.PrikazTip.BANNER_IZNAD),
         'upsell_banners_below': get_cart_banner_upsell_offers(UpsellOffer.PrikazTip.BANNER_ISPOD),
         **page_seo_context('cart', defaults={
-            'seo_title': 'Korpa — Carpologija BH',
-            'seo_description': 'Vaša korpa — Carpologija BH',
+            'seo_title': f'Korpa — {shop_name()}',
+            'seo_description': f'Vaša korpa — {shop_name()}',
             'seo_h1': 'Korpa',
         }),
     }
+    cart_product_ids = [item['product_id'] for item in cart.cart.values()]
+    category_ids = Product.objects.filter(pk__in=cart_product_ids).values_list('kategorija_id', flat=True)
+    context['cart_recommendations'] = Product.objects.filter(
+        aktivan=True, na_stanju=True, sakriven_do_stanja=False, modul_sakriven=False, kategorija_id__in=category_ids,
+    ).exclude(pk__in=cart_product_ids).select_related('kategorija').order_by('-pk')[:6]
     return render(request, 'cart.html', context)
 
 
@@ -5167,8 +5230,8 @@ def checkout(request):
         'form': form,
         'upsell_checkout_offers': get_checkout_upsell_offers(cart),
         **page_seo_context('checkout', defaults={
-            'seo_title': 'Narudžba — Carpologija BH',
-            'seo_description': 'Završite narudžbu — Carpologija BH',
+            'seo_title': f'Narudžba — {shop_name()}',
+            'seo_description': f'Završite narudžbu — {shop_name()}',
             'seo_h1': 'Narudžba',
         }),
     }
@@ -5239,7 +5302,7 @@ def order_success(request, broj):
         'scratch_game_immediate': True,
         'scratch_game_return_url': reverse('home'),
         **page_seo_context('order_success', defaults={
-            'seo_title': 'Narudžba primljena — Carpologija BH',
+            'seo_title': f'Narudžba primljena — {shop_name()}',
             'seo_description': '',
             'seo_h1': 'Hvala na narudžbi!',
         }),
@@ -5359,8 +5422,8 @@ def register(request):
         'form': form,
         'turnstile_site_key': getattr(settings, 'TURNSTILE_SITE_KEY', ''),
         **page_seo_context('register', defaults={
-            'seo_title': 'Registracija — Carpologija BH',
-            'seo_description': 'Kreirajte nalog — Carpologija BH',
+            'seo_title': f'Registracija — {shop_name()}',
+            'seo_description': f'Kreirajte nalog — {shop_name()}',
             'seo_h1': 'Registracija',
         }),
     }
@@ -5432,8 +5495,8 @@ def login_view(request):
         'next_url': next_url,
         'turnstile_site_key': getattr(settings, 'TURNSTILE_SITE_KEY', ''),
         **page_seo_context('login', defaults={
-            'seo_title': 'Prijava — Carpologija BH',
-            'seo_description': 'Prijavite se — Carpologija BH',
+            'seo_title': f'Prijava — {shop_name()}',
+            'seo_description': f'Prijavite se — {shop_name()}',
             'seo_h1': 'Prijava',
         }),
     }
@@ -5512,7 +5575,7 @@ def _account_recently_viewed(request, limit=10):
 
 
 def _account_dashboard_extras(request, *, orders, loyalty, loyalty_card, profil):
-    spend = loyalty_card.ukupna_potrosnja or Decimal('0')
+    spend = (loyalty_card.ukupna_potrosnja if loyalty_card else None) or Decimal('0')
     tier = loyalty.get('tier') or {}
     next_tier = loyalty.get('next_tier')
     cap = tier.get('do') if next_tier else spend
@@ -5522,12 +5585,7 @@ def _account_dashboard_extras(request, *, orders, loyalty, loyalty_card, profil)
         progress_pct = int(min(100, max(0, (spend / cap) * 100)))
     else:
         progress_pct = 100
-    coupons = list(
-        Coupon.objects.filter(
-            Q(vlasnik=request.user) | Q(loyalty_kartica=loyalty_card),
-            aktivan=True,
-        ).order_by('automatski', '-kreiran')
-    )
+    coupons = _coupon_choices(request)
     closed = {Order.Status.ZAVRSENA, Order.Status.OTKAZANA}
     return {
         'orders_recent': orders[:5],
@@ -5662,6 +5720,10 @@ def account(request):
         reward_consumed=False,
     ).order_by('-kreirano').first()
 
+    from .panel_modules import module_locked
+    if module_locked('sretni_greb_greb'):
+        account_scratch_reward = None
+
     context = {
         **_base_context(),
         'profile_form': profile_form,
@@ -5712,7 +5774,7 @@ def _superuser_required(user):
 
 
 def _staff_required(user):
-    """Staff ili superuser — npr. Admin panel ulaz i Loyalty System."""
+    """Staff ili superuser — npr. Panel ulaz i Loyalty System."""
     return user.is_authenticated and (user.is_staff or user.is_superuser)
 
 
@@ -5949,6 +6011,12 @@ def staff_order_detail(request, broj):
                 messages.error(request, str(exc))
             return redirect('staff_magacin_narudzbe')
 
+    if request.method == 'GET' and request.GET.get('preview') == 'email':
+        from .emails import _render_admin_order_html
+        response = HttpResponse(_render_admin_order_html(order))
+        response['Cache-Control'] = 'private, no-store'
+        return response
+
     from .magacin import order_is_editable
     from .views_magacin import _magacin_context
     can_edit = order_is_editable(order)
@@ -6091,7 +6159,7 @@ def staff_order_brza_posta(request, broj):
         'order': order,
         'datum': created.strftime('%d.%m.%Y.'),
         'vrijeme': created.strftime('%H:%M'),
-        'site_name': 'Carpologija BH',
+        'site_name': f'{shop_name()}',
         'iznos_sa_dostavom': order.ukupno,
         'iznos_copy': f'{order.ukupno:.2f}'.replace('.', ','),
         'packing_lines': packing_lines,
@@ -6442,6 +6510,11 @@ def _build_order_packing_lines(order):
             picks, shortfall = [], int(item.kolicina or 0)
         else:
             picks, shortfall = [], _item_remaining_pick_qty(item, already_picked)
+        if item.artikal_id and not item.artikal.pracenje_zaliha:
+            qty = _item_remaining_pick_qty(item, already_picked)
+            picks = [{'location_name': 'Bez praćenja', 'location_id': None,
+                      'location_path': '', 'take': qty, 'on_hand': 0}] if qty else []
+            shortfall = 0
         if shortfall > 0 and item.artikal_id:
             picks, shortfall = _fill_remaining_physical_picks(order, item, picks, shortfall)
         if item.pk in mp_confirmed and shortfall > 0:
@@ -6573,7 +6646,7 @@ def staff_order_packing(request, broj):
         'packing_error': packing_error,
         'datum': created.strftime('%d.%m.%Y.'),
         'vrijeme': created.strftime('%H:%M'),
-        'site_name': 'Carpologija BH',
+        'site_name': f'{shop_name()}',
     }
     return render(request, 'staff/order_packing.html', context)
 
@@ -6724,8 +6797,9 @@ def staff_site_edit_save(request):
 
 @login_required(login_url='login')
 @user_passes_test(_staff_required)
-def staff_admin_panel(request):
+def staff_panel(request):
     from .models import Order
+    from .panel_settings import panel_model_sections, B2B_KEYS, WMS_KEYS, PRODUCT_KEYS, PROMOTION_KEYS, SETTINGS_KEYS
 
     nova_count = 0
     if request.user.is_superuser:
@@ -6734,8 +6808,24 @@ def staff_admin_panel(request):
         **_base_context(),
         'is_superuser_staff': request.user.is_superuser,
         'new_orders_count': nova_count,
+        'model_sections': [item for item in panel_model_sections(request) if item['key'] not in (*B2B_KEYS, *WMS_KEYS, *PRODUCT_KEYS[1:], *PROMOTION_KEYS[1:], *SETTINGS_KEYS, 'loyaltycard')],
     }
-    return render(request, 'staff/admin_panel.html', context)
+    return render(request, 'staff/panel.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(_staff_required)
+@require_GET
+@never_cache
+def staff_newsletter(request):
+    query = (request.GET.get('q') or '').strip()
+    subscribers = MarketingSubscriber.objects.filter(aktivan=True).order_by('-kreirano', '-pk')
+    if query:
+        subscribers = subscribers.filter(email__icontains=query)
+    page = Paginator(subscribers, 25).get_page(request.GET.get('page'))
+    return render(request, 'staff/newsletter.html', {
+        **_base_context(), 'subscribers': page, 'query': query,
+    })
 
 
 @login_required(login_url='login')
@@ -6786,7 +6876,7 @@ def staff_gift_voucher_print(request):
         'punio_ime': f'{ime} {prezime}'.strip(),
         'iznos': iznos,
         'datum': created.strftime('%d.%m.%Y.'),
-        'site_name': 'Carpologija BH',
+        'site_name': f'{shop_name()}',
     }
     return render(request, 'staff/gift_voucher_print.html', context)
 
@@ -7135,7 +7225,7 @@ def staff_activate_user(request):
         if is_ajax:
             return JsonResponse({'ok': False, 'message': msg}, status=404)
         messages.error(request, msg)
-        return redirect('staff_admin_panel')
+        return redirect('staff_panel')
 
     if target.is_active:
         msg = f'Nalog {target.email or target.username} je već aktivan.'
@@ -7619,7 +7709,7 @@ def set_builder_add_cart(request):
     if not ids:
         return JsonResponse({'ok': False, 'message': 'Nema artikala za dodati.'}, status=400)
     products = list(
-        Product.objects.filter(pk__in=ids, aktivan=True, na_stanju=True, sakriven_do_stanja=False)
+        Product.objects.filter(pk__in=ids, aktivan=True, na_stanju=True, sakriven_do_stanja=False, modul_sakriven=False)
     )
     by_id = {p.pk: p for p in products}
     cart = Cart(request)
@@ -7968,11 +8058,12 @@ def staff_active_carts(request):
 @user_passes_test(_superuser_required)
 @require_GET
 def staff_orders_validation(request):
-    orders = Order.objects.filter(izvor=Order.Izvor.WEBSHOP).exclude(status=Order.Status.CEKA_PLACANJE).exclude(
-        Q(ime_prezime__iexact='Prenos u MP') | Q(pick_state__kind__isnull=False, pick_state__kind='prenos_mp'),
-    ).exclude(
-        status__in=[Order.Status.ZAVRSENA, Order.Status.OTKAZANA],
-    ).exclude(lager_status__in=[Order.LagerStatus.VALIDIRANO, Order.LagerStatus.OTKAZANO])
+    return _orders_validation_response(request)
+
+
+def _orders_validation_response(request):
+    from .wms_orders import panel_active_orders
+    orders = panel_active_orders()
     pending_summary = orders.aggregate(count=Count('pk'), total=Sum('ukupno'))
     from .online_gift import SCRATCH_CAMPAIGN_NAME, scratch_label_for_claim
     from .models import ScratchPrize

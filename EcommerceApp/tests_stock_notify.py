@@ -64,7 +64,7 @@ class StockNotifyTests(TestCase):
     def test_product_detail_shows_notify_instead_of_sold_out(self):
         page = self.client.get(reverse('product_detail', args=[self.product.slug]))
         self.assertEqual(page.status_code, 200)
-        self.assertContains(page, 'Obavijesti kada bude na stanju')
+        self.assertContains(page, 'Obavijesti pri dolasku')
         self.assertContains(page, reverse('stock_notify', args=[self.product.slug]))
         self.assertContains(page, 'stockNotifyOverlay')
         self.assertNotContains(page, 'btn-add-to-bag--sold')
@@ -133,3 +133,27 @@ class StockNotifyTests(TestCase):
         self.assertIsNotNone(
             StockNotify.objects.get(email='kupac@example.com').notified_at
         )
+
+    def test_product_quantity_edit_notifies_after_commit_only_once(self):
+        from .models import ModulePermissions
+        ModulePermissions.objects.create(pk=1, wms_zalihe=True)
+        subscribe(product=self.product, email='restock@example.invalid')
+        with self.captureOnCommitCallbacks(execute=True):
+            self.product.stanje = 3
+            self.product.save()
+            self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIsNotNone(StockNotify.objects.get(product=self.product).notified_at)
+        with self.captureOnCommitCallbacks(execute=True):
+            self.product.stanje = 5
+            self.product.save()
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_restock_send_failure_keeps_subscription_pending(self):
+        subscribe(product=self.product, email='pending@example.invalid')
+        with patch('EcommerceApp.emails.send_stock_back_email', side_effect=RuntimeError('SMTP unavailable')):
+            with self.captureOnCommitCallbacks(execute=True):
+                self.product.stanje = 3
+                self.product.na_stanju = True
+                self.product.save()
+        self.assertIsNone(StockNotify.objects.get(product=self.product).notified_at)

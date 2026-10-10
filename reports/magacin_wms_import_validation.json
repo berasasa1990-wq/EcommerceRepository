@@ -1,0 +1,13 @@
+{
+  "assigned_products": 2434,
+  "imported_locations": 513,
+  "total_wms_locations": 513,
+  "stock_rows": 3368,
+  "all_quantities_match": true,
+  "preserved_data_fingerprints": {
+    "legacy_stock": true,
+    "legacy_locations": true,
+    "catalogue_quantities": true
+  },
+  "tests_passed": 5
+}

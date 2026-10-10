@@ -1,6 +1,7 @@
 {% extends 'staff/magacin/base.html' %}
 {% load static %}
-{% block body_class %}{{ block.super }} is-orders-reference{% endblock %}
+{% block body_class %}{{ block.super }} is-orders-reference<link rel="stylesheet" href="{% static 'css/bera-orders.css' %}?v=20261008">
+{% endblock %}
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'css/staff-orders-reference.css' %}?v=20260906-6">
@@ -64,7 +65,7 @@
     </a>
     <a href="{% url 'staff_magacin_narudzbe' %}?{{ qs_webshop }}" class="{% if izvor_filter == 'webshop' %}is-active{% endif %}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
-        Webshop
+        {{ shop_name }}
     </a>
 </div>
 {% if show_validated and not show_all_validated %}
@@ -151,7 +152,7 @@
             </thead>
             <tbody>
                 {% for order in orders %}
-                <tr class="is-clickable{% if order.pick_shortages %} has-short-pick{% endif %}{% if order.needs_mp_check %} is-mp-lock{% endif %}" data-order-url="{% url 'staff_order_detail' order.broj %}" data-mp="{% if order.needs_mp_check %}1{% else %}0{% endif %}"{% if order.is_vp %} data-vp="1"{% endif %}>
+                <tr class="is-clickable{% if order.pick_shortages %} has-short-pick{% endif %}{% if order.needs_mp_check %} is-mp-lock{% endif %}" data-order-url="{% url 'staff_order_detail' order.broj %}?preview=email" data-order-new-window="1" data-mp="{% if order.needs_mp_check %}1{% else %}0{% endif %}"{% if order.is_vp %} data-vp="1"{% endif %}>
                     <td class="mg-check-col" data-stop-row>
                         <input type="checkbox" name="b" value="{{ order.broj }}" class="mg-order-check"{% if order.needs_mp_check %} data-mp="1"{% endif %}{% if order.is_vp %} data-vp="1"{% endif %}>
                     </td>
@@ -192,7 +193,7 @@
                         {% elif order.izvor == 'magacin' %}
                         <span class="mg-pill mg-src-rucna">Ručna</span>
                         {% else %}
-                        <span class="mg-pill mg-src-web">Webshop</span>
+                        <span class="mg-pill mg-src-web">{{ shop_name }}</span>
                         {% endif %}
                     </td>
                     <td>
@@ -239,7 +240,7 @@
                                 {% if order.lager_status == 'rezervisano' %}
                                 <button type="submit" form="cancelOrder{{ order.pk }}">Otkaži narudžbu</button>
                                 {% endif %}
-                                <a href="{% url 'staff_order_detail' order.broj %}">Prikaži fakturu</a>
+                                <a href="{% url 'staff_order_detail' order.broj %}?preview=email" target="_blank" rel="noopener">Pregled narudžbe</a>
                             </div>
                         </details>
                     </td>

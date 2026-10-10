@@ -140,3 +140,7 @@ body.magacin-page .mg-app .mg-sidebar .mg-menu-lock{
   color:#626872;
 }
 body.magacin-page .mg-app .mg-side-foot>.mg-nav-locked{margin-bottom:6px}
+
+.mg-nav a.mg-tool-locked { opacity: .55; cursor: not-allowed; }
+.mg-nav a.mg-tool-locked:hover { background: transparent; }
+.mg-nav a .mg-tool-lock-icon { width: 16px; height: 16px; margin-left: auto; flex-shrink: 0; }

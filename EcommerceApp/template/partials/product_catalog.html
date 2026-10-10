@@ -56,7 +56,7 @@
             {% if products %}
             <div class="product-grid product-grid--catalog">
                 {% for product in products %}
-                {% include 'partials/product_catalog_card.html' with product=product home_reference_card=True hide_variations=True hide_brand=hide_brand show_akcija_expiry=show_akcija_expiry image_sizes='(max-width: 768px) 50vw, 20vw' %}
+                {% include 'partials/product_catalog_card.html' with product=product home_reference_card=True hide_variations=True hide_footer_stock=True hide_brand=hide_brand show_akcija_expiry=show_akcija_expiry image_sizes='(max-width: 768px) 50vw, 20vw' %}
                 {% endfor %}
             </div>
             {% else %}

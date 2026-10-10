@@ -62,3 +62,14 @@ class CheckoutEmailWorkerTests(SimpleTestCase):
              self.assertLogs('EcommerceApp.emails', level='ERROR'):
             _send_order_emails_in_background(123)
             close.assert_called_once()
+
+
+class IndependentOrderDeliveryTests(SimpleTestCase):
+    def test_admin_failure_still_attempts_customer_confirmation(self):
+        from .emails import send_order_emails
+        order = Mock(broj='TEST')
+        with patch('EcommerceApp.emails.send_admin_order_notification', side_effect=RuntimeError('SMTP')) as admin_send, patch('EcommerceApp.emails.send_customer_order_confirmation') as customer_send, self.assertLogs('EcommerceApp.emails', level='ERROR'):
+            with self.assertRaises(RuntimeError):
+                send_order_emails(order)
+        admin_send.assert_called_once_with(order)
+        customer_send.assert_called_once_with(order)

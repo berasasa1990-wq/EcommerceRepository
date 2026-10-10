@@ -3,11 +3,21 @@ from decimal import ROUND_HALF_UP, Decimal
 from .models import Product, ProductVariation
 from .upsell import get_deal_info_for_cart_item, get_quantity_deal, calculate_deal_adjusted_total
 
+# Internal purchase limit for untracked items; never persisted as stock.
+UNTRACKED_PURCHASE_LIMIT = 2147483647
+
 PDV_STOPA = Decimal('0.17')
 
 
 def stock_on_hand(product=None, variation=None):
     """Količina na stanju za SKU (varijacija ima prednost)."""
+    if product is None and variation is not None:
+        product = variation.artikal
+    from .module_settings import inventory_mode
+    if product is not None and inventory_mode() is True and not product.is_set and variation is None:
+        return max(0, int(product.stanje or 0))
+    if product is not None and not product.pracenje_zaliha:
+        return UNTRACKED_PURCHASE_LIMIT if product.na_stanju else 0
     if variation is not None:
         return max(0, int(getattr(variation, 'stanje', 0) or 0))
     if product is not None and product.is_set:
@@ -210,6 +220,8 @@ class Cart:
                 continue
             sku = (row.product_id, row.variation_id)
             quantities[sku] = quantities.get(sku, 0) + max(0, int(row.kolicina or 0) - max(0, int(row.rezervisano or 0)))
+        from .module_settings import inventory_mode
+        inventory_enabled = inventory_mode() is True
         result = {}
         for key, item in self.cart.items():
             product = products.get(item['product_id'])
@@ -217,6 +229,10 @@ class Cart:
             variant = variants.get(variant_id) if variant_id else None
             if not product or not product.aktivan or product.sakriven_do_stanja or (variant_id and (not variant or variant.artikal_id != product.pk)):
                 result[key] = 0
+            elif inventory_enabled and not product.is_set and not variant:
+                result[key] = stock_on_hand(product) if product.na_stanju else 0
+            elif not product.pracenje_zaliha:
+                result[key] = stock_on_hand(product, variant)
             elif product.is_set:
                 from .product_sets import set_stock_totals
                 result[key] = set_stock_totals(product)['dostupno']
@@ -392,7 +408,7 @@ class Cart:
             for it in self.cart.values()
         )
         korpa_nudjenje_map = build_korpa_nudjenje_map(self)
-        products = {p.pk: p for p in Product.objects.filter(pk__in={item['product_id'] for item in self.cart.values()}).prefetch_related('varijacije')}
+        products = {p.pk: p for p in Product.objects.filter(pk__in={item['product_id'] for item in self.cart.values()}).select_related('brend').prefetch_related('varijacije')}
         variants = {v.pk: v for p in products.values() for v in p.varijacije.all()}
         available = self.availability(products=products, variants=variants)
         from .upsell import prime_quantity_deals
@@ -407,6 +423,7 @@ class Cart:
         for key, item in self.cart.items():
             item = item.copy()
             item['key'] = key
+            item['brand'] = products[item['product_id']].brend if item['product_id'] in products else None
             if 'varijacija_naziv' not in item:
                 item['varijacija_naziv'] = (
                     item['naziv']

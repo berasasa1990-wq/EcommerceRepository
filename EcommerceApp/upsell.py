@@ -197,6 +197,9 @@ def prime_quantity_deals(products):
 
 def get_quantity_deal(product):
     """Vrati aktivni X+1 deal za dati artikal, ako postoji."""
+    from .panel_modules import module_locked
+    if module_locked('akcije'):
+        return None
     if hasattr(product, '_prefetched_quantity_deal'):
         return product._prefetched_quantity_deal
     if not product:

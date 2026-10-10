@@ -44,15 +44,17 @@ def sitemap_view(request, sitemaps, section=None, template_name='sitemap.xml', c
 
 
 class CanonicalSitemap(Sitemap):
+    def get_protocol(self, protocol=None):
+        return urlparse(settings.SITE_URL).scheme
+
     def get_domain(self, site=None):
-        return urlparse(settings.SEO_CANONICAL_URL).netloc
+        return urlparse(settings.SITE_URL).netloc
 
 
 class StaticViewSitemap(CanonicalSitemap):
     """Javne statične stranice visokog prioriteta."""
     priority = 1.0
     changefreq = 'daily'
-    protocol = 'https'
 
     def items(self):
         return ['home', 'about_us', 'payment_methods', 'vlog_list', 'brands_list', 'set_builder']
@@ -64,7 +66,6 @@ class StaticViewSitemap(CanonicalSitemap):
 class CategorySitemap(CanonicalSitemap):
     changefreq = 'daily'
     priority = 0.85
-    protocol = 'https'
 
     def items(self):
         return filter_categories_with_products(Category.objects.filter(aktivan=True))
@@ -79,7 +80,6 @@ class CategorySitemap(CanonicalSitemap):
 class VlogSitemap(CanonicalSitemap):
     changefreq = 'weekly'
     priority = 0.65
-    protocol = 'https'
 
     def items(self):
         return HomeVlog.objects.filter(aktivan=True).exclude(slug='')
@@ -95,7 +95,6 @@ class ProductSitemap(CanonicalSitemap):
     """
     changefreq = 'daily'
     priority = 0.9
-    protocol = 'https'
     limit = 50000
 
     def items(self):
@@ -120,7 +119,6 @@ class BrandSitemap(CanonicalSitemap):
     """
     changefreq = 'weekly'
     priority = 0.6
-    protocol = 'https'
 
     def items(self):
         used = (

@@ -5,6 +5,7 @@ Pronađi postojeći artikal po šifri ili barkodu, dopuni cijenu, brend i sliku,
 pa ga aktiviraj za webshop (na_stanju, aktivan).
 """
 from __future__ import annotations
+from EcommerceApp.branding import shop_name
 
 import logging
 import os
@@ -183,7 +184,7 @@ def generate_product_description(
             {
                 'role': 'system',
                 'content': (
-                    'Ti si copywriter za webshop opremazaribolov.ba. '
+                    f'Ti si copywriter za webshop {shop_name()}. '
                     'Pišeš kratke, tačne opise artikala ribolovne opreme. '
                     'Odgovaraš isključivo tekstom opisa, ničim drugim.'
                 ),
@@ -299,11 +300,13 @@ def create_and_activate_product(
     from django.utils import timezone
 
     from .models import SIFRA_MAX_LENGTH
-    from .product_identifiers import _sifra_zauzeta
+    from .product_identifiers import _sifra_zauzeta, product_name_taken
 
-    naziv = (naziv or '').strip()[:200]
+    naziv = ' '.join((naziv or '').split())[:200]
     if not naziv:
         raise ValueError('Naziv je obavezan.')
+    if product_name_taken(naziv):
+        raise ValueError(f'Artikal sa nazivom „{naziv}” već postoji. Unesite drugi naziv.')
     sifra = (sifra or '').strip()[:SIFRA_MAX_LENGTH] or None
     if sifra and _sifra_zauzeta(sifra):
         raise ValueError(f'Šifra {sifra} je već zauzeta.')

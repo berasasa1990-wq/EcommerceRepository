@@ -1,70 +1,28 @@
 {% if qty_deal_page and qty_deal_page.columns %}
 {% with akcija=qty_deal_page.akcija product=qty_deal_page.product columns=qty_deal_page.columns %}
-<section class="pd-inline-qty" aria-label="Kupi više, uštedi više">
-    <h2 class="pd-inline-qty__title">
-        <span class="pd-inline-qty__tag" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.4 11.6 12.4 2.6A1.5 1.5 0 0 0 11.3 2H4.5A1.5 1.5 0 0 0 3 3.5v6.8a1.5 1.5 0 0 0 .4 1.1l9 9a1.5 1.5 0 0 0 2.1 0l7-7a1.5 1.5 0 0 0-.1-2.8ZM7.2 8.2A1.7 1.7 0 1 1 7.2 4.8a1.7 1.7 0 0 1 0 3.4Z"/></svg>
-        </span>
-        Kupi više, uštedi više
-    </h2>
-
-    <div class="pd-inline-qty__grid pd-inline-qty__grid--n{{ columns|length }}">
-        {% for col in columns %}
-        {% if product.stanje >= col.quantity %}
-        <form method="post" action="{% url 'add_to_cart' product.slug %}"
-              class="pd-inline-qty__card pd-qtydeal__form{% if col.is_single %} pd-inline-qty__card--single{% endif %}{% if col.is_best %} pd-inline-qty__card--best{% endif %}">
-            {% csrf_token %}
-            <input type="hidden" name="quantity" value="{{ col.quantity }}">
-            <input type="hidden" name="tier_id" value="{{ col.id }}">
-            <input type="hidden" name="stay" value="1">
-            <input type="hidden" name="akcija_id" value="{{ akcija.id }}">
-            {% if in_stock_variations %}
-            <input type="hidden" name="variation_id" value="{{ in_stock_variations.0.pk }}">
-            {% endif %}
-
-            <div class="pd-inline-qty__head">
-                <p class="pd-inline-qty__head-title">{{ col.title }}</p>
-                <p class="pd-inline-qty__head-sub">{{ col.subtitle }}</p>
-            </div>
-            {% if col.is_best %}
-            <span class="pd-inline-qty__star" aria-hidden="true">★</span>
-            {% endif %}
-
-            <div class="pd-inline-qty__media">
-                <span class="pd-inline-qty__mul">{{ col.qty_label }}</span>
-                {% if product.prikazna_slika %}
-                <img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" width="160" height="160" loading="lazy" decoding="async">
-                {% else %}
-                <span aria-hidden="true">📦</span>
-                {% endif %}
-            </div>
-
-            <p class="pd-inline-qty__prices">
-                <span class="pd-inline-qty__sale">
-                <strong class="pd-inline-qty__now">{{ col.line_snizena|floatformat:2 }} KM{% if col.is_open %}+{% endif %}</strong>
-                {% if col.pct_label %}
-                <span class="pd-inline-qty__pct">−{{ col.pct_label }}%</span>
-                {% endif %}
-                </span>
-                {% if not col.is_single %}
-                <s class="pd-inline-qty__was">{{ col.line_bazna|floatformat:2 }} KM{% if col.is_open %}+{% endif %}</s>
-                {% endif %}
-            </p>
-
-            <button type="submit" class="pd-inline-qty__cta{% if col.is_single %} pd-inline-qty__cta--regular{% endif %}">
-                Kupi {{ col.quantity }} kom za {{ col.line_snizena|floatformat:"-2" }} KM
-            </button>
-        </form>
-        {% endif %}
-        {% endfor %}
+<section class="pd-inline-qty pd-inline-qty--offer" aria-label="Kupi više, uštedi više">
+<header class="pd-quantity-heading"><span aria-hidden="true">%</span><div><h2>Kupi više, uštedi više</h2><p>Veća količina, veća ušteda! Automatski se primjenjuje popust na količinu.</p></div></header>
+<div class="pd-inline-qty__grid">
+    <div class="pd-quantity-option pd-quantity-option--single">
+        <span class="pd-quantity-radio" aria-hidden="true"></span>
+        {% if product.prikazna_slika %}<img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" width="70" height="80" loading="lazy">{% endif %}
+        <div class="pd-quantity-copy"><h3>1 kom</h3><strong>{{ product.prikazna_cijena|floatformat:2 }} KM</strong>{% if product.na_akciji %}<s>{{ product.bazna_cijena|floatformat:2 }} KM</s>{% endif %}</div>
+        {% if product.akcija_postotak_prikaz %}<span class="pd-quantity-discount">−{{ product.akcija_postotak_prikaz }}%</span>{% endif %}
     </div>
-
-    {% if qty_deal_page.usteda_po_komadu %}
-    <p class="pd-inline-qty__foot">
-        <span aria-hidden="true">🏷</span>
-        UŠTEDA DO <strong>{{ qty_deal_page.usteda_po_komadu|floatformat:2 }} KM</strong> PO KOMADU!
-    </p>
+    {% for col in columns %}
+    {% if not product.pracenje_zaliha or product.stanje >= col.quantity %}
+    <form method="post" action="{% url 'add_to_cart' product.slug %}" class="pd-quantity-option pd-qtydeal__form">
+        {% csrf_token %}<input type="hidden" name="quantity" value="{{ col.quantity }}"><input type="hidden" name="tier_id" value="{{ col.id }}"><input type="hidden" name="stay" value="1"><input type="hidden" name="akcija_id" value="{{ akcija.id }}">{% if in_stock_variations %}<input type="hidden" name="variation_id" value="{{ in_stock_variations.0.pk }}">{% endif %}
+        <button type="submit" class="pd-quantity-select" aria-label="Dodaj {{ col.quantity }} komada u korpu za {{ col.line_snizena|floatformat:2 }} KM">
+        <span class="pd-quantity-radio" aria-hidden="true"></span>
+        {% if product.prikazna_slika %}<img src="{{ product.prikazna_slika.url }}" alt="" width="70" height="80" loading="lazy">{% endif %}
+        <span class="pd-quantity-copy"><b>{{ col.quantity }}{% if col.is_open %}+{% endif %} kom</b><strong>{{ col.line_snizena|floatformat:2 }} KM</strong><small>{{ col.unit_snizena|floatformat:2 }} KM / kom</small><s>{{ col.line_bazna|floatformat:2 }} KM</s></span>
+        {% if col.pct_label %}<span class="pd-quantity-discount">−{{ col.pct_label }}%</span>{% endif %}
+        </button>
+    </form>
     {% endif %}
+    {% endfor %}
+</div>
 </section>
 {% endwith %}
 {% endif %}

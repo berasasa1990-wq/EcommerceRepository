@@ -1,0 +1,147 @@
+/* Superuser administration shares the panel's blue storefront palette. */
+body.bera-admin #header {
+    background: linear-gradient(110deg, #009dcd, #086b9d) !important;
+    color: #fff !important; padding: 16px 24px; gap: 16px; flex-wrap: wrap;
+    border-bottom: 0 !important; box-shadow: 0 3px 14px rgb(15 83 122 / 12%);
+}
+body.bera-admin #header a,
+body.bera-admin #header #site-name { color: #fff !important; }
+body.bera-admin #user-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; line-height: 1.5; }
+body.bera-admin #user-tools a { border-color: #ffffff60; }
+body.bera-admin #site-name a { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+body.bera-admin .admin-store-logo { width: auto; max-width: 220px; height: 56px; object-fit: contain; }
+body.bera-admin .admin-store-label { background: #ffffff20; color: #fff; border: 1px solid #ffffff40; border-radius: 8px; padding: 6px 10px; }
+body.bera-admin div.breadcrumbs { background: #e7f4fc !important; color: #426581 !important; padding: 12px 24px; }
+body.bera-admin div.breadcrumbs a { color: #007fb5 !important; }
+body.bera-admin #nav-sidebar { background: #f4f9fd !important; border-right: 1px solid #dce9f2; padding: 12px; box-sizing: border-box; }
+body.bera-admin #nav-filter { width: 100%; box-sizing: border-box; margin: 0 0 12px; border-radius: 8px; border-color: #d6e8f4; background: #fff; color: #173149; }
+body.bera-admin #nav-sidebar .current-app .section:link,
+body.bera-admin #nav-sidebar .current-app .section:visited { color: #fff !important; }
+body.bera-admin #nav-sidebar .current-model { background: #e2f3fc !important; }
+body.bera-admin #toggle-nav-sidebar { background: #e7f4fc; color: #007fb5; border-color: #dce9f2; }
+body.bera-admin .dashboard #content-related,
+body.bera-admin #content-related { background: #edf7fc !important; border: 1px solid #dce9f2; border-radius: 12px; }
+body.bera-admin #content-related h2,
+body.bera-admin #content-related h3 { color: #234963 !important; }
+body.bera-admin input[type=checkbox], body.bera-admin input[type=radio] { accent-color: #008bc5; }
+body.bera-admin .theme-toggle { color: #fff; }
+body.bera-admin.login #container { border: 1px solid #dce9f2; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 28px rgb(15 83 122 / 8%); }
+@media (max-width: 767px) {
+    body.bera-admin #header { padding: 14px 16px; }
+    body.bera-admin #content { padding: 16px !important; }
+    body.bera-admin .admin-store-logo { max-width: 170px; height: 45px; }
+}
+
+/* White labels on the administration's blue surfaces. */
+body.bera-admin #header,
+body.bera-admin #header :is(a, span, strong, button),
+body.bera-admin .module :is(h2, caption),
+body.bera-admin .module :is(h2, caption) :is(a, span, strong),
+body.bera-admin .inline-group h2,
+body.bera-admin .inline-group h2 :is(a, span, strong),
+body.bera-admin #nav-sidebar .module caption,
+body.bera-admin #nav-sidebar .module caption a,
+body.bera-admin :is(.button, .object-tools a, input[type=submit], input[type=button], .submit-row input, button.button) {
+    color: #fff !important;
+}
+body.bera-admin .module caption a.section:link,
+body.bera-admin .module caption a.section:visited,
+body.bera-admin .module h2 a:link,
+body.bera-admin .module h2 a:visited,
+body.bera-admin .object-tools a:link,
+body.bera-admin .object-tools a:visited { color: #fff !important; }
+
+body.bera-admin #user-tools a[href="/"],
+body.bera-admin #user-tools a[href*="password_change"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 7px 12px;
+    border: 1px solid #ffffff40 !important;
+    border-radius: 8px;
+    background: #0079b0 !important;
+    color: #fff !important;
+    text-decoration: none;
+}
+body.bera-admin #user-tools a[href="/"]:hover,
+body.bera-admin #user-tools a[href*="password_change"]:hover {
+    background: #00699a !important;
+    color: #fff !important;
+}
+
+body.bera-admin #user-tools #logout-form button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 7px 12px;
+    border: 1px solid #ffffff40 !important;
+    border-radius: 8px;
+    background: #0079b0 !important;
+    color: #fff !important;
+    text-decoration: none;
+    cursor: pointer;
+}
+body.bera-admin #user-tools #logout-form button:hover {
+    background: #00699a !important;
+    color: #fff !important;
+}
+
+/* Let the logo sit directly on the blue header, without a white tile. */
+body.bera-admin #branding,
+body.bera-admin #site-name,
+body.bera-admin #site-name > a,
+body.bera-admin .admin-store-logo {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+body.bera-admin .admin-store-logo { mix-blend-mode: multiply; }
+
+/* Module switches in a responsive grid of pale blue cards. */
+body.bera-admin.model-modulepermissions #content-main fieldset.module {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 14px;
+    padding: 18px;
+    background: #fff !important;
+}
+body.bera-admin.model-modulepermissions fieldset.module > .form-row {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #d6eaf6;
+    border-radius: 12px;
+    background: #eff8ff;
+}
+body.bera-admin.model-modulepermissions .form-row > div { width: 100%; min-width: 0; }
+body.bera-admin.model-modulepermissions .form-row .flex-container { align-items: flex-start; flex-wrap: nowrap; gap: 10px; }
+body.bera-admin.model-modulepermissions .form-row label {
+    width: auto;
+    min-width: 0;
+    float: none;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #234963;
+    overflow-wrap: anywhere;
+}
+body.bera-admin.model-modulepermissions .form-row input[type=checkbox] {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin: 2px 0 0;
+}
+body.bera-admin.model-modulepermissions .form-row .help {
+    margin: 8px 0 0 !important;
+    padding: 0;
+    color: #637b94;
+    font-size: 12px;
+    line-height: 1.5;
+}
+body.bera-admin.model-modulepermissions fieldset.module > .form-row:has(input:checked) {
+    background: #e5f5ff;
+    border-color: #9bd4ee;
+}

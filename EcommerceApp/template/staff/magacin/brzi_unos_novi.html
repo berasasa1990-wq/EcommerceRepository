@@ -3,7 +3,7 @@
 {% block body_class %}{{ block.super }} is-new-article{% endblock %}
 {% block extra_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'css/staff-new-article-reference.css' %}?v=20260906-1">
+<link rel="stylesheet" href="{% static 'css/staff-new-article-reference.css' %}?v=20261007-stock-mode">
 {% endblock %}
 
 {% block magacin_content %}
@@ -15,7 +15,7 @@
     <a class="bu-btn-secondary mg-back" href="{{ scan_url }}">← Nazad</a>
   </div>
   <div class="bu-card">
-    <p class="bu-lead">Obavezni su samo naziv i cijena. Ostalo može ostati prazno — artikal ide odmah na sajt.</p>
+    <p class="bu-lead">Obavezni su naziv, cijena i izbor praćenja zaliha. Uz praćenje, artikal je dostupan nakon dodavanja količine na lokaciju. Bez praćenja, odmah je dostupan.</p>
 
     {% if form_errors %}
     <div class="bu-errors">
@@ -66,8 +66,23 @@
         </div>
         {{ categories_json|json_script:"bu-categories-data" }}
       </div>
+      {% for field in details_form %}
+      <div class="bu-field bu-field-wide{% if field.name == 'rezim_zaliha' %} bu-stock-mode{% endif %}">
+        {{ field.label_tag }}
+        {% if field.name == 'barkod' %}
+        <div style="display:flex;gap:8px;align-items:center">
+          {{ field }}
+          <button type="button" class="mg-btn mg-scan-btn" data-mg-scan-target="id_barkod" data-mg-scan-title="Skeniraj barkod" aria-label="Skeniraj barkod" title="Skeniraj barkod">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M7 8v8M10 8v8M14 8v8M17 8v8"/></svg>
+          </button>
+        </div>
+        {% else %}{{ field }}{% endif %}
+        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        {{ field.errors }}
+      </div>
+      {% endfor %}
       <div class="bu-actions">
-        <button type="submit" class="bu-btn-primary">Aktiviraj na sajtu</button>
+        <button type="submit" class="bu-btn-primary">Sačuvaj artikal</button>
       </div>
     </form>
   </div>

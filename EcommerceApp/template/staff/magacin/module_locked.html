@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<section style="max-width:720px;margin:40px auto;padding:28px;border:1px solid #dcebf5;border-radius:16px;background:#f2faff;color:#10243b">
+  <h1>Modul {{ locked_module }} je isključen</h1>
+  <p>{{ lock_message }}</p>
+  <a href="{% url 'staff_panel' %}">Nazad na panel</a>
+  {% if request.user.is_superuser %}<p><a href="{{ modules_url }}">Moduli / Dozvole</a></p>{% endif %}
+</section>
+{% endblock %}

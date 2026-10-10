@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block body_class %}{% if not filters_active %}home-mobile-reference{% else %}catalog-header-reference{% endif %}{% endblock %}
+{% block storefront_theme %}{% if filters_active %}<link rel="stylesheet" href="{% static 'css/bera-catalog.css' %}?v=20261008">{% endif %}{% endblock %}
+{% block body_class %}{% if not filters_active %}home-mobile-reference bera-home{% else %}catalog-header-reference{% endif %}{% endblock %}
+
 
 {% block extra_css %}
 <style>
@@ -101,9 +103,9 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
 
 {% block content %}
 {% if not filters_active %}
-<h1 style="max-width:1200px;margin:18px auto 12px;padding:0 16px;font-size:20px;line-height:1.3;">{{ seo_h1 }}</h1>
+<h1 class="bera-seo-heading" style="max-width:1200px;margin:18px auto 12px;padding:0 16px;font-size:20px;line-height:1.3;">{{ seo_h1 }}</h1>
 {% if hero_slides %}
-<section class="hero-carousel" id="heroCarousel">
+<section class="hero-carousel" id="heroCarousel" style="--bera-banner-ratio: {{ hero_slides.0.image_width|default:2172 }} / {{ hero_slides.0.image_height|default:600 }};">
     <div class="carousel-track">
         {% for slide in hero_slides %}
         <div class="carousel-slide {% if forloop.first %}active{% endif %}{% if slide.title or slide.subtitle or slide.actions %} carousel-slide--has-content{% endif %}" data-index="{{ forloop.counter0 }}">
@@ -179,8 +181,9 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
 </section>
 {% endif %}
 
+{% if not hero_slides %}{% include 'partials/bera_default_hero.html' %}{% endif %}
 {% include 'partials/home_mobile_navigation.html' %}
-{% include 'partials/home_mobile_benefits.html' %}
+{% if not home_trust_items %}{% include 'partials/home_mobile_benefits.html' %}{% endif %}
 
 {% if home_trust_items %}
 {% include 'partials/home_trust_bar.html' %}
@@ -188,40 +191,8 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
 
 
 
-{% if featured_cards %}
-<section class="featured-grid featured-grid--promos" aria-label="Promotivne ponude">
-    {% for card in featured_cards|slice:":8" %}
-    {% if card.url %}
-    <a href="{{ card.url }}" class="featured-card featured-card--linked{% if card.wide %} featured-card--wide{% endif %}">
-    {% else %}
-    <article class="featured-card{% if card.wide %} featured-card--wide{% endif %}">
-    {% endif %}
-        {% include 'partials/banner_media.html' with card=card video_class='card-image card-image--featured banner-media-video' image_class='card-image card-image--featured' image_sizes='(max-width: 767px) 50vw, 25vw' image_loading='lazy' %}
-        {% if card.title or card.subtitle or card.actions %}
-        <div class="card-overlay">
-            {% if card.title %}<h3>{{ card.title }}</h3>{% endif %}
-            {% if card.subtitle %}<p>{{ card.subtitle }}</p>{% endif %}
-            {% if card.actions %}
-            <div class="card-actions">
-                {% for action in card.actions %}
-                {% if card.url %}
-                <span class="btn btn-banner">{{ action.label }}</span>
-                {% else %}
-                <a href="{{ action.url }}" class="btn btn-banner">{{ action.label }}</a>
-                {% endif %}
-                {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-        {% endif %}
-    {% if card.url %}
-    </a>
-    {% else %}
-    </article>
-    {% endif %}
-    {% endfor %}
-</section>
-{% endif %}
+
+
 
 {% if spotlight %}
 <section class="spotlight">
@@ -255,96 +226,48 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
 
 {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
-{% if latest_products %}
-<section class="category-page category-page--shop home-products home-products--novo">
-    <div class="product-catalog product-catalog--compact home-product-catalog">
-        <div class="catalog-layout catalog-layout--full">
-            <div class="catalog-products">
-                {% include 'partials/home_section_header.html' with title=site_settings.naslov_novo subtitle=site_settings.podnaslov_novo edit_title='naslov_novo' edit_title_placeholder='Noviteti' edit_subtitle='podnaslov_novo' header_mod='novo' see_all_url='/?noviteti=1' %}
-                {% include 'partials/home_product_carousel.html' with products=latest_products|slice:':6' eager_first_image=eager_first_novo_image home_section_badge='novo' %}
-            </div>
-        </div>
-    </div>
-</section>
-{% endif %}
-
 {% if featured_products %}
 <section class="category-page category-page--shop home-products home-products--izdvojeno">
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
-                {% include 'partials/home_section_header.html' with title='Izdvojeno za vas' header_mod='izdvojeno' see_all_url='/?izdvojeno=1' %}
-                {% include 'partials/home_product_carousel.html' with products=featured_products home_section_badge='hit' desktop_extra_ids=featured_desktop_extra_ids %}
+                {% include 'partials/home_section_header.html' with title='Izdvojena ponuda' header_mod='izdvojeno' see_all_url='/?izdvojeno=1' %}
+                {% include 'partials/home_product_carousel.html' with products=featured_products|slice:':6' eager_first_image=True visible_desktop=6 carousel_no_arrows=True home_section_badge='hit' desktop_extra_ids=featured_desktop_extra_ids %}
             </div>
         </div>
     </div>
 </section>
 {% endif %}
 
-{% include 'partials/home_loyalty_banner.html' %}
+{% include 'partials/bera_offer_banners.html' %}
 
-{% if sale_products %}
-<section class="category-page category-page--shop home-products home-products--akcija">
+{% if latest_products %}
+<section class="category-page category-page--shop home-products home-products--novo">
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
-                {% include 'partials/home_section_header.html' with title=site_settings.naslov_akcija subtitle=site_settings.podnaslov_akcija edit_title='naslov_akcija' edit_title_placeholder='Akcijska ponuda' edit_subtitle='podnaslov_akcija' header_mod='akcija' see_all_url='/?akcija=1' %}
-                {% include 'partials/home_product_carousel.html' with products=sale_products home_section_badge='' %}
+                {% include 'partials/home_section_header.html' with title='Najprodavaniji proizvodi' subtitle=site_settings.podnaslov_novo edit_subtitle='podnaslov_novo' header_mod='novo' see_all_url='/?noviteti=1' %}
+                {% include 'partials/home_product_carousel.html' with products=latest_products|slice:':6' visible_desktop=6 carousel_no_arrows=True eager_first_image=eager_first_novo_image home_section_badge='' %}
             </div>
         </div>
     </div>
 </section>
 {% endif %}
 
-{% if showcase_brands %}
-<section class="home-shop-brands" aria-labelledby="homeShopBrandsTitle">
-    <div class="home-shop-brands__heading">
-        <h2 id="homeShopBrandsTitle">Kupujte po brendu</h2>
-        <a href="#brendovi">Pogledaj sve <span aria-hidden="true">›</span></a>
-    </div>
-    <div class="home-shop-brands__grid">
-        {% for brand in showcase_brands %}
-        <a href="{% url 'home' %}?brend={{ brand.slug }}#product-showcase">
-            <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" width="160" height="70" loading="lazy" decoding="async">
-        </a>
-        {% endfor %}
-    </div>
-</section>
-{% endif %}
-
-{% include 'partials/home_sale_banner.html' with mobile_image=site_settings.akcija_banner_slika desktop_image=site_settings.akcija_banner_desktop banner_href=site_settings.akcija_banner_href %}
-{% include 'partials/home_sale_banner.html' with mobile_image=site_settings.akcija_banner_slika_2 desktop_image=site_settings.akcija_banner_desktop_2 banner_href=site_settings.akcija_banner_href_2 %}
-{% include 'partials/home_sale_banner.html' with mobile_image=site_settings.akcija_banner_slika_3 desktop_image=site_settings.akcija_banner_desktop_3 banner_href=site_settings.akcija_banner_href_3 %}
-{% include 'partials/home_sale_banner.html' with mobile_image=site_settings.akcija_banner_slika_4 desktop_image=site_settings.akcija_banner_desktop_4 banner_href=site_settings.akcija_banner_href_4 %}
-
-
-{% if home_category_showcases %}
-{% include 'partials/home_category_showcase.html' with sections=home_category_showcases %}
-{% endif %}
-
-{% if home_brand_showcases %}
-{% include 'partials/home_brand_showcase.html' with sections=home_brand_showcases %}
-{% endif %}
-
-{% if home_vlogs or site_settings.prikazi_newsletter %}
-{% include 'partials/home_vlog.html' %}
-{% endif %}
-
-{% if showcase_brands %}
-<section class="home-brand-strip-section home-brand-strip-section--mockup" id="brendovi">
-    {% if site_settings.naslov_brendovi %}
-    <div class="home-section-header home-section-header--brands">
-        <div class="home-section-header__text">
-            <h2 class="home-section-header__title"
-                data-site-edit="naslov_brendovi"
-                data-site-edit-placeholder="Naši brendovi">{{ site_settings.naslov_brendovi }}</h2>
+{% if home_new_offer_products %}
+<section class="category-page category-page--shop home-products home-products--new-offer">
+    <div class="product-catalog product-catalog--compact home-product-catalog">
+        <div class="catalog-layout catalog-layout--full">
+            <div class="catalog-products">
+                {% include 'partials/home_section_header.html' with title='Novo u ponudi' header_mod='novo' %}
+                {% include 'partials/home_product_carousel.html' with products=home_new_offer_products visible_desktop=6 carousel_no_arrows=True home_section_badge='novo' %}
+            </div>
         </div>
     </div>
-    {% endif %}
-    {% include 'partials/home_brand_carousel.html' with brands=showcase_brands %}
 </section>
 {% endif %}
 
-{% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
+{% include 'partials/bera_home_bottom.html' %}
+
 {% endif %}
 {% endblock %}

@@ -1,3 +1,4 @@
+from EcommerceApp.branding import shop_name
 import hashlib
 import hmac
 import io
@@ -13,6 +14,7 @@ from django.contrib.auth.models import User
 from django.db.models import Q, Sum
 
 from .models import Coupon, LoyaltyCard, LoyaltyPurchase, Order, UserProfile
+from .panel_modules import module_locked
 
 # Session key za pending OTP pri evidentiranju kupovine
 LOYALTY_PURCHASE_OTP_SESSION_KEY = 'loyalty_purchase_otp'
@@ -369,6 +371,8 @@ def loyalty_kartica_po_telefonu(telefon):
 
 def loyalty_coupon_za_telefon(telefon):
     """Aktivan loyalty kupon za karticu pronađenu po telefonu, ili None."""
+    if module_locked('loyalty'):
+        return None
     card = loyalty_kartica_po_telefonu(telefon)
     if not card:
         return None
@@ -711,7 +715,7 @@ def loyalty_member_url(kod):
 def open_card_otp_message(code):
     from_label = loyalty_from_phone_display()
     lines = [
-        'opremazaribolov.ba — otvaranje kartice',
+        f'{shop_name()} — otvaranje kartice',
         f'Vaš 6-cifreni kod: {code}',
     ]
     if from_label and from_label != '—':
@@ -1037,7 +1041,7 @@ def purchase_otp_message(code, *, iznos=None):
     """Tekst poruke za Viber/WhatsApp — kupac izdiktira kod prodavcu."""
     from_label = loyalty_from_phone_display()
     lines = [
-        'opremazaribolov.ba — potvrda kupovine',
+        f'{shop_name()} — potvrda kupovine',
         f'Vaš kod: {code}',
         'Recite ovaj kod prodavcu da se kupovina evidentira.',
     ]
@@ -1166,6 +1170,8 @@ def commit_loyalty_purchase(
     placanje=LoyaltyPurchase.Placanje.GOTOVINA,
 ):
     """Upiši kupovinu + ažuriraj potrošnju/nivo kartice."""
+    if module_locked('loyalty'):
+        raise ValueError('Loyalty modul je zaključan.')
     try:
         iznos_d = Decimal(str(iznos)).quantize(Decimal('0.01'))
     except Exception as exc:
@@ -1490,6 +1496,8 @@ def povezi_narudzbu_sa_loyalty_korisnikom(order, card):
 
 
 def sync_loyalty_coupon(card):
+    if module_locked('loyalty'):
+        return None
     tier = tier_info(card.nivo)
     Coupon.objects.update_or_create(
         loyalty_kartica=card,
@@ -1505,6 +1513,8 @@ def sync_loyalty_coupon(card):
 
 
 def azuriraj_loyalty_karticu(card):
+    if module_locked('loyalty'):
+        return None
     tier = nivo_za_potrosnju(card.ukupna_potrosnja)
     card.nivo = tier['nivo']
     card.save(update_fields=['nivo', 'azurirana'])
@@ -1514,6 +1524,8 @@ def azuriraj_loyalty_karticu(card):
 
 def preracunaj_potrosnju_kartice(card):
     """Preračunaj ukupnu potrošnju i nivo iz narudžbi + evidentiranih kupovina."""
+    if module_locked('loyalty'):
+        return None
     if not card:
         return None
     if not card.barkod:
@@ -1524,6 +1536,8 @@ def preracunaj_potrosnju_kartice(card):
 
 
 def kreiraj_loyalty_karticu(user):
+    if module_locked('loyalty'):
+        return None
     kod = _generisi_kod(user)
     while LoyaltyCard.objects.filter(kod=kod).exists() or Coupon.objects.filter(kod=kod).exists():
         kod = _generisi_kod(user)
@@ -1548,6 +1562,8 @@ def kreiraj_loyalty_karticu(user):
 
 
 def osiguraj_loyalty_karticu(user):
+    if module_locked('loyalty'):
+        return None
     card = getattr(user, 'loyalty_kartica', None)
     if card:
         osiguraj_sestocifreni_kod(card)
@@ -1563,6 +1579,8 @@ def azuriraj_loyalty_nakon_narudzbe(order):
     Kartica se pronalazi po: prijavljenom nalogu, kupon kodu, emailu ili telefonu.
     Ako kartica ne postoji — ne kreira se automatski (samo prijava / izdavanje).
     """
+    if module_locked('loyalty'):
+        return None
     if not order:
         return None
     card = pronadji_loyalty_karticu_za_narudzbu(order)
@@ -1607,6 +1625,10 @@ def validiraj_kupon(kod, user=None, *, subtotal=None):
         .first()
     )
 
+    loyalty_locked = module_locked('loyalty')
+    if loyalty_locked and (not coupon or coupon.automatski or coupon.loyalty_kartica_id):
+        return None, 'Kupon nije dostupan.'
+
     # Ako kupon ne postoji, pokušaj preko loyalty kartice (kod ili barkod)
     if not coupon:
         card = _pronadji_loyalty_karticu_po_kodu(kod)
@@ -1629,6 +1651,8 @@ def validiraj_kupon(kod, user=None, *, subtotal=None):
     if not coupon:
         return None, 'Broj kartice / kupon nije pronađen ili nije aktivan.'
 
+    if coupon.scratch_claim_id and module_locked('sretni_greb_greb'):
+        return None, 'Kupon nije dostupan.'
     if coupon.scratch_claim_id:
         if coupon.scratch_claim.reward_consumed:
             return None, 'Ovaj Greb-Greb kod je već iskorišten.'
@@ -1698,7 +1722,7 @@ def loyalty_card_caption(card, *, share_image_url=''):
     else:
         next_line = 'Najvisi nivo, maksimalni popust'
     return '\n'.join([
-        'Vasa loyalty kartica - opremazaribolov.ba',
+        f'Vasa loyalty kartica - {shop_name()}',
         f'Nivo: {tier["label"]} - Popust: {int(tier["postotak"])}%',
         next_line,
         f'Broj kartice: {card.kod}',
@@ -1710,6 +1734,8 @@ def loyalty_card_caption(card, *, share_image_url=''):
 
 
 def loyalty_kontekst(card, *, share_image_url=''):
+    if not card or module_locked('loyalty'):
+        return {}
     tier = tier_info(card.nivo)
     next_tier = None
     for index, item in enumerate(LOYALTY_TIERS):
@@ -1880,14 +1906,14 @@ def _draw_front_side(card, *, cardholder_name=None):
         _paste_logo(img, logo, (lx, ly))
         draw = ImageDraw.Draw(img)
     else:
-        draw.text((width // 2 - 170, height // 2 - 20), 'opremazaribolov.ba', fill='white', font=font_brand)
+        draw.text((width // 2 - 170, height // 2 - 20), f'{shop_name()}', fill='white', font=font_brand)
 
     # Minimalan footer na crnoj
     draw.text((width // 2 - 72, height - 48), 'LOYALTY', fill=green, font=font_tier)
     tier_label = tier['label'].upper()
     # nivo desno od LOYALTY
     draw.text((width // 2 + 20, height - 48), tier_label, fill=muted, font=font_tier)
-    draw.text((width // 2 - 70, height - 26), 'opremazaribolov.ba', fill=(90, 90, 90), font=font_micro)
+    draw.text((width // 2 - 70, height - 26), f'{shop_name()}', fill=(90, 90, 90), font=font_micro)
 
     return img
 
@@ -2005,7 +2031,7 @@ def _draw_back_side(card, *, cardholder_name=None):
         x += tw + 10
     draw.text(
         (48, 510),
-        'Unesi broj u korpi za popust · ne vrijedi na akcije · opremazaribolov.ba',
+        f'Unesi broj u korpi za popust · ne vrijedi na akcije · {shop_name()}',
         fill=muted,
         font=font_micro,
     )
@@ -2140,6 +2166,8 @@ def loyalty_sync_pregled(user):
 
 def sinhronizuj_loyalty_sa_nalogom(user):
     """Kupac spaja ručno izdate kartice s nalogom: loyalty kartica postaje kartica naloga."""
+    if module_locked('loyalty'):
+        raise ValueError('Loyalty modul je zaključan.')
     from django.db import transaction
     from django.contrib.admin.models import LogEntry, CHANGE
     from django.contrib.contenttypes.models import ContentType

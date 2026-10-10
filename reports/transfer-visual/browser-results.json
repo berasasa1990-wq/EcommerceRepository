@@ -1,0 +1,3574 @@
+[
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/",
+    "status": 200,
+    "finalPath": "/",
+    "file": "1440-00-reference.png",
+    "layout": {
+      "title": "Oprema za ribolov | Online shop BiH — opremazaribolov.ba",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 3093,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 118,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 2665.90625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 2783.90625,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/artikal/qa-artikal-1/",
+    "status": 200,
+    "finalPath": "/artikal/qa-artikal-1/",
+    "file": "1440-01-reference.png",
+    "layout": {
+      "title": "QA Artikal 1 | QA Brand | QA QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1470,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 118,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 1042.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1160.265625,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".product-gallery",
+          "x": 75.59375,
+          "y": 175.5,
+          "width": 721.875,
+          "height": 422,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/artikal/qa-artikal-2/",
+    "status": 200,
+    "finalPath": "/artikal/qa-artikal-2/",
+    "file": "1440-02-reference.png",
+    "layout": {
+      "title": "QA Artikal 2 | QA Brand | QA QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1773,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 118,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 1345.875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1463.875,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".product-gallery",
+          "x": 75.59375,
+          "y": 175.5,
+          "width": 721.875,
+          "height": 369.609375,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/korpa/",
+    "status": 200,
+    "finalPath": "/korpa/",
+    "file": "1440-03-reference.png",
+    "layout": {
+      "title": "Korpa | opremazaribolov.ba",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1671,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 118,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 1244.09375,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1362.09375,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".cart-page",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 1244.09375,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 36, 59)",
+          "background": "rgb(255, 255, 255)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/narudzba/",
+    "status": 200,
+    "finalPath": "/narudzba/",
+    "file": "1440-04-reference.png",
+    "layout": {
+      "title": "Narudžba | opremazaribolov.ba",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1164,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 118,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 736.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 854.5,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".checkout-page",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 736.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 36, 59)",
+          "background": "rgb(255, 255, 255)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/panel",
+    "status": 200,
+    "finalPath": "/panel",
+    "file": "1440-05-reference.png",
+    "layout": {
+      "title": "Panel — http://127.0.0.1:8011",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 110.6875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 535.6875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 579.6875,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".staff-admin-page",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 535.6875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/panel/podesavanja",
+    "status": 200,
+    "finalPath": "/panel/podesavanja",
+    "file": "1440-06-reference.png",
+    "layout": {
+      "title": "Podešavanja — QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1225,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 20,
+          "y": 60,
+          "width": 1400,
+          "height": 37.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 871.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 915.5,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/panel/podesavanja/sajt/",
+    "status": 200,
+    "finalPath": "/panel/podesavanja/sajt/",
+    "file": "1440-07-reference.png",
+    "layout": {
+      "title": "Podešavanja — QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 5458,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 24,
+          "y": 24,
+          "width": 1392,
+          "height": 78,
+          "font": "Times",
+          "color": "rgb(24, 24, 27)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 8,
+          "y": 8,
+          "width": 1424,
+          "height": 5442,
+          "font": "Times",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/panel/sekcija/product/",
+    "status": 200,
+    "finalPath": "/panel/sekcija/product/",
+    "file": "1440-08-reference.png",
+    "layout": {
+      "title": "Artikli — QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1225,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 20,
+          "y": 60,
+          "width": 1400,
+          "height": 37.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 871.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 915.5,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/panel/b2b",
+    "status": 200,
+    "finalPath": "/panel/b2b",
+    "file": "1440-09-reference.png",
+    "layout": {
+      "title": "B2B — QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1225,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 20,
+          "y": 60,
+          "width": 1400,
+          "height": 37.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 871.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 915.5,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [
+      "ReferenceError: django is not defined\n    at http://127.0.0.1:8012/static/admin/js/b2b-settings.js:25:4"
+    ],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/panel/loyalty",
+    "status": 200,
+    "finalPath": "/panel/loyalty",
+    "file": "1440-10-reference.png",
+    "layout": {
+      "title": "Loyalty — QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 176.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 220.5,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/panel/greb-greb",
+    "status": 200,
+    "finalPath": "/panel/greb-greb",
+    "file": "1440-11-reference.png",
+    "layout": {
+      "title": "Sretni Greb-Greb — QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 176.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 220.5,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/nalog/online-narudzbe/",
+    "status": 200,
+    "finalPath": "/nalog/online-narudzbe/",
+    "file": "1440-12-reference.png",
+    "layout": {
+      "title": "Online narudžbe — http://127.0.0.1:8011",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 2353,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 118,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 1926,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 2044,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/wms/",
+    "status": 200,
+    "finalPath": "/wms/",
+    "file": "1440-13-reference.png",
+    "layout": {
+      "title": "WMS Magacin — Zalihe",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/wms/lokacije/",
+    "status": 200,
+    "finalPath": "/wms/lokacije/",
+    "file": "1440-14-reference.png",
+    "layout": {
+      "title": "WMS Magacin — Lokacije",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/wms/narudzbe/",
+    "status": 200,
+    "finalPath": "/wms/narudzbe/",
+    "file": "1440-15-reference.png",
+    "layout": {
+      "title": "WMS Magacin — Narudžbe",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/wms/podesavanje/",
+    "status": 200,
+    "finalPath": "/wms/podesavanje/",
+    "file": "1440-16-reference.png",
+    "layout": {
+      "title": "WMS Magacin — Podešavanje",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/panel/podesavanja/sekcije/EcommerceApp/product/1/change/",
+    "status": 200,
+    "finalPath": "/panel/podesavanja/sekcije/EcommerceApp/product/1/change/",
+    "file": "1440-17-reference.png",
+    "layout": {
+      "title": "QA Artikal 1 | Change Artikal | QA Webshop Admin",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 5980,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(51, 51, 51)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 5979.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "reference",
+    "route": "/panel/podesavanja/sekcije/EcommerceApp/product/add/",
+    "status": 200,
+    "finalPath": "/panel/podesavanja/sekcije/EcommerceApp/product/add/",
+    "file": "1440-18-reference.png",
+    "layout": {
+      "title": "Add Artikal | QA Webshop Admin",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 5385,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(51, 51, 51)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 5384.625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/",
+    "status": 200,
+    "finalPath": "/",
+    "file": "1440-00-destination.png",
+    "layout": {
+      "title": "Oprema za ribolov | Online shop BiH — opremazaribolov.ba",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 3093,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 118,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 2665.90625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 2783.90625,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/artikal/qa-artikal-1/",
+    "status": 200,
+    "finalPath": "/artikal/qa-artikal-1/",
+    "file": "1440-01-destination.png",
+    "layout": {
+      "title": "QA Artikal 1 | QA Brand | QA QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1470,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 118,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 1042.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1160.265625,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".product-gallery",
+          "x": 75.59375,
+          "y": 175.5,
+          "width": 721.875,
+          "height": 422,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/artikal/qa-artikal-2/",
+    "status": 200,
+    "finalPath": "/artikal/qa-artikal-2/",
+    "file": "1440-02-destination.png",
+    "layout": {
+      "title": "QA Artikal 2 | QA Brand | QA QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1773,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 118,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 1345.875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1463.875,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".product-gallery",
+          "x": 75.59375,
+          "y": 175.5,
+          "width": 721.875,
+          "height": 369.609375,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/korpa/",
+    "status": 200,
+    "finalPath": "/korpa/",
+    "file": "1440-03-destination.png",
+    "layout": {
+      "title": "Korpa | opremazaribolov.ba",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1671,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 118,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 1244.09375,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1362.09375,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".cart-page",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 1244.09375,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 36, 59)",
+          "background": "rgb(255, 255, 255)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/narudzba/",
+    "status": 200,
+    "finalPath": "/narudzba/",
+    "file": "1440-04-destination.png",
+    "layout": {
+      "title": "Narudžba | opremazaribolov.ba",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1164,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 118,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 736.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 854.5,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".checkout-page",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 736.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 36, 59)",
+          "background": "rgb(255, 255, 255)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/panel",
+    "status": 200,
+    "finalPath": "/panel",
+    "file": "1440-05-destination.png",
+    "layout": {
+      "title": "Panel — http://127.0.0.1:8011",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 110.6875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 535.6875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 579.6875,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".staff-admin-page",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 535.6875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/panel/podesavanja",
+    "status": 200,
+    "finalPath": "/panel/podesavanja",
+    "file": "1440-06-destination.png",
+    "layout": {
+      "title": "Podešavanja — QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1225,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 20,
+          "y": 60,
+          "width": 1400,
+          "height": 37.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 871.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 915.5,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/panel/podesavanja/sajt/",
+    "status": 200,
+    "finalPath": "/panel/podesavanja/sajt/",
+    "file": "1440-07-destination.png",
+    "layout": {
+      "title": "Podešavanja — QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 5458,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 24,
+          "y": 24,
+          "width": 1392,
+          "height": 78,
+          "font": "Times",
+          "color": "rgb(24, 24, 27)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 8,
+          "y": 8,
+          "width": 1424,
+          "height": 5442,
+          "font": "Times",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/panel/sekcija/product/",
+    "status": 200,
+    "finalPath": "/panel/sekcija/product/",
+    "file": "1440-08-destination.png",
+    "layout": {
+      "title": "Artikli — QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1225,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 20,
+          "y": 60,
+          "width": 1400,
+          "height": 37.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 871.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 915.5,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/panel/b2b",
+    "status": 200,
+    "finalPath": "/panel/b2b",
+    "file": "1440-09-destination.png",
+    "layout": {
+      "title": "B2B — QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1225,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 20,
+          "y": 60,
+          "width": 1400,
+          "height": 37.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 871.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 915.5,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/panel/loyalty",
+    "status": 200,
+    "finalPath": "/panel/loyalty",
+    "file": "1440-10-destination.png",
+    "layout": {
+      "title": "Loyalty — QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 176.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 220.5,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/panel/greb-greb",
+    "status": 200,
+    "finalPath": "/panel/greb-greb",
+    "file": "1440-11-destination.png",
+    "layout": {
+      "title": "Sretni Greb-Greb — QA Webshop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 1440,
+          "height": 176.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 220.5,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/nalog/online-narudzbe/",
+    "status": 200,
+    "finalPath": "/nalog/online-narudzbe/",
+    "file": "1440-12-destination.png",
+    "layout": {
+      "title": "Online narudžbe — http://127.0.0.1:8011",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 2353,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 118,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 118,
+          "width": 1440,
+          "height": 1926,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 2044,
+          "width": 1440,
+          "height": 275.265625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/wms/",
+    "status": 200,
+    "finalPath": "/wms/",
+    "file": "1440-13-destination.png",
+    "layout": {
+      "title": "WMS Magacin — Zalihe",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/wms/lokacije/",
+    "status": 200,
+    "finalPath": "/wms/lokacije/",
+    "file": "1440-14-destination.png",
+    "layout": {
+      "title": "WMS Magacin — Lokacije",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/wms/narudzbe/",
+    "status": 200,
+    "finalPath": "/wms/narudzbe/",
+    "file": "1440-15-destination.png",
+    "layout": {
+      "title": "WMS Magacin — Narudžbe",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/wms/podesavanje/",
+    "status": 200,
+    "finalPath": "/wms/podesavanje/",
+    "file": "1440-16-destination.png",
+    "layout": {
+      "title": "WMS Magacin — Podešavanje",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/panel/podesavanja/sekcije/EcommerceApp/product/1/change/",
+    "status": 200,
+    "finalPath": "/panel/podesavanja/sekcije/EcommerceApp/product/1/change/",
+    "file": "1440-17-destination.png",
+    "layout": {
+      "title": "QA Artikal 1 | Change Artikal | QA Webshop Admin",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 5980,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(51, 51, 51)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 5979.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "route": "/panel/podesavanja/sekcije/EcommerceApp/product/add/",
+    "status": 200,
+    "finalPath": "/panel/podesavanja/sekcije/EcommerceApp/product/add/",
+    "file": "1440-18-destination.png",
+    "layout": {
+      "title": "Add Artikal | QA Webshop Admin",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 5385,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(51, 51, 51)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 5384.625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/",
+    "status": 200,
+    "finalPath": "/",
+    "file": "390-00-reference.png",
+    "layout": {
+      "title": "Oprema za ribolov | Online shop BiH — opremazaribolov.ba",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 4846,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 120,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 120,
+          "width": 390,
+          "height": 3880.078125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 4000.078125,
+          "width": 390,
+          "height": 741.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/artikal/qa-artikal-1/",
+    "status": 200,
+    "finalPath": "/artikal/qa-artikal-1/",
+    "file": "390-01-reference.png",
+    "layout": {
+      "title": "QA Artikal 1 | QA Brand | QA QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 2580,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 120,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 136,
+          "width": 390,
+          "height": 1565.734375,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1733.734375,
+          "width": 390,
+          "height": 741.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".product-gallery",
+          "x": 16,
+          "y": 162.5,
+          "width": 358,
+          "height": 296,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/artikal/qa-artikal-2/",
+    "status": 200,
+    "finalPath": "/artikal/qa-artikal-2/",
+    "file": "390-02-reference.png",
+    "layout": {
+      "title": "QA Artikal 2 | QA Brand | QA QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 3306,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 120,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 136,
+          "width": 390,
+          "height": 2292.140625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 2460.140625,
+          "width": 390,
+          "height": 741.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".product-gallery",
+          "x": 16,
+          "y": 162.5,
+          "width": 358,
+          "height": 296,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/korpa/",
+    "status": 200,
+    "finalPath": "/korpa/",
+    "file": "390-03-reference.png",
+    "layout": {
+      "title": "Korpa | opremazaribolov.ba",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 2814,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 74,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 74,
+          "width": 390,
+          "height": 1893.765625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1967.765625,
+          "width": 390,
+          "height": 741.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".cart-page",
+          "x": 0,
+          "y": 74,
+          "width": 390,
+          "height": 1893.765625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 36, 59)",
+          "background": "rgb(255, 255, 255)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/narudzba/",
+    "status": 200,
+    "finalPath": "/narudzba/",
+    "file": "390-04-reference.png",
+    "layout": {
+      "title": "Narudžba | opremazaribolov.ba",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 2574,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 74,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 74,
+          "width": 390,
+          "height": 1653.6875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1727.6875,
+          "width": 390,
+          "height": 741.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".checkout-page",
+          "x": 0,
+          "y": 74,
+          "width": 390,
+          "height": 1653.6875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 36, 59)",
+          "background": "rgb(255, 255, 255)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/panel",
+    "status": 200,
+    "finalPath": "/panel",
+    "file": "390-05-reference.png",
+    "layout": {
+      "title": "Panel — http://127.0.0.1:8011",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 2293,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 129.28125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 1399.78125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1443.78125,
+          "width": 390,
+          "height": 745.546875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".staff-admin-page",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 1399.78125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/panel/podesavanja",
+    "status": 200,
+    "finalPath": "/panel/podesavanja",
+    "file": "390-06-reference.png",
+    "layout": {
+      "title": "Podešavanja — QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1985,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 8,
+          "y": 54,
+          "width": 374,
+          "height": 37.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 1091.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1135.5,
+          "width": 390,
+          "height": 745.546875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/panel/podesavanja/sajt/",
+    "status": 200,
+    "finalPath": "/panel/podesavanja/sajt/",
+    "file": "390-07-reference.png",
+    "layout": {
+      "title": "Podešavanja — QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 8891,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 24,
+          "y": 24,
+          "width": 342,
+          "height": 93,
+          "font": "Times",
+          "color": "rgb(24, 24, 27)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 8,
+          "y": 8,
+          "width": 374,
+          "height": 8875.390625,
+          "font": "Times",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/panel/sekcija/product/",
+    "status": 200,
+    "finalPath": "/panel/sekcija/product/",
+    "file": "390-08-reference.png",
+    "layout": {
+      "title": "Artikli — QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1985,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 8,
+          "y": 54,
+          "width": 374,
+          "height": 37.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 1091.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1135.5,
+          "width": 390,
+          "height": 745.546875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/panel/b2b",
+    "status": 200,
+    "finalPath": "/panel/b2b",
+    "file": "390-09-reference.png",
+    "layout": {
+      "title": "B2B — QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1985,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 8,
+          "y": 54,
+          "width": 374,
+          "height": 37.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 1091.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1135.5,
+          "width": 390,
+          "height": 745.546875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [
+      "ReferenceError: django is not defined\n    at http://127.0.0.1:8012/static/admin/js/b2b-settings.js:25:4"
+    ],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/panel/loyalty",
+    "status": 200,
+    "finalPath": "/panel/loyalty",
+    "file": "390-10-reference.png",
+    "layout": {
+      "title": "Loyalty — QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1175,
+      "boxes": [
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 281,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 325,
+          "width": 390,
+          "height": 745.546875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/panel/greb-greb",
+    "status": 200,
+    "finalPath": "/panel/greb-greb",
+    "file": "390-11-reference.png",
+    "layout": {
+      "title": "Sretni Greb-Greb — QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1193,
+      "boxes": [
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 299,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 343,
+          "width": 390,
+          "height": 745.546875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/nalog/online-narudzbe/",
+    "status": 200,
+    "finalPath": "/nalog/online-narudzbe/",
+    "file": "390-12-reference.png",
+    "layout": {
+      "title": "Online narudžbe — http://127.0.0.1:8011",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 3648,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 120,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 120,
+          "width": 390,
+          "height": 2682,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 2802,
+          "width": 390,
+          "height": 741.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/wms/",
+    "status": 200,
+    "finalPath": "/wms/",
+    "file": "390-13-reference.png",
+    "layout": {
+      "title": "WMS Magacin — Zalihe",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 744,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/wms/lokacije/",
+    "status": 200,
+    "finalPath": "/wms/lokacije/",
+    "file": "390-14-reference.png",
+    "layout": {
+      "title": "WMS Magacin — Lokacije",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 921,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 817.390625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/wms/narudzbe/",
+    "status": 200,
+    "finalPath": "/wms/narudzbe/",
+    "file": "390-15-reference.png",
+    "layout": {
+      "title": "WMS Magacin — Narudžbe",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1563,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 1459.390625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/wms/podesavanje/",
+    "status": 200,
+    "finalPath": "/wms/podesavanje/",
+    "file": "390-16-reference.png",
+    "layout": {
+      "title": "WMS Magacin — Podešavanje",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1682,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 1578.3125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/panel/podesavanja/sekcije/EcommerceApp/product/1/change/",
+    "status": 200,
+    "finalPath": "/panel/podesavanja/sekcije/EcommerceApp/product/1/change/",
+    "file": "390-17-reference.png",
+    "layout": {
+      "title": "QA Artikal 1 | Change Artikal | QA Webshop Admin",
+      "width": 390,
+      "scrollWidth": 406,
+      "height": 8325,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(51, 51, 51)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 406,
+          "height": 8325.171875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "route": "/panel/podesavanja/sekcije/EcommerceApp/product/add/",
+    "status": 200,
+    "finalPath": "/panel/podesavanja/sekcije/EcommerceApp/product/add/",
+    "file": "390-18-reference.png",
+    "layout": {
+      "title": "Add Artikal | QA Webshop Admin",
+      "width": 390,
+      "scrollWidth": 406,
+      "height": 7534,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(51, 51, 51)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 406,
+          "height": 7534.359375,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/",
+    "status": 200,
+    "finalPath": "/",
+    "file": "390-00-destination.png",
+    "layout": {
+      "title": "Oprema za ribolov | Online shop BiH — opremazaribolov.ba",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 4846,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 120,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 120,
+          "width": 390,
+          "height": 3880.078125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 4000.078125,
+          "width": 390,
+          "height": 741.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/artikal/qa-artikal-1/",
+    "status": 200,
+    "finalPath": "/artikal/qa-artikal-1/",
+    "file": "390-01-destination.png",
+    "layout": {
+      "title": "QA Artikal 1 | QA Brand | QA QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 2580,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 120,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 136,
+          "width": 390,
+          "height": 1565.734375,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1733.734375,
+          "width": 390,
+          "height": 741.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".product-gallery",
+          "x": 16,
+          "y": 162.5,
+          "width": 358,
+          "height": 296,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/artikal/qa-artikal-2/",
+    "status": 200,
+    "finalPath": "/artikal/qa-artikal-2/",
+    "file": "390-02-destination.png",
+    "layout": {
+      "title": "QA Artikal 2 | QA Brand | QA QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 3306,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 120,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 136,
+          "width": 390,
+          "height": 2292.140625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 2460.140625,
+          "width": 390,
+          "height": 741.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".product-gallery",
+          "x": 16,
+          "y": 162.5,
+          "width": 358,
+          "height": 296,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(7, 25, 46)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/korpa/",
+    "status": 200,
+    "finalPath": "/korpa/",
+    "file": "390-03-destination.png",
+    "layout": {
+      "title": "Korpa | opremazaribolov.ba",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 2814,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 74,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 74,
+          "width": 390,
+          "height": 1893.765625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1967.765625,
+          "width": 390,
+          "height": 741.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".cart-page",
+          "x": 0,
+          "y": 74,
+          "width": 390,
+          "height": 1893.765625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 36, 59)",
+          "background": "rgb(255, 255, 255)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/narudzba/",
+    "status": 200,
+    "finalPath": "/narudzba/",
+    "file": "390-04-destination.png",
+    "layout": {
+      "title": "Narudžba | opremazaribolov.ba",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 2574,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 74,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 74,
+          "width": 390,
+          "height": 1653.6875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1727.6875,
+          "width": 390,
+          "height": 741.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".checkout-page",
+          "x": 0,
+          "y": 74,
+          "width": 390,
+          "height": 1653.6875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 36, 59)",
+          "background": "rgb(255, 255, 255)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/panel",
+    "status": 200,
+    "finalPath": "/panel",
+    "file": "390-05-destination.png",
+    "layout": {
+      "title": "Panel — http://127.0.0.1:8011",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 2293,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 129.28125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 1399.78125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1443.78125,
+          "width": 390,
+          "height": 745.546875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": ".staff-admin-page",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 1399.78125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/panel/podesavanja",
+    "status": 200,
+    "finalPath": "/panel/podesavanja",
+    "file": "390-06-destination.png",
+    "layout": {
+      "title": "Podešavanja — QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1985,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 8,
+          "y": 54,
+          "width": 374,
+          "height": 37.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 1091.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1135.5,
+          "width": 390,
+          "height": 745.546875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/panel/podesavanja/sajt/",
+    "status": 200,
+    "finalPath": "/panel/podesavanja/sajt/",
+    "file": "390-07-destination.png",
+    "layout": {
+      "title": "Podešavanja — QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 8891,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 24,
+          "y": 24,
+          "width": 342,
+          "height": 93,
+          "font": "Times",
+          "color": "rgb(24, 24, 27)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 8,
+          "y": 8,
+          "width": 374,
+          "height": 8875.390625,
+          "font": "Times",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/panel/sekcija/product/",
+    "status": 200,
+    "finalPath": "/panel/sekcija/product/",
+    "file": "390-08-destination.png",
+    "layout": {
+      "title": "Artikli — QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1985,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 8,
+          "y": 54,
+          "width": 374,
+          "height": 37.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 1091.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1135.5,
+          "width": 390,
+          "height": 745.546875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/panel/b2b",
+    "status": 200,
+    "finalPath": "/panel/b2b",
+    "file": "390-09-destination.png",
+    "layout": {
+      "title": "B2B — QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1985,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 8,
+          "y": 54,
+          "width": 374,
+          "height": 37.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 1091.5,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 1135.5,
+          "width": 390,
+          "height": 745.546875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/panel/loyalty",
+    "status": 200,
+    "finalPath": "/panel/loyalty",
+    "file": "390-10-destination.png",
+    "layout": {
+      "title": "Loyalty — QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1175,
+      "boxes": [
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 281,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 325,
+          "width": 390,
+          "height": 745.546875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/panel/greb-greb",
+    "status": 200,
+    "finalPath": "/panel/greb-greb",
+    "file": "390-11-destination.png",
+    "layout": {
+      "title": "Sretni Greb-Greb — QA Webshop",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1193,
+      "boxes": [
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 44,
+          "width": 390,
+          "height": 299,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(23, 49, 73)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 343,
+          "width": 390,
+          "height": 745.546875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/nalog/online-narudzbe/",
+    "status": 200,
+    "finalPath": "/nalog/online-narudzbe/",
+    "file": "390-12-destination.png",
+    "layout": {
+      "title": "Online narudžbe — http://127.0.0.1:8011",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 3648,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 120,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 120,
+          "width": 390,
+          "height": 2682,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 2802,
+          "width": 390,
+          "height": 741.828125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/wms/",
+    "status": 200,
+    "finalPath": "/wms/",
+    "file": "390-13-destination.png",
+    "layout": {
+      "title": "WMS Magacin — Zalihe",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 900,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 744,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/wms/lokacije/",
+    "status": 200,
+    "finalPath": "/wms/lokacije/",
+    "file": "390-14-destination.png",
+    "layout": {
+      "title": "WMS Magacin — Lokacije",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 921,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 817.390625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/wms/narudzbe/",
+    "status": 200,
+    "finalPath": "/wms/narudzbe/",
+    "file": "390-15-destination.png",
+    "layout": {
+      "title": "WMS Magacin — Narudžbe",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1563,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 1459.390625,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/wms/podesavanje/",
+    "status": 200,
+    "finalPath": "/wms/podesavanje/",
+    "file": "390-16-destination.png",
+    "layout": {
+      "title": "WMS Magacin — Podešavanje",
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1682,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 1578.3125,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(16, 35, 67)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/panel/podesavanja/sekcije/EcommerceApp/product/1/change/",
+    "status": 200,
+    "finalPath": "/panel/podesavanja/sekcije/EcommerceApp/product/1/change/",
+    "file": "390-17-destination.png",
+    "layout": {
+      "title": "QA Artikal 1 | Change Artikal | QA Webshop Admin",
+      "width": 390,
+      "scrollWidth": 406,
+      "height": 8325,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(51, 51, 51)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 406,
+          "height": 8325.171875,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "route": "/panel/podesavanja/sekcije/EcommerceApp/product/add/",
+    "status": 200,
+    "finalPath": "/panel/podesavanja/sekcije/EcommerceApp/product/add/",
+    "file": "390-18-destination.png",
+    "layout": {
+      "title": "Add Artikal | QA Webshop Admin",
+      "width": 390,
+      "scrollWidth": 406,
+      "height": 7534,
+      "boxes": [
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(51, 51, 51)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "selector": "main",
+          "x": 0,
+          "y": 0,
+          "width": 406,
+          "height": 7534.359375,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "selector": "footer",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "font": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+          "color": "rgb(34, 34, 34)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ]
+    },
+    "errors": [],
+    "failed": []
+  }
+]

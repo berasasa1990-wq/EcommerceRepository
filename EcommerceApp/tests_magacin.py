@@ -878,7 +878,7 @@ class MagacinViewTests(TestCase):
 
     def test_admin_panel_has_magacin_not_carts(self):
         self.client.force_login(self.user)
-        response = self.client.get(reverse('staff_admin_panel'))
+        response = self.client.get(reverse('staff_panel'))
         self.assertContains(response, 'Magacin')
         self.assertContains(response, reverse('staff_magacin'))
         self.assertNotContains(response, 'Aktivne korpe')
@@ -1110,9 +1110,9 @@ class MagacinViewTests(TestCase):
         list_res = self.client.get(reverse('staff_magacin_artikli'))
         self.assertEqual(list_res.status_code, 200)
         self.assertContains(list_res, 'mgArticleScanBtn')
-        self.assertContains(list_res, 'Zadnje izmjene količina')
+        self.assertContains(list_res, 'Posljednje promjene lagera')
         self.assertContains(list_res, 'KORISNIK')
-        self.assertNotContains(list_res, 'class="mg-product-row"')
+        self.assertContains(list_res, 'class="mg-product-row"')
         self.assertContains(list_res, 'Test braid')
         detail = self.client.get(reverse('staff_magacin_artikal', args=[self.product.pk]))
         self.assertEqual(detail.status_code, 200)
@@ -4911,8 +4911,8 @@ class MagacinViewTests(TestCase):
         self.assertEqual(page_edit.status_code, 302)
         customer.refresh_from_db()
         self.assertEqual(customer.ime_prezime, 'Marko Ivić')
-        from django.contrib import admin as django_admin
-        self.assertIn(WarehouseCustomer, django_admin.site._registry)
+        from .panel_admin import panel_admin_site
+        self.assertIn(WarehouseCustomer, panel_admin_site._registry)
 
         form = self.client.get(reverse('staff_magacin_narudzba_nova'))
         self.assertContains(form, 'id="mgCustomerEdit"')

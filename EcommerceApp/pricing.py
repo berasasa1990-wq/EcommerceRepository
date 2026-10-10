@@ -14,7 +14,7 @@ def _postotni_popust(osnovica, postotak):
 
 
 def _stavka_snizena_za_loyalty(item):
-    """Loyalty popust ne vrijedi na snižene artikle ni na stavke sa % umanjenjem."""
+    """Kupon ne vrijedi na snižene artikle ni na stavke sa % umanjenjem."""
     cijena = item.get('cijena_decimal')
     if cijena is None:
         cijena = Decimal(str(item.get('cijena', '0')))
@@ -166,17 +166,13 @@ def izracunaj_sazetak(
         if kupon.vrsta == Coupon.Vrsta.DOSTAVA:
             pogodnosti.append(f'Kupon: besplatna dostava ({kupon.kod})')
         elif kupon.vrsta == Coupon.Vrsta.IZNOS:
-            kupon_popust = min(ukupno_sa_pdvom, kupon.iznos or Decimal('0.00'))
+            osnovica = _loyalty_osnovica_iz_korpe(cart_items) if cart_items is not None else medjuzbir
+            kupon_popust = min(osnovica, kupon.iznos or Decimal('0.00'))
             popust += kupon_popust
             pogodnosti.append(f'Kupon {kupon_popust} KM ({kupon.kod})')
-        elif kupon.scratch_claim_id:
-            kupon_popust = sum((_scratch_coupon_line_discount(item, kupon.postotak)
-                                for item in (cart_items or [])), Decimal('0.00'))
-        elif kupon.automatski:
-            loyalty_osnovica = _loyalty_osnovica_iz_korpe(cart_items)
-            kupon_popust = _postotni_popust(loyalty_osnovica, kupon.postotak)
         elif kupon.vrsta == Coupon.Vrsta.POSTOTAK:
-            kupon_popust = _postotni_popust(ukupno_sa_pdvom, kupon.postotak)
+            osnovica = _loyalty_osnovica_iz_korpe(cart_items) if cart_items is not None else medjuzbir
+            kupon_popust = _postotni_popust(osnovica, kupon.postotak)
         if kupon.vrsta == Coupon.Vrsta.POSTOTAK:
             popust += kupon_popust
         if kupon.vrsta == Coupon.Vrsta.POSTOTAK and kupon.naziv == 'Registracijski popust (uživo)':
@@ -459,14 +455,13 @@ def annotate_cart_coupon_prices(items, coupon):
     """Display-only line prices; leave the cart's original accounting values intact."""
     from decimal import ROUND_DOWN
 
-    if not coupon or coupon.postotak <= 0:
+    if not coupon or coupon.vrsta != Coupon.Vrsta.POSTOTAK or coupon.postotak <= 0:
         return
     rows = []
     for item in items:
         total = Decimal(str(item['ukupno_stavka']))
-        base = _loyalty_osnovica_iz_korpe([item]) if coupon.automatski else total
-        raw = (_scratch_coupon_line_discount(item, coupon.postotak) if coupon.scratch_claim_id
-               else min(total, base * coupon.postotak / Decimal('100')))
+        base = _loyalty_osnovica_iz_korpe([item])
+        raw = min(total, base * coupon.postotak / Decimal('100'))
         if raw > 0:
             rows.append((item, total, raw, raw.quantize(Decimal('.01'), rounding=ROUND_DOWN)))
     target = _kvantiziraj(sum((row[2] for row in rows), Decimal('0')))

@@ -17,7 +17,7 @@ OLX_API_BASE = 'https://api.olx.ba'
 OLX_JPEG_QUALITY = 92
 DEFAULT_OLX_CATEGORY_ID = 1260  # Ostali ribolovni pribor
 DEFAULT_OLX_COUNTRY_ID = 49
-DEFAULT_OLX_CITY_ID = 77  # Bijeljina (CarpologijaBH profil)
+DEFAULT_OLX_CITY_ID = 77  # Bijeljina (Webshop profil)
 
 
 def _olx_jpeg_buffer(image, *, stem='olx-image'):
@@ -47,7 +47,7 @@ class OlxClient:
         self.session.headers.update({
             'Authorization': f'Bearer {self.token}',
             'Accept': 'application/json',
-            'User-Agent': 'opremazaribolov-olx-sync/1.0',
+            'User-Agent': 'webshop-olx-sync/1.0',
         })
 
     @classmethod
@@ -345,7 +345,7 @@ def _listing_payload(product, *, category_id, attributes):
 
 
 def _resolve_olx_category_id(client, product):
-    """CarpologijaBH shop — uvijek ribolovna kategorija (suggest često pogriješi, npr. Mobiteli)."""
+    """Webshop shop — uvijek ribolovna kategorija (suggest često pogriješi, npr. Mobiteli)."""
     return client.default_category_id
 
 

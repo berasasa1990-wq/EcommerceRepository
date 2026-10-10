@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load static warehouse_access %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>Panel — {{ public_site_url }}</title>
+{% endblock %}
+
+{% block body_class %}staff-shell-page is-cart-page{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20260916-coupon-prices">
+<style>
+body.staff-shell-page { background: #f5f5f7; color: #111; }
+body.staff-shell-page main { width: 100% !important; max-width: none !important; margin: 0 !important; }
+body .staff-admin-page { width: 100% !important; max-width: none !important; margin: 0 !important; }
+body .staff-admin-page .staff-page-hero__inner { max-width: none !important; padding-left: 40px !important; padding-right: 40px !important; }
+body .staff-admin-page .admin-buttons { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 40px 40px !important; }
+body .staff-admin-page .staff-page-hero { background: #eeeef1; border: 1px solid #dedee3; box-shadow: none; }
+body .staff-admin-page :is(.staff-page-title,.staff-page-subtitle,.staff-page-kicker,.staff-page-back) { color: #111; }
+body .staff-admin-page .admin-btn { background: #f0f0f3; color: #111; border: 1px solid #dedee3; box-shadow: none; }
+body .staff-admin-page .admin-btn:hover { background: #e7e7ec; border-color: #c9c9d1; }
+body .staff-admin-page .admin-btn-icon { background: #e2e2e8; color: #333; }
+body .staff-admin-page .admin-btn-text :is(h2,h3,p,span,strong), body .staff-admin-page .admin-btn-arrow { color: #111; }
+body .staff-admin-page .admin-live-new { position: absolute; top: 12px; right: 13px; padding: 4px 8px; border-radius: 999px; background: #ff5a00; color: #fff !important; font-size: 10px; font-weight: 900; letter-spacing: .08em; line-height: 1; }
+@media (max-width: 820px) {
+    body .staff-admin-page .staff-page-hero__inner { padding-left: 16px !important; padding-right: 16px !important; }
+    body .staff-admin-page .admin-buttons { padding: 0 16px 32px !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="staff-admin-page">
+    <header class="staff-page-hero">
+        <div class="staff-page-hero__inner">
+            <p class="staff-page-kicker">Staff</p>
+            <h1 class="staff-page-title">Panel</h1>
+            <p class="staff-page-subtitle">
+                {% if user.is_superuser %}
+                Odaberite sekciju za rad sa sajtom, narudžbama i loyalty programom.
+                {% else %}
+                Odaberite sekciju za rad sa sajtom i narudžbama.
+                {% endif %}
+            </p>
+        </div>
+    </header>
+
+    <div class="admin-buttons">
+        <a href="{% url 'staff_newsletter' %}" class="admin-btn">
+            <div class="admin-btn-icon" aria-hidden="true">✉</div>
+            <div class="admin-btn-text"><strong>Newsletter</strong><span>Lista prijavljenih email adresa</span></div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
+        </a>
+        <a {% if "staff_b2b_workspace"|panel_tool_locked %}aria-disabled="true" title="Modul je isključen"{% else %}href="{% url 'staff_b2b_workspace' %}"{% endif %} class="{% if "staff_b2b_workspace"|panel_tool_locked %}admin-btn--locked {% endif %}admin-btn">
+            <div class="admin-btn-icon" aria-hidden="true">B2B</div>
+            <div class="admin-btn-text"><strong>B2B</strong><span>Podešavanja, korisnici, narudžbe i B2B Live</span></div>
+            <span class="admin-btn-arrow" aria-hidden="true">{% if "staff_b2b_workspace"|panel_tool_locked %}🔒{% else %}→{% endif %}</span>
+        </a>
+        <a href="{% url 'staff_settings' %}" class="admin-btn">
+            <div class="admin-btn-icon" aria-hidden="true">⚙</div>
+            <div class="admin-btn-text"><strong>Podešavanja</strong><span>Podešavanja sajta, banneri, korisnički profili i SEO stranice</span></div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
+        </a>
+        {% for item in model_sections %}
+        <a {% if item.module_locked %}aria-disabled="true" title="Modul je isključen"{% else %}href="{{ item.workspace_url }}"{% endif %} class="admin-btn{% if item.module_locked %} admin-btn--locked{% endif %}">
+            <div class="admin-btn-icon" aria-hidden="true">▤</div>
+            <div class="admin-btn-text"><strong>{{ item.label }}</strong><span>{% if item.key == 'product' %}Artikli, tagovi, kategorije i brendovi{% elif item.key == 'akcija' %}Akcije i upsell ponude{% else %}Pregled i uređivanje{% endif %}</span></div>
+            <span class="admin-btn-arrow" aria-hidden="true">{% if item.module_locked %}🔒{% else %}→{% endif %}</span>
+        </a>
+        {% endfor %}
+        <a {% if "staff_loyalty_workspace"|panel_tool_locked %}aria-disabled="true" title="Modul je isključen"{% else %}href="{% url 'staff_loyalty_workspace' %}"{% endif %} class="{% if "staff_loyalty_workspace"|panel_tool_locked %}admin-btn--locked {% endif %}admin-btn">
+            <div class="admin-btn-icon admin-btn-icon--loyalty" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+            </div>
+            <div class="admin-btn-text">
+                <strong>Loyalty</strong>
+                <span>Loyalty sistem i Loyalty kartice</span>
+            </div>
+            <span class="admin-btn-arrow" aria-hidden="true">{% if "staff_loyalty_workspace"|panel_tool_locked %}🔒{% else %}→{% endif %}</span>
+        </a>
+        <a href="{% url 'staff_wms' %}" class="admin-btn">
+            <div class="admin-btn-icon admin-btn-icon--carts" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-6 9 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <path d="M9 22V12h6v10"/>
+                </svg>
+            </div>
+            <div class="admin-btn-text">
+                <strong>WMS Magacin</strong>
+                <span>Zalihe, narudžbe, pakovanje i lokacije</span>
+            </div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
+        </a>
+
+        {% if user.is_superuser %}
+        <a {% if "staff_gift_voucher"|panel_tool_locked %}aria-disabled="true" title="Modul je isključen"{% else %}href="{% url 'staff_gift_voucher' %}"{% endif %} class="{% if "staff_gift_voucher"|panel_tool_locked %}admin-btn--locked {% endif %}admin-btn admin-btn--orders" id="adminGiftVoucherBtn">
+            <div class="admin-btn-icon admin-btn-icon--orders" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="8" width="18" height="13" rx="2"/>
+                    <path d="M12 8V21"/>
+                    <path d="M3 12h18"/>
+                    <path d="M12 8c-2.2-2.8-6-2-6 .8 0 1.6 1.5 2.4 3 3.2 1.8 1 3 1.6 3 1.6s1.2-.6 3-1.6c1.5-.8 3-1.6 3-3.2 0-2.8-3.8-3.6-6-.8z"/>
+                </svg>
+            </div>
+            <div class="admin-btn-text">
+                <strong>Poklon Vaučer</strong>
+                <span>Ime, prezime i iznos — štampa A4 poklon vaučera</span>
+            </div>
+            <span class="admin-btn-arrow" aria-hidden="true">{% if "staff_gift_voucher"|panel_tool_locked %}🔒{% else %}→{% endif %}</span>
+        </a>
+
+
+
+
+        <a {% if "staff_live_analytics"|panel_tool_locked %}aria-disabled="true" title="Modul je isključen"{% else %}href="{% url 'staff_live_analytics' %}"{% endif %} class="{% if "staff_live_analytics"|panel_tool_locked %}admin-btn--locked {% endif %}admin-btn">
+            <span class="admin-live-new">NEW</span>
+            <div class="admin-btn-icon admin-btn-icon--live" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="2.5"/>
+                    <path d="M16.24 7.76a6 6 0 0 1 0 8.48"/>
+                    <path d="M7.76 16.24a6 6 0 0 1 0-8.48"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                    <path d="M4.93 19.07a10 10 0 0 1 0-14.14"/>
+                </svg>
+            </div>
+            <div class="admin-btn-text">
+                <strong>Live centar</strong>
+                <span>Online kupci, korpe, checkout, B2B i aktivni pregledi</span>
+            </div>
+            <span class="admin-btn-arrow" aria-hidden="true">{% if "staff_live_analytics"|panel_tool_locked %}🔒{% else %}→{% endif %}</span>
+        </a>
+        <a href="{% url 'staff_orders_validation' %}" class="admin-btn">
+            <span class="admin-live-new">NEW</span>
+            <div class="admin-btn-icon admin-btn-icon--orders" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg>
+            </div>
+            <div class="admin-btn-text"><strong>Narudžbe</strong><span>Narudžbe za validaciju, pretraga i Greb-Greb nagrade</span></div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
+        </a>
+
+
+
+        {% else %}
+        <div class="admin-btn admin-btn--locked" title="Dostupno samo superuseru" aria-disabled="true">
+            <div class="admin-btn-icon admin-btn-icon--locked" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="11" width="16" height="10" rx="2"/>
+                    <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+                </svg>
+            </div>
+            <div class="admin-btn-text">
+                <strong>Ostale sekcije</strong>
+                <span>Poklon vaučer, magacin, analitika — samo superuser</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

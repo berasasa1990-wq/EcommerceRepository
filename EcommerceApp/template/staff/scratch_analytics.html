@@ -6,7 +6,7 @@
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/staff-scratch.css' %}?v=20260929-wide-counts">{% endblock %}
 {% block content %}
 <section class="scratch-report">
-<a class="scratch-report__back" href="{% url 'staff_admin_panel' %}">← Admin panel</a>
+<a class="scratch-report__back" href="{% url 'staff_scratch_workspace' %}">← Sretni Greb-Greb</a>
 <header class="scratch-report__hero">
 <div><span class="scratch-report__eyebrow">Nagrade kupaca</span><h1>Greb Greb</h1><p>Od prvog prikaza do iskorištene nagrade. Pratite kome je kartica prikazana, šta je ogrebao i je li nagradu dodao u narudžbu.</p></div>
 <div class="scratch-report__stats"><div class="scratch-report__total"><strong>{{ page.paginator.count }}</strong><span>Ukupno pokušaja</span></div><div class="scratch-report__total scratch-report__total--accepted"><strong>{{ accepted_count }}</strong><span>Prihvaćeno</span></div></div>

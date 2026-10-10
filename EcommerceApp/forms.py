@@ -422,6 +422,23 @@ class PopupAdminForm(forms.ModelForm):
 
 
 class BannerAdminForm(forms.ModelForm):
+    MODULE_FIELDS = ('kategorija', 'filter_cijena_do', 'filter_cijena_od',
+                     'tekst_dugmeta', 'sekundarno_dugme', 'sekundarni_link')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .panel_modules import module_locked
+        if module_locked('banner_odrediste_filter'):
+            for name in self.MODULE_FIELDS:
+                if name in self.fields:
+                    self.fields[name].disabled = True
+                    self.fields[name].help_text = '🔒 Modul „Banner — Odredište i filter” je isključen.'
+        self.fields['slika'].help_text = (
+            'Dva bannera ispod Brza dostava: 1400 × 288 px (oko 4,9:1), JPG, PNG ili WebP. '
+            'Banner iznad footera (redoslijed 2): 1920 × 300 px (6,4:1). '
+            'Uploaduj kompletan dizajn bannera. Hero: 2172 × 724 px.'
+        )
+
     class Meta:
         model = Banner
         fields = '__all__'

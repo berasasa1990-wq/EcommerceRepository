@@ -4,7 +4,7 @@
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {% block page_title %}
-<title>B2B Live — opremazaribolov.ba</title>
+<title>B2B Live — {{ public_site_url }}</title>
 {% endblock %}
 
 {% block extra_css %}
@@ -17,7 +17,7 @@
 <section class="staff-admin-page b2b-live-page">
     <header class="staff-page-hero">
         <div class="staff-page-hero__inner">
-            <a href="{% url 'staff_admin_panel' %}" class="staff-page-back">← Nazad na Admin panel</a>
+            <a href="{% url 'staff_panel' %}" class="staff-page-back">← Nazad na Panel</a>
             <p class="staff-page-kicker">Live</p>
             <h1 class="staff-page-title">B2B Live</h1>
             <p class="staff-page-subtitle">

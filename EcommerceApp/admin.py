@@ -52,6 +52,7 @@ from .models import (
     HomeCategoryShowcase,
     HomeFeaturedProduct,
     HomeNovoProduct,
+    HomeBestsellerProduct,
     HomePromoCard,
     HomeTrustItem,
     HomeVlog,
@@ -133,6 +134,13 @@ class LoyaltyCardAdmin(admin.ModelAdmin):
 
 @admin.register(Coupon)
 class CouponAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        from .panel_modules import module_locked
+        queryset = super().get_queryset(request)
+        if module_locked('loyalty'):
+            queryset = queryset.filter(loyalty_kartica__isnull=True, automatski=False)
+        return queryset
+
     list_display = ('kod', 'naziv', 'vrsta', 'postotak', 'iznos', 'vlasnik', 'aktivan', 'automatski')
     list_filter = ('vrsta', 'aktivan', 'automatski')
     search_fields = ('kod', 'naziv', 'vlasnik__email')
@@ -155,9 +163,58 @@ class CouponAdmin(admin.ModelAdmin):
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'telefon', 'grad')
-    search_fields = ('user__email', 'user__first_name', 'telefon')
+    list_display = ('user', 'customer_name', 'customer_email', 'telefon', 'grad', 'customer_active')
+    search_fields = ('user__email', 'user__first_name', 'user__last_name', 'user__username', 'telefon')
     autocomplete_fields = ('user',)
+    readonly_fields = ('customer_details', 'prva_prijava', 'telefon_verifikovan_at', 'reset_password_link')
+    fieldsets = (
+        ('Pregled korisnika', {'fields': ('customer_details', 'reset_password_link')}),
+        ('Kontakt i adresa', {'fields': ('user', 'telefon', 'adresa', 'grad', 'postanski_broj')}),
+        ('Prijave i verifikacija', {'fields': ('prva_prijava', 'telefon_verifikovan', 'telefon_verifikovan_at')}),
+        ('Loyalty napomena', {'fields': ('loyalty_napomena',)}),
+    )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(user__is_superuser=False).select_related('user')
+
+    def get_readonly_fields(self, request, obj=None):
+        return (*self.readonly_fields, 'user') if obj else self.readonly_fields
+
+    @admin.display(description='Ime i prezime')
+    def customer_name(self, obj):
+        return obj.user.get_full_name() or '—'
+
+    @admin.display(description='Email')
+    def customer_email(self, obj):
+        return obj.user.email or '—'
+
+    @admin.display(description='Aktivan', boolean=True)
+    def customer_active(self, obj):
+        return obj.user.is_active
+
+    @admin.display(description='Podaci i aktivnost')
+    def customer_details(self, obj):
+        if not obj or not obj.pk:
+            return 'Odaberite korisnika i sačuvajte profil.'
+        from .customer_profiles import profile_overview
+        return profile_overview(obj, self.admin_site.name)
+
+    @admin.display(description='Reset lozinke')
+    def reset_password_link(self, obj):
+        if not obj or not obj.pk:
+            return 'Sačuvajte profil prije slanja.'
+        if not obj.user.email or not obj.user.is_active or not obj.user.has_usable_password():
+            return 'Reset nije dostupan: potreban je aktivan račun sa emailom i postavljenom lozinkom.'
+        return format_html('<a class="button" href="{}">Pošalji reset lozinke na email</a>',
+                           reverse(f'{self.admin_site.name}:profile_reset_password', args=[obj.pk]))
+
+    def get_urls(self):
+        return [path('<int:profile_id>/reset-password/', self.admin_site.admin_view(self.reset_password_view),
+                     name='profile_reset_password')] + super().get_urls()
+
+    def reset_password_view(self, request, profile_id):
+        from .customer_profiles import reset_profile_password
+        return reset_profile_password(request, self, profile_id)
 
 
 class CustomerUserChangeForm(UserChangeForm):
@@ -296,7 +353,7 @@ class CustomerUserAdmin(UserAdmin):
     def reset_password_link(self, obj):
         if not obj.pk or not obj.email:
             return 'Korisnik nema email adresu.'
-        url = reverse('admin:customer_reset_password', args=[obj.pk])
+        url = reverse(f'{self.admin_site.name}:customer_reset_password', args=[obj.pk])
         return format_html('<a href="{}">Pošalji link za reset lozinke</a>', url)
 
     def get_urls(self):
@@ -322,10 +379,10 @@ class CustomerUserAdmin(UserAdmin):
                 self.message_user(
                     request,
                     'Email nije poslan: lokalni admin ne može promijeniti lozinku na javnom sajtu. '
-                    'Pošaljite reset iz admina na carpologijabh.ba ili zatražite reset na tom sajtu.',
+                    'Pošaljite reset iz admina na shop.example ili zatražite reset na tom sajtu.',
                     messages.ERROR,
                 )
-                return redirect('admin:auth_user_change', user.pk)
+                return redirect(f'{self.admin_site.name}:auth_user_change', user.pk)
             if user.email and user.is_active and user.has_usable_password():
                 body = render_to_string('auth/admin_password_reset_email.txt', {
                     'protocol': 'https' if request.is_secure() else 'http',
@@ -343,7 +400,7 @@ class CustomerUserAdmin(UserAdmin):
                                   messages.SUCCESS if sent else messages.ERROR)
             else:
                 self.message_user(request, 'Reset nije moguć za ovog korisnika.', messages.ERROR)
-            return redirect('admin:auth_user_change', user.pk)
+            return redirect(f'{self.admin_site.name}:auth_user_change', user.pk)
         return render(request, 'admin/customer_reset_password.html', {
             **self.admin_site.each_context(request),
             'title': 'Pošalji reset lozinke',
@@ -523,6 +580,60 @@ class HomeTrustItemInline(_HomeInlineMixin, admin.TabularInline):
     )
 
 
+@admin.register(HomeFeaturedProduct)
+class HomeFeaturedProductAdmin(admin.ModelAdmin):
+    list_display = ('artikal', 'redoslijed', 'aktivan')
+    list_editable = ('redoslijed', 'aktivan')
+    list_filter = ('aktivan',)
+    search_fields = ('artikal__naziv', 'artikal__sifra')
+    autocomplete_fields = ('artikal',)
+    ordering = ('redoslijed', 'id')
+    fieldsets = (('Izdvojena ponuda na početnoj', {
+        'fields': ('artikal', 'redoslijed', 'aktivan'),
+        'description': 'Odaberi postojeći artikal pretragom naziva ili šifre. '
+                       'Prvih 6 aktivnih artikala prikazuje se na početnoj, po redoslijedu (manji broj ide prvi). '
+                       'Artikal mora biti aktivan i na stanju. Isključi Aktivan za uklanjanje iz ponude.',
+    }),)
+
+    def save_model(self, request, obj, form, change):
+        obj.postavke = SiteSettings.objects.get_or_create(pk=1)[0]
+        super().save_model(request, obj, form, change)
+        self.clear_home_cache()
+
+    def delete_model(self, request, obj):
+        super().delete_model(request, obj)
+        self.clear_home_cache()
+
+    def delete_queryset(self, request, queryset):
+        super().delete_queryset(request, queryset)
+        self.clear_home_cache()
+
+    @staticmethod
+    def clear_home_cache():
+        from django.core.cache import cache
+        cache.delete('home_featured_products_v4')
+
+
+@admin.register(HomeNovoProduct)
+class HomeNovoProductAdmin(HomeFeaturedProductAdmin):
+    fieldsets = (('Novo u ponudi na početnoj', {
+        'fields': ('artikal', 'redoslijed', 'aktivan'),
+        'description': 'Odaberi postojeći artikal po nazivu ili šifri. '
+                       'Prvih 6 aktivnih artikala na stanju prikazuje se u sekciji Novo u ponudi. '
+                       'Manji redoslijed ide prvi. Oznaka Novo se dodaje automatski; kod sniženja prednost ima −%.',
+    }),)
+
+
+@admin.register(HomeBestsellerProduct)
+class HomeBestsellerProductAdmin(HomeFeaturedProductAdmin):
+    fieldsets = (('Najprodavaniji proizvodi na početnoj', {
+        'fields': ('artikal', 'redoslijed', 'aktivan'),
+        'description': 'Odaberi postojeći artikal po nazivu ili šifri. '
+                       'Prvih 6 aktivnih artikala na stanju prikazuje se po redoslijedu u sekciji Najprodavaniji proizvodi. '
+                       'Manji broj ide prvi. Isključi Aktivan za uklanjanje iz sekcije.',
+    }),)
+
+
 class HomeFeaturedProductInline(_HomeInlineMixin, admin.TabularInline):
     model = HomeFeaturedProduct
     fk_name = 'postavke'
@@ -642,7 +753,6 @@ class HomeBrandShowcaseInline(_HomeInlineMixin, admin.TabularInline):
         return formset
 
 
-@admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
     radio_fields = {'boja_menija': admin.HORIZONTAL}
     # Duga forma (inlines + SEO) — Save mora biti lako dostupan
@@ -763,13 +873,14 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         )
 
     fieldsets = (
+        ('Firma i dokumenti', {'fields': ('company_name', 'company_address', 'company_tax_id', 'company_bank_account', 'business_hours')}),
         ('Boja', {
             'fields': ('boja_menija',),
             'description': 'Odaberi Bijela ili Crna, pa sačuvaj. Promjena važi za meni kategorija i pogodnosti ispod banera na računaru i mobitelu.',
         }),
         ('① Logo i izgled sajta', {
             'fields': (
-                'logo', 'pregled_loga',
+                'logo', 'pregled_loga', 'newsletter_banner',
                 'favicon', 'pregled_favicona',
                 'loyalty_banner_slika', 'loyalty_banner_desktop', 'loyalty_banner_link',
                 'akcija_banner_slika', 'akcija_banner_desktop', 'akcija_banner_link',
@@ -1072,7 +1183,7 @@ class CategoryAdmin(admin.ModelAdmin):
             ),
             'description': (
                 '<strong>Prioritet #1 poslije početne.</strong> Svaka kategorija treba unique sadržaj.<br>'
-                '• <b>SEO title</b> (50–60): npr. „Štapovi za šarana | Oprema za ribolov — opremazaribolov.ba”<br>'
+                '• <b>SEO title</b> (50–60): npr. „Štapovi za šarana | Oprema za ribolov — shop.example”<br>'
                 '• <b>Meta description</b> (140–160): što nudiš + benefit + CTA<br>'
                 '• <b>H1</b>: npr. „Štapovi za šarana” (može kraće od title-a)<br>'
                 '• <b>SEO tekst ispod</b>: 2–4 pasusa o kategoriji (ne copy-paste isti tekst)<br>'
@@ -1179,7 +1290,7 @@ class CategoryAdmin(admin.ModelAdmin):
                     'Tagovi se odnose samo na podkategorije, ne na glavne.',
                     messages.WARNING,
                 )
-            return HttpResponseRedirect(reverse('admin:EcommerceApp_category_changelist'))
+            return HttpResponseRedirect(reverse(f'{self.admin_site.name}:EcommerceApp_category_changelist'))
 
         if not subcategories.exists():
             self.message_user(
@@ -1188,7 +1299,7 @@ class CategoryAdmin(admin.ModelAdmin):
                 'Search tagovi ne važe za glavne kategorije.',
                 messages.WARNING,
             )
-            return HttpResponseRedirect(reverse('admin:EcommerceApp_category_changelist'))
+            return HttpResponseRedirect(reverse(f'{self.admin_site.name}:EcommerceApp_category_changelist'))
 
         context = {
             **self.admin_site.each_context(request),
@@ -1955,6 +2066,26 @@ class HomeVlogAdmin(admin.ModelAdmin):
 @admin.register(Banner)
 class BannerAdmin(admin.ModelAdmin):
     form = BannerAdminForm
+    change_list_template = 'admin/EcommerceApp/banner/change_list.html'
+
+    def changelist_view(self, request, extra_context=None):
+        context = dict(extra_context or {})
+        slots = []
+        for index, label in enumerate(('Lijevi banner', 'Desni banner')):
+            banner = Banner.objects.filter(tip=Banner.BannerType.FEATURED, redoslijed=index).order_by('-aktivan', 'pk').first()
+            if banner:
+                url = reverse(f'{self.admin_site.name}:EcommerceApp_banner_change', args=[banner.pk])
+            else:
+                url = reverse(f'{self.admin_site.name}:EcommerceApp_banner_add') + f'?tip=featured&redoslijed={index}&naslov={label.replace(" ", "%20")}'
+            slots.append({'label': label, 'url': url, 'configured': bool(banner)})
+        context['homepage_banner_slots'] = slots
+        banner = Banner.objects.filter(tip=Banner.BannerType.FEATURED, redoslijed=2).order_by('-aktivan', 'pk').first()
+        context['footer_banner_url'] = (
+            reverse(f'{self.admin_site.name}:EcommerceApp_banner_change', args=[banner.pk]) if banner else
+            reverse(f'{self.admin_site.name}:EcommerceApp_banner_add') + '?tip=featured&redoslijed=2&naslov=Banner%20iznad%20footera'
+        )
+        context['footer_banner_configured'] = bool(banner)
+        return super().changelist_view(request, extra_context=context)
     list_display = ('naslov', 'tip', 'kategorija', 'filter_cijena_do', 'filter_cijena_od', 'aktivan', 'redoslijed', 'pregled_slike')
     list_filter = ('tip', 'aktivan')
     list_editable = ('aktivan', 'redoslijed')
@@ -1964,10 +2095,11 @@ class BannerAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Mjesto prikaza banera', {
             'fields': ('tip',),
-            'description': 'Za mrežu odmah ispod trake Brza dostava / Sigurna kupovina izaberi „Grid ispod banera”. '
-                           'Desktop: prva 8 banera (4 × 2). Mobitel: prva 4 (2 × 2). '
-                           'Slike za ovaj grid: 1200 × 800 px, omjer 3:2 (isto za desktop i mobitel). '
-                           'Redoslijed podešavaš u polju Redoslijed; manji broj ide prvi.',
+             'description': 'Dva bannera ispod Brza dostava: izaberi „Grid ispod banera”. '
+                           'Lijevi banner: Redoslijed 0. Desni banner: Redoslijed 1. '
+                           'Preporučena slika: 1400 × 288 px (omjer približno 4,9:1), JPG, PNG ili WebP. '
+                           'Banner iznad footera: isti tip, Redoslijed 2, slika 1920 × 300 px (6,4:1). '
+                           'Slika zamjenjuje cijeli banner. Na računaru su jedan pored drugog, na telefonu jedan ispod drugog.'
         }),
         ('Sadržaj', {
             'fields': (
@@ -2103,7 +2235,7 @@ class ImaVarijacijeFilter(admin.SimpleListFilter):
 
 
 class NaStanjuFilter(admin.SimpleListFilter):
-    """Custom filter for 'na_stanju' that defaults to 'Yes' (in stock) selected."""
+    """Show the shared catalogue by default; stock filtering is explicit."""
     title = 'Na stanju'
     parameter_name = 'na_stanju'
 
@@ -2126,8 +2258,6 @@ class NaStanjuFilter(admin.SimpleListFilter):
             val = val[0] if val else None
         if val is None and getattr(self, '_show_all_for_mt', False):
             return None
-        if val is None:
-            return '1'
         return val
 
     def queryset(self, request, queryset):
@@ -2155,6 +2285,22 @@ class NaStanjuFilter(admin.SimpleListFilter):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    def get_fieldsets(self, request, obj=None):
+        from .module_settings import inventory_mode
+        mode = inventory_mode()
+        fieldsets = super().get_fieldsets(request, obj)
+        if mode is None:
+            return fieldsets
+        result = []
+        for title, options in fieldsets:
+            options = dict(options)
+            options['fields'] = tuple(field for field in options['fields']
+                                      if field != 'pracenje_zaliha' and (mode or field != 'stanje'))
+            result.append((title, options))
+        return result
+
+    from .admin_forms import ProductTagsAdminForm
+    form = ProductTagsAdminForm
     change_list_template = 'admin/EcommerceApp/product/change_list.html'
     change_form_template = 'admin/EcommerceApp/product/change_form.html'
     actions = [
@@ -2165,11 +2311,11 @@ class ProductAdmin(admin.ModelAdmin):
         'bulk_split_variations',
         'bulk_objavi_na_olx_pik',
     ]
-    filter_horizontal = ('tagovi',)
+    filter_horizontal = ()
     list_display = (
         'naziv', 'varijacije_broj', 'sifra', 'mt_sifra_u_nazivu', 'brend', 'kategorija', 'cijena',
         'pakovanje_komada',
-        'akcijska_cijena', 'na_stanju', 'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
+        'akcijska_cijena', 'na_stanju', 'add_stock_button', 'prikazi_na_pocetnoj', 'je_novitet', 'je_hit',
         'prioritet_lagera', 'proizvedeno_u_japanu',
         'aktivan', 'sakriven_do_stanja', 'datum_dodavanja', 'olx_status', 'pregled_slike',
     )
@@ -2228,12 +2374,30 @@ class ProductAdmin(admin.ModelAdmin):
     readonly_fields = (
         'kreiran', 'azuriran',
         'pregled_slike_velika', 'odoo_template_id', 'seo_title_preview', 'seo_description_preview',
-        'olx_objavi_info', 'olx_listing_id', 'olx_listing_slug', 'olx_listing_url', 'olx_objavljen',
+        'preview_360', 'olx_objavi_info', 'olx_listing_id', 'olx_listing_slug', 'olx_listing_url', 'olx_objavljen',
     )
     inlines = [ProductVariationInline, ProductImageInline]
 
     class Media:
-        js = ('js/barcode-check.js',)
+        js = ('js/barcode-check.js', 'js/product-wms-location.js', 'js/product-wms-list-add.js', 'js/product360.js', 'js/product360-admin.js')
+        css = {'all': ('css/product-wms-location.css', 'css/product360.css')}
+
+    @admin.display(description='Učitane 360° fotografije')
+    def preview_360(self, obj):
+        import json
+        from django.utils.html import format_html_join
+        if not obj or not obj.pk:
+            return 'Sačuvajte artikal za pregled učitanog seta.'
+        images = list(obj.images_360.all())
+        thumbs = format_html_join('', '<img src="{}" width="56" height="56" alt="Kadar {}" loading="lazy">', ((frame.image.url, frame.position + 1) for frame in images))
+        return format_html('<div class="product360-admin-preview"><p>{} fotografija</p><div class="product360-admin-thumbs">{}</div><button type="button" class="product360-preview-button" data-spin-preview="{}">Pregledaj 360°</button></div>', len(images), thumbs, json.dumps([frame.image.url for frame in images]))
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        if hasattr(form, 'prepared_360'):
+            self.message_user(request, f'360° set je uspješno učitan: {len(form.prepared_360)} fotografija.', messages.SUCCESS)
+        elif form.cleaned_data.get('delete_360'):
+            self.message_user(request, '360° fotografije su obrisane.', messages.SUCCESS)
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
@@ -2272,7 +2436,7 @@ class ProductAdmin(admin.ModelAdmin):
             'fields': (
                 'slika', 'pregled_slike_velika', 'cijena', 'pakovanje_komada',
                 'akcija_postotak', 'akcijska_cijena', 'akcija_do',
-                'na_stanju', 'stanje',
+                'pracenje_zaliha', 'na_stanju', 'stanje', 'wms_lokacija', 'wms_raspored',
             ),
             'description': (
                 'Akcija: unesite popust (%) za automatski izračun akcijske cijene, '
@@ -2281,6 +2445,11 @@ class ProductAdmin(admin.ModelAdmin):
                 'kupac vidi „Pakovanje 9 kom.” da ne pomisli da je cijena po komadu. '
                 'Upload slike: AVIF max 15KB + responsive 120/200/320w.'
             ),
+        }),
+        ('360° prikaz proizvoda', {
+            'fields': ('enabled_360', 'upload_360_zip', 'upload_360_images', 'preview_360', 'delete_360'),
+            'classes': ('product360-admin-section',),
+            'description': 'Novi upload zamjenjuje cijeli 360° set nakon uspješne provjere. Glavna i dodatne fotografije ostaju sačuvane.',
         }),
         ('Prikaz', {
             'fields': (
@@ -2303,7 +2472,7 @@ class ProductAdmin(admin.ModelAdmin):
             ),
             'description': (
                 'Sva polja su <strong>opcionalna</strong>. Sistem automatski radi: '
-                '<em>Naziv | Brend | opremazaribolov.ba</em> + opis s benefitima.<br>'
+                '<em>Naziv | Brend | shop.example</em> + opis s benefitima.<br>'
                 '<strong>Ručno popuni samo</strong> za bestsellere / skupe / prioritetne artikle.<br>'
                 '• Title 50–60 znakova · Description 140–160 · H1 = kupcu jasno ime proizvoda<br>'
                 '• SEO tekst: rijetko potreban na artiklu (bolje dobar <em>Opis proizvoda</em>)<br>'
@@ -2326,9 +2495,67 @@ class ProductAdmin(admin.ModelAdmin):
         }),
     )
 
+    @admin.display(description='Količina')
+    def add_stock_button(self, obj):
+        from .panel_modules import module_locked
+        if module_locked('wms_zalihe'):
+            return '—'
+        url = reverse(f'{self.admin_site.name}:EcommerceApp_product_add_stock', args=[obj.pk])
+        return format_html('<span class="product-wms-stock-controls"><button type="button" class="product-wms-stock-square" data-list-add-stock="{}" data-stock-action="remove" title="Skini količinu" aria-label="Skini količinu">−</button><button type="button" class="product-wms-stock-square" data-list-add-stock="{}" data-stock-action="add" title="Dodaj količinu" aria-label="Dodaj količinu">+</button></span>', url, url)
+
+    def add_stock_view(self, request, object_id):
+        from django.http import JsonResponse
+        from django.db import transaction
+        from .models import WMSLocation, ProductWMSStock
+        from .panel_modules import module_locked
+        obj = self.get_object(request, object_id)
+        if obj is None or not self.has_change_permission(request, obj) or module_locked('wms_zalihe'):
+            return JsonResponse({'error': 'Nemate dozvolu za dodavanje količine.'}, status=403)
+        if request.method == 'GET':
+            return JsonResponse({'locations': list(WMSLocation.objects.values('id', 'naziv')), 'stocks': list(obj.wms_zalihe.values('lokacija_id', 'kolicina')), 'csrf': get_token(request)})
+        if request.method != 'POST':
+            return JsonResponse({'error': 'Nedozvoljen zahtjev.'}, status=405)
+        try:
+            quantity = int(request.POST.get('quantity', ''))
+            location_id = int(request.POST.get('location', ''))
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Unesite količinu i lokaciju.'}, status=400)
+        if quantity < 1 or quantity > 2147483647 or not WMSLocation.objects.filter(pk=location_id).exists():
+            return JsonResponse({'error': 'Unesite pozitivnu količinu i ispravnu lokaciju.'}, status=400)
+        action = request.POST.get('action', 'add')
+        if action not in ('add', 'remove'):
+            return JsonResponse({'error': 'Neispravna radnja.'}, status=400)
+        with transaction.atomic():
+            product = Product.objects.select_for_update().get(pk=obj.pk)
+            if action == 'remove':
+                stock = ProductWMSStock.objects.select_for_update().filter(product=product, lokacija_id=location_id).first()
+                if stock is None or quantity > stock.kolicina:
+                    return JsonResponse({'error': 'Na izabranoj lokaciji nema dovoljno količine.'}, status=400)
+                stock.kolicina -= quantity
+                stock.save(update_fields=['kolicina'])
+                product.stanje = sum(product.wms_zalihe.values_list('kolicina', flat=True))
+                product.save(update_fields=['stanje', 'na_stanju'])
+                self.log_change(request, product, 'Skinuto %s kom sa WMS lokacije %s.' % (quantity, location_id))
+                return JsonResponse({'ok': True})
+            if not product.wms_zalihe.exists() and product.stanje and product.wms_lokacija_id:
+                ProductWMSStock.objects.create(product=product, lokacija_id=product.wms_lokacija_id, kolicina=product.stanje)
+            total = sum(product.wms_zalihe.values_list('kolicina', flat=True))
+            if total + quantity > 2147483647:
+                return JsonResponse({'error': 'Količina je prevelika.'}, status=400)
+            stock, _ = ProductWMSStock.objects.get_or_create(product=product, lokacija_id=location_id)
+            stock.kolicina += quantity
+            stock.save(update_fields=['kolicina'])
+            product.stanje = total + quantity
+            ids = list(product.wms_zalihe.values_list('lokacija_id', flat=True))
+            product.wms_lokacija_id = ids[0] if len(ids) == 1 else None
+            product.save(update_fields=['stanje', 'wms_lokacija'])
+            self.log_change(request, product, 'Dodano %s kom na WMS lokaciju %s.' % (quantity, location_id))
+        return JsonResponse({'ok': True})
+
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
+            path('<path:object_id>/dodaj-kolicinu/', self.admin_site.admin_view(self.add_stock_view), name='EcommerceApp_product_add_stock'),
             path(
                 '<path:object_id>/olx-objavi/',
                 self.admin_site.admin_view(self.olx_publish_view),
@@ -2354,7 +2581,7 @@ class ProductAdmin(admin.ModelAdmin):
         extra_context['olx_api_configured'] = bool(settings.OLX_API_TOKEN)
         if object_id:
             extra_context['olx_publish_url'] = reverse(
-                'admin:EcommerceApp_product_olx_publish',
+                f'{self.admin_site.name}:EcommerceApp_product_olx_publish',
                 args=[object_id],
             )
             obj = self.get_object(request, object_id)
@@ -2371,20 +2598,20 @@ class ProductAdmin(admin.ModelAdmin):
         from .olx_api import OlxApiError, publish_product_to_olx
 
         if request.method != 'POST':
-            return redirect('admin:EcommerceApp_product_change', object_id)
+            return redirect(f'{self.admin_site.name}:EcommerceApp_product_change', object_id)
 
         if not self.has_change_permission(request):
             messages.error(request, 'Nemate dozvolu za izmjenu artikla.')
-            return redirect('admin:EcommerceApp_product_changelist')
+            return redirect(f'{self.admin_site.name}:EcommerceApp_product_changelist')
 
         if not settings.OLX_API_TOKEN:
             messages.error(request, 'OLX_API_TOKEN nije postavljen u okruženju.')
-            return redirect('admin:EcommerceApp_product_change', object_id)
+            return redirect(f'{self.admin_site.name}:EcommerceApp_product_change', object_id)
 
         product = self.get_object(request, object_id)
         if product is None:
             messages.error(request, 'Artikal nije pronađen.')
-            return redirect('admin:EcommerceApp_product_changelist')
+            return redirect(f'{self.admin_site.name}:EcommerceApp_product_changelist')
 
         try:
             result = publish_product_to_olx(product)
@@ -2415,7 +2642,7 @@ class ProductAdmin(admin.ModelAdmin):
             logger.exception('OLX admin objava artikla %s', product.slug)
             messages.error(request, f'Neočekivana greška pri objavi: {exc}')
 
-        return redirect('admin:EcommerceApp_product_change', object_id)
+        return redirect(f'{self.admin_site.name}:EcommerceApp_product_change', object_id)
 
 
 
@@ -2426,7 +2653,7 @@ class ProductAdmin(admin.ModelAdmin):
 
         if not self.has_change_permission(request):
             messages.error(request, 'Nemate dozvolu za izmjenu artikala.')
-            return redirect('admin:EcommerceApp_product_changelist')
+            return redirect(f'{self.admin_site.name}:EcommerceApp_product_changelist')
 
         query = normalize_scan_code(request.GET.get('q') or request.POST.get('q') or '')
         matches = []
@@ -2439,7 +2666,7 @@ class ProductAdmin(admin.ModelAdmin):
                 product, multi = find_single_product(query)
                 if product is not None:
                     return redirect(
-                        'admin:EcommerceApp_product_brzi_unos_aktivacija',
+                        f'{self.admin_site.name}:EcommerceApp_product_brzi_unos_aktivacija',
                         product_id=product.pk,
                     )
                 matches = multi if multi is not None else find_products(query)
@@ -2452,7 +2679,7 @@ class ProductAdmin(admin.ModelAdmin):
                     )
                 elif len(matches) == 1:
                     return redirect(
-                        'admin:EcommerceApp_product_brzi_unos_aktivacija',
+                        f'{self.admin_site.name}:EcommerceApp_product_brzi_unos_aktivacija',
                         product_id=matches[0].pk,
                     )
 
@@ -2487,7 +2714,7 @@ class ProductAdmin(admin.ModelAdmin):
 
         if not self.has_change_permission(request):
             messages.error(request, 'Nemate dozvolu za izmjenu artikala.')
-            return redirect('admin:EcommerceApp_product_changelist')
+            return redirect(f'{self.admin_site.name}:EcommerceApp_product_changelist')
 
         product = (
             Product.objects.select_related('brend', 'kategorija')
@@ -2497,7 +2724,7 @@ class ProductAdmin(admin.ModelAdmin):
         )
         if product is None:
             messages.error(request, 'Artikal nije pronađen.')
-            return redirect('admin:EcommerceApp_product_brzi_unos')
+            return redirect(f'{self.admin_site.name}:EcommerceApp_product_brzi_unos')
 
         # Jedan klik: skini sa stanja — samo na_stanju=False, bez forme / validacije
         post_action = (request.POST.get('action') or '').strip() if request.method == 'POST' else ''
@@ -2514,7 +2741,7 @@ class ProductAdmin(admin.ModelAdmin):
                     product_id,
                 )
                 messages.error(request, f'Skidanje sa stanja nije uspjelo: {exc}')
-            return redirect('admin:EcommerceApp_product_brzi_unos')
+            return redirect(f'{self.admin_site.name}:EcommerceApp_product_brzi_unos')
 
         brands = Brand.objects.order_by('naziv')
         categories = category_choices()
@@ -2715,7 +2942,7 @@ class ProductAdmin(admin.ModelAdmin):
                                     f'Artikal je aktivan, ali OLX objava nije uspjela: {olx_exc}',
                                 )
 
-                    return redirect('admin:EcommerceApp_product_brzi_unos')
+                    return redirect(f'{self.admin_site.name}:EcommerceApp_product_brzi_unos')
                 except Exception as exc:
                     logger.exception(
                         'Brzi unos: aktivacija nije uspjela za product_id=%s',
@@ -2772,7 +2999,7 @@ class ProductAdmin(admin.ModelAdmin):
             'olx_configured': olx_configured,
             'has_view_permission': self.has_view_permission(request),
             'has_change_permission': self.has_change_permission(request),
-            'scan_url': reverse('admin:EcommerceApp_product_brzi_unos'),
+            'scan_url': reverse(f'{self.admin_site.name}:EcommerceApp_product_brzi_unos'),
         }
         return render(
             request,
@@ -2887,7 +3114,7 @@ class ProductAdmin(admin.ModelAdmin):
                     f'{unchanged} artikal/a ostavljen/o bez promjene (nema nove kategorije).',
                     messages.INFO,
                 )
-            return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
+            return HttpResponseRedirect(reverse(f'{self.admin_site.name}:EcommerceApp_product_changelist'))
 
         context = {
             **self.admin_site.each_context(request),
@@ -2914,7 +3141,7 @@ class ProductAdmin(admin.ModelAdmin):
                 f'{count} artikal/a dodijeljeno brendu „{brand}”.',
                 messages.SUCCESS,
             )
-            return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
+            return HttpResponseRedirect(reverse(f'{self.admin_site.name}:EcommerceApp_product_changelist'))
 
         context = {
             **self.admin_site.each_context(request),
@@ -3000,7 +3227,7 @@ class ProductAdmin(admin.ModelAdmin):
                     'Nijedan artikal nije ažuriran. Provjeri unose.',
                     messages.WARNING,
                 )
-            return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
+            return HttpResponseRedirect(reverse(f'{self.admin_site.name}:EcommerceApp_product_changelist'))
 
         context = {
             **self.admin_site.each_context(request),
@@ -3056,7 +3283,7 @@ class ProductAdmin(admin.ModelAdmin):
                     'Nema tagova za primjenu. Ostavi predložene označene ili unesi nove u polje.',
                     messages.ERROR,
                 )
-                return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
+                return HttpResponseRedirect(reverse(f'{self.admin_site.name}:EcommerceApp_product_changelist'))
 
             if not selected_ids:
                 self.message_user(
@@ -3064,7 +3291,7 @@ class ProductAdmin(admin.ModelAdmin):
                     'Nijedan artikal nije označen.',
                     messages.ERROR,
                 )
-                return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
+                return HttpResponseRedirect(reverse(f'{self.admin_site.name}:EcommerceApp_product_changelist'))
 
             tags = []
             for name in tag_names:
@@ -3123,7 +3350,7 @@ class ProductAdmin(admin.ModelAdmin):
                     'Nijedan artikal nije ažuriran.',
                     messages.WARNING,
                 )
-            return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
+            return HttpResponseRedirect(reverse(f'{self.admin_site.name}:EcommerceApp_product_changelist'))
 
         # Predloži tagove koji već postoje na nekom od označenih → Save ih da svima
         suggested_tags = list(
@@ -3302,7 +3529,7 @@ class ProductAdmin(admin.ModelAdmin):
                         messages.SUCCESS,
                     )
                     return HttpResponseRedirect(
-                        reverse('admin:EcommerceApp_product_change', args=[result['primary'].pk]),
+                        reverse(f'{self.admin_site.name}:EcommerceApp_product_change', args=[result['primary'].pk]),
                     )
                 except ProductMergeError as exc:
                     self.message_user(request, str(exc), messages.ERROR)
@@ -3359,9 +3586,9 @@ class ProductAdmin(admin.ModelAdmin):
                 )
             if last_primary and len(with_vars) == 1 and not errors:
                 return HttpResponseRedirect(
-                    reverse('admin:EcommerceApp_product_change', args=[last_primary.pk]),
+                    reverse(f'{self.admin_site.name}:EcommerceApp_product_change', args=[last_primary.pk]),
                 )
-            return HttpResponseRedirect(reverse('admin:EcommerceApp_product_changelist'))
+            return HttpResponseRedirect(reverse(f'{self.admin_site.name}:EcommerceApp_product_changelist'))
 
         context = {
             **self.admin_site.each_context(request),
@@ -3737,7 +3964,7 @@ class B2BSettingsAdmin(admin.ModelAdmin):
 
     class Media:
         css = {'all': ('admin/css/b2b-settings.css',)}
-        js = ('admin/js/b2b-settings.js',)
+        js = ('admin/js/jquery.init.js', 'admin/js/b2b-settings.js')
 
     def has_add_permission(self, request):
         return super().has_add_permission(request) and not B2BSettings.objects.exists()
@@ -3782,6 +4009,39 @@ class B2BSubmissionAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+# Global modules stay exclusively in the superuser Django administration.
+from .models import ModulePermissions
+
+
+@admin.register(ModulePermissions)
+class ModulePermissionsAdmin(admin.ModelAdmin):
+    change_form_template = 'admin/EcommerceApp/modulepermissions/change_form.html'
+    fieldsets = (('WMS', {'fields': ('wms_zalihe', 'wms_narudzbe', 'wms_pakovanje', 'wms_prenosnice')}), ('Akcije', {'fields': ('akcije',)}))
+    list_display = ('__str__',)
+
+    def changelist_view(self, request, extra_context=None):
+        if not request.user.is_superuser:
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
+        if ModulePermissions.objects.filter(pk=1).exists():
+            return redirect('admin:EcommerceApp_modulepermissions_change', object_id=1)
+        return redirect('admin:EcommerceApp_modulepermissions_add')
+
+    def has_module_permission(self, request):
+        return request.user.is_superuser
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser and not ModulePermissions.objects.exists()
 
     def has_delete_permission(self, request, obj=None):
         return False

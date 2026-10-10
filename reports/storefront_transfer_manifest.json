@@ -1,0 +1,2116 @@
+[
+  {
+    "path": "EcommerceApp/tests_category_logo.py",
+    "operation": "updated",
+    "source_sha256": "733a8b18915c7c71afcfdf45f0341ff78ca1dec924b5fafee39150346c885697",
+    "destination_sha256": "733a8b18915c7c71afcfdf45f0341ff78ca1dec924b5fafee39150346c885697",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_coupon_sale_exclusion.py",
+    "operation": "added",
+    "source_sha256": "0cb2ba575c6dfb723d6db7d586d44c4edaf6eb37fd98eb2fa594dd4bc7cf1706",
+    "destination_sha256": "0cb2ba575c6dfb723d6db7d586d44c4edaf6eb37fd98eb2fa594dd4bc7cf1706",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/warehouse_access.py",
+    "operation": "updated",
+    "source_sha256": "4f9034e4a1b129035f3b4c5bf9cd247e99e8e3325a360246329de4b6c1208548",
+    "destination_sha256": "4f9034e4a1b129035f3b4c5bf9cd247e99e8e3325a360246329de4b6c1208548",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/cart.py",
+    "operation": "updated",
+    "source_sha256": "8a0ded790a6157b5fa2eb340c066223902de4af26fc67944bd875606e3929030",
+    "destination_sha256": "8a0ded790a6157b5fa2eb340c066223902de4af26fc67944bd875606e3929030",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/online_gift.py",
+    "operation": "updated",
+    "source_sha256": "af95a611c56180533a7dce08c47e849aa19c257d97d8318d678969d68e60e7b1",
+    "destination_sha256": "af95a611c56180533a7dce08c47e849aa19c257d97d8318d678969d68e60e7b1",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_inventory_module.py",
+    "operation": "added",
+    "source_sha256": "a7389a8ee741a5c8ad9e86e7730dd3d9a66aba55f58f23b23b4a21c99cacc80b",
+    "destination_sha256": "a7389a8ee741a5c8ad9e86e7730dd3d9a66aba55f58f23b23b4a21c99cacc80b",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/upsell.py",
+    "operation": "updated",
+    "source_sha256": "5a480f0f23adbe549ef950ec7ecd461df91f09c94f43abc49f5fc43e890d7cfa",
+    "destination_sha256": "5a480f0f23adbe549ef950ec7ecd461df91f09c94f43abc49f5fc43e890d7cfa",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/views_wms.py",
+    "operation": "added",
+    "source_sha256": "8f49480d817744e604e47d2943c264f569dc332cceed90e3321c508dbd472ad5",
+    "destination_sha256": "8f49480d817744e604e47d2943c264f569dc332cceed90e3321c508dbd472ad5",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_stock_notify.py",
+    "operation": "updated",
+    "source_sha256": "2adc13c8d235ab020130f4e72a05225586636ff3af316ddb9b4e5d52181a1cfe",
+    "destination_sha256": "2adc13c8d235ab020130f4e72a05225586636ff3af316ddb9b4e5d52181a1cfe",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/models.py",
+    "operation": "updated",
+    "source_sha256": "1408ec4f29e8de43bc13995d2d161109814f7ad81e198c9904967235cb85b0e2",
+    "destination_sha256": "1408ec4f29e8de43bc13995d2d161109814f7ad81e198c9904967235cb85b0e2",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_monri.py",
+    "operation": "updated",
+    "source_sha256": "c430e8cf5afd55fea7092b5e8a73c1f2ace21d8fbb229456679c4f96cdf90e26",
+    "destination_sha256": "b112d1301a858e46132c22da042e5565d7fc2c836e6cdf0f23cb8730592fad70",
+    "adapted": true
+  },
+  {
+    "path": "EcommerceApp/branding.py",
+    "operation": "added",
+    "source_sha256": "a4028f56b0621250b984bd05e28c1edfadbde0beac8355685911e88a624fd93d",
+    "destination_sha256": "a4028f56b0621250b984bd05e28c1edfadbde0beac8355685911e88a624fd93d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_customer_profiles.py",
+    "operation": "added",
+    "source_sha256": "b5370a9516c4a40a5d17f31e9ded451c6d1185812970c20401aecaf2770d5fc2",
+    "destination_sha256": "b5370a9516c4a40a5d17f31e9ded451c6d1185812970c20401aecaf2770d5fc2",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/sync_handlers.py",
+    "operation": "updated",
+    "source_sha256": "c45486d73153db8882c64c2a31d0b6baeb46bc52c9780ae4021d9591241e641e",
+    "destination_sha256": "c45486d73153db8882c64c2a31d0b6baeb46bc52c9780ae4021d9591241e641e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/quick_activation.py",
+    "operation": "updated",
+    "source_sha256": "16a0b83b2a7b44646d441126294a1d6819b117b1063b65da03251bc545092938",
+    "destination_sha256": "16a0b83b2a7b44646d441126294a1d6819b117b1063b65da03251bc545092938",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/wms_excel.py",
+    "operation": "added",
+    "source_sha256": "6989d421e2765060f56c1fd3a89e2a7ddf8f9f3f0f598363aa8da45193e9db78",
+    "destination_sha256": "6989d421e2765060f56c1fd3a89e2a7ddf8f9f3f0f598363aa8da45193e9db78",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_mungos_product.py",
+    "operation": "updated",
+    "source_sha256": "a6f1ec2ff9dea8cd66fdf504dec1bdba2a3fa92ef12ae15a52f715f6a39d3ce4",
+    "destination_sha256": "a6f1ec2ff9dea8cd66fdf504dec1bdba2a3fa92ef12ae15a52f715f6a39d3ce4",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/views_b2b.py",
+    "operation": "updated",
+    "source_sha256": "3eed2e6aedefd0ed98d731b8fe438d8ffc904531bea4899f4fb880e69a2eadd7",
+    "destination_sha256": "3eed2e6aedefd0ed98d731b8fe438d8ffc904531bea4899f4fb880e69a2eadd7",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/emails.py",
+    "operation": "updated",
+    "source_sha256": "f49d7a54a3650781915eb32eb2ec50ea6e46283b17e6eb8c01747f4bbe821223",
+    "destination_sha256": "f49d7a54a3650781915eb32eb2ec50ea6e46283b17e6eb8c01747f4bbe821223",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/panel_settings.py",
+    "operation": "added",
+    "source_sha256": "9db97aec887b4c898e74dcbb4a0fd0a3e677ee8a714d4bea468db4e97a3f1e42",
+    "destination_sha256": "9db97aec887b4c898e74dcbb4a0fd0a3e677ee8a714d4bea468db4e97a3f1e42",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_menu_color.py",
+    "operation": "updated",
+    "source_sha256": "60386b349d46f105faa1707d94f6f674cb1748b06cbc014bc6ecb18240b00b42",
+    "destination_sha256": "60386b349d46f105faa1707d94f6f674cb1748b06cbc014bc6ecb18240b00b42",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_panel_access.py",
+    "operation": "added",
+    "source_sha256": "32d432aeaf48d0b21f5ad188d0f016c39cba0fbb410ad883c638668d6c921b3a",
+    "destination_sha256": "32d432aeaf48d0b21f5ad188d0f016c39cba0fbb410ad883c638668d6c921b3a",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_home_banner_preload.py",
+    "operation": "updated",
+    "source_sha256": "acd9adafd71f73ff938d027cf00e95a04166d4cdac04fe94a7e128648a161f40",
+    "destination_sha256": "acd9adafd71f73ff938d027cf00e95a04166d4cdac04fe94a7e128648a161f40",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/olx_api.py",
+    "operation": "updated",
+    "source_sha256": "c90ae6262792b791b251e170f15c2558c3810ad1a3246b706c4e818eb3fca523",
+    "destination_sha256": "c90ae6262792b791b251e170f15c2558c3810ad1a3246b706c4e818eb3fca523",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_retired_features.py",
+    "operation": "updated",
+    "source_sha256": "9582af5a18ae97e9d85899d610e7daf780c029a67eca708b2c0fdc2f06b102e9",
+    "destination_sha256": "9582af5a18ae97e9d85899d610e7daf780c029a67eca708b2c0fdc2f06b102e9",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/magacin.py",
+    "operation": "updated",
+    "source_sha256": "966ef997b172d7fc7b24a72204fe6938d23b2c8225670da2e2fe87e9cee39edb",
+    "destination_sha256": "966ef997b172d7fc7b24a72204fe6938d23b2c8225670da2e2fe87e9cee39edb",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/module_settings.py",
+    "operation": "added",
+    "source_sha256": "ebff0f7cb80696ffd10c056167640ca935edaaca87aa608f03a590ef7d3eedcf",
+    "destination_sha256": "ebff0f7cb80696ffd10c056167640ca935edaaca87aa608f03a590ef7d3eedcf",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/apps.py",
+    "operation": "updated",
+    "source_sha256": "51d7011da2170bda8221f8055181a482b874bf152bfa61d76be717916edbe2a8",
+    "destination_sha256": "51d7011da2170bda8221f8055181a482b874bf152bfa61d76be717916edbe2a8",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/panel_admin.py",
+    "operation": "added",
+    "source_sha256": "db5d70a22948168659f7381d5b40e629e2efe6ca7c381ac29d37c4f15c09f89f",
+    "destination_sha256": "db5d70a22948168659f7381d5b40e629e2efe6ca7c381ac29d37c4f15c09f89f",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/account_verification.py",
+    "operation": "updated",
+    "source_sha256": "dceeab5965a14249f15faf2a2aed80edff0f887e9f51a7ca0102be6fc22b934c",
+    "destination_sha256": "dceeab5965a14249f15faf2a2aed80edff0f887e9f51a7ca0102be6fc22b934c",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_mungos_bulk.py",
+    "operation": "updated",
+    "source_sha256": "fc280a2ca7191f90ad88b97914f66b9f02b644afbcc8c47143037cbd7f56b527",
+    "destination_sha256": "fc280a2ca7191f90ad88b97914f66b9f02b644afbcc8c47143037cbd7f56b527",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/forms.py",
+    "operation": "updated",
+    "source_sha256": "0f89e2d7ad9f6f01d1ac98c37e31fe1f38a61db81ce23a57c9efda9a0e5b8b43",
+    "destination_sha256": "0f89e2d7ad9f6f01d1ac98c37e31fe1f38a61db81ce23a57c9efda9a0e5b8b43",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/wms_orders.py",
+    "operation": "added",
+    "source_sha256": "053215178be3e2e35bbdff208bf0f55db55a933c85deb7b26b09f9173248231e",
+    "destination_sha256": "053215178be3e2e35bbdff208bf0f55db55a933c85deb7b26b09f9173248231e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/context_processors.py",
+    "operation": "updated",
+    "source_sha256": "b6dc7a94690fe99744013914f99afe5c9041423b5a82fa8bfcc0fe6ede6e6e2b",
+    "destination_sha256": "b6dc7a94690fe99744013914f99afe5c9041423b5a82fa8bfcc0fe6ede6e6e2b",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_order_admin_email.py",
+    "operation": "added",
+    "source_sha256": "34bd126ba2dfb26d0fb3a9fd8d9c165cbd64e31bf9be65535533e9c412f0695a",
+    "destination_sha256": "34bd126ba2dfb26d0fb3a9fd8d9c165cbd64e31bf9be65535533e9c412f0695a",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_admin_theme.py",
+    "operation": "updated",
+    "source_sha256": "b2f1a76a0ccace643ca3b401b49a7dc21779b002367f01200710cd5ea1df875e",
+    "destination_sha256": "b2f1a76a0ccace643ca3b401b49a7dc21779b002367f01200710cd5ea1df875e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/panel_modules.py",
+    "operation": "added",
+    "source_sha256": "f6158100980a15d3a5b34bf6f6d47392497cd9174f09fb7a5c28efb477711e9d",
+    "destination_sha256": "f6158100980a15d3a5b34bf6f6d47392497cd9174f09fb7a5c28efb477711e9d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/admin.py",
+    "operation": "updated",
+    "source_sha256": "5930c9b75fb01916a80fe77ce0423b0c3cff12cde939c5fa3f78d93b4204ee7f",
+    "destination_sha256": "da86206e525682d19c14b891ba638b711c3ff7def4957a1404f84cfba0a3ca3d",
+    "adapted": true
+  },
+  {
+    "path": "EcommerceApp/tests_b2b.py",
+    "operation": "updated",
+    "source_sha256": "905b8657a6a4098ea9bf3c2acd90e02280ac58321464494d3d2c4a6e8657144c",
+    "destination_sha256": "905b8657a6a4098ea9bf3c2acd90e02280ac58321464494d3d2c4a6e8657144c",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/product360.py",
+    "operation": "added",
+    "source_sha256": "6d0d72b339982399e57d1f7a2936a29aa4d389b602803e5fce6fc35bf71d893e",
+    "destination_sha256": "6d0d72b339982399e57d1f7a2936a29aa4d389b602803e5fce6fc35bf71d893e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/product_features.py",
+    "operation": "added",
+    "source_sha256": "231d495ae32dae203ac4977ba41756e25c7203131b197161a587a3e640fb801b",
+    "destination_sha256": "231d495ae32dae203ac4977ba41756e25c7203131b197161a587a3e640fb801b",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/pricing.py",
+    "operation": "updated",
+    "source_sha256": "ccac6bd716267022b70068d23b76a4ecf7c617928a754a8c6e7f6d7224431293",
+    "destination_sha256": "ccac6bd716267022b70068d23b76a4ecf7c617928a754a8c6e7f6d7224431293",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_seo_domain.py",
+    "operation": "updated",
+    "source_sha256": "b7f79f9f79d580308c6f3b641ee5b29f7eb1c8ccebe887f425a75404d9f1c0af",
+    "destination_sha256": "b7f79f9f79d580308c6f3b641ee5b29f7eb1c8ccebe887f425a75404d9f1c0af",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_barcodes.py",
+    "operation": "updated",
+    "source_sha256": "c8eaa34fa7eefdfb739f21b3a72dc1b321143cc8989b2dbe661c11422f0a6223",
+    "destination_sha256": "c8eaa34fa7eefdfb739f21b3a72dc1b321143cc8989b2dbe661c11422f0a6223",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/admin_site.py",
+    "operation": "added",
+    "source_sha256": "5340d8b0a6b2bd7db4ab51191ede087257e29180fd42f537078cb29caa931698",
+    "destination_sha256": "5340d8b0a6b2bd7db4ab51191ede087257e29180fd42f537078cb29caa931698",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_settings_workspace.py",
+    "operation": "added",
+    "source_sha256": "9ff074d171f3cc118bcc1dbd5d73b8f2ee78a80c3ce68fa30b33327e28ecaaec",
+    "destination_sha256": "9ff074d171f3cc118bcc1dbd5d73b8f2ee78a80c3ce68fa30b33327e28ecaaec",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_warehouse_new_product.py",
+    "operation": "added",
+    "source_sha256": "d087934d841dfd242af9250e98459d2a974720d7627c9c2afbb4e0ddddad6237",
+    "destination_sha256": "d087934d841dfd242af9250e98459d2a974720d7627c9c2afbb4e0ddddad6237",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/customer_profiles.py",
+    "operation": "added",
+    "source_sha256": "8ec9d82bd8ca77649f8a53279af6569e0d890ac40da4ecd7cd0a4c8cee02b704",
+    "destination_sha256": "8ec9d82bd8ca77649f8a53279af6569e0d890ac40da4ecd7cd0a4c8cee02b704",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_stock_tracking.py",
+    "operation": "added",
+    "source_sha256": "62950f8dbea32cb7bc960e4b046aef67a64938e7bf609772bb78cde977dcef3a",
+    "destination_sha256": "62950f8dbea32cb7bc960e4b046aef67a64938e7bf609772bb78cde977dcef3a",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/product_identifiers.py",
+    "operation": "updated",
+    "source_sha256": "ed321b7ee5187137c72ab2a6ce2b235361ef2c71dcd4e72fc14e9cc6ca8001b9",
+    "destination_sha256": "ed321b7ee5187137c72ab2a6ce2b235361ef2c71dcd4e72fc14e9cc6ca8001b9",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/warehouse_product_form.py",
+    "operation": "added",
+    "source_sha256": "eed4dae5ec45091bf910a8f31af4d6e3e8a7cce5b62a477379ee65bdba11ca88",
+    "destination_sha256": "eed4dae5ec45091bf910a8f31af4d6e3e8a7cce5b62a477379ee65bdba11ca88",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests.py",
+    "operation": "updated",
+    "source_sha256": "199b9736c9c981b3b1eec3eac04cff805ce9abd84184f7f088b30620ee71c6b4",
+    "destination_sha256": "199b9736c9c981b3b1eec3eac04cff805ce9abd84184f7f088b30620ee71c6b4",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_magacin.py",
+    "operation": "updated",
+    "source_sha256": "505730d058706d0f355447247ef97a883f25190f8d10ca1b0841e5959767344d",
+    "destination_sha256": "505730d058706d0f355447247ef97a883f25190f8d10ca1b0841e5959767344d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/urls.py",
+    "operation": "updated",
+    "source_sha256": "6d66496298336aeda3e0b2ba7d00a8b223c78a1a485f56b962b9bc8cb481544e",
+    "destination_sha256": "a97aadc6b30623c162624e81d38a572fac9bb5c697267f57207b6d495a9d6686",
+    "adapted": true
+  },
+  {
+    "path": "EcommerceApp/views_magacin.py",
+    "operation": "updated",
+    "source_sha256": "43c93831c778a2b9fed6eed52fab0829780ccbfa06b4bc0e9c9dc0fa958819ee",
+    "destination_sha256": "13ad70045add19231043ed6d527776e98db8e7902496afafa435062a406b8a9f",
+    "adapted": true
+  },
+  {
+    "path": "EcommerceApp/monri.py",
+    "operation": "updated",
+    "source_sha256": "eb42b3003feacc1a9d6cd7910a10f1354ac91a88119c18fd3d41e8cc7ce219ca",
+    "destination_sha256": "eb42b3003feacc1a9d6cd7910a10f1354ac91a88119c18fd3d41e8cc7ce219ca",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_akcija_admin.py",
+    "operation": "updated",
+    "source_sha256": "d5a085ee1d72f927b53ba524c065809aa3597356e143c45ec967bfe512821587",
+    "destination_sha256": "d5a085ee1d72f927b53ba524c065809aa3597356e143c45ec967bfe512821587",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/sitemaps.py",
+    "operation": "updated",
+    "source_sha256": "f0b56ec160edb98f2341a2cb59fd42c89c05583102960de3e4aba5d56219791b",
+    "destination_sha256": "f0b56ec160edb98f2341a2cb59fd42c89c05583102960de3e4aba5d56219791b",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_wms_independent.py",
+    "operation": "added",
+    "source_sha256": "294c711564532314d20dfc4ccfc677b902b7b11843b6a57097b4c2b7c1259f33",
+    "destination_sha256": "294c711564532314d20dfc4ccfc677b902b7b11843b6a57097b4c2b7c1259f33",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_product360.py",
+    "operation": "added",
+    "source_sha256": "7e7f26c2953cb3d87b1f640ff9bbf711b8617019ac6417d73000f7247c309921",
+    "destination_sha256": "7e7f26c2953cb3d87b1f640ff9bbf711b8617019ac6417d73000f7247c309921",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/loyalty.py",
+    "operation": "updated",
+    "source_sha256": "67fc0d9b3abb958cc0d6c41c34e7f2411b84a73b33535889315ef38a9d0cd9e1",
+    "destination_sha256": "67fc0d9b3abb958cc0d6c41c34e7f2411b84a73b33535889315ef38a9d0cd9e1",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_checkout_notifications.py",
+    "operation": "updated",
+    "source_sha256": "1dcab03afb02588146411e2b41d4c49eaebda291a101d5728e061272bfaf5d5e",
+    "destination_sha256": "1dcab03afb02588146411e2b41d4c49eaebda291a101d5728e061272bfaf5d5e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/tests_panel_settings.py",
+    "operation": "added",
+    "source_sha256": "67850ddef836871e48a00f896d475baae506e201389ebc5c42df3148763667b4",
+    "destination_sha256": "67850ddef836871e48a00f896d475baae506e201389ebc5c42df3148763667b4",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/views.py",
+    "operation": "updated",
+    "source_sha256": "e0b7d9774a262000273fc1d993e22a2a59687650ee517ff4a8601b9ec38efd6f",
+    "destination_sha256": "e0b7d9774a262000273fc1d993e22a2a59687650ee517ff4a8601b9ec38efd6f",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/admin_forms.py",
+    "operation": "updated",
+    "source_sha256": "a61568b3c747d7d4ef7be98e858bd3ba0897443674c039deee222875894d4319",
+    "destination_sha256": "a61568b3c747d7d4ef7be98e858bd3ba0897443674c039deee222875894d4319",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/xexpress_service.py",
+    "operation": "updated",
+    "source_sha256": "707b758b1d0aa491ff2989a2676865c09556e1f0d3bc8fc89232deb1d133caed",
+    "destination_sha256": "707b758b1d0aa491ff2989a2676865c09556e1f0d3bc8fc89232deb1d133caed",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/templatetags/warehouse_access.py",
+    "operation": "updated",
+    "source_sha256": "f12a906130d4a078ae4b49d876b33399989949d268fa939a9f40fcab211d7b5e",
+    "destination_sha256": "f12a906130d4a078ae4b49d876b33399989949d268fa939a9f40fcab211d7b5e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/middleware/inventory_module.py",
+    "operation": "added",
+    "source_sha256": "e73301ef9bda6f9b345563d79c44e64c9edfd4831214956a864806a67a949df8",
+    "destination_sha256": "e73301ef9bda6f9b345563d79c44e64c9edfd4831214956a864806a67a949df8",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0344_wms_shortage_resolution.py",
+    "operation": "added",
+    "source_sha256": "69344527052153600bd8928199ed1224be556babfd2cf78c36d4954fe1a7cb23",
+    "destination_sha256": "69344527052153600bd8928199ed1224be556babfd2cf78c36d4954fe1a7cb23",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0349_wms_customer_delete.py",
+    "operation": "added",
+    "source_sha256": "7c2ad0eba50cebdaa600f1b10af9e84b38f07d693f9bad476d6193736b1dc749",
+    "destination_sha256": "7c2ad0eba50cebdaa600f1b10af9e84b38f07d693f9bad476d6193736b1dc749",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0341_wms_odvajanje_robe.py",
+    "operation": "added",
+    "source_sha256": "063857f0a592c7c43fafb3ebf4c552366d1c590216053e9978d941319cbae41f",
+    "destination_sha256": "063857f0a592c7c43fafb3ebf4c552366d1c590216053e9978d941319cbae41f",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0314_product_stock_tracking.py",
+    "operation": "added",
+    "source_sha256": "0420c5b714832e36c788411e1c4b5d664a394e2ad44cdc6f184c6fc43dcd76e4",
+    "destination_sha256": "0420c5b714832e36c788411e1c4b5d664a394e2ad44cdc6f184c6fc43dcd76e4",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0333_wms_storefront_availability.py",
+    "operation": "added",
+    "source_sha256": "b5c51424091a99010e9199842610d1b6082a2b129166d6500749588d44f96817",
+    "destination_sha256": "b5c51424091a99010e9199842610d1b6082a2b129166d6500749588d44f96817",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0346_wms_order_items.py",
+    "operation": "added",
+    "source_sha256": "8f5dc69461ead9245193ffcc0be23541086a8aeeebe410a41d6541b8b0ff3a79",
+    "destination_sha256": "8f5dc69461ead9245193ffcc0be23541086a8aeeebe410a41d6541b8b0ff3a79",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0322_stock_check_tools.py",
+    "operation": "added",
+    "source_sha256": "6cf99dcd362fdd5491c8d7d9b9573362b60827fc8de143345d3162c679597694",
+    "destination_sha256": "6cf99dcd362fdd5491c8d7d9b9573362b60827fc8de143345d3162c679597694",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0330_product_360.py",
+    "operation": "added",
+    "source_sha256": "0783e9f2a5d1bb81a77285dd8e3adcc65fa8d371844593c9cb4b2ea76347c3fa",
+    "destination_sha256": "0783e9f2a5d1bb81a77285dd8e3adcc65fa8d371844593c9cb4b2ea76347c3fa",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0334_merge_wms_stock_locations.py",
+    "operation": "added",
+    "source_sha256": "6a0182eceed43da31bb6718ed106bc6c161b85993212e7e163f681615eb75050",
+    "destination_sha256": "6a0182eceed43da31bb6718ed106bc6c161b85993212e7e163f681615eb75050",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0331_wms_transfer_settings.py",
+    "operation": "added",
+    "source_sha256": "06510a22252ff684f69d2d3c766889b4efad5f7b9a33f5fd4ca1322a0f7763f2",
+    "destination_sha256": "06510a22252ff684f69d2d3c766889b4efad5f7b9a33f5fd4ca1322a0f7763f2",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0312_configurable_newsletter_banner.py",
+    "operation": "added",
+    "source_sha256": "cc597375fbc1e0daf0b764775d3dc199e597c5c776a362b767ea34bff8ba07cc",
+    "destination_sha256": "cc597375fbc1e0daf0b764775d3dc199e597c5c776a362b767ea34bff8ba07cc",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0351_wms_vat_regular_price.py",
+    "operation": "added",
+    "source_sha256": "3c6f4b3f4fea6b64ab66c3ca8eb4635abb6d113f49cb9e63439481161a9857d4",
+    "destination_sha256": "3c6f4b3f4fea6b64ab66c3ca8eb4635abb6d113f49cb9e63439481161a9857d4",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0339_wms_cancellation_reason.py",
+    "operation": "added",
+    "source_sha256": "8de04885b9d36e9505ed1c63b5731995eebf592744e387b70f8483bee395687b",
+    "destination_sha256": "8de04885b9d36e9505ed1c63b5731995eebf592744e387b70f8483bee395687b",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0319_warehouse_tool_modules.py",
+    "operation": "added",
+    "source_sha256": "b4bf199115204b088dfd56b4b32fb802f0445c3e4570910a9b27ac546abda4e0",
+    "destination_sha256": "b4bf199115204b088dfd56b4b32fb802f0445c3e4570910a9b27ac546abda4e0",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0337_wms_transfer_documents.py",
+    "operation": "added",
+    "source_sha256": "cf8f89cc6845b16ebeac0b2a3ab659f411acaca8385473f4aced8bbdc05d9f9e",
+    "destination_sha256": "cf8f89cc6845b16ebeac0b2a3ab659f411acaca8385473f4aced8bbdc05d9f9e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0326_panel_actions_module.py",
+    "operation": "added",
+    "source_sha256": "0296514c3d69460fe738970cdfa7303f3df0486f6714968e1cf2a45fda738208",
+    "destination_sha256": "0296514c3d69460fe738970cdfa7303f3df0486f6714968e1cf2a45fda738208",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0343_wms_optional_picking_photo.py",
+    "operation": "added",
+    "source_sha256": "27b560dbc52110f44e2e0e7d1b3006c9ed800417eaf7f3ad1fba4cd6cc81d32e",
+    "destination_sha256": "27b560dbc52110f44e2e0e7d1b3006c9ed800417eaf7f3ad1fba4cd6cc81d32e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0318_product_sets_module.py",
+    "operation": "added",
+    "source_sha256": "332238453fb697c1a968df7ba4952f0c353f8776fd9d676b93322f7819b02c05",
+    "destination_sha256": "332238453fb697c1a968df7ba4952f0c353f8776fd9d676b93322f7819b02c05",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0347_wms_customers.py",
+    "operation": "added",
+    "source_sha256": "6fd9675a37b72a96c826e50778a00a8a40bacf2ebff7f1fcfe9d61771ea11c72",
+    "destination_sha256": "6fd9675a37b72a96c826e50778a00a8a40bacf2ebff7f1fcfe9d61771ea11c72",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0340_wms_panel_orders.py",
+    "operation": "added",
+    "source_sha256": "ed9e5db0c3e1c8b89b52958e106808b439544eb394007f5cc4930829ed0e10c7",
+    "destination_sha256": "ed9e5db0c3e1c8b89b52958e106808b439544eb394007f5cc4930829ed0e10c7",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0329_product_multiple_wms_locations.py",
+    "operation": "added",
+    "source_sha256": "c1fc17bba990f21d63af6488ae32354d317a681108b0ae2df92ab8b408a9dd08",
+    "destination_sha256": "c1fc17bba990f21d63af6488ae32354d317a681108b0ae2df92ab8b408a9dd08",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0320_spare_parts_module.py",
+    "operation": "added",
+    "source_sha256": "e5fe027dfb67cc04908e89975b234b61624a8f3e74787e355f638950933e926f",
+    "destination_sha256": "e5fe027dfb67cc04908e89975b234b61624a8f3e74787e355f638950933e926f",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0316_inventory_module.py",
+    "operation": "added",
+    "source_sha256": "2b69c934e9448c581d1ae5a3bb9c046a8c2f67eced1b079e2a22dfa4139f89fc",
+    "destination_sha256": "2b69c934e9448c581d1ae5a3bb9c046a8c2f67eced1b079e2a22dfa4139f89fc",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0324_panel_tool_modules.py",
+    "operation": "added",
+    "source_sha256": "813e9071d6403ab32883a53c1bd1b06bc98116ba1871a587ddc08000cb46528b",
+    "destination_sha256": "813e9071d6403ab32883a53c1bd1b06bc98116ba1871a587ddc08000cb46528b",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0336_visible_out_of_stock.py",
+    "operation": "added",
+    "source_sha256": "1b4a40def7ac3d26587dd5fbe17eed221506f9c921c2f77d638defbb421aa166",
+    "destination_sha256": "1b4a40def7ac3d26587dd5fbe17eed221506f9c921c2f77d638defbb421aa166",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0321_stock_check_module.py",
+    "operation": "added",
+    "source_sha256": "2aca9186ceda20843eecf4e998c798da182f00c2993eb7ce84ac72f4b2c5e77d",
+    "destination_sha256": "2aca9186ceda20843eecf4e998c798da182f00c2993eb7ce84ac72f4b2c5e77d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0315_home_bestseller_products.py",
+    "operation": "added",
+    "source_sha256": "66f5b69f294f0737a2943eb93725294289abc63e9873aae1856bdf5190299a07",
+    "destination_sha256": "66f5b69f294f0737a2943eb93725294289abc63e9873aae1856bdf5190299a07",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0332_wms_section_permissions.py",
+    "operation": "added",
+    "source_sha256": "ae69da5391d34c7731b37061a555efb7e322392e5ccbc971af59dcbe329c15c3",
+    "destination_sha256": "ae69da5391d34c7731b37061a555efb7e322392e5ccbc971af59dcbe329c15c3",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0338_wms_order_cancel.py",
+    "operation": "added",
+    "source_sha256": "deb2e15e24e74a9be85b5eddcddedb4ea47c434d83459917371534aa76c90cb5",
+    "destination_sha256": "deb2e15e24e74a9be85b5eddcddedb4ea47c434d83459917371534aa76c90cb5",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0327_independent_wms.py",
+    "operation": "added",
+    "source_sha256": "2059b3c77f7eb9d99054eca01ed8a02d0de6f7c180ffe4deb6786478a29d52e9",
+    "destination_sha256": "2059b3c77f7eb9d99054eca01ed8a02d0de6f7c180ffe4deb6786478a29d52e9",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0317_inventory_module_label.py",
+    "operation": "added",
+    "source_sha256": "fbb74b5621472f28d31a615660a72361c14476cebd6c6e3a7387252b0c6ae4a9",
+    "destination_sha256": "fbb74b5621472f28d31a615660a72361c14476cebd6c6e3a7387252b0c6ae4a9",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0348_wms_item_discount.py",
+    "operation": "added",
+    "source_sha256": "16ab6078d9014888f250e0b6f0345eaeed217ec1d2bf11d93bad2d2064fa1937",
+    "destination_sha256": "16ab6078d9014888f250e0b6f0345eaeed217ec1d2bf11d93bad2d2064fa1937",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0325_banner_destination_module.py",
+    "operation": "added",
+    "source_sha256": "906032ea8c27233a4a1e3921b52186cc46bed568657a0d08796e35d883f3bd66",
+    "destination_sha256": "906032ea8c27233a4a1e3921b52186cc46bed568657a0d08796e35d883f3bd66",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0328_product_wms_location.py",
+    "operation": "added",
+    "source_sha256": "87737bba9aa2b20ee62bfb1c4ea68fe74b2b6efbd018751410e4f00c61d67fb0",
+    "destination_sha256": "87737bba9aa2b20ee62bfb1c4ea68fe74b2b6efbd018751410e4f00c61d67fb0",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0335_wms_inventory_mode.py",
+    "operation": "added",
+    "source_sha256": "0b73e7dcf7eb0f8fbe206ec5e4132de74e65b200ead1fd7979239180158d61ce",
+    "destination_sha256": "0b73e7dcf7eb0f8fbe206ec5e4132de74e65b200ead1fd7979239180158d61ce",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0345_wms_completion_date.py",
+    "operation": "added",
+    "source_sha256": "528bdb7b3a3cfc5a4b73aef966fc63262098b590d8610841650cc7d64b17923d",
+    "destination_sha256": "528bdb7b3a3cfc5a4b73aef966fc63262098b590d8610841650cc7d64b17923d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0311_white_label_identity.py",
+    "operation": "added",
+    "source_sha256": "67fef769dc7f3fe5ff2bbefc8e1343b9dd7533fbed5d3623dd606aa6e0862caf",
+    "destination_sha256": "67fef769dc7f3fe5ff2bbefc8e1343b9dd7533fbed5d3623dd606aa6e0862caf",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0342_wms_picking_confirmation.py",
+    "operation": "added",
+    "source_sha256": "8b160abab5b326009f92bff824fc3ac221157c6a0b20a7d493707495b7826ef2",
+    "destination_sha256": "8b160abab5b326009f92bff824fc3ac221157c6a0b20a7d493707495b7826ef2",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0313_forced_search_priority.py",
+    "operation": "added",
+    "source_sha256": "2921b969cbcc9258b017fda8eb7a830e0876e46d9e3f3ff5add2fceedf24ddc8",
+    "destination_sha256": "2921b969cbcc9258b017fda8eb7a830e0876e46d9e3f3ff5add2fceedf24ddc8",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0323_import_module.py",
+    "operation": "added",
+    "source_sha256": "90b8d56b2ac1c5b4670ee0ec009666bdf0d553c53d6f03fd29941492834e3fbe",
+    "destination_sha256": "90b8d56b2ac1c5b4670ee0ec009666bdf0d553c53d6f03fd29941492834e3fbe",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/migrations/0350_wms_picking_last_location.py",
+    "operation": "added",
+    "source_sha256": "cf03a202c91bb280342d68e6acbbf62c11d521ed9f0f0f5380063dba52c06d00",
+    "destination_sha256": "cf03a202c91bb280342d68e6acbbf62c11d521ed9f0f0f5380063dba52c06d00",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/monri_form.html",
+    "operation": "updated",
+    "source_sha256": "0027ff4d9d2162352f5bf049dd9e2b37bd1559262976d7d6de2bbb09778e3092",
+    "destination_sha256": "0027ff4d9d2162352f5bf049dd9e2b37bd1559262976d7d6de2bbb09778e3092",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/product_detail.html",
+    "operation": "updated",
+    "source_sha256": "4ce847d3b4651502876e28ca4a798a7fa151e384dc2a8aa7e33e3f09e3f716c6",
+    "destination_sha256": "4ce847d3b4651502876e28ca4a798a7fa151e384dc2a8aa7e33e3f09e3f716c6",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/home.html",
+    "operation": "updated",
+    "source_sha256": "571a1101c728728720bb9662a04656d24341286b466bd7944ec2d7c33380f117",
+    "destination_sha256": "571a1101c728728720bb9662a04656d24341286b466bd7944ec2d7c33380f117",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/base.html",
+    "operation": "updated",
+    "source_sha256": "ddf608828a07c96808d31744da082fdb54530a82e719db7323d12d7f7754fbdd",
+    "destination_sha256": "bda9ad6834fc3376d12abca262052f749db160b3c4b2d4779f87b443db8251f6",
+    "adapted": true
+  },
+  {
+    "path": "EcommerceApp/template/category.html",
+    "operation": "updated",
+    "source_sha256": "18ac4c183fdb999d2ecb5af4bd5dfdced300d51ac65fec9411f3d73f2c0e19bd",
+    "destination_sha256": "18ac4c183fdb999d2ecb5af4bd5dfdced300d51ac65fec9411f3d73f2c0e19bd",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/monri_status.html",
+    "operation": "updated",
+    "source_sha256": "a4a8bdf572f6b0328120ebfb6d522fb007848c234c8ccd18fcd85f0f5a208037",
+    "destination_sha256": "a4a8bdf572f6b0328120ebfb6d522fb007848c234c8ccd18fcd85f0f5a208037",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/checkout.html",
+    "operation": "updated",
+    "source_sha256": "d2c0d743c15b5bf5dbb383ac10312f52fe0647094b5799bf933e4fc55a8b8e4d",
+    "destination_sha256": "d2c0d743c15b5bf5dbb383ac10312f52fe0647094b5799bf933e4fc55a8b8e4d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/ponuda_pdf.html",
+    "operation": "updated",
+    "source_sha256": "55ddf4652b720b032fbd65c5eede771c7ded8ce31c33b5f8fe340c292426ea08",
+    "destination_sha256": "55ddf4652b720b032fbd65c5eede771c7ded8ce31c33b5f8fe340c292426ea08",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/site_prep.html",
+    "operation": "updated",
+    "source_sha256": "5338fb4324932c6e5c86703a41d18392222160d5904576c7cc0dc513dec41ada",
+    "destination_sha256": "5338fb4324932c6e5c86703a41d18392222160d5904576c7cc0dc513dec41ada",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/cart.html",
+    "operation": "updated",
+    "source_sha256": "6c69377ebc823c230ff45be3247e987241efc9e19b0bcc3718b93c60c7d4ea1b",
+    "destination_sha256": "6c69377ebc823c230ff45be3247e987241efc9e19b0bcc3718b93c60c7d4ea1b",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/robots.txt",
+    "operation": "updated",
+    "source_sha256": "b2c3186bff8b5bae8750733b4c6c11ef24622f7b196179db939a4cc9575921f3",
+    "destination_sha256": "b2c3186bff8b5bae8750733b4c6c11ef24622f7b196179db939a4cc9575921f3",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/order_success.html",
+    "operation": "updated",
+    "source_sha256": "3c830114a76151b6edd7c8e6b57dd851ac25774968b6d92bfc5b1c63b875d461",
+    "destination_sha256": "3c830114a76151b6edd7c8e6b57dd851ac25774968b6d92bfc5b1c63b875d461",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/wishlist.html",
+    "operation": "updated",
+    "source_sha256": "f79a03a47bb8e6e3f23d2fbdd5f76e693484f465d1088f7564a46b9832fe93f5",
+    "destination_sha256": "f79a03a47bb8e6e3f23d2fbdd5f76e693484f465d1088f7564a46b9832fe93f5",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/utils/seo.py",
+    "operation": "updated",
+    "source_sha256": "9ab51babd45564be2e87c3a4c40105994967aaaa4eb05a091cde64cee59aaa0b",
+    "destination_sha256": "9ab51babd45564be2e87c3a4c40105994967aaaa4eb05a091cde64cee59aaa0b",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/utils/images.py",
+    "operation": "updated",
+    "source_sha256": "be9ab820644ea6fb7462605d36a55f1b3824f76063467d15a0771ac9eea8f608",
+    "destination_sha256": "be9ab820644ea6fb7462605d36a55f1b3824f76063467d15a0771ac9eea8f608",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/maintenance.html",
+    "operation": "updated",
+    "source_sha256": "5d98a882a9fe2ebcd28a4b2462923ff03ed77fab42b866e3bccc9b33a7cff4f3",
+    "destination_sha256": "5d98a882a9fe2ebcd28a4b2462923ff03ed77fab42b866e3bccc9b33a7cff4f3",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/b2b.css",
+    "operation": "updated",
+    "source_sha256": "68d58454aba80fb1dfbac7006beb98f17de203822e8e2effa3c6de03e9528f7e",
+    "destination_sha256": "68d58454aba80fb1dfbac7006beb98f17de203822e8e2effa3c6de03e9528f7e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/bera-cart.css",
+    "operation": "added",
+    "source_sha256": "0e0ba4d6dcec68ca2ee499423d1397f7d6000e80a5d0a46663ff4e1476a79308",
+    "destination_sha256": "0e0ba4d6dcec68ca2ee499423d1397f7d6000e80a5d0a46663ff4e1476a79308",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/product-wms-location.css",
+    "operation": "added",
+    "source_sha256": "d91ad4a47dcca70ceff88ca229c31b75f452ac0705d921a52b2921c9cee94c06",
+    "destination_sha256": "d91ad4a47dcca70ceff88ca229c31b75f452ac0705d921a52b2921c9cee94c06",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/storefront-extras.min.css",
+    "operation": "updated",
+    "source_sha256": "a6b0f2978385145657c7b744c1fd4d7afd38db6d998bc9e43031bf09ad7e6bb7",
+    "destination_sha256": "a6b0f2978385145657c7b744c1fd4d7afd38db6d998bc9e43031bf09ad7e6bb7",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/bera-product.css",
+    "operation": "added",
+    "source_sha256": "1dbf176dd43d6cf9c46793ebf66ee7f34e25e789f7f7ae2efa75e14caaed3bab",
+    "destination_sha256": "1dbf176dd43d6cf9c46793ebf66ee7f34e25e789f7f7ae2efa75e14caaed3bab",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/panel-shell.css",
+    "operation": "added",
+    "source_sha256": "3ed288343ed34f265f85eb53af292b88e8110f54204b8bd9b046643c6a4e39ed",
+    "destination_sha256": "3ed288343ed34f265f85eb53af292b88e8110f54204b8bd9b046643c6a4e39ed",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/panel-articles.css",
+    "operation": "added",
+    "source_sha256": "a5efdcb55be0865bafc910bc181d6dc8020988be6008995019eb260a1e99fd01",
+    "destination_sha256": "a5efdcb55be0865bafc910bc181d6dc8020988be6008995019eb260a1e99fd01",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/bera-catalog.css",
+    "operation": "added",
+    "source_sha256": "4e80d7283313678a55872210dab251036b1cfd890de08c6837d143b9b30f1c2d",
+    "destination_sha256": "4e80d7283313678a55872210dab251036b1cfd890de08c6837d143b9b30f1c2d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/bera-home.css",
+    "operation": "added",
+    "source_sha256": "36ec5626b1cbd5b938c20c82b8eb3e65f05240165d3e3599bc9d251c70e1a918",
+    "destination_sha256": "36ec5626b1cbd5b938c20c82b8eb3e65f05240165d3e3599bc9d251c70e1a918",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/bera-account.css",
+    "operation": "added",
+    "source_sha256": "110be8bfd8a47618c01c29dba78730626793dc64cecbc582a7d6af26e7f00db7",
+    "destination_sha256": "110be8bfd8a47618c01c29dba78730626793dc64cecbc582a7d6af26e7f00db7",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/panel-blue.css",
+    "operation": "added",
+    "source_sha256": "fa8896146533c19221d38aa2a97b391d5f5d6efbb193c805bc0fbbf9e4e6bb22",
+    "destination_sha256": "fa8896146533c19221d38aa2a97b391d5f5d6efbb193c805bc0fbbf9e4e6bb22",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/home-mobile-reference.css",
+    "operation": "updated",
+    "source_sha256": "752281786acf9d3a37f9f7fdb59650ba497b2b800c046d65cb37210aa84e1309",
+    "destination_sha256": "752281786acf9d3a37f9f7fdb59650ba497b2b800c046d65cb37210aa84e1309",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/newsletter-gray.css",
+    "operation": "updated",
+    "source_sha256": "8670f4b1cf58f8eb1f7633602a8b1c62a3b67c9d49ae3e234edb75d9b3d187c4",
+    "destination_sha256": "8670f4b1cf58f8eb1f7633602a8b1c62a3b67c9d49ae3e234edb75d9b3d187c4",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/product360.css",
+    "operation": "added",
+    "source_sha256": "f11bc626ae090967604b8cb0af2ac784f783fad72e22ddc21076185d7027f808",
+    "destination_sha256": "f11bc626ae090967604b8cb0af2ac784f783fad72e22ddc21076185d7027f808",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/panel-settings-workspace.css",
+    "operation": "added",
+    "source_sha256": "7bca7305669496f9580e8e2d17dee8eea9ce87917e66cb85369df43b061341c0",
+    "destination_sha256": "7bca7305669496f9580e8e2d17dee8eea9ce87917e66cb85369df43b061341c0",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/bera-offer-popup.css",
+    "operation": "added",
+    "source_sha256": "e897d6b7b2dd721c4dd37fed9905b9069e43e6e2d74e0b2710a6680c3518337d",
+    "destination_sha256": "e897d6b7b2dd721c4dd37fed9905b9069e43e6e2d74e0b2710a6680c3518337d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/desktop-reference.css",
+    "operation": "updated",
+    "source_sha256": "2f0bfb977641ea2b357824a72f6c941e2c5f1e264a02c07746426186f1d02fd5",
+    "destination_sha256": "2f0bfb977641ea2b357824a72f6c941e2c5f1e264a02c07746426186f1d02fd5",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/staff-magacin-menu.css",
+    "operation": "updated",
+    "source_sha256": "ee073a160e116bc20aff98ad2cc30b4c639550aee66c1c7d71b14da3ab821ac6",
+    "destination_sha256": "ee073a160e116bc20aff98ad2cc30b4c639550aee66c1c7d71b14da3ab821ac6",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/style.css",
+    "operation": "updated",
+    "source_sha256": "52d059e78ab5d1c052a430b50dffd30bc75f319f1266b810204bc13924b7e384",
+    "destination_sha256": "52d059e78ab5d1c052a430b50dffd30bc75f319f1266b810204bc13924b7e384",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/panel-model-editor.css",
+    "operation": "added",
+    "source_sha256": "c05e511e1fe0bbc0d6204e49c7283609eafb13c45e8a590edba3f215734a3d95",
+    "destination_sha256": "c05e511e1fe0bbc0d6204e49c7283609eafb13c45e8a590edba3f215734a3d95",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/panel-settings.css",
+    "operation": "added",
+    "source_sha256": "2c9f9c44892c14b919110aa468470ccc34d31bc1094c1ad6cd9199db3ad93748",
+    "destination_sha256": "2c9f9c44892c14b919110aa468470ccc34d31bc1094c1ad6cd9199db3ad93748",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/bera-wms-independent.css",
+    "operation": "added",
+    "source_sha256": "d1fccf2726f3b726b14ca1652fcde6ef528fd419add66f255ea56b6561d3cf1f",
+    "destination_sha256": "d1fccf2726f3b726b14ca1652fcde6ef528fd419add66f255ea56b6561d3cf1f",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/staff-orders-validation.css",
+    "operation": "updated",
+    "source_sha256": "3d819f49a92fcfa5236e00cee5a2671e334bbe63ddbc5170398f4b8575e69db0",
+    "destination_sha256": "3d819f49a92fcfa5236e00cee5a2671e334bbe63ddbc5170398f4b8575e69db0",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/staff-new-article-reference.css",
+    "operation": "updated",
+    "source_sha256": "ca5d64114224cce9821c135c4bec56289641d8389fa3b972c5500db2503811de",
+    "destination_sha256": "ca5d64114224cce9821c135c4bec56289641d8389fa3b972c5500db2503811de",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/bera-orders.css",
+    "operation": "added",
+    "source_sha256": "83af1777e1547d892f16ad13631118096ad7e87304165e5559a04834841e7f8c",
+    "destination_sha256": "83af1777e1547d892f16ad13631118096ad7e87304165e5559a04834841e7f8c",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/product-reference.css",
+    "operation": "updated",
+    "source_sha256": "0b35d13142117252df28027d69659daa791ddca4e03c825d087563bc58afc1ac",
+    "destination_sha256": "0b35d13142117252df28027d69659daa791ddca4e03c825d087563bc58afc1ac",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/css/admin-module-switches.css",
+    "operation": "added",
+    "source_sha256": "40c9ae18f0598e509e4b58dee4639787ec21712b539a9b28ed9ce27c6bf29c29",
+    "destination_sha256": "40c9ae18f0598e509e4b58dee4639787ec21712b539a9b28ed9ce27c6bf29c29",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/panel-settings-workspace.js",
+    "operation": "added",
+    "source_sha256": "3488666eac0eccd264776f00353dcfe47ed258d4aa4e5388e3ef1bd327be0351",
+    "destination_sha256": "3488666eac0eccd264776f00353dcfe47ed258d4aa4e5388e3ef1bd327be0351",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/panel-articles-fit.js",
+    "operation": "added",
+    "source_sha256": "dd77a9de95314b52f6fbb7fec011f052c999ac55ff727d2b527a4849a53e1e8d",
+    "destination_sha256": "dd77a9de95314b52f6fbb7fec011f052c999ac55ff727d2b527a4849a53e1e8d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/wms-picking.js",
+    "operation": "added",
+    "source_sha256": "dad4a7e1c57555803849f7790b6bd60939b5adf343c0aefe812f760b9ab5635a",
+    "destination_sha256": "dad4a7e1c57555803849f7790b6bd60939b5adf343c0aefe812f760b9ab5635a",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/cart-qty.min.js",
+    "operation": "updated",
+    "source_sha256": "639f6dc2ed5c4f54770ddb07c68165e2d95b13d3f21e2568293722e9d9b742df",
+    "destination_sha256": "639f6dc2ed5c4f54770ddb07c68165e2d95b13d3f21e2568293722e9d9b742df",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/wms-order-customers.js",
+    "operation": "added",
+    "source_sha256": "90a5b2dde189645c4000a2738af493a4ee8bd2614306d99a675ecf2c66eb328e",
+    "destination_sha256": "90a5b2dde189645c4000a2738af493a4ee8bd2614306d99a675ecf2c66eb328e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/wms-online-order.js",
+    "operation": "added",
+    "source_sha256": "4ecfeb0a0489d4f8c92bb4aeee0caca58bec1ef9406f3ef4407f7d4ad7769702",
+    "destination_sha256": "4ecfeb0a0489d4f8c92bb4aeee0caca58bec1ef9406f3ef4407f7d4ad7769702",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/b2b.js",
+    "operation": "updated",
+    "source_sha256": "f41b52c05b47c77d2cadc0ecb13a1db847642e672dba301d2f101666b9b49f13",
+    "destination_sha256": "f41b52c05b47c77d2cadc0ecb13a1db847642e672dba301d2f101666b9b49f13",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/bera-brands.js",
+    "operation": "added",
+    "source_sha256": "cc9fc8db5a4083d2bd49839750806919e2828d80a774f3fac0220a7a696a9895",
+    "destination_sha256": "cc9fc8db5a4083d2bd49839750806919e2828d80a774f3fac0220a7a696a9895",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/product360-gallery.js",
+    "operation": "added",
+    "source_sha256": "ffb7708845fbc06fce43ebd3036df160d09cd885823d99c50b9d1234097a6d0a",
+    "destination_sha256": "ffb7708845fbc06fce43ebd3036df160d09cd885823d99c50b9d1234097a6d0a",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/product-wms-location.js",
+    "operation": "added",
+    "source_sha256": "4b09dc8d114459b2205c1621f57684a31284255779367ff8439b428934668003",
+    "destination_sha256": "4b09dc8d114459b2205c1621f57684a31284255779367ff8439b428934668003",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/product360-admin.js",
+    "operation": "added",
+    "source_sha256": "a88c7e553901c058127f48f383df4372d27f00591891ad2120a24ea312df71ae",
+    "destination_sha256": "a88c7e553901c058127f48f383df4372d27f00591891ad2120a24ea312df71ae",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/staff-product-objava.js",
+    "operation": "updated",
+    "source_sha256": "3b637a529d37e52f18dbfe2df49bb7d90c7eb2b8b17e3e5dfcd4e2058c6a28c2",
+    "destination_sha256": "3b637a529d37e52f18dbfe2df49bb7d90c7eb2b8b17e3e5dfcd4e2058c6a28c2",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/staff-alerts.js",
+    "operation": "updated",
+    "source_sha256": "4a2bdce3fb4516006cb0375918a23b15d52f6b2e0c0538b544daa3557aa222ae",
+    "destination_sha256": "4a2bdce3fb4516006cb0375918a23b15d52f6b2e0c0538b544daa3557aa222ae",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/bera-product.js",
+    "operation": "added",
+    "source_sha256": "48219e66d371e1e06b8785d0a52dfe72221bba156a518adcd8a9bde74638cc2e",
+    "destination_sha256": "48219e66d371e1e06b8785d0a52dfe72221bba156a518adcd8a9bde74638cc2e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/bera-brand-logo-align.js",
+    "operation": "added",
+    "source_sha256": "b4a6231d9238f288379b2c42c4688726214404acdcf5a8ff20fe75ee858b0f0a",
+    "destination_sha256": "b4a6231d9238f288379b2c42c4688726214404acdcf5a8ff20fe75ee858b0f0a",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/staff-magacin.js",
+    "operation": "updated",
+    "source_sha256": "600dd5bc17b38f944f87d06ffaa185a81b26df4d053f0ed3d2f45df392ff0dfc",
+    "destination_sha256": "600dd5bc17b38f944f87d06ffaa185a81b26df4d053f0ed3d2f45df392ff0dfc",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/product-wms-list-add.js",
+    "operation": "added",
+    "source_sha256": "f28a4fd2f31d449b5d56a546ca1541358497c5a651e19215a87702bce1110a31",
+    "destination_sha256": "f28a4fd2f31d449b5d56a546ca1541358497c5a651e19215a87702bce1110a31",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/bera-cart-layout.js",
+    "operation": "added",
+    "source_sha256": "4e2b268c6c99bb377291b1d58384f817251ca5e7ef2c364a5d838742e8b455b4",
+    "destination_sha256": "4e2b268c6c99bb377291b1d58384f817251ca5e7ef2c364a5d838742e8b455b4",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/product360.js",
+    "operation": "added",
+    "source_sha256": "21054bcd0aab91751fc4b54dac003abea07c07bb387cac7a25b6367880a1641c",
+    "destination_sha256": "21054bcd0aab91751fc4b54dac003abea07c07bb387cac7a25b6367880a1641c",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/js/panel-settings.js",
+    "operation": "added",
+    "source_sha256": "7dd8d5bad8b4640c02f4f268f61624f14f1d871969027d5631f9abaf94ffe73d",
+    "destination_sha256": "7dd8d5bad8b4640c02f4f268f61624f14f1d871969027d5631f9abaf94ffe73d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/pwa-icon.svg",
+    "operation": "updated",
+    "source_sha256": "73a1c73fe6c3862e038bde09f7c1c9c73cd2b7cc77b9b9a508ced0fc4781319b",
+    "destination_sha256": "73a1c73fe6c3862e038bde09f7c1c9c73cd2b7cc77b9b9a508ced0fc4781319b",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/maintenance-generic.svg",
+    "operation": "added",
+    "source_sha256": "d354c9a27b65afbc7bdba93c876416232ce1badae9fca7b3549df3127f27c626",
+    "destination_sha256": "d354c9a27b65afbc7bdba93c876416232ce1badae9fca7b3549df3127f27c626",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/newsletter-generic.svg",
+    "operation": "added",
+    "source_sha256": "de4f94ee0bfc2dc493595315d22ddc2b5a07254376d1085231dc095e13544864",
+    "destination_sha256": "de4f94ee0bfc2dc493595315d22ddc2b5a07254376d1085231dc095e13544864",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/bera-logo.svg",
+    "operation": "added",
+    "source_sha256": "03dd17304a9a70e0b2debcd7b89e0c174dadb34a03786b49e66588129a41d4d7",
+    "destination_sha256": "03dd17304a9a70e0b2debcd7b89e0c174dadb34a03786b49e66588129a41d4d7",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/bera-hero.webp",
+    "operation": "added",
+    "source_sha256": "6a393935e0967c23dc5ce5fa7f63adddba74fd9627593ae2255a349d78af71fd",
+    "destination_sha256": "6a393935e0967c23dc5ce5fa7f63adddba74fd9627593ae2255a349d78af71fd",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/webshop-logo.svg",
+    "operation": "added",
+    "source_sha256": "6d894ac948ad73409d1f392eb36f5f38b77da59595666f7802337e71ff1057cb",
+    "destination_sha256": "6d894ac948ad73409d1f392eb36f5f38b77da59595666f7802337e71ff1057cb",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/card.png",
+    "operation": "added",
+    "source_sha256": "6205c3fc45153104b4e1d0af2a80373c5b59c19625092d4c0336d56cfba6a071",
+    "destination_sha256": "6205c3fc45153104b4e1d0af2a80373c5b59c19625092d4c0336d56cfba6a071",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/check.png",
+    "operation": "added",
+    "source_sha256": "28c2b157aa052bfdc25078d4a6d4f4919dcfad7cd69fc0f2608ef3f518779134",
+    "destination_sha256": "28c2b157aa052bfdc25078d4a6d4f4919dcfad7cd69fc0f2608ef3f518779134",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/document.png",
+    "operation": "added",
+    "source_sha256": "a5ac4ea11002091a1b1962ba96271b7c7c42f62aba28160a2199937082aef58a",
+    "destination_sha256": "a5ac4ea11002091a1b1962ba96271b7c7c42f62aba28160a2199937082aef58a",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/pin.png",
+    "operation": "added",
+    "source_sha256": "403782a28c9e7a350306dd9119b7e9d8f25cc0c61159d8ec4130e2a4e9d0cbed",
+    "destination_sha256": "403782a28c9e7a350306dd9119b7e9d8f25cc0c61159d8ec4130e2a4e9d0cbed",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/shield.png",
+    "operation": "added",
+    "source_sha256": "86d2e5298d61a2a3e83fd91b8fb40ca4b3aec437cc7ad2fb5aaa49f15d20f57c",
+    "destination_sha256": "86d2e5298d61a2a3e83fd91b8fb40ca4b3aec437cc7ad2fb5aaa49f15d20f57c",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/cart.png",
+    "operation": "added",
+    "source_sha256": "57ba62a16c7e901b60134ddc26911bd89adc869f233838643fe82929a15dde88",
+    "destination_sha256": "57ba62a16c7e901b60134ddc26911bd89adc869f233838643fe82929a15dde88",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/headset.png",
+    "operation": "added",
+    "source_sha256": "5139bb46d767a8897ef73c43b328214518575c17fc60e2f86cd5905d453f6a7c",
+    "destination_sha256": "5139bb46d767a8897ef73c43b328214518575c17fc60e2f86cd5905d453f6a7c",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/user.png",
+    "operation": "added",
+    "source_sha256": "1813589b317e7774ce7ec004185aede6298d57c16f0a0f991eca882bdea47954",
+    "destination_sha256": "1813589b317e7774ce7ec004185aede6298d57c16f0a0f991eca882bdea47954",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/shield-white.png",
+    "operation": "added",
+    "source_sha256": "bf69004e15d26bcd08a409a645412b7fadb56d464708fed4323a43579687910b",
+    "destination_sha256": "bf69004e15d26bcd08a409a645412b7fadb56d464708fed4323a43579687910b",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/calendar.png",
+    "operation": "added",
+    "source_sha256": "a42ed4826449ef9db53b716cb7974ff2525455f83ad26f9cca9a72e817316523",
+    "destination_sha256": "a42ed4826449ef9db53b716cb7974ff2525455f83ad26f9cca9a72e817316523",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/truck-white.png",
+    "operation": "added",
+    "source_sha256": "0a82a66d8354a051fe3b3242efc2787cfdbf7009a234c0bb920b3be0ffc373db",
+    "destination_sha256": "0a82a66d8354a051fe3b3242efc2787cfdbf7009a234c0bb920b3be0ffc373db",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/truck.png",
+    "operation": "added",
+    "source_sha256": "40215132457ce1280cab643f4aab4f523a4d346c796ce7cf796d8fef6a09153e",
+    "destination_sha256": "40215132457ce1280cab643f4aab4f523a4d346c796ce7cf796d8fef6a09153e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/box.png",
+    "operation": "added",
+    "source_sha256": "c20324855fdd44d3dba30e6ba7a7ef94769c3ea548166260c6cf18cd1512820d",
+    "destination_sha256": "c20324855fdd44d3dba30e6ba7a7ef94769c3ea548166260c6cf18cd1512820d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/img/email/headset-white.png",
+    "operation": "added",
+    "source_sha256": "e0d8b62ea77685957badcab18879fa263ae77657e6459787d683c60e726c34af",
+    "destination_sha256": "e0d8b62ea77685957badcab18879fa263ae77657e6459787d683c60e726c34af",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/admin/css/bera-admin.css",
+    "operation": "added",
+    "source_sha256": "7d2c75cf58acc97c500b74a36c210dbe26ab02720f048f4403d317ea83f5f6ae",
+    "destination_sha256": "7d2c75cf58acc97c500b74a36c210dbe26ab02720f048f4403d317ea83f5f6ae",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/admin/css/ozr_admin.css",
+    "operation": "updated",
+    "source_sha256": "748386ecd1c564ce4a92f693abb26819456baaa0c930f5a4add03710d5f7b058",
+    "destination_sha256": "748386ecd1c564ce4a92f693abb26819456baaa0c930f5a4add03710d5f7b058",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/static/admin/css/ozr_admin.v20260830.css",
+    "operation": "updated",
+    "source_sha256": "748386ecd1c564ce4a92f693abb26819456baaa0c930f5a4add03710d5f7b058",
+    "destination_sha256": "748386ecd1c564ce4a92f693abb26819456baaa0c930f5a4add03710d5f7b058",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/auth/admin_password_reset_email.txt",
+    "operation": "updated",
+    "source_sha256": "cde0cbe51ad01ac26725014f1d4dbe461273fc836438b1cd1a1ae4faa146c06f",
+    "destination_sha256": "cde0cbe51ad01ac26725014f1d4dbe461273fc836438b1cd1a1ae4faa146c06f",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/auth/password_reset_done.html",
+    "operation": "updated",
+    "source_sha256": "f613d85b079576adec7731b733d761c0c201fe08cf8b00240b88a710057723b2",
+    "destination_sha256": "f613d85b079576adec7731b733d761c0c201fe08cf8b00240b88a710057723b2",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/auth/admin_password_reset_subject.txt",
+    "operation": "updated",
+    "source_sha256": "a1f92ae25ca49cf506c12900795643da60ef5c9478fcd6f8d5eb2d3ab1745ba8",
+    "destination_sha256": "a1f92ae25ca49cf506c12900795643da60ef5c9478fcd6f8d5eb2d3ab1745ba8",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/auth/register.html",
+    "operation": "updated",
+    "source_sha256": "b04edbbf8b7e5dc991430a972f48c3f34f2b5cc2a8b50c7117a8d64d9c7d49ef",
+    "destination_sha256": "b04edbbf8b7e5dc991430a972f48c3f34f2b5cc2a8b50c7117a8d64d9c7d49ef",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/auth/login.html",
+    "operation": "updated",
+    "source_sha256": "aa0af58d237f494c7d43be786aad7b6e9d6d49afe73d64045d6b2090335baa12",
+    "destination_sha256": "aa0af58d237f494c7d43be786aad7b6e9d6d49afe73d64045d6b2090335baa12",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/auth/password_reset_subject.txt",
+    "operation": "updated",
+    "source_sha256": "3a8b433e9ee89d73caa4e6c336e4c6d34303932178a6c8071e2afc3e67b485a7",
+    "destination_sha256": "3a8b433e9ee89d73caa4e6c336e4c6d34303932178a6c8071e2afc3e67b485a7",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/auth/password_reset_confirm.html",
+    "operation": "updated",
+    "source_sha256": "a8049779aca99623bdc7ac73331c96a55fa3a2fc7b441d3b675618961490e565",
+    "destination_sha256": "a8049779aca99623bdc7ac73331c96a55fa3a2fc7b441d3b675618961490e565",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/auth/password_reset_form.html",
+    "operation": "updated",
+    "source_sha256": "23fce4dbea7b0235a3a0d477ae4555fd0d608a24a8cb809a9ead5831c19c0e51",
+    "destination_sha256": "23fce4dbea7b0235a3a0d477ae4555fd0d608a24a8cb809a9ead5831c19c0e51",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/auth/password_reset_complete.html",
+    "operation": "updated",
+    "source_sha256": "7e6a603527ca44a93c8d95daeb3604d498c9f6c39dd5dab31cfce3236277f480",
+    "destination_sha256": "7e6a603527ca44a93c8d95daeb3604d498c9f6c39dd5dab31cfce3236277f480",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/auth/password_reset_email.txt",
+    "operation": "updated",
+    "source_sha256": "8763c067a6df4b8ea2ecd824136ee5b9b4646ac9defb3157e166754c6a9245cb",
+    "destination_sha256": "8763c067a6df4b8ea2ecd824136ee5b9b4646ac9defb3157e166754c6a9245cb",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/emails/coupon_reward.html",
+    "operation": "updated",
+    "source_sha256": "867e58825f3f08e3862921e3fd2e75a95b94ab7310ba656a8269b2de4df2a83d",
+    "destination_sha256": "867e58825f3f08e3862921e3fd2e75a95b94ab7310ba656a8269b2de4df2a83d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/emails/stock_back.html",
+    "operation": "updated",
+    "source_sha256": "644a89e0270cd4edbb3d58ef57e57cbe1cdfd778131ef155ad6741c715d4c714",
+    "destination_sha256": "644a89e0270cd4edbb3d58ef57e57cbe1cdfd778131ef155ad6741c715d4c714",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/emails/live_offer.html",
+    "operation": "updated",
+    "source_sha256": "46c1d4d6998497f506d0b4714110b374f9032b7bdc38f444049b404044c3dc3e",
+    "destination_sha256": "46c1d4d6998497f506d0b4714110b374f9032b7bdc38f444049b404044c3dc3e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/emails/order_admin.html",
+    "operation": "added",
+    "source_sha256": "390d16cca328f6aceb457b5b9cb15169e984a2441406d556e95bca216457c7dd",
+    "destination_sha256": "390d16cca328f6aceb457b5b9cb15169e984a2441406d556e95bca216457c7dd",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/emails/coupon_reward.txt",
+    "operation": "updated",
+    "source_sha256": "b8591529c1228d98d46da65406b2502a34293fa6b3ffdf1440aae4f7adb91cfe",
+    "destination_sha256": "b8591529c1228d98d46da65406b2502a34293fa6b3ffdf1440aae4f7adb91cfe",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/emails/stock_unsubscribed.html",
+    "operation": "updated",
+    "source_sha256": "58a7e44c627f26b3fb858522c71457ee07f017d6550fa2ab01453c948ac7681e",
+    "destination_sha256": "58a7e44c627f26b3fb858522c71457ee07f017d6550fa2ab01453c948ac7681e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/admin/customer_profile_overview.html",
+    "operation": "added",
+    "source_sha256": "4c250506535cc27d9aa9f93b050d34e3a42a4fa6556f2bf85a3dac0c8c0a1b06",
+    "destination_sha256": "4c250506535cc27d9aa9f93b050d34e3a42a4fa6556f2bf85a3dac0c8c0a1b06",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/admin/profile_reset_password.html",
+    "operation": "added",
+    "source_sha256": "15e587b4241cbca414c527ccd2ee5c9309d19618b17816bd04c95c73f772539e",
+    "destination_sha256": "15e587b4241cbca414c527ccd2ee5c9309d19618b17816bd04c95c73f772539e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/admin/base_site.html",
+    "operation": "updated",
+    "source_sha256": "079f32514bc1530dcb17f19b66f277934df6585180016583fc41bf6e74063944",
+    "destination_sha256": "079f32514bc1530dcb17f19b66f277934df6585180016583fc41bf6e74063944",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/feeds/facebook_feed.xml",
+    "operation": "updated",
+    "source_sha256": "7cf0180558769d89eb97695c200d601128bba96a00f7e4782aba9fe631d0438b",
+    "destination_sha256": "7cf0180558769d89eb97695c200d601128bba96a00f7e4782aba9fe631d0438b",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/active_carts.html",
+    "operation": "updated",
+    "source_sha256": "db6e8b54c21a33612db09e80b12aa55480ac50803c816e8574a4a2e120d8cf17",
+    "destination_sha256": "db6e8b54c21a33612db09e80b12aa55480ac50803c816e8574a4a2e120d8cf17",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/settings_editor_base.html",
+    "operation": "added",
+    "source_sha256": "cdb35969bfe46f0655e49f297a53ab53aa4aae7bbbe1abe26561d3d190aeea16",
+    "destination_sha256": "cdb35969bfe46f0655e49f297a53ab53aa4aae7bbbe1abe26561d3d190aeea16",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/order_lookup.html",
+    "operation": "updated",
+    "source_sha256": "1d8b4162e0c70dd8679f63caec680291e05361f5380f5828b54000d54600aed0",
+    "destination_sha256": "1d8b4162e0c70dd8679f63caec680291e05361f5380f5828b54000d54600aed0",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/online_orders.html",
+    "operation": "updated",
+    "source_sha256": "4a7a40d6a4a41460b0f8058792d32158131acf795db9d1e0b31bd5c9d739b196",
+    "destination_sha256": "4a7a40d6a4a41460b0f8058792d32158131acf795db9d1e0b31bd5c9d739b196",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/b2b_live.html",
+    "operation": "updated",
+    "source_sha256": "4642e14a2646a0d2685f326d6e3b58d9d3144f40cccaf30e8cbd5bcf7f70af68",
+    "destination_sha256": "4642e14a2646a0d2685f326d6e3b58d9d3144f40cccaf30e8cbd5bcf7f70af68",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/orders_validation_scripts.html",
+    "operation": "added",
+    "source_sha256": "0df9bb7a2ed9abdc0f8c7332cca1b88a66b8e6d74d0ca1e8b965928e941e4039",
+    "destination_sha256": "0df9bb7a2ed9abdc0f8c7332cca1b88a66b8e6d74d0ca1e8b965928e941e4039",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/gift_voucher.html",
+    "operation": "updated",
+    "source_sha256": "b8bdfbecbcdf6ffc436cde314abff9959e0de495a6698bfcdba8d5dfa1431b97",
+    "destination_sha256": "b8bdfbecbcdf6ffc436cde314abff9959e0de495a6698bfcdba8d5dfa1431b97",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/live_analytics.html",
+    "operation": "updated",
+    "source_sha256": "66f8f1aa0c948f8ab379f5321a24e8e20f8aa6769ef93a6d134070173de07746",
+    "destination_sha256": "66f8f1aa0c948f8ab379f5321a24e8e20f8aa6769ef93a6d134070173de07746",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/loyalty_workspace.html",
+    "operation": "added",
+    "source_sha256": "f1a1a7e6a67e79518ddb54b75fa9fa36e466670261fbdbaffd2cf1442ec56bdc",
+    "destination_sha256": "f1a1a7e6a67e79518ddb54b75fa9fa36e466670261fbdbaffd2cf1442ec56bdc",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/loyalty_system.html",
+    "operation": "updated",
+    "source_sha256": "f0ea2054bd541c89eecbd9267cbcc2cf34f35afc9d696ae8360e9cffd9de3dc8",
+    "destination_sha256": "f0ea2054bd541c89eecbd9267cbcc2cf34f35afc9d696ae8360e9cffd9de3dc8",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/scratch_analytics.html",
+    "operation": "updated",
+    "source_sha256": "b48975b022f8896c7729e411c85bbbf3cca3f89ef663f39d2b38b1e07c36cd4c",
+    "destination_sha256": "b48975b022f8896c7729e411c85bbbf3cca3f89ef663f39d2b38b1e07c36cd4c",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/panel.html",
+    "operation": "added",
+    "source_sha256": "29225eef1f242c5cd8650acc2c181e6397cf6d69d900ff0e35fb9eda7aa630fe",
+    "destination_sha256": "29225eef1f242c5cd8650acc2c181e6397cf6d69d900ff0e35fb9eda7aa630fe",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/scratch_workspace.html",
+    "operation": "added",
+    "source_sha256": "cb7594916afae0084f54dfaec511fced3226cd876ac3245ca32f06b13b909ffe",
+    "destination_sha256": "cb7594916afae0084f54dfaec511fced3226cd876ac3245ca32f06b13b909ffe",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/uvoz.html",
+    "operation": "updated",
+    "source_sha256": "b21c5dc3cc81f4dcd13e56ec3e6d92b9b1a40684ff9c79965d700138990605f1",
+    "destination_sha256": "b21c5dc3cc81f4dcd13e56ec3e6d92b9b1a40684ff9c79965d700138990605f1",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms_workspace.html",
+    "operation": "added",
+    "source_sha256": "00288b66189df99467dae4155e84641a839cefd0fba7fa4d5fd98a18554d5b25",
+    "destination_sha256": "00288b66189df99467dae4155e84641a839cefd0fba7fa4d5fd98a18554d5b25",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/settings.html",
+    "operation": "added",
+    "source_sha256": "d6c8fe2f8272576190aa00caf124bbd0885aa4ffb8f1afac9a5e90cafb882fef",
+    "destination_sha256": "d6c8fe2f8272576190aa00caf124bbd0885aa4ffb8f1afac9a5e90cafb882fef",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/settings_workspace.html",
+    "operation": "added",
+    "source_sha256": "d46e88ec020bc20b7dc9a4fb3ad5224a99daddfc5d11cdc336a8de09409b8f4a",
+    "destination_sha256": "d46e88ec020bc20b7dc9a4fb3ad5224a99daddfc5d11cdc336a8de09409b8f4a",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/gift_voucher_print.html",
+    "operation": "updated",
+    "source_sha256": "03b83d37813829bc3b3ec82b65680413d90337a8d7332126b7aa3f99553ccd06",
+    "destination_sha256": "03b83d37813829bc3b3ec82b65680413d90337a8d7332126b7aa3f99553ccd06",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/orders_validation_content.html",
+    "operation": "added",
+    "source_sha256": "e7733a8e3b6fca166066c2b30a86f1bb463ccef39dd636dccee3ca7137df07f9",
+    "destination_sha256": "e7733a8e3b6fca166066c2b30a86f1bb463ccef39dd636dccee3ca7137df07f9",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/orders_validation.html",
+    "operation": "updated",
+    "source_sha256": "33b8fa3edebd0dbb040da112a83e4c34d3cbbc5eb2de61a32202e2975494a1a9",
+    "destination_sha256": "33b8fa3edebd0dbb040da112a83e4c34d3cbbc5eb2de61a32202e2975494a1a9",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/account/index.html",
+    "operation": "updated",
+    "source_sha256": "8fa49b50e7e943cf59aeeb3d36dbc2617438d07941a36b42382f4ea61a0e2df5",
+    "destination_sha256": "8fa49b50e7e943cf59aeeb3d36dbc2617438d07941a36b42382f4ea61a0e2df5",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/account/order_detail.html",
+    "operation": "updated",
+    "source_sha256": "c4fb6c471e8e40ca56f9ebea987aaf82d65f4add0e95f66177d9739e3e622624",
+    "destination_sha256": "c4fb6c471e8e40ca56f9ebea987aaf82d65f4add0e95f66177d9739e3e622624",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/pages/payment_security.html",
+    "operation": "updated",
+    "source_sha256": "508a6a638d9010b9e879e71e3209be8a17e5d09e6c56b24ce4048e0b61a9eba8",
+    "destination_sha256": "508a6a638d9010b9e879e71e3209be8a17e5d09e6c56b24ce4048e0b61a9eba8",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/pages/purchase_terms.html",
+    "operation": "updated",
+    "source_sha256": "3e95b31aaed0a7a85d651daa4c4c2850613af02e827cf1864af1e169be37be8f",
+    "destination_sha256": "3e95b31aaed0a7a85d651daa4c4c2850613af02e827cf1864af1e169be37be8f",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/pages/about.html",
+    "operation": "updated",
+    "source_sha256": "cca67ec968076537894975271dc5c765e30f4654a74c85bcc41005bb4786d336",
+    "destination_sha256": "cca67ec968076537894975271dc5c765e30f4654a74c85bcc41005bb4786d336",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/pages/payment.html",
+    "operation": "updated",
+    "source_sha256": "0bc8c5c8d89820dfc535a99512cea9618622f0335c388b4e6fd3b7455b1feb09",
+    "destination_sha256": "0bc8c5c8d89820dfc535a99512cea9618622f0335c388b4e6fd3b7455b1feb09",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/loyalty_card_print.html",
+    "operation": "updated",
+    "source_sha256": "f1b2365d12e12b48c8882698429b78fcb9f3f8f809478d03366206c17ccc7177",
+    "destination_sha256": "f1b2365d12e12b48c8882698429b78fcb9f3f8f809478d03366206c17ccc7177",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/coupon_form.html",
+    "operation": "updated",
+    "source_sha256": "6b3c953b06703044752f593304bc0a2b8e3a54b1a2ac01a3bc3ac7c69ec71da4",
+    "destination_sha256": "6b3c953b06703044752f593304bc0a2b8e3a54b1a2ac01a3bc3ac7c69ec71da4",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/bera_home_bottom.html",
+    "operation": "added",
+    "source_sha256": "3a99c78abd2ed91243a54d57032b7a17a15558c456fd49ab6d510e9eb913d9df",
+    "destination_sha256": "3a99c78abd2ed91243a54d57032b7a17a15558c456fd49ab6d510e9eb913d9df",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/product_card_price.html",
+    "operation": "updated",
+    "source_sha256": "1ef342a97c328e49302722531762e1a459c0157cf97d1b094b1d343b8018f1cd",
+    "destination_sha256": "1ef342a97c328e49302722531762e1a459c0157cf97d1b094b1d343b8018f1cd",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/product_brand_logo.html",
+    "operation": "added",
+    "source_sha256": "e3b8636da72ce9e5e42090d62936b85546160a336681e9729725e486fa30d372",
+    "destination_sha256": "e3b8636da72ce9e5e42090d62936b85546160a336681e9729725e486fa30d372",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/bera_footer.html",
+    "operation": "added",
+    "source_sha256": "a776295e65fa0ba5043104146b568977c8c14abda3fb654e022ac44996a737e1",
+    "destination_sha256": "a776295e65fa0ba5043104146b568977c8c14abda3fb654e022ac44996a737e1",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/stock_notify_button.html",
+    "operation": "updated",
+    "source_sha256": "b12af0c23614079da6c7c18a3cd2536450723b4923b1e0c84a58f78f8e44431f",
+    "destination_sha256": "b12af0c23614079da6c7c18a3cd2536450723b4923b1e0c84a58f78f8e44431f",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/order_invoice_document.html",
+    "operation": "updated",
+    "source_sha256": "a458afa5ed143f45b17d1d5978e3d32edde289fec626f03e3fe48640404d66cb",
+    "destination_sha256": "a458afa5ed143f45b17d1d5978e3d32edde289fec626f03e3fe48640404d66cb",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/bera_cart_recommendations.html",
+    "operation": "added",
+    "source_sha256": "fb9f4a065849db8656e269a4dfe0c21da8b6da290eb9808e93813d28ba5725b9",
+    "destination_sha256": "fb9f4a065849db8656e269a4dfe0c21da8b6da290eb9808e93813d28ba5725b9",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/bera_product_related.html",
+    "operation": "added",
+    "source_sha256": "6c94a5680eb6eb027bd5f705f734c1fc3bcdbcce69d1ed8fa2c25fd71237c87f",
+    "destination_sha256": "6c94a5680eb6eb027bd5f705f734c1fc3bcdbcce69d1ed8fa2c25fd71237c87f",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/bera_default_hero.html",
+    "operation": "added",
+    "source_sha256": "701aa136972fa08aab9862054bae95c0a4c7e9a1242cf8bbe588bc4f9890faf4",
+    "destination_sha256": "701aa136972fa08aab9862054bae95c0a4c7e9a1242cf8bbe588bc4f9890faf4",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/product_catalog_card.html",
+    "operation": "updated",
+    "source_sha256": "c80bad196f02957691a7c796cb38801fc0f211efbb6872c9c9fa9e6ac1500d4e",
+    "destination_sha256": "c80bad196f02957691a7c796cb38801fc0f211efbb6872c9c9fa9e6ac1500d4e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/home_mobile_navigation.html",
+    "operation": "updated",
+    "source_sha256": "1c8f43d672e2bd68ce6542a7586442d1da6a5319857ac80237b6dc0f5d3cbf67",
+    "destination_sha256": "1c8f43d672e2bd68ce6542a7586442d1da6a5319857ac80237b6dc0f5d3cbf67",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/bera_product_details.html",
+    "operation": "added",
+    "source_sha256": "46a03157a23fcf459af06538e200b72249865ee0e6d670ed1797bba2af0a0dac",
+    "destination_sha256": "46a03157a23fcf459af06538e200b72249865ee0e6d670ed1797bba2af0a0dac",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/product_stock_label.html",
+    "operation": "updated",
+    "source_sha256": "f7ae7841c9fa616f1ac3f33d2dcfad91e283415981383079cab04e71d82161ce",
+    "destination_sha256": "f7ae7841c9fa616f1ac3f33d2dcfad91e283415981383079cab04e71d82161ce",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/product_bundle_set.html",
+    "operation": "updated",
+    "source_sha256": "72a72cfb8120eea20ee64a8ce9a0989a4296072a3e67c37012db266b22a11bbd",
+    "destination_sha256": "72a72cfb8120eea20ee64a8ce9a0989a4296072a3e67c37012db266b22a11bbd",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/product_qty_deal.html",
+    "operation": "updated",
+    "source_sha256": "3c17590160f6d92c3f4bf606908bdb6e9fb261010c1a29723fcf492d95be9b8d",
+    "destination_sha256": "3c17590160f6d92c3f4bf606908bdb6e9fb261010c1a29723fcf492d95be9b8d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/bera_offer_banners.html",
+    "operation": "added",
+    "source_sha256": "bd8a68d1032d76b01746235802742e7dfa8ab281755464653adb6af12a26b8c0",
+    "destination_sha256": "bd8a68d1032d76b01746235802742e7dfa8ab281755464653adb6af12a26b8c0",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/home_vlog.html",
+    "operation": "updated",
+    "source_sha256": "1a5a087bf708c74801cf52d994dde53ed39e81b035ea2783b81b18626a340adb",
+    "destination_sha256": "1a5a087bf708c74801cf52d994dde53ed39e81b035ea2783b81b18626a340adb",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/footer.html",
+    "operation": "updated",
+    "source_sha256": "e4aef6fc65a5e8adf78ef1ee6a40b0a93458d7f196c7730a1130d608876231d7",
+    "destination_sha256": "e4aef6fc65a5e8adf78ef1ee6a40b0a93458d7f196c7730a1130d608876231d7",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/product_catalog.html",
+    "operation": "updated",
+    "source_sha256": "2e5654496b6e3d457551bce53cb6e709ad9dc6c35322ff60bf628cfdd11a3acd",
+    "destination_sha256": "2e5654496b6e3d457551bce53cb6e709ad9dc6c35322ff60bf628cfdd11a3acd",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/bera_home_nav.html",
+    "operation": "added",
+    "source_sha256": "1ac681f870095cce131afc2d8460721f301c36a4114ee45df9417012fc666648",
+    "destination_sha256": "1ac681f870095cce131afc2d8460721f301c36a4114ee45df9417012fc666648",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/home_product_card.html",
+    "operation": "updated",
+    "source_sha256": "f2797931128792e41689fab7ac65198e8579320dc5b1e409c339b933165730d5",
+    "destination_sha256": "f2797931128792e41689fab7ac65198e8579320dc5b1e409c339b933165730d5",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/bera_category_branch.html",
+    "operation": "added",
+    "source_sha256": "c0f52b1a3c5dfadffc3304df4fba5a27fc0ca862559f82dcfbd242af942981d8",
+    "destination_sha256": "c0f52b1a3c5dfadffc3304df4fba5a27fc0ca862559f82dcfbd242af942981d8",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/home_mobile_benefits.html",
+    "operation": "updated",
+    "source_sha256": "6d4d40723e1551cc2beb14005baff4b8192dfc25a8ec9a00d9d4b78ac36d36c9",
+    "destination_sha256": "6d4d40723e1551cc2beb14005baff4b8192dfc25a8ec9a00d9d4b78ac36d36c9",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/partials/home_loyalty_banner.html",
+    "operation": "updated",
+    "source_sha256": "5caeb375b713f3a8326ddcffe445b520018a7031746c7b9063e417166c6952c9",
+    "destination_sha256": "5caeb375b713f3a8326ddcffe445b520018a7031746c7b9063e417166c6952c9",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/online_order_form.html",
+    "operation": "added",
+    "source_sha256": "1595306fb68d27e76ff05a021115e36b248230f219fbf5481c683ebbff27d7d0",
+    "destination_sha256": "1595306fb68d27e76ff05a021115e36b248230f219fbf5481c683ebbff27d7d0",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/announcement_print.html",
+    "operation": "added",
+    "source_sha256": "f9ce14b9a78eb1579c3fce98d21ee5a3ad8e6654c89cae853bb7b2ee850cee8a",
+    "destination_sha256": "f9ce14b9a78eb1579c3fce98d21ee5a3ad8e6654c89cae853bb7b2ee850cee8a",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/order_form.html",
+    "operation": "added",
+    "source_sha256": "1a16158c29b32b45fe0ce28924bdcf48bccc98636b008741a087c5927788ba72",
+    "destination_sha256": "1a16158c29b32b45fe0ce28924bdcf48bccc98636b008741a087c5927788ba72",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/base.html",
+    "operation": "added",
+    "source_sha256": "efff8476a6ae161c66fad57a99c5f41b74213e4d3a164d50346824befe07352c",
+    "destination_sha256": "efff8476a6ae161c66fad57a99c5f41b74213e4d3a164d50346824befe07352c",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/stock_search.html",
+    "operation": "added",
+    "source_sha256": "667394a1c0ed869c32984d466bd8d25ef2dd2505c6fbfa11f9d271a38182c1ae",
+    "destination_sha256": "667394a1c0ed869c32984d466bd8d25ef2dd2505c6fbfa11f9d271a38182c1ae",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/location_transfer_row.html",
+    "operation": "added",
+    "source_sha256": "e9c5ec89f42d19fa40ad2321a834459b395fd27d8849e1ff95707eaa4e64f830",
+    "destination_sha256": "e9c5ec89f42d19fa40ad2321a834459b395fd27d8849e1ff95707eaa4e64f830",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/icon.html",
+    "operation": "added",
+    "source_sha256": "4b495ee7ef440b5b89499a829785e687766edafb9fbb1f7751b34c4d42cae8d1",
+    "destination_sha256": "4b495ee7ef440b5b89499a829785e687766edafb9fbb1f7751b34c4d42cae8d1",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/customer_form.html",
+    "operation": "added",
+    "source_sha256": "566b397055b2ffb9940e400bd213f1662d249a77facdc547bfb09e767b8a14c0",
+    "destination_sha256": "566b397055b2ffb9940e400bd213f1662d249a77facdc547bfb09e767b8a14c0",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/prenosnica.html",
+    "operation": "added",
+    "source_sha256": "bf998021ee35ef0abe50018f293688f84e46e1b68b6dee59c9705fe571fc237a",
+    "destination_sha256": "bf998021ee35ef0abe50018f293688f84e46e1b68b6dee59c9705fe571fc237a",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/orders_print.html",
+    "operation": "added",
+    "source_sha256": "5c795c18df96468f3179c21e978a6a22352b1c09e7113823719b3b17ba529ce6",
+    "destination_sha256": "5c795c18df96468f3179c21e978a6a22352b1c09e7113823719b3b17ba529ce6",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/location_barcode_print.html",
+    "operation": "added",
+    "source_sha256": "471ff6cd504f543190e8eb916c4352c7bfe713a7179c853cb460cdb5de6981d7",
+    "destination_sha256": "471ff6cd504f543190e8eb916c4352c7bfe713a7179c853cb460cdb5de6981d7",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/picking.html",
+    "operation": "added",
+    "source_sha256": "27d349ef08ba8c5f4878085d245ecdcad1ec700069cd0d168878082b1dbe6e9f",
+    "destination_sha256": "27d349ef08ba8c5f4878085d245ecdcad1ec700069cd0d168878082b1dbe6e9f",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/customers.html",
+    "operation": "added",
+    "source_sha256": "72d9ef5d6119a0ead7f65fc2069eb5707ca1e635c44513050eeca3e18bfce953",
+    "destination_sha256": "72d9ef5d6119a0ead7f65fc2069eb5707ca1e635c44513050eeca3e18bfce953",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/podesavanje.html",
+    "operation": "added",
+    "source_sha256": "e6502eb1496285db9e7ca0b8556389a02d3a863823ab618abb57239842e8dba4",
+    "destination_sha256": "e6502eb1496285db9e7ca0b8556389a02d3a863823ab618abb57239842e8dba4",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/order_detail.html",
+    "operation": "added",
+    "source_sha256": "d1fa1e6fae6309434cc45934d16f33eef2516950b64a040c57d4151f20d9d670",
+    "destination_sha256": "d1fa1e6fae6309434cc45934d16f33eef2516950b64a040c57d4151f20d9d670",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/location_detail.html",
+    "operation": "added",
+    "source_sha256": "894a9c21a18b423ed113d645720f4370441c0365ddab859bbe96bd22db6ced28",
+    "destination_sha256": "894a9c21a18b423ed113d645720f4370441c0365ddab859bbe96bd22db6ced28",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/workspace.html",
+    "operation": "added",
+    "source_sha256": "093302fe596cfd2ec7d290678fffb861242df754735bed4b5936fde5722eeac9",
+    "destination_sha256": "093302fe596cfd2ec7d290678fffb861242df754735bed4b5936fde5722eeac9",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/empty.html",
+    "operation": "added",
+    "source_sha256": "f0665e254e0d096338d45facfe812ccd7b0a187eccb9b03aab945b7ff0d4ccb0",
+    "destination_sha256": "f0665e254e0d096338d45facfe812ccd7b0a187eccb9b03aab945b7ff0d4ccb0",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/wms/invoice_selection.html",
+    "operation": "added",
+    "source_sha256": "dd5e9922a53ba0b69913e8195b0d5c0695d119311accbd0603962e8a36cc2efb",
+    "destination_sha256": "dd5e9922a53ba0b69913e8195b0d5c0695d119311accbd0603962e8a36cc2efb",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/magacin/brzi_unos_novi.html",
+    "operation": "updated",
+    "source_sha256": "74ca4884eb36328ca8f7d54a9df3f68f978e128d07e8538df0ad8cee308a8232",
+    "destination_sha256": "74ca4884eb36328ca8f7d54a9df3f68f978e128d07e8538df0ad8cee308a8232",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/magacin/artikal.html",
+    "operation": "updated",
+    "source_sha256": "58d736588157ce7658413d9f0ee7007b85209dbb74336a90d9434a4d6be0bd0d",
+    "destination_sha256": "58d736588157ce7658413d9f0ee7007b85209dbb74336a90d9434a4d6be0bd0d",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/magacin/artikli.html",
+    "operation": "updated",
+    "source_sha256": "7845413cba1a421ede1f679ca19ac53ffb986081ef78e879f32cb395abd5a85a",
+    "destination_sha256": "7845413cba1a421ede1f679ca19ac53ffb986081ef78e879f32cb395abd5a85a",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/magacin/base.html",
+    "operation": "updated",
+    "source_sha256": "c45de7b5c3e75cc3e0d889a0bc53f1e55d6442046067b3bd00dc93a8d3dbec2c",
+    "destination_sha256": "c45de7b5c3e75cc3e0d889a0bc53f1e55d6442046067b3bd00dc93a8d3dbec2c",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/magacin/dupli_barkodovi.html",
+    "operation": "updated",
+    "source_sha256": "e2f85bb1fd559971aa7638bd7a8426e1926f7cb3f022914973c70d2caa1a4671",
+    "destination_sha256": "e2f85bb1fd559971aa7638bd7a8426e1926f7cb3f022914973c70d2caa1a4671",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/magacin/tool_lock.html",
+    "operation": "added",
+    "source_sha256": "b31e50cb4b4b466d617ae98de5341bc7b4b41bd56696d2e1b0792fc0170a5d7e",
+    "destination_sha256": "b31e50cb4b4b466d617ae98de5341bc7b4b41bd56696d2e1b0792fc0170a5d7e",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/magacin/module_locked.html",
+    "operation": "added",
+    "source_sha256": "a88c960b595dbc16235f8f0e211e812871b4c836912204e193a08791a452ac66",
+    "destination_sha256": "a88c960b595dbc16235f8f0e211e812871b4c836912204e193a08791a452ac66",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/magacin/narudzbe.html",
+    "operation": "updated",
+    "source_sha256": "dc4e89e19f7c903c01e78f14e150d7002f2d0317c2b492b7dbd1fd990f2e93e6",
+    "destination_sha256": "dc4e89e19f7c903c01e78f14e150d7002f2d0317c2b492b7dbd1fd990f2e93e6",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/staff/magacin/brzi_unos_aktivacija.html",
+    "operation": "updated",
+    "source_sha256": "a376c0eb498a05f18d2a4507a92d057c7d4b5cf4520d9311f8f508b17fb00aae",
+    "destination_sha256": "a376c0eb498a05f18d2a4507a92d057c7d4b5cf4520d9311f8f508b17fb00aae",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/admin/EcommerceApp/product/brzi_unos_aktivacija.html",
+    "operation": "updated",
+    "source_sha256": "2de20632a7b2b2d95b9e69b0bec6bfb0ca520cb5405aa68c4aa44dba24263a73",
+    "destination_sha256": "2de20632a7b2b2d95b9e69b0bec6bfb0ca520cb5405aa68c4aa44dba24263a73",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/admin/EcommerceApp/modulepermissions/change_form.html",
+    "operation": "added",
+    "source_sha256": "3bae8264427ea9249399a2df2be37115369d06786135e0ddbc292cb89a981c48",
+    "destination_sha256": "3bae8264427ea9249399a2df2be37115369d06786135e0ddbc292cb89a981c48",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/template/admin/EcommerceApp/banner/change_list.html",
+    "operation": "added",
+    "source_sha256": "d1b67e9db8d1afa1495f4970bf0d1eaf357cbcf8678d37a4bcf05a417fa0e060",
+    "destination_sha256": "d1b67e9db8d1afa1495f4970bf0d1eaf357cbcf8678d37a4bcf05a417fa0e060",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceProject/admin_apps.py",
+    "operation": "added",
+    "source_sha256": "5ca2e6272dd3f1117cba652833d00d96607d7342c1adaff28b102cc5e6d84b77",
+    "destination_sha256": "5ca2e6272dd3f1117cba652833d00d96607d7342c1adaff28b102cc5e6d84b77",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceProject/urls.py",
+    "operation": "updated",
+    "source_sha256": "0891f5d9046bebd445a45c81367064d3a1b289d20a9a8c3d5dc270a80bfc85e4",
+    "destination_sha256": "0891f5d9046bebd445a45c81367064d3a1b289d20a9a8c3d5dc270a80bfc85e4",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/templates/b2b/base.html",
+    "operation": "updated",
+    "source_sha256": "d372940c6ff49b7789c30de0b930d39de905883f735ec9c32f32c597da54dd15",
+    "destination_sha256": "d372940c6ff49b7789c30de0b930d39de905883f735ec9c32f32c597da54dd15",
+    "adapted": false
+  },
+  {
+    "path": "EcommerceApp/templates/b2b/category_tree.html",
+    "operation": "updated",
+    "source_sha256": "e24ffcf261653782118cbbb20bb0da221fc75078b4db43d8253e612d71d287bd",
+    "destination_sha256": "e24ffcf261653782118cbbb20bb0da221fc75078b4db43d8253e612d71d287bd",
+    "adapted": false
+  }
+]

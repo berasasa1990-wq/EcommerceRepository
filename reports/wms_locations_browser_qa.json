@@ -1,0 +1,16 @@
+[
+  {
+    "width": 1440,
+    "rows": 16,
+    "visible": 10,
+    "scrollable": true,
+    "search": true
+  },
+  {
+    "width": 390,
+    "rows": 16,
+    "visible": 10,
+    "scrollable": true,
+    "search": true
+  }
+]

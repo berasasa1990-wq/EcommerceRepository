@@ -1,0 +1,21 @@
+{% extends 'base.html' %}{% load static %}
+{% block page_title %}<title>{{ workspace_title }} — {{ shop_name }}</title>{% endblock %}
+{% block meta_robots %}<meta name="robots" content="noindex,nofollow">{% endblock %}
+{% block body_class %}staff-shell-page settings-workspace-page{% if workspace_group == 'Artikli' %} panel-articles-workspace{% endif %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/panel-settings-workspace.css' %}">{% endblock %}
+{% block content %}
+<section class="settings-workspace">
+<header class="settings-workspace__header"><h1>{{ workspace_title }}</h1></header>
+<div class="settings-workspace__layout">
+<aside class="settings-workspace__sidebar" aria-label="Sekcije: {{ workspace_title }}">
+<div class="settings-workspace__group">{{ workspace_group }}</div>
+{% for item in settings_navigation %}
+<div class="settings-workspace__row{% if item.key == selected_settings.key %} is-active{% endif %}" data-section="{{ item.key }}">
+<a href="{{ item.url }}" target="settings-content" class="settings-workspace__link" data-section-link>{{ item.label }}</a>
+{% if item.add_url %}<a href="{{ item.add_url }}" target="settings-content" class="settings-workspace__add" aria-label="Dodaj: {{ item.label }}"><span aria-hidden="true">✚</span> Add</a>{% endif %}
+</div>{% endfor %}
+</aside>
+<div class="settings-workspace__content"><iframe name="settings-content" id="settingsContent" src="{{ selected_settings.url }}" title="{{ selected_settings.label }}" data-workspace-url="{{ workspace_url }}"></iframe></div>
+</div></section>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'js/panel-settings-workspace.js' %}" defer></script>{% endblock %}

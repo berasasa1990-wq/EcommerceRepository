@@ -1,9 +1,12 @@
+from . import views_wms
+from . import panel_settings
 from . import views_monri
 from . import views_partner_stock
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from django.urls import reverse_lazy
 from django.views.decorators.cache import never_cache
+from django.views.generic import RedirectView
 
 from . import views
 from . import manual_order_drafts, data_history
@@ -90,7 +93,7 @@ urlpatterns = [
 
     path('priprema-pristup/', views_site_prep.site_prep_unlock, name='site_prep_unlock'),
     path(
-        f'{views.FACEBOOK_DOMAIN_VERIFICATION}.html',
+        f'{views.FACEBOOK_DOMAIN_VERIFICATION or "facebook-domain-verification"}.html',
         views.facebook_domain_verification,
         name='facebook_domain_verification',
     ),
@@ -165,7 +168,25 @@ urlpatterns = [
     ),
 
 
-    path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
+    path('panel/podesavanja/logo/', panel_settings.staff_settings_logo, name='staff_settings_logo'),
+    path('panel/podesavanja/sajt/', panel_settings.staff_site_settings, name='staff_site_settings'),
+    path('panel/podesavanja', panel_settings.staff_settings, name='staff_settings'),
+    path('panel/podesavanja/', panel_settings.staff_settings),
+    path('panel/podesavanja/pretraga/', panel_settings.staff_settings_lookup, name='staff_settings_lookup'),
+    path('panel/b2b', panel_settings.staff_b2b_workspace, name='staff_b2b_workspace'),
+    path('panel/b2b/', panel_settings.staff_b2b_workspace),
+    path('panel/loyalty', panel_settings.staff_loyalty_workspace, name='staff_loyalty_workspace'),
+    path('panel/loyalty/', panel_settings.staff_loyalty_workspace),
+    path('panel/wms', panel_settings.staff_wms_workspace, name='staff_wms_workspace'),
+    path('panel/wms/', panel_settings.staff_wms_workspace),
+    path('panel/greb-greb', panel_settings.staff_scratch_workspace, name='staff_scratch_workspace'),
+    path('panel/greb-greb/', panel_settings.staff_scratch_workspace),
+    path('panel/sekcija/<slug:section>/', panel_settings.staff_model_workspace, name='staff_model_workspace'),
+    # Preserve the destination project's existing staff entry URL and reverse name.
+    path('nalog/admin/', views.staff_panel, name='staff_admin_panel'),
+    path('panel/newsletter/', views.staff_newsletter, name='staff_newsletter'),
+    path('panel', views.staff_panel, name='staff_panel'),
+    path('panel/', views.staff_panel),
     path('nalog/b2b-live/', views.staff_b2b_live, name='staff_b2b_live'),
     path('nalog/edit-mode/', views.staff_toggle_edit_mode, name='staff_toggle_edit_mode'),
     path('nalog/site-edit/', views.staff_site_edit_save, name='staff_site_edit_save'),
@@ -173,20 +194,39 @@ urlpatterns = [
     path('nalog/artikli/ista-slika/', views.staff_same_image_products, name='staff_same_image_products'),
     path('nalog/aktiviraj-korisnika/', views.staff_activate_user, name='staff_activate_user'),
     path('nalog/aktivne-korpe/', views.staff_active_carts, name='staff_active_carts'),
+    path('wms/narudzbe/kreiraj/<str:tip>/', views_wms.create_order, name='staff_wms_create_order'),
+    path('wms/narudzbe/pregled/<int:pk>/', views_wms.order_detail, name='staff_wms_order'),
+    path('wms/narudzbe/<int:pk>/izmjena/', views_wms.edit_order, name='staff_wms_edit_order'),
+    path('wms/narudzbe/<int:pk>/pakovanje/', views_wms.pack_order, name='staff_wms_pack_order'),
+    path('wms/narudzbe/<int:pk>/odvajanje/', views_wms.pick_order, name='staff_wms_pick_order'),
+    path('wms/narudzbe/<int:pk>/vrati/', views_wms.restore_order, name='staff_wms_restore_order'),
+    path('wms/narudzbe/<int:pk>/otkazi/', views_wms.cancel_order, name='staff_wms_cancel_order'),
+    path('wms/lokacije/nedostaje/<int:pk>/', views_wms.resolve_shortage, name='staff_wms_resolve_shortage'),
+    path('wms/narudzbe/stampa/<str:kind>/', views_wms.print_orders, name='staff_wms_print_orders'),
+    path('wms/narudzbe/artikli/', views_wms.order_products, name='staff_wms_order_products'),
+    path('wms/narudzbe/kupci/', views_wms.order_customers, name='staff_wms_order_customers'),
+    path('wms/kupci/<int:pk>/<str:action>/', views_wms.manage_customer, name='staff_wms_manage_customer'),
+    path('wms/lokacije/<int:pk>/barkod/', views_wms.location_barcode_print, name='staff_wms_location_barcode'),
+    path('wms/lokacije/<int:pk>/', views_wms.location_detail, name='staff_wms_location'),
+    path('wms/podesavanje/magacin-import/', views_wms.magacin_import, name='staff_wms_magacin_import'),
+    path('wms/podesavanje/excel-import/', views_wms.excel_import, name='staff_wms_excel_import'),
+    path('wms/', views_wms.workspace, name='staff_wms'),
+    path('wms/<str:section>/', views_wms.workspace, name='staff_wms_section'),
     path('nalog/magacin/', views_magacin.magacin_home, name='staff_magacin'),
     path('nalog/magacin/pregled/', views_magacin.magacin_pregled, name='staff_magacin_pregled'),
     path('nalog/magacin/barkod-provjera/', views_magacin.magacin_barkod_provjera, name='staff_magacin_barkod_provjera'),
     path('nalog/magacin/dupli-barkodovi/<int:pk>/obrisi/', views_magacin.magacin_dupli_barkod_obrisi, name='staff_magacin_dupli_barkod_obrisi'),
     path('nalog/magacin/dupli-barkodovi/', views_magacin.magacin_dupli_barkodovi, name='staff_magacin_dupli_barkodovi'),
     path('nalog/magacin/artikli/', views_magacin.magacin_artikli, name='staff_magacin_artikli'),
-    path('nalog/magacin/artikli/brzi-unos/', views_magacin.magacin_brzi_unos, name='staff_magacin_brzi_unos'),
+    path('nalog/magacin/artikli/brzi-unos/novi/',
+         RedirectView.as_view(pattern_name='staff_magacin_brzi_unos_novi', query_string=True)),
     path(
-        'nalog/magacin/artikli/brzi-unos/novi/',
+        'nalog/magacin/artikli/novi/',
         views_magacin.magacin_brzi_unos_novi,
         name='staff_magacin_brzi_unos_novi',
     ),
     path(
-        'nalog/magacin/artikli/brzi-unos/<int:product_id>/',
+        'nalog/magacin/artikli/<int:product_id>/aktivacija/',
         views_magacin.magacin_brzi_unos_aktivacija,
         name='staff_magacin_brzi_unos_aktivacija',
     ),

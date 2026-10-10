@@ -101,7 +101,7 @@ def _fetch_lokacije() -> list:
 
 
 def _resolve_lokacija() -> str | None:
-    """rb iz GET /lokacije. 0 je validan (nalog 3425)."""
+    """rb iz GET /lokacije. 0 je validan za glavnu adresu."""
     raw = getattr(settings, 'XEXPRESS_LOKACIJA', None)
     configured = None
     if raw not in (None, ''):
@@ -388,7 +388,7 @@ def build_shipment_payload(order) -> dict:
         'uslugaSifra': 1,
         # 1 = pošiljalac. 2 = primalac. Skinuta poštarina: i dalje šaljemo, plaća pošiljalac.
         'obveznikPlacanja': _int_setting('XEXPRESS_OBVEZNIK_PLACANJA', 1),
-        # 0 = gotovina, 1 = banka, 9 = po računu. Nalog 3425: 1 (žiralno) vraća 420.
+        # 0 = gotovina, 1 = banka, 9 = po računu. Opcije zavise od ugovora klijenta.
         'nacinPlacanja': _int_setting('XEXPRESS_NACIN_PLACANJA', 0),
         'vrednostPosiljke': declared,
         'otkupnina': pouzece,

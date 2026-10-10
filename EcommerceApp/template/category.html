@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block storefront_theme %}<link rel="stylesheet" href="{% static 'css/bera-catalog.css' %}?v=20261008">{% endblock %}
 {% block body_class %}catalog-header-reference category-hide-search{% endblock %}
 
 {% block page_title %}

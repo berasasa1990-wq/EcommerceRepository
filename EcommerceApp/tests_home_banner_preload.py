@@ -73,6 +73,7 @@ class HomeBannerPreloadTests(SimpleTestCase):
         from .models import SiteSettings
         html = render_to_string('home.html', {
             'site_settings': SiteSettings(),
+            'media_origin': 'https://media.example',
             'lcp_image_url': '/desktop.jpg',
             'lcp_image_sizes': '100vw',
             'hero_slides': [{'has_mobile_image': True, 'has_video': False,
@@ -80,7 +81,7 @@ class HomeBannerPreloadTests(SimpleTestCase):
         })
         head = html.split('<head>', 1)[1].split('</head>', 1)[0]
         links = PreloadLinks(head).links
-        preconnect = {'rel': 'preconnect', 'href': 'https://media.opremazaribolov.ba'}
+        preconnect = {'rel': 'preconnect', 'href': 'https://media.example'}
         matching = [link for link in links if link.get('rel') == 'preconnect'
                     and link.get('href') == preconnect['href']]
         self.assertEqual(matching, [preconnect])
@@ -90,3 +91,12 @@ class HomeBannerPreloadTests(SimpleTestCase):
         self.assertEqual({link['href'] for link in hero_preloads}, {'/mobile.jpg', '/desktop.jpg'})
         for link in hero_preloads + [link for link in links if link.get('rel') == 'stylesheet']:
             self.assertLess(links.index(preconnect), links.index(link))
+
+    @override_settings(STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    })
+    def test_local_media_has_no_external_preconnect(self):
+        from .models import SiteSettings
+        html = render_to_string('home.html', {'site_settings': SiteSettings(), 'media_origin': ''})
+        self.assertFalse(any(link.get('rel') == 'preconnect' for link in PreloadLinks(html).links))

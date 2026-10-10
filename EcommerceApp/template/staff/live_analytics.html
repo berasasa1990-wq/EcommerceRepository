@@ -3,7 +3,7 @@
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {% block page_title %}
-<title>Live centar — opremazaribolov.ba</title>
+<title>Live centar — {{ public_site_url }}</title>
 {% endblock %}
 
 {% block body_class %}staff-shell-page{% endblock %}
@@ -55,7 +55,7 @@ body.staff-shell-page main .live-lite__body { width:100% !important; max-width:n
          data-poll-url="{% url 'staff_live_analytics_data' %}">
     <header class="staff-page-hero">
         <div class="staff-page-hero__inner">
-            <a href="{% url 'staff_admin_panel' %}" class="staff-page-back">← Nazad na Admin panel</a>
+            <a href="{% url 'staff_panel' %}" class="staff-page-back">← Nazad na Panel</a>
             <div class="live-lite-heading-row">
                 <p class="staff-page-kicker">Live</p>
                 <h1 class="staff-page-title">Live centar</h1>

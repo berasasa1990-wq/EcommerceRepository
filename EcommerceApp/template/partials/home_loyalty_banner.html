@@ -1,3 +1,6 @@
+{% load warehouse_access %}
+{% panel_tool_locked 'staff_loyalty_system' as loyalty_locked %}
+{% if not loyalty_locked %}
 {% if site_settings.loyalty_banner_desktop %}
 <section class="home-loyalty-banner home-loyalty-banner--uploaded home-desktop-banner-only home-featured-desktop-banner" aria-label="Loyalty Card">
     <a href="{% if site_settings.loyalty_banner_href %}{{ site_settings.loyalty_banner_href }}{% elif user.is_authenticated %}{% url 'account' %}{% else %}{% url 'register' %}{% endif %}">
@@ -11,4 +14,6 @@
         <img src="{{ site_settings.loyalty_banner_slika.url }}" alt="Loyalty Card" width="1080" height="1080" loading="lazy" decoding="async">
     </a>
 </section>
+{% endif %}
+
 {% endif %}

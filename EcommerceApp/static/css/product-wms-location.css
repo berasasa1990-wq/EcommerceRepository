@@ -1,0 +1,21 @@
+.product-wms-location-display{display:inline-block;padding:9px 14px;border:1px solid #cde6f8;border-radius:8px;background:#edf8ff;color:#007db7;font-weight:600}
+.product-wms-location-dialog{width:min(460px,calc(100vw - 32px));box-sizing:border-box;padding:26px;border:1px solid #cde6f8;border-radius:16px;background:#fff;color:#102343;box-shadow:0 24px 80px #052b4b40}
+.product-wms-location-dialog::backdrop{background:#071c3580;backdrop-filter:blur(4px)}
+.product-wms-location-dialog h2{background:none;color:#102343;padding:0;font-size:22px;line-height:1.4;margin:0 0 12px}
+.product-wms-location-dialog p{color:#54718a;font-size:14px;line-height:1.5}
+.product-wms-location-dialog label{display:block;margin:18px 0 8px;color:#335772}
+.product-wms-location-dialog select{width:100%;box-sizing:border-box;padding:12px;border:1px solid #cde6f8;border-radius:8px;background:#f8fcff;color:#102343}
+.product-wms-location-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+.product-wms-location-actions button{padding:11px 15px;border:1px solid #cde6f8;border-radius:8px;background:#edf7ff;color:#007db7;cursor:pointer}
+.product-wms-location-actions [data-confirm]{background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;border-color:#009bd0}
+.product-wms-location-actions [data-confirm]:hover{background:#0076ac}
+.product-wms-location-dialog .product-wms-location-error{color:#b3261e}
+.product-wms-quantity-add{display:inline-flex;align-items:center;justify-content:center;margin-left:10px;padding:9px 16px;border:1px solid #009bd0;border-radius:8px;background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;font-size:13px;cursor:pointer}.product-wms-quantity-add:hover{background:#0076ac;color:#fff}
+.product-wms-allocation-row{display:flex;gap:8px;align-items:center;margin:10px 0}.product-wms-allocation-row select{flex:1;min-width:0}.product-wms-allocation-row input{width:80px;padding:10px;border:1px solid #cde6f8;border-radius:8px}.product-wms-allocation-row button,.product-wms-location-dialog [data-add]{padding:10px;border:1px solid #cde6f8;border-radius:8px;background:#edf7ff;color:#007db7;cursor:pointer}
+.product-wms-stock-total{background:#edf7ff!important;color:#007db7!important;font-weight:700;cursor:default}.product-wms-add-fields{display:grid;grid-template-columns:100px minmax(0,1fr);gap:14px;align-items:end}.product-wms-add-fields label{margin:12px 0 0}.product-wms-add-fields input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #cde6f8;border-radius:8px;background:#f8fcff;color:#102343;margin-top:8px}.product-wms-add-fields select{margin-top:8px}.product-wms-location-actions [data-add]{background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;border-color:#009bd0}.product-wms-location-actions [data-add]:hover{background:#0076ac}.product-wms-location-dialog [data-success]{color:#007db7;background:#edf7ff;padding:10px;border-radius:8px}.product-wms-location-dialog [data-success]:empty{display:none}.product-wms-location-dialog [data-error]{color:#b3261e}
+/* Location is selected in the Add quantity dialog; omit the separate form row. */
+.form-row.field-wms_lokacija{display:none!important}
+.product-wms-stock-controls{display:inline-flex;gap:7px;white-space:nowrap}
+.product-wms-stock-square{display:inline-flex!important;align-items:center;justify-content:center;width:36px;height:36px;padding:0!important;border:1px solid #0089c2!important;border-radius:7px;background:linear-gradient(115deg,#00bddd,#007bb8)!important;color:#fff!important;font-size:25px!important;line-height:1;cursor:pointer}
+.product-wms-stock-square:hover{background:#0076ac!important;color:#fff!important}
+.product-wms-stock-square:focus-visible{outline:2px solid #006ca5;outline-offset:3px}

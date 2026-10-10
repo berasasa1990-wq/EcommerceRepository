@@ -1,3 +1,43 @@
+const categoryNav = document.querySelector('.category-nav');
+const categoryDesktop = window.matchMedia('(min-width: 901px)');
+const positionCategoryPanels = () => {
+  if (!categoryNav || !categoryDesktop.matches) return;
+  categoryNav.querySelectorAll('.category-branch[open]').forEach((branch) => {
+    const summary = branch.querySelector(':scope > summary');
+    const panel = branch.querySelector(':scope > .category-children');
+    const rect = summary.getBoundingClientRect();
+    panel.style.left = `${Math.min(rect.right + 6, window.innerWidth - panel.offsetWidth - 8)}px`;
+    panel.style.top = `${Math.max(8, Math.min(rect.top, window.innerHeight - panel.offsetHeight - 8))}px`;
+  });
+};
+categoryNav?.querySelectorAll('.category-branch').forEach((branch) => {
+  branch.addEventListener('toggle', () => {
+    if (branch.open) {
+      [...branch.parentElement.children].forEach((sibling) => {
+        if (sibling !== branch && sibling.matches('.category-branch')) sibling.open = false;
+      });
+    } else {
+      branch.querySelectorAll('.category-branch[open]').forEach((child) => { child.open = false; });
+    }
+    positionCategoryPanels();
+  });
+});
+const closeCategoryPanels = () => {
+  categoryNav?.querySelectorAll('.category-branch[open]').forEach((branch) => { branch.open = false; });
+};
+document.addEventListener('click', (event) => {
+  if (categoryDesktop.matches && categoryNav && !categoryNav.contains(event.target)) closeCategoryPanels();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && categoryNav?.querySelector('.category-branch[open]')) {
+    categoryNav.querySelector('.category-branch[open] > summary')?.focus();
+    closeCategoryPanels();
+  }
+});
+window.addEventListener('resize', positionCategoryPanels);
+document.addEventListener('scroll', positionCategoryPanels, true);
+positionCategoryPanels();
+
 document.querySelectorAll('[data-brand-scroll]').forEach((button) => {
   button.addEventListener('click', (event) => {
     event.preventDefault();

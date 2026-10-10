@@ -599,7 +599,7 @@ def request_access(request):
             ])
             try:
                 delivered = send_mail('Novi zahtjev za B2B pristup', body,
-                    settings.DEFAULT_FROM_EMAIL, ['narudzbe@opremazaribolov.ba'], fail_silently=False)
+                    settings.DEFAULT_FROM_EMAIL, [settings.ORDER_NOTIFICATION_EMAIL or settings.STORE_EMAIL or settings.DEFAULT_FROM_EMAIL], fail_silently=False)
                 if not delivered:
                     raise RuntimeError('Email backend did not accept the message')
             except Exception:

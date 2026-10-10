@@ -3,14 +3,14 @@
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {% block page_title %}
-<title>Uvoz — opremazaribolov.ba</title>
+<title>Uvoz — {{ public_site_url }}</title>
 {% endblock %}
 
 {% block content %}
 <section class="staff-uvoz-page">
     <header class="staff-uvoz-hero">
         <div class="staff-uvoz-hero__text">
-            <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Admin panel</a>
+            <a href="{% url 'staff_panel' %}" class="account-back-link">← Panel</a>
             <h1>Uvoz</h1>
             <p>
                 Import iz Excel uvoznice (Artikal, Kolicina, Mpc brutto…).

@@ -16,7 +16,7 @@ REMOTE = 'a9241b59-9e45-4840-9730-c93cb8ad9517'
 
 @override_settings(MUNGOS_ENABLED=True, MUNGOS_BASE_URL='https://staging.mungos.ba/api/v1/connector',
                    MUNGOS_API_KEY='private-api-secret', MUNGOS_ECOMMERCE_ACCESS_CODE='private-access-secret',
-                   SITE_URL='https://carpologijabh.ba')
+                   SITE_URL='https://shop.example')
 class BulkTests(TestCase):
     def setUp(self):
         self.category = Category.objects.create(naziv='Štapovi')

@@ -1,0 +1,23 @@
+
+<script>
+(function () {
+    const dialog = document.getElementById('vo-reward-dialog');
+    const content = document.getElementById('vo-reward-content');
+    document.querySelectorAll('[data-reward-template]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const template = document.getElementById(button.dataset.rewardTemplate);
+            content.replaceChildren(template.content.cloneNode(true));
+            dialog.showModal();
+        });
+    });
+    dialog.querySelector('.vo-reward-close').addEventListener('click', function () {
+        dialog.close();
+    });
+    dialog.addEventListener('click', function (event) {
+        if (event.target !== dialog) return;
+        const bounds = dialog.getBoundingClientRect();
+        if (event.clientX < bounds.left || event.clientX > bounds.right ||
+            event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
+    });
+})();
+</script>

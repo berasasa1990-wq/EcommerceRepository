@@ -51,7 +51,7 @@
 
             {% if site_settings.prikazi_newsletter %}
             <aside class="home-newsletter home-newsletter--image" aria-label="Prijavi se na naš newsletter">
-                <img class="home-newsletter__banner" src="{% static 'img/newsletter-banner-final.png' %}" width="2162" height="727" alt="Budi uvijek u toku. Prijavi se na naš newsletter za nove proizvode, akcije, savjete za ribolov i posebne ponude. Možeš se odjaviti u bilo kojem trenutku." loading="lazy" decoding="async">
+                <img class="home-newsletter__banner" src="{% if site_settings.newsletter_banner %}{{ site_settings.newsletter_banner.url }}{% else %}{% static 'img/newsletter-generic.svg' %}{% endif %}" width="2162" height="727" alt="Budi uvijek u toku. Prijavi se na naš newsletter za nove proizvode, akcije, savjete za ribolov i posebne ponude. Možeš se odjaviti u bilo kojem trenutku." loading="lazy" decoding="async">
                 <form class="home-newsletter__form" id="homeNewsletterForm" action="{% url 'newsletter_subscribe' %}" method="post" novalidate>
                     {% csrf_token %}
                     <label class="visually-hidden" for="homeNewsletterEmail">Tvoja email adresa</label>

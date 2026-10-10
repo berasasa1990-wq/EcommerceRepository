@@ -1,0 +1,13 @@
+{% extends 'staff/loyalty_workspace.html' %}
+{% block page_title %}<title>Sretni Greb-Greb — {{ shop_name }}</title>{% endblock %}
+{% block content %}
+<section class="loyalty-workspace">
+<h1>Sretni Greb-Greb</h1>
+<div class="loyalty-workspace__cards">
+<a href="{% url 'staff_model_workspace' 'scratchprize' %}" class="loyalty-workspace__card"><div><strong>Sretni Greb-Greb nagrade</strong><p>Pregled, dodavanje i uređivanje nagrada</p></div><span aria-hidden="true">→</span></a>
+{% if user.is_superuser %}
+<a href="{% url 'staff_scratch_analytics' %}" class="loyalty-workspace__card"><div><strong>Greb-Greb</strong><p>Prikazi kupcima, ogrebane nagrade i dodavanje u narudžbu</p></div><span aria-hidden="true">→</span></a>
+{% endif %}
+</div>
+</section>
+{% endblock %}

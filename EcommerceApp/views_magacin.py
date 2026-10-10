@@ -97,6 +97,7 @@ from .magacin import (
     maloprodaja_location_rows,
     missing_maloprodaja_rows,
     display_stock_totals,
+    stock_quantity_unknown,
     display_variant_stock_totals,
     countable_stock_qs,
     recorded_stock_qs,
@@ -423,8 +424,15 @@ def magacin_brzi_unos(request):
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
 def magacin_brzi_unos_novi(request):
-    """Novi artikal iz Brzog unosa. Obavezni su samo naziv i cijena."""
+    """Novi artikal iz Brzog unosa. Obavezni su naziv, cijena i način praćenja zaliha."""
     from .quick_activation import category_choices, create_and_activate_product, parse_price
+    from .quick_activation import resolve_tags
+    from .warehouse_product_form import WarehouseNewProductDetailsForm
+
+    details_data = request.POST.copy() if request.method == 'POST' else None
+    if details_data is not None and 'tip' not in details_data:
+        details_data['tip'] = '0'
+    details_form = WarehouseNewProductDetailsForm(details_data)
 
     brands = Brand.objects.order_by('naziv')
     categories = category_choices()
@@ -474,15 +482,27 @@ def magacin_brzi_unos_novi(request):
             if kategorija is None:
                 form_errors.append('Odabrana kategorija ne postoji.')
 
+        if not details_form.is_valid():
+            for name, errors in details_form.errors.items():
+                label = details_form.fields[name].label if name in details_form.fields else 'Artikal'
+                form_errors.extend(f'{label}: {error}' for error in errors)
+        if (cijena is not None and details_form.cleaned_data.get('akcijska_cijena') is not None
+                and details_form.cleaned_data['akcijska_cijena'] >= cijena):
+            form_errors.append('Akcijska cijena mora biti manja od redovne cijene.')
+
         if not form_errors and cijena is not None:
             try:
-                product = create_and_activate_product(
-                    naziv=naziv,
-                    cijena=cijena,
-                    sifra=form_data['sifra'],
-                    brend=brend,
-                    kategorija=kategorija,
-                )
+                with transaction.atomic():
+                    product = create_and_activate_product(
+                        naziv=naziv, cijena=cijena, sifra=form_data['sifra'], brend=brend, kategorija=kategorija,
+                    )
+                    for name in details_form.Meta.fields:
+                        setattr(product, name, details_form.cleaned_data.get(name))
+                    product.pracenje_zaliha = details_form.cleaned_data['rezim_zaliha'] == 'tracked'
+                    product.na_stanju = not product.pracenje_zaliha
+                    product.prioritet_lagera = details_form.cleaned_data['tip']
+                    product.save()
+                    product.tagovi.set(resolve_tags(details_form.cleaned_data['tagovi_unos']))
                 extra = []
                 if product.sifra:
                     extra.append(product.sifra)
@@ -500,7 +520,7 @@ def magacin_brzi_unos_novi(request):
                     request,
                     f'✓ Novi artikal „{product.naziv}” je {site_note} ({cijena} KM){note}.',
                 )
-                return redirect('staff_magacin_brzi_unos')
+                return redirect('staff_magacin_artikli')
             except ValueError as exc:
                 form_errors.append(str(exc))
             except Exception as exc:
@@ -508,7 +528,7 @@ def magacin_brzi_unos_novi(request):
                 form_errors.append(f'Artikal nije snimljen: {exc}')
 
     context = _magacin_context(
-        request, section='brzi_unos', page_title='Novi artikal — Brzi unos',
+        request, section='artikli', page_title='Novi artikal',
         hide_top_search=True,
     )
     context.update({
@@ -517,7 +537,8 @@ def magacin_brzi_unos_novi(request):
         'categories_json': categories,
         'form_data': form_data,
         'form_errors': form_errors,
-        'scan_url': reverse('staff_magacin_brzi_unos'),
+        'details_form': details_form,
+        'scan_url': reverse('staff_magacin_artikli'),
     })
     return render(request, 'staff/magacin/brzi_unos_novi.html', context)
 
@@ -544,7 +565,7 @@ def magacin_brzi_unos_aktivacija(request, product_id):
     )
     if product is None:
         messages.error(request, 'Artikal nije pronađen.')
-        return redirect('staff_magacin_brzi_unos')
+        return redirect('staff_magacin_artikli')
 
     post_action = (request.POST.get('action') or '').strip() if request.method == 'POST' else ''
     if request.method == 'POST' and post_action == 'off_stock':
@@ -560,7 +581,7 @@ def magacin_brzi_unos_aktivacija(request, product_id):
                 product_id,
             )
             messages.error(request, f'Skidanje sa stanja nije uspjelo: {exc}')
-        return redirect('staff_magacin_brzi_unos')
+        return redirect('staff_magacin_artikli')
 
     brands = Brand.objects.order_by('naziv')
     categories = category_choices()
@@ -758,7 +779,7 @@ def magacin_brzi_unos_aktivacija(request, product_id):
                                 f'Artikal je aktivan, ali OLX objava nije uspjela: {olx_exc}',
                             )
 
-                return redirect('staff_magacin_brzi_unos')
+                return redirect('staff_magacin_artikli')
             except Exception as exc:
                 logger.exception(
                     'Magacin brzi unos: aktivacija nije uspjela za product_id=%s',
@@ -807,7 +828,7 @@ def magacin_brzi_unos_aktivacija(request, product_id):
         'google_query': google_query,
         'chatgpt_url': chatgpt_url,
         'olx_configured': olx_configured,
-        'scan_url': reverse('staff_magacin_brzi_unos'),
+        'scan_url': reverse('staff_magacin_artikli'),
     })
     return render(request, 'staff/magacin/brzi_unos_aktivacija.html', context)
 
@@ -840,10 +861,8 @@ def magacin_artikli(request):
         'page': None,
         'result_count': 0,
         'magacin_notice': request.session.pop('magacin_page_notice', '') or '',
+        'include_zero': include_zero,
     })
-    if not searched:
-        return render(request, 'staff/magacin/artikli.html', context)
-
     # Non-exact searches already fall back to all stock states. Search once,
     # then preserve the original filter/redirect behavior without loading all rows.
     products, exact = search_products(query, limit=None, include_zero=True)
@@ -853,18 +872,20 @@ def magacin_artikli(request):
             include_zero = True
             context['include_zero'] = True
     unique = exact
-    if unique is None and request.GET.get('rezultati') != '1':
+    if searched and unique is None and request.GET.get('rezultati') != '1':
         # Only inspect two rows to decide whether to open a unique result.
         candidates = list(products[:2])
         if len(candidates) == 1:
             unique = candidates[0]
-    if unique is not None and request.GET.get('rezultati') != '1':
+    if searched and unique is not None and request.GET.get('rezultati') != '1':
         url = reverse('staff_magacin_artikal', args=[unique.pk])
         params = {'pretraga': query}
         if include_zero:
             params['bez_zalihe'] = '1'
         return redirect(f'{url}?{urlencode(params)}')
     qs = products
+    if not searched:
+        qs = qs.order_by('-kreiran', '-pk')
 
     paginator = Paginator(qs, 40)
     page = paginator.get_page(request.GET.get('page') or 1)
@@ -897,8 +918,11 @@ def magacin_artikli(request):
         }
         if product.is_set:
             totals = display_stock_totals(product)
+        elif product.pk not in totals_by_product:
+            totals = display_stock_totals(product)
         prices = [net_price(product, variant, discounts, divisors) for variant in list(product.varijacije.all()) or [None]]
-        rows.append({'product': product, **totals, 'locations': [],
+        rows.append({'product': product, **totals,
+                     'quantity_unknown': stock_quantity_unknown(product, totals), 'locations': [],
                      'vpc_netto': min(prices), 'vpc_netto_max': max(prices)})
     locs_by_product = {}
     if product_ids:
@@ -1137,6 +1161,7 @@ def magacin_artikal(request, pk):
         'location_rows': rows,
         'mp_location_rows': mp_rows,
         'totals': totals,
+        'quantity_unknown': stock_quantity_unknown(product, totals, variation),
         'locations': locations,
         'add_locations': add_locations,
         'movements': movements,
@@ -4355,7 +4380,7 @@ def _create_manual_order(request, *, existing=None):
         raise MagacinError('Ime i prezime su obavezni.')
     if not telefon:
         raise MagacinError('Telefon je obavezan.')
-    email = (request.POST.get('email') or '').strip() or 'carpologijabh@gmail.com'
+    email = (request.POST.get('email') or '').strip() or settings.STORE_EMAIL or settings.DEFAULT_FROM_EMAIL
     adresa = (request.POST.get('adresa') or '').strip() or 'Ručni unos'
     grad = (request.POST.get('grad') or '').strip() or '—'
     vp_kupac = _post_flag(request.POST, 'vp_kupac')
@@ -4364,7 +4389,7 @@ def _create_manual_order(request, *, existing=None):
         telefon=telefon,
         adresa=adresa,
         grad=grad,
-        email='' if email == 'carpologijabh@gmail.com' else email,
+        email='' if email == (settings.STORE_EMAIL or settings.DEFAULT_FROM_EMAIL) else email,
         postanski_broj=(request.POST.get('postanski_broj') or '').strip(),
         vp_kupac=vp_kupac,
     )

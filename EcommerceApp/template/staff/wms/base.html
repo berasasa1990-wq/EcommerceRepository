@@ -1,0 +1,34 @@
+{% extends 'base.html' %}{% load static %}
+{% block page_title %}<title>WMS Magacin — {{ wms_title }}</title>{% endblock %}
+{% block site_footer %}{% endblock %}
+{% block body_class %}wms-independent{% if wms_section == 'pakovanje' %} wms-picking-page{% endif %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bera-wms-independent.css' %}?v=20261010-wms-locations-scroll">{% endblock %}
+{% block content %}
+<div class="wms-layout{% if wms_section == 'pakovanje' %} wms-picking-layout{% endif %}">
+<aside class="wms-sidebar">
+<div class="wms-brand"><span class="wms-brand-icon">{% include 'staff/wms/icon.html' with key='magacin' %}</span><div><span class="wms-eyebrow">RADNI PROSTOR</span><h2>WMS Magacin</h2></div></div>
+<nav aria-label="WMS Magacin">{% for key,label in wms_sections %}{% if key != 'podesavanje' %}{% if key in wms_locked_sections %}<span class="wms-nav-locked" aria-disabled="true"><span class="wms-nav-icon">{% include 'staff/wms/icon.html' %}</span><span>{{ label }}</span><span aria-label="Zaključano">🔒</span></span>{% else %}<a href="{% url 'staff_wms_section' key %}" class="{% if wms_section == key %}is-active{% endif %}"{% if wms_section == key %} aria-current="page"{% endif %}><span class="wms-nav-icon">{% include 'staff/wms/icon.html' %}</span><span>{{ label }}</span>{% if key == 'pakovanje' and wms_pending_picking %}<span class="wms-transfer-count" aria-label="{{ wms_pending_picking }} narudžbi za odvajanje">{{ wms_pending_picking }}</span>{% endif %}{% if key == 'prenosnica' %}<span class="wms-transfer-count" aria-label="{{ wms_pending_transfers }} aktivnih prenosnica">{{ wms_pending_transfers }}</span>{% endif %}<span class="wms-nav-arrow" aria-hidden="true">›</span></a>{% endif %}{% endif %}{% endfor %}<a class="wms-panel-link" href="{% url 'staff_panel' %}"><span class="wms-nav-icon">{% include 'staff/wms/icon.html' with key='panel' %}</span><span>Nazad na panel</span></a><a class="wms-settings-link{% if wms_section == 'podesavanje' %} is-active{% endif %}" href="{% url 'staff_wms_section' 'podesavanje' %}"{% if wms_section == 'podesavanje' %} aria-current="page"{% endif %}><span class="wms-nav-icon">{% include 'staff/wms/icon.html' with key='podesavanje' %}</span><span>Podešavanje</span></a></nav>
+</aside>
+<section class="wms-content">{% block wms_content %}{% endblock %}</section>
+</div>
+<script>
+(() => {
+ const url = "{% if wms_section %}{% url 'staff_wms_section' wms_section %}{% else %}{% url 'staff_wms' %}{% endif %}";
+ let checking = false;
+ const check = async () => {
+  if (document.hidden || checking) return;
+  checking = true;
+  try {
+   const response = await fetch(url, {headers: {'X-WMS-Permissions': '1'}, credentials: 'same-origin', cache: 'no-store'});
+   if (response.ok) {
+    const state = await response.json();
+    if (state.redirect) window.location.replace(state.redirect);
+   }
+  } catch (_) {} finally { checking = false; }
+ };
+ window.setInterval(check, 5000);
+ document.addEventListener('visibilitychange', check);
+ window.addEventListener('focus', check);
+})();
+</script>
+{% endblock %}

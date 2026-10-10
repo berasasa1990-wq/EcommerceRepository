@@ -47,16 +47,23 @@ class RetiredFeaturesTests(TestCase):
                       OnlineGiftClaim, AIProdajaSettings, LiveVisitorOffer, AdvisorBeginnerFishType, AdvisorBeginnerSet]:
             self.assertNotIn(model, admin.site._registry)
 
-    def test_admin_panel_settings_and_promotions_still_render_without_retired_controls(self):
+    def test_panel_settings_and_promotions_still_render_without_retired_controls(self):
+        self.assertEqual(reverse('staff_panel'), '/panel')
+        guest = self.client.get('/panel')
+        self.assertEqual(guest.status_code, 302)
+        self.assertIn('next=/panel', guest.url)
         self.client.force_login(self.owner)
-        response = self.client.get(reverse('staff_admin_panel'))
+        response = self.client.get(reverse('staff_panel'))
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<h1 class="staff-page-title">Panel</h1>', html=True)
+        self.assertEqual(self.client.get('/panel/').status_code, 200)
+        self.assertEqual(self.client.get('/nalog/admin/').status_code, 404)
         self.assertNotContains(response, 'Pregled sajta')
-        response = self.client.get(reverse('admin:EcommerceApp_sitesettings_change', args=[self.settings.pk]))
+        response = self.client.get(reverse('staff_site_settings'))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'name="chat_sa_kupcem_aktivan"')
         self.assertNotContains(response, 'name="online_nagrada_bočni_aktivan"')
-        response = self.client.get(reverse('admin:EcommerceApp_akcija_add'))
+        response = self.client.get(reverse('panel_admin:EcommerceApp_akcija_add'))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'value="ai_prodaja"')
         self.assertNotContains(response, 'name="browse_interest_popup_aktivan"')

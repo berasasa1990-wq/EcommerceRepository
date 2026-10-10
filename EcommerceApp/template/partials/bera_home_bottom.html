@@ -1,0 +1,39 @@
+{% load static %}
+<div class="bera-home-bottom">
+    <a class="bera-wide-promo" href="{% if footer_promo_card %}{{ footer_promo_card.url|default:'/?akcija=1' }}{% else %}{{ site_settings.akcija_banner_href|default:'/?akcija=1' }}{% endif %}">
+        {% if footer_promo_card %}
+        {% include 'partials/banner_media.html' with card=footer_promo_card image_class='bera-wide-promo__art' video_class='bera-wide-promo__art' image_sizes='100vw' image_loading='lazy' %}
+        {% elif site_settings.akcija_banner_desktop %}
+        <img class="bera-wide-promo__art" src="{{ site_settings.akcija_banner_desktop.url }}" alt="Posebne ponude" loading="lazy">
+        {% else %}
+        <div class="bera-wide-promo__copy"><span>POSEBNE PONUDE</span><h2>SAMO ZA VAS</h2><p>Istražite najnovije akcije i uštedite.</p><span class="bera-offer-banner__button">Istraži akcije <b aria-hidden="true">→</b></span></div>
+        <div class="bera-wide-promo__waves" aria-hidden="true"></div>
+        <span class="bera-wide-promo__seal" aria-hidden="true">POSEBNE<br><b>CIJENE</b></span>
+        {% endif %}
+    </a>
+    {% if showcase_brands %}
+    <section class="bera-popular-brands" id="brendovi" aria-labelledby="beraBrandsTitle">
+        <h2 id="beraBrandsTitle">Popularni brendovi</h2>
+        <div class="bera-popular-brands__carousel">
+            <button class="bera-popular-brands__arrow" type="button" data-brand-direction="-1" aria-label="Prethodni brendovi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
+        <div class="bera-popular-brands__row" tabindex="0" aria-label="Popularni brendovi">{% for brand in showcase_brands %}<a href="{% url 'home' %}?brend={{ brand.slug }}" title="{{ brand.naziv }}"><img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" width="120" height="40" loading="lazy"></a>{% endfor %}</div>
+            <button class="bera-popular-brands__arrow" type="button" data-brand-direction="1" aria-label="Sljedeći brendovi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button>
+        </div>
+        <script src="{% static 'js/bera-brands.js' %}?v=20261008" defer></script>
+    </section>
+    {% endif %}
+    <section class="bera-bottom-benefits" aria-label="Pogodnosti kupovine">
+        <div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 4h13v13H1zM14 9h5l4 5v3h-9"/><circle cx="5" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></svg><p><strong>BRZA DOSTAVA</strong><span>Brzo i pouzdano</span></p></div>
+        <div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 4v6c0 5-4 8-9 10-5-2-9-5-9-10V6zM7 12l3 3 7-7"/></svg><p><strong>SIGURNA KUPOVINA</strong><span>Sigurno plaćanje</span></p></div>
+        <div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9a9 9 0 1 1-1 7M3 3v6h6M12 7v6l4 2"/></svg><p><strong>JEDNOSTAVAN POVRAT</strong><a href="{% url 'purchase_terms' %}">Uslovi povrata</a></p></div>
+        <div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 14v-3a9 9 0 0 1 18 0v3M21 18v2c0 2-4 2-7 2"/><rect x="1" y="12" width="5" height="8" rx="2"/><rect x="18" y="12" width="5" height="8" rx="2"/></svg><p><strong>PODRŠKA</strong><span>Uvijek dostupni</span></p></div>
+    </section>
+    <section class="bera-newsletter" aria-labelledby="beraNewsletterTitle">
+        <div><h2 id="beraNewsletterTitle">PRIJAVITE SE NA NEWSLETTER</h2><p>Budite prvi koji će saznati za nove proizvode, akcije i posebne ponude.</p></div>
+        <form id="footerNewsletterForm" action="{% url 'newsletter_subscribe' %}" method="post">{% csrf_token %}<label class="visually-hidden" for="footerNewsletterEmail">E-mail adresa</label><input id="footerNewsletterEmail" name="email" type="email" required autocomplete="email" placeholder="Unesite svoju email adresu..."><button type="submit">Prijavi se <span aria-hidden="true">→</span></button></form>
+        <svg class="bera-newsletter__art" viewBox="0 0 120 90" fill="none" aria-hidden="true"><path d="m10 38 50-30 50 30v48H10z" fill="#8bc5e7"/><path d="M26 12h68v58H26z" fill="#f5fbff"/><path d="M40 27h40M40 38h40M40 49h27" stroke="#91bad7" stroke-width="3"/><path d="m10 38 50 32 50-32v48H10z" fill="#b5d9ef"/><path d="m10 86 50-35 50 35" fill="#d8ecf8"/></svg>
+        <p id="footerNewsletterMsg" class="bera-newsletter__message" hidden role="status"></p>
+    </section>
+</div>
+
+<script src="{% static 'js/newsletter-subscribe.js' %}?v=20261010" defer></script>

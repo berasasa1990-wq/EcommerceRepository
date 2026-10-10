@@ -1,0 +1,13 @@
+{% extends 'staff/loyalty_workspace.html' %}
+{% block page_title %}<title>WMS — {{ shop_name }}</title>{% endblock %}
+{% block content %}
+<section class="loyalty-workspace">
+<h1>WMS</h1>
+<div class="loyalty-workspace__cards">
+<a href="{% url 'staff_magacin' %}" class="loyalty-workspace__card"><div><strong>Magacin</strong><p>Lager artikala, transferi i kretanja</p></div><span aria-hidden="true">→</span></a>
+{% for item in wms_sections %}
+<a href="{{ item.workspace_url }}" class="loyalty-workspace__card"><div><strong>{{ item.label }}</strong><p>Pregled, dodavanje i uređivanje</p></div><span aria-hidden="true">→</span></a>
+{% endfor %}
+</div>
+</section>
+{% endblock %}

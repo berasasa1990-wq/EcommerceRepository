@@ -30,10 +30,10 @@
         <p class="product-card__pack"{% if product.pakovanje_cijena_hint %} title="{{ product.pakovanje_cijena_hint }}"{% endif %}>{% if product.je_pakovanje %}{{ product.pakovanje_label|default:"Pakovanje" }}{% else %}&nbsp;{% endif %}</p>
         <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="hm-title" data-product-name{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>{{ product.naziv }}</a>
         {% include 'partials/product_staff_missing.html' with product=product %}
-        {% include 'partials/product_stock_label.html' with product=product %}
 
         <div class="hm-footer">
             <div class="hm-price-col">
+                {% include 'partials/product_stock_label.html' with product=product %}
                 <div class="hm-price" data-product-price>
                     {% if product.katalog_na_akciji %}
                     <span class="hm-price__old">{{ product.katalog_bazna_cijena }} KM</span>
@@ -42,7 +42,7 @@
                     <span class="hm-price__now">{{ product.katalog_prikazna_cijena }} KM</span>
                     {% endif %}
                 </div>
-
+                {% include 'partials/product_brand_logo.html' with brand=product.brend %}
             </div>
 
             {% if card_variations|length > 1 %}
@@ -71,8 +71,9 @@
                 {% endif %}
             >
                 <svg class="product-card-add-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="5" y="7" width="14" height="15" rx="2"/>
-                    <path d="M9 7V5a3 3 0 0 1 6 0v2"/>
+                    <path d="M2 3h3l2.4 11.4a2 2 0 0 0 2 1.6H18a2 2 0 0 0 2-1.6L22 7H6"/>
+                    <circle cx="10" cy="20" r="1"/>
+                    <circle cx="18" cy="20" r="1"/>
                 </svg>
                 <span>{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}</span>
             </button>

@@ -41,6 +41,13 @@ def _izracunaj_postotak_umanjenja(bazna_cijena, prikazna_cijena):
 
 
 class SiteSettings(models.Model):
+    newsletter_banner = models.ImageField(upload_to='site/', blank=True, verbose_name='Newsletter banner')
+    company_name = models.CharField(max_length=160, blank=True, verbose_name='Naziv firme')
+    company_address = models.CharField(max_length=240, blank=True, verbose_name='Adresa firme')
+    company_tax_id = models.CharField(max_length=80, blank=True, verbose_name='ID / PDV broj')
+    company_bank_account = models.CharField(max_length=120, blank=True, verbose_name='Transakcijski račun')
+    business_hours = models.TextField(blank=True, verbose_name='Radno vrijeme')
+
     class BojaMenija(models.TextChoices):
         BIJELA = 'white', 'Bijela'
         CRNA = 'black', 'Crna'
@@ -149,13 +156,13 @@ class SiteSettings(models.Model):
         verbose_name='Logo glavnog sajta',
         help_text=(
             'Prikazuje se u headeru ispod glavnog loga uz tekst „by” '
-            '(pod-sajt / Carpologija BH). Automatski se skalira na ~200×48px PNG.'
+            '(pod-sajt / Webshop). Automatski se skalira na ~200×48px PNG.'
         ),
     )
     logo_desno_kategorije = models.ImageField(
         upload_to='site/category-logos/', blank=True, null=True,
         verbose_name='Desni logo uz Sve kategorije',
-        help_text='Upload loga na krajnjoj desnoj strani reda kategorija. Preporuka: 1000 × 200 px (5:1), JPG ili PNG. Ako je prazno, prikazuje se priloženi Carpologija BH logo.',
+        help_text='Upload loga na krajnjoj desnoj strani reda kategorija. Preporuka: 1000 × 200 px (5:1), JPG ili PNG. Ako je prazno, prikazuje se priloženi Webshop logo.',
     )
     favicon = models.ImageField(
         upload_to='site/', blank=True, null=True,
@@ -470,7 +477,7 @@ class SiteSettings(models.Model):
     chat_pozdrav_poruka = models.TextField(
         blank=True,
         default=(
-            'Zdravo! 👋 Dobrodošli na opremazaribolov.ba.\n\n'
+            'Zdravo! 👋 Dobrodošli u naš webshop.\n\n'
             'Treba li vam pomoć ili preporuka pri kupovini?\n'
             'Pišite nam — tu smo da pomognemo.'
         ),
@@ -551,12 +558,12 @@ class SiteSettings(models.Model):
     )
     # —— SEO / Google (organizacija, verifikacija, društvene mreže) ——
     seo_organizacija_naziv = models.CharField(
-        max_length=120, blank=True, default='opremazaribolov.ba',
+        max_length=120, blank=True, default='Webshop',
         verbose_name='Naziv trgovine (schema.org)',
         help_text='Prikazuje se u Google Knowledge / Organization JSON-LD.',
     )
     seo_email = models.EmailField(
-        blank=True, default='opremazaribolov.ba@gmail.com',
+        blank=True, default='',
         verbose_name='SEO / kontakt email',
         help_text='Za schema.org ContactPoint (customer service).',
     )
@@ -571,7 +578,7 @@ class SiteSettings(models.Model):
         help_text='Dvoslovni kod za schema.org (BA = BiH).',
     )
     seo_facebook_url = models.URLField(
-        blank=True, default='https://www.facebook.com/opremazaribolov.ba',
+        blank=True, default='',
         verbose_name='Facebook URL',
         help_text='Puni link na Facebook stranicu (schema sameAs).',
     )
@@ -590,10 +597,10 @@ class SiteSettings(models.Model):
         ),
     )
     seo_title_suffix = models.CharField(
-        max_length=40, blank=True, default='opremazaribolov.ba',
+        max_length=40, blank=True, default='Webshop',
         verbose_name='Sufiks u title tagu',
         help_text=(
-            'Dodaje se na kraju title-a kad nije već unesen (npr. „Naziv artikla | opremazaribolov.ba”). '
+            'Dodaje se na kraju title-a kad nije već unesen (npr. „Naziv artikla | shop.example”). '
             'Prazno = bez sufiksa.'
         ),
     )
@@ -742,7 +749,7 @@ class SiteSettings(models.Model):
     kontakt_messenger = models.CharField(
         max_length=120, blank=True,
         verbose_name='Facebook Messenger',
-        help_text='Korisničko ime Facebook stranice za Messenger, npr. opremazaribolov.ba',
+        help_text='Korisničko ime Facebook stranice za Messenger, npr. shop.example',
     )
     # —— Kontakt dugmad (plutajuća) — koje prikazati + boje ——
     kontakt_prikazi_whatsapp = models.BooleanField(
@@ -839,6 +846,8 @@ class SiteSettings(models.Model):
             cache.delete('category_ids_with_products_v1')
             cache.delete('category_ids_with_products_v2')
             cache.delete('category_ids_with_products_v3')
+            cache.delete('seo_org_json_ld_webshop_v1')
+            cache.delete('seo_web_json_ld_webshop_v1')
             cache.delete('seo_org_json_ld_v1')
             cache.delete('seo_web_json_ld_v1')
             cache.delete('showcase_brands_v1')
@@ -1591,7 +1600,7 @@ class Banner(models.Model):
                     site_host = ''
                 local_hosts = {
                     'localhost', '127.0.0.1', '0.0.0.0',
-                    'www.opremazaribolov.ba', 'opremazaribolov.ba',
+
                 }
                 if site_host:
                     local_hosts.add(site_host)
@@ -1599,7 +1608,7 @@ class Banner(models.Model):
                         local_hosts.add(site_host[4:])
                     else:
                         local_hosts.add(f'www.{site_host}')
-                if host in local_hosts or host.endswith('.onrender.com'):
+                if host in local_hosts:
                     path = parsed.path or '/'
                     if parsed.query:
                         path = f'{path}?{parsed.query}'
@@ -1882,6 +1891,34 @@ class HomeNovoProduct(models.Model):
     class Meta:
         verbose_name = 'Novitet (početna)'
         verbose_name_plural = 'Noviteti na početnoj (ručno)'
+        ordering = ['redoslijed', 'id']
+
+    def __str__(self):
+        return self.artikal.naziv
+
+
+class HomeBestsellerProduct(models.Model):
+    """Ručno odabrani najprodavaniji proizvodi na početnoj."""
+    postavke = models.ForeignKey(
+        SiteSettings,
+        on_delete=models.CASCADE,
+        related_name='najprodavaniji_artikli',
+        default=1,
+        editable=False,
+    )
+    artikal = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='najprodavaniji_na_pocetnoj',
+        verbose_name='Postojeći artikal',
+        limit_choices_to={'aktivan': True},
+    )
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+
+    class Meta:
+        verbose_name = 'Najprodavaniji proizvod (početna)'
+        verbose_name_plural = 'Najprodavaniji proizvodi'
         ordering = ['redoslijed', 'id']
 
     def __str__(self):
@@ -2278,7 +2315,8 @@ class Akcija(models.Model):
 
     def jos_traje(self):
         """Akcija vrijedi dok je uključena u adminu (Aktivan = da)."""
-        return self.aktivan
+        from .panel_modules import module_locked
+        return self.aktivan and not module_locked('akcije')
 
     def je_popup(self):
         """Da li akcija ide u site-wide popup queue. Bundle se prikazuje na artiklu."""
@@ -3232,6 +3270,63 @@ def _build_unique_slug(model_cls, source_text, *, pk=None, max_length=SLUG_MAX_L
     return slug
 
 
+class ModulePermissions(models.Model):
+    wms_zalihe = models.BooleanField(default=True, verbose_name='Zalihe i Lokacije')
+    wms_lokacije = models.BooleanField(default=True, verbose_name='Lokacije')
+    wms_narudzbe = models.BooleanField(default=True, verbose_name='Narudžbe')
+    wms_pakovanje = models.BooleanField(default=True, verbose_name='Odvajanje robe')
+    wms_prenosnice = models.BooleanField(default=True, verbose_name='Prenosnice')
+    akcije = models.BooleanField(default=True, verbose_name='Akcije', help_text='Omogućava pristup Akcijama u panelu.')
+    banner_odrediste_filter = models.BooleanField(default=True,
+        verbose_name='Banner — Odredište i filter',
+        help_text='Zaključava odredište i filter bannera. Polje Link ostaje uvijek dostupno.')
+    b2b = models.BooleanField(default=True, verbose_name='B2B')
+    posjetioci_uzivo = models.BooleanField(default=True, verbose_name='Posjetioci uživo')
+    sretni_greb_greb = models.BooleanField(default=True, verbose_name='Sretni Greb-Greb')
+    stavke_aktivnih_korpi = models.BooleanField(default=True, verbose_name='Stavke aktivnih korpi')
+    loyalty = models.BooleanField(default=True, verbose_name='Loyalty')
+    poklon_vaucer = models.BooleanField(default=True, verbose_name='Poklon vaučer')
+    live_centar = models.BooleanField(default=True, verbose_name='Live centar')
+    uvoz = models.BooleanField(default=True, verbose_name='Uvoz')
+    provjera_lagera = models.BooleanField(default=True, verbose_name='Provjera lagera (Lokacije, Zalihe, Transferi)')
+    rezervni_dijelovi = models.BooleanField(default=True, verbose_name='Rezervni dijelovi')
+    stampa_cijena = models.BooleanField(default=True, verbose_name='Štampaj cijene')
+    stampa_deklaracije = models.BooleanField(default=True, verbose_name='Štampaj deklaracije')
+    dnevno_skidanje = models.BooleanField(default=True, verbose_name='Dnevno skidanje MP lagera')
+    dupli_barkodovi = models.BooleanField(default=True, verbose_name='Dupli barkodovi')
+    duguje_potrazuje = models.BooleanField(default=True, verbose_name='Duguje / Potražuje')
+    popis_robe = models.BooleanField(default=True, verbose_name='Popis robe')
+    fali_u_mp = models.BooleanField(default=True, verbose_name='Fali u MP-u')
+    nivelacije = models.BooleanField(default=True, verbose_name='Nivelacije')
+    kreiraj_ponudu = models.BooleanField(default=True, verbose_name='Kreiraj ponudu')
+    izvjestaji = models.BooleanField(default=True, verbose_name='Izvještaji')
+    artikli_u_setu = models.BooleanField(default=True, verbose_name='Artikli u setu',
+        help_text='Uključeno: dozvoljava pristup alatu Artikli u setu. Isključeno: alat je zaključan.')
+    pracenje_lagera = models.BooleanField(
+        default=True, verbose_name='Praćenje lagera (Dostupnost kol. na sajtu, Magacin: Artikli, Narudžbe, Picking, Kupci)',
+        help_text='Uključeno: dostupnost zavisi od količine. Isključeno: oznaka „Na stanju” mijenja se ručno.',
+    )
+
+    class Meta:
+        verbose_name = 'Moduli / Dozvole'
+        verbose_name_plural = 'Moduli / Dozvole'
+
+    def __str__(self):
+        return 'Moduli / Dozvole'
+
+    def save(self, *args, **kwargs):
+        from django.db import transaction
+        from .module_settings import apply_inventory_mode
+        self.pk = 1
+        with transaction.atomic():
+            previous = type(self).objects.filter(pk=1).values_list('wms_zalihe', flat=True).first()
+            super().save(*args, **kwargs)
+            if previous is None or previous != self.wms_zalihe:
+                apply_inventory_mode(self.wms_zalihe)
+            from .views import _invalidate_storefront_product_caches
+            transaction.on_commit(_invalidate_storefront_product_caches)
+
+
 class Product(models.Model):
     is_set = models.BooleanField(default=False, db_index=True, verbose_name="Artikal je set")
     naziv = models.CharField(max_length=200)
@@ -3246,8 +3341,13 @@ class Product(models.Model):
         help_text='Prikazuje se na stranici artikla.',
     )
     slika = models.ImageField(upload_to='products/', blank=True, null=True)
+    enabled_360 = models.BooleanField(default=False, verbose_name='Omogući 360° prikaz')
     na_stanju = models.BooleanField(default=True, verbose_name='Na stanju')
+    pracenje_zaliha = models.BooleanField(default=True, verbose_name='Praćenje zaliha',
+        help_text='Bez praćenja: dostupnost se uključuje i isključuje ručno, bez količina i lokacija.')
     stanje = models.PositiveIntegerField(default=0, verbose_name='Količina')
+    wms_lokacija = models.ForeignKey('WMSLocation', null=True, blank=True, on_delete=models.PROTECT, related_name='artikli', verbose_name='WMS lokacija')
+    modul_sakriven = models.BooleanField(default=False, editable=False, db_index=True)
     pakovanje_komada = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
@@ -3305,6 +3405,7 @@ class Product(models.Model):
         NORMAL = 0, 'Normalno'
         FAVORIZUJ = 1, 'Favorizuj'
         HIT = 2, 'Hit redukovanje lagera'
+        FORSIRAJ = 3, 'Forsiraj u pretrazi'
 
     prioritet_lagera = models.PositiveSmallIntegerField(
         choices=PrioritetLagera.choices,
@@ -3315,7 +3416,7 @@ class Product(models.Model):
             'Prioritet među relevantnim rezultatima (pretraga, kategorija, preporuke). '
             'Nikad ne gura nerelevantne artikle. '
             'Normalno = bez boosta; Favorizuj = blago; '
-            'Hit redukovanje lagera = maksimalni prioritet.'
+            'Hit redukovanje lagera = jak prioritet; Forsiraj = prvi među rezultatima pretrage.'
         ),
     )
     proizvedeno_u_japanu = models.BooleanField(
@@ -3411,6 +3512,16 @@ class Product(models.Model):
     def clean(self):
         super().clean()
         from .barcodes import validate_barcode
+        from .product_identifiers import _sifra_zauzeta, product_name_taken
+        from django.core.exceptions import ValidationError
+        errors = {}
+        if self._state.adding and product_name_taken(self.naziv):
+            errors['naziv'] = 'Artikal sa ovim nazivom već postoji. Unesite drugi naziv.'
+        previous_code = None if self._state.adding else Product.objects.filter(pk=self.pk).values_list('sifra', flat=True).first()
+        if self.sifra and (self._state.adding or previous_code != self.sifra) and _sifra_zauzeta(self.sifra, product_pk=self.pk):
+            errors['sifra'] = 'Ova šifra već postoji na artiklu ili varijaciji. Unesite drugu šifru.'
+        if errors:
+            raise ValidationError(errors)
         validate_barcode(self, self.barkod)
 
     def save(self, *args, **kwargs):
@@ -3419,6 +3530,16 @@ class Product(models.Model):
             return self._save_product(*args, **kwargs)
 
     def _save_product(self, *args, **kwargs):
+        previous_stock = type(self).objects.filter(pk=self.pk).values_list('na_stanju', flat=True).first() if self.pk else None
+        from .module_settings import inventory_mode
+        mode = inventory_mode()
+        if mode is not None:
+            self.pracenje_zaliha = mode
+            self.modul_sakriven = False
+            if mode:
+                self.na_stanju = self.stanje > 0
+            if kwargs.get('update_fields') is not None:
+                kwargs['update_fields'] = set(kwargs['update_fields']) | {'pracenje_zaliha', 'modul_sakriven', 'na_stanju'}
         if not self.slug:
             self.slug = _build_unique_slug(
                 Product,
@@ -3454,6 +3575,11 @@ class Product(models.Model):
         if self.search_document is None:
             self.search_document = ''
         super().save(*args, **kwargs)
+        if previous_stock is False and self.na_stanju:
+            from django.db import transaction
+            from .stock_notify import notify_back_in_stock
+            product_id = self.pk
+            transaction.on_commit(lambda: notify_back_in_stock(product_id))
 
     @property
     def na_akciji(self):
@@ -5272,7 +5398,7 @@ class LiveVisitorOffer(models.Model):
 
     class Tip(models.TextChoices):
         ARTIKAL = 'artikal', 'Artikal'
-        NARUDZBA = 'narudzba', 'Popust na narudžbu' 
+        NARUDZBA = 'narudzba', 'Popust na narudžbu'
         REGISTRACIJA = 'registracija', 'Registracija'
 
     session_key = models.CharField(max_length=40, db_index=True, verbose_name='Sesija')
@@ -7232,3 +7358,138 @@ class CardPayment(models.Model):
     transaction_id = models.CharField(max_length=64, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class WMSLocation(models.Model):
+    @property
+    def barkod(self):
+        return f'WMSLOC{self.pk:06d}' if self.pk else ''
+
+    def __str__(self):
+        return self.naziv
+
+    naziv = models.CharField(max_length=120, unique=True)
+    opis = models.CharField(max_length=240, blank=True)
+
+    class Meta:
+        ordering = ['naziv']
+
+
+class WMSStock(models.Model):
+    sifra = models.CharField(max_length=80)
+    naziv = models.CharField(max_length=240)
+    lokacija = models.ForeignKey(WMSLocation, on_delete=models.PROTECT, related_name='zalihe')
+    kolicina = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['naziv', 'sifra']
+        constraints = [models.UniqueConstraint(fields=['sifra', 'lokacija'], name='wms_stock_sifra_location')]
+
+
+class WMSOrder(models.Model):
+    customer = models.ForeignKey('WMSCustomer', null=True, blank=True, on_delete=models.SET_NULL)
+    grad = models.CharField(max_length=100, blank=True)
+    postanski_broj = models.CharField(max_length=20, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    source_order = models.OneToOneField(Order, null=True, blank=True, on_delete=models.PROTECT, related_name="wms_order")
+    cancellation_reason = models.TextField(blank=True, verbose_name="Razlog otkazivanja")
+    @property
+    def display_number(self):
+        return f"{self.pk:04d}"
+
+    tip = models.CharField(max_length=12, choices=[('vp', 'Veleprodaja'), ('online', 'Online slanje')])
+    kupac = models.CharField(max_length=240)
+    email = models.EmailField(blank=True)
+    telefon = models.CharField(max_length=60, blank=True)
+    adresa = models.CharField(max_length=300, blank=True)
+    napomena = models.TextField(blank=True)
+    status = models.CharField(max_length=12, default='nova', choices=[('nova', 'Nova narudžba'), ('pakovanje', 'Odvajanje robe'), ('zapakovana', 'Završena'), ('otkazana', 'Otkazana')])
+    kreirana = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-kreirana']
+
+
+class ProductWMSStock(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='wms_zalihe')
+    lokacija = models.ForeignKey(WMSLocation, on_delete=models.PROTECT, related_name='stanje_artikala')
+    kolicina = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['product', 'lokacija'], name='product_wms_unique_location')]
+
+
+class Product360Image(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images_360')
+    image = models.ImageField(upload_to='products/360/')
+    position = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['position']
+        constraints = [models.UniqueConstraint(fields=['product', 'position'], name='product360_unique_position')]
+
+
+class WMSSettings(models.Model):
+    vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('17.00'), verbose_name='PDV (%)', validators=[MinValueValidator(0), MaxValueValidator(100)])
+    picking_last_location = models.ForeignKey(WMSLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', verbose_name='Lokacija koja se posljednja nudi za odvajanje')
+    show_storefront_availability = models.BooleanField(default=True, verbose_name="Prikaz dostupnosti artikala na sajtu")
+    transfer_location = models.ForeignKey(WMSLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', verbose_name='Lokacija za prenos iz Zaliha')
+
+
+class WMSTransfer(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='wms_transfers')
+    source = models.ForeignKey(WMSLocation, on_delete=models.PROTECT, related_name='outgoing_transfers')
+    destination = models.ForeignKey(WMSLocation, on_delete=models.PROTECT, related_name='incoming_transfers')
+    quantity = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+        constraints = [models.CheckConstraint(condition=models.Q(quantity__gt=0), name='wms_transfer_positive_quantity')]
+
+
+class WMSPickLine(models.Model):
+    shortage_resolution = models.CharField(max_length=10, blank=True, choices=[('clear', 'Očišćeno'), ('keep', 'Ostavljeno')])
+    shortage_resolved_at = models.DateTimeField(null=True, blank=True)
+    order = models.ForeignKey(WMSOrder, on_delete=models.CASCADE, related_name='pick_lines')
+    item = models.ForeignKey(OrderItem, null=True, blank=True, on_delete=models.PROTECT)
+    wms_item = models.ForeignKey('WMSOrderItem', null=True, blank=True, on_delete=models.PROTECT)
+
+    @property
+    def picking_item(self):
+        return self.item if self.item_id else self.wms_item
+
+    location = models.ForeignKey(WMSLocation, on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField()
+    confirmed_quantity = models.PositiveIntegerField(default=0)
+    photo = models.ImageField(upload_to='wms/picking/%Y/%m/', blank=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['pk']
+        constraints = [models.UniqueConstraint(fields=['order', 'item', 'location'], name='wms_pick_item_location_unique')]
+
+
+class WMSOrderItem(models.Model):
+    order = models.ForeignKey(WMSOrder, on_delete=models.CASCADE, related_name='items')
+    artikal = models.ForeignKey(Product, null=True, on_delete=models.SET_NULL)
+    naziv = models.CharField(max_length=200)
+    sifra = models.CharField(max_length=100, blank=True)
+    kolicina = models.PositiveIntegerField()
+    bazna_cijena = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    cijena = models.DecimalField(max_digits=10, decimal_places=2)
+    popust = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+
+class WMSCustomer(models.Model):
+    is_deleted = models.BooleanField(default=False)
+    ime_prezime = models.CharField(max_length=240)
+    telefon = models.CharField(max_length=60)
+    adresa = models.CharField(max_length=300)
+    grad = models.CharField(max_length=100)
+    postanski_broj = models.CharField(max_length=20)
+
+    class Meta:
+        ordering = ['ime_prezime', 'pk']

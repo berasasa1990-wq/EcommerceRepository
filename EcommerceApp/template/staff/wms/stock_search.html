@@ -1,0 +1,58 @@
+{% extends 'staff/wms/base.html' %}
+{% block wms_content %}
+<header class="wms-page-heading"><h1>Zalihe</h1></header>
+<form method="get" class="wms-card wms-stock-search" role="search">
+<label for="wmsStockQuery">Pretraga artikala</label>
+<div><input id="wmsStockQuery" type="search" name="q" value="{{ query }}" placeholder="Naziv, šifra ili barkod artikla" autofocus><button class="wms-button" type="submit">Pretraži</button></div>
+</form>
+{% if search_submitted %}
+<div class="wms-results-heading"><div><h2>Rezultati pretrage</h2><p>{% if query %}Za „{{ query }}“{% else %}Svi artikli{% endif %}</p></div><span class="wms-results-count">{{ products.paginator.count }} artikala</span></div>
+<div class="wms-stock-results">
+{% for product in products %}
+<article class="wms-stock-result">
+<div class="wms-stock-result-image">{% if product.prikazna_slika %}<img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" loading="lazy">{% else %}{% include 'staff/wms/icon.html' with key='pakovanje' %}{% endif %}</div>
+<div class="wms-stock-result-info"><h3>{{ product.naziv }}</h3><div class="wms-stock-result-codes"><span>Šifra <strong>{{ product.sifra|default:'—' }}</strong></span><span>Barkod <strong>{{ product.barkod|default:'—' }}</strong></span></div></div>
+{% if product.stanje <= 1 or not wms_locations_enabled %}
+<div class="wms-stock-result-quantity{% if not product.stanje %} is-empty{% endif %}"><span>Količina</span><strong>{{ product.stanje }} <small>kom</small></strong></div>
+{% else %}
+<button type="button" class="wms-stock-result-quantity{% if not product.stanje %} is-empty{% endif %}" data-stock-location="wmsStockLocation{{ product.pk }}" aria-haspopup="dialog" aria-label="Prikaži lokaciju artikla {{ product.naziv }}"><span>Količina</span><strong>{{ product.stanje }} <small>kom</small></strong></button>
+{% endif %}
+{% if wms_locations_enabled %}<template id="wmsStockLocation{{ product.pk }}">
+{% for stock in product.wms_zalihe.all %}{% include 'staff/wms/location_transfer_row.html' with source_location=stock.lokacija source_location_id=stock.lokacija_id stock_id=stock.pk %}{% empty %}{% include 'staff/wms/location_transfer_row.html' with source_location=product.wms_lokacija source_location_id=product.wms_lokacija_id stock_id='' %}{% endfor %}
+</template>{% endif %}
+</article>
+{% empty %}<div class="wms-stock-empty"><span class="wms-empty-icon">{% include 'staff/wms/icon.html' with key='zalihe' %}</span><h3>Nema artikala za unesenu pretragu.</h3><p>Pokušajte s drugim nazivom, šifrom ili barkodom.</p></div>{% endfor %}
+</div>
+{% if products.has_other_pages %}<nav class="wms-type-options" aria-label="Stranice rezultata">{% if products.has_previous %}<a class="wms-button" href="?q={{ query|urlencode }}&amp;page={{ products.previous_page_number }}">← Prethodna</a>{% endif %}<span>{{ products.number }} / {{ products.paginator.num_pages }}</span>{% if products.has_next %}<a class="wms-button" href="?q={{ query|urlencode }}&amp;page={{ products.next_page_number }}">Sljedeća →</a>{% endif %}</nav>{% endif %}
+{% endif %}
+<dialog id="wmsStockLocationDialog" class="wms-card wms-stock-location-dialog" aria-labelledby="wmsLocationTitle"><header><h2 id="wmsLocationTitle">Lokacija zalihe</h2><form method="dialog"><button class="wms-close" aria-label="Zatvori">×</button></form></header><div id="wmsStockLocationContent"></div></dialog>
+{% endblock %}
+{% block extra_js %}<script>
+(() => {
+ const dialog = document.getElementById('wmsStockLocationDialog');
+ const content = document.getElementById('wmsStockLocationContent');
+ document.querySelectorAll('[data-stock-location]').forEach(button => button.addEventListener('click', () => {
+  content.replaceChildren(document.getElementById(button.dataset.stockLocation).content.cloneNode(true));
+  dialog.showModal();
+ }));
+ content.addEventListener('click', event => {
+  const button = event.target.closest('.wms-transfer-toggle');
+  if (!button) return;
+  const row = button.closest('.wms-stock-location-row');
+  const form = row.nextElementSibling;
+  const opening = form.hidden;
+  content.querySelectorAll('.wms-stock-location-row').forEach(other => {
+   other.hidden = opening && other !== row;
+   const otherForm = other.nextElementSibling;
+   if (otherForm?.matches('.wms-transfer-form')) otherForm.hidden = other !== row || !opening;
+   other.querySelector('.wms-transfer-toggle')?.setAttribute('aria-expanded', String(other === row && opening));
+  });
+  if (opening) form.querySelector('input[name=quantity]')?.focus();
+ });
+ dialog.addEventListener('click', event => {
+  if (event.target !== dialog) return;
+  const bounds = dialog.getBoundingClientRect();
+  if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
+ });
+})();
+</script>{% endblock %}

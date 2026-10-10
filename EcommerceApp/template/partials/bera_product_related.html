@@ -1,0 +1,18 @@
+{% if related_products %}
+<section class="bera-product-related" aria-label="Slični proizvodi">
+  <div class="bera-product-related-heading"><h2>Slični proizvodi</h2>{% if product.kategorija %}<a href="{{ product.kategorija.get_absolute_url }}">Pogledaj sve →</a>{% endif %}</div>
+  <div class="bera-related-grid">
+    {% for item in related_products|slice:':3' %}
+    <article class="bera-related-card">
+      <button type="button" class="home-card-heart bera-related-heart" data-favorite-id="{{ item.pk }}" aria-label="Dodaj u listu želja — {{ item.naziv }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></button>
+      <a class="bera-related-image" href="{{ item.get_absolute_url }}" aria-label="{{ item.naziv }}">
+        {% if item.prikazna_slika %}{% with img=item.prikazna_slika_responsive %}<img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} sizes="(max-width: 1024px) 40vw, 180px" width="180" height="160" alt="{{ item.naziv }}" loading="lazy" decoding="async">{% endwith %}{% else %}<svg class="bera-related-placeholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 18 6-6 4 4 4-6 4 8"/></svg>{% endif %}
+      </a>
+      <a class="bera-related-name" href="{{ item.get_absolute_url }}">{{ item.naziv }}</a>
+      <div class="bera-related-price"><strong>{{ item.katalog_prikazna_cijena|floatformat:2 }} KM</strong>{% if item.na_akciji %}<del>{{ item.katalog_bazna_cijena|floatformat:2 }} KM</del>{% endif %}</div>
+      {% include 'partials/product_brand_logo.html' with brand=item.brend %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}

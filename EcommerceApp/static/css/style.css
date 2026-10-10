@@ -546,7 +546,7 @@ body.search-suggest-open .header-float-ctas {
     background: transparent;
 }
 
-/* Kad postoji „by Carpologija” red, logo ostavlja mjesta ispod */
+/* Kad postoji „by Webshop” red, logo ostavlja mjesta ispod */
 .logo-brand:has(.logo-byline) .logo-image {
     height: calc(var(--header-top-height) - 24px);
     max-height: calc(var(--header-top-height) - 24px);

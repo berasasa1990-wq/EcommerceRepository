@@ -1,0 +1,29 @@
+/* Shared storefront colours for the order workspaces. */
+body.magacin-page.is-orders-reference{--ord-metal:#f1f8ff;--ord-panel:#fff;--ord-edge:#dcebf7;--ord-bevel:none;background:#f5faff!important}
+body.magacin-page.is-orders-reference :is(.mg-app,.mg-main){background:#f5faff;color:#102343}
+body.magacin-page.is-orders-reference :is(.mg-chrome,.mg-page-head,.mg-card,.mg-orders-panel){background:#fff;border:1px solid #dcebf7;border-radius:14px;box-shadow:0 4px 18px #06558208}
+body.magacin-page.is-orders-reference .mg-page-head h1{color:#102343}
+body.magacin-page.is-orders-reference .mg-orders-page :is(.mg-btn,.mg-filter-tabs a,.mg-btn-pill){background:#edf7ff;border:1px solid #cde6f8;border-radius:9px;box-shadow:none;color:#006da9}
+body.magacin-page.is-orders-reference .mg-orders-page :is(.mg-btn-primary,.mg-toolbar-actions .mg-btn-primary,.mg-orders-find .mg-btn-primary,.mg-filter-tabs a.is-active){background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;border-color:#009bd0;box-shadow:none}
+body.magacin-page.is-orders-reference .mg-orders-page :is(.mg-btn,.mg-filter-tabs a,.mg-btn-pill):hover{background:#dcefff;color:#00669a}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-btn-primary:hover{background:#007db8;color:#fff}
+body.magacin-page.is-orders-reference .mg-table{background:#fff;border-color:#dcebf7;color:#102343}
+body.magacin-page.is-orders-reference .mg-table th{background:#edf6ff;color:#335772;border-color:#dcebf7}
+body.magacin-page.is-orders-reference .mg-table td{border-color:#e4eef7}
+body.magacin-page.is-orders-reference .mg-table tr.is-clickable:hover td{background:#f0f9ff}
+body.magacin-page.is-orders-reference .mg-orders-page input{border:1px solid #cde3f4;border-radius:9px;background:#f8fcff;color:#102343}
+.staff-online-orders-page{max-width:1440px;margin:24px auto;padding:24px;color:#102343;background:#f5faff;border-radius:18px;box-sizing:border-box}
+.staff-online-orders-page h1{color:#102343;font-size:30px}
+.staff-online-orders-page :is(.staff-orders-subtitle,.staff-online-order-meta){color:#54718a}
+.staff-online-orders-page :is(.staff-orders-search-row,.staff-online-orders-filter,.staff-online-order-actions){display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.staff-online-orders-page input[type=search]{flex:1;min-width:180px;padding:12px 16px;border:1px solid #d5e7f5;border-radius:10px;background:#fff}
+.staff-online-orders-page :is(.btn,.staff-filter-btn){display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border:1px solid #cde5f6;border-radius:9px;background:#eaf6ff;color:#0077b6;text-decoration:none;box-shadow:none}
+.staff-online-orders-page :is(.btn-primary,.staff-filter-btn.is-active,.staff-order-preview-btn){background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;border-color:#009bd0}
+.staff-online-orders-page :is(.btn,.staff-filter-btn):hover{background:#007db8;color:#fff}
+.staff-online-orders-filter{margin:18px 0}
+.staff-online-order-row{display:flex;justify-content:space-between;align-items:center;gap:20px;background:#fff;border:1px solid #dcebf7;border-radius:13px;margin:12px 0;padding:20px;box-shadow:0 4px 18px #06558208}
+.staff-online-order-main{display:grid;gap:8px;min-width:0}
+.staff-online-order-number{font-weight:800;color:#007bb8}
+.staff-online-order-meta{display:flex;gap:14px;flex-wrap:wrap;overflow-wrap:anywhere}
+.staff-online-order-amount{color:#008bc3;font-weight:800;font-size:20px}
+@media(max-width:700px){.staff-online-orders-page{padding:14px;margin:12px}.staff-online-order-row{align-items:stretch;flex-direction:column;padding:16px}.staff-online-order-actions .btn{flex:1}}

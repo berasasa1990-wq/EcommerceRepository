@@ -2739,7 +2739,11 @@ function initOrderBulkPrint() {
     });
     form.querySelectorAll('tr[data-order-url]').forEach(function (row) {
         row.addEventListener('click', function () {
-            window.location.href = row.getAttribute('data-order-url');
+            if (row.hasAttribute('data-order-new-window')) {
+                window.open(row.getAttribute('data-order-url'), '_blank', 'noopener');
+            } else {
+                window.location.href = row.getAttribute('data-order-url');
+            }
         });
     });
     sync();

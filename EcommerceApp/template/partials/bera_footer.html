@@ -1,0 +1,11 @@
+{% load static %}
+<footer class="bera-footer">
+    <div class="bera-footer__grid">
+        <div class="bera-footer__brand" id="footerContact"><a href="{% url 'home' %}" aria-label="{{ shop_name }}">{% if site_settings.logo %}<img src="{{ site_settings.logo.url }}" alt="{{ shop_name }}" width="150" height="60" loading="lazy">{% else %}<strong>{{ shop_name }}</strong>{% endif %}</a><p>Kvalitet, sigurnost i podrška.<br>Vaša online trgovina.</p><a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a><div class="bera-footer__social">{% if facebook_url %}<a href="{{ facebook_url }}" aria-label="Facebook" target="_blank" rel="noopener">f</a>{% endif %}{% if instagram_url %}<a href="{{ instagram_url }}" aria-label="Instagram" target="_blank" rel="noopener">◎</a>{% endif %}</div></div>
+        <div><h3>Korisnički servis</h3><a href="{% url 'about_us' %}#kontakt">Kontakt</a><a href="{% url 'purchase_terms' %}">Dostava</a><a href="{% url 'purchase_terms' %}">Povrat i reklamacije</a>{% if contact_phone %}<a href="tel:{{ contact_phone }}">{{ contact_phone }}</a>{% endif %}</div>
+        <div><h3>Informacije</h3><a href="{% url 'about_us' %}">O nama</a><a href="{% url 'purchase_terms' %}">Uslovi kupovine</a><a href="{% url 'privacy_statement' %}">Politika privatnosti</a><a href="{% url 'vlog_list' %}">Blog</a></div>
+        <div><h3>Moj nalog</h3><a href="{% url 'login' %}">Prijava</a><a href="{% url 'register' %}">Registracija</a><a href="{% url 'wishlist' %}">Lista želja</a><a href="{% url 'account' %}">Moje narudžbe</a></div>
+        <div class="bera-footer__payments"><h3>Načini plaćanja</h3><a href="{% url 'payment_methods' %}" class="bera-footer__payment-row"><span>VISA</span><img src="{% static 'img/payments/mastercard.png' %}" alt="Mastercard" width="65" height="38" loading="lazy"><span class="bera-footer__cash">▣ Pouzećem</span></a><a href="{% url 'payment_security' %}">Sigurnost plaćanja</a></div>
+    </div>
+    <div class="bera-footer__bottom">© {% now 'Y' %} {{ shop_name }}</div>
+</footer>

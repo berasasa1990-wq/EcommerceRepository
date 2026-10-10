@@ -1,0 +1,12 @@
+{% extends 'staff/wms/base.html' %}
+{% block wms_content %}
+<header class="wms-page-heading"><h1>{% if delete_customer %}Obriši kupca{% else %}Izmjena kupca{% endif %}</h1></header>
+<div class="wms-card">
+{% if delete_customer %}
+<p>Želite li obrisati kupca <strong>{{ customer.ime_prezime }}</strong>?</p>
+<form method="post">{% csrf_token %}<button class="wms-button wms-cancel-submit" type="submit">Obriši kupca</button> <a class="wms-close" href="{% url 'staff_wms_section' 'kupci' %}">Odustani</a></form>
+{% else %}
+<form method="post" class="wms-form">{% csrf_token %}{{ form.as_p }}<div><button class="wms-button" type="submit">Sačuvaj</button> <a class="wms-close" href="{% url 'staff_wms_section' 'kupci' %}">Odustani</a></div></form>
+{% endif %}
+</div>
+{% endblock %}

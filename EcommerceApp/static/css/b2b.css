@@ -259,6 +259,25 @@ body.is-catalog .b2b-workspace>aside>.benefits{flex-shrink:0}
 .category-children{
   padding:0 6px 6px 18px;
 }
+@media(min-width:901px){
+  .category-branch[open]>.category-children{
+    position:fixed;
+    z-index:1250;
+    width:260px;
+    max-width:calc(100vw - 16px);
+    max-height:calc(100vh - 16px);
+    overflow:auto;
+    padding:8px;
+    background:linear-gradient(#e8eaee,#d4d8de);
+    border:1px solid #9aa3ab;
+    border-radius:4px;
+    box-shadow:0 8px 24px #0003;
+  }
+  .category-branch[open]>summary{
+    background:linear-gradient(#dcecc8,#c3d8a8);
+    border-color:#8eaa72;
+  }
+}
 .category-children>a,
 .category-children .category-branch summary{
   font-size:12px;

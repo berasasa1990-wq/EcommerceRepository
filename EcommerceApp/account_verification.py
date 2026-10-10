@@ -29,8 +29,8 @@ def send_verification_email(request, user):
     link = request.build_absolute_uri(path)
     try:
         sent = send_mail(
-            'Potvrdite email adresu — Carpologija BH',
-            'Dobrodošli na Carpologija BH!\n\n'
+            'Potvrdite email adresu — Webshop',
+            'Dobrodošli na Webshop!\n\n'
             'Za aktivaciju naloga i prijavu kliknite na ovaj link:\n'
             f'{link}\n\nAko niste zatražili registraciju, zanemarite ovu poruku.',
             settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False,

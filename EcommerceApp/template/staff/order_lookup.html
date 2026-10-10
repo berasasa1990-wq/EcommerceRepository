@@ -3,14 +3,14 @@
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {% block page_title %}
-<title>Provjera narudžbi — opremazaribolov.ba</title>
+<title>Provjera narudžbi — {{ public_site_url }}</title>
 {% endblock %}
 
 {% block content %}
 <section class="staff-orders-page">
     <div class="staff-orders-header">
         <div>
-            <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
+            <a href="{% url 'staff_panel' %}" class="account-back-link">← Nazad na Panel</a>
             <h1>Provjera narudžbi</h1>
             <p class="staff-orders-subtitle">Unesite broj narudžbe, email ili telefon kupca — sve prolazi u jednom polju.</p>
         </div>

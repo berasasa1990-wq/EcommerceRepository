@@ -352,7 +352,7 @@
         overlay.innerHTML =
             '<div class="staff-order-celebration__backdrop" data-order-celeb-close></div>' +
             '<div class="staff-order-celebration__card">' +
-            '<div class="soc-brand"><img src="' + escapeHtml(root.dataset.logoUrl || '') + '" alt="Carpologija BH — Oprema za ribolov"></div>' +
+            '<div class="soc-brand"><img src="' + escapeHtml(root.dataset.logoUrl || '') + '" alt="Webshop — Oprema za ribolov"></div>' +
             '<button type="button" class="staff-order-celebration__close" data-order-celeb-close aria-label="Zatvori">×</button>' +
             '<div class="soc-content"><div class="soc-success" aria-hidden="true"><span>✓</span></div>' +
             '<h2 id="staffOrderCelebrationTitle" class="staff-order-celebration__title">Primili ste <em>novu narudžbu</em></h2>' +
@@ -364,7 +364,7 @@
             detailRow('total', 'Ukupno:', totalLabel, true) +
             '<div class="soc-status">STATUS <b>Nova</b></div>' +
             '</div><div class="soc-package" aria-hidden="true"><strong>FISH MORE.<br>LIVE REAL.</strong>' +
-            '<svg viewBox="0 0 200 155"><path fill="#d3a574" d="M12 38 120 13 188 43 83 70Z"/><path fill="#bb8856" d="M12 38 83 70 83 145 12 111Z"/><path fill="#deb487" d="M83 70 188 43 188 119 83 145Z"/><path fill="#edcba8" d="m63 26 72 31 18-5-72-30Z"/><path fill="#c99a68" d="m135 57 18-5v35l-18 5Z"/><path fill="#111" d="m94 87 80-21v26l-80 21Z"/><text x="101" y="100" fill="white" font-size="10" font-weight="bold" transform="rotate(-15 101 100)">CARPOLOGIJA BH</text></svg></div></div>' +
+            '<svg viewBox="0 0 200 155"><path fill="#d3a574" d="M12 38 120 13 188 43 83 70Z"/><path fill="#bb8856" d="M12 38 83 70 83 145 12 111Z"/><path fill="#deb487" d="M83 70 188 43 188 119 83 145Z"/><path fill="#edcba8" d="m63 26 72 31 18-5-72-30Z"/><path fill="#c99a68" d="m135 57 18-5v35l-18 5Z"/><path fill="#111" d="m94 87 80-21v26l-80 21Z"/><text x="101" y="100" fill="white" font-size="10" font-weight="bold" transform="rotate(-15 101 100)">' + escapeHtml(document.body.dataset.shopName || 'Webshop') + '</text></svg></div></div>' +
             '<div class="soc-steps"><div><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5Zm5 3h4"/></svg></i><strong>Nova narudžba</strong><span>Stigla nova narudžba od kupca.</span></div>' +
             '<div><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h8M8 17h5"/></svg></i><strong>Pregled detalja</strong><span>Provjerite proizvode, podatke i napomene.</span></div>' +
             '<div><i aria-hidden="true">⚙</i><strong>Brza obrada</strong><span>Krenite sa pripremom narudžbe.</span></div>' +
@@ -373,7 +373,7 @@
             '<div class="staff-order-celebration__actions">' +
             '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--primary" data-order-celeb-orders>PREGLEDAJ NARUDŽBU <span aria-hidden="true">→</span></button>' +
             '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--ghost" data-order-celeb-close>IZAĐI</button></div>' +
-            '<div class="soc-footer">OPREMAZARIBOLOV.BA</div></div></div>';
+            '<div class="soc-footer">' + escapeHtml(document.body.dataset.shopName || 'Webshop') + '</div></div></div>';
 
         document.body.appendChild(overlay);
         document.body.classList.add('staff-order-celebration-open');

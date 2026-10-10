@@ -1,0 +1,27 @@
+{% extends 'admin/change_form.html' %}{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-module-switches.css' %}?v=20261009">{% endblock %}
+{% block field_sets %}
+<div class="module-cards">
+<button type="button" class="module-card" data-module-open="wmsModuleDialog"><span class="module-card-icon">{% include 'staff/wms/icon.html' with key='magacin' %}</span><span><strong>WMS</strong><small>Mogućnosti magacina</small></span><span class="module-card-arrow">›</span></button>
+<button type="button" class="module-card" data-module-open="actionsModuleDialog"><span class="module-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7" cy="7" r="1"/><path d="m11 10 5 5m-5 0 5-5"/></svg></span><span><strong>Akcije</strong><small>Ponude i akcije na sajtu</small></span><span class="module-card-arrow">›</span></button>
+</div>
+{% for fieldset in adminform %}
+<dialog id="{% if fieldset.name == 'WMS' %}wmsModuleDialog{% else %}actionsModuleDialog{% endif %}" class="module-dialog">
+<header><h2>{{ fieldset.name }} — mogućnosti</h2><button type="button" data-module-close aria-label="Zatvori">×</button></header>
+<div class="module-switch-list">
+{% for line in fieldset %}{% for field in line %}
+<div class="module-switch-row"><label class="module-option-name" for="{{ field.field.id_for_label }}">{{ field.field.label }}</label><label class="module-switch" for="{{ field.field.id_for_label }}">{{ field.field }}<span class="module-switch-track" aria-hidden="true"></span><span class="module-switch-state" aria-hidden="true"><span class="is-on">Uključeno</span><span class="is-off">Isključeno</span></span></label>{{ field.field.errors }}</div>
+{% endfor %}{% endfor %}
+</div>
+<p class="module-dialog-hint">Isključene mogućnosti su zaključane. Potvrdite izbor i sačuvajte promjene.</p>
+<footer><button type="button" data-module-close class="module-done">Gotovo</button></footer>
+</dialog>
+{% endfor %}
+<p class="module-save-hint">Izaberite modul, podesite mogućnosti i kliknite „Sačuvaj“.</p>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+ document.querySelectorAll('[data-module-open]').forEach(button => button.addEventListener('click', () => document.getElementById(button.dataset.moduleOpen).showModal()));
+ document.querySelectorAll('[data-module-close]').forEach(button => button.addEventListener('click', () => button.closest('dialog').close()));
+});
+</script>
+{% endblock %}

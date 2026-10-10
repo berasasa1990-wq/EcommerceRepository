@@ -107,7 +107,7 @@ class BarcodeTests(TestCase):
         self.assertFalse(BarcodeConflict.objects.exists())
 
     def test_admin_widget_has_live_check(self):
-        page = self.client.get(reverse('admin:EcommerceApp_product_change', args=[self.target.pk]))
+        page = self.client.get(reverse('panel_admin:EcommerceApp_product_change', args=[self.target.pk]))
         self.assertContains(page, 'data-barcode-check=')
         self.assertContains(page, 'js/barcode-check.js')
 

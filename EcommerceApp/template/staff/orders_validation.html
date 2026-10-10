@@ -1,83 +1,12 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
-{% block page_title %}<title>Narudžbe za validaciju — opremazaribolov.ba</title>{% endblock %}
+{% block page_title %}<title>Narudžbe za validaciju — {{ public_site_url }}</title>{% endblock %}
 {% block body_class %}validation-orders-page{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/staff-orders-validation.css' %}?v=20261002-payment-scratch">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/staff-orders-validation.css' %}?v=20261008-blue-fit">{% endblock %}
 {% block content %}
-<section class="validation-orders">
-    <a class="vo-back" href="{% url 'staff_admin_panel' %}">← Nazad na Admin panel</a>
-    <header class="vo-header">
-        <div class="vo-heading"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V2h6v3M9 11h6M9 15h4"/></svg><div><h1>Narudžbe za validaciju</h1><p>Narudžbe koje još nisu validovane. Nakon validacije nestaju sa ove liste.</p></div></div>
-        <div class="vo-count"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8C3 8 6 0 10 4l2 4c9 0 6-8 2-4z"/></svg><div><strong>{{ pending_count }}</strong><span>nevalidovanih narudžbi</span></div><div class="vo-count-total"><strong>{{ pending_total|floatformat:2 }} KM</strong><span>Ukupan iznos</span></div></div>
-    </header>
-    <form method="get" class="vo-filters">
-        <label>Datum od<input type="date" name="date_from" value="{{ date_from }}"></label>
-        <label>Datum do<input type="date" name="date_to" value="{{ date_to }}"></label>
-        <label>Način naručivanja<select name="source"><option value="">Svi načini</option>{% for value, label in source_choices %}<option value="{{ value }}"{% if source == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-        <label>Greb-Greb<select name="scratch"><option value="">Svi</option><option value="yes"{% if scratch == 'yes' %} selected{% endif %}>Da</option><option value="no"{% if scratch == 'no' %} selected{% endif %}>Ne</option></select></label>
-        <label class="vo-search"><span class="vo-sr">Pretraga narudžbi</span><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg><input type="search" name="q" value="{{ search_query }}" placeholder="Pretraži po imenu, telefonu, emailu..."></label>
-        <input type="hidden" name="sort" value="{{ sort }}"><button type="submit" class="vo-button">Filtriraj</button>
-    </form>
-    <div class="vo-table-wrap"><table class="vo-table"><thead><tr><th scope="col">#</th><th scope="col">Kupac</th><th scope="col">Način naručivanja</th><th scope="col">Iznos</th><th scope="col">Način plaćanja</th><th scope="col">Greb-Greb</th><th scope="col" aria-sort="{% if sort == 'oldest' %}ascending{% else %}descending{% endif %}"><a href="?{{ sort_query }}">Datum {% if sort == 'oldest' %}↑{% else %}↓{% endif %}</a></th><th scope="col">Akcija</th></tr></thead><tbody>
-    {% for order in orders %}<tr>
-        <td><a class="vo-number" href="{% url 'staff_order_detail' broj=order.broj %}">#{{ order.broj }}</a></td>
-        <td><strong>{{ order.ime_prezime }}</strong><div class="vo-contact"><span>{{ order.telefon }}</span><span>{{ order.email }}</span></div></td>
-        <td><span class="vo-source"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 3h3l3 13h11l3-10H6M9 20h.01M18 20h.01"/></svg>{% if order.izvor == 'webshop' %}Web shop{% else %}Ručni unos{% endif %}</span></td>
-        <td class="vo-amount">{{ order.ukupno|floatformat:2 }} KM</td>
-        <td><span class="vo-source">{% if order.placeno_karticom %}Karticom{% else %}Gotovinski{% endif %}</span></td>
-        <td>
-                <button type="button" class="vo-reward-trigger" data-reward-template="vo-reward-{{ order.pk }}" aria-haspopup="dialog" aria-controls="vo-reward-dialog" aria-label="Prikaži Greb-Greb nagradu za narudžbu {{ order.broj }}"><span class="vo-gift {% if order.scratch_used %}vo-gift-yes{% else %}vo-gift-no{% endif %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8C3 8 6 0 10 4l2 4c9 0 6-8 2-4z"/></svg><span>{% if order.scratch_used %}DA<small>{{ order.scratch_count }} nagrada</small>{% else %}NE{% endif %}</span></span><small class="vo-reward-hint">Prikaži nagradu</small></button>
-                <template id="vo-reward-{{ order.pk }}">
-                <p class="vo-reward-order">Narudžba #{{ order.broj }}</p>
-                <div class="vo-reward-panel">
-                    {% for reward in order.scratch_details %}
-                    <div class="vo-reward-item">
-                        <strong>{{ reward.display_reward }}</strong>
-                        {% if reward.display_product %}<span>{{ reward.display_product.naziv }}</span>{% endif %}
-                        {% if reward.display_discount %}<span>Popust: {{ reward.display_discount|floatformat:0 }}%</span>{% endif %}
-                        <small>{% if reward.scratch_revealed_at %}Otkrivena {{ reward.scratch_revealed_at|date:'d.m.Y. H:i' }}{% elif reward.scratch_shown_at %}Prikazana kupcu, još nije ogrebana{% elif reward.scratch_tracking_enabled %}Dodijeljena, još nije prikazana{% else %}Stariji zapis — prikaz nije evidentiran{% endif %}</small>
-                        <small>{% if reward.reward_consumed %}Iskorištena{% if reward.order_id != order.pk %} na drugoj narudžbi{% endif %}{% else %}Nije iskorištena{% endif %}</small>
-                    </div>
-                    {% empty %}<p>Za ovu narudžbu nema evidentirane Greb-Greb nagrade.</p>{% endfor %}
-                </div>
-                </template>
-        </td>
-        <td class="vo-date">{{ order.kreirana|date:'d.m.Y.' }}<small>{{ order.kreirana|date:'H:i' }}</small></td>
-        <td><a class="vo-button" href="{% url 'staff_order_detail' broj=order.broj %}" aria-label="Pogledaj narudžbu {{ order.broj }}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Pogledaj</a></td>
-    </tr>{% empty %}<tr><td colspan="8" class="vo-empty">Nema nevalidovanih narudžbi za odabrane filtere.</td></tr>{% endfor %}
-    </tbody></table></div>
-    {% if orders.has_other_pages %}<nav class="vo-pagination" aria-label="Stranice narudžbi">{% if orders.has_previous %}<a href="?{{ page_query }}&amp;page={{ orders.previous_page_number }}">← Prethodna</a>{% endif %}<span>Stranica {{ orders.number }} od {{ orders.paginator.num_pages }}</span>{% if orders.has_next %}<a href="?{{ page_query }}&amp;page={{ orders.next_page_number }}">Sljedeća →</a>{% endif %}</nav>{% endif %}
-    <dialog id="vo-reward-dialog" class="vo-reward-dialog" aria-labelledby="vo-reward-title">
-        <header class="vo-reward-dialog-header">
-            <h2 id="vo-reward-title">Greb-Greb nagrada</h2>
-            <button type="button" class="vo-reward-close" aria-label="Zatvori" autofocus>×</button>
-        </header>
-        <div id="vo-reward-content"></div>
-    </dialog>
-</section>
+{% include 'staff/orders_validation_content.html' %}
 {% endblock %}
 {% block extra_js %}
-<script>
-(function () {
-    const dialog = document.getElementById('vo-reward-dialog');
-    const content = document.getElementById('vo-reward-content');
-    document.querySelectorAll('[data-reward-template]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            const template = document.getElementById(button.dataset.rewardTemplate);
-            content.replaceChildren(template.content.cloneNode(true));
-            dialog.showModal();
-        });
-    });
-    dialog.querySelector('.vo-reward-close').addEventListener('click', function () {
-        dialog.close();
-    });
-    dialog.addEventListener('click', function (event) {
-        if (event.target !== dialog) return;
-        const bounds = dialog.getBoundingClientRect();
-        if (event.clientX < bounds.left || event.clientX > bounds.right ||
-            event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
-    });
-})();
-</script>
+{% include 'staff/orders_validation_scripts.html' %}
 {% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'staff/wms/base.html' %}
+{% block flash_messages %}
+{% if messages %}<div class="flash-messages" role="status">{% for message in messages %}<p class="flash-message flash-message--{{ message.tags }}">{{ message }}</p>{% endfor %}</div>{% endif %}
+{% endblock %}
+{% block wms_content %}
+<header class="wms-page-heading"><h1>Podešavanje</h1></header>
+{% if form %}
+<form method="post" class="wms-card wms-settings-form">{% csrf_token %}
+{{ form.non_field_errors }}
+{% for field in form %}
+{% if field.name == 'show_storefront_availability' %}
+<div class="wms-availability-setting">
+<label class="wms-availability-label" for="{{ field.id_for_label }}">
+<span class="wms-setting-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></span>
+<span><strong>Prikaz dostupnosti artikala na sajtu</strong><small>Prikaži oznaku „Na stanju“ i raspoloživu količinu.</small></span>
+</label>
+<label class="wms-setting-switch" for="{{ field.id_for_label }}">{{ field }}<span class="wms-switch-track" aria-hidden="true"></span><span class="wms-switch-state" aria-hidden="true"><span class="is-on">Uključeno</span><span class="is-off">Isključeno</span></span></label>
+{{ field.errors }}
+</div>
+{% else %}
+<div class="wms-setting-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>
+{% endif %}
+{% endfor %}
+<div class="wms-settings-actions"><button type="submit" class="wms-button">Sačuvaj</button></div>
+</form>
+{% else %}<div class="wms-card"><p>Nema dostupnih podešavanja.</p></div>{% endif %}
+{% if wms_locations_enabled %}<section class="wms-card wms-settings-form"><header class="wms-page-heading"><h2>Excel import artikala</h2><a class="wms-close" href="{% url 'staff_wms_excel_import' %}?template=1">↓ Download template</a></header><p>Unesite artikle, opise, kategorije, brendove, tagove i količine po lokacijama prema primjeru u templateu. Za podkategorije unesite putanju, npr. Ribolov &gt; Štapovi &gt; Šaranski štapovi. Postojeći artikli prepoznaju se po šifri. Unesena količina postavlja stanje na navedenoj lokaciji.</p><form method="post" enctype="multipart/form-data" action="{% url 'staff_wms_excel_import' %}" class="wms-excel-import">{% csrf_token %}<label for="wmsExcelFile">Excel datoteka (.xlsx)</label><input id="wmsExcelFile" type="file" name="excel_file" accept=".xlsx" required><button class="wms-button" type="submit">Importuj artikle</button></form></section>{% endif %}
+{% if wms_locations_enabled %}
+<section class="wms-card wms-settings-form">
+<header class="wms-page-heading"><h2>Prenos lokacija i količina iz magacina</h2></header>
+<p>Prenesite lokacije i fizičke količine postojećih artikala iz /magacin u WMS. Koristi se baza ovog sajta, pa nakon postavljanja na glavni sajt prenos preuzima njegove podatke.</p>
+<p>U magacinu: <strong>{{ magacin_import.products }}</strong> artikala, <strong>{{ magacin_import.locations }}</strong> lokacija i ukupno <strong>{{ magacin_import.quantity }}</strong> komada.</p>
+<p>Podaci u magacinu, rezervacije i stanje artikala ostaju sačuvani. Ponovljeni prenos ne stvara duplikate. Ako WMS već ima drugačije količine ili lokacije za ove artikle, prenos se zaustavlja bez izmjena.</p>
+<form method="post" action="{% url 'staff_wms_magacin_import' %}">{% csrf_token %}
+<div class="wms-settings-actions"><button type="submit" class="wms-button" {% if not magacin_import.products %}disabled{% endif %}>Prenesi lokacije i količine iz magacina</button></div>
+</form>
+</section>
+{% endif %}
+{% endblock %}

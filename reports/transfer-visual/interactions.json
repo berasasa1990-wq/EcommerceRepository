@@ -1,0 +1,70 @@
+[
+  {
+    "width": 1440,
+    "label": "reference",
+    "checks": [
+      "anonymous panel denied",
+      "gallery zoom opens",
+      "gallery zoom closes",
+      "product quantity increases",
+      "added item quantity is 2",
+      "cart quantity persists as 3",
+      "cart quantity survives reload",
+      "remove empties cart",
+      "empty checkout rejected",
+      "COD order reaches success"
+    ],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "checks": [
+      "anonymous panel denied",
+      "gallery zoom opens",
+      "gallery zoom closes",
+      "product quantity increases",
+      "added item quantity is 2",
+      "cart quantity persists as 3",
+      "cart quantity survives reload",
+      "remove empties cart",
+      "empty checkout rejected",
+      "COD order reaches success"
+    ],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "label": "reference",
+    "checks": [
+      "anonymous panel denied",
+      "gallery zoom opens",
+      "gallery zoom closes",
+      "product quantity increases",
+      "added item quantity is 2",
+      "cart quantity persists as 3",
+      "cart quantity survives reload",
+      "remove empties cart",
+      "empty checkout rejected",
+      "COD order reaches success"
+    ],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "checks": [
+      "anonymous panel denied",
+      "gallery zoom opens",
+      "gallery zoom closes",
+      "product quantity increases",
+      "added item quantity is 2",
+      "cart quantity persists as 3",
+      "cart quantity survives reload",
+      "remove empties cart",
+      "empty checkout rejected",
+      "COD order reaches success"
+    ],
+    "errors": []
+  }
+]

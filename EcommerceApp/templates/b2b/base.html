@@ -3,14 +3,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>B2B veleprodaja | Carpologija BH</title>
-<link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20260917categoryScroll">
-<script src="{% static 'js/b2b.js' %}?v=20260912headCart" defer></script>
+<title>B2B veleprodaja | {{ shop_name }}</title>
+<link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20261008categorySidePanel">
+<script src="{% static 'js/b2b.js' %}?v=20261008categorySidePanel" defer></script>
 <link rel="stylesheet" href="{% static 'css/touch-navigation.css' %}?v=20260909">
 </head>
 <body class="{% if account %}b2b-has-cart-bar{% endif %}{% block body_class %}{% endblock %}">
 <header class="masthead">
-  <a class="brand-logo" href="{% url 'b2b_catalog' %}"><img src="{% static 'img/carpologija-nav-logo-dark.jpg' %}" alt="Carpologija BH · Oprema za ribolov"></a>
+  <a class="brand-logo" href="{% url 'b2b_catalog' %}"><img src="{{ brand_logo_url }}" alt="{{ shop_name }} · Oprema za ribolov"></a>
   <div class="b2b-mark"><strong>B2B</strong><span>VELEPRODAJA</span></div>
   {% if account %}
   <a class="masthead-cart" href="{% url 'b2b_cart' %}">
@@ -77,7 +77,7 @@
     {% endif %}
     <p class="b2b-zoom-hint">Klikom na sliku artikla možete je uvećati.</p>
   </div>
-  <a class="b2b-collection-button b2b-new-button" href="{% url 'b2b_catalog' %}?ponuda=noviteti#catalog-filters" {% if collection == 'noviteti' %}aria-current="page"{% endif %}>NOVITETI</a>
+  <a class="b2b-collection-button b2b-new-button" href="{% url 'b2b_catalog' %}?ponuda=noviteti#catalog-filters" {% if collection == 'noviteti' %}aria-current="page"{% endif %}>Najprodavaniji proizvodi</a>
   <a class="b2b-collection-button b2b-sale-button" href="{% url 'b2b_catalog' %}?ponuda=akcijska#catalog-filters" {% if collection == 'akcijska' %}aria-current="page"{% endif %}>AKCIJSKA PONUDA</a>
   <a class="cart-link" href="{% url 'b2b_cart' %}">
     <svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 3h3l3 13h11l3-10H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg>

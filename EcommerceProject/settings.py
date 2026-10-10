@@ -245,7 +245,7 @@ if not DEBUG:
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    'EcommerceProject.admin_apps.SuperuserAdminConfig',
     'django.contrib.auth',
     'EcommerceApp.apps.EcommerceappConfig',
     'django.contrib.contenttypes',
@@ -267,6 +267,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'EcommerceApp.middleware.inventory_module.InventoryModuleMiddleware',
     'EcommerceApp.media_retention.PreserveUploadsMiddleware',
     'EcommerceApp.middleware.live_visitor.LiveVisitorMiddleware',
     'EcommerceApp.middleware.site_prep_lock.SitePrepLockMiddleware',
@@ -300,6 +301,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'EcommerceApp.context_processors.nav_categories',
+                'EcommerceApp.branding.branding_context',
                 'EcommerceApp.context_processors.meta_pixel',
                 'EcommerceApp.site_version.site_version',
             ],
@@ -679,3 +681,9 @@ MONRI_MERCHANT_KEY = _MONRI_CONFIG['MONRI_MERCHANT_KEY']
 MONRI_AUTHENTICITY_TOKEN = _MONRI_CONFIG['MONRI_AUTHENTICITY_TOKEN']
 MONRI_PUBLIC_BASE_URL = _MONRI_CONFIG['MONRI_PUBLIC_BASE_URL']
 del _MONRI_CONFIG, _MONRI_PROCESS_ENV
+
+# Store identity and optional tracking are configurable for this installation.
+SITE_NAME = _env('SITE_NAME', 'Webshop')
+GOOGLE_ANALYTICS_ID = _env('GOOGLE_ANALYTICS_ID', '')
+GOOGLE_ADS_ID = _env('GOOGLE_ADS_ID', '')
+FACEBOOK_DOMAIN_VERIFICATION = _env('FACEBOOK_DOMAIN_VERIFICATION', '')

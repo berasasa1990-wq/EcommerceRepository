@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ponuda {{ ponuda.broj }} — opremazaribolov.ba</title>
+    <title>Ponuda {{ ponuda.broj }} — {{ public_site_url }}</title>
     <style>
         :root {
             --ink: #14181c;
@@ -248,7 +248,7 @@
                 {% if site_settings.logo %}
                 <img src="{{ site_settings.logo.url }}" alt="" style="max-height:42px;max-width:180px;object-fit:contain;margin-bottom:8px;">
                 {% endif %}
-                <strong>opremazaribolov.ba</strong>
+                <strong>{{ public_site_url }}</strong>
                 <span>
                     Online shop — oprema za ribolov<br>
                     {% if site_settings.kontakt_telefon %}Tel: {{ site_settings.kontakt_telefon }}<br>{% endif %}
@@ -265,7 +265,7 @@
         <div class="cols">
             <div class="box">
                 <span>Izdavalac</span>
-                <strong>opremazaribolov.ba</strong>
+                <strong>{{ public_site_url }}</strong>
                 <p>Komercijalna ponuda artikala<br>Cijene navedene sa PDV-om</p>
             </div>
             <div class="box">
@@ -324,7 +324,7 @@
         </div>
 
         <footer>
-            <span>Ponuda {{ ponuda.broj }} · opremazaribolov.ba</span>
+            <span>Ponuda {{ ponuda.broj }} · {{ public_site_url }}</span>
             <span>Ova ponuda nije fiskalni račun.</span>
         </footer>
     </article>

@@ -13,6 +13,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 from io import BytesIO, StringIO
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
@@ -424,6 +425,15 @@ def maloprodaja_location_rows(product, variation=None):
     return rows
 
 
+def stock_quantity_unknown(product, totals, variation=None):
+    """Manual catalogue availability without an entered physical quantity."""
+    return bool(
+        variation is None and not product.is_set and product.na_stanju
+        and not product.stanje and totals['na_stanju'] <= 0
+        and totals['rezervisano'] <= 0
+    )
+
+
 def display_stock_totals(product, variation=None):
     """Ukupno na stanju i dostupno, uključujući maloprodaju kao ostale lokacije."""
     if getattr(product, 'is_set', False):
@@ -433,6 +443,12 @@ def display_stock_totals(product, variation=None):
     for row in maloprodaja_location_rows(product, variation):
         totals['na_stanju'] += int(row.get('kolicina') or 0)
         totals['rezervisano'] += int(row.get('rezervisano') or 0)
+    # Catalogue-entered quantities remain the source until physical stock
+    # locations are recorded. A recorded zero must never revive old stock.
+    if (not product.magacin_sync_at
+            and not WarehouseStock.objects.filter(product=product).exists()
+            and totals['na_stanju'] == 0 and totals['rezervisano'] == 0):
+        totals['na_stanju'] = max(0, _int(variation.stanje if variation else product.stanje))
     totals['dostupno'] = max(0, totals['na_stanju'] - totals['rezervisano'])
     return totals
 
@@ -643,6 +659,8 @@ def maybe_unhide_on_restock(product, *, now_in_stock, new_qty):
 
 def refresh_catalog_qty(product):
     """Na sajtu dok ima količinu na bilo kojoj lokaciji (magacin + MP). Bez zalihe = skini sa sajta."""
+    if not product.pracenje_zaliha:
+        return product
     if product.is_set:
         from .product_sets import refresh_set
         return refresh_set(product)
@@ -768,6 +786,8 @@ def apply_movement(
     else:
         product = Product.objects.select_for_update().get(pk=product.pk)
 
+    if not product.pracenje_zaliha:
+        raise MagacinError('Artikal je bez praćenja zaliha; količine i lokacije se ne evidentiraju.')
     if product.is_set:
         raise MagacinError('Zaliha seta računa se iz artikala u setu. Promijeni zalihu njegovih artikala.')
 
@@ -1558,16 +1578,14 @@ def move_uvoz_leftovers_to_mp(*, user=None):
 
 
 def magacin_products_qs():
-    """Postojeći lokalni Magacin katalog; historijska polja zadržavaju obuhvat."""
-    return Product.objects.filter(
-        Q(magacin_sync_at__isnull=False) | Q(odoo_template_id__isnull=False) | Q(is_set=True)
-    )
+    """Panel and warehouse share the same local product catalogue."""
+    return Product.objects.all()
 
 
 def magacin_in_stock_q():
     """Physical stock for articles; computed component availability for sets."""
     from django.db.models import Exists, OuterRef
-    return Q(is_set=True, na_stanju=True, stanje__gt=0) | Exists(
+    return Q(pracenje_zaliha=False, na_stanju=True) | Q(is_set=True, na_stanju=True, stanje__gt=0) | Exists(
         recorded_stock_qs(WarehouseStock.objects.filter(product_id=OuterRef('pk'), kolicina__gt=0))
     )
 
@@ -1895,7 +1913,11 @@ def ubaci_na_sajt(product):
     if not product.aktivan:
         product.aktivan = True
         product.save(update_fields=['aktivan'])
-    refresh_catalog_qty(product)
+    if not product.pracenje_zaliha:
+        product.na_stanju = True
+        product.save(update_fields=['na_stanju'])
+    else:
+        refresh_catalog_qty(product)
     return product
 
 
@@ -3796,7 +3818,7 @@ def accept_ponuda(ponuda, *, user=None):
         raise MagacinError('Ponuda nema stavki.')
     ime = (ponuda.ime_prezime or '').strip() or f'Ponuda {ponuda.broj}'
     telefon = (ponuda.telefon or '').strip() or '—'
-    email = (ponuda.email or '').strip() or 'carpologijabh@gmail.com'
+    email = (ponuda.email or '').strip() or settings.STORE_EMAIL or settings.DEFAULT_FROM_EMAIL
     adresa = (ponuda.adresa or '').strip() or 'Ponuda'
     grad = (ponuda.grad or '').strip() or '—'
     totals = ponuda_totals(ponuda)
@@ -3955,7 +3977,7 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False, placanje=''):
         })
     medjuzbir = sum((line['cijena'] * line['qty'] for line in lines), Decimal('0.00'))
     totals = vp_draft_totals(medjuzbir, bulk=bool(getattr(draft, 'bulk', False)))
-    email = (draft.email or '').strip() or 'vp@opremazaribolov.ba'
+    email = (draft.email or '').strip() or settings.STORE_EMAIL or settings.DEFAULT_FROM_EMAIL
     adresa = (draft.adresa or '').strip() or 'VP narudžba'
     grad = (draft.grad or '').strip() or '—'
     napomena = 'VP narudžba'
@@ -4034,7 +4056,7 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False, placanje=''):
 @transaction.atomic
 def ensure_web_product_stock(product):
     """Use the existing checkout stock initialization for a newly ordered SKU."""
-    if product.is_set:
+    if product.is_set or not product.pracenje_zaliha:
         return product
     product = Product.objects.select_for_update().get(pk=product.pk)
     if not WarehouseStock.objects.filter(product=product).exists():
@@ -4150,6 +4172,8 @@ def restore_unfinished_web_stock(order, *, user=None):
 
 def deduct_for_order(product, qty, *, variation=None, user=None, napomena='', web_order=None, order=None):
     """Skini slobodnu količinu (bez rezervisanog). Vraća koliko nije skinuto."""
+    if not product.pracenje_zaliha:
+        return 0
     remaining = max(0, _int(qty))
     if remaining <= 0:
         return 0
@@ -4188,6 +4212,10 @@ def deduct_for_order(product, qty, *, variation=None, user=None, napomena='', we
 
 def reserve_for_order(order, product, qty, *, variation=None, user=None, napomena='', location=None, exact=False, set_item=None):
     """Rezerviši slobodnu zalihu za narudžbu. Vraća koliko nije rezervisano."""
+    if not product.pracenje_zaliha:
+        if not product.na_stanju:
+            raise MagacinError(f'Artikal „{product.naziv}” nije na stanju.')
+        return 0
     if getattr(product, 'is_set', False):
         if qty <= 0:
             return 0
@@ -4993,7 +5021,7 @@ def create_prenos_mp_pick(*, product, variation=None, location, qty, user=None):
     if created:
         order = Order.objects.create(
             ime_prezime='Prenos u MP',
-            email='prenos@carpologijabh.local',
+            email='transfer@example.invalid',
             telefon='-',
             adresa=loc_label[:300],
             grad='Magacin',
@@ -5276,6 +5304,8 @@ def _stock_row_for_sale(product, variation, location):
 def _sell_qty_from_location(order, product, variation, location, qty, *, user=None):
     """Skini količinu s lokacije. Prvo rezervacija te narudžbe, pa slobodno stanje."""
     remaining = max(0, _int(qty))
+    if product is not None and not product.pracenje_zaliha:
+        return remaining
     if remaining <= 0 or product is None or location is None:
         return 0
     if order.izvor == Order.Izvor.WEBSHOP and order.stanje_skinuto:
@@ -5664,7 +5694,7 @@ def seed_default_locations():
         if was_created:
             created += 1
     WarehouseSupplier.objects.get_or_create(
-        naziv='Carpologija d.o.o.',
+        naziv='Webshop',
         defaults={'aktivan': True},
     )
     return created

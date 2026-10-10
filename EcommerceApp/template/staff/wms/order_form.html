@@ -1,0 +1,1 @@
+{% extends 'staff/wms/base.html' %}{% block wms_content %}<h1>{% if editing %}Izmjena narudžbe #{{ order.display_number }}{% else %}Kreiraj narudžbu{% endif %} — {{ order_type }}</h1><form method="post" class="wms-card wms-form">{% csrf_token %}{{ form.as_p }}<button type="submit" class="wms-button">Sačuvaj narudžbu</button></form>{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'staff/panel.html' %}
+{% block page_title %}<title>Newsletter — {{ shop_name }}</title>{% endblock %}
+{% block extra_css %}{{ block.super }}
+<style>
+body.staff-shell-page {background:#f3f9fd;color:#102343}
+.newsletter-list {padding:32px 40px 48px;max-width:1100px;margin:auto;color:#102343}
+.newsletter-list>a {display:inline-flex;align-items:center;padding:9px 14px;border:1px solid #cde7f7;border-radius:9px;background:#fff;color:#007db7;text-decoration:none;font-weight:600}
+.newsletter-list h1 {font-size:clamp(26px,4vw,36px);margin:24px 0 10px;letter-spacing:-.025em;color:#102343}
+.newsletter-list>p {color:#54718a;margin:0 0 24px}
+.newsletter-list>p strong {display:inline-block;padding:3px 10px;background:#e0f3ff;border-radius:7px;color:#007db7}
+.newsletter-search {display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:20px 0;padding:20px;background:#fff;border:1px solid #cde7f7;border-radius:14px;box-shadow:0 4px 18px #052b4b08}
+.newsletter-search label {width:100%;font-size:14px;font-weight:600;color:#102343}
+.newsletter-search input {flex:1;min-width:180px;padding:12px 14px;border:1px solid #cde7f7;background:#f8fcff;border-radius:9px;max-width:100%;font:inherit;color:#102343}
+.newsletter-search input::placeholder {color:#6a879c}
+.newsletter-search button {padding:12px 22px;background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;border:0;border-radius:9px;cursor:pointer;font:inherit;font-weight:600;transition:box-shadow .15s,filter .15s}
+.newsletter-search button:hover {filter:brightness(.94);box-shadow:0 4px 14px #008bc325}
+.newsletter-search a {color:#007db7;padding:10px;text-decoration:none}
+.newsletter-table {overflow:auto;background:#fff;border:1px solid #cde7f7;border-radius:14px;box-shadow:0 4px 18px #052b4b08}
+.newsletter-table table {width:100%;border-collapse:collapse;font-size:14px}
+.newsletter-table th,.newsletter-table td {padding:16px 20px;text-align:left;border-bottom:1px solid #e0edf8}
+.newsletter-table th {background:#eaf7ff;color:#007db7;font-weight:700;white-space:nowrap}
+.newsletter-table td:first-child {overflow-wrap:anywhere}
+.newsletter-table td:last-child {color:#54718a;white-space:nowrap}
+.newsletter-table tbody tr:last-child td {border-bottom:0}
+.newsletter-table tbody tr:hover {background:#f5faff}
+.newsletter-pagination {display:flex;gap:12px;align-items:center;margin-top:22px;flex-wrap:wrap;color:#54718a;font-size:14px}
+.newsletter-pagination a {display:inline-flex;padding:10px 16px;color:#007db7;background:#fff;border:1px solid #cde7f7;border-radius:9px;text-decoration:none;font-weight:600}
+.newsletter-list>a:hover,.newsletter-pagination a:hover {background:#eaf7ff;border-color:#008bc3}
+.newsletter-list :is(a,button,input):focus-visible {outline:3px solid #8edbfa;outline-offset:3px}
+@media(max-width:820px){.newsletter-list{padding:20px 16px 32px}.newsletter-search{padding:16px}}
+@media(max-width:480px){.newsletter-search input{flex-basis:100%;min-width:0;width:100%}.newsletter-search button{flex:1}.newsletter-table th,.newsletter-table td{padding:13px 12px;font-size:12px}}
+</style>{% endblock %}
+{% block content %}
+<section class="newsletter-list">
+<a href="{% url 'staff_panel' %}">← Nazad na panel</a>
+<h1>Newsletter</h1>
+<p>Prijavljene email adrese: <strong>{{ subscribers.paginator.count }}</strong></p>
+<form method="get" class="newsletter-search" role="search">
+<label for="newsletterQuery">Pretraži email</label>
+<input id="newsletterQuery" type="search" name="q" value="{{ query }}" placeholder="Email adresa">
+<button type="submit">Pretraži</button>{% if query %}<a href="{% url 'staff_newsletter' %}">Poništi</a>{% endif %}
+</form>
+<div class="newsletter-table"><table>
+<thead><tr><th scope="col">Email adresa</th><th scope="col">Datum prijave</th></tr></thead>
+<tbody>{% for subscriber in subscribers %}<tr><td>{{ subscriber.email }}</td><td>{{ subscriber.kreirano|date:'d.m.Y. H:i' }}</td></tr>{% empty %}<tr><td colspan="2">Nema prijavljenih email adresa{% if query %} za ovu pretragu{% endif %}.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% if subscribers.paginator.num_pages > 1 %}<nav class="newsletter-pagination" aria-label="Stranice pretplatnika">
+{% if subscribers.has_previous %}<a href="?q={{ query|urlencode }}&page={{ subscribers.previous_page_number }}">Prethodna</a>{% endif %}
+<span>{{ subscribers.number }} / {{ subscribers.paginator.num_pages }}</span>
+{% if subscribers.has_next %}<a href="?q={{ query|urlencode }}&page={{ subscribers.next_page_number }}">Sljedeća</a>{% endif %}
+</nav>{% endif %}
+</section>
+{% endblock %}

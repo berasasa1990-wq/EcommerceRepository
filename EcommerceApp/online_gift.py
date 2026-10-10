@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from .panel_modules import module_locked
+
 from decimal import Decimal, InvalidOperation
 from secrets import randbelow, token_hex
 from threading import Thread
@@ -75,7 +77,7 @@ def _pending_scratch_order_ids(request):
 
 def grant_scratch_chance(request, order):
     """Svaka uspješna webshop narudžba dodaje jednu priliku u red sesije."""
-    if not order or order.izvor != order.Izvor.WEBSHOP:
+    if module_locked('sretni_greb_greb') or not order or order.izvor != order.Izvor.WEBSHOP:
         return
     campaign = _scratch_campaign()
     # Ako je kampanja ugašena ili Admin nema aktivnu nagradu, ne spremamo
@@ -425,6 +427,8 @@ def get_session_reward(request):
                 break
         else:
             return None
+    if module_locked('sretni_greb_greb') and (raw.get('scratch_kind') or raw.get('claim_id')):
+        return None
     if raw.get('consumed'):
         return None
     return raw

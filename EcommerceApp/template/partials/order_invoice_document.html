@@ -2,8 +2,8 @@
     <table class="doc-header-table" role="presentation" cellpadding="0" cellspacing="0">
         <tr>
             <td class="doc-brand" style="vertical-align: top; width: 52%;">
-                <p class="doc-company">d.o.o. CarpologijaBH</p>
-                <p class="doc-contact">Kontakt: <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a></p>
+                <p class="doc-company">{{ company_name }}</p>
+                <p class="doc-contact">Kontakt: <a href="mailto:{{ contact_email }}">{{ contact_email }}</a></p>
             </td>
             <td class="doc-meta">
                 <p class="doc-title">{% if order.is_mp_transfer %}Prenosnica u MP{% else %}Online Narudžbe{% endif %} br. {{ order.broj }}</p>
@@ -38,9 +38,12 @@
             </td>
             <td>
                 <span class="party-label">PRODAVAC</span>
-                <span class="party-name">d.o.o. CarpologijaBH</span>
-                Email: carpologijabh@gmail.com<br>
-                Web: www.carpologijabh.ba
+                <span class="party-name">{{ company_name }}</span>
+                Email: {{ contact_email }}<br>
+                Web: {{ public_site_url }}<br>
+                {{ company_address }}<br>
+                ID / PDV: {{ site_settings.company_tax_id }}<br>
+                Račun: {{ site_settings.company_bank_account }}
             </td>
         </tr>
     </table>
@@ -119,7 +122,7 @@
         <div class="invoice-seal-block">
             <div class="invoice-warranty-box">
                 <strong>Garancija</strong>
-                <span class="invoice-warranty-note">Ovaj papir je garantni list za narudžbu #{{ order.broj }} koja je poručena {{ datum }}. Garancija se odnosi na sve artikle s ovog računa, u skladu sa zakonima BiH i uslovima proizvođača. Reklamacije se podnose uz ovaj račun na carpologijabh@gmail.com.</span>
+                <span class="invoice-warranty-note">Ovaj papir je garantni list za narudžbu #{{ order.broj }} koja je poručena {{ datum }}. Garancija se odnosi na sve artikle s ovog računa, u skladu sa zakonima BiH i uslovima proizvođača. Reklamacije se podnose uz ovaj račun na {{ contact_email }}.</span>
             </div>
             <div class="invoice-seal-row">
                 <div class="invoice-sign">
@@ -135,6 +138,6 @@
         {% if order.card_payment or order.placeno_karticom %}Način plaćanja: KARTICOM.
         {% else %}Način plaćanja: pouzećem pri preuzimanju pošiljke.{% endif %}
         Hvala vam na kupovini.
-        Kontakt: <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a>.
+        Kontakt: <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.
     </div>
 </div>

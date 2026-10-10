@@ -1,3 +1,4 @@
+from .panel_admin import panel_admin_site
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -497,7 +498,7 @@ class B2BTests(TestCase):
         self.assertEqual(response.context['page'].paginator.count, 27)
         self.assertTrue(all(row['available'] for row in response.context['rows']))
 
-    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend', ORDER_NOTIFICATION_EMAIL='orders@example.invalid')
     def test_access_request_emails_all_fields_without_creating_account(self):
         from django.core import mail
         data = {'company': 'Nova Firma', 'address': 'Ulica 12', 'city': 'Sarajevo',
@@ -509,7 +510,7 @@ class B2BTests(TestCase):
         response = self.client.post('/veleprodaja/zatrazi-pristup/', data, follow=True)
         self.assertContains(response, 'Zahtjev je poslan')
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].to, ['narudzbe@opremazaribolov.ba'])
+        self.assertEqual(mail.outbox[0].to, ['orders@example.invalid'])
         for value in data.values():
             self.assertIn(value, mail.outbox[0].body)
         self.assertEqual(B2BAccount.objects.count(), before)
@@ -579,7 +580,7 @@ class B2BTests(TestCase):
         self.assertEqual(settings.brand_prices.get().divisor, Decimal('1.5'))
         self.assertEqual(settings.noviteti.count(), 2)
         self.assertEqual(list(settings.akcijska_ponuda.all()), [second])
-        self.assertEqual(admin.site._registry[B2BSettings].autocomplete_fields, ['noviteti'])
+        self.assertEqual(panel_admin_site._registry[B2BSettings].autocomplete_fields, ['noviteti'])
 
     def test_offer_discount_used_in_catalog_cart_checkout_and_order(self):
         from .models import B2BSettings, B2BOfferItem
@@ -663,7 +664,7 @@ class B2BTests(TestCase):
         self.assertContains(response, 'partner')
         self.assertContains(response, 'U korpi')
         self.assertContains(response, '200.00 KM')
-        panel = admin_client.get(reverse('staff_admin_panel'))
+        panel = admin_client.get(reverse('staff_panel'))
         self.assertContains(panel, 'B2B Live')
         self.assertContains(panel, reverse('staff_b2b_live'))
 

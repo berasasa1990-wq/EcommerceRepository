@@ -1,0 +1,5 @@
+<nav class="bera-home-nav" aria-label="Glavna navigacija">
+<a class="is-current"{% if request.path == '/' %} aria-current="page"{% endif %} href="{% url 'home' %}">Početna</a>
+<details class="bera-category-menu"><summary>Sve kategorije <span aria-hidden="true">⌄</span></summary><div>{% for cat in nav_categories %}{% include 'partials/bera_category_branch.html' with cat=cat %}{% empty %}<a href="{% url 'home' %}?izdvojeno=1">Svi artikli</a>{% endfor %}</div></details>
+<a href="{% url 'home' %}?akcija=1">Akcije</a><a href="{% url 'home' %}?noviteti=1">Novo</a><a href="{% url 'home' %}?izdvojeno=1">Najprodavanije</a><a href="{% url 'vlog_list' %}">Blog</a><a href="{% url 'about_us' %}">O nama</a><a href="#footerContact">Kontakt</a>
+</nav>

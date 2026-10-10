@@ -10,10 +10,10 @@ from .utils.images import product_image_seo_label
 class ProductImageSeoNameTests(SimpleTestCase):
     def test_upload_name_has_shop_prefix_and_product_title(self):
         name = product_image_seo_label('Fox EOS Pro 12ft 3.00lb')
-        self.assertTrue(name.startswith('oprema-za-ribolov-carpologijabh-'))
+        self.assertTrue(name.startswith('webshop-product-'))
         self.assertIn('fox-eos-pro-12ft-300lb', name)
         gallery = product_image_seo_label('Fox EOS Pro', extra='galerija')
-        self.assertTrue(gallery.startswith('oprema-za-ribolov-carpologijabh-'))
+        self.assertTrue(gallery.startswith('webshop-product-'))
         self.assertTrue(gallery.endswith('-galerija'))
 
 
@@ -71,6 +71,7 @@ class LoyaltyCouponPricingTests(SimpleTestCase):
         self.assertEqual(_loyalty_osnovica_iz_korpe(cart_items), Decimal('30.00'))
 
 
+@override_settings(LOYALTY_VIBER_FROM_PHONE='0038765000000')
 class LoyaltyAdminSearchTests(TestCase):
     def setUp(self):
         from django.contrib.auth.models import User
@@ -109,14 +110,14 @@ class LoyaltyAdminSearchTests(TestCase):
         page = self.client.get('/nalog/loyalty/')
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, 'Članovi / Kartice')
-        self.assertContains(page, 'Admin panel')
+        self.assertContains(page, 'Panel')
         self.assertContains(page, 'Pretraga članova')
         self.assertContains(page, 'Novi član')
         self.assertContains(page, 'Pretraga člana')
         self.assertContains(page, '+387')
         self.assertContains(page, 'Viber')
         self.assertContains(page, 'WhatsApp')
-        self.assertContains(page, '65 152 072')
+        self.assertContains(page, '65 000 000')
         self.assertContains(page, 'Ukupno članova')
         self.assertContains(page, 'Najveći potrošač')
         self.assertNotContains(page, 'Ukupno bodova')
@@ -315,7 +316,7 @@ class LoyaltyAdminSearchTests(TestCase):
         from .loyalty import whatsapp_app_url, whatsapp_chat_url
 
         from .loyalty import open_card_otp_message
-        self.assertIn('65 152 072', open_card_otp_message('123456'))
+        self.assertIn('65 000 000', open_card_otp_message('123456'))
         web = whatsapp_chat_url('065123456', 'kod 123456')
         app = whatsapp_app_url('065123456', 'kod 123456')
         self.assertTrue(web.startswith('https://wa.me/38765123456'))
@@ -469,7 +470,7 @@ class ProductVariationSplitTests(TestCase):
             naziv='Bez varijacija', slug='bez-var-split', cijena=Decimal('10.00'),
         )
         self.client.force_login(user)
-        changelist = reverse('admin:EcommerceApp_product_changelist')
+        changelist = reverse('panel_admin:EcommerceApp_product_changelist')
         response = self.client.post(changelist, {
             'action': 'bulk_split_variations',
             '_selected_action': [str(product.pk)],
@@ -729,26 +730,26 @@ class SiteVersionTests(TestCase):
         self.assertContains(page, f"Verzija {version['site_version']}")
         if version['site_version_sha']:
             self.assertNotContains(page, f"Deploy {version['site_version_sha']}")
-        self.assertContains(page, '<strong>Izrada web stranice: 065 838 653</strong>', html=True)
+        self.assertNotContains(page, '065 838 653')
 
-    def test_footer_copies_carpologija_text(self):
+    @override_settings(SITE_URL='https://client.example')
+    def test_footer_uses_site_settings_identity(self):
         from django.urls import reverse
-
+        from django.core.cache import cache
+        from .models import SiteSettings
+        site = SiteSettings.load()
+        site.seo_organizacija_naziv = 'Demo trgovina'
+        site.company_address = 'Demo adresa 1'
+        site.kontakt_telefon = '+38760000000'
+        site.seo_email = 'contact@client.example'
+        site.business_hours = 'Ponedjeljak: 9–17'
+        site.save()
+        cache.clear()
         page = self.client.get(reverse('home'))
-        self.assertContains(page, 'Kontaktirajte nas:')
-        self.assertContains(page, 'Raje Banjičića 76, Bijeljina, BiH')
-        self.assertContains(page, '(387) 65 838-653')
-        self.assertContains(page, 'carpologijabh@gmail.com')
-        self.assertContains(page, 'www.carpologijabh.ba')
-        self.assertContains(page, 'O nama')
-        self.assertContains(page, 'Način plaćanja')
-        self.assertContains(page, 'Sigurnost plaćanja')
-        self.assertContains(page, 'Izjava o privatnosti')
+        for value in ('Demo trgovina', 'Demo adresa 1', '+38760000000',
+                      'contact@client.example', 'https://client.example', 'Ponedjeljak: 9–17'):
+            self.assertContains(page, value)
         self.assertContains(page, 'Uslovi kupovine')
-        self.assertContains(page, 'Ponedjeljak – Petak : 9:00-17:00')
-        self.assertContains(page, '© Copyright Carpologija BH 2015-')
-        self.assertContains(page, 'opremazaribolov.ba je sajt CarpologijaBH.')
-        self.assertContains(page, 'Pridruži se preko 20 000 sabskrajbera')
 
 
 class ProductNameOptionsTests(TestCase):

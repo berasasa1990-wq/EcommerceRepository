@@ -8,4 +8,4 @@ Prijava i korpa: {{ login_url }}
 
 Vaš kod: {{ coupon.kod }}
 
-Carpologija BH
+Webshop

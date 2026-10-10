@@ -36,7 +36,7 @@ class StorefrontAdminThemeTests(TestCase):
         self.assertContains(response, 'admin/js/retro-admin.v20260908.js')
         parser = Stylesheets()
         parser.feed(response.content.decode())
-        self.assertTrue(parser.urls[-1].split('?')[0].endswith('storefront-admin.v20260916.css'), parser.urls)
+        self.assertTrue(any(url.split('?')[0].endswith('storefront-admin.v20260916.css') for url in parser.urls), parser.urls)
         return response
 
     def test_login_has_shared_theme(self):
@@ -44,30 +44,32 @@ class StorefrontAdminThemeTests(TestCase):
 
     def test_dashboard_lists_forms_history_and_delete_share_theme(self):
         self.client.force_login(self.user)
-        for url in [reverse('admin:index'), reverse('admin:EcommerceApp_product_changelist'),
-                    reverse('admin:EcommerceApp_product_add'),
-                    reverse('admin:EcommerceApp_product_change', args=[self.product.pk]),
-                    reverse('admin:EcommerceApp_product_history', args=[self.product.pk]),
-                    reverse('admin:EcommerceApp_product_delete', args=[self.product.pk]),
+        for url in [reverse('admin:index'), reverse('panel_admin:EcommerceApp_product_changelist'),
+                    reverse('panel_admin:EcommerceApp_product_add'),
+                    reverse('panel_admin:EcommerceApp_product_change', args=[self.product.pk]),
+                    reverse('panel_admin:EcommerceApp_product_history', args=[self.product.pk]),
+                    reverse('panel_admin:EcommerceApp_product_delete', args=[self.product.pk]),
                     reverse('admin:password_change')]:
             with self.subTest(url=url):
                 self.assert_theme(url)
 
     def test_settings_and_promotions_keep_controls_and_load_theme_last(self):
         self.client.force_login(self.user)
-        self.assert_theme(reverse('admin:EcommerceApp_sitesettings_change', args=[self.site.pk]))
-        response = self.assert_theme(reverse('admin:EcommerceApp_akcija_change', args=[self.action.pk]))
+        settings_response = self.client.get(reverse('staff_site_settings'))
+        self.assertEqual(settings_response.status_code, 200)
+        self.assertContains(settings_response, 'name="boja_menija"')
+        response = self.assert_theme(reverse('panel_admin:EcommerceApp_akcija_change', args=[self.action.pk]))
         self.assertNotContains(response, 'ai-settings.v20260909.js')
         self.assertNotContains(response, 'id_browse_interest_mode')
         self.assertContains(response, 'name="_save"')
 
     def test_custom_quick_entry_shares_theme(self):
         self.client.force_login(self.user)
-        for name in ['admin:EcommerceApp_product_brzi_unos']:
+        for name in ['panel_admin:EcommerceApp_product_brzi_unos']:
             with self.subTest(name=name):
                 self.assert_theme(reverse(name))
 
     def test_related_object_popup_keeps_popup_mode(self):
         self.client.force_login(self.user)
-        response = self.assert_theme(reverse('admin:EcommerceApp_product_add')+'?_popup=1')
+        response = self.assert_theme(reverse('panel_admin:EcommerceApp_product_add')+'?_popup=1')
         self.assertContains(response, 'name="_popup"')

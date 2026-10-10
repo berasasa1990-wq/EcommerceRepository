@@ -1,0 +1,70 @@
+{% extends 'staff/settings_editor_base.html' %}
+{% load static %}
+{% block page_title %}<title>Podešavanja — {{ shop_name }}</title>{% endblock %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block body_class %}staff-shell-page{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/panel-settings.css' %}">{% endblock %}
+{% block content %}
+<section class="panel-settings">
+    <header class="panel-settings__header">
+        <a href="{% url 'staff_panel' %}" target="_top">← Panel</a>
+        <h1>Podešavanja</h1>
+        <p>Izgled webshopa, sadržaj početne stranice, kontakt, dostava i SEO.</p>
+    </header>
+    <form method="post" action="{% url 'staff_site_settings' %}" enctype="multipart/form-data" id="panelSettingsForm" novalidate data-logo-upload-url="{% url 'staff_settings_logo' %}">
+        {% csrf_token %}
+        <div id="settingsSaveStatus" tabindex="-1" role="status"{% if settings_error_summary %} class="settings-errors"{% else %} hidden{% endif %}>{% if settings_error_summary %}<p>Podešavanja nisu sačuvana. Ispravite sljedeća polja:</p><ul>{% for error in settings_error_summary %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}</div>
+        <div class="settings-actions"><button type="submit">Sačuvaj podešavanja</button></div>
+        {% for section in settings_sections %}
+        <details class="settings-section" open>
+            <summary>{{ section.title }}</summary>
+            {% if section.description %}<div class="settings-description">{{ section.description|safe|linebreaksbr }}</div>{% endif %}
+            <div class="settings-fields">
+                {% for field in section.fields %}
+                <div class="settings-field{% if field.errors %} settings-field--error{% endif %}">
+                    {{ field.label_tag }}{{ field }}
+                    {% if field.name == 'logo' %}<div class="settings-help">Logo se automatski čuva nakon odabira slike.</div>{% endif %}
+                    {% if field.value and field.value.url %}<img class="settings-image-preview" src="{{ field.value.url }}" alt="{{ field.label }}" loading="lazy">{% endif %}
+                    {% if field.help_text %}<div class="settings-help">{{ field.help_text|safe }}</div>{% endif %}
+                    {{ field.errors }}
+                </div>
+                {% endfor %}
+            </div>
+        </details>
+        {% endfor %}
+        {% for group in inline_groups %}
+        <details class="settings-section settings-inline" open data-formset-prefix="{{ group.formset.prefix }}" data-max-forms="{{ group.formset.max_num }}">
+            <summary>{{ group.title }}</summary>
+            {{ group.formset.management_form }}
+            {{ group.formset.non_form_errors }}
+            <div data-formset-rows>
+                {% for form in group.formset %}
+                <div class="settings-inline-row">
+                    {{ form.non_field_errors }}
+                    {% for field in form.hidden_fields %}{{ field }}{{ field.errors }}{% endfor %}
+                    <div class="settings-fields">
+                    {% for field in form.visible_fields %}
+                    <div class="settings-field">{{ field.label_tag }}{{ field }}{{ field.errors }}{% if field.help_text %}<div class="settings-help">{{ field.help_text|safe }}</div>{% endif %}</div>
+                    {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <template data-formset-empty>
+                <div class="settings-inline-row">
+                    {% for field in group.empty_form.hidden_fields %}{{ field }}{% endfor %}
+                    <div class="settings-fields">
+                    {% for field in group.empty_form.visible_fields %}
+                    <div class="settings-field">{{ field.label_tag }}{{ field }}{% if field.help_text %}<div class="settings-help">{{ field.help_text|safe }}</div>{% endif %}</div>
+                    {% endfor %}
+                    </div>
+                </div>
+            </template>
+            <button type="button" data-add-form>Dodaj stavku</button>
+        </details>
+        {% endfor %}
+        <div class="settings-actions"><button type="submit">Sačuvaj podešavanja</button></div>
+    </form>
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'js/panel-settings.js' %}?v=20261007-formsets" defer></script>{% endblock %}

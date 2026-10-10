@@ -1,7 +1,7 @@
 {% extends "admin/base.html" %}
 {% load static %}
 
-{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | opremazaribolov.ba Admin{% endblock %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ shop_name }} Admin{% endblock %}
 
 {% block extrastyle %}
 {{ block.super }}
@@ -12,11 +12,11 @@
 <div id="site-name">
     <a href="{% url 'admin:index' %}">
         {% if site_settings.logo %}
-        <img class="admin-store-logo" src="{{ site_settings.logo.url }}" alt="opremazaribolov.ba" width="245" height="66">
+        <img class="admin-store-logo" src="{{ site_settings.logo.url }}" alt="{{ shop_name }}" width="245" height="66">
         {% else %}
-        <span class="admin-store-name">opremazaribolov.ba</span>
+        <span class="admin-store-name">{{ shop_name }}</span>
         {% endif %}
-        <span class="admin-store-label">Admin panel</span>
+        <span class="admin-store-label">Panel</span>
     </a>
 </div>
 {% if user.is_anonymous %}
@@ -30,6 +30,11 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'admin/css/storefront-admin.v20260916.css' %}?v=black-text-3">
 <script src="{% static 'admin/js/retro-admin.v20260908.js' %}" defer></script>
+{% if panel_is_embedded %}<link rel="stylesheet" href="{% static 'css/panel-model-editor.css' %}">{% endif %}
+<link rel="stylesheet" href="{% static 'css/panel-blue.css' %}?v=20261008-all-panel">
+{% if not panel_is_embedded %}<link rel="stylesheet" href="{% static 'admin/css/bera-admin.css' %}?v=20261008-module-cards">{% endif %}
 {% endblock %}
 
-{% block footer %}{{ block.super }}{% include "partials/permanent_input_history.html" %}{% endblock %}
+{% block footer %}{{ block.super }}<script src="{% static 'js/panel-articles-fit.js' %}?v=20261008-fit" defer></script>{% include "partials/permanent_input_history.html" %}{% endblock %}
+
+{% block bodyclass %}{{ block.super }} panel-blue-editor{% if not panel_is_embedded %} bera-admin{% endif %}{% endblock %}

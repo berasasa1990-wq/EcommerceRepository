@@ -1,11 +1,11 @@
-# Carpologija BH — robots.txt
+# Webshop — robots.txt
 # Javni katalog i sadržaj: dozvoljeno. Korpa, nalog, API: zabranjeno indeksiranje.
 
 User-agent: *
 Allow: /
 
 # Sitemap (Google / Bing)
-Sitemap: https://carpologijabh.ba/sitemap.xml
+Sitemap: {{ public_site_url }}/sitemap.xml
 # —— Ne indeksirati (utility / privatno) ——
 Disallow: /korpa/
 Disallow: /narudzba/

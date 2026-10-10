@@ -18,10 +18,10 @@ class AkcijaAdminSaveTests(TestCase):
         self.base = {'naziv': 'Nova akcija', 'aktivan': 'on', 'redoslijed': '0'}
         self.display = {'tekst_dugmeta': 'Dodaj u korpu', 'boja_dugmeta': '#666666', 'boja_opisa': '#666666',
                         'za_prijavljene': 'on', 'za_neprijavljene': 'on', 'ponovo_poslije_dana': '0'}
-        self.url = reverse('admin:EcommerceApp_akcija_add')
+        self.url = reverse('panel_admin:EcommerceApp_akcija_add')
 
     def save(self, data, obj=None):
-        url = reverse('admin:EcommerceApp_akcija_change', args=[obj.pk]) if obj else self.url
+        url = reverse('panel_admin:EcommerceApp_akcija_change', args=[obj.pk]) if obj else self.url
         response = self.client.post(url, {**self.base, **data})
         errors = response.context['adminform'].form.errors if response.status_code == 200 else ''
         inline_errors = [f.formset.errors for f in response.context['inline_admin_formsets']] if response.status_code == 200 else ''
@@ -67,7 +67,7 @@ class AkcijaAdminSaveTests(TestCase):
 
     def test_switch_existing_ponuda_to_bundle(self):
         obj = self.save({'tip': 'ponuda', 'artikal': self.products[0].pk, 'gratis_artikal': self.products[1].pk})
-        response = self.client.get(reverse('admin:EcommerceApp_akcija_change', args=[obj.pk]))
+        response = self.client.get(reverse('panel_admin:EcommerceApp_akcija_change', args=[obj.pk]))
         for name in ['bundle_lines-TOTAL_FORMS', 'id_qty_2_popust']:
             self.assertContains(response, name)
         obj = self.save(self.bundle_data(), obj)
@@ -90,7 +90,7 @@ class AkcijaAdminSaveTests(TestCase):
                          'flash_lines-MIN_NUM_FORMS': '0', 'flash_lines-MAX_NUM_FORMS': '4',
                          'flash_lines-0-product': self.products[0].pk, 'flash_lines-0-redoslijed': '0'})
         self.assertEqual(obj.flash_lines.count(), 1)
-        response = self.client.get(reverse('admin:EcommerceApp_akcija_change', args=[obj.pk]))
+        response = self.client.get(reverse('panel_admin:EcommerceApp_akcija_change', args=[obj.pk]))
         self.assertNotContains(response, 'id_flash_trigger')
         self.assertIsNotNone(obj.pocetak)
         self.assertTrue(obj.flash_applies_to_product(self.products[0]))
