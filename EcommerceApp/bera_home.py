@@ -11,7 +11,7 @@ def storefront_context():
     site = SiteSettings.load()
     from .context_processors import _messenger_contact_url
     result = {
-        'shop_name': site.seo_organizacija_naziv or getattr(settings, 'SITE_NAME', 'Webshop'),
+        'shop_name': 'CarpologijaBH' if 'opremazaribolov.ba' in (site.seo_organizacija_naziv or '').lower() else (site.seo_organizacija_naziv or getattr(settings, 'SITE_NAME', 'CarpologijaBH')),
         'public_site_url': settings.SITE_URL,
         'contact_email': site.seo_email or settings.STORE_EMAIL,
         'contact_phone': site.kontakt_telefon or settings.STORE_PHONE,

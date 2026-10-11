@@ -59,8 +59,8 @@ class EcommerceappConfig(AppConfig):
         from .admin_forms import TurnstileAdminAuthenticationForm
 
         admin.site.login_form = TurnstileAdminAuthenticationForm
-        admin.site.site_header = 'opremazaribolov.ba Admin'
-        admin.site.site_title = 'opremazaribolov.ba'
+        admin.site.site_header = 'CarpologijaBH Admin'
+        admin.site.site_title = 'CarpologijaBH'
         admin.site.index_title = 'Upravljanje trgovinom'
 
         # Register panel editors after admin autodiscovery, before system checks.

@@ -269,7 +269,6 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'EcommerceApp.media_retention.PreserveUploadsMiddleware',
-    'EcommerceApp.middleware.live_visitor.LiveVisitorMiddleware',
     'EcommerceApp.middleware.site_prep_lock.SitePrepLockMiddleware',
     'EcommerceApp.middleware.meta_page_view.MetaPageViewMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',

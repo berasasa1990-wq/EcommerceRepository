@@ -229,3 +229,37 @@ body.bera-product-reference .bera-product-code strong{color:#10243b;font-weight:
 body.bera-product-reference .bera-product-stock{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:6px 10px;box-sizing:border-box;border-radius:8px;font-weight:600}
 body.bera-product-reference .bera-product-stock .storefront-stock-quantity{color:#10243b}
 @media(max-width:540px){body.bera-product-reference .bera-product-meta{font-size:12px;gap:8px;margin-bottom:10px}}
+@media(max-width:767px){
+    body.bera-product-reference .bera-product-meta{display:grid;grid-template-columns:minmax(0,1fr) auto;width:100%;box-sizing:border-box}
+    body.bera-product-reference .bera-product-code{grid-column:1;grid-row:1;justify-self:start}
+    body.bera-product-reference .bera-product-meta #productOtherOptionsBtn{display:inline-flex!important;position:static;inset:auto;grid-column:2;grid-row:1;align-items:center;justify-self:end;gap:5px;width:auto;min-height:32px;margin:0;padding:3px 0;background:transparent!important;color:inherit!important;border:0;box-shadow:none;transform:none;font-size:13px;text-transform:none}
+    body.bera-product-reference .bera-product-meta #productOtherOptionsBtn .product-other-options-btn__count{display:none}
+    body.bera-product-reference .bera-product-stock{grid-column:1 / -1;justify-self:start}
+}
+
+/* Product options share the configurable storefront accent. */
+body.bera-product-reference #productOtherOptionsBtn,
+body.bera-product-reference .bera-product-meta #productOtherOptionsBtn{color:var(--wishlist-accent,#008dc3)!important}
+body.bera-product-reference #productOtherOptionsBtn .pd-options-icon{color:var(--wishlist-accent,#008dc3)!important;stroke:currentColor!important}
+body.bera-product-reference #productOtherOptionsBtn .product-other-options-btn__count{background:var(--wishlist-accent,#008dc3)!important;color:#fff!important}
+body.bera-product-reference #productOtherOptionsBtn:hover{filter:brightness(.9)}
+
+/* Options popup follows the same palette as its opener. */
+body.bera-product-reference .product-other-options-modal__panel{background:#f6fbff;color:#18364f;border:1px solid #cfe6f5;border-radius:18px;box-shadow:0 18px 60px #163f6533}
+body.bera-product-reference .product-other-options-modal__title{color:var(--wishlist-accent,#008dc3)}
+body.bera-product-reference .product-other-options-modal__lead{color:#637f95}
+body.bera-product-reference .product-other-options-modal__close{background:#e6f4fd;color:var(--wishlist-accent,#008dc3);border-radius:50%;border:0}
+body.bera-product-reference .product-other-options-row{background:#fff;border-color:#d9eaf6;border-radius:12px}
+body.bera-product-reference .product-other-options-row__name{color:#18364f}
+body.bera-product-reference .product-other-options-row__name:hover{color:var(--wishlist-accent,#008dc3)}
+body.bera-product-reference .product-other-options-row__media{background:#fff;border-radius:10px;border-color:#d9eaf6}
+body.bera-product-reference .product-other-options-row__price :is(.price-current,.price-sale){color:var(--wishlist-accent,#008dc3)!important}
+body.bera-product-reference .product-other-options-row__variant{color:#637f95}
+body.bera-product-reference .product-other-options-add{background:var(--wishlist-accent,#008dc3)!important;border-color:var(--wishlist-accent,#008dc3)!important;color:white!important}
+body.bera-product-reference .product-other-options-add:hover{filter:brightness(.9)}
+body.bera-product-reference .product-other-options-form .product-qty-selector{border-color:#cfe6f5;background:#fff}
+body.bera-product-reference .product-other-options-form .product-qty-selector button{color:var(--wishlist-accent,#008dc3);background:#edf7fe}
+
+@media(max-width:767px){
+ body.bera-product-reference .product-detail-info .product-brand-under-price img{max-width:38px!important;height:11px!important;width:auto!important;object-fit:contain}
+}

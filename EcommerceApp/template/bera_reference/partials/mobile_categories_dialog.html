@@ -4,6 +4,10 @@
         <h2 id="mobileCategoriesTitle">Kategorije</h2>
         <button type="button" data-categories-close aria-label="Zatvori kategorije">×</button>
     </div>
+    <form class="mobile-categories-search" action="{% url 'home' %}" method="get" role="search">
+        <input type="search" name="q" placeholder="Pretraži proizvode i brendove" aria-label="Pretraži proizvode i brendove" value="{{ request.GET.q|default:'' }}">
+        <button type="submit" aria-label="Pretraži"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg></button>
+    </form>
     <div class="mobile-categories-dialog__scroll">
         {% for cat in nav_categories %}
         <details class="mobile-category-entry" data-category-entry>

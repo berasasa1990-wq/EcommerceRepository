@@ -264,7 +264,7 @@
         font-weight: 400;
     }
 
-    .home-card-stock > span { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .home-card-stock > span[aria-hidden="true"] { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
     .home-mobile-reference .product-card--home-reference .home-card-stock--out ,
     .product-catalog .product-card--home-reference .home-card-stock--out{ color: #b64646; }

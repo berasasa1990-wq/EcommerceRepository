@@ -1440,6 +1440,61 @@ def _search_exists_match(raw):
     return match
 
 
+def _typo_tolerant_name_match(raw):
+    """Match words at >=80% similarity (one/two edits), entirely in SQL.
+
+    Similarity is 1 - edits / max(query length, matched word length).
+    Adjacent transposition counts as one typo. Exact substring/code search
+    remains unchanged.
+    """
+    tokens = _search_tokens(raw)
+    if not tokens or len(tokens) > 6:
+        return Q(pk__in=[])
+    match = Q()
+    has_tolerant_word = False
+    for token in tokens:
+        word_match = _q_name_contains(token)
+        # Short words and numeric product codes must remain precise.
+        if token.isalpha() and 4 <= len(token) <= 32:
+            has_tolerant_word = True
+            patterns = {token}
+            for index in range(len(token)):
+                patterns.add(token[:index] + token[index + 1:])
+                patterns.add(token[:index] + '[a-z]' + token[index + 1:])
+            for index in range(len(token) + 1):
+                patterns.add(token[:index] + '[a-z]' + token[index:])
+            for index in range(len(token) - 1):
+                patterns.add(token[:index] + token[index + 1] + token[index] + token[index + 2:])
+            single_edit_patterns = patterns.copy()
+            # Two wrong/missing letters; work with literal letter positions so
+            # regex syntax cannot be edited or supplied by the search input.
+            for first in range(len(token)):
+                for second in range(first + 1, len(token)):
+                    for replacement_a in ('', '[a-z]'):
+                        for replacement_b in ('', '[a-z]'):
+                            patterns.add(token[:first] + replacement_a + token[first + 1:second] + replacement_b + token[second + 1:])
+            # Two missing letters in the query, including adjacent omissions.
+            for first in range(len(token) + 1):
+                for second in range(first, len(token) + 1):
+                    patterns.add(token[:first] + '[a-z]' + token[first:second] + '[a-z]' + token[second:])
+            # One added/missing letter combined with one wrong/extra letter.
+            for index in range(len(token)):
+                for replacement in ('', '[a-z]'):
+                    atoms = list(token[:index]) + ([replacement] if replacement else []) + list(token[index + 1:])
+                    for gap in range(len(atoms) + 1):
+                        patterns.add(''.join(atoms[:gap]) + '[a-z]' + ''.join(atoms[gap:]))
+            eligible_patterns = []
+            for candidate in patterns:
+                edits = 0 if candidate == token else (1 if candidate in single_edit_patterns else 2)
+                matched_length = len(candidate.replace('[a-z]', '?'))
+                if edits * 5 <= max(len(token), matched_length):
+                    eligible_patterns.append(candidate)
+            pattern = '(^|[^a-z0-9])(' + '|'.join(sorted(eligible_patterns)) + ')($|[^a-z0-9])'
+            word_match |= Q(naziv__iregex=pattern) | Q(naziv_normalized__iregex=pattern)
+        match &= word_match
+    return match if has_tolerant_word else Q(pk__in=[])
+
+
 def _apply_search_filter(products_qs, query):
     """
     Pretraga (prioritet):
@@ -1457,6 +1512,7 @@ def _apply_search_filter(products_qs, query):
 
     # 1–2) Naziv (sve riječi, bilo kojim redom) + šifra
     match = _search_exists_match(raw)
+    match |= _typo_tolerant_name_match(raw)
 
     # 3) Explicit product tags also match phrases such as "feeder set".
     try:
@@ -2597,47 +2653,9 @@ def _related_category_products(product, limit=HOME_SECTION_PRODUCT_LIMIT, reques
 
 
 def _vlog_cards(limit=None):
-    try:
-        entries_qs = HomeVlog.objects.filter(
-            aktivan=True,
-        ).exclude(
-            slika='',
-        ).exclude(
-            slug='',
-        ).order_by('redoslijed', '-id')
-        if limit is not None:
-            entries = list(entries_qs[:limit])
-        else:
-            entries = list(entries_qs)
-    except DatabaseError:
-        logger.exception(
-            'HomeVlog tabela nije dostupna — pokreni: python manage.py migrate',
-        )
-        return []
-
-    vlogs = []
-    for vlog in entries:
-        if not vlog.slug:
-            continue
-        from .utils.images import vlog_image_responsive_meta
-
-        image_meta = vlog_image_responsive_meta(vlog.slika, default=(800, 500))
-        display_date = getattr(vlog, 'display_date', None)
-        teaser = ''
-        if hasattr(vlog, 'short_teaser'):
-            teaser = vlog.short_teaser()
-        vlogs.append({
-            'id': vlog.pk,
-            'slug': vlog.slug,
-            'naslov': vlog.naslov,
-            'teaser': teaser,
-            'datum': display_date,
-            'slika_url': image_meta['src'],
-            'slika_srcset': image_meta['srcset'],
-            'image_width': image_meta['width'],
-            'image_height': image_meta['height'],
-        })
-    return vlogs
+    # The vlog module has been retired; preserve existing database records.
+    """Retired module: preserve stored history without background work."""
+    return []
 
 
 def _home_vlogs():
@@ -3083,7 +3101,8 @@ def about_us(request):
         }),
         'canonical_url': settings.SEO_CANONICAL_URL + reverse('about_us'),
     }
-    return render(request, 'pages/about.html', context)
+    from .bera_home import render_storefront
+    return render_storefront(request, 'pages/about.html', context)
 
 
 def wishlist(request):
@@ -3096,7 +3115,9 @@ def wishlist(request):
         }),
         'canonical_url': settings.SEO_CANONICAL_URL + reverse('wishlist'),
     }
-    return render(request, 'wishlist.html', context)
+    from .bera_home import storefront_context
+    context.update(storefront_context())
+    return render(request, 'bera_reference/wishlist.html', context)
 
 
 def payment_methods(request):
@@ -3111,7 +3132,8 @@ def payment_methods(request):
         }),
         'canonical_url': settings.SEO_CANONICAL_URL + reverse('payment_methods'),
     }
-    return render(request, 'pages/payment.html', context)
+    from .bera_home import render_storefront
+    return render_storefront(request, 'pages/payment.html', context)
 
 
 
@@ -3122,7 +3144,8 @@ def payment_security(request):
         'seo_description': 'Sigurnost plaćanja kreditnim karticama i pomoć kupcu.',
         'canonical_url': settings.SEO_CANONICAL_URL + reverse('payment_security'),
     }
-    return render(request, 'pages/payment_security.html', context)
+    from .bera_home import render_storefront
+    return render_storefront(request, 'pages/payment_security.html', context)
 
 
 def privacy_statement(request):
@@ -3132,7 +3155,8 @@ def privacy_statement(request):
         'seo_description': 'Izjava o zaštiti i prikupljanju osobnih podataka kupaca i korisnika.',
         'canonical_url': settings.SEO_CANONICAL_URL + reverse('privacy_statement'),
     }
-    return render(request, 'pages/privacy_statement.html', context)
+    from .bera_home import render_storefront
+    return render_storefront(request, 'pages/privacy_statement.html', context)
 
 
 def purchase_terms(request):
@@ -3142,7 +3166,8 @@ def purchase_terms(request):
         'seo_description': 'Uslovi naručivanja, plaćanja, isporuke i reklamacija proizvoda.',
         'canonical_url': settings.SEO_CANONICAL_URL + reverse('purchase_terms'),
     }
-    return render(request, 'pages/purchase_terms.html', context)
+    from .bera_home import render_storefront
+    return render_storefront(request, 'pages/purchase_terms.html', context)
 
 
 def brands_list(request):
@@ -5394,7 +5419,8 @@ def register(request):
             'seo_h1': 'Registracija',
         }),
     }
-    return render(request, 'auth/register.html', context)
+    from .bera_home import render_storefront
+    return render_storefront(request, 'auth/register.html', context)
 
 
 @never_cache
@@ -5467,7 +5493,8 @@ def login_view(request):
             'seo_h1': 'Prijava',
         }),
     }
-    return render(request, 'auth/login.html', context)
+    from .bera_home import render_storefront
+    return render_storefront(request, 'auth/login.html', context)
 
 
 @never_cache
@@ -8025,9 +8052,18 @@ def staff_orders_validation(request):
     all_site_orders = request.resolver_match.url_name == 'staff_panel_orders'
     orders = Order.objects.filter(izvor=Order.Izvor.WEBSHOP).exclude(status=Order.Status.CEKA_PLACANJE).exclude(
         Q(ime_prezime__iexact='Prenos u MP') | Q(pick_state__kind__isnull=False, pick_state__kind='prenos_mp'),
-    ).exclude(
-        status__in=[Order.Status.ZAVRSENA, Order.Status.OTKAZANA],
-    ).exclude(lager_status__in=[Order.LagerStatus.VALIDIRANO, Order.LagerStatus.OTKAZANO])
+    )
+    cancelled = Q(status=Order.Status.OTKAZANA) | Q(lager_status=Order.LagerStatus.OTKAZANO) | Q(wms_order__status='otkazana')
+    completed = Q(status=Order.Status.ZAVRSENA) | Q(lager_status=Order.LagerStatus.VALIDIRANO) | Q(wms_order__status='zapakovana')
+    order_filter = request.GET.get('status', 'aktivna') if all_site_orders else 'aktivna'
+    if order_filter not in ('aktivna', 'zavrsene', 'otkazana'):
+        order_filter = 'aktivna'
+    if order_filter == 'otkazana':
+        orders = orders.filter(cancelled)
+    elif order_filter == 'zavrsene':
+        orders = orders.filter(completed).exclude(cancelled)
+    else:
+        orders = orders.exclude(cancelled | completed)
     pending_summary = orders.aggregate(count=Count('pk'), total=Sum('ukupno'))
     from .online_gift import SCRATCH_CAMPAIGN_NAME, scratch_label_for_claim
     from .models import ScratchPrize
@@ -8105,6 +8141,7 @@ def staff_orders_validation(request):
         **_base_context(), **dates, 'orders': page, 'all_site_orders': all_site_orders, 'pending_count': pending_summary['count'],
         'pending_total': pending_summary['total'] or Decimal('0.00'),
         'search_query': query, 'source': source, 'scratch': scratch, 'sort': sort,
+        'order_filter': order_filter,
         'source_choices': [(Order.Izvor.WEBSHOP, 'Web shop')], 'page_query': page_query,
         'sort_query': params.urlencode(),
     })
@@ -9576,7 +9613,9 @@ def staff_loyalty_system(request):
         'phone_local': phone_local,
         'loyalty_from_phone_fmt': loyalty_from_phone_display(),
     }
-    return render(request, 'staff/loyalty_system.html', context)
+    from .bera_home import storefront_context
+    context.update(storefront_context())
+    return render(request, 'bera_reference/staff/loyalty_system.html', context)
 
 
 @login_required(login_url='login')

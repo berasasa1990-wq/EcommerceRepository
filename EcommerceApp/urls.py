@@ -21,7 +21,15 @@ from . import views_product_sets
 from . import views_site_prep
 from . import views_sync
 
+def retired_live_feature(request, *args, **kwargs):
+    from django.http import HttpResponseGone
+    response = HttpResponseGone('Ova opcija je uklonjena.')
+    response['Cache-Control'] = 'no-store'
+    return response
+
+
 urlpatterns = [
+    path('panel/stara-dugmad/', bera_panel.staff_old_buttons, name='staff_old_buttons'),
     path('panel/zahtjev-otkljucavanje/', module_requests.request_unlock, name='staff_request_unlock'),
     path('panel/podesavanje-novo/', bera_panel_settings.staff_site_settings, name='staff_settings_new'),
     path('panel/podesavanje-novo/boja-dugmadi/', bera_panel_settings.staff_button_color, name='staff_button_color'),
@@ -154,8 +162,8 @@ urlpatterns = [
     path('izjava-o-privatnosti/', views.privacy_statement, name='privacy_statement'),
     path('uslovi-kupovine/', views.purchase_terms, name='purchase_terms'),
     path('brendovi/', views.brands_list, name='brands_list'),
-    path('vlog/', views.vlog_list, name='vlog_list'),
-    path('vlog/<slug:slug>/', views.vlog_detail, name='vlog_detail'),
+    path('vlog/', retired_live_feature, name='vlog_list'),
+    path('vlog/<slug:slug>/', retired_live_feature, name='vlog_detail'),
     path('kategorija/<slug:slug>/', views.category_detail, name='category'),
     path('artikal/<slug:slug>/', views.product_detail, name='product_detail'),
     path('artikal/<slug:slug>/brza-izmjena/', views.staff_product_quick_edit, name='staff_product_quick_edit'),
@@ -182,10 +190,10 @@ urlpatterns = [
     path('kreiraj-set/zamjena/', views.set_builder_alternatives, name='set_builder_alternatives'),
     path('kreiraj-set/korpa/', views.set_builder_add_cart, name='set_builder_add_cart'),
     path('drustveni-dokaz/', views.social_proof_poll, name='social_proof_poll'),
-    path('uzivo/prisutan/', views.live_visitor_heartbeat, name='live_visitor_heartbeat'),
-    path('uzivo/odlazak/', views.live_visitor_leave, name='live_visitor_leave'),
-    path('uzivo/javno/', views.public_online_visitors, name='public_online_visitors'),
-    path('uzivo/skoro-korpa/', views.almost_cart_track, name='almost_cart_track'),
+    path('uzivo/prisutan/', retired_live_feature, name='live_visitor_heartbeat'),
+    path('uzivo/odlazak/', retired_live_feature, name='live_visitor_leave'),
+    path('uzivo/javno/', retired_live_feature, name='public_online_visitors'),
+    path('uzivo/skoro-korpa/', retired_live_feature, name='almost_cart_track'),
     path('narudzba/', views.checkout, name='checkout'),
     path('narudzba/uspjeh/<str:broj>/', views.order_success, name='order_success'),
     path('prijava/', views.login_view, name='login'),
@@ -223,7 +231,7 @@ urlpatterns = [
     path('nalog/artikli/bulk-izmjena/', views.staff_product_bulk_edit, name='staff_product_bulk_edit'),
     path('nalog/artikli/ista-slika/', views.staff_same_image_products, name='staff_same_image_products'),
     path('nalog/aktiviraj-korisnika/', views.staff_activate_user, name='staff_activate_user'),
-    path('nalog/aktivne-korpe/', views.staff_active_carts, name='staff_active_carts'),
+    path('nalog/aktivne-korpe/', retired_live_feature, name='staff_active_carts'),
     path('nalog/magacin/', views_magacin.magacin_home, name='staff_magacin'),
     path('nalog/magacin/pregled/', views_magacin.magacin_pregled, name='staff_magacin_pregled'),
     path('nalog/magacin/barkod-provjera/', views_magacin.magacin_barkod_provjera, name='staff_magacin_barkod_provjera'),
@@ -446,9 +454,9 @@ urlpatterns = [
         name='staff_magacin_backup_download_current',
     ),
     path('nalog/greb-greb/', views.staff_scratch_analytics, name='staff_scratch_analytics'),
-    path('nalog/uzivo-analitika/', views.staff_live_analytics, name='staff_live_analytics'),
-    path('nalog/uzivo-analitika/podaci/', views.staff_live_analytics_data, name='staff_live_analytics_data'),
-    path('nalog/uzivo-obavijesti/', views.staff_site_events_poll, name='staff_site_events_poll'),
+    path('nalog/uzivo-analitika/', retired_live_feature, name='staff_live_analytics'),
+    path('nalog/uzivo-analitika/podaci/', retired_live_feature, name='staff_live_analytics_data'),
+    path('nalog/uzivo-obavijesti/', retired_live_feature, name='staff_site_events_poll'),
     path('nalog/pretraga-artikala/', views.staff_product_search, name='staff_product_search'),
 
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),

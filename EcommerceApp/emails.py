@@ -35,7 +35,7 @@ def _ensure_email_configured():
 
 
 def _from_email():
-    return formataddr(('opremazaribolov.ba', settings.DEFAULT_FROM_EMAIL))
+    return formataddr(('CarpologijaBH', settings.DEFAULT_FROM_EMAIL))
 
 
 def send_coupon_reward_email(coupon):
@@ -61,7 +61,7 @@ def send_coupon_reward_email(coupon):
         'login_url': login_url,
     }
     mail = EmailMultiAlternatives(
-        subject=f'Dobili ste nagradu: {reward_label} — opremazaribolov.ba',
+        subject=f'Dobili ste nagradu: {reward_label} — CarpologijaBH',
         body=render_to_string('emails/coupon_reward.txt', context),
         from_email=_from_email(),
         to=[user.email],
@@ -153,7 +153,7 @@ def _email_context(order):
         'datum': created.strftime('%d.%m.%Y.'),
         'datum_kratko': f'{created.day}. {created.month}. {created.year}.',
         'vrijeme': created.strftime('%H:%M'),
-        'site_name': 'opremazaribolov.ba',
+        'site_name': 'CarpologijaBH',
         'site_url': settings.SITE_URL,
         'logo_url': logo_url,
         'store_email': settings.STORE_EMAIL,
@@ -176,7 +176,7 @@ def send_admin_order_notification(order):
 
     recipient = settings.ORDER_NOTIFICATION_EMAIL
     admin_mail = EmailMultiAlternatives(
-        subject=f'Nova narudžba #{order.broj} — opremazaribolov.ba',
+        subject=f'Nova narudžba #{order.broj} — CarpologijaBH',
         body=_admin_order_text(order),
         from_email=_from_email(),
         to=[recipient],
@@ -202,7 +202,7 @@ def send_customer_order_confirmation(order):
         f'U prilogu emaila nalazi se potvrda narudžbe i garantni list.\n'
     )
     customer_mail = EmailMultiAlternatives(
-        subject=f'Potvrda narudžbe #{order.broj} — opremazaribolov.ba',
+        subject=f'Potvrda narudžbe #{order.broj} — CarpologijaBH',
         body=customer_text,
         from_email=_from_email(),
         to=[order.email],
@@ -228,7 +228,7 @@ def send_chat_notification(conversation, message):
     created = timezone.localtime(message.created_at)
 
     body_lines = [
-        'Nova poruka u chatu na opremazaribolov.ba',
+        'Nova poruka u chatu na CarpologijaBH',
         '',
         f'Ime: {name}',
         f'Email: {email}',
@@ -329,7 +329,7 @@ def send_cart_add_notification(
     cart_total = cart.ukupno if cart is not None else line_total
 
     body_lines = [
-        'Artikal je dodan u korpu na opremazaribolov.ba',
+        'Artikal je dodan u korpu na CarpologijaBH',
         '',
         f'Korisnik: {user_label}',
         f'Email: {user_email or "—"}',
@@ -358,7 +358,7 @@ def send_cart_add_notification(
     recipient = settings.ORDER_NOTIFICATION_EMAIL
 
     mail = EmailMultiAlternatives(
-        subject=f'Korpa: {label} — opremazaribolov.ba',
+        subject=f'Korpa: {label} — CarpologijaBH',
         body='\n'.join(body_lines),
         from_email=_from_email(),
         to=[recipient],
@@ -427,7 +427,7 @@ def send_live_offer_email(*, to_email, visitor_name='', offer=None):
     free_shipping = bool(getattr(offer, 'besplatna_dostava', False))
 
     if tip == LiveVisitorOffer.Tip.ARTIKAL and product:
-        subject = f'Posebna ponuda: {product_name} — opremazaribolov.ba'
+        subject = f'Posebna ponuda: {product_name} — CarpologijaBH'
         headline = 'Imate posebnu ponudu na sajtu'
         parts = []
         if percent > 0:
@@ -439,25 +439,25 @@ def send_live_offer_email(*, to_email, visitor_name='', offer=None):
         body_lead = 'Pripremili smo Vam ' + ' i '.join(parts) + '.'
     elif tip == LiveVisitorOffer.Tip.NARUDZBA:
         if free_shipping and percent <= 0:
-            subject = 'Besplatna dostava na prvu kupovinu — opremazaribolov.ba'
+            subject = 'Besplatna dostava na prvu kupovinu — CarpologijaBH'
             headline = 'Besplatna dostava na prvu kupovinu'
             body_lead = (
                 f'Prihvatite ponudu na sajtu — na prvu narudžbu dostava vam je besplatna'
                 f'{f" (kod: {code})" if code else ""}.'
             )
         elif free_shipping and percent > 0:
-            subject = f'{percent:g}% popusta + besplatna dostava — opremazaribolov.ba'
+            subject = f'{percent:g}% popusta + besplatna dostava — CarpologijaBH'
             headline = 'Popust i besplatna dostava'
             body_lead = (
                 f'Vaš kod za {percent:g}% popusta na narudžbu: {code or "—"}. '
                 f'Uz to, na prvu kupovinu imate besplatnu dostavu.'
             )
         else:
-            subject = f'Vaš kod za {percent:g}% popusta — opremazaribolov.ba'
+            subject = f'Vaš kod za {percent:g}% popusta — CarpologijaBH'
             headline = 'Popust na vašu narudžbu'
             body_lead = f'Vaš aktivacioni kod za {percent:g}% popusta na narudžbu: {code or "—"}.'
     else:
-        subject = 'Posebna ponuda — opremazaribolov.ba'
+        subject = 'Posebna ponuda — CarpologijaBH'
         headline = 'Imate posebnu ponudu'
         body_lead = 'Otvorite sajt da vidite personalizovanu ponudu.'
 
@@ -476,7 +476,7 @@ def send_live_offer_email(*, to_email, visitor_name='', offer=None):
     text_lines.extend([
         '',
         'Lijep pozdrav,',
-        'opremazaribolov.ba',
+        'CarpologijaBH',
     ])
 
     mail = EmailMultiAlternatives(
@@ -580,7 +580,7 @@ def send_stock_back_email(*, to_email, product):
         return
 
     ctx = stock_back_email_context(product=product, to_email=to_email)
-    subject = f'{product.naziv} je ponovo na stanju — opremazaribolov.ba'
+    subject = f'{product.naziv} je ponovo na stanju — CarpologijaBH'
     text = '\n'.join([
         f'{product.naziv} je ponovo na stanju.',
         '',
@@ -590,7 +590,7 @@ def send_stock_back_email(*, to_email, product):
         f'Poruči: {ctx["product_url"]}',
         '',
         'Lijep pozdrav,',
-        'opremazaribolov.ba',
+        'CarpologijaBH',
     ])
     mail = EmailMultiAlternatives(
         subject=subject,

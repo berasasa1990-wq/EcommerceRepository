@@ -1,4 +1,5 @@
 {% if page_obj %}
+{% if pagination_placement != 'top' or page_obj.paginator.num_pages > 1 %}
 <nav class="catalog-pagination catalog-pagination--compact{% if pagination_placement %} catalog-pagination--{{ pagination_placement }}{% endif %}" aria-label="Stranice artikala">
     {% if page_obj.paginator.num_pages > 1 %}
     <div class="catalog-pagination-links">
@@ -37,8 +38,11 @@
         {% endif %}
     </div>
     {% endif %}
+    {% if pagination_placement != 'top' %}
     <div class="catalog-pagination-info">
         {{ page_obj.number }}/{{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} art.
     </div>
+    {% endif %}
 </nav>
+{% endif %}
 {% endif %}

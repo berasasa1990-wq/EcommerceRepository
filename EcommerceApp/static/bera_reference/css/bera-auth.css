@@ -1,0 +1,13 @@
+body.bera-storefront-header.is-auth-page .auth-page{max-width:600px;margin:0 auto;padding:28px 20px 48px;box-sizing:border-box;color:#10243b}
+body.bera-storefront-header.is-auth-page .auth-card{padding:28px;background:linear-gradient(145deg,#f1faff,#fff 70%);border:1px solid #dcebf5;border-radius:18px;box-shadow:0 8px 28px rgb(15 83 122 / 5%)}
+body.bera-storefront-header.is-auth-page .auth-card h1{color:#10243b;font-size:28px;text-transform:none}
+body.bera-storefront-header.is-auth-page .auth-lead{color:#637b94;line-height:1.5}
+body.bera-storefront-header.is-auth-page .auth-form label{color:#234963}
+body.bera-storefront-header.is-auth-page .auth-form :is(input:not([type=hidden]):not([type=checkbox]),select){width:100%;max-width:100%;min-height:46px;box-sizing:border-box;border:1px solid #d6e8f4;border-radius:10px;background:#f7fbfe;color:#10243b;font-size:16px;padding:10px 12px}
+body.bera-storefront-header.is-auth-page .auth-form input[type=checkbox]{accent-color:#009ace}
+body.bera-storefront-header.is-auth-page .auth-form :is(input,button):focus-visible{outline:2px solid #009ace;outline-offset:3px}
+body.bera-storefront-header.is-auth-page .auth-card a{color:#007caf}
+body.bera-storefront-header.is-auth-page .auth-form button[type=submit]{width:100%;min-height:46px;border:0;border-radius:12px;background:var(--wishlist-accent,#008dc3)!important;color:#fff!important}
+body.bera-storefront-header.is-auth-page .form-group--error input{border-color:#b42318!important}
+body.bera-storefront-header.is-auth-page .form-error{color:#b42318}
+@media(max-width:767px){body.bera-storefront-header.is-auth-page .auth-page{padding:18px 12px 28px}body.bera-storefront-header.is-auth-page .auth-card{padding:20px 16px}}

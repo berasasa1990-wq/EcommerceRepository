@@ -1072,7 +1072,7 @@ class CategoryAdmin(admin.ModelAdmin):
             ),
             'description': (
                 '<strong>Prioritet #1 poslije početne.</strong> Svaka kategorija treba unique sadržaj.<br>'
-                '• <b>SEO title</b> (50–60): npr. „Štapovi za šarana | Oprema za ribolov — opremazaribolov.ba”<br>'
+                '• <b>SEO title</b> (50–60): npr. „Štapovi za šarana | Oprema za ribolov — CarpologijaBH”<br>'
                 '• <b>Meta description</b> (140–160): što nudiš + benefit + CTA<br>'
                 '• <b>H1</b>: npr. „Štapovi za šarana” (može kraće od title-a)<br>'
                 '• <b>SEO tekst ispod</b>: 2–4 pasusa o kategoriji (ne copy-paste isti tekst)<br>'
@@ -2312,7 +2312,7 @@ class ProductAdmin(admin.ModelAdmin):
             ),
             'description': (
                 'Sva polja su <strong>opcionalna</strong>. Sistem automatski radi: '
-                '<em>Naziv | Brend | opremazaribolov.ba</em> + opis s benefitima.<br>'
+                '<em>Naziv | Brend | CarpologijaBH</em> + opis s benefitima.<br>'
                 '<strong>Ručno popuni samo</strong> za bestsellere / skupe / prioritetne artikle.<br>'
                 '• Title 50–60 znakova · Description 140–160 · H1 = kupcu jasno ime proizvoda<br>'
                 '• SEO tekst: rijetko potreban na artiklu (bolje dobar <em>Opis proizvoda</em>)<br>'
@@ -3896,3 +3896,8 @@ class HomeBestsellerProductAdmin(HomeFeaturedProductAdmin):
                        'Prvih 6 aktivnih artikala na stanju prikazuje se po redoslijedu u sekciji Najprodavaniji proizvodi. '
                        'Manji broj ide prvi. Isključi Aktivan za uklanjanje iz sekcije.',
     }),)
+
+# Retired live monitoring and vlog editors; database history is preserved.
+for _retired_model in (HomeVlog, ActiveCartItem, StaffSiteEvent, LiveVisitor):
+    if admin.site.is_registered(_retired_model):
+        admin.site.unregister(_retired_model)

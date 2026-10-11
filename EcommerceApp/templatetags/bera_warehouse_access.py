@@ -42,17 +42,17 @@ register.simple_tag(panel_tool_locked, name='panel_tool_locked')
 
 @register.simple_tag(takes_context=True)
 def storefront_availability_visible(context):
+    request = context.get('request')
+    if request is not None and hasattr(request, '_wms_availability_visible'):
+        return request._wms_availability_visible
     try:
         from EcommerceApp.models import WMSSettings
-        from EcommerceApp.panel_modules import module_locked
+        from EcommerceApp.bera_panel_modules import module_locked
     except ImportError:
         return True
     from django.db import connection
     if WMSSettings._meta.db_table not in connection.introspection.table_names():
         return True
-    request = context.get('request')
-    if request is not None and hasattr(request, '_wms_availability_visible'):
-        return request._wms_availability_visible
     visible = not module_locked('wms_zalihe') and not WMSSettings.objects.filter(pk=1, show_storefront_availability=False).exists()
     if request is not None:
         request._wms_availability_visible = visible

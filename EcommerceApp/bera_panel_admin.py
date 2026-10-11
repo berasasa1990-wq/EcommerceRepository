@@ -15,7 +15,7 @@ class PanelAdminSite(admin.AdminSite):
     app_index_template = 'bera_panel_admin/app_index.html'
 
     def get_app_list(self, request, app_label=None):
-        hidden = {'ModulePermissions'}
+        hidden = {'ModulePermissions', 'HomeVlog', 'ActiveCartItem', 'StaffSiteEvent', 'LiveVisitor', 'LiveVisitorOffer'}
         apps = super().get_app_list(request, app_label)
         for app in apps:
             app['models'] = [model for model in app['models'] if model['object_name'] not in hidden]
@@ -67,7 +67,7 @@ def install_panel_editors():
     from django.conf import settings
     root = Path(settings.BASE_DIR) / 'EcommerceApp/template/bera_panel_admin'
     for model, editor in list(admin.site._registry.items()):
-        if model._meta.model_name == 'modulepermissions':
+        if model._meta.model_name in {'modulepermissions', 'homevlog', 'activecartitem', 'staffsiteevent', 'livevisitor', 'livevisitoroffer'}:
             continue
         if model in panel_admin_site._registry or model._meta.app_label not in {'EcommerceApp', 'auth'}:
             continue

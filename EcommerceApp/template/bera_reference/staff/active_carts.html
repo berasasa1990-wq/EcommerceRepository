@@ -50,16 +50,16 @@
             <input type="hidden" name="sort" value="{{ sort }}">
             {% endif %}
             {% if search_query %}
-            <a href="{% url 'staff_active_carts' %}{% if sort and sort != 'azurirano' %}?sort={{ sort }}{% endif %}" class="staff-active-carts-search-clear">Poništi pretragu</a>
+            
             {% endif %}
         </form>
 
         <div class="staff-active-carts-sort">
             <span class="staff-active-carts-sort-label">Sortiraj</span>
             <div class="staff-active-carts-sort-pills">
-                <a href="{% url 'staff_active_carts' %}?sort=azurirano{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="staff-filter-btn{% if sort == 'azurirano' or not sort %} is-active{% endif %}">Zadnja izmjena</a>
-                <a href="{% url 'staff_active_carts' %}?sort=dodano{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="staff-filter-btn{% if sort == 'dodano' %} is-active{% endif %}">Dodano u korpu</a>
-                <a href="{% url 'staff_active_carts' %}?sort=naziv{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="staff-filter-btn{% if sort == 'naziv' %} is-active{% endif %}">Naziv artikla</a>
+                
+                
+                
             </div>
         </div>
     </div>
@@ -127,7 +127,7 @@
             {% endif %}
         </p>
         {% if search_query %}
-        <a href="{% url 'staff_active_carts' %}{% if sort and sort != 'azurirano' %}?sort={{ sort }}{% endif %}" class="btn btn-secondary">Poništi pretragu</a>
+        
         {% endif %}
     </div>
     {% endif %}

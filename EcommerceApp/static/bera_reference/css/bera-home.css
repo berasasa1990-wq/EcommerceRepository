@@ -495,3 +495,185 @@ body.bera-storefront-header :is(.subcategory-grid,.brands-grid){display:grid;gri
 /* Catalog images match the larger homepage image area. */
 body.bera-storefront-header .product-catalog .product-image{aspect-ratio:1.4!important;padding:8px 8px 0!important}
 body.bera-storefront-header .product-catalog .product-image img{padding:2px!important}
+
+/* Keep mobile availability and its quantity together. */
+@media (max-width:768px){
+ body.bera-storefront-header :is(.home-card-stock,.product-stock-label,.bera-product-stock){display:inline-flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center;gap:4px;white-space:nowrap!important}
+ body.bera-storefront-header :is(.home-card-stock,.product-stock-label,.bera-product-stock) .storefront-stock-quantity{display:inline!important;width:auto!important;flex:0 0 auto!important;white-space:nowrap!important}
+}
+
+/* Slightly enlarge the shop logo while preserving its header slot. */
+body.bera-storefront-header #header img.logo-image{transform:scale(1.08);transform-origin:center}
+
+.bera-payment-security{padding:20px 16px;border-top:1px solid #d9e8f3;text-align:center}
+.bera-payment-security p{margin:0 0 12px;font-size:13px}
+.bera-payment-security__logos{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px}
+.bera-payment-security__logos a{display:flex;align-items:center;justify-content:center;width:92px;height:60px;background:#fff;border:1px solid #d9e8f3;border-radius:6px}
+.bera-payment-security__logos img{width:80px;height:54px;object-fit:contain}
+
+/* Two benefits per mobile view; swipe for the remaining items. */
+@media(max-width:768px){
+ body.bera-home.home-mobile-reference :is(.mobile-home-benefits,.home-trust-bar__inner){display:grid!important;grid-template-columns:none!important;grid-auto-flow:column;grid-auto-columns:calc((100% - 8px) / 2);gap:8px!important;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+ body.bera-home.home-mobile-reference :is(.mobile-home-benefits,.home-trust-bar__inner)::-webkit-scrollbar{display:none}
+ body.bera-home.home-mobile-reference :is(.mobile-home-benefits__item,.home-trust-bar__item){min-width:0;scroll-snap-align:start}
+ body.bera-home.home-mobile-reference :is(.mobile-home-benefits,.home-trust-bar__inner):focus-visible{outline:2px solid #008bc5;outline-offset:3px}
+}
+
+/* Quantity is text, not the decorative availability dot. */
+body.bera-storefront-header .home-card-stock > .storefront-stock-quantity{background:transparent!important;border-radius:0!important;height:auto!important;width:auto!important;box-shadow:none!important}
+
+/* Footer: the shop's blue palette and consistent responsive spacing. */
+body.bera-storefront-header .bera-footer{
+ background:linear-gradient(125deg,#007fba 0%,#005c98 52%,#003d70 100%);
+ color:#fff;padding:40px max(20px,calc((100% - 1424px)/2)) 20px;
+ border-top:4px solid #00c9e8;
+}
+.bera-footer .bera-footer__grid{max-width:1424px;grid-template-columns:1.45fr repeat(3,minmax(0,1fr)) 1.35fr;gap:32px;align-items:start}
+.bera-footer .bera-footer__grid>div{min-width:0}
+.bera-footer h3{font-size:15px;line-height:1.4;margin:0 0 16px;letter-spacing:.01em}
+.bera-footer a{color:#e3f4ff!important;font-size:13px;line-height:1.6;margin-bottom:9px;overflow-wrap:anywhere;transition:color .15s ease}
+.bera-footer a:hover{color:#fff!important;text-decoration:underline;text-underline-offset:4px}
+.bera-footer a:focus-visible{outline:2px solid #a7edff;outline-offset:4px;border-radius:3px}
+.bera-footer .bera-footer__brand>a:first-child{display:inline-flex;background:#fff;border-radius:10px;padding:10px 14px;margin-bottom:6px;max-width:100%;box-sizing:border-box;color:#004b7f!important}
+.bera-footer .bera-footer__brand img{max-width:180px;height:54px;object-fit:contain}
+.bera-footer .bera-footer__brand p{font-size:13px;color:#e3f4ff;line-height:1.7;margin:8px 0 14px}
+.bera-footer .bera-footer__social{gap:10px;margin-top:16px}
+.bera-footer .bera-footer__social a{width:34px;height:34px;margin:0;border-color:#ffffff60;background:#ffffff10;font-size:19px}
+.bera-footer .bera-footer__social a:hover{background:#ffffff25;text-decoration:none}
+.bera-footer .bera-footer__payment-row{gap:8px;margin-bottom:14px}
+.bera-footer .bera-payment-security{max-width:1424px;margin:30px auto 0;padding:22px 0;border-top:1px solid #ffffff35}
+.bera-footer .bera-payment-security p{font-size:13px;font-weight:600;color:#e3f4ff;margin-bottom:14px}
+.bera-footer .bera-payment-security__logos{gap:10px}
+.bera-footer .bera-payment-security__logos a{margin:0;border-color:#ffffff40;box-shadow:0 2px 6px #002c5320;transition:transform .15s ease}
+.bera-footer .bera-payment-security__logos a:hover{transform:translateY(-2px)}
+.bera-footer .bera-footer__bottom{max-width:1424px;margin:0 auto;border-color:#ffffff35;text-align:center;padding-top:18px;font-size:12px;line-height:1.6;color:#d1eaff}
+@media(max-width:1024px){
+ body.bera-storefront-header .bera-footer{padding:30px 20px 20px}
+ .bera-footer .bera-footer__grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
+ .bera-footer .bera-footer__brand{grid-column:1/-1}
+ .bera-footer .bera-footer__payments{grid-column:auto}
+}
+@media(max-width:600px){
+ body.bera-storefront-header .bera-footer{padding:26px 16px 22px}
+ .bera-footer .bera-footer__grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 16px}
+ .bera-footer .bera-footer__brand,.bera-footer .bera-footer__payments{grid-column:1/-1}
+ .bera-footer h3{font-size:14px;margin-bottom:12px}
+ .bera-footer a{font-size:12px;margin-bottom:9px}
+ .bera-footer .bera-payment-security{margin-top:24px;padding:20px 0}
+ .bera-footer .bera-payment-security__logos{display:grid;grid-template-columns:repeat(3,minmax(0,92px));gap:10px;justify-content:center}
+ .bera-footer .bera-payment-security__logos a{width:100%;box-sizing:border-box}
+ .bera-footer .bera-payment-security__logos img{max-width:100%;object-fit:contain}
+}
+
+/* Consistent grid for secure-payment partner logos. */
+.bera-footer .bera-payment-security__logos{display:grid;grid-template-columns:repeat(6,minmax(0,104px));justify-content:center;align-items:stretch;gap:12px;max-width:684px;margin:0 auto}
+.bera-footer .bera-payment-security__logos a{display:flex;align-items:center;justify-content:center;width:100%;height:64px;padding:8px;margin:0;box-sizing:border-box;border-radius:9px;background:#fff;overflow:hidden}
+.bera-footer .bera-payment-security__logos img{display:block;width:100%;max-width:84px;height:44px;object-fit:contain;margin:0}
+@media(max-width:768px){.bera-footer .bera-payment-security__logos{grid-template-columns:repeat(3,minmax(0,104px));gap:10px;max-width:332px}}
+@media(max-width:360px){.bera-footer .bera-payment-security__logos{gap:8px}.bera-footer .bera-payment-security__logos a{height:58px;padding:6px}.bera-footer .bera-payment-security__logos img{height:40px}}
+
+/* Mobile navigation follows the app-style dock. */
+@media(max-width:767px){
+    body.bera-storefront-header{padding-bottom:calc(88px + env(safe-area-inset-bottom))!important}
+    body.bera-storefront-header .mobile-home-dock{padding:8px 6px calc(10px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid #e0edf5;box-shadow:0 -4px 18px rgba(18,64,95,.06)}
+    body.bera-storefront-header .mobile-home-dock > :is(a,button){position:relative;isolation:isolate;min-height:68px;padding:7px 0 9px;gap:6px;color:#4b5869;font-size:12px;line-height:1.2}
+    body.bera-storefront-header .mobile-home-dock > :is(a,button) > svg{width:28px;height:28px;stroke:#4b5869;stroke-width:1.7;fill:none}
+    body.bera-storefront-header .mobile-home-dock > :is([aria-current="page"],.is-open){color:var(--mobile-dock-accent,#009fda)!important;font-weight:700}
+    body.bera-storefront-header .mobile-home-dock > :is([aria-current="page"],.is-open)::before{content:"";position:absolute;z-index:-1;top:0;left:10%;right:10%;height:40px;border-radius:24px;background:color-mix(in srgb,var(--mobile-dock-accent,#009fda) 10%,white)}
+    body.bera-storefront-header .mobile-home-dock > :is([aria-current="page"],.is-open)::after{content:"";position:absolute;bottom:0;left:22%;right:22%;height:3px;border-radius:3px;background:var(--mobile-dock-accent,#009fda)}
+    body.bera-storefront-header .mobile-home-dock > :is([aria-current="page"],.is-open) > svg{stroke:var(--mobile-dock-accent,#009fda)!important}
+    body.bera-storefront-header .mobile-home-dock > a:first-child[aria-current="page"] > svg{fill:var(--mobile-dock-accent,#009fda)!important}
+    body.bera-storefront-header .mobile-home-dock :is(.mobile-dock-cart-count,.mobile-dock-favorites-count){position:absolute;top:0;left:calc(50% + 8px);right:auto;display:grid;place-items:center;min-width:19px;height:19px;padding:0 4px;box-sizing:border-box;border-radius:50px;background:var(--mobile-dock-accent,#009fda)!important;color:white!important;font-size:11px;font-weight:700;line-height:1;border:2px solid white}
+    body.bera-storefront-header .mobile-home-dock .mobile-dock-favorites-count[hidden]{display:none}
+}
+
+/* Shared blue palette for category navigation and category pages. */
+body.bera-storefront-header .mobile-categories-dialog{border-color:#cfe7f6;border-radius:20px;background:#f5faff;color:#16344f;box-shadow:0 16px 50px #153c5a30}
+body.bera-storefront-header .mobile-categories-dialog::backdrop{background:#12375080}
+body.bera-storefront-header .mobile-categories-dialog__head{padding-bottom:12px;border-bottom:1px solid #d5e9f5}
+body.bera-storefront-header .mobile-categories-dialog__head :is(h2,button){color:#008dc3}
+body.bera-storefront-header .mobile-category-entry{margin-bottom:8px;border:1px solid #d9eaf6;border-radius:12px;background:white;overflow:hidden}
+body.bera-storefront-header .mobile-category-entry summary{min-height:48px;color:#24415c}
+body.bera-storefront-header .mobile-category-entry summary .cat-ico{color:#008dc3}
+body.bera-storefront-header .mobile-category-entry[open] summary{color:#007eaf;background:#e6f5ff}
+body.bera-storefront-header .mobile-category-entry[open] summary::before{background:#009fda;left:0}
+body.bera-storefront-header .mobile-category-entry[open] summary::after{border-color:#008dc3}
+body.bera-storefront-header .mobile-category-entry__children{background:#f1f8fd;border-radius:0;padding-top:8px;padding-bottom:12px}
+body.bera-storefront-header .mobile-category-entry__children a{padding-top:10px;padding-bottom:10px;color:#254861}
+body.bera-storefront-header .mobile-category-entry__children .mobile-category-entry__all{color:#008dc3}
+body.bera-storefront-header .mobile-categories-extra{background:#e6f4fd;color:#007fac;border:1px solid #cee8f6}
+body.bera-storefront-header :is(.mobile-category-entry__children a,.mobile-categories-extra):hover{background:#dceffc;color:#006d9a}
+body.bera-storefront-header .cats-dropdown__btn{background:linear-gradient(135deg,#00bddb,#008bc5)!important;color:white!important;border-color:#009fda}
+body.bera-storefront-header :is(.cats-dropdown__panel,.cats-dropdown__sub){background:#fff;border-color:#d5e9f5}
+body.bera-storefront-header .cats-dropdown__item:is(.is-current,.is-open) > .cats-dropdown__link,body.bera-storefront-header .cats-dropdown__link:hover{background:#eaf6ff;color:#008dc3}
+body.bera-storefront-header .cats-dropdown__sub a:hover{background:#eaf6ff;color:#008dc3}
+body.bera-storefront-header .subcategory-card{background:linear-gradient(135deg,#fff,#f0f8fe);border:1px solid #d2e8f6;border-radius:14px;box-shadow:0 4px 14px #125b8610;color:#174263}
+body.bera-storefront-header .subcategory-card .subcategory-name{color:#174263}
+body.bera-storefront-header .subcategory-card:hover{border-color:#009fda;box-shadow:0 6px 20px #008dc320}
+body.bera-storefront-header .subcategory-card:hover .subcategory-name{color:#008dc3}
+body.bera-storefront-header .btn-view-all{background:linear-gradient(135deg,#00bddb,#008bc5)!important;color:white!important;border-color:#009fda}
+@media(max-width:767px){
+    html.categories-dialog-open body.bera-storefront-header .mobile-home-dock [data-mobile-home-menu]{color:#009fda!important;font-weight:700}
+    html.categories-dialog-open body.bera-storefront-header .mobile-home-dock [data-mobile-home-menu] svg{stroke:#009fda!important;fill:none}
+    html.categories-dialog-open body.bera-storefront-header .mobile-home-dock [data-mobile-home-menu]::before{content:"";position:absolute;z-index:-1;top:0;left:10%;right:10%;height:40px;border-radius:24px;background:#e6f5fd}
+    html.categories-dialog-open body.bera-storefront-header .mobile-home-dock [data-mobile-home-menu]::after{content:"";position:absolute;bottom:0;left:22%;right:22%;height:3px;border-radius:3px;background:#009fda}
+    html.categories-dialog-open body.bera-storefront-header .mobile-home-dock > [aria-current="page"]::before,html.categories-dialog-open body.bera-storefront-header .mobile-home-dock > [aria-current="page"]::after{display:none}
+}
+
+body.bera-storefront-header .mobile-categories-search{display:flex;align-items:center;gap:8px;flex-shrink:0;margin:0 0 14px;padding:0 10px;background:#eaf5fd;border:1px solid #cee5f5;border-radius:12px;min-height:46px}
+body.bera-storefront-header .mobile-categories-search input{flex:1;min-width:0;width:100%;padding:12px 0;border:0;outline:none;background:transparent;color:#173b59;font:inherit;font-size:16px}
+body.bera-storefront-header .mobile-categories-search:focus-within{outline:2px solid #009fda;outline-offset:2px}
+body.bera-storefront-header .mobile-categories-search button{display:grid;place-items:center;width:40px;min-height:40px;padding:8px;border:0;background:transparent;color:#008dc3;border-radius:8px}
+body.bera-storefront-header .mobile-categories-search svg{width:22px;height:22px}
+
+/* Wishlist uses the storefront palette on desktop and mobile. */
+body.bera-storefront-header :is(.wishlist-popover,.mobile-favorites.wishlist-sheet){background:#f5faff;color:#18364f;border:1px solid #d2e8f6;box-shadow:0 14px 42px #174c7026}
+body.bera-storefront-header .wishlist-panel{background:#fff;color:#18364f}
+body.bera-storefront-header .wishlist-panel__head{background:#edf7fe;border-bottom:1px solid #dcecf7}
+body.bera-storefront-header :is(.wishlist-panel__head a,.wishlist-item__price){color:var(--wishlist-accent,#008dc3)}
+body.bera-storefront-header .wishlist-item{border-color:#dfedf7}
+body.bera-storefront-header .wishlist-item__name{color:#18364f}
+body.bera-storefront-header .wishlist-item__cat{color:#6a8195}
+body.bera-storefront-header .wishlist-item__media{background:#f0f8fd;border:1px solid #e0edf7;border-radius:12px}
+body.bera-storefront-header .wishlist-item__remove{color:#6b859a;border-radius:10px}
+body.bera-storefront-header .wishlist-item__remove:hover{background:#e6f4fd;color:var(--wishlist-accent,#008dc3)}
+body.bera-storefront-header .wishlist-panel__cta{background:var(--wishlist-accent,#008dc3);color:#fff!important;box-shadow:0 4px 12px #008dc31a}
+body.bera-storefront-header .wishlist-menu.is-open .reference-header-heart{background:#e5f4fd;color:var(--wishlist-accent,#008dc3)}
+body.bera-storefront-header .mobile-favorites.wishlist-sheet .wishlist-sheet__close{background:#e5f4fd;color:var(--wishlist-accent,#008dc3);border-radius:50%}
+body.bera-storefront-header .wishlist-page__head h1{color:#18364f}
+body.bera-storefront-header .wishlist-page__head p{color:#6a8195}
+body.bera-storefront-header .wishlist-page__list{padding:0 16px;background:white;border:1px solid #d2e8f6;border-radius:16px;box-shadow:0 4px 18px #174c7010}
+body.bera-storefront-header .wishlist-item--empty{color:#6a8195}
+body.bera-storefront-header .mobile-home-dock .mobile-dock-favorites:is(.is-open,.wishlist-btn--has-items) svg{stroke:var(--wishlist-accent,#008dc3)!important}
+body.bera-storefront-header .mobile-home-dock .mobile-dock-favorites.wishlist-btn--has-items svg{fill:var(--wishlist-accent,#008dc3)}
+
+/* One mobile card layout for home, search, categories, brands and offers. */
+@media(max-width:767px){
+ body.bera-storefront-header .category-page{width:calc(100% - 16px)!important;margin-left:auto!important;margin-right:auto!important}
+ body.bera-storefront-header .product-catalog .product-grid--catalog{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+ body.bera-storefront-header .product-catalog .catalog-products .product-card--catalog{min-width:0;display:flex!important;flex-direction:column!important;height:100%;border:1px solid #e3edf5!important;border-radius:14px!important;background:#fff!important;box-shadow:0 2px 7px #144a7610!important;overflow:hidden}
+ body.bera-storefront-header .product-catalog .catalog-products .product-card--catalog .product-image{height:auto!important;aspect-ratio:1.4!important;min-height:0!important;padding:8px 8px 0!important}
+ body.bera-storefront-header .product-catalog .catalog-products .product-card--catalog .product-image img{padding:2px!important;object-fit:contain}
+ body.bera-storefront-header .product-catalog .catalog-products .product-card--catalog .product-card__body{padding:6px 9px 0!important}
+ body.bera-storefront-header .product-catalog .catalog-products .product-card--catalog .product-card__title{font-size:12px!important;line-height:1.35!important;font-weight:500!important;min-height:2.7em!important;max-height:2.7em!important;margin:0!important}
+ body.bera-storefront-header .product-catalog .catalog-products .product-card--catalog .product-card__footer{padding:6px 9px 10px!important;gap:8px!important}
+ body.bera-storefront-header .product-catalog .catalog-products .product-card--catalog :is(.price-current,.price-sale){font-size:16px!important}
+ body.bera-storefront-header .product-catalog .catalog-products .product-card--catalog .product-card-add-btn:not(.product-card-add-btn--notify){height:34px!important;min-height:34px!important;font-size:11px!important;gap:5px!important;border-radius:10px!important}
+}
+
+/* Tighten the space above catalogue products. */
+body.bera-storefront-header .category-page{padding-top:12px!important}
+body.bera-storefront-header .product-catalog .catalog-pagination--top{padding-top:6px!important;padding-bottom:8px!important;margin-top:0!important;margin-bottom:0!important}
+
+@media(max-width:767px){
+ body.bera-storefront-header .product-card .product-brand-under-price img,
+ body.bera-storefront-header .product-catalog .product-card .product-brand-under-price img{max-width:27.2px!important;height:7.2px!important;width:auto!important;min-width:0!important;min-height:0!important;object-fit:contain}
+}
+
+body.bera-storefront-header #header .logo-brand:has(.header-panel-shortcut){display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:12px;min-width:0}
+body.bera-storefront-header #header .logo-brand:has(.header-panel-shortcut) > .logo{min-width:0;flex:1 1 auto;width:auto!important;max-width:calc(100% - 46px)!important}
+body.bera-storefront-header #header .header-panel-shortcut{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;box-sizing:border-box;border:1px solid #cde7f5;border-radius:9px;background:#edf8fd;color:var(--wishlist-accent,#008dc3);text-decoration:none}
+body.bera-storefront-header #header .header-panel-shortcut svg{width:21px;height:21px}
+body.bera-storefront-header #header .header-panel-shortcut:hover{background:#dff3fc}
+body.bera-storefront-header #header .header-panel-shortcut:focus-visible{outline:2px solid #008dc3;outline-offset:3px}
+@media(max-width:767px){body.bera-storefront-header #header .logo-brand:has(.header-panel-shortcut){gap:6px}body.bera-storefront-header #header .header-panel-shortcut{flex-basis:28px;width:28px;height:28px}body.bera-storefront-header #header .header-panel-shortcut svg{width:18px;height:18px}}

@@ -1,0 +1,89 @@
+body.staff-shell-page.loy-full,body.staff-shell-page.loy-full .site-main{background:#f3f9ff!important;color:#18364f}
+body.loy-full main{width:100%;box-sizing:border-box;padding-top:16px!important}
+body.loy-full .loy-desk{max-width:1440px;margin:0 auto;padding:12px 24px 40px;color:#18364f}
+body.loy-full .loy-grid{grid-template-columns:minmax(0,1fr) minmax(280px,340px);gap:20px}
+body.loy-full .loy-grid > *{min-width:0}
+body.loy-full :is(.loy-search-card,.loy-table,.loy-modal__panel,.loyalty-scan-modal__panel){border-color:#d4e8f6;border-radius:16px;box-shadow:0 4px 18px #1857800c}
+body.loy-full :is(.loy-kicker,.loy-back,.loy-resend button){color:var(--wishlist-accent,#008dc3)}
+body.loy-full .loy-top h1{color:#18364f}
+body.loy-full .loy-sub{color:#678198}
+body.loy-full :is(.loy-btn-new,.loy-btn-go,.loy-find button){background:var(--wishlist-accent,#008dc3)!important;color:#fff!important;box-shadow:none}
+body.loy-full :is(.loy-btn-new,.loy-btn-go,.loy-find button):hover{filter:brightness(.9)}
+body.loy-full .loy-tabs{border-color:#d4e8f6;flex-wrap:wrap;gap:12px 22px}
+body.loy-full .loy-tabs a.is-on{color:var(--wishlist-accent,#008dc3);border-color:var(--wishlist-accent,#008dc3)}
+body.loy-full :is(.loy-phone,.loy-find input,.loy-otp-d):focus-within{border-color:var(--wishlist-accent,#008dc3);box-shadow:0 0 0 3px #008dc31a}
+body.loy-full .loy-foreign input{accent-color:var(--wishlist-accent,#008dc3)}
+body.loy-full .loy-hint{background:#eaf6fe;color:#23658c}
+body.loy-full .loy-table{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+body.loy-full .loy-table th{background:#edf7fe;color:#3b6580}
+body.loy-full .loy-table :is(td,th){border-color:#e0edf7}
+body.loy-full .loy-table a.row{color:var(--wishlist-accent,#008dc3)}
+body.loy-full .loy-pages .is-on,body.loy-full .loy-years a.is-on{background:var(--wishlist-accent,#008dc3);color:#fff;border-color:var(--wishlist-accent,#008dc3)}
+body.loy-full :is(.loy-top,.loy-foot){flex-wrap:wrap}
+@media(max-width:1100px){body.loy-full .loy-grid{grid-template-columns:minmax(0,1fr)}body.loy-full .loy-desk{padding:8px 14px 32px}}
+@media(max-width:540px){body.loy-full .loy-desk{padding:8px 10px 28px}body.loy-full .loy-search-card{padding:14px 12px}body.loy-full .loy-find{flex-wrap:wrap}body.loy-full .loy-find input{flex-basis:100%;font-size:16px}body.loy-full .loy-find button{width:100%}body.loy-full .loy-phone input{font-size:16px}body.loy-full .loy-table table{min-width:600px}body.loy-full .loy-table td{overflow-wrap:anywhere}body.loy-full .loy-otp{gap:5px}body.loy-full .loy-otp-d{width:36px;min-width:0;box-sizing:border-box}}
+
+/* Use the regular storefront chrome and card proportions. */
+body.bera-storefront-header.loy-full .loy-desk{max-width:1424px;padding:24px 20px 40px}
+body.bera-storefront-header.loy-full .loy-back{padding:8px 12px;border:1px solid #d4e8f6;border-radius:10px;background:#fff;color:#008dc3}
+body.bera-storefront-header.loy-full .loy-tabs{padding:0 16px;background:#fff;border:1px solid #d4e8f6;border-radius:12px}
+body.bera-storefront-header.loy-full .loy-tabs a{padding:14px 0;font-weight:600}
+body.bera-storefront-header.loy-full .loy-search-card{background:linear-gradient(135deg,#fff,#f7fbff);border:1px solid #d4e8f6}
+body.bera-storefront-header.loy-full :is(.loy-btn-new,.loy-btn-go,.loy-find button){border-radius:10px;min-height:44px;background:linear-gradient(135deg,#00bddb,#008bc5)!important}
+body.bera-storefront-header.loy-full :is(.loy-top h1,.loyalty-results-title){color:#102f4d;font-weight:700}
+body.bera-storefront-header.loy-full :is(.loy-find input,.loy-phone){background:#edf7fe;border-color:#d4e8f6}
+@media(max-width:767px){body.bera-storefront-header.loy-full .loy-desk{padding:16px 10px 24px}body.bera-storefront-header.loy-full .loy-tabs{gap:16px;padding:0 12px}}
+
+/* Match the WMS workspace palette and controls. */
+body.bera-storefront-header.loy-full{--wishlist-accent:#008bc3;background:#f5faff!important;color:#102343}
+body.bera-storefront-header.loy-full .site-main{background:#f5faff!important}
+body.bera-storefront-header.loy-full .loy-desk{color:#102343}
+body.bera-storefront-header.loy-full :is(.loy-search-card,.loy-table){background:#fff;border:1px solid #dcebf7;border-radius:14px;box-shadow:0 4px 18px #06558208}
+body.bera-storefront-header.loy-full .loy-desk :is(.loy-btn-new,.loy-btn-go,.loy-find button,.loy-ch,.loy-ch-wide),body.bera-storefront-header.loy-full .loy-modal :is(.loy-btn-go,.loy-ch){background:linear-gradient(135deg,#009ec9,#0068a8)!important;border:1px solid #008cc5!important;color:#fff!important;border-radius:10px;min-height:40px;font-weight:700;box-shadow:none}
+body.bera-storefront-header.loy-full :is(.loy-btn-new,.loy-btn-go,.loy-find button,.loy-ch,.loy-ch-wide):hover{filter:brightness(.92)}
+body.bera-storefront-header.loy-full .loy-btn-ghost{background:#edf7ff;color:#007caf;border:1px solid #dcebf7}
+body.bera-storefront-header.loy-full :is(.loy-phone,.loy-find input,.loy-otp-d){background:#fff;border-color:#dcebf7;border-radius:10px}
+body.bera-storefront-header.loy-full :is(.loy-tabs a.is-on,.loy-kicker,.loy-resend button){color:#008bc3}
+body.bera-storefront-header.loy-full .loy-tabs a.is-on{border-color:#008bc3}
+body.bera-storefront-header.loy-full .loy-table th{background:#edf7ff;color:#557b9f}
+body.bera-storefront-header.loy-full .loy-table tr:hover td{background:#f5faff}
+body.bera-storefront-header.loy-full .loy-prog :is(.on,.done) .n{background:#008bc3;color:#fff}
+body.bera-storefront-header.loy-full .loy-prog .done + .ln{background:#b4dff3}
+body.bera-storefront-header.loy-full .loy-sent .ok{color:#008bc3}
+body.bera-storefront-header.loy-full .loy-hint{background:#edf7ff;color:#557b9f;border:1px solid #dcebf7}
+
+/* Match the current cart's cards, controls and spacing. */
+body.bera-storefront-header.loy-full .loy-desk{max-width:1440px;padding:28px 24px 56px;color:#10243b}
+body.bera-storefront-header.loy-full .loy-grid{gap:24px}
+body.bera-storefront-header.loy-full :is(.loy-search-card,.loy-table,.loy-card,.loy-panel,.loyalty-scan-modal__panel){border:1px solid #dcebf5;border-radius:18px;box-shadow:0 8px 28px rgb(15 83 122 / 5%)}
+body.bera-storefront-header.loy-full .loy-search-card{background:#fff;padding:22px;margin-bottom:20px}
+body.bera-storefront-header.loy-full .loy-card{padding:22px;background:linear-gradient(145deg,#f1faff,#fff 70%)}
+body.bera-storefront-header.loy-full :is(.loy-card h3,.loy-panel h2,.loy-top h1,.loyalty-results-title){color:#10243b;text-transform:none;letter-spacing:-.02em}
+body.bera-storefront-header.loy-full .loy-card h3{font-size:19px}
+body.bera-storefront-header.loy-full :is(.loy-sub,.loy-card p,.loy-send-lab){color:#637b94}
+body.bera-storefront-header.loy-full .loy-back{padding:12px 16px;background:#edf8fd;border:1px solid #cce9f5;color:#007caf;border-radius:10px}
+body.bera-storefront-header.loy-full .loy-desk :is(.loy-btn-new,.loy-btn-go,.loy-find button,.loy-ch,.loy-ch-wide),body.bera-storefront-header.loy-full .loy-modal :is(.loy-btn-go,.loy-ch){background:linear-gradient(120deg,#0ac4e8,#0084ba)!important;color:#fff!important;border:0!important;border-radius:12px;min-height:44px;text-transform:none;letter-spacing:0}
+body.bera-storefront-header.loy-full :is(.loy-btn-new,.loy-btn-go,.loy-find button,.loy-ch,.loy-ch-wide):hover{background:linear-gradient(120deg,#00aed8,#006f9f)!important;filter:none}
+body.bera-storefront-header.loy-full :is(.loy-phone,.loy-find input,.loy-otp-d){border-color:#d6e8f4;border-radius:10px;background:#f7fbfe;color:#10243b}
+body.bera-storefront-header.loy-full .loy-hint{background:#edf8fd;border-color:#dcebf5;color:#526c86;border-radius:12px}
+body.bera-storefront-header.loy-full .loy-table :is(th,td){border-color:#e7f0f7}
+body.bera-storefront-header.loy-full .loy-card input,body.bera-storefront-header.loy-full .loy-card select{max-width:100%;box-sizing:border-box}
+body.bera-storefront-header.loy-full .loy-desk :is(button,a,input):focus-visible{outline:2px solid #009ace;outline-offset:3px}
+@media(max-width:767px){body.bera-storefront-header.loy-full .loy-desk{padding:18px 12px 28px}body.bera-storefront-header.loy-full .loy-grid{gap:18px}body.bera-storefront-header.loy-full :is(.loy-search-card,.loy-card,.loy-panel){padding:16px}body.bera-storefront-header.loy-full .loy-top h1{font-size:26px}}
+
+/* Flat blue panels replace the old metallic stylesheet. */
+body.bera-storefront-header.loy-full .loy-desk{font-family:Inter,"Segoe UI",sans-serif}
+body.bera-storefront-header.loy-full .loy-tabs{padding:8px;gap:8px}
+body.bera-storefront-header.loy-full .loy-tabs a{padding:10px 14px;border:1px solid transparent;border-radius:9px;color:#55718a;background:transparent;box-shadow:none}
+body.bera-storefront-header.loy-full .loy-tabs a.is-on{background:#008dc3;color:#fff;border-color:#008dc3;margin:0}
+body.bera-storefront-header.loy-full .loy-tabs a:hover{background:#eaf6fd;color:#007caf}
+body.bera-storefront-header.loy-full .loy-tabs a.is-on:hover{background:#007caf;color:#fff}
+body.bera-storefront-header.loy-full .loyalty-results-title{margin:0;padding:16px 18px;font-size:19px;background:#edf8fd;border-bottom:1px solid #dcebf5;box-shadow:none}
+body.bera-storefront-header.loy-full .loy-card h3{background:transparent;padding:0;margin:0 0 16px;border:0;box-shadow:none}
+body.bera-storefront-header.loy-full .loy-stat article{background:#fff;border:1px solid #dcebf5;border-radius:14px;padding:18px;box-shadow:0 8px 28px rgb(15 83 122 / 5%)}
+body.bera-storefront-header.loy-full .loy-stat .ico{background:#e6f5fd;color:#008dc3}
+body.bera-storefront-header.loy-full .loy-stat :is(.lab,.sub){color:#637b94}
+body.bera-storefront-header.loy-full .loy-stat strong{color:#10243b}
+body.bera-storefront-header.loy-full .loy-table td{background:#fff;color:#234963}
+body.bera-storefront-header.loy-full .loy-badge{border:0;border-radius:7px;box-shadow:none;padding:5px 9px}
+body.bera-storefront-header.loy-full .loy-fab{background:#008dc3;color:#fff}

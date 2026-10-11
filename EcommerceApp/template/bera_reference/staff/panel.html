@@ -55,17 +55,15 @@ body .staff-admin-page .admin-live-new { position: absolute; top: 12px; right: 1
             <div class="admin-btn-text"><strong>B2B</strong><span>Podešavanja, korisnici, narudžbe i B2B Live</span></div>
             <span class="admin-btn-arrow" aria-hidden="true">{% if not panel_b2b_url or "staff_b2b_workspace"|panel_tool_locked %}🔒{% else %}→{% endif %}</span>
         </a>
-        <a {% if panel_settings_url %}href="{% url 'staff_settings' %}"{% else %}aria-disabled="true" title="Nemate dozvolu za ovu sekciju"{% endif %} class="admin-btn{% if not panel_settings_url %} admin-btn--locked{% endif %}">
-            <div class="admin-btn-icon" aria-hidden="true">⚙</div>
-            <div class="admin-btn-text"><strong>Podešavanja</strong><span>Podešavanja sajta, banneri, korisnički profili i SEO stranice</span></div>
-            <span class="admin-btn-arrow" aria-hidden="true">→</span>
-        </a>
+        <a href="{% url 'staff_old_buttons' %}" class="admin-btn"><div class="admin-btn-icon" aria-hidden="true">▤</div><div class="admin-btn-text"><strong>Stara dugmad</strong><span>Podešavanja i dodatne administrativne sekcije</span></div><span class="admin-btn-arrow" aria-hidden="true">→</span></a>
         {% for item in model_sections %}
+        {% if item.key != 'order' %}
         <a {% if item.module_locked %}aria-disabled="true" title="Modul je isključen"{% else %}href="{{ item.workspace_url }}"{% endif %} class="admin-btn{% if item.module_locked %} admin-btn--locked{% endif %}">
             <div class="admin-btn-icon" aria-hidden="true">▤</div>
             <div class="admin-btn-text"><strong>{{ item.label }}</strong><span>{% if item.key == 'product' %}Artikli, tagovi, kategorije i brendovi{% elif item.key == 'akcija' %}Akcije i upsell ponude{% else %}Pregled i uređivanje{% endif %}</span></div>
             <span class="admin-btn-arrow" aria-hidden="true">{% if item.module_locked %}🔒{% else %}→{% endif %}</span>
         </a>
+        {% endif %}
         {% endfor %}
         <a {% if "staff_loyalty_workspace"|panel_tool_locked %}aria-disabled="true" title="Modul je isključen"{% else %}href="{% url 'staff_loyalty_workspace' %}"{% endif %} class="{% if "staff_loyalty_workspace"|panel_tool_locked %}admin-btn--locked {% endif %}admin-btn">
             <div class="admin-btn-icon admin-btn-icon--loyalty" aria-hidden="true">
@@ -113,23 +111,7 @@ body .staff-admin-page .admin-live-new { position: absolute; top: 12px; right: 1
 
 
 
-        <a {% if "staff_live_analytics"|panel_tool_locked %}aria-disabled="true" title="Modul je isključen"{% else %}href="{% url 'staff_live_analytics' %}"{% endif %} class="{% if "staff_live_analytics"|panel_tool_locked %}admin-btn--locked {% endif %}admin-btn">
-            <span class="admin-live-new">NEW</span>
-            <div class="admin-btn-icon admin-btn-icon--live" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="2.5"/>
-                    <path d="M16.24 7.76a6 6 0 0 1 0 8.48"/>
-                    <path d="M7.76 16.24a6 6 0 0 1 0-8.48"/>
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                    <path d="M4.93 19.07a10 10 0 0 1 0-14.14"/>
-                </svg>
-            </div>
-            <div class="admin-btn-text">
-                <strong>Live centar</strong>
-                <span>Online kupci, korpe, checkout, B2B i aktivni pregledi</span>
-            </div>
-            <span class="admin-btn-arrow" aria-hidden="true">{% if "staff_live_analytics"|panel_tool_locked %}🔒{% else %}→{% endif %}</span>
-        </a>
+        
         <a href="{% url 'staff_panel_orders' %}" class="admin-btn">
             <span class="admin-live-new">NEW</span>
             <div class="admin-btn-icon admin-btn-icon--orders" aria-hidden="true">

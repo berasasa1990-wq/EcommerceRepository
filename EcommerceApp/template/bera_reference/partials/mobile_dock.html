@@ -1,7 +1,7 @@
 {% load static %}
 {% include 'bera_reference/partials/mobile_categories_dialog.html' %}
 {% include 'bera_reference/partials/mobile_search_dialog.html' %}
-<nav class="mobile-home-dock" aria-label="Mobilna navigacija">
+<nav class="mobile-home-dock" style="--mobile-dock-accent:{{ bera_button_color|default:'#009fda' }}" aria-label="Mobilna navigacija">
     <a href="{% url 'home' %}" {% if request.resolver_match.url_name == "home" and not filters_active %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24"><path d="m3 10 9-8 9 8v11h-6v-7H9v7H3z"/></svg><span>Početna</span></a>
     <button type="button" data-mobile-home-menu><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span>Kategorije</span></button>
     <button type="button" data-mobile-home-search><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 6 6"/></svg><span>Pretraga</span></button>

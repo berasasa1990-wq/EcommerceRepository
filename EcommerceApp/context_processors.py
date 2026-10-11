@@ -15,7 +15,7 @@ from .online_gift import active_reward_label
 from .upsell import get_active_upsell_offer
 from .utils.seo import absolute_url
 
-_CONTACT_MESSAGE = 'Zdravo, imam pitanje sa opremazaribolov.ba'
+_CONTACT_MESSAGE = 'Zdravo, imam pitanje sa CarpologijaBH'
 
 
 def _phone_digits(phone):

@@ -11,6 +11,7 @@ PRODUCT_KEYS = ('product', 'homefeaturedproduct', 'homenovoproduct', 'homebestse
 PROMOTION_KEYS = ('akcija', 'upselloffer')
 SETTINGS_KEYS = ('banner', 'userprofile', 'pageseo')
 WMS_KEYS = ('warehousecustomer', 'warehouselocation', 'productwarehousemeta', 'warehousesynclog')
+OLD_BUTTON_KEYS = ('magacindeklaracijabrend', 'warehousesupplier', 'group', 'warehousemovement', 'coupon', 'user', 'warehousestock')
 
 
 def can_open_panel(user):
@@ -28,12 +29,25 @@ def model_sections(request):
 def staff_panel(request):
     from .views import _base_context
     sections = model_sections(request)
-    excluded = (*B2B_KEYS, *WMS_KEYS, *PRODUCT_KEYS[1:], *PROMOTION_KEYS[1:], *SETTINGS_KEYS, 'loyaltycard', 'sitesettings')
+    excluded = (*B2B_KEYS, *WMS_KEYS, *PRODUCT_KEYS[1:], *PROMOTION_KEYS[1:], *SETTINGS_KEYS, *OLD_BUTTON_KEYS, 'loyaltycard', 'sitesettings')
     return render(request, 'bera_reference/staff/panel.html', {
         **_base_context(), **storefront_context(),
         'is_superuser_staff': request.user.is_superuser,
         'new_orders_count': Order.objects.filter(status=Order.Status.NOVA).count() if request.user.is_superuser else 0,
         'model_sections': [item for item in sections if item['key'] not in excluded],
         'panel_b2b_url': next((item['workspace_url'] for item in sections if item['key'] == 'b2baccount'), ''),
+        'panel_settings_url': next((item['workspace_url'] for item in sections if item['key'] == 'sitesettings'), ''),
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(can_open_panel, login_url='login')
+@require_GET
+def staff_old_buttons(request):
+    from .views import _base_context
+    sections = model_sections(request)
+    return render(request, 'bera_reference/staff/old_buttons.html', {
+        **_base_context(), **storefront_context(),
+        'old_sections': [item for item in sections if item['key'] in OLD_BUTTON_KEYS],
         'panel_settings_url': next((item['workspace_url'] for item in sections if item['key'] == 'sitesettings'), ''),
     })

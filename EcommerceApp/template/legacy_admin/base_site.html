@@ -1,7 +1,7 @@
 {% extends "admin/base.html" %}
 {% load static %}
 
-{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | opremazaribolov.ba Admin{% endblock %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | CarpologijaBH Admin{% endblock %}
 
 {% block extrastyle %}
 {{ block.super }}
@@ -12,9 +12,9 @@
 <div id="site-name">
     <a href="{% url 'admin:index' %}">
         {% if site_settings.logo %}
-        <img class="admin-store-logo" src="{{ site_settings.logo.url }}" alt="opremazaribolov.ba" width="245" height="66">
+        <img class="admin-store-logo" src="{{ site_settings.logo.url }}" alt="CarpologijaBH" width="245" height="66">
         {% else %}
-        <span class="admin-store-name">opremazaribolov.ba</span>
+        <span class="admin-store-name">CarpologijaBH</span>
         {% endif %}
         <span class="admin-store-label">Admin panel</span>
     </a>

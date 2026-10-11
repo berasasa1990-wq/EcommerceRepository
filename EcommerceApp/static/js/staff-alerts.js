@@ -373,7 +373,7 @@
             '<div class="staff-order-celebration__actions">' +
             '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--primary" data-order-celeb-orders>PREGLEDAJ NARUDŽBU <span aria-hidden="true">→</span></button>' +
             '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--ghost" data-order-celeb-close>IZAĐI</button></div>' +
-            '<div class="soc-footer">OPREMAZARIBOLOV.BA</div></div></div>';
+            '<div class="soc-footer">CarpologijaBH</div></div></div>';
 
         document.body.appendChild(overlay);
         document.body.classList.add('staff-order-celebration-open');

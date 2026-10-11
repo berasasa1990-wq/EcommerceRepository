@@ -2,10 +2,11 @@
 <section class="validation-orders">
     <a class="vo-back" href="{% url 'staff_panel' %}">← Nazad na Panel</a>
     <header class="vo-header">
-        <div class="vo-heading"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V2h6v3M9 11h6M9 15h4"/></svg><div><h1>{% if all_site_orders %}Narudžbe sa sajta{% else %}Narudžbe za validaciju{% endif %}</h1><p>{% if all_site_orders %}Sve narudžbe kreirane na sajtu, bez obzira na status.{% else %}Narudžbe koje još nisu validovane. Nakon validacije nestaju sa ove liste.{% endif %}</p></div></div>
+        <div class="vo-heading"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V2h6v3M9 11h6M9 15h4"/></svg><div><h1>{% if all_site_orders %}Narudžbe sa sajta{% else %}Narudžbe za validaciju{% endif %}</h1><p>{% if all_site_orders %}Aktivne narudžbe sa sajta. Završene i otkazane pogledajte kroz filter statusa.{% else %}Narudžbe koje još nisu validovane. Nakon validacije nestaju sa ove liste.{% endif %}</p></div></div>
         <div class="vo-count"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8C3 8 6 0 10 4l2 4c9 0 6-8 2-4z"/></svg><div><strong>{{ pending_count }}</strong><span>{% if all_site_orders %}narudžbi sa sajta{% else %}nevalidovanih narudžbi{% endif %}</span></div><div class="vo-count-total"><strong>{{ pending_total|floatformat:2 }} KM</strong><span>Ukupan iznos</span></div></div>
     </header>
     <form method="get" class="vo-filters">
+        {% if all_site_orders %}<label>Status<select name="status"><option value="aktivna"{% if order_filter == 'aktivna' %} selected{% endif %}>Aktivne</option><option value="zavrsene"{% if order_filter == 'zavrsene' %} selected{% endif %}>Završene</option><option value="otkazana"{% if order_filter == 'otkazana' %} selected{% endif %}>Otkazane</option></select></label>{% endif %}
         <label>Datum od<input type="date" name="date_from" value="{{ date_from }}"></label>
         <label>Datum do<input type="date" name="date_to" value="{{ date_to }}"></label>
         <label>Način naručivanja<select name="source"><option value="">Svi načini</option>{% for value, label in source_choices %}<option value="{{ value }}"{% if source == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
@@ -39,7 +40,7 @@
         </td>
         <td data-label="Datum" class="vo-date">{{ order.kreirana|date:'d.m.Y.' }}<small>{{ order.kreirana|date:'H:i' }}</small></td>
         <td data-label="Akcija"><a class="vo-button" href="{% url 'staff_order_detail' broj=order.broj %}?preview=email" target="_blank" rel="noopener" aria-label="Pogledaj narudžbu {{ order.broj }}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Pogledaj</a></td>
-    </tr>{% empty %}<tr><td colspan="8" class="vo-empty">Nema nevalidovanih narudžbi za odabrane filtere.</td></tr>{% endfor %}
+    </tr>{% empty %}<tr><td colspan="8" class="vo-empty">Nema narudžbi za odabrane filtere.</td></tr>{% endfor %}
     </tbody></table></div>
     {% if orders.has_other_pages %}<nav class="vo-pagination" aria-label="Stranice narudžbi">{% if orders.has_previous %}<a href="?{{ page_query }}&amp;page={{ orders.previous_page_number }}">← Prethodna</a>{% endif %}<span>Stranica {{ orders.number }} od {{ orders.paginator.num_pages }}</span>{% if orders.has_next %}<a href="?{{ page_query }}&amp;page={{ orders.next_page_number }}">Sljedeća →</a>{% endif %}</nav>{% endif %}
     <dialog id="vo-reward-dialog" class="vo-reward-dialog" aria-labelledby="vo-reward-title">

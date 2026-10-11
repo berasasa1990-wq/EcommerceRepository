@@ -83,3 +83,19 @@ document.querySelectorAll('.bera-product-tabs').forEach((list) => {
     });
   });
 });
+
+// Keep the existing options button and its popup handler when changing layout.
+(() => {
+    const button = document.getElementById('productOtherOptionsBtn');
+    const meta = document.querySelector('.bera-product-meta');
+    if (!button || !meta) return;
+    const origin = document.createComment('product options desktop position');
+    button.before(origin);
+    const mobile = window.matchMedia('(max-width: 767px)');
+    const place = () => {
+        if (mobile.matches) meta.append(button);
+        else origin.after(button);
+    };
+    place();
+    mobile.addEventListener('change', place);
+})();

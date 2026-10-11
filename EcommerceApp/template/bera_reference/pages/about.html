@@ -1,4 +1,7 @@
 {% extends 'bera_reference/base.html' %}
+{% load static %}
+{% block body_class %}page-info catalog-header-reference{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'bera_reference/css/bera-info.css' %}?v=20261011">{% endblock %}
 
 {% block page_title %}
 <title>{{ seo_title }}</title>
@@ -24,22 +27,20 @@
         {% include 'bera_reference/partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
         <div class="info-page-body">
-            <p>
-                {{ shop_name }} nastao je iz dugogodišnje strasti prema ribolovu i kvalitetnoj opremi.
-                Godinama smo bili u svakodnevnom kontaktu s ribarima, razumjeli njihove potrebe i tražili
-                najbolje proizvode koje tržište nudi.
-            </p>
-            <p>
-                Iskustvo stečeno kroz ribolov i rad s opremom prirodno je preraslo u prodaju — željeli smo
-                ribarima u Bosni i Hercegovini pružiti što bolju, pregledniju i pouzdaniju ponudu na jednom mjestu.
-            </p>
-            <p>
-                Danas nudimo širok asortiman ribolovačke opreme renomiranih brendova, uz savjete i podršku
-                koje dolaze iz prakse, a ne samo iz kataloga. Naš cilj je jednostavan: da svaki ribar pronađe
-                opremu koja mu odgovara i kojoj može vjerovati.
-            </p>
+            <p>CarpologijaBH nastala je iz dugogodišnje strasti prema ribolovu, iskustva u radu s ribolovačkom opremom i želje da ribolovcima širom Bosne i Hercegovine pružimo kvalitetan izbor proizvoda na jednom mjestu.</p>
+            <p>Kroz godine iskustva i svakodnevni kontakt s ribolovcima naučili smo koliko su kvalitet, pouzdanost i pravilan izbor opreme važni za uspješan boravak na vodi.</p>
+            <p>Danas CarpologijaBH predstavlja modernu online trgovinu s bogatim asortimanom ribolovačke opreme poznatih brendova. Našu ponudu nastojimo kontinuirano unapređivati, prateći potrebe ribolovaca i novitete u svijetu ribolova.</p>
+            <p>Posebnu pažnju posvećujemo jednostavnoj i sigurnoj kupovini, preglednoj ponudi, jasnim informacijama o proizvodima i kvalitetnoj podršci kupcima.</p>
+            <p><strong>Naš cilj nije samo prodaja opreme, već izgradnja dugoročnog povjerenja s ljudima koji dijele našu strast prema ribolovu.</strong></p>
+            <p>Bilo da ste početnik ili iskusan ribolovac, želimo da u CarpologijaBH pronađete opremu koja odgovara vašim potrebama.</p>
+            <p><strong>CarpologijaBH – vaša strast, naša posvećenost.</strong></p>
         </div>
 
+        <section id="kontakt" class="info-page-body">
+            <h2>Kontakt</h2>
+            {% if contact_phone %}<p>Telefon: <a href="tel:{{ contact_phone }}">{{ contact_phone }}</a></p>{% endif %}
+            <p>Email: <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a></p>
+        </section>
         {% include 'bera_reference/partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
     </div>
 </article>

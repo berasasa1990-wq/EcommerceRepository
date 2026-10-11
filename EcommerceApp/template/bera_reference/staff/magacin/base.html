@@ -233,10 +233,7 @@
                         <path d="M7 8v8M10 8v8M13 8v5M16 8v8"/>
                     </svg>
                 </button>
-                <a class="mg-chrome-icon" href="{% url 'staff_live_analytics' %}" title="Obavijesti" aria-label="Obavijesti">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
-                    {% if notify_count %}<span class="mg-badge">{{ notify_count }}</span>{% endif %}
-                </a>
+                
                 <div class="mg-user" id="mgUser">
                     <span class="mg-avatar">{{ staff_display_name|default:"AD"|slice:":2"|upper }}</span>
                     <div class="mg-user-menu">

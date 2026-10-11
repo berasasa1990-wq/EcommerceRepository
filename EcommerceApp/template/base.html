@@ -365,7 +365,7 @@
                 <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 3"/></svg>Brza dostava u roku 24h</span>
                 <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6zM7 11l3 3 6-6"/></svg>Sigurna kupovina</span>
             </div>
-            <nav aria-label="Informacije"><a href="#footerContact">Kontakt</a><a href="{% url 'about_us' %}">O nama</a><a href="{% url 'vlog_list' %}">Blog</a><a href="{% url 'payment_methods' %}">Pomoć</a><a class="site-wholesale-link" href="{% url 'b2b_catalog' %}">VELEPRODAJA</a></nav>
+            <nav aria-label="Informacije"><a href="#footerContact">Kontakt</a><a href="{% url 'about_us' %}">O nama</a><a href="{% url 'payment_methods' %}">Pomoć</a><a class="site-wholesale-link" href="{% url 'b2b_catalog' %}">VELEPRODAJA</a></nav>
         </div>
         <p>
             <span data-site-edit="promo_bar_tekst" data-site-edit-placeholder="Promo tekst">{% if site_settings.promo_bar_tekst %}{{ site_settings.promo_bar_tekst }}{% endif %}</span>
@@ -781,9 +781,7 @@
     {% include 'partials/mobile_dock.html' %}
     {% include 'partials/footer.html' %}
     {% include 'partials/contact_float.html' %}
-    {% if site_settings.javno_online_posjetioci %}
-    {% include 'partials/public_online_visitors.html' %}
-    {% endif %}
+    
     {% include 'partials/catalog_variation_modal.html' %}
     {% include 'partials/stock_notify_popup.html' %}
 
@@ -804,30 +802,11 @@
     <script src="{% static 'js/main.min.js' %}?v=20260916-account-scroll-top" defer></script>
     <script src="{% static 'js/desktop-reference.js' %}?v=20260914-dropdowns" defer></script>
     <script src="{% static 'js/stock-notify.js' %}?v=20260916-notify-no-autofocus" defer></script>
-    {% if site_settings.javno_online_posjetioci %}
-    <script>idleLoadScript("{% static 'js/public-online-visitors.js' %}?v=20260716v1");</script>
-    {% endif %}
-    {% if not user.is_authenticated or not user.is_superuser %}
-    <script>idleLoadScript("{% static 'js/almost-cart.js' %}?v=20260712v3");</script>
-    {% endif %}
+    
+    
     {# Live praćenje svih osim superusera — incognito / gost / registrovan #}
-    {% if not user.is_authenticated or not user.is_superuser %}
-    <div id="visitorPresenceRoot" hidden
-         data-heartbeat-url="{% url 'live_visitor_heartbeat' %}"
-         data-leave-url="{% url 'live_visitor_leave' %}"
-         data-session-key="{{ request.session.session_key|default:'' }}"></div>
-    <script>idleLoadScript("{% static 'js/visitor-presence.js' %}?v=20260831fast");</script>
-    {% endif %}
-    {% if user.is_authenticated and user.is_superuser %}
-    <link rel="stylesheet" href="{% static 'css/staff-alerts.css' %}?v=20260909ordercard">
-    <div id="staffAlertsRoot" hidden
-         data-logo-url="{% static 'img/carpologija-nav-logo-dark.jpg' %}"
-         data-poll-url="{% url 'staff_site_events_poll' %}"
-         data-analytics-url="{% url 'staff_live_analytics' %}"
-         data-orders-url="{% url 'staff_online_orders' %}"
-         {% if request.resolver_match and request.resolver_match.url_name == 'staff_live_analytics' %}data-disable-toasts="1"{% endif %}></div>
-    <script src="{% static 'js/staff-alerts.js' %}?v=20261011-summary-poll" defer></script>
-    {% endif %}
+    
+    
     {% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
     {% include 'partials/staff_site_editor.html' %}
     <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20260929bulkTags">

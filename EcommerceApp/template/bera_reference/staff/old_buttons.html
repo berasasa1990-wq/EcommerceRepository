@@ -1,0 +1,14 @@
+{% extends 'bera_reference/staff/panel.html' %}
+{% block page_title %}<title>Stara dugmad — {{ shop_name }}</title>{% endblock %}
+{% block content %}
+<section class="staff-admin-page">
+    <a href="{% url 'staff_panel' %}" class="admin-back">← Nazad na panel</a>
+    <header class="admin-header"><h1>Stara dugmad</h1></header>
+    <div class="admin-buttons">
+        {% if panel_settings_url %}<a href="{% url 'staff_settings' %}" class="admin-btn"><div class="admin-btn-icon" aria-hidden="true">⚙</div><div class="admin-btn-text"><strong>Podešavanje</strong><span>Podešavanja sajta</span></div><span class="admin-btn-arrow" aria-hidden="true">→</span></a>{% endif %}
+        {% for item in old_sections %}
+        <a {% if item.module_locked %}aria-disabled="true" title="Modul je isključen"{% else %}href="{{ item.workspace_url }}"{% endif %} class="admin-btn{% if item.module_locked %} admin-btn--locked{% endif %}"><div class="admin-btn-icon" aria-hidden="true">▤</div><div class="admin-btn-text"><strong>{{ item.label }}</strong><span>Pregled i uređivanje</span></div><span class="admin-btn-arrow" aria-hidden="true">{% if item.module_locked %}🔒{% else %}→{% endif %}</span></a>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

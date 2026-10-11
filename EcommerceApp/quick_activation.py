@@ -183,7 +183,7 @@ def generate_product_description(
             {
                 'role': 'system',
                 'content': (
-                    'Ti si copywriter za webshop opremazaribolov.ba. '
+                    'Ti si copywriter za webshop CarpologijaBH. '
                     'Pišeš kratke, tačne opise artikala ribolovne opreme. '
                     'Odgovaraš isključivo tekstom opisa, ničim drugim.'
                 ),

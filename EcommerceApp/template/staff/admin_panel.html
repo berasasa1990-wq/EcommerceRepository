@@ -4,7 +4,7 @@
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {% block page_title %}
-<title>Admin panel — opremazaribolov.ba</title>
+<title>Admin panel — CarpologijaBH</title>
 {% endblock %}
 
 {% block body_class %}staff-shell-page is-cart-page{% endblock %}
@@ -94,23 +94,7 @@ body .staff-admin-page .admin-live-new { position: absolute; top: 12px; right: 1
         </a>
 
 
-        <a href="{% url 'staff_live_analytics' %}" class="admin-btn">
-            <span class="admin-live-new">NEW</span>
-            <div class="admin-btn-icon admin-btn-icon--live" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="2.5"/>
-                    <path d="M16.24 7.76a6 6 0 0 1 0 8.48"/>
-                    <path d="M7.76 16.24a6 6 0 0 1 0-8.48"/>
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                    <path d="M4.93 19.07a10 10 0 0 1 0-14.14"/>
-                </svg>
-            </div>
-            <div class="admin-btn-text">
-                <strong>Live centar</strong>
-                <span>Online kupci, korpe, checkout, B2B i aktivni pregledi</span>
-            </div>
-            <span class="admin-btn-arrow" aria-hidden="true">→</span>
-        </a>
+        
         <a href="{% url 'staff_orders_validation' %}" class="admin-btn">
             <span class="admin-live-new">NEW</span>
             <div class="admin-btn-icon admin-btn-icon--orders" aria-hidden="true">

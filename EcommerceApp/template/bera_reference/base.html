@@ -216,7 +216,7 @@
         body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
     </style>
     {% endif %}
-    <link rel="stylesheet" href="{% static 'bera_reference/css/home-mobile-reference.css' %}?v=20261008-shared-header">
+    <link rel="stylesheet" href="{% static 'bera_reference/css/home-mobile-reference.css' %}?v=20261011-panel-beside-logo">
     <link rel="stylesheet" href="{% static 'bera_reference/css/mobile-dock.css' %}?v=20260919-wishlist-badge">
     <link rel="stylesheet" href="{% static 'bera_reference/css/wishlist.css' %}?v=20260919-mobile-sheet">
 
@@ -357,10 +357,11 @@
     }
     </style>
 {% block storefront_theme %}{% endblock %}
-<link rel="stylesheet" href="{% static 'bera_reference/css/bera-home.css' %}?v=20261010-all-catalog-image-size">
+<link rel="stylesheet" href="{% static 'bera_reference/css/bera-home.css' %}?v=20261011-panel-beside-logo">
 <link rel="stylesheet" href="{% static 'bera_reference/css/bera-offer-popup.css' %}?v=20261008-blue-offers">
 {% if bera_button_color %}
 <style>
+body.bera-storefront-header{--wishlist-accent:{{ bera_button_color }}}
 body.bera-storefront-header .scratch-game{--scratch-accent:{{ bera_button_color }}}
 body.bera-storefront-header:not(.panel-blue-workspace):not(.wms-independent):not(.staff-shell-page) :is(.btn,.button,.bera-hero-cta,.product-card-add-btn,.checkout-submit,.cart-checkout-btn,.bera-newsletter button,main button[type=submit]),
 body.bera-storefront-header:not(.panel-blue-workspace):not(.wms-independent):not(.staff-shell-page) .product-catalog .product-card-add-btn{background:{{ bera_button_color }}!important;border-color:{{ bera_button_color }}!important;color:{{ bera_button_text }}!important}
@@ -399,7 +400,7 @@ body.bera-storefront-header .product-card-add-btn :is(svg,.product-card-add-btn_
                 <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 3"/></svg>Brza dostava u roku 24h</span>
                 <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6zM7 11l3 3 6-6"/></svg>Sigurna kupovina</span>
             </div>
-            <nav aria-label="Informacije"><a href="#footerContact">Kontakt</a><a href="{% url 'about_us' %}">O nama</a><a href="{% url 'vlog_list' %}">Blog</a><a href="{% url 'payment_methods' %}">Pomoć</a><a class="site-wholesale-link" href="{% url 'b2b_catalog' %}">VELEPRODAJA</a></nav>
+            <nav aria-label="Informacije"><a href="#footerContact">Kontakt</a><a href="{% url 'about_us' %}">O nama</a><a href="{% url 'payment_methods' %}">Pomoć</a><a class="site-wholesale-link" href="{% url 'b2b_catalog' %}">VELEPRODAJA</a></nav>
         </div>
         <p>
             <span data-site-edit="promo_bar_tekst" data-site-edit-placeholder="Promo tekst">{% if site_settings.promo_bar_tekst %}{{ site_settings.promo_bar_tekst }}{% endif %}</span>
@@ -428,6 +429,11 @@ body.bera-storefront-header .product-card-add-btn :is(svg,.product-card-add-btn_
                         <strong class="logo-image">{{ shop_name }}</strong>
                         {% endif %}
                     </a>
+                    {% if user.is_authenticated and user.is_superuser %}
+                    <a href="{% url 'staff_panel' %}" class="header-panel-shortcut" aria-label="Otvori panel" title="Panel">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+                    </a>
+                    {% endif %}
                 </div>
 
                 <div class="header-search" id="headerSearch">
@@ -790,9 +796,7 @@ body.bera-storefront-header .product-card-add-btn :is(svg,.product-card-add-btn_
     {% include 'bera_reference/partials/mobile_dock.html' %}
     {% block site_footer %}{% include 'bera_reference/partials/footer.html' %}{% endblock %}
     {% include 'bera_reference/partials/contact_float.html' %}
-    {% if site_settings.javno_online_posjetioci %}
-    {% include 'bera_reference/partials/public_online_visitors.html' %}
-    {% endif %}
+    
     {% include 'bera_reference/partials/catalog_variation_modal.html' %}
     {% include 'bera_reference/partials/stock_notify_popup.html' %}
     {% endif %}
@@ -815,31 +819,12 @@ body.bera-storefront-header .product-card-add-btn :is(svg,.product-card-add-btn_
     {% if not is_wms_workspace %}
     <script src="{% static 'bera_reference/js/desktop-reference.js' %}?v=20260914-dropdowns" defer></script>
     <script src="{% static 'bera_reference/js/stock-notify.js' %}?v=20260916-notify-no-autofocus" defer></script>
-    {% if site_settings.javno_online_posjetioci %}
-    <script>idleLoadScript("{% static 'bera_reference/js/public-online-visitors.js' %}?v=20260716v1");</script>
-    {% endif %}
-    {% if not user.is_authenticated or not user.is_superuser %}
-    <script>idleLoadScript("{% static 'bera_reference/js/almost-cart.js' %}?v=20260712v3");</script>
-    {% endif %}
+    
+    
     {# Live praćenje svih osim superusera — incognito / gost / registrovan #}
-    {% if not user.is_authenticated or not user.is_superuser %}
-    <div id="visitorPresenceRoot" hidden
-         data-heartbeat-url="{% url 'live_visitor_heartbeat' %}"
-         data-leave-url="{% url 'live_visitor_leave' %}"
-         data-session-key="{{ request.session.session_key|default:'' }}"></div>
-    <script>idleLoadScript("{% static 'bera_reference/js/visitor-presence.js' %}?v=20260831fast");</script>
+    
     {% endif %}
-    {% endif %}
-    {% if user.is_authenticated and user.is_superuser %}
-    <link rel="stylesheet" href="{% static 'bera_reference/css/staff-alerts.css' %}?v=20260909ordercard">
-    <div id="staffAlertsRoot" hidden
-         data-logo-url="{{ brand_logo_url }}"
-         data-poll-url="{% url 'staff_site_events_poll' %}"
-         data-analytics-url="{% url 'staff_live_analytics' %}"
-         data-orders-url="{% url 'staff_online_orders' %}"
-         {% if request.resolver_match and request.resolver_match.url_name == 'staff_live_analytics' %}data-disable-toasts="1"{% endif %}></div>
-    <script src="{% static 'bera_reference/js/staff-alerts.js' %}?v=20261011-summary-poll" defer></script>
-    {% endif %}
+    
     {% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
     {% include 'bera_reference/partials/staff_site_editor.html' %}
     <link rel="stylesheet" href="{% static 'bera_reference/css/staff-site-edit.css' %}?v=20260929bulkTags">

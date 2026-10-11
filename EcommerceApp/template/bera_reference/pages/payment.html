@@ -1,11 +1,15 @@
 {% extends 'bera_reference/base.html' %}
 {% load static %}
+{% block body_class %}page-info catalog-header-reference{% endblock %}
+
+{% load static %}
 
 {% block page_title %}
 <title>{{ seo_title }}</title>
 {% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'bera_reference/css/bera-info.css' %}?v=20261011">
 <link rel="stylesheet" href="{% static 'bera_reference/css/payment-pages.css' %}?v=20261002-desktop-2">
 {% endblock %}
 

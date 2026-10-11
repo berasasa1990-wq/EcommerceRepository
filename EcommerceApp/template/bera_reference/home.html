@@ -82,6 +82,42 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
 .hero-carousel {
     border-bottom: 2px solid var(--ozr-orange, #FF5A00) !important;
 }
+@media (max-width: 768px) {
+    body.bera-home.home-mobile-reference .hero-carousel {
+        width: 100vw !important;
+        max-width: none !important;
+        margin-left: calc(50% - 50vw) !important;
+        margin-right: calc(50% - 50vw) !important;
+    }
+    body.bera-home.home-mobile-reference #heroCarousel :is(.carousel-track,.carousel-slide,.slide-image,.slide-image-link,picture) {
+        width: 100% !important;
+        max-width: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+    }
+    body.bera-home.home-mobile-reference #heroCarousel .carousel-track {
+        height: 100% !important;
+        min-height: 0 !important;
+        aspect-ratio: auto !important;
+    }
+    body.bera-home.home-mobile-reference #heroCarousel .slide-image picture .slide-image-img,
+    body.bera-home.home-mobile-reference #heroCarousel .slide-image > .slide-image-img,
+    body.bera-home.home-mobile-reference #heroCarousel .slide-image-link > .slide-image-img {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        object-fit: cover !important;
+        object-position: center !important;
+    }
+    body.bera-home.home-mobile-reference .hero-carousel:has(.carousel-slide:first-child.active) {
+        aspect-ratio: 4 / 5 !important;
+    }
+}
 .home-products--akcija,
 .home-brand-strip-section--mockup {
     border-top: 2px solid var(--ozr-orange, #FF5A00) !important;
@@ -269,6 +305,5 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
 
 {% include 'bera_reference/partials/bera_home_bottom.html' %}
 
-{% include 'bera_reference/partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
 {% endif %}
 {% endblock %}
