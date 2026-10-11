@@ -155,7 +155,10 @@ def workspace(request, section='zalihe'):
         if transfer_filter not in ('aktivne', 'prenijete'):
             transfer_filter = 'aktivne'
         ctx['transfer_filter'] = transfer_filter
-        ctx['transfers'] = WMSTransfer.objects.select_related('product', 'source', 'destination').filter(completed_at__isnull=transfer_filter == 'aktivne')
+        ctx['transfers'] = Paginator(WMSTransfer.objects.select_related('product', 'source', 'destination').filter(completed_at__isnull=transfer_filter == 'aktivne'), 50).get_page(request.GET.get('page'))
+        page_query = request.GET.copy()
+        page_query.pop('page', None)
+        ctx['page_query'] = page_query.urlencode()
         return render(request, 'bera_reference/staff/wms/prenosnica.html', ctx)
     if section == 'zalihe':
         query = (request.GET.get('q') or '').strip()
@@ -229,6 +232,10 @@ def workspace(request, section='zalihe'):
                     ctx['orders'] = ctx['orders'].filter(match)
         if section == 'pakovanje':
             ctx['orders'] = ctx['orders'].exclude(status__in=['zapakovana', 'otkazana'])
+        ctx['orders'] = Paginator(ctx['orders'].select_related('source_order').order_by('-kreirana', '-pk'), 50).get_page(request.GET.get('page'))
+        page_query = request.GET.copy()
+        page_query.pop('page', None)
+        ctx['page_query'] = page_query.urlencode()
     else:
         model, fields = WMSLocation, ['naziv']
         Form = modelform_factory(model, fields=fields)
@@ -239,7 +246,7 @@ def workspace(request, section='zalihe'):
         ctx['form'] = form
         ctx['records'] = model.objects.all()
         if section == 'lokacije':
-            ctx['shortages'] = pending_shortages().select_related('item__artikal', 'location', 'order')
+            ctx['shortages'] = pending_shortages().select_related('item__artikal', 'wms_item__artikal', 'location', 'order')
     return render(request, 'bera_reference/staff/wms/workspace.html', ctx)
 
 
@@ -382,7 +389,7 @@ def pick_order(request, pk):
     from .models import WMSPickLine
     from django.utils import timezone
     from django import forms
-    lines = order.pick_lines.select_related('item__artikal', 'location')
+    lines = order.pick_lines.select_related('item__artikal', 'wms_item__artikal', 'location')
     if request.method == 'POST':
         action = request.POST.get('action', 'start')
         with transaction.atomic():
@@ -565,7 +572,7 @@ def print_orders(request, kind):
     require_wms_section('narudzbe')
     if kind not in ('racun', 'faktura', 'najava'):
         raise Http404
-    orders = WMSOrder.objects.filter(status='zapakovana').select_related('source_order').prefetch_related('pick_lines__item', 'pick_lines__location')
+    orders = WMSOrder.objects.filter(status='zapakovana').select_related('source_order').prefetch_related('pick_lines__item', 'pick_lines__wms_item', 'pick_lines__location', 'source_order__stavke', 'items')
     if kind == 'faktura':
         orders = orders.filter(tip='vp')
     from datetime import date
@@ -581,7 +588,7 @@ def print_orders(request, kind):
         else:
             from .wms_orders import sync_panel_orders
             sync_panel_orders()
-            orders = WMSOrder.objects.exclude(status='otkazana').exclude(source_order__status='otkazana').select_related('source_order').prefetch_related('pick_lines__item', 'pick_lines__location').filter(
+            orders = WMSOrder.objects.exclude(status='otkazana').exclude(source_order__status='otkazana').select_related('source_order').prefetch_related('pick_lines__item', 'pick_lines__wms_item', 'pick_lines__location', 'source_order__stavke', 'items').filter(
                 Q(source_order__kreirana__date=print_date) | Q(source_order__isnull=True, kreirana__date=print_date))
         if kind in ('racun', 'faktura'):
             if request.GET.get('stage') != 'print':

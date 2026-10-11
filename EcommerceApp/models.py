@@ -3477,7 +3477,11 @@ class Product(models.Model):
             return None
         rows = getattr(self, '_prefetched_objects_cache', {}).get('akcija_flash_lines')
         if rows is None:
-            rows = self.akcija_flash_lines.select_related('akcija').filter(akcija__aktivan=True)
+            from .request_performance import request_read
+            rows = request_read(
+                ('product-flash-lines', self._state.db, self.pk),
+                lambda: list(self.akcija_flash_lines.select_related('akcija').filter(akcija__aktivan=True)),
+            )
         prices = []
         for row in rows:
             if row.akcija.flash_still_running():

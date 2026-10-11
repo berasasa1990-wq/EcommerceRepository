@@ -21,10 +21,11 @@ def module_locked(field):
         return False
     if field not in {item.name for item in model._meta.fields}:
         return False
-    from django.db import connection
-    if model._meta.db_table not in connection.introspection.table_names():
+    from .request_performance import schema_tables, request_read
+    if model._meta.db_table not in schema_tables():
         return False
-    return model.objects.filter(pk=1, **{field: False}).exists()
+    flags = request_read('module-flags', lambda: model.objects.filter(pk=1).values().first())
+    return bool(flags and flags.get(field) is False)
 
 
 def panel_route_module(name):

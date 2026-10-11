@@ -256,6 +256,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'EcommerceApp.request_performance.RequestReadMiddleware',
     # Include the policy on early responses too (HTTPS redirects and static files).
     'EcommerceApp.middleware.permissions_policy.PermissionsPolicyMiddleware',
     'django.middleware.security.SecurityMiddleware',

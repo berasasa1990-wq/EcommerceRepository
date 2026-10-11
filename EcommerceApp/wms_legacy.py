@@ -11,6 +11,7 @@ from django.shortcuts import redirect
 from .models import WMSLocation, ProductWMSStock, ProductWMSLocationMeta, WarehouseLocation, WarehouseStock, Product, WMSOrder
 from .magacin import MagacinError, set_location_counted_qty, is_ignored_stock_location, apply_movement
 from .models import WarehouseMovement
+from .request_performance import schema_tables
 
 _changed = ContextVar('wms_changed_products', default=None)
 
@@ -48,8 +49,11 @@ def import_legacy_stock(product_ids=None):
         key = (row.product_id, row.location_id)
         grouped[key] = grouped.get(key, 0) + max(0, row.kolicina)
     mapped = {}
+    existing_locations = {}
+    for row in WMSLocation.objects.filter(legacy_location_id__in=locations).order_by('pk'):
+        existing_locations.setdefault(row.legacy_location_id, row)
     for pk, location in locations.items():
-        wms = WMSLocation.objects.filter(legacy_location_id=pk).first()
+        wms = existing_locations.get(pk)
         if wms is None:
             wms, _ = WMSLocation.objects.get_or_create(naziv=location.sifra, defaults={'legacy_location': location})
             if not wms.legacy_location_id:
@@ -156,13 +160,16 @@ def warehouse_compatible(view):
         # Do not touch warehouse records for unauthorized requests.
         if not (request.user.is_authenticated and request.user.is_active and request.user.is_superuser):
             return view(request, *args, **kwargs)
-        tables = connection.introspection.table_names()
+        tables = schema_tables()
         if any(model._meta.db_table not in tables for model in (WMSLocation, WMSOrder, ProductWMSLocationMeta)):
             return HttpResponse('WMS zahtijeva migracije 0311 i 0312. Postojeći magacin ostaje dostupan na /nalog/magacin/.', status=503)
         with connection.cursor() as cursor:
             columns = connection.introspection.get_table_description(cursor, WMSLocation._meta.db_table)
         if 'legacy_location_id' not in {column.name for column in columns}:
             return HttpResponse('WMS zahtijeva migraciju 0312. Postojeći magacin ostaje dostupan na /nalog/magacin/.', status=503)
+        # The workspace permission probe has no stock operation or HTML payload.
+        if view.__name__ == 'workspace' and request.method == 'GET' and request.headers.get('X-WMS-Permissions') == '1':
+            return view(request, *args, **kwargs)
         token = _changed.set(set())
         try:
             with transaction.atomic():

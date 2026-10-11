@@ -4,6 +4,7 @@ from django.conf import settings
 from urllib.parse import urlsplit
 from .models import SiteSettings, HomeNovoProduct, PageSEO
 from django.db import connection
+from .request_performance import schema_tables
 
 
 def storefront_context():
@@ -26,7 +27,7 @@ def storefront_context():
     content_path = settings.BASE_DIR / 'config/bera_home_content.json'
     result['bera_home_content'] = json.loads(content_path.read_text()) if content_path.exists() else {}
     from .models import BeraAppearance
-    result['bera_appearance_ready'] = BeraAppearance._meta.db_table in connection.introspection.table_names()
+    result['bera_appearance_ready'] = BeraAppearance._meta.db_table in schema_tables()
     if result['bera_appearance_ready']:
         color = BeraAppearance.objects.filter(pk=1).values_list('button_color', flat=True).first() or ''
         import re
@@ -45,7 +46,7 @@ def homepage_context(context, request):
     # destination schema; old installations continue using their existing selection.
     if not context.get('filters_active'):
         table = 'EcommerceApp_homebestsellerproduct'
-        if table in connection.introspection.table_names():
+        if table in schema_tables():
             with connection.cursor() as cursor:
                 cursor.execute('SELECT artikal_id FROM ' + connection.ops.quote_name(table) + ' WHERE aktivan = %s ORDER BY redoslijed, id', [True])
                 ids = [row[0] for row in cursor.fetchall()]

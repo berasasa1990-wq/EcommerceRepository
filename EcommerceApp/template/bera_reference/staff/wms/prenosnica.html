@@ -18,4 +18,4 @@
 </article>
 {% empty %}<div class="wms-stock-empty"><span class="wms-empty-icon">{% include 'bera_reference/staff/wms/icon.html' with key='prenosnica' %}</span><h3>{% if transfer_filter == 'prenijete' %}Nema prenijetih prenosnica.{% else %}Nema aktivnih prenosnica.{% endif %}</h3></div>{% endfor %}
 </div>
-{% endblock %}
+{% include 'bera_reference/staff/wms/pagination.html' with page=transfers %}{% endblock %}
