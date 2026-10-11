@@ -1,0 +1,18 @@
+[
+  {
+    "peak_python_bytes": 1355139,
+    "stage": "before",
+    "ms": 50.663,
+    "queries": 4,
+    "bytes": 3549,
+    "rows_returned": 30
+  },
+  {
+    "peak_python_bytes": 45240,
+    "stage": "after",
+    "ms": 23.601,
+    "queries": 1,
+    "bytes": 3549,
+    "rows_returned": 30
+  }
+]

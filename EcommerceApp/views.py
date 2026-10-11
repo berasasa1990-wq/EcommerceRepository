@@ -7872,6 +7872,20 @@ def staff_site_events_poll(request):
     """Polling endpoint — live toast obavijesti za superusere na sajtu."""
     from .staff_alerts import get_staff_events_since
 
+    # The badge client does not consume visitor/cart details or event payloads.
+    # Keep the full response available for other consumers of this endpoint.
+    if request.GET.get('summary') == '1':
+        from .models import StaffSiteEvent
+        from .staff_alerts import count_new_online_orders
+        latest = StaffSiteEvent.objects.order_by('-id').values_list('id', flat=True).first()
+        response = JsonResponse({
+            'ok': True, 'events': [], 'latest_id': latest or 0,
+            'online_sessions': [], 'visitor_states': {},
+            'new_orders_count': count_new_online_orders(),
+        })
+        response['Cache-Control'] = 'no-store'
+        return response
+
     since = request.GET.get('since') or request.GET.get('after') or '0'
     data = get_staff_events_since(since)
     return JsonResponse({

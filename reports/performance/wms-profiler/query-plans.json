@@ -1,0 +1,135 @@
+{
+  "sqlite_search_plan": "3 0 216 SCAN EcommerceApp_product\n59 0 0 USE TEMP B-TREE FOR ORDER BY",
+  "sqlite_location_plan": "3 0 61 SEARCH EcommerceApp_warehousestock USING INDEX EcommerceApp_warehousestock_location_id_006a3cb2 (location_id=?)",
+  "stock_indexes": {
+    "__unnamed_constraint_1__": {
+      "check": true,
+      "columns": [
+        "variation_key"
+      ],
+      "primary_key": false,
+      "unique": false,
+      "foreign_key": null,
+      "index": false
+    },
+    "uniq_wh_stock_product_varkey_loc": {
+      "unique": true,
+      "columns": [
+        "product_id",
+        "variation_key",
+        "location_id"
+      ],
+      "primary_key": false,
+      "foreign_key": null,
+      "check": false,
+      "index": false
+    },
+    "EcommerceAp_product_749ded_idx": {
+      "columns": [
+        "product_id",
+        "location_id"
+      ],
+      "primary_key": false,
+      "unique": false,
+      "foreign_key": null,
+      "check": false,
+      "index": true,
+      "type": "idx",
+      "orders": [
+        "ASC",
+        "ASC"
+      ]
+    },
+    "EcommerceApp_warehousestock_variation_id_dd747580": {
+      "columns": [
+        "variation_id"
+      ],
+      "primary_key": false,
+      "unique": false,
+      "foreign_key": null,
+      "check": false,
+      "index": true,
+      "type": "idx",
+      "orders": [
+        "ASC"
+      ]
+    },
+    "EcommerceApp_warehousestock_product_id_df697815": {
+      "columns": [
+        "product_id"
+      ],
+      "primary_key": false,
+      "unique": false,
+      "foreign_key": null,
+      "check": false,
+      "index": true,
+      "type": "idx",
+      "orders": [
+        "ASC"
+      ]
+    },
+    "EcommerceApp_warehousestock_location_id_006a3cb2": {
+      "columns": [
+        "location_id"
+      ],
+      "primary_key": false,
+      "unique": false,
+      "foreign_key": null,
+      "check": false,
+      "index": true,
+      "type": "idx",
+      "orders": [
+        "ASC"
+      ]
+    },
+    "__primary__": {
+      "columns": [
+        "id"
+      ],
+      "primary_key": true,
+      "unique": false,
+      "foreign_key": null,
+      "check": false,
+      "index": false
+    },
+    "fk_0": {
+      "columns": [
+        "variation_id"
+      ],
+      "primary_key": false,
+      "unique": false,
+      "foreign_key": [
+        "EcommerceApp_productvariation",
+        "id"
+      ],
+      "check": false,
+      "index": false
+    },
+    "fk_1": {
+      "columns": [
+        "product_id"
+      ],
+      "primary_key": false,
+      "unique": false,
+      "foreign_key": [
+        "EcommerceApp_product",
+        "id"
+      ],
+      "check": false,
+      "index": false
+    },
+    "fk_2": {
+      "columns": [
+        "location_id"
+      ],
+      "primary_key": false,
+      "unique": false,
+      "foreign_key": [
+        "EcommerceApp_warehouselocation",
+        "id"
+      ],
+      "check": false,
+      "index": false
+    }
+  }
+}

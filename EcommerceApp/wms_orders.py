@@ -14,7 +14,7 @@ def panel_active_orders():
 
 
 def sync_panel_orders():
-    for order in panel_active_orders().filter(wms_order__isnull=True).iterator():
+    for order in panel_active_orders().filter(wms_order__isnull=True).only('pk', 'ime_prezime', 'email', 'telefon', 'adresa', 'napomena').iterator(chunk_size=200):
         WMSOrder.objects.get_or_create(source_order=order, defaults={
             'tip': 'online', 'kupac': order.ime_prezime, 'email': order.email,
             'telefon': order.telefon, 'adresa': order.adresa,

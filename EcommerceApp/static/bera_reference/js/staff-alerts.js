@@ -418,11 +418,13 @@
         showOrderCelebration(event, pendingCount);
     }
 
+    let polling = false;
     async function poll() {
-        if (document.hidden) return;
+        if (document.hidden || polling) return;
+        polling = true;
         try {
             const url = pollUrl + (pollUrl.indexOf('?') >= 0 ? '&' : '?') +
-                'since=' + encodeURIComponent(sinceId);
+                'summary=1&since=' + encodeURIComponent(sinceId);
             const response = await fetch(url, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin',
@@ -450,6 +452,8 @@
             }
         } catch (err) {
             /* tiho */
+        } finally {
+            polling = false;
         }
     }
 

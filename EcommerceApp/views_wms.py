@@ -57,6 +57,9 @@ def workspace(request, section='zalihe'):
     if request.method in ('GET', 'HEAD') and locked:
         return redirect(target_url)
     require_wms_section(section)
+    if section in ('narudzbe', 'pakovanje'):
+        from .wms_orders import sync_panel_orders
+        sync_panel_orders()
     ctx = context(section)
     if section == 'istorija':
         from datetime import date
@@ -194,15 +197,12 @@ def workspace(request, section='zalihe'):
                     When(stanje__gt=0, then=Value(0)),
                     default=Value(1), output_field=IntegerField(),
                 )
-            ).prefetch_related('magacin_zalihe__location', 'magacin_zalihe__variation').order_by('stock_priority', 'naziv', 'pk')
+            ).prefetch_related('varijacije', 'magacin_zalihe__location', 'magacin_zalihe__variation').order_by('stock_priority', 'naziv', 'pk')
         ctx.update({'transfer_settings': WMSSettings.objects.filter(pk=1).select_related('transfer_location').first(), 'locations': WarehouseLocation.objects.all(), 'query': query, 'search_submitted': search_submitted, 'products': Paginator(products, 30).get_page(request.GET.get('page'))})
         for product in ctx['products']:
             product.canonical_wms_stocks = [stock for stock in product.magacin_zalihe.all() if not is_ignored_stock_location(stock.location)]
         return render(request, 'bera_reference/staff/wms/stock_search.html', ctx)
     if section in ('narudzbe', 'pakovanje'):
-        from .wms_orders import sync_panel_orders
-        sync_panel_orders()
-        ctx['wms_pending_picking'] = WMSOrder.objects.filter(status__in=['nova', 'pakovanje']).count() if not module_locked('wms_pakovanje') else 0
         if request.method == 'POST' and section == 'pakovanje':
             order = get_object_or_404(WMSOrder, pk=request.POST.get('order_id'))
             return redirect('staff_wms_pick_order', pk=order.pk)
@@ -241,7 +241,7 @@ def workspace(request, section='zalihe'):
         ctx['form'] = form
         ctx['records'] = model.objects.all()
         if section == 'lokacije':
-            ctx['shortages'] = pending_shortages().select_related('item__artikal', 'wms_item__artikal', 'location', 'order')
+            ctx['shortages'] = pending_shortages().select_related('item__artikal', 'wms_item__artikal', 'location', 'order__source_order').prefetch_related('item__artikal__varijacije', 'wms_item__artikal__varijacije')
     return render(request, 'bera_reference/staff/wms/workspace.html', ctx)
 
 
@@ -263,7 +263,7 @@ def order_detail(request, pk):
     require_wms_section('narudzbe')
     order = get_object_or_404(WMSOrder, pk=pk)
     source = order.source_order if order.source_order_id else None
-    items = list(source.stavke.select_related('artikal') if source else order.items.select_related('artikal'))
+    items = list(source.stavke.select_related('artikal').prefetch_related('artikal__varijacije') if source else order.items.select_related('artikal').prefetch_related('artikal__varijacije'))
     for item in items:
         item.line_total = item.cijena * item.kolicina
         regular = item.bazna_cijena
@@ -357,7 +357,7 @@ def pick_order(request, pk):
         return redirect('staff_wms_section', section='pakovanje')
     rows = []
     allocated = {}
-    order_items = order.source_order.stavke.select_related('artikal').exclude(is_set_parent=True) if order.source_order_id else order.items.select_related('artikal')
+    order_items = order.source_order.stavke.select_related('artikal').prefetch_related('artikal__varijacije').exclude(is_set_parent=True) if order.source_order_id else order.items.select_related('artikal').prefetch_related('artikal__varijacije')
     if order_items:
         for item in order_items:
             remaining = item.kolicina
@@ -377,7 +377,7 @@ def pick_order(request, pk):
     from .models import WMSPickLine
     from django.utils import timezone
     from django import forms
-    lines = order.pick_lines.select_related('item__artikal', 'wms_item__artikal', 'location')
+    lines = order.pick_lines.select_related('item__artikal', 'wms_item__artikal', 'location').prefetch_related('item__artikal__varijacije', 'wms_item__artikal__varijacije')
     if request.method == 'POST':
         action = request.POST.get('action', 'start')
         with transaction.atomic():
@@ -645,7 +645,7 @@ def order_products(request):
     products = Product.objects.filter(aktivan=True).annotate(wms_reserved=Sum('magacin_zalihe__rezervisano'))
     if query:
         products = products.filter(Q(naziv__icontains=query) | Q(sifra__icontains=query))
-    page = Paginator(products.order_by('naziv', 'pk'), 24).get_page(request.GET.get('page'))
+    page = Paginator(products.prefetch_related('varijacije').order_by('naziv', 'pk'), 24).get_page(request.GET.get('page'))
     return JsonResponse({'pages': page.paginator.num_pages, 'page': page.number, 'results': [
         {'id': product.pk, 'name': product.naziv, 'code': product.sifra, 'price': str(wms_entry_price(product, request.GET.get('tip', 'online'))),
          'available': max(0, product.stanje - (product.wms_reserved or 0)),
@@ -699,25 +699,8 @@ def order_customers(request):
     if request.method != 'GET':
         return JsonResponse({'error': 'Nedozvoljen zahtjev.'}, status=405)
     query = (request.GET.get('q') or '').strip()
-    customers = WMSCustomer.objects.filter(is_deleted=False)
-    history = Order.objects.all()
-    manual = WMSOrder.objects.filter(source_order__isnull=True, customer__isnull=True)
-    if query:
-        customers = customers.filter(Q(ime_prezime__icontains=query) | Q(telefon__icontains=query) | Q(grad__icontains=query))
-        history = history.filter(Q(ime_prezime__icontains=query) | Q(telefon__icontains=query) | Q(grad__icontains=query))
-        manual = manual.filter(Q(kupac__icontains=query) | Q(telefon__icontains=query) | Q(grad__icontains=query))
-    rows = [{'id': c.pk, 'name': c.ime_prezime, 'phone': c.telefon, 'address': c.adresa, 'city': c.grad, 'postal': c.postanski_broj} for c in customers]
-    rows += [{'id': '', 'name': o.ime_prezime, 'phone': o.telefon, 'address': o.adresa, 'city': o.grad, 'postal': o.postanski_broj, 'email': o.email} for o in history.order_by('-kreirana')]
-    rows += [{'id': '', 'name': o.kupac, 'phone': o.telefon, 'address': o.adresa, 'city': o.grad, 'postal': o.postanski_broj, 'email': o.email} for o in manual.order_by('-kreirana')]
-    deleted = {(c.ime_prezime.strip().lower(), c.telefon.strip()) for c in WMSCustomer.objects.filter(is_deleted=True)}
-    unique = {}
-    for row in rows:
-        if (row['name'].strip().lower(), row['phone'].strip()) in deleted:
-            continue
-        unique.setdefault((row['name'].strip().lower(), row['phone'].strip()), row)
-    rows = sorted(unique.values(), key=lambda row: row['name'].lower())
-    page = Paginator(rows, 30).get_page(request.GET.get('page'))
-    return JsonResponse({'customers': list(page), 'page': page.number, 'pages': page.paginator.num_pages})
+    from .wms_customer_query import customer_page
+    return JsonResponse(customer_page(query, request.GET.get('page')))
 
 
 @login_required(login_url='login')
@@ -800,8 +783,9 @@ def location_detail(request, pk):
                 messages.success(request, 'Prenosnica je kreirana. Potvrdite Prenijeto da prebacite robu.')
                 return redirect('staff_wms_section', section='prenosnica')
         return redirect('staff_wms_location', pk=pk)
-    stocks = WarehouseStock.objects.filter(location=location, kolicina__gt=0).select_related('product').order_by('product__naziv')
-    return render(request, 'bera_reference/staff/wms/location_detail.html', {**context('lokacije'), 'location': location, 'stocks': stocks, 'destinations': WarehouseLocation.objects.exclude(pk=pk).order_by('naziv')})
+    stocks = WarehouseStock.objects.filter(location=location, kolicina__gt=0).select_related('product').prefetch_related('product__varijacije').order_by('product__naziv', 'pk')
+    stocks = Paginator(stocks, 30).get_page(request.GET.get('page'))
+    return render(request, 'bera_reference/staff/wms/location_detail.html', {**context('lokacije'), 'location': location, 'stocks': stocks, 'destinations': WarehouseLocation.objects.exclude(pk=pk).only('pk', 'naziv').order_by('naziv')})
 
 
 @login_required(login_url='login')

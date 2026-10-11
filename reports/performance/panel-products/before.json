@@ -1,0 +1,466 @@
+[
+  {
+    "url": "/panel/podesavanja/sekcije/EcommerceApp/product/",
+    "ms": 50.58,
+    "queries": 31,
+    "bytes": 64808,
+    "sql": [
+      {
+        "sql": "SELECT \"django_session\".\"session_key\", \"django_session\".\"session_data\", \"django_session\".\"expire_date\" FROM \"django_session\" WHERE (\"django_session\".\"expire_date\" > '2026-10-11 18:11:51.609086' AND \"django_session\".\"session_key\" = '8hdk1jhh8nid6dhmowc8e0nvalp9qfrm') LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"auth_user\".\"id\", \"auth_user\".\"password\", \"auth_user\".\"last_login\", \"auth_user\".\"is_superuser\", \"auth_user\".\"username\", \"auth_user\".\"first_name\", \"auth_user\".\"last_name\", \"auth_user\".\"email\", \"auth_user\".\"is_staff\", \"auth_user\".\"is_active\", \"auth_user\".\"date_joined\" FROM \"auth_user\" WHERE \"auth_user\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" ORDER BY \"EcommerceApp_category\".\"redoslijed\" ASC, \"EcommerceApp_category\".\"naziv\" ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" ORDER BY \"EcommerceApp_brand\".\"naziv\" ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_tag\".\"id\", \"EcommerceApp_tag\".\"naziv\", \"EcommerceApp_tag\".\"slug\", \"EcommerceApp_tag\".\"roditelj_id\" FROM \"EcommerceApp_tag\" LEFT OUTER JOIN \"EcommerceApp_tag\" T2 ON (\"EcommerceApp_tag\".\"roditelj_id\" = T2.\"id\") ORDER BY T2.\"naziv\" ASC, \"EcommerceApp_tag\".\"naziv\" ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT COUNT(*) FROM (SELECT \"EcommerceApp_product\".\"id\" AS \"col1\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") WHERE \"EcommerceApp_product\".\"na_stanju\" GROUP BY 1) subquery",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT COUNT(*) FROM (SELECT \"EcommerceApp_product\".\"id\" AS \"col1\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") GROUP BY 1) subquery",
+        "time": "0.000"
+      },
+      {
+        "sql": "\n            SELECT name, type FROM sqlite_master\n            WHERE type in ('table', 'view') AND NOT name='sqlite_sequence'\n            ORDER BY name",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_bera_modulepermissions\".\"id\", \"EcommerceApp_bera_modulepermissions\".\"wms_zalihe\", \"EcommerceApp_bera_modulepermissions\".\"wms_lokacije\", \"EcommerceApp_bera_modulepermissions\".\"wms_narudzbe\", \"EcommerceApp_bera_modulepermissions\".\"wms_pakovanje\", \"EcommerceApp_bera_modulepermissions\".\"wms_prenosnice\", \"EcommerceApp_bera_modulepermissions\".\"akcije\", \"EcommerceApp_bera_modulepermissions\".\"banner_odrediste_filter\", \"EcommerceApp_bera_modulepermissions\".\"b2b\", \"EcommerceApp_bera_modulepermissions\".\"posjetioci_uzivo\", \"EcommerceApp_bera_modulepermissions\".\"sretni_greb_greb\", \"EcommerceApp_bera_modulepermissions\".\"stavke_aktivnih_korpi\", \"EcommerceApp_bera_modulepermissions\".\"loyalty\", \"EcommerceApp_bera_modulepermissions\".\"poklon_vaucer\", \"EcommerceApp_bera_modulepermissions\".\"live_centar\", \"EcommerceApp_bera_modulepermissions\".\"uvoz\", \"EcommerceApp_bera_modulepermissions\".\"provjera_lagera\", \"EcommerceApp_bera_modulepermissions\".\"rezervni_dijelovi\", \"EcommerceApp_bera_modulepermissions\".\"stampa_cijena\", \"EcommerceApp_bera_modulepermissions\".\"stampa_deklaracije\", \"EcommerceApp_bera_modulepermissions\".\"dnevno_skidanje\", \"EcommerceApp_bera_modulepermissions\".\"dupli_barkodovi\", \"EcommerceApp_bera_modulepermissions\".\"duguje_potrazuje\", \"EcommerceApp_bera_modulepermissions\".\"popis_robe\", \"EcommerceApp_bera_modulepermissions\".\"fali_u_mp\", \"EcommerceApp_bera_modulepermissions\".\"nivelacije\", \"EcommerceApp_bera_modulepermissions\".\"kreiraj_ponudu\", \"EcommerceApp_bera_modulepermissions\".\"izvjestaji\", \"EcommerceApp_bera_modulepermissions\".\"artikli_u_setu\", \"EcommerceApp_bera_modulepermissions\".\"pracenje_lagera\" FROM \"EcommerceApp_bera_modulepermissions\" WHERE \"EcommerceApp_bera_modulepermissions\".\"id\" = 1 ORDER BY \"EcommerceApp_bera_modulepermissions\".\"id\" ASC LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_product\".\"id\", \"EcommerceApp_product\".\"is_set\", \"EcommerceApp_product\".\"naziv\", \"EcommerceApp_product\".\"slug\", \"EcommerceApp_product\".\"sifra\", \"EcommerceApp_product\".\"barkod\", \"EcommerceApp_product\".\"opis\", \"EcommerceApp_product\".\"slika\", \"EcommerceApp_product\".\"na_stanju\", \"EcommerceApp_product\".\"stanje\", \"EcommerceApp_product\".\"pakovanje_komada\", \"EcommerceApp_product\".\"cijena\", \"EcommerceApp_product\".\"akcijska_cijena\", \"EcommerceApp_product\".\"akcija_postotak\", \"EcommerceApp_product\".\"akcija_do\", \"EcommerceApp_product\".\"kategorija_id\", \"EcommerceApp_product\".\"brend_id\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\", \"EcommerceApp_product\".\"je_novitet\", \"EcommerceApp_product\".\"je_hit\", \"EcommerceApp_product\".\"prioritet_lagera\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\", \"EcommerceApp_product\".\"aktivan\", \"EcommerceApp_product\".\"sakriven_do_stanja\", \"EcommerceApp_product\".\"odoo_template_id\", \"EcommerceApp_product\".\"magacin_sync_at\", \"EcommerceApp_product\".\"meta_title\", \"EcommerceApp_product\".\"meta_description\", \"EcommerceApp_product\".\"h1_naslov\", \"EcommerceApp_product\".\"seo_tekst_iznad\", \"EcommerceApp_product\".\"seo_tekst_ispod\", \"EcommerceApp_product\".\"search_keywords\", \"EcommerceApp_product\".\"naziv_normalized\", \"EcommerceApp_product\".\"sifra_normalized\", \"EcommerceApp_product\".\"barkod_normalized\", \"EcommerceApp_product\".\"search_document\", \"EcommerceApp_product\".\"olx_listing_id\", \"EcommerceApp_product\".\"olx_listing_slug\", \"EcommerceApp_product\".\"olx_listing_url\", \"EcommerceApp_product\".\"olx_objavljen\", \"EcommerceApp_product\".\"kreiran\", \"EcommerceApp_product\".\"azuriran\", COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") AS \"varijacije_broj\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") WHERE \"EcommerceApp_product\".\"na_stanju\" GROUP BY \"EcommerceApp_product\".\"id\", \"EcommerceApp_product\".\"is_set\", \"EcommerceApp_product\".\"naziv\", \"EcommerceApp_product\".\"slug\", \"EcommerceApp_product\".\"sifra\", \"EcommerceApp_product\".\"barkod\", \"EcommerceApp_product\".\"opis\", \"EcommerceApp_product\".\"slika\", \"EcommerceApp_product\".\"na_stanju\", \"EcommerceApp_product\".\"stanje\", \"EcommerceApp_product\".\"pakovanje_komada\", \"EcommerceApp_product\".\"cijena\", \"EcommerceApp_product\".\"akcijska_cijena\", \"EcommerceApp_product\".\"akcija_postotak\", \"EcommerceApp_product\".\"akcija_do\", \"EcommerceApp_product\".\"kategorija_id\", \"EcommerceApp_product\".\"brend_id\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\", \"EcommerceApp_product\".\"je_novitet\", \"EcommerceApp_product\".\"je_hit\", \"EcommerceApp_product\".\"prioritet_lagera\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\", \"EcommerceApp_product\".\"aktivan\", \"EcommerceApp_product\".\"sakriven_do_stanja\", \"EcommerceApp_product\".\"odoo_template_id\", \"EcommerceApp_product\".\"magacin_sync_at\", \"EcommerceApp_product\".\"meta_title\", \"EcommerceApp_product\".\"meta_description\", \"EcommerceApp_product\".\"h1_naslov\", \"EcommerceApp_product\".\"seo_tekst_iznad\", \"EcommerceApp_product\".\"seo_tekst_ispod\", \"EcommerceApp_product\".\"search_keywords\", \"EcommerceApp_product\".\"naziv_normalized\", \"EcommerceApp_product\".\"sifra_normalized\", \"EcommerceApp_product\".\"barkod_normalized\", \"EcommerceApp_product\".\"search_document\", \"EcommerceApp_product\".\"olx_listing_id\", \"EcommerceApp_product\".\"olx_listing_slug\", \"EcommerceApp_product\".\"olx_listing_url\", \"EcommerceApp_product\".\"olx_objavljen\", \"EcommerceApp_product\".\"kreiran\", \"EcommerceApp_product\".\"azuriran\" ORDER BY \"EcommerceApp_product\".\"prioritet_lagera\" DESC, \"EcommerceApp_product\".\"kreiran\" DESC, \"EcommerceApp_product\".\"id\" DESC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT 1 AS \"a\" FROM \"EcommerceApp_sitesettings\" LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT 1 AS \"a\" FROM \"EcommerceApp_b2bsettings\" LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_bera_appearance\".\"button_color\" AS \"button_color\" FROM \"EcommerceApp_bera_appearance\" WHERE \"EcommerceApp_bera_appearance\".\"id\" = 1 ORDER BY \"EcommerceApp_bera_appearance\".\"id\" ASC LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT MIN(\"__col1\"), MAX(\"__col1\") FROM (SELECT \"EcommerceApp_product\".\"kreiran\" AS \"__col1\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") WHERE \"EcommerceApp_product\".\"na_stanju\" GROUP BY \"EcommerceApp_product\".\"id\", 1) subquery",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT DISTINCT django_datetime_trunc('day', \"EcommerceApp_product\".\"kreiran\", 'Europe/Sarajevo', 'UTC') AS \"datetimefield\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") WHERE (\"EcommerceApp_product\".\"na_stanju\" AND \"EcommerceApp_product\".\"kreiran\" IS NOT NULL) GROUP BY \"EcommerceApp_product\".\"id\", \"EcommerceApp_product\".\"is_set\", \"EcommerceApp_product\".\"naziv\", \"EcommerceApp_product\".\"slug\", \"EcommerceApp_product\".\"sifra\", \"EcommerceApp_product\".\"barkod\", \"EcommerceApp_product\".\"opis\", \"EcommerceApp_product\".\"slika\", \"EcommerceApp_product\".\"na_stanju\", \"EcommerceApp_product\".\"stanje\", \"EcommerceApp_product\".\"pakovanje_komada\", \"EcommerceApp_product\".\"cijena\", \"EcommerceApp_product\".\"akcijska_cijena\", \"EcommerceApp_product\".\"akcija_postotak\", \"EcommerceApp_product\".\"akcija_do\", \"EcommerceApp_product\".\"kategorija_id\", \"EcommerceApp_product\".\"brend_id\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\", \"EcommerceApp_product\".\"je_novitet\", \"EcommerceApp_product\".\"je_hit\", \"EcommerceApp_product\".\"prioritet_lagera\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\", \"EcommerceApp_product\".\"aktivan\", \"EcommerceApp_product\".\"sakriven_do_stanja\", \"EcommerceApp_product\".\"odoo_template_id\", \"EcommerceApp_product\".\"magacin_sync_at\", \"EcommerceApp_product\".\"meta_title\", \"EcommerceApp_product\".\"meta_description\", \"EcommerceApp_product\".\"h1_naslov\", \"EcommerceApp_product\".\"seo_tekst_iznad\", \"EcommerceApp_product\".\"seo_tekst_ispod\", \"EcommerceApp_product\".\"search_keywords\", \"EcommerceApp_product\".\"naziv_normalized\", \"EcommerceApp_product\".\"sifra_normalized\", \"EcommerceApp_product\".\"barkod_normalized\", \"EcommerceApp_product\".\"search_document\", \"EcommerceApp_product\".\"olx_listing_id\", \"EcommerceApp_product\".\"olx_listing_slug\", \"EcommerceApp_product\".\"olx_listing_url\", \"EcommerceApp_product\".\"olx_objavljen\", \"EcommerceApp_product\".\"kreiran\", \"EcommerceApp_product\".\"azuriran\", 1 ORDER BY 1 ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      }
+    ]
+  },
+  {
+    "url": "/panel/podesavanja/sekcije/EcommerceApp/product/?q=QA",
+    "ms": 61.11,
+    "queries": 31,
+    "bytes": 65579,
+    "sql": [
+      {
+        "sql": "SELECT \"django_session\".\"session_key\", \"django_session\".\"session_data\", \"django_session\".\"expire_date\" FROM \"django_session\" WHERE (\"django_session\".\"expire_date\" > '2026-10-11 18:11:51.659471' AND \"django_session\".\"session_key\" = '8hdk1jhh8nid6dhmowc8e0nvalp9qfrm') LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"auth_user\".\"id\", \"auth_user\".\"password\", \"auth_user\".\"last_login\", \"auth_user\".\"is_superuser\", \"auth_user\".\"username\", \"auth_user\".\"first_name\", \"auth_user\".\"last_name\", \"auth_user\".\"email\", \"auth_user\".\"is_staff\", \"auth_user\".\"is_active\", \"auth_user\".\"date_joined\" FROM \"auth_user\" WHERE \"auth_user\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" ORDER BY \"EcommerceApp_category\".\"redoslijed\" ASC, \"EcommerceApp_category\".\"naziv\" ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" ORDER BY \"EcommerceApp_brand\".\"naziv\" ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_tag\".\"id\", \"EcommerceApp_tag\".\"naziv\", \"EcommerceApp_tag\".\"slug\", \"EcommerceApp_tag\".\"roditelj_id\" FROM \"EcommerceApp_tag\" LEFT OUTER JOIN \"EcommerceApp_tag\" T2 ON (\"EcommerceApp_tag\".\"roditelj_id\" = T2.\"id\") ORDER BY T2.\"naziv\" ASC, \"EcommerceApp_tag\".\"naziv\" ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT COUNT(*) FROM (SELECT DISTINCT \"EcommerceApp_product\".\"id\" AS \"col1\", \"EcommerceApp_product\".\"is_set\" AS \"col2\", \"EcommerceApp_product\".\"naziv\" AS \"col3\", \"EcommerceApp_product\".\"slug\" AS \"col4\", \"EcommerceApp_product\".\"sifra\" AS \"col5\", \"EcommerceApp_product\".\"barkod\" AS \"col6\", \"EcommerceApp_product\".\"opis\" AS \"col7\", \"EcommerceApp_product\".\"slika\" AS \"col8\", \"EcommerceApp_product\".\"na_stanju\" AS \"col9\", \"EcommerceApp_product\".\"stanje\" AS \"col10\", \"EcommerceApp_product\".\"pakovanje_komada\" AS \"col11\", \"EcommerceApp_product\".\"cijena\" AS \"col12\", \"EcommerceApp_product\".\"akcijska_cijena\" AS \"col13\", \"EcommerceApp_product\".\"akcija_postotak\" AS \"col14\", \"EcommerceApp_product\".\"akcija_do\" AS \"col15\", \"EcommerceApp_product\".\"kategorija_id\" AS \"col16\", \"EcommerceApp_product\".\"brend_id\" AS \"col17\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\" AS \"col18\", \"EcommerceApp_product\".\"je_novitet\" AS \"col19\", \"EcommerceApp_product\".\"je_hit\" AS \"col20\", \"EcommerceApp_product\".\"prioritet_lagera\" AS \"col21\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\" AS \"col22\", \"EcommerceApp_product\".\"aktivan\" AS \"col23\", \"EcommerceApp_product\".\"sakriven_do_stanja\" AS \"col24\", \"EcommerceApp_product\".\"odoo_template_id\" AS \"col25\", \"EcommerceApp_product\".\"magacin_sync_at\" AS \"col26\", \"EcommerceApp_product\".\"meta_title\" AS \"col27\", \"EcommerceApp_product\".\"meta_description\" AS \"col28\", \"EcommerceApp_product\".\"h1_naslov\" AS \"col29\", \"EcommerceApp_product\".\"seo_tekst_iznad\" AS \"col30\", \"EcommerceApp_product\".\"seo_tekst_ispod\" AS \"col31\", \"EcommerceApp_product\".\"search_keywords\" AS \"col32\", \"EcommerceApp_product\".\"naziv_normalized\" AS \"col33\", \"EcommerceApp_product\".\"sifra_normalized\" AS \"col34\", \"EcommerceApp_product\".\"barkod_normalized\" AS \"col35\", \"EcommerceApp_product\".\"search_document\" AS \"col36\", \"EcommerceApp_product\".\"olx_listing_id\" AS \"col37\", \"EcommerceApp_product\".\"olx_listing_slug\" AS \"col38\", \"EcommerceApp_product\".\"olx_listing_url\" AS \"col39\", \"EcommerceApp_product\".\"olx_objavljen\" AS \"col40\", \"EcommerceApp_product\".\"kreiran\" AS \"col41\", \"EcommerceApp_product\".\"azuriran\" AS \"col42\", COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") AS \"varijacije_broj\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") LEFT OUTER JOIN \"EcommerceApp_product_tagovi\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_product_tagovi\".\"product_id\") LEFT OUTER JOIN \"EcommerceApp_tag\" ON (\"EcommerceApp_product_tagovi\".\"tag_id\" = \"EcommerceApp_tag\".\"id\") LEFT OUTER JOIN \"EcommerceApp_category\" ON (\"EcommerceApp_product\".\"kategorija_id\" = \"EcommerceApp_category\".\"id\") LEFT OUTER JOIN \"EcommerceApp_category\" T6 ON (\"EcommerceApp_category\".\"roditelj_id\" = T6.\"id\") WHERE (\"EcommerceApp_product\".\"na_stanju\" AND (\"EcommerceApp_product\".\"naziv\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"sifra\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"barkod\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_tag\".\"naziv\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_category\".\"naziv\" LIKE '%QA%' ESCAPE '\\' OR T6.\"naziv\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"odoo_template_id\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"meta_title\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"meta_description\" LIKE '%QA%' ESCAPE '\\')) GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42) subquery",
+        "time": "0.001"
+      },
+      {
+        "sql": "SELECT COUNT(*) FROM (SELECT \"EcommerceApp_product\".\"id\" AS \"col1\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") GROUP BY 1) subquery",
+        "time": "0.000"
+      },
+      {
+        "sql": "\n            SELECT name, type FROM sqlite_master\n            WHERE type in ('table', 'view') AND NOT name='sqlite_sequence'\n            ORDER BY name",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_bera_modulepermissions\".\"id\", \"EcommerceApp_bera_modulepermissions\".\"wms_zalihe\", \"EcommerceApp_bera_modulepermissions\".\"wms_lokacije\", \"EcommerceApp_bera_modulepermissions\".\"wms_narudzbe\", \"EcommerceApp_bera_modulepermissions\".\"wms_pakovanje\", \"EcommerceApp_bera_modulepermissions\".\"wms_prenosnice\", \"EcommerceApp_bera_modulepermissions\".\"akcije\", \"EcommerceApp_bera_modulepermissions\".\"banner_odrediste_filter\", \"EcommerceApp_bera_modulepermissions\".\"b2b\", \"EcommerceApp_bera_modulepermissions\".\"posjetioci_uzivo\", \"EcommerceApp_bera_modulepermissions\".\"sretni_greb_greb\", \"EcommerceApp_bera_modulepermissions\".\"stavke_aktivnih_korpi\", \"EcommerceApp_bera_modulepermissions\".\"loyalty\", \"EcommerceApp_bera_modulepermissions\".\"poklon_vaucer\", \"EcommerceApp_bera_modulepermissions\".\"live_centar\", \"EcommerceApp_bera_modulepermissions\".\"uvoz\", \"EcommerceApp_bera_modulepermissions\".\"provjera_lagera\", \"EcommerceApp_bera_modulepermissions\".\"rezervni_dijelovi\", \"EcommerceApp_bera_modulepermissions\".\"stampa_cijena\", \"EcommerceApp_bera_modulepermissions\".\"stampa_deklaracije\", \"EcommerceApp_bera_modulepermissions\".\"dnevno_skidanje\", \"EcommerceApp_bera_modulepermissions\".\"dupli_barkodovi\", \"EcommerceApp_bera_modulepermissions\".\"duguje_potrazuje\", \"EcommerceApp_bera_modulepermissions\".\"popis_robe\", \"EcommerceApp_bera_modulepermissions\".\"fali_u_mp\", \"EcommerceApp_bera_modulepermissions\".\"nivelacije\", \"EcommerceApp_bera_modulepermissions\".\"kreiraj_ponudu\", \"EcommerceApp_bera_modulepermissions\".\"izvjestaji\", \"EcommerceApp_bera_modulepermissions\".\"artikli_u_setu\", \"EcommerceApp_bera_modulepermissions\".\"pracenje_lagera\" FROM \"EcommerceApp_bera_modulepermissions\" WHERE \"EcommerceApp_bera_modulepermissions\".\"id\" = 1 ORDER BY \"EcommerceApp_bera_modulepermissions\".\"id\" ASC LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT DISTINCT \"EcommerceApp_product\".\"id\", \"EcommerceApp_product\".\"is_set\", \"EcommerceApp_product\".\"naziv\", \"EcommerceApp_product\".\"slug\", \"EcommerceApp_product\".\"sifra\", \"EcommerceApp_product\".\"barkod\", \"EcommerceApp_product\".\"opis\", \"EcommerceApp_product\".\"slika\", \"EcommerceApp_product\".\"na_stanju\", \"EcommerceApp_product\".\"stanje\", \"EcommerceApp_product\".\"pakovanje_komada\", \"EcommerceApp_product\".\"cijena\", \"EcommerceApp_product\".\"akcijska_cijena\", \"EcommerceApp_product\".\"akcija_postotak\", \"EcommerceApp_product\".\"akcija_do\", \"EcommerceApp_product\".\"kategorija_id\", \"EcommerceApp_product\".\"brend_id\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\", \"EcommerceApp_product\".\"je_novitet\", \"EcommerceApp_product\".\"je_hit\", \"EcommerceApp_product\".\"prioritet_lagera\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\", \"EcommerceApp_product\".\"aktivan\", \"EcommerceApp_product\".\"sakriven_do_stanja\", \"EcommerceApp_product\".\"odoo_template_id\", \"EcommerceApp_product\".\"magacin_sync_at\", \"EcommerceApp_product\".\"meta_title\", \"EcommerceApp_product\".\"meta_description\", \"EcommerceApp_product\".\"h1_naslov\", \"EcommerceApp_product\".\"seo_tekst_iznad\", \"EcommerceApp_product\".\"seo_tekst_ispod\", \"EcommerceApp_product\".\"search_keywords\", \"EcommerceApp_product\".\"naziv_normalized\", \"EcommerceApp_product\".\"sifra_normalized\", \"EcommerceApp_product\".\"barkod_normalized\", \"EcommerceApp_product\".\"search_document\", \"EcommerceApp_product\".\"olx_listing_id\", \"EcommerceApp_product\".\"olx_listing_slug\", \"EcommerceApp_product\".\"olx_listing_url\", \"EcommerceApp_product\".\"olx_objavljen\", \"EcommerceApp_product\".\"kreiran\", \"EcommerceApp_product\".\"azuriran\", COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") AS \"varijacije_broj\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") LEFT OUTER JOIN \"EcommerceApp_product_tagovi\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_product_tagovi\".\"product_id\") LEFT OUTER JOIN \"EcommerceApp_tag\" ON (\"EcommerceApp_product_tagovi\".\"tag_id\" = \"EcommerceApp_tag\".\"id\") LEFT OUTER JOIN \"EcommerceApp_category\" ON (\"EcommerceApp_product\".\"kategorija_id\" = \"EcommerceApp_category\".\"id\") LEFT OUTER JOIN \"EcommerceApp_category\" T6 ON (\"EcommerceApp_category\".\"roditelj_id\" = T6.\"id\") WHERE (\"EcommerceApp_product\".\"na_stanju\" AND (\"EcommerceApp_product\".\"naziv\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"sifra\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"barkod\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_tag\".\"naziv\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_category\".\"naziv\" LIKE '%QA%' ESCAPE '\\' OR T6.\"naziv\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"odoo_template_id\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"meta_title\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"meta_description\" LIKE '%QA%' ESCAPE '\\')) GROUP BY \"EcommerceApp_product\".\"id\", \"EcommerceApp_product\".\"is_set\", \"EcommerceApp_product\".\"naziv\", \"EcommerceApp_product\".\"slug\", \"EcommerceApp_product\".\"sifra\", \"EcommerceApp_product\".\"barkod\", \"EcommerceApp_product\".\"opis\", \"EcommerceApp_product\".\"slika\", \"EcommerceApp_product\".\"na_stanju\", \"EcommerceApp_product\".\"stanje\", \"EcommerceApp_product\".\"pakovanje_komada\", \"EcommerceApp_product\".\"cijena\", \"EcommerceApp_product\".\"akcijska_cijena\", \"EcommerceApp_product\".\"akcija_postotak\", \"EcommerceApp_product\".\"akcija_do\", \"EcommerceApp_product\".\"kategorija_id\", \"EcommerceApp_product\".\"brend_id\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\", \"EcommerceApp_product\".\"je_novitet\", \"EcommerceApp_product\".\"je_hit\", \"EcommerceApp_product\".\"prioritet_lagera\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\", \"EcommerceApp_product\".\"aktivan\", \"EcommerceApp_product\".\"sakriven_do_stanja\", \"EcommerceApp_product\".\"odoo_template_id\", \"EcommerceApp_product\".\"magacin_sync_at\", \"EcommerceApp_product\".\"meta_title\", \"EcommerceApp_product\".\"meta_description\", \"EcommerceApp_product\".\"h1_naslov\", \"EcommerceApp_product\".\"seo_tekst_iznad\", \"EcommerceApp_product\".\"seo_tekst_ispod\", \"EcommerceApp_product\".\"search_keywords\", \"EcommerceApp_product\".\"naziv_normalized\", \"EcommerceApp_product\".\"sifra_normalized\", \"EcommerceApp_product\".\"barkod_normalized\", \"EcommerceApp_product\".\"search_document\", \"EcommerceApp_product\".\"olx_listing_id\", \"EcommerceApp_product\".\"olx_listing_slug\", \"EcommerceApp_product\".\"olx_listing_url\", \"EcommerceApp_product\".\"olx_objavljen\", \"EcommerceApp_product\".\"kreiran\", \"EcommerceApp_product\".\"azuriran\" ORDER BY \"EcommerceApp_product\".\"prioritet_lagera\" DESC, \"EcommerceApp_product\".\"kreiran\" DESC, \"EcommerceApp_product\".\"id\" DESC",
+        "time": "0.001"
+      },
+      {
+        "sql": "SELECT 1 AS \"a\" FROM \"EcommerceApp_sitesettings\" LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT 1 AS \"a\" FROM \"EcommerceApp_b2bsettings\" LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_bera_appearance\".\"button_color\" AS \"button_color\" FROM \"EcommerceApp_bera_appearance\" WHERE \"EcommerceApp_bera_appearance\".\"id\" = 1 ORDER BY \"EcommerceApp_bera_appearance\".\"id\" ASC LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT MIN(\"__col1\"), MAX(\"__col1\") FROM (SELECT DISTINCT \"EcommerceApp_product\".\"id\" AS \"col1\", \"EcommerceApp_product\".\"is_set\" AS \"col2\", \"EcommerceApp_product\".\"naziv\" AS \"col3\", \"EcommerceApp_product\".\"slug\" AS \"col4\", \"EcommerceApp_product\".\"sifra\" AS \"col5\", \"EcommerceApp_product\".\"barkod\" AS \"col6\", \"EcommerceApp_product\".\"opis\" AS \"col7\", \"EcommerceApp_product\".\"slika\" AS \"col8\", \"EcommerceApp_product\".\"na_stanju\" AS \"col9\", \"EcommerceApp_product\".\"stanje\" AS \"col10\", \"EcommerceApp_product\".\"pakovanje_komada\" AS \"col11\", \"EcommerceApp_product\".\"cijena\" AS \"col12\", \"EcommerceApp_product\".\"akcijska_cijena\" AS \"col13\", \"EcommerceApp_product\".\"akcija_postotak\" AS \"col14\", \"EcommerceApp_product\".\"akcija_do\" AS \"col15\", \"EcommerceApp_product\".\"kategorija_id\" AS \"col16\", \"EcommerceApp_product\".\"brend_id\" AS \"col17\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\" AS \"col18\", \"EcommerceApp_product\".\"je_novitet\" AS \"col19\", \"EcommerceApp_product\".\"je_hit\" AS \"col20\", \"EcommerceApp_product\".\"prioritet_lagera\" AS \"col21\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\" AS \"col22\", \"EcommerceApp_product\".\"aktivan\" AS \"col23\", \"EcommerceApp_product\".\"sakriven_do_stanja\" AS \"col24\", \"EcommerceApp_product\".\"odoo_template_id\" AS \"col25\", \"EcommerceApp_product\".\"magacin_sync_at\" AS \"col26\", \"EcommerceApp_product\".\"meta_title\" AS \"col27\", \"EcommerceApp_product\".\"meta_description\" AS \"col28\", \"EcommerceApp_product\".\"h1_naslov\" AS \"col29\", \"EcommerceApp_product\".\"seo_tekst_iznad\" AS \"col30\", \"EcommerceApp_product\".\"seo_tekst_ispod\" AS \"col31\", \"EcommerceApp_product\".\"search_keywords\" AS \"col32\", \"EcommerceApp_product\".\"naziv_normalized\" AS \"col33\", \"EcommerceApp_product\".\"sifra_normalized\" AS \"col34\", \"EcommerceApp_product\".\"barkod_normalized\" AS \"col35\", \"EcommerceApp_product\".\"search_document\" AS \"col36\", \"EcommerceApp_product\".\"olx_listing_id\" AS \"col37\", \"EcommerceApp_product\".\"olx_listing_slug\" AS \"col38\", \"EcommerceApp_product\".\"olx_listing_url\" AS \"col39\", \"EcommerceApp_product\".\"olx_objavljen\" AS \"col40\", \"EcommerceApp_product\".\"kreiran\" AS \"col41\", \"EcommerceApp_product\".\"azuriran\" AS \"col42\", COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") AS \"varijacije_broj\", \"EcommerceApp_product\".\"kreiran\" AS \"__col1\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") LEFT OUTER JOIN \"EcommerceApp_product_tagovi\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_product_tagovi\".\"product_id\") LEFT OUTER JOIN \"EcommerceApp_tag\" ON (\"EcommerceApp_product_tagovi\".\"tag_id\" = \"EcommerceApp_tag\".\"id\") LEFT OUTER JOIN \"EcommerceApp_category\" ON (\"EcommerceApp_product\".\"kategorija_id\" = \"EcommerceApp_category\".\"id\") LEFT OUTER JOIN \"EcommerceApp_category\" T6 ON (\"EcommerceApp_category\".\"roditelj_id\" = T6.\"id\") WHERE (\"EcommerceApp_product\".\"na_stanju\" AND (\"EcommerceApp_product\".\"naziv\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"sifra\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"barkod\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_tag\".\"naziv\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_category\".\"naziv\" LIKE '%QA%' ESCAPE '\\' OR T6.\"naziv\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"odoo_template_id\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"meta_title\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"meta_description\" LIKE '%QA%' ESCAPE '\\')) GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 44, 42) subquery",
+        "time": "0.001"
+      },
+      {
+        "sql": "SELECT DISTINCT django_datetime_trunc('day', \"EcommerceApp_product\".\"kreiran\", 'Europe/Sarajevo', 'UTC') AS \"datetimefield\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") LEFT OUTER JOIN \"EcommerceApp_product_tagovi\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_product_tagovi\".\"product_id\") LEFT OUTER JOIN \"EcommerceApp_tag\" ON (\"EcommerceApp_product_tagovi\".\"tag_id\" = \"EcommerceApp_tag\".\"id\") LEFT OUTER JOIN \"EcommerceApp_category\" ON (\"EcommerceApp_product\".\"kategorija_id\" = \"EcommerceApp_category\".\"id\") LEFT OUTER JOIN \"EcommerceApp_category\" T6 ON (\"EcommerceApp_category\".\"roditelj_id\" = T6.\"id\") WHERE (\"EcommerceApp_product\".\"na_stanju\" AND (\"EcommerceApp_product\".\"naziv\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"sifra\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"barkod\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_tag\".\"naziv\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_category\".\"naziv\" LIKE '%QA%' ESCAPE '\\' OR T6.\"naziv\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"odoo_template_id\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"meta_title\" LIKE '%QA%' ESCAPE '\\' OR \"EcommerceApp_product\".\"meta_description\" LIKE '%QA%' ESCAPE '\\') AND \"EcommerceApp_product\".\"kreiran\" IS NOT NULL) GROUP BY \"EcommerceApp_product\".\"id\", \"EcommerceApp_product\".\"is_set\", \"EcommerceApp_product\".\"naziv\", \"EcommerceApp_product\".\"slug\", \"EcommerceApp_product\".\"sifra\", \"EcommerceApp_product\".\"barkod\", \"EcommerceApp_product\".\"opis\", \"EcommerceApp_product\".\"slika\", \"EcommerceApp_product\".\"na_stanju\", \"EcommerceApp_product\".\"stanje\", \"EcommerceApp_product\".\"pakovanje_komada\", \"EcommerceApp_product\".\"cijena\", \"EcommerceApp_product\".\"akcijska_cijena\", \"EcommerceApp_product\".\"akcija_postotak\", \"EcommerceApp_product\".\"akcija_do\", \"EcommerceApp_product\".\"kategorija_id\", \"EcommerceApp_product\".\"brend_id\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\", \"EcommerceApp_product\".\"je_novitet\", \"EcommerceApp_product\".\"je_hit\", \"EcommerceApp_product\".\"prioritet_lagera\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\", \"EcommerceApp_product\".\"aktivan\", \"EcommerceApp_product\".\"sakriven_do_stanja\", \"EcommerceApp_product\".\"odoo_template_id\", \"EcommerceApp_product\".\"magacin_sync_at\", \"EcommerceApp_product\".\"meta_title\", \"EcommerceApp_product\".\"meta_description\", \"EcommerceApp_product\".\"h1_naslov\", \"EcommerceApp_product\".\"seo_tekst_iznad\", \"EcommerceApp_product\".\"seo_tekst_ispod\", \"EcommerceApp_product\".\"search_keywords\", \"EcommerceApp_product\".\"naziv_normalized\", \"EcommerceApp_product\".\"sifra_normalized\", \"EcommerceApp_product\".\"barkod_normalized\", \"EcommerceApp_product\".\"search_document\", \"EcommerceApp_product\".\"olx_listing_id\", \"EcommerceApp_product\".\"olx_listing_slug\", \"EcommerceApp_product\".\"olx_listing_url\", \"EcommerceApp_product\".\"olx_objavljen\", \"EcommerceApp_product\".\"kreiran\", \"EcommerceApp_product\".\"azuriran\", 1 ORDER BY 1 ASC",
+        "time": "0.001"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      }
+    ]
+  },
+  {
+    "url": "/panel/podesavanja/sekcije/EcommerceApp/product/?ima_varijacije=da",
+    "ms": 34.87,
+    "queries": 15,
+    "bytes": 40667,
+    "sql": [
+      {
+        "sql": "SELECT \"django_session\".\"session_key\", \"django_session\".\"session_data\", \"django_session\".\"expire_date\" FROM \"django_session\" WHERE (\"django_session\".\"expire_date\" > '2026-10-11 18:11:51.720640' AND \"django_session\".\"session_key\" = '8hdk1jhh8nid6dhmowc8e0nvalp9qfrm') LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"auth_user\".\"id\", \"auth_user\".\"password\", \"auth_user\".\"last_login\", \"auth_user\".\"is_superuser\", \"auth_user\".\"username\", \"auth_user\".\"first_name\", \"auth_user\".\"last_name\", \"auth_user\".\"email\", \"auth_user\".\"is_staff\", \"auth_user\".\"is_active\", \"auth_user\".\"date_joined\" FROM \"auth_user\" WHERE \"auth_user\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" ORDER BY \"EcommerceApp_category\".\"redoslijed\" ASC, \"EcommerceApp_category\".\"naziv\" ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" ORDER BY \"EcommerceApp_brand\".\"naziv\" ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_tag\".\"id\", \"EcommerceApp_tag\".\"naziv\", \"EcommerceApp_tag\".\"slug\", \"EcommerceApp_tag\".\"roditelj_id\" FROM \"EcommerceApp_tag\" LEFT OUTER JOIN \"EcommerceApp_tag\" T2 ON (\"EcommerceApp_tag\".\"roditelj_id\" = T2.\"id\") ORDER BY T2.\"naziv\" ASC, \"EcommerceApp_tag\".\"naziv\" ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT COUNT(*) FROM (SELECT \"EcommerceApp_product\".\"id\" AS \"col1\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") WHERE \"EcommerceApp_product\".\"na_stanju\" GROUP BY 1 HAVING COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") > 0) subquery",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT COUNT(*) FROM (SELECT \"EcommerceApp_product\".\"id\" AS \"col1\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") GROUP BY 1) subquery",
+        "time": "0.000"
+      },
+      {
+        "sql": "\n            SELECT name, type FROM sqlite_master\n            WHERE type in ('table', 'view') AND NOT name='sqlite_sequence'\n            ORDER BY name",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_bera_modulepermissions\".\"id\", \"EcommerceApp_bera_modulepermissions\".\"wms_zalihe\", \"EcommerceApp_bera_modulepermissions\".\"wms_lokacije\", \"EcommerceApp_bera_modulepermissions\".\"wms_narudzbe\", \"EcommerceApp_bera_modulepermissions\".\"wms_pakovanje\", \"EcommerceApp_bera_modulepermissions\".\"wms_prenosnice\", \"EcommerceApp_bera_modulepermissions\".\"akcije\", \"EcommerceApp_bera_modulepermissions\".\"banner_odrediste_filter\", \"EcommerceApp_bera_modulepermissions\".\"b2b\", \"EcommerceApp_bera_modulepermissions\".\"posjetioci_uzivo\", \"EcommerceApp_bera_modulepermissions\".\"sretni_greb_greb\", \"EcommerceApp_bera_modulepermissions\".\"stavke_aktivnih_korpi\", \"EcommerceApp_bera_modulepermissions\".\"loyalty\", \"EcommerceApp_bera_modulepermissions\".\"poklon_vaucer\", \"EcommerceApp_bera_modulepermissions\".\"live_centar\", \"EcommerceApp_bera_modulepermissions\".\"uvoz\", \"EcommerceApp_bera_modulepermissions\".\"provjera_lagera\", \"EcommerceApp_bera_modulepermissions\".\"rezervni_dijelovi\", \"EcommerceApp_bera_modulepermissions\".\"stampa_cijena\", \"EcommerceApp_bera_modulepermissions\".\"stampa_deklaracije\", \"EcommerceApp_bera_modulepermissions\".\"dnevno_skidanje\", \"EcommerceApp_bera_modulepermissions\".\"dupli_barkodovi\", \"EcommerceApp_bera_modulepermissions\".\"duguje_potrazuje\", \"EcommerceApp_bera_modulepermissions\".\"popis_robe\", \"EcommerceApp_bera_modulepermissions\".\"fali_u_mp\", \"EcommerceApp_bera_modulepermissions\".\"nivelacije\", \"EcommerceApp_bera_modulepermissions\".\"kreiraj_ponudu\", \"EcommerceApp_bera_modulepermissions\".\"izvjestaji\", \"EcommerceApp_bera_modulepermissions\".\"artikli_u_setu\", \"EcommerceApp_bera_modulepermissions\".\"pracenje_lagera\" FROM \"EcommerceApp_bera_modulepermissions\" WHERE \"EcommerceApp_bera_modulepermissions\".\"id\" = 1 ORDER BY \"EcommerceApp_bera_modulepermissions\".\"id\" ASC LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_product\".\"id\", \"EcommerceApp_product\".\"is_set\", \"EcommerceApp_product\".\"naziv\", \"EcommerceApp_product\".\"slug\", \"EcommerceApp_product\".\"sifra\", \"EcommerceApp_product\".\"barkod\", \"EcommerceApp_product\".\"opis\", \"EcommerceApp_product\".\"slika\", \"EcommerceApp_product\".\"na_stanju\", \"EcommerceApp_product\".\"stanje\", \"EcommerceApp_product\".\"pakovanje_komada\", \"EcommerceApp_product\".\"cijena\", \"EcommerceApp_product\".\"akcijska_cijena\", \"EcommerceApp_product\".\"akcija_postotak\", \"EcommerceApp_product\".\"akcija_do\", \"EcommerceApp_product\".\"kategorija_id\", \"EcommerceApp_product\".\"brend_id\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\", \"EcommerceApp_product\".\"je_novitet\", \"EcommerceApp_product\".\"je_hit\", \"EcommerceApp_product\".\"prioritet_lagera\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\", \"EcommerceApp_product\".\"aktivan\", \"EcommerceApp_product\".\"sakriven_do_stanja\", \"EcommerceApp_product\".\"odoo_template_id\", \"EcommerceApp_product\".\"magacin_sync_at\", \"EcommerceApp_product\".\"meta_title\", \"EcommerceApp_product\".\"meta_description\", \"EcommerceApp_product\".\"h1_naslov\", \"EcommerceApp_product\".\"seo_tekst_iznad\", \"EcommerceApp_product\".\"seo_tekst_ispod\", \"EcommerceApp_product\".\"search_keywords\", \"EcommerceApp_product\".\"naziv_normalized\", \"EcommerceApp_product\".\"sifra_normalized\", \"EcommerceApp_product\".\"barkod_normalized\", \"EcommerceApp_product\".\"search_document\", \"EcommerceApp_product\".\"olx_listing_id\", \"EcommerceApp_product\".\"olx_listing_slug\", \"EcommerceApp_product\".\"olx_listing_url\", \"EcommerceApp_product\".\"olx_objavljen\", \"EcommerceApp_product\".\"kreiran\", \"EcommerceApp_product\".\"azuriran\", COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") AS \"varijacije_broj\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") WHERE \"EcommerceApp_product\".\"na_stanju\" GROUP BY \"EcommerceApp_product\".\"id\", \"EcommerceApp_product\".\"is_set\", \"EcommerceApp_product\".\"naziv\", \"EcommerceApp_product\".\"slug\", \"EcommerceApp_product\".\"sifra\", \"EcommerceApp_product\".\"barkod\", \"EcommerceApp_product\".\"opis\", \"EcommerceApp_product\".\"slika\", \"EcommerceApp_product\".\"na_stanju\", \"EcommerceApp_product\".\"stanje\", \"EcommerceApp_product\".\"pakovanje_komada\", \"EcommerceApp_product\".\"cijena\", \"EcommerceApp_product\".\"akcijska_cijena\", \"EcommerceApp_product\".\"akcija_postotak\", \"EcommerceApp_product\".\"akcija_do\", \"EcommerceApp_product\".\"kategorija_id\", \"EcommerceApp_product\".\"brend_id\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\", \"EcommerceApp_product\".\"je_novitet\", \"EcommerceApp_product\".\"je_hit\", \"EcommerceApp_product\".\"prioritet_lagera\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\", \"EcommerceApp_product\".\"aktivan\", \"EcommerceApp_product\".\"sakriven_do_stanja\", \"EcommerceApp_product\".\"odoo_template_id\", \"EcommerceApp_product\".\"magacin_sync_at\", \"EcommerceApp_product\".\"meta_title\", \"EcommerceApp_product\".\"meta_description\", \"EcommerceApp_product\".\"h1_naslov\", \"EcommerceApp_product\".\"seo_tekst_iznad\", \"EcommerceApp_product\".\"seo_tekst_ispod\", \"EcommerceApp_product\".\"search_keywords\", \"EcommerceApp_product\".\"naziv_normalized\", \"EcommerceApp_product\".\"sifra_normalized\", \"EcommerceApp_product\".\"barkod_normalized\", \"EcommerceApp_product\".\"search_document\", \"EcommerceApp_product\".\"olx_listing_id\", \"EcommerceApp_product\".\"olx_listing_slug\", \"EcommerceApp_product\".\"olx_listing_url\", \"EcommerceApp_product\".\"olx_objavljen\", \"EcommerceApp_product\".\"kreiran\", \"EcommerceApp_product\".\"azuriran\" HAVING COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") > 0 ORDER BY \"EcommerceApp_product\".\"prioritet_lagera\" DESC, \"EcommerceApp_product\".\"kreiran\" DESC, \"EcommerceApp_product\".\"id\" DESC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT 1 AS \"a\" FROM \"EcommerceApp_sitesettings\" LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT 1 AS \"a\" FROM \"EcommerceApp_b2bsettings\" LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_bera_appearance\".\"button_color\" AS \"button_color\" FROM \"EcommerceApp_bera_appearance\" WHERE \"EcommerceApp_bera_appearance\".\"id\" = 1 ORDER BY \"EcommerceApp_bera_appearance\".\"id\" ASC LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT MIN(\"__col1\"), MAX(\"__col1\") FROM (SELECT \"EcommerceApp_product\".\"kreiran\" AS \"__col1\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") WHERE \"EcommerceApp_product\".\"na_stanju\" GROUP BY \"EcommerceApp_product\".\"id\", 1 HAVING COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") > 0) subquery",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT DISTINCT django_datetime_trunc('year', \"EcommerceApp_product\".\"kreiran\", 'Europe/Sarajevo', 'UTC') AS \"datetimefield\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") WHERE (\"EcommerceApp_product\".\"na_stanju\" AND \"EcommerceApp_product\".\"kreiran\" IS NOT NULL) GROUP BY \"EcommerceApp_product\".\"id\", \"EcommerceApp_product\".\"is_set\", \"EcommerceApp_product\".\"naziv\", \"EcommerceApp_product\".\"slug\", \"EcommerceApp_product\".\"sifra\", \"EcommerceApp_product\".\"barkod\", \"EcommerceApp_product\".\"opis\", \"EcommerceApp_product\".\"slika\", \"EcommerceApp_product\".\"na_stanju\", \"EcommerceApp_product\".\"stanje\", \"EcommerceApp_product\".\"pakovanje_komada\", \"EcommerceApp_product\".\"cijena\", \"EcommerceApp_product\".\"akcijska_cijena\", \"EcommerceApp_product\".\"akcija_postotak\", \"EcommerceApp_product\".\"akcija_do\", \"EcommerceApp_product\".\"kategorija_id\", \"EcommerceApp_product\".\"brend_id\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\", \"EcommerceApp_product\".\"je_novitet\", \"EcommerceApp_product\".\"je_hit\", \"EcommerceApp_product\".\"prioritet_lagera\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\", \"EcommerceApp_product\".\"aktivan\", \"EcommerceApp_product\".\"sakriven_do_stanja\", \"EcommerceApp_product\".\"odoo_template_id\", \"EcommerceApp_product\".\"magacin_sync_at\", \"EcommerceApp_product\".\"meta_title\", \"EcommerceApp_product\".\"meta_description\", \"EcommerceApp_product\".\"h1_naslov\", \"EcommerceApp_product\".\"seo_tekst_iznad\", \"EcommerceApp_product\".\"seo_tekst_ispod\", \"EcommerceApp_product\".\"search_keywords\", \"EcommerceApp_product\".\"naziv_normalized\", \"EcommerceApp_product\".\"sifra_normalized\", \"EcommerceApp_product\".\"barkod_normalized\", \"EcommerceApp_product\".\"search_document\", \"EcommerceApp_product\".\"olx_listing_id\", \"EcommerceApp_product\".\"olx_listing_slug\", \"EcommerceApp_product\".\"olx_listing_url\", \"EcommerceApp_product\".\"olx_objavljen\", \"EcommerceApp_product\".\"kreiran\", \"EcommerceApp_product\".\"azuriran\", 1 HAVING COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") > 0 ORDER BY 1 ASC",
+        "time": "0.000"
+      }
+    ]
+  },
+  {
+    "url": "/panel/podesavanja/sekcije/EcommerceApp/product/?ima_varijacije=ne",
+    "ms": 105.0,
+    "queries": 31,
+    "bytes": 66615,
+    "sql": [
+      {
+        "sql": "SELECT \"django_session\".\"session_key\", \"django_session\".\"session_data\", \"django_session\".\"expire_date\" FROM \"django_session\" WHERE (\"django_session\".\"expire_date\" > '2026-10-11 18:11:51.755601' AND \"django_session\".\"session_key\" = '8hdk1jhh8nid6dhmowc8e0nvalp9qfrm') LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"auth_user\".\"id\", \"auth_user\".\"password\", \"auth_user\".\"last_login\", \"auth_user\".\"is_superuser\", \"auth_user\".\"username\", \"auth_user\".\"first_name\", \"auth_user\".\"last_name\", \"auth_user\".\"email\", \"auth_user\".\"is_staff\", \"auth_user\".\"is_active\", \"auth_user\".\"date_joined\" FROM \"auth_user\" WHERE \"auth_user\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" ORDER BY \"EcommerceApp_category\".\"redoslijed\" ASC, \"EcommerceApp_category\".\"naziv\" ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" ORDER BY \"EcommerceApp_brand\".\"naziv\" ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_tag\".\"id\", \"EcommerceApp_tag\".\"naziv\", \"EcommerceApp_tag\".\"slug\", \"EcommerceApp_tag\".\"roditelj_id\" FROM \"EcommerceApp_tag\" LEFT OUTER JOIN \"EcommerceApp_tag\" T2 ON (\"EcommerceApp_tag\".\"roditelj_id\" = T2.\"id\") ORDER BY T2.\"naziv\" ASC, \"EcommerceApp_tag\".\"naziv\" ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT COUNT(*) FROM (SELECT \"EcommerceApp_product\".\"id\" AS \"col1\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") WHERE \"EcommerceApp_product\".\"na_stanju\" GROUP BY 1 HAVING COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") = 0) subquery",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT COUNT(*) FROM (SELECT \"EcommerceApp_product\".\"id\" AS \"col1\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") GROUP BY 1) subquery",
+        "time": "0.000"
+      },
+      {
+        "sql": "\n            SELECT name, type FROM sqlite_master\n            WHERE type in ('table', 'view') AND NOT name='sqlite_sequence'\n            ORDER BY name",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_bera_modulepermissions\".\"id\", \"EcommerceApp_bera_modulepermissions\".\"wms_zalihe\", \"EcommerceApp_bera_modulepermissions\".\"wms_lokacije\", \"EcommerceApp_bera_modulepermissions\".\"wms_narudzbe\", \"EcommerceApp_bera_modulepermissions\".\"wms_pakovanje\", \"EcommerceApp_bera_modulepermissions\".\"wms_prenosnice\", \"EcommerceApp_bera_modulepermissions\".\"akcije\", \"EcommerceApp_bera_modulepermissions\".\"banner_odrediste_filter\", \"EcommerceApp_bera_modulepermissions\".\"b2b\", \"EcommerceApp_bera_modulepermissions\".\"posjetioci_uzivo\", \"EcommerceApp_bera_modulepermissions\".\"sretni_greb_greb\", \"EcommerceApp_bera_modulepermissions\".\"stavke_aktivnih_korpi\", \"EcommerceApp_bera_modulepermissions\".\"loyalty\", \"EcommerceApp_bera_modulepermissions\".\"poklon_vaucer\", \"EcommerceApp_bera_modulepermissions\".\"live_centar\", \"EcommerceApp_bera_modulepermissions\".\"uvoz\", \"EcommerceApp_bera_modulepermissions\".\"provjera_lagera\", \"EcommerceApp_bera_modulepermissions\".\"rezervni_dijelovi\", \"EcommerceApp_bera_modulepermissions\".\"stampa_cijena\", \"EcommerceApp_bera_modulepermissions\".\"stampa_deklaracije\", \"EcommerceApp_bera_modulepermissions\".\"dnevno_skidanje\", \"EcommerceApp_bera_modulepermissions\".\"dupli_barkodovi\", \"EcommerceApp_bera_modulepermissions\".\"duguje_potrazuje\", \"EcommerceApp_bera_modulepermissions\".\"popis_robe\", \"EcommerceApp_bera_modulepermissions\".\"fali_u_mp\", \"EcommerceApp_bera_modulepermissions\".\"nivelacije\", \"EcommerceApp_bera_modulepermissions\".\"kreiraj_ponudu\", \"EcommerceApp_bera_modulepermissions\".\"izvjestaji\", \"EcommerceApp_bera_modulepermissions\".\"artikli_u_setu\", \"EcommerceApp_bera_modulepermissions\".\"pracenje_lagera\" FROM \"EcommerceApp_bera_modulepermissions\" WHERE \"EcommerceApp_bera_modulepermissions\".\"id\" = 1 ORDER BY \"EcommerceApp_bera_modulepermissions\".\"id\" ASC LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_product\".\"id\", \"EcommerceApp_product\".\"is_set\", \"EcommerceApp_product\".\"naziv\", \"EcommerceApp_product\".\"slug\", \"EcommerceApp_product\".\"sifra\", \"EcommerceApp_product\".\"barkod\", \"EcommerceApp_product\".\"opis\", \"EcommerceApp_product\".\"slika\", \"EcommerceApp_product\".\"na_stanju\", \"EcommerceApp_product\".\"stanje\", \"EcommerceApp_product\".\"pakovanje_komada\", \"EcommerceApp_product\".\"cijena\", \"EcommerceApp_product\".\"akcijska_cijena\", \"EcommerceApp_product\".\"akcija_postotak\", \"EcommerceApp_product\".\"akcija_do\", \"EcommerceApp_product\".\"kategorija_id\", \"EcommerceApp_product\".\"brend_id\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\", \"EcommerceApp_product\".\"je_novitet\", \"EcommerceApp_product\".\"je_hit\", \"EcommerceApp_product\".\"prioritet_lagera\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\", \"EcommerceApp_product\".\"aktivan\", \"EcommerceApp_product\".\"sakriven_do_stanja\", \"EcommerceApp_product\".\"odoo_template_id\", \"EcommerceApp_product\".\"magacin_sync_at\", \"EcommerceApp_product\".\"meta_title\", \"EcommerceApp_product\".\"meta_description\", \"EcommerceApp_product\".\"h1_naslov\", \"EcommerceApp_product\".\"seo_tekst_iznad\", \"EcommerceApp_product\".\"seo_tekst_ispod\", \"EcommerceApp_product\".\"search_keywords\", \"EcommerceApp_product\".\"naziv_normalized\", \"EcommerceApp_product\".\"sifra_normalized\", \"EcommerceApp_product\".\"barkod_normalized\", \"EcommerceApp_product\".\"search_document\", \"EcommerceApp_product\".\"olx_listing_id\", \"EcommerceApp_product\".\"olx_listing_slug\", \"EcommerceApp_product\".\"olx_listing_url\", \"EcommerceApp_product\".\"olx_objavljen\", \"EcommerceApp_product\".\"kreiran\", \"EcommerceApp_product\".\"azuriran\", COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") AS \"varijacije_broj\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") WHERE \"EcommerceApp_product\".\"na_stanju\" GROUP BY \"EcommerceApp_product\".\"id\", \"EcommerceApp_product\".\"is_set\", \"EcommerceApp_product\".\"naziv\", \"EcommerceApp_product\".\"slug\", \"EcommerceApp_product\".\"sifra\", \"EcommerceApp_product\".\"barkod\", \"EcommerceApp_product\".\"opis\", \"EcommerceApp_product\".\"slika\", \"EcommerceApp_product\".\"na_stanju\", \"EcommerceApp_product\".\"stanje\", \"EcommerceApp_product\".\"pakovanje_komada\", \"EcommerceApp_product\".\"cijena\", \"EcommerceApp_product\".\"akcijska_cijena\", \"EcommerceApp_product\".\"akcija_postotak\", \"EcommerceApp_product\".\"akcija_do\", \"EcommerceApp_product\".\"kategorija_id\", \"EcommerceApp_product\".\"brend_id\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\", \"EcommerceApp_product\".\"je_novitet\", \"EcommerceApp_product\".\"je_hit\", \"EcommerceApp_product\".\"prioritet_lagera\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\", \"EcommerceApp_product\".\"aktivan\", \"EcommerceApp_product\".\"sakriven_do_stanja\", \"EcommerceApp_product\".\"odoo_template_id\", \"EcommerceApp_product\".\"magacin_sync_at\", \"EcommerceApp_product\".\"meta_title\", \"EcommerceApp_product\".\"meta_description\", \"EcommerceApp_product\".\"h1_naslov\", \"EcommerceApp_product\".\"seo_tekst_iznad\", \"EcommerceApp_product\".\"seo_tekst_ispod\", \"EcommerceApp_product\".\"search_keywords\", \"EcommerceApp_product\".\"naziv_normalized\", \"EcommerceApp_product\".\"sifra_normalized\", \"EcommerceApp_product\".\"barkod_normalized\", \"EcommerceApp_product\".\"search_document\", \"EcommerceApp_product\".\"olx_listing_id\", \"EcommerceApp_product\".\"olx_listing_slug\", \"EcommerceApp_product\".\"olx_listing_url\", \"EcommerceApp_product\".\"olx_objavljen\", \"EcommerceApp_product\".\"kreiran\", \"EcommerceApp_product\".\"azuriran\" HAVING COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") = 0 ORDER BY \"EcommerceApp_product\".\"prioritet_lagera\" DESC, \"EcommerceApp_product\".\"kreiran\" DESC, \"EcommerceApp_product\".\"id\" DESC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT 1 AS \"a\" FROM \"EcommerceApp_sitesettings\" LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT 1 AS \"a\" FROM \"EcommerceApp_b2bsettings\" LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_bera_appearance\".\"button_color\" AS \"button_color\" FROM \"EcommerceApp_bera_appearance\" WHERE \"EcommerceApp_bera_appearance\".\"id\" = 1 ORDER BY \"EcommerceApp_bera_appearance\".\"id\" ASC LIMIT 1",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT MIN(\"__col1\"), MAX(\"__col1\") FROM (SELECT \"EcommerceApp_product\".\"kreiran\" AS \"__col1\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") WHERE \"EcommerceApp_product\".\"na_stanju\" GROUP BY \"EcommerceApp_product\".\"id\", 1 HAVING COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") = 0) subquery",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT DISTINCT django_datetime_trunc('day', \"EcommerceApp_product\".\"kreiran\", 'Europe/Sarajevo', 'UTC') AS \"datetimefield\" FROM \"EcommerceApp_product\" LEFT OUTER JOIN \"EcommerceApp_productvariation\" ON (\"EcommerceApp_product\".\"id\" = \"EcommerceApp_productvariation\".\"artikal_id\") WHERE (\"EcommerceApp_product\".\"na_stanju\" AND \"EcommerceApp_product\".\"kreiran\" IS NOT NULL) GROUP BY \"EcommerceApp_product\".\"id\", \"EcommerceApp_product\".\"is_set\", \"EcommerceApp_product\".\"naziv\", \"EcommerceApp_product\".\"slug\", \"EcommerceApp_product\".\"sifra\", \"EcommerceApp_product\".\"barkod\", \"EcommerceApp_product\".\"opis\", \"EcommerceApp_product\".\"slika\", \"EcommerceApp_product\".\"na_stanju\", \"EcommerceApp_product\".\"stanje\", \"EcommerceApp_product\".\"pakovanje_komada\", \"EcommerceApp_product\".\"cijena\", \"EcommerceApp_product\".\"akcijska_cijena\", \"EcommerceApp_product\".\"akcija_postotak\", \"EcommerceApp_product\".\"akcija_do\", \"EcommerceApp_product\".\"kategorija_id\", \"EcommerceApp_product\".\"brend_id\", \"EcommerceApp_product\".\"prikazi_na_pocetnoj\", \"EcommerceApp_product\".\"je_novitet\", \"EcommerceApp_product\".\"je_hit\", \"EcommerceApp_product\".\"prioritet_lagera\", \"EcommerceApp_product\".\"proizvedeno_u_japanu\", \"EcommerceApp_product\".\"aktivan\", \"EcommerceApp_product\".\"sakriven_do_stanja\", \"EcommerceApp_product\".\"odoo_template_id\", \"EcommerceApp_product\".\"magacin_sync_at\", \"EcommerceApp_product\".\"meta_title\", \"EcommerceApp_product\".\"meta_description\", \"EcommerceApp_product\".\"h1_naslov\", \"EcommerceApp_product\".\"seo_tekst_iznad\", \"EcommerceApp_product\".\"seo_tekst_ispod\", \"EcommerceApp_product\".\"search_keywords\", \"EcommerceApp_product\".\"naziv_normalized\", \"EcommerceApp_product\".\"sifra_normalized\", \"EcommerceApp_product\".\"barkod_normalized\", \"EcommerceApp_product\".\"search_document\", \"EcommerceApp_product\".\"olx_listing_id\", \"EcommerceApp_product\".\"olx_listing_slug\", \"EcommerceApp_product\".\"olx_listing_url\", \"EcommerceApp_product\".\"olx_objavljen\", \"EcommerceApp_product\".\"kreiran\", \"EcommerceApp_product\".\"azuriran\", 1 HAVING COUNT(DISTINCT \"EcommerceApp_productvariation\".\"id\") = 0 ORDER BY 1 ASC",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.001"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_brand\".\"id\", \"EcommerceApp_brand\".\"naziv\", \"EcommerceApp_brand\".\"slug\", \"EcommerceApp_brand\".\"slika\", \"EcommerceApp_brand\".\"meta_title\", \"EcommerceApp_brand\".\"meta_description\", \"EcommerceApp_brand\".\"h1_naslov\", \"EcommerceApp_brand\".\"seo_tekst_iznad\", \"EcommerceApp_brand\".\"seo_tekst_ispod\" FROM \"EcommerceApp_brand\" WHERE \"EcommerceApp_brand\".\"id\" = 1 LIMIT 21",
+        "time": "0.000"
+      },
+      {
+        "sql": "SELECT \"EcommerceApp_category\".\"id\", \"EcommerceApp_category\".\"naziv\", \"EcommerceApp_category\".\"ikonica_pocetna\", \"EcommerceApp_category\".\"slug\", \"EcommerceApp_category\".\"roditelj_id\", \"EcommerceApp_category\".\"redoslijed\", \"EcommerceApp_category\".\"prikazi_u_meniju\", \"EcommerceApp_category\".\"aktivan\", \"EcommerceApp_category\".\"odoo_category_id\", \"EcommerceApp_category\".\"meta_title\", \"EcommerceApp_category\".\"meta_description\", \"EcommerceApp_category\".\"h1_naslov\", \"EcommerceApp_category\".\"seo_tekst_iznad\", \"EcommerceApp_category\".\"seo_tekst_ispod\", \"EcommerceApp_category\".\"search_tagovi\" FROM \"EcommerceApp_category\" WHERE \"EcommerceApp_category\".\"id\" = 1 LIMIT 21",
+        "time": "0.001"
+      }
+    ]
+  }
+]

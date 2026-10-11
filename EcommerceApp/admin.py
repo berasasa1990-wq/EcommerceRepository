@@ -2193,8 +2193,17 @@ class ProductAdmin(admin.ModelAdmin):
     )
 
     def get_queryset(self, request):
+        from django.db.models import IntegerField, OuterRef, Subquery
+        from django.db.models.functions import Coalesce
+        from .models import ProductVariation
+
         qs = super().get_queryset(request)
-        return qs.annotate(varijacije_broj=Count('varijacije', distinct=True))
+        variation_count = ProductVariation.objects.filter(
+            artikal_id=OuterRef('pk'),
+        ).order_by().values('artikal_id').annotate(total=Count('pk')).values('total')
+        return qs.select_related('brend', 'kategorija', 'kategorija__roditelj').annotate(
+            varijacije_broj=Coalesce(Subquery(variation_count, output_field=IntegerField()), 0),
+        )
 
     def get_search_results(self, request, queryset, search_term):
         """
@@ -3434,7 +3443,7 @@ class ProductAdmin(admin.ModelAdmin):
         if obj and obj.slika:
             try:
                 return format_html(
-                    '<img src="{}" style="height:40px;border-radius:4px;" />',
+                    '<img src="{}" style="height:40px;border-radius:4px;" loading="lazy" decoding="async" />',
                     obj.slika.url,
                 )
             except Exception:
