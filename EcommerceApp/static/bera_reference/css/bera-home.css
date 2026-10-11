@@ -677,3 +677,7 @@ body.bera-storefront-header #header .header-panel-shortcut svg{width:21px;height
 body.bera-storefront-header #header .header-panel-shortcut:hover{background:#dff3fc}
 body.bera-storefront-header #header .header-panel-shortcut:focus-visible{outline:2px solid #008dc3;outline-offset:3px}
 @media(max-width:767px){body.bera-storefront-header #header .logo-brand:has(.header-panel-shortcut){gap:6px}body.bera-storefront-header #header .header-panel-shortcut{flex-basis:28px;width:28px;height:28px}body.bera-storefront-header #header .header-panel-shortcut svg{width:18px;height:18px}}
+
+/* Give every brand the same logo frame below product prices. */
+body.bera-storefront-header :is(.product-card,.product-catalog,.product-detail-info) .product-brand-under-price img{width:50px!important;max-width:50px!important;height:14px!important;min-width:0!important;min-height:0!important;object-fit:contain;object-position:left center;display:block}
+@media(max-width:767px){body.bera-storefront-header :is(.product-card,.product-catalog,.product-detail-info) .product-brand-under-price img{width:40px!important;max-width:40px!important;height:11px!important}}
