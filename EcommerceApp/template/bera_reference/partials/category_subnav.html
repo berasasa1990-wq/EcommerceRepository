@@ -1,0 +1,7 @@
+{% if category_subnav %}
+<nav class="category-subnav" aria-label="Podkategorije">
+    {% for item in category_subnav %}
+    <a href="{{ item.url }}#product-showcase" class="category-subnav-link{% if item.active %} is-active{% endif %}">{{ item.label }}</a>
+    {% endfor %}
+</nav>
+{% endif %}

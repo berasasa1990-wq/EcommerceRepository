@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Garancija na proizvode">
+  <defs>
+    <path id="topArc" d="M 18 60 A 42 42 0 0 1 102 60" fill="none"/>
+    <path id="bottomArc" d="M 102 60 A 42 42 0 0 1 18 60" fill="none"/>
+  </defs>
+  <circle cx="60" cy="60" r="56" fill="#f8faf8" stroke="#5BB805" stroke-width="3"/>
+  <circle cx="60" cy="60" r="48" fill="none" stroke="#5BB805" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text fill="#2d6a0b" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="9" font-weight="700" letter-spacing="0.08em">
+    <textPath href="#topArc" startOffset="50%" text-anchor="middle">GARANCIJA</textPath>
+  </text>
+  <text fill="#2d6a0b" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="7.5" font-weight="600" letter-spacing="0.06em">
+    <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">NA PROIZVODE</textPath>
+  </text>
+  <path d="M60 34 L74 48 L52 70 L46 64 Z" fill="#5BB805"/>
+  <path d="M44 72 L52 80 L76 56" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,2572 @@
+[
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/account/index.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/account/index.html",
+    "source_sha256": "8fa49b50e7e943cf59aeeb3d36dbc2617438d07941a36b42382f4ea61a0e2df5"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/account/mobile_overview.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/account/mobile_overview.html",
+    "source_sha256": "044a83d8455a0cf4058735d59ccdbf5d80ffed863e81deb941c79a192654ae07"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/account/order_detail.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/account/order_detail.html",
+    "source_sha256": "c4fb6c471e8e40ca56f9ebea987aaf82d65f4add0e95f66177d9739e3e622624"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/banner/change_list.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/banner/change_list.html",
+    "source_sha256": "d1b67e9db8d1afa1495f4970bf0d1eaf357cbcf8678d37a4bcf05a417fa0e060"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/category/bulk_assign_tags.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/category/bulk_assign_tags.html",
+    "source_sha256": "bb2613fe8c33b6bb2149b7b2c638454bad6fd7fe73aabf6d8d0f7eff1f3c7c64"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/modulepermissions/change_form.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/modulepermissions/change_form.html",
+    "source_sha256": "3bae8264427ea9249399a2df2be37115369d06786135e0ddbc292cb89a981c48"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/product/brzi_unos.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/product/brzi_unos.html",
+    "source_sha256": "813b3ae945c9322b5140f473ff1520615e2bf71806d615f3c93a068603784699"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/product/brzi_unos_aktivacija.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/product/brzi_unos_aktivacija.html",
+    "source_sha256": "2de20632a7b2b2d95b9e69b0bec6bfb0ca520cb5405aa68c4aa44dba24263a73"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/product/bulk_assign_category.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/product/bulk_assign_category.html",
+    "source_sha256": "5d8d4e687dd4d8f3ae4e1cf1057411b5416f1d6b19e33aa6c42ba98178cbc409"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/product/bulk_assign_field.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/product/bulk_assign_field.html",
+    "source_sha256": "d1e469c27056be9d2d3e3976fcaa76efda2a93d9a18e4b7325476e18887b59d9"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/product/bulk_assign_pakovanje.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/product/bulk_assign_pakovanje.html",
+    "source_sha256": "ae13aab36fd398d6bae833348646ef501754cb64839d82209e8e8ca9f56a0fa1"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/product/bulk_assign_tags.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/product/bulk_assign_tags.html",
+    "source_sha256": "767e4edcb91bc5c745f7b85e33b2b8d691824cc27f439866117c74462a54011d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/product/bulk_merge_products.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/product/bulk_merge_products.html",
+    "source_sha256": "8fe16675dad67048b25195d42a2bb82f30995555626db2e9fb12abdd5e59618a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/product/bulk_split_variations.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/product/bulk_split_variations.html",
+    "source_sha256": "098306c2db71d41c7653a9ba8fb420de093c5fc84256fe5796228ee45f51e2ae"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/product/change_form.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/product/change_form.html",
+    "source_sha256": "6a1d05d1d9d2df59dbe254806d1328d0bed6aa8dbee006c09e171f908e72fae3"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/product/change_list.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/product/change_list.html",
+    "source_sha256": "3cf99411b18629d25c9e99cb71c0ae69547dfdfc663e1567d1867568bc340a50"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/EcommerceApp/sitesettings/change_form.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/EcommerceApp/sitesettings/change_form.html",
+    "source_sha256": "2122a5834cd27d9e69f7636fae9d40485741d8609bedc7c12ff10f0089f60757"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/base_site.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/base_site.html",
+    "source_sha256": "079f32514bc1530dcb17f19b66f277934df6585180016583fc41bf6e74063944"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/customer_profile_overview.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/customer_profile_overview.html",
+    "source_sha256": "4c250506535cc27d9aa9f93b050d34e3a42a4fa6556f2bf85a3dac0c8c0a1b06"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/customer_reset_password.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/customer_reset_password.html",
+    "source_sha256": "25f32c6177145b6bc3e01aa0bddf00f68c1aeee9b27ef5ac0cc2524c309c4f76"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/admin/profile_reset_password.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/admin/profile_reset_password.html",
+    "source_sha256": "15e587b4241cbca414c527ccd2ee5c9309d19618b17816bd04c95c73f772539e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/auth/csrf_failure.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/auth/csrf_failure.html",
+    "source_sha256": "a093d766525cda2c6d6c45f1ee7117628e3bd126ce6799b5ffde2020c6261d44"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/auth/login.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/auth/login.html",
+    "source_sha256": "aa0af58d237f494c7d43be786aad7b6e9d6d49afe73d64045d6b2090335baa12"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/auth/password_reset_complete.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/auth/password_reset_complete.html",
+    "source_sha256": "7e6a603527ca44a93c8d95daeb3604d498c9f6c39dd5dab31cfce3236277f480"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/auth/password_reset_confirm.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/auth/password_reset_confirm.html",
+    "source_sha256": "a8049779aca99623bdc7ac73331c96a55fa3a2fc7b441d3b675618961490e565"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/auth/password_reset_done.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/auth/password_reset_done.html",
+    "source_sha256": "f613d85b079576adec7731b733d761c0c201fe08cf8b00240b88a710057723b2"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/auth/password_reset_form.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/auth/password_reset_form.html",
+    "source_sha256": "23fce4dbea7b0235a3a0d477ae4555fd0d608a24a8cb809a9ead5831c19c0e51"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/auth/register.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/auth/register.html",
+    "source_sha256": "b04edbbf8b7e5dc991430a972f48c3f34f2b5cc2a8b50c7117a8d64d9c7d49ef"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/base.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/base.html",
+    "source_sha256": "ddf608828a07c96808d31744da082fdb54530a82e719db7323d12d7f7754fbdd"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/brands.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/brands.html",
+    "source_sha256": "75ad1c4e5228be5c876898ee97fe2471e4d02d5fe8b9b9ee3b31bf9961222b4c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/cart.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/cart.html",
+    "source_sha256": "6c69377ebc823c230ff45be3247e987241efc9e19b0bcc3718b93c60c7d4ea1b"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/category.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/category.html",
+    "source_sha256": "18ac4c183fdb999d2ecb5af4bd5dfdced300d51ac65fec9411f3d73f2c0e19bd"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/category_subcategories.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/category_subcategories.html",
+    "source_sha256": "73acd41cebc29ee81d4d865c37b76d962f781af0a2652c926b4750c7cbb02b9b"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/checkout.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/checkout.html",
+    "source_sha256": "d2c0d743c15b5bf5dbb383ac10312f52fe0647094b5799bf933e4fc55a8b8e4d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/coupon_choice.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/coupon_choice.html",
+    "source_sha256": "8c1b2a7092ab8aaec03ab257cc717bda714699af338a5e3d14f5cd750413d836"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/emails/activation_email.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/emails/activation_email.html",
+    "source_sha256": "90e86e40f786d1bb72e13e38ceb0a664ae39d59d2c9a14bc1607958a793b3649"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/emails/cart_add_notification.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/emails/cart_add_notification.html",
+    "source_sha256": "b08191268b7bab49f66ed1a66f08508121ca4bc4b93ba49bb1e4ec8179d68d0e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/emails/coupon_reward.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/emails/coupon_reward.html",
+    "source_sha256": "867e58825f3f08e3862921e3fd2e75a95b94ab7310ba656a8269b2de4df2a83d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/emails/live_offer.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/emails/live_offer.html",
+    "source_sha256": "46c1d4d6998497f506d0b4714110b374f9032b7bdc38f444049b404044c3dc3e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/emails/order_admin.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/emails/order_admin.html",
+    "source_sha256": "390d16cca328f6aceb457b5b9cb15169e984a2441406d556e95bca216457c7dd"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/emails/order_customer.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/emails/order_customer.html",
+    "source_sha256": "e258b406aa3da9dba0a1bf9991ca0a82970f98ad8d493f5b423756b964c0f30e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/emails/stock_back.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/emails/stock_back.html",
+    "source_sha256": "644a89e0270cd4edbb3d58ef57e57cbe1cdfd778131ef155ad6741c715d4c714"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/emails/stock_unsubscribed.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/emails/stock_unsubscribed.html",
+    "source_sha256": "58a7e44c627f26b3fb858522c71457ee07f017d6550fa2ab01453c948ac7681e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/home.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/home.html",
+    "source_sha256": "571a1101c728728720bb9662a04656d24341286b466bd7944ec2d7c33380f117"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/monri_form.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/monri_form.html",
+    "source_sha256": "0027ff4d9d2162352f5bf049dd9e2b37bd1559262976d7d6de2bbb09778e3092"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/monri_status.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/monri_status.html",
+    "source_sha256": "a4a8bdf572f6b0328120ebfb6d522fb007848c234c8ccd18fcd85f0f5a208037"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/order_success.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/order_success.html",
+    "source_sha256": "3c830114a76151b6edd7c8e6b57dd851ac25774968b6d92bfc5b1c63b875d461"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/pages/about.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/pages/about.html",
+    "source_sha256": "cca67ec968076537894975271dc5c765e30f4654a74c85bcc41005bb4786d336"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/pages/payment.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/pages/payment.html",
+    "source_sha256": "0bc8c5c8d89820dfc535a99512cea9618622f0335c388b4e6fd3b7455b1feb09"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/pages/payment_security.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/pages/payment_security.html",
+    "source_sha256": "508a6a638d9010b9e879e71e3209be8a17e5d09e6c56b24ce4048e0b61a9eba8"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/pages/privacy_statement.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/pages/privacy_statement.html",
+    "source_sha256": "77733fc2b7a099cdf1839af157279b5417126cfc43705958c62f1711ffaaec1b"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/pages/purchase_terms.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/pages/purchase_terms.html",
+    "source_sha256": "3e95b31aaed0a7a85d651daa4c4c2850613af02e827cf1864af1e169be37be8f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/account_complaints.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/account_complaints.html",
+    "source_sha256": "054dfce2adcead5c6edb6de80f2688e2bcde9db01152be70d82f029aa3b324f8"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/account_order_tracking.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/account_order_tracking.html",
+    "source_sha256": "711e87c99f5b3c16a2c2e2a2dda0f87b9d0141c6cdb5d4ecc4f6f60bed4d34ea"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/account_orders_table.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/account_orders_table.html",
+    "source_sha256": "d0451272b19ecd73e3366fd041ff2b25c6e0dc8dab7ae7d5dfcb71ae9a727c01"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/banner_media.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/banner_media.html",
+    "source_sha256": "cf51609dc04ddf7184a3258f8eaa8f4ad781c05b2fc46a92caa0802990c633e1"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/bera_cart_recommendations.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/bera_cart_recommendations.html",
+    "source_sha256": "fb9f4a065849db8656e269a4dfe0c21da8b6da290eb9808e93813d28ba5725b9"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/bera_category_branch.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/bera_category_branch.html",
+    "source_sha256": "c0f52b1a3c5dfadffc3304df4fba5a27fc0ca862559f82dcfbd242af942981d8"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/bera_default_hero.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/bera_default_hero.html",
+    "source_sha256": "701aa136972fa08aab9862054bae95c0a4c7e9a1242cf8bbe588bc4f9890faf4"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/bera_footer.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/bera_footer.html",
+    "source_sha256": "a776295e65fa0ba5043104146b568977c8c14abda3fb654e022ac44996a737e1"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/bera_home_bottom.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/bera_home_bottom.html",
+    "source_sha256": "3a99c78abd2ed91243a54d57032b7a17a15558c456fd49ab6d510e9eb913d9df"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/bera_home_nav.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/bera_home_nav.html",
+    "source_sha256": "1ac681f870095cce131afc2d8460721f301c36a4114ee45df9417012fc666648"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/bera_offer_banners.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/bera_offer_banners.html",
+    "source_sha256": "bd8a68d1032d76b01746235802742e7dfa8ab281755464653adb6af12a26b8c0"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/bera_product_details.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/bera_product_details.html",
+    "source_sha256": "46a03157a23fcf459af06538e200b72249865ee0e6d670ed1797bba2af0a0dac"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/bera_product_related.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/bera_product_related.html",
+    "source_sha256": "6c94a5680eb6eb027bd5f705f734c1fc3bcdbcce69d1ed8fa2c25fd71237c87f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/brand_display.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/brand_display.html",
+    "source_sha256": "8ebdcb615c4a8ee75028dded42f2fd91b454da085f6f6e9ddc5014c1482380c6"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/cart_abandon_exit_popup.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/cart_abandon_exit_popup.html",
+    "source_sha256": "c5da5c8b22066e17e7eaee7f0c063b549e1a4b97cdfb734a639315e25629245a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/cart_exit_popup.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/cart_exit_popup.html",
+    "source_sha256": "7e8eb3d37d8b4c403933fc511d7c93742d5adeeebd2ec49cfdf678e0eadd3d2d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/cart_free_shipping_bar.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/cart_free_shipping_bar.html",
+    "source_sha256": "9797060ef87649badd52149a124d8dac8f0b71effb4ce3e5a09693b856d1b9d4"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/cart_item_name.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/cart_item_name.html",
+    "source_sha256": "1d4e0f65bbc60a18897e387d2dfb0376e7e54a401b398523d5c06d6453d1ea81"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/cart_recovery_popup.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/cart_recovery_popup.html",
+    "source_sha256": "3ff9a4e9f14ac7c1b96028ef6453992d204479c526c74faf2a0c2667c48f9617"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/catalog_mobile_filter.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/catalog_mobile_filter.html",
+    "source_sha256": "15377b5ef9eb5624a0c9aa9d9297f746134bf66eb5258ae1d1aa143607ebe7e8"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/catalog_pagination.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/catalog_pagination.html",
+    "source_sha256": "d872baf44c66b02d15e9735bd44ca60e1b23a2d345de13a181b7a1cf1593dae9"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/catalog_variation_modal.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/catalog_variation_modal.html",
+    "source_sha256": "0923d60d0d06a3ae12b69eb49a6a4e9a3e58543312c7db04affacbacceb68d09"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/category_subnav.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/category_subnav.html",
+    "source_sha256": "eb3be33dcbaf747bd61925409f3f79ae2ad8bc52a09d44ffac24616ff350fb67"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/checkout_items.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/checkout_items.html",
+    "source_sha256": "f3cd737efea74606b77e0ba6ace53e69beef70f94b6b7d42aa15340ee8509c7c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/contact_float.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/contact_float.html",
+    "source_sha256": "a077d75d39656412573cc72cccaca207adaae7475bd3051d4ac7ced1194ecec7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/coupon_choice_modal.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/coupon_choice_modal.html",
+    "source_sha256": "95b5098aa71eb90c8aac2ee8d5cea2daa08e3c6d267a0820bc1d607212047787"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/coupon_form.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/coupon_form.html",
+    "source_sha256": "6b3c953b06703044752f593304bc0a2b8e3a54b1a2ac01a3bc3ac7c69ec71da4"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/footer.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/footer.html",
+    "source_sha256": "e4aef6fc65a5e8adf78ef1ee6a40b0a93458d7f196c7730a1130d608876231d7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/gratis_offer_modal.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/gratis_offer_modal.html",
+    "source_sha256": "1b2803130a33f259eddb94fcf2f7e0f8b82e43dd0db9a909de50fcfb0271624a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/gratis_promo.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/gratis_promo.html",
+    "source_sha256": "974e5e96187d6082eb2509de9c76c505ff61e88e41040354f3bbef6a56c4af3a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_brand_carousel.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_brand_carousel.html",
+    "source_sha256": "2015f2400f5737b4cde491d08cc717c15c63e897362016e3c3b4f0a221db7119"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_brand_showcase.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_brand_showcase.html",
+    "source_sha256": "8fce85c4de213142c3adb2465e58b62bac33c8cc4899628ba11e8b3b17c3f725"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_catalog_grid.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_catalog_grid.html",
+    "source_sha256": "0d9a61dfeb4c7a1469fb0950384dc463896265fc12c411c04847e3cd99c2d11d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_category_showcase.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_category_showcase.html",
+    "source_sha256": "5ee8d370f91bb67e62a94e7620634455fb47f24e234eaea0f9ee1f0b66021abf"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_loyalty_banner.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_loyalty_banner.html",
+    "source_sha256": "5caeb375b713f3a8326ddcffe445b520018a7031746c7b9063e417166c6952c9"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_mobile_benefits.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_mobile_benefits.html",
+    "source_sha256": "6d4d40723e1551cc2beb14005baff4b8192dfc25a8ec9a00d9d4b78ac36d36c9"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_mobile_navigation.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_mobile_navigation.html",
+    "source_sha256": "1c8f43d672e2bd68ce6542a7586442d1da6a5319857ac80237b6dc0f5d3cbf67"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_product_card.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_product_card.html",
+    "source_sha256": "f2797931128792e41689fab7ac65198e8579320dc5b1e409c339b933165730d5"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_product_carousel.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_product_carousel.html",
+    "source_sha256": "820fb5ec908d1ff7c5347cea2124555e4611ee5ab0f1d0ede07c287f42089a34"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_promo_cards.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_promo_cards.html",
+    "source_sha256": "7aef531210c31c22682bc59fc88bcc96cb20dcc8e2ee8a9608d9f43f3cb2c756"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_sale_banner.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_sale_banner.html",
+    "source_sha256": "78946ac072219c619ca78b528d89ec1b375a0e0c9ed4268879de36a6f8a2c00d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_section_header.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_section_header.html",
+    "source_sha256": "4cb86e46f72f95c10dec8af2f2722b06731d8171622dd32bb2a70d633f4e79be"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_trust_bar.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_trust_bar.html",
+    "source_sha256": "66102c8ad8e1f37fad08c08f92c9515769edc897a63a502dee0eb837091a8ebb"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/home_vlog.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/home_vlog.html",
+    "source_sha256": "1a5a087bf708c74801cf52d994dde53ed39e81b035ea2783b81b18626a340adb"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/korpa_nudjenje_inline.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/korpa_nudjenje_inline.html",
+    "source_sha256": "346b83fd6a6596044ef10b908716fc3c3f44d68813e6775e68f003640dcbf45b"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/loyalty_card.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/loyalty_card.html",
+    "source_sha256": "1109afacfe12276bc3459ce4a29f3b144c5e5f4ffe481e36e8cd4df530c1bac7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/loyalty_card_print.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/loyalty_card_print.html",
+    "source_sha256": "f1b2365d12e12b48c8882698429b78fcb9f3f8f809478d03366206c17ccc7177"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/loyalty_sync_purchases.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/loyalty_sync_purchases.html",
+    "source_sha256": "05b5bc2d33e500a64ba883f44f15f57ae5651d42bc6b4d4d280610862b4b1493"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/mobile_categories_dialog.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/mobile_categories_dialog.html",
+    "source_sha256": "c61252cbef1eda5728b74d3ebe9318518c2cad11e5f161b9c82a085a9a8000bc"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/mobile_dock.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/mobile_dock.html",
+    "source_sha256": "ef9c1b4dd78ecc8257dfa39659a8b7e0748be3627a9f3a0e2f1c7d87c6ad905c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/mobile_search_dialog.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/mobile_search_dialog.html",
+    "source_sha256": "562584a6e6d7e858e0aedc173d704e7c4511587f82b62ec8af64953ef6120ef6"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/nav_category_icon.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/nav_category_icon.html",
+    "source_sha256": "79ea3a29d75db595a93d3737d8f5ea899e77453d438e7cdec39980de5c4c0067"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/order_invoice_document.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/order_invoice_document.html",
+    "source_sha256": "a458afa5ed143f45b17d1d5978e3d32edde289fec626f03e3fe48640404d66cb"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/order_invoice_embed_styles.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/order_invoice_embed_styles.html",
+    "source_sha256": "17777fd7259a3b848f603053fba3cfb50110afc9f6ade2cfbbceebf57d6dd007"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/order_packing_document.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/order_packing_document.html",
+    "source_sha256": "9eeab34d43e1f35209cf8f85f8d1af9e93f46ac6a72962520faaea746dbee839"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/order_totals.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/order_totals.html",
+    "source_sha256": "61ca65724f34d5b5bd341f16d56286de3cede3c092c78dead46ec1499442e857"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/order_totals_checkout.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/order_totals_checkout.html",
+    "source_sha256": "a59304f50c326c9eec78d8e5852c614e830cfd38227a9c2b00206062d1eceda6"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/order_warranty_document.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/order_warranty_document.html",
+    "source_sha256": "694ce7effecc44a466afc4db85719b64901c2e8d7d5d22f9e745b0d504839488"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/permanent_input_history.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/permanent_input_history.html",
+    "source_sha256": "de25a6fe60f3efaaf327b1531efdf1dbe55fa6d3f9987f50b9a442bb93accbb4"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/picking_shortages.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/picking_shortages.html",
+    "source_sha256": "969a4dbf562fa6830c442bd95b5cd412a27a6446fc9b0c009625c8b9be21314b"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_brand_logo.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_brand_logo.html",
+    "source_sha256": "e3b8636da72ce9e5e42090d62936b85546160a336681e9729725e486fa30d372"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_bundle_set.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_bundle_set.html",
+    "source_sha256": "72a72cfb8120eea20ee64a8ce9a0989a4296072a3e67c37012db266b22a11bbd"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_card_home_info.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_card_home_info.html",
+    "source_sha256": "d1d44c2d746b4c6f7bb8171caf7264fb4310add6a58f61c20ff06ae02be7847b"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_card_info.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_card_info.html",
+    "source_sha256": "bc68528c3296ae3ec10df9f18e4120ddd9b7789b2e3bda4d0685f581d350970f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_card_price.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_card_price.html",
+    "source_sha256": "1ef342a97c328e49302722531762e1a459c0157cf97d1b094b1d343b8018f1cd"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_catalog.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_catalog.html",
+    "source_sha256": "2e5654496b6e3d457551bce53cb6e709ad9dc6c35322ff60bf628cfdd11a3acd"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_catalog_card.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_catalog_card.html",
+    "source_sha256": "c80bad196f02957691a7c796cb38801fc0f211efbb6872c9c9fa9e6ac1500d4e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_detail_badge.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_detail_badge.html",
+    "source_sha256": "2026d32e3b95a0e9656f5c605ad8525cef46622918c5a4342863bb0f12014480"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_detail_variation_rows.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_detail_variation_rows.html",
+    "source_sha256": "4fafde3b76821aac02f38fcafbc7fe63be905c7aa34e61762bafc06fa336bc65"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_discount_badge.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_discount_badge.html",
+    "source_sha256": "58d3748779e52e47f5b6706484e19c4c7cc2028e738480f4aa872a30f206c25e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_filter_sidebar.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_filter_sidebar.html",
+    "source_sha256": "9d62800d0f2913fdce346d328cade09e23f26f998e6a5afd1b2dcb43a1f146b3"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_flash_offer.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_flash_offer.html",
+    "source_sha256": "e79618af80ffdb7b55911839107205d33558e266e8ce209ef2b4e2baad390dc8"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_grid.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_grid.html",
+    "source_sha256": "a84d4a818e7697bd31f3bfc91ada1b925624df1c696db176fad732f1b319fc3a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_image.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_image.html",
+    "source_sha256": "70b7bf0e7b38efc827400f486ed8a0a60b9b3c7d3863c8c922aea1f1fbf27ae4"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_loyalty_points.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_loyalty_points.html",
+    "source_sha256": "8f7aae1c6ec6ad8a4295302035df6dbaa3994f38bc08cf9ab6ec9f6ec599a251"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_mobile_details.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_mobile_details.html",
+    "source_sha256": "495527cd7016436528d9f3e0ceba6bde33d76d85158603b90316783fd279830f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_pack_badge.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_pack_badge.html",
+    "source_sha256": "c21e18bdbe0fce61a67e1e403f88de79e0c897f17bbf247930fa9815b9562b54"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_pack_label.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_pack_label.html",
+    "source_sha256": "e09086977be33e31fc334aa894ecbf0eb960501002a2d44549b0a7cf96426222"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_price.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_price.html",
+    "source_sha256": "d87642f47cdd090df46a488bffa800c9989d29f4d9643e767b53292afc037665"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_qty_deal.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_qty_deal.html",
+    "source_sha256": "3c17590160f6d92c3f4bf606908bdb6e9fb261010c1a29723fcf492d95be9b8d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_qty_selector.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_qty_selector.html",
+    "source_sha256": "b4b73bf46335c9642b88a56c70b67b18907fc96a4c8d621841b27d0b154ab005"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_sale_ribbon.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_sale_ribbon.html",
+    "source_sha256": "f06ac4141889d774e3991e95b38dc66373944bde49dd9ffc6fb433a46223af4a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_staff_missing.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_staff_missing.html",
+    "source_sha256": "8bf2982c7d79474f88e2cab16eb9b37efb83d76920d869cf03ce91905ba2a93c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_staff_overlay.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_staff_overlay.html",
+    "source_sha256": "84f3896d1eb356f5a1804b5caf724c94b1046e636346bbe87a08c52dafd94925"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_stock_label.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_stock_label.html",
+    "source_sha256": "f7ae7841c9fa616f1ac3f33d2dcfad91e283415981383079cab04e71d82161ce"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_urgency.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_urgency.html",
+    "source_sha256": "4cb57d258dfd188fc549b47d066b1001e7da6693e5bcca49c513ecd325beb13d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_variation_swatches.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_variation_swatches.html",
+    "source_sha256": "12ecaa95eae3b477420123abb08f48e1ee0dba75798700ae8250ce8ed8ec61d0"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/product_why_buy.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/product_why_buy.html",
+    "source_sha256": "fac3825b6c34dede0c0eefc3f995a0f998249d1023be15b29b989e7e69db683e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/public_online_visitors.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/public_online_visitors.html",
+    "source_sha256": "e35a588d375c339d1b54f485b9bf203c193b4d4e7071dedd221da3fbf054f0a9"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/qty_deal_offer_modal.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/qty_deal_offer_modal.html",
+    "source_sha256": "b575af829e77036ba0d38f6b2a049d2b1662fcf8ae8d006d6fb66d13e7a2bdaa"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/qty_deal_promo.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/qty_deal_promo.html",
+    "source_sha256": "4355b057af7db752e7a1951b8aabf1719a1a1d8d67bd6137aeb7662e6649058e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/seo_text_block.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/seo_text_block.html",
+    "source_sha256": "e7c452b409ec8596ddb9aec8c70f5cb1ff32d85786f3b79980c6467d95b446e3"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/site_popup.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/site_popup.html",
+    "source_sha256": "e51a677aefb1df2e3c3d9d3ed17c1bb24f93b2fb9ed4329e599bef49c745dc78"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/social_proof_toast.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/social_proof_toast.html",
+    "source_sha256": "11736e7fd3a71ef36c2d53036cc4f105c69e9a7e1a21eae7d769e010df5bbaf4"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/staff_site_editor.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/staff_site_editor.html",
+    "source_sha256": "21a0d2e9b4f7294e01d8ce3194191195180e125c6653be1d567ef0763f91562c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/stock_notify_button.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/stock_notify_button.html",
+    "source_sha256": "b12af0c23614079da6c7c18a3cd2536450723b4923b1e0c84a58f78f8e44431f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/stock_notify_popup.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/stock_notify_popup.html",
+    "source_sha256": "316ba90edb56f5bd4855117c4ace8c34523eb4980fe7a6ecf1f7ea1c7ff8a608"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/upsell_cart_banner.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/upsell_cart_banner.html",
+    "source_sha256": "f9b9675d5237966f97224fd163c7301e8cb23e96a72e5c60a580b85c6fe88ffd"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/upsell_checkout.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/upsell_checkout.html",
+    "source_sha256": "ba128a9aaefd5b1ecfb38921ce8003c60d3008d8b42014f3acd680bafb7a082d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/upsell_popup.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/upsell_popup.html",
+    "source_sha256": "b8dea02434119ab66ac303414bde8cc58350e5a23833d0a3ae270f08b7b2bc92"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/variation_image.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/variation_image.html",
+    "source_sha256": "1ffb02da4fe1148e49045f0a52503493dc113fc8edadd3623806d9d16d7adce2"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/variation_swatch_content.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/variation_swatch_content.html",
+    "source_sha256": "b48b8472a09e4bfe1369cd7b14c353d50cb3d3c1e5acd74868021b0420ebe4fc"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/partials/wishlist_panel.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/partials/wishlist_panel.html",
+    "source_sha256": "60a5219e3d46ae86f9c15774aba7cd0644ced8e771d5f2caf03e183bc72ec65b"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/ponuda_pdf.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/ponuda_pdf.html",
+    "source_sha256": "55ddf4652b720b032fbd65c5eede771c7ded8ce31c33b5f8fe340c292426ea08"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/product_detail.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/product_detail.html",
+    "source_sha256": "4ce847d3b4651502876e28ca4a798a7fa151e384dc2a8aa7e33e3f09e3f716c6"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/set_builder.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/set_builder.html",
+    "source_sha256": "11edfb2b7a04b0d65c827d01dca630a717b23d75d577338f13226b9f5ff072f8"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/set_builder_locked.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/set_builder_locked.html",
+    "source_sha256": "936eeaa3adb306f8b8f57d5e742c514ed45289294d7ee2c4d447119feec457cb"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/site_prep.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/site_prep.html",
+    "source_sha256": "5338fb4324932c6e5c86703a41d18392222160d5904576c7cc0dc513dec41ada"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/active_carts.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/active_carts.html",
+    "source_sha256": "db6e8b54c21a33612db09e80b12aa55480ac50803c816e8574a4a2e120d8cf17"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/b2b_live.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/b2b_live.html",
+    "source_sha256": "4642e14a2646a0d2685f326d6e3b58d9d3144f40cccaf30e8cbd5bcf7f70af68"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/gift_voucher.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/gift_voucher.html",
+    "source_sha256": "b8bdfbecbcdf6ffc436cde314abff9959e0de495a6698bfcdba8d5dfa1431b97"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/gift_voucher_print.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/gift_voucher_print.html",
+    "source_sha256": "03b83d37813829bc3b3ec82b65680413d90337a8d7332126b7aa3f99553ccd06"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/live_analytics.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/live_analytics.html",
+    "source_sha256": "66f8f1aa0c948f8ab379f5321a24e8e20f8aa6769ef93a6d134070173de07746"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/loyalty_member.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/loyalty_member.html",
+    "source_sha256": "60bbe2286813fb7a2eb1539e4f82d94777a211eaae0e03b79b451ab7a733228d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/loyalty_sync.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/loyalty_sync.html",
+    "source_sha256": "9b31251ccd464bf2a22c553b24377a3ac80a9f6bfd6e0f1ea8a8098323f847c1"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/loyalty_system.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/loyalty_system.html",
+    "source_sha256": "f0ea2054bd541c89eecbd9267cbcc2cf34f35afc9d696ae8360e9cffd9de3dc8"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/loyalty_workspace.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/loyalty_workspace.html",
+    "source_sha256": "f1a1a7e6a67e79518ddb54b75fa9fa36e466670261fbdbaffd2cf1442ec56bdc"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/_backup_panel.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/_backup_panel.html",
+    "source_sha256": "dbb12dd50931eb167e31c87d1f7fe0a1f530668dc9908b458d1184fef162192f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/_nivelacije_table.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/_nivelacije_table.html",
+    "source_sha256": "66d23a92386384f7c832ad1985951627472fa4fa18add3263eb78aa9412155d7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/akcija.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/akcija.html",
+    "source_sha256": "5a54741efb96333da1832e09618a91b9140890b62f7f75a18f4bc24b9a8b5ec3"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/akcija_detail.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/akcija_detail.html",
+    "source_sha256": "93181ed988fcd81471f77672f77b2d2be89419ba46eec62bd210acf31eb655b6"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/akcija_etiketa.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/akcija_etiketa.html",
+    "source_sha256": "1cebfd72b431ebbef70cc11eed86b0d2810abbf13a747b663b60e8babaee5ba5"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/akcija_etiketa_zebra.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/akcija_etiketa_zebra.html",
+    "source_sha256": "c2d2ca3bf584d71fcbc2fa72710e4fe15868d1b4a7ab7b204d52d2a887fa0f3e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/akcija_print.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/akcija_print.html",
+    "source_sha256": "dd1132468ba4f0db50a324d5301f058535e21b89c4b74a16f610c5f2e178d205"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/artikal.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/artikal.html",
+    "source_sha256": "58d736588157ce7658413d9f0ee7007b85209dbb74336a90d9434a4d6be0bd0d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/artikal_barkod_zebra.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/artikal_barkod_zebra.html",
+    "source_sha256": "5cac91c26b604016b7ce41d0d62f7e5b5c2969c908d36691fa5a7aedd6114257"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/artikal_etiketa.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/artikal_etiketa.html",
+    "source_sha256": "880d2db73542620a177b76aecc159be9b0ce04483a746fcf2fa209121c1dcd4b"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/artikal_etiketa_zebra.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/artikal_etiketa_zebra.html",
+    "source_sha256": "db4a29e25ed6600e5769505425aec999271c5392f266d104726f5522402636d3"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/artikal_izmjena.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/artikal_izmjena.html",
+    "source_sha256": "6672431b20f512a2f9f4dc1be93adddb35229208471d48856143926371c591e1"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/artikli.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/artikli.html",
+    "source_sha256": "7845413cba1a421ede1f679ca19ac53ffb986081ef78e879f32cb395abd5a85a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/backup.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/backup.html",
+    "source_sha256": "8ea1c9844f236f7fb3f0eb531f1eb889c1d0015cc0f9fb1decdf3e584137242a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/base.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/base.html",
+    "source_sha256": "c45de7b5c3e75cc3e0d889a0bc53f1e55d6442046067b3bd00dc93a8d3dbec2c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/brza_posta.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/brza_posta.html",
+    "source_sha256": "62f1c8540c56a117af7313319bb3a47c3ee2069a0a4ebad3f265f46fc1019305"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/brza_posta_detail.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/brza_posta_detail.html",
+    "source_sha256": "b71f662b2b0f4b7b319ef7e0a19efcc2ee5e6434c461d55b1e5b1833ff9f4d95"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/brzi_unos.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/brzi_unos.html",
+    "source_sha256": "0235f2a8626fbac8020713630483cfd85447d0344d1653a1a6774ffcdf2df35a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/brzi_unos_aktivacija.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/brzi_unos_aktivacija.html",
+    "source_sha256": "a376c0eb498a05f18d2a4507a92d057c7d4b5cf4520d9311f8f508b17fb00aae"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/brzi_unos_novi.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/brzi_unos_novi.html",
+    "source_sha256": "74ca4884eb36328ca8f7d54a9df3f68f978e128d07e8538df0ad8cee308a8232"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/data_history.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/data_history.html",
+    "source_sha256": "5cc089991a3a6d372dee9a4ce32a65dab78c7496f554faf53a6b9aa993840ce2"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/deklaracija_etiketa.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/deklaracija_etiketa.html",
+    "source_sha256": "6e066f4681eb2da8f14d9fd2d3667e020de390e5d2b088f67465b3e690a92cb7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/dobavljaci.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/dobavljaci.html",
+    "source_sha256": "168908338433281987f7937fa68b4cdb52644c4a6042f71d25087796f5e49dbc"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/draft_history.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/draft_history.html",
+    "source_sha256": "75d6d6091f957205880b6ec9023dbf8e3edb570f130c7964481696c528f1049c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/duguje.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/duguje.html",
+    "source_sha256": "18de4819b11e12139de099ba21142f24fba1518040ea988483a9618ab29d553c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/dupli_barkodovi.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/dupli_barkodovi.html",
+    "source_sha256": "e2f85bb1fd559971aa7638bd7a8426e1926f7cb3f022914973c70d2caa1a4671"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/dupli_barkodovi_stampa.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/dupli_barkodovi_stampa.html",
+    "source_sha256": "ff9dcca37ba32a71b6f0d2b81124d6e06ad00aaefb9585bb554f9a744ff2a014"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/fali_na_sajtu.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/fali_na_sajtu.html",
+    "source_sha256": "02804cb9a3ceab9ea88ea26a6522f8c23ebf4ef5d2c2beb5c844cc5120ef438c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/istorija.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/istorija.html",
+    "source_sha256": "ea49bc0ec0406c34f6e29b4de19cb4189e700d964ae71175ffa6dbea78b31510"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/izvjestaji.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/izvjestaji.html",
+    "source_sha256": "7b4286e979f133d10d37692dd9e8c3a77311a182186ce4a93ae50225f0ed820c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/kupci.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/kupci.html",
+    "source_sha256": "49fe5325793e9d6951d8ee798b059e971ddc6da0eb749860aaeee36dafe451a1"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/lokacija_print.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/lokacija_print.html",
+    "source_sha256": "9108a56ee3139732b41c9cfaf1af7278f9c691f09df28124839a6c35f0ae7ac1"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/lokacije.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/lokacije.html",
+    "source_sha256": "ad039c9912b91b98052f09be1f9b4d0ff675db99d802def76e9ba993e849089f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/module_locked.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/module_locked.html",
+    "source_sha256": "a88c960b595dbc16235f8f0e211e812871b4c836912204e193a08791a452ac66"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/movement_history_table.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/movement_history_table.html",
+    "source_sha256": "a3efe1823978e8101a0970dd45dd387c5f6e0392d6da5d2f81994d36e249200c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/mp_dnevno_skidanje.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/mp_dnevno_skidanje.html",
+    "source_sha256": "b2688bec47fd5184dc5b3ef6ea2ae8f38fb039ea2a5062b4fe8e859d235c238e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/narudzba_nova.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/narudzba_nova.html",
+    "source_sha256": "a518ee4e79806488a5d0831d2a8dc235fbb6d67e83d0d1e9963685bd9b1abbc7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/narudzbe.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/narudzbe.html",
+    "source_sha256": "dc4e89e19f7c903c01e78f14e150d7002f2d0317c2b492b7dbd1fd990f2e93e6"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/narudzbe_packing.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/narudzbe_packing.html",
+    "source_sha256": "a2f8b2a971445d870edd7a2c714ab7d51227d42f9d2c6b3c5567e15bf9708a7b"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/nivelacije.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/nivelacije.html",
+    "source_sha256": "a6e7f4922ca6839c9dfedafbd183eeed78a06c5197ae7b1313587080028e1aae"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/nivelacije_print.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/nivelacije_print.html",
+    "source_sha256": "21363c4aa54d3dabf5e9b255cd23a111ac02382a2a39693d4b03db3db42bebbd"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/packing_izbor.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/packing_izbor.html",
+    "source_sha256": "8faee1a462d2f9b8616d066502579889ede243dba891bd92ddd9701354c82936"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/pakovanje.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/pakovanje.html",
+    "source_sha256": "e6e9d12a7f4dcfc483ad5a445e70b4450fb5ef78242fc98d0c0a7202cd8b4c08"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/pakuj.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/pakuj.html",
+    "source_sha256": "e8c4fa574d52f9e0bca54adb7441d964dae1e4cb4f9027cf3ced55a2d75cc74c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/pakuj_detail.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/pakuj_detail.html",
+    "source_sha256": "f820aceb41fc5e312a258fdaa14c802cb901bbc113eec7533ab8ef02371103b4"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/pakuj_prenos.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/pakuj_prenos.html",
+    "source_sha256": "93e4d161ce9186fa4336063f4a83b389d377d5827141f6b0f2a0926f535b5fc5"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/pakuj_provjera.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/pakuj_provjera.html",
+    "source_sha256": "06bd017eb63facf0a59499c08d9e16a63d7627bad48fd5d3645da95afbb13667"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/pakuj_zavrseno.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/pakuj_zavrseno.html",
+    "source_sha256": "dd05e83709dddc624e5b9b9ad6976f53a1d52c50b5e05fba809b71cd3753a8b0"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/partials/stampa_papir.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/partials/stampa_papir.html",
+    "source_sha256": "1139ae2837913fdd6ef90f5ef5fdbfdf3993aa91965de543c0b8262b3e0ae2ac"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/podesavanja.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/podesavanja.html",
+    "source_sha256": "d319c72ac43582bffb88723f1baa6cba6501e8efc60197e743b53b591a0a23de"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/ponuda_detail.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/ponuda_detail.html",
+    "source_sha256": "be16b71371205d4231526e6204bef60f807ca3dd7a1f18a235628bf93580d4ae"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/ponude.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/ponude.html",
+    "source_sha256": "1e88f56ba99b0d1e336f07d3981b58b4f5668ab8eb3b6e273a5212da02b6fdc3"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/popis.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/popis.html",
+    "source_sha256": "28f9a4d1dc071868a3836ce3913537b0544c45794bd83f355b81ba471d529ce5"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/popis_print.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/popis_print.html",
+    "source_sha256": "cf45491c52fcb1fdfb962af40edfb340ce0e69d693239a7843a5ced8280082a2"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/popis_test.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/popis_test.html",
+    "source_sha256": "9a8d099b4bf01906713230a6ccbbe7bf262062a58ad49058043d7b21f7e6d692"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/pregled.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/pregled.html",
+    "source_sha256": "dfbccaabe506417fa6c5f189a8f3e0510eed79f0f7b7b5d001b102975be4b3cc"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/product_sets.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/product_sets.html",
+    "source_sha256": "fa02566d9e12830277e60041f3c7399380c978a3cc72947851100791af11a065"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/provjera_lagera.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/provjera_lagera.html",
+    "source_sha256": "4ae3bdad715e9c34bfe97721785d92a4197ab9f44c43c12e044adccc6716cd4a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/provjera_lagera_print.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/provjera_lagera_print.html",
+    "source_sha256": "1956bd408f578bf9f366dbf8991d53f0992b785b1219d291a5a38e24921b9b82"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/rezervni_dijelovi.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/rezervni_dijelovi.html",
+    "source_sha256": "4c972902d10b34a9cc5ae1761b9a455266e0f493739334fd2b3bf02c51172cb7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/stampa_cijena.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/stampa_cijena.html",
+    "source_sha256": "4560945c1bb3bf23481f089e7f49a5c67a854e42918fc4d4ddb99d0eb0566887"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/stampa_deklaracije.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/stampa_deklaracije.html",
+    "source_sha256": "868dc1a26d41a9b9668d2d2b8b53631923cbdbfb53b3d1aae3b14a49596f76fa"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/stampa_kolicine.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/stampa_kolicine.html",
+    "source_sha256": "6572158af6d6153abf675cbfb1b15eb8fd32d6f4c0c77609e97f01b9d0c14e14"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/sync_istorija.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/sync_istorija.html",
+    "source_sha256": "d5c87ef8938f7ba4100bc28d0f70c28e330066f97b40426d485d46faf348caad"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/tool_lock.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/tool_lock.html",
+    "source_sha256": "b31e50cb4b4b466d617ae98de5341bc7b4b41bd56696d2e1b0792fc0170a5d7e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/transferi.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/transferi.html",
+    "source_sha256": "4b35b13f51ee32bba45c93411d97b4a3138b3d60ce07b3ab3f838f843f6eca24"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/uvoz.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/uvoz.html",
+    "source_sha256": "7680f8bd0fd841b3c8f8b376da37ab23aaea5d864f2ca521dbbea198b94b2ab4"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/uvoz_cijene.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/uvoz_cijene.html",
+    "source_sha256": "4a89cf678b4bc7a34a95224f0dec1d559ea2df4714c97a2ddda40078fb6e85d6"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/uvoz_detail.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/uvoz_detail.html",
+    "source_sha256": "21839d3f4f19bbefdc544139534c1aba5230403c5c17f9a916c4794a898cee21"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/uvoz_novi.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/uvoz_novi.html",
+    "source_sha256": "d51654e13e1c19cefc76278b23a68237319801479b6f54b661e0fa168742e7be"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/uvoz_popis.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/uvoz_popis.html",
+    "source_sha256": "c7c654f07d49e7a8645641a34e6a572663acaf073915d74c459b12977326ae7f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/uvoz_popis_print.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/uvoz_popis_print.html",
+    "source_sha256": "201221e8d3144bc74cae81f51578ee1bfef580143c092216a14711f535235b35"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/uvoz_print.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/uvoz_print.html",
+    "source_sha256": "8dd4f07dfb55905b0ff499696fe3916354bc7af753f44b4ba269520aef394ee9"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/vp_narudzba.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/vp_narudzba.html",
+    "source_sha256": "e18c74ae1c93b803728105800efc36f168bbede51ed5fc3bff28ae6f5e30d9fa"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/magacin/zalihe.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/magacin/zalihe.html",
+    "source_sha256": "c589c326edbd84036eb3cdbcaf1eab82ddd69041d354fe29c9d2a34eb270ae9a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/online_orders.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/online_orders.html",
+    "source_sha256": "4a7a40d6a4a41460b0f8058792d32158131acf795db9d1e0b31bd5c9d739b196"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/order_brza_posta.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/order_brza_posta.html",
+    "source_sha256": "aa0336bdc3ea7eb6f562e55f68e4cb6cd2bb1e43cd1bad240eb923911db5bd8f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/order_detail.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/order_detail.html",
+    "source_sha256": "f8e2b5429ad657719a0f3b16b61a890ad3381422cebab90f813127cee92cb675"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/order_lookup.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/order_lookup.html",
+    "source_sha256": "1d8b4162e0c70dd8679f63caec680291e05361f5380f5828b54000d54600aed0"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/order_packing.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/order_packing.html",
+    "source_sha256": "93c14608b8d57fa406eac3f6e47a6ff23298277f922d3dd231a9cb1debbf02ae"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/order_print.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/order_print.html",
+    "source_sha256": "e4396854a973afd5b6c924dd6e011a052167e94d8d842cfdd6a36fb7b05f78d7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/orders_validation.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/orders_validation.html",
+    "source_sha256": "33b8fa3edebd0dbb040da112a83e4c34d3cbbc5eb2de61a32202e2975494a1a9"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/orders_validation_content.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/orders_validation_content.html",
+    "source_sha256": "e7733a8e3b6fca166066c2b30a86f1bb463ccef39dd636dccee3ca7137df07f9"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/orders_validation_scripts.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/orders_validation_scripts.html",
+    "source_sha256": "0df9bb7a2ed9abdc0f8c7332cca1b88a66b8e6d74d0ca1e8b965928e941e4039"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/panel.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/panel.html",
+    "source_sha256": "29225eef1f242c5cd8650acc2c181e6397cf6d69d900ff0e35fb9eda7aa630fe"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/partials/active_cart_preview.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/partials/active_cart_preview.html",
+    "source_sha256": "b35ac586073539b85a4523b5a91352fc38b618f86761df063547893122f3fd54"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/partials/live_visitor_row.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/partials/live_visitor_row.html",
+    "source_sha256": "6506ebe2b2c2d48335caac01f30a528212c90ae3fedde19736694050f385b3e7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/partials/order_print_job.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/partials/order_print_job.html",
+    "source_sha256": "8e7cf6ac5038259e91821d5bbfb4965f2bf0bb1ce86f8b32e7b9852d16f253f3"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/scratch_analytics.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/scratch_analytics.html",
+    "source_sha256": "b48975b022f8896c7729e411c85bbbf3cca3f89ef663f39d2b38b1e07c36cd4c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/scratch_workspace.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/scratch_workspace.html",
+    "source_sha256": "cb7594916afae0084f54dfaec511fced3226cd876ac3245ca32f06b13b909ffe"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/settings.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/settings.html",
+    "source_sha256": "d6c8fe2f8272576190aa00caf124bbd0885aa4ffb8f1afac9a5e90cafb882fef"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/settings_editor_base.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/settings_editor_base.html",
+    "source_sha256": "cdb35969bfe46f0655e49f297a53ab53aa4aae7bbbe1abe26561d3d190aeea16"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/settings_workspace.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/settings_workspace.html",
+    "source_sha256": "d46e88ec020bc20b7dc9a4fb3ad5224a99daddfc5d11cdc336a8de09409b8f4a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/uvoz.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/uvoz.html",
+    "source_sha256": "b21c5dc3cc81f4dcd13e56ec3e6d92b9b1a40684ff9c79965d700138990605f1"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/uvoz_detail.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/uvoz_detail.html",
+    "source_sha256": "697cb77e84a2b9b4a5a165fb8a4938094164f85f3fd8d23accb6dfd390638efa"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/announcement_print.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/announcement_print.html",
+    "source_sha256": "f9ce14b9a78eb1579c3fce98d21ee5a3ad8e6654c89cae853bb7b2ee850cee8a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/base.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/base.html",
+    "source_sha256": "efff8476a6ae161c66fad57a99c5f41b74213e4d3a164d50346824befe07352c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/customer_form.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/customer_form.html",
+    "source_sha256": "566b397055b2ffb9940e400bd213f1662d249a77facdc547bfb09e767b8a14c0"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/customers.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/customers.html",
+    "source_sha256": "72d9ef5d6119a0ead7f65fc2069eb5707ca1e635c44513050eeca3e18bfce953"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/empty.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/empty.html",
+    "source_sha256": "f0665e254e0d096338d45facfe812ccd7b0a187eccb9b03aab945b7ff0d4ccb0"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/icon.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/icon.html",
+    "source_sha256": "4b495ee7ef440b5b89499a829785e687766edafb9fbb1f7751b34c4d42cae8d1"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/invoice_selection.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/invoice_selection.html",
+    "source_sha256": "dd5e9922a53ba0b69913e8195b0d5c0695d119311accbd0603962e8a36cc2efb"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/location_barcode_print.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/location_barcode_print.html",
+    "source_sha256": "471ff6cd504f543190e8eb916c4352c7bfe713a7179c853cb460cdb5de6981d7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/location_detail.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/location_detail.html",
+    "source_sha256": "894a9c21a18b423ed113d645720f4370441c0365ddab859bbe96bd22db6ced28"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/location_transfer_row.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/location_transfer_row.html",
+    "source_sha256": "e9c5ec89f42d19fa40ad2321a834459b395fd27d8849e1ff95707eaa4e64f830"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/online_order_form.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/online_order_form.html",
+    "source_sha256": "1595306fb68d27e76ff05a021115e36b248230f219fbf5481c683ebbff27d7d0"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/order_detail.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/order_detail.html",
+    "source_sha256": "d1fa1e6fae6309434cc45934d16f33eef2516950b64a040c57d4151f20d9d670"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/order_form.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/order_form.html",
+    "source_sha256": "1a16158c29b32b45fe0ce28924bdcf48bccc98636b008741a087c5927788ba72"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/orders_print.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/orders_print.html",
+    "source_sha256": "5c795c18df96468f3179c21e978a6a22352b1c09e7113823719b3b17ba529ce6"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/picking.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/picking.html",
+    "source_sha256": "27d349ef08ba8c5f4878085d245ecdcad1ec700069cd0d168878082b1dbe6e9f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/podesavanje.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/podesavanje.html",
+    "source_sha256": "e6502eb1496285db9e7ca0b8556389a02d3a863823ab618abb57239842e8dba4"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/prenosnica.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/prenosnica.html",
+    "source_sha256": "bf998021ee35ef0abe50018f293688f84e46e1b68b6dee59c9705fe571fc237a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/stock_search.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/stock_search.html",
+    "source_sha256": "667394a1c0ed869c32984d466bd8d25ef2dd2505c6fbfa11f9d271a38182c1ae"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms/workspace.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms/workspace.html",
+    "source_sha256": "093302fe596cfd2ec7d290678fffb861242df754735bed4b5936fde5722eeac9"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/staff/wms_workspace.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/staff/wms_workspace.html",
+    "source_sha256": "00288b66189df99467dae4155e84641a839cefd0fba7fa4d5fd98a18554d5b25"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/vlog_detail.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/vlog_detail.html",
+    "source_sha256": "a4c9320e77520720e69f1a8ed3c09a024620a5f43072ee048c9f45217153eed6"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/vlog_list.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/vlog_list.html",
+    "source_sha256": "f3353e23b2be001b2d811e5a7ff5eed4229dd902c9a93c0035c02e1db30c1c43"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/template/wishlist.html",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/template/bera_reference/wishlist.html",
+    "source_sha256": "f79a03a47bb8e6e3f23d2fbdd5f76e693484f465d1088f7564a46b9832fe93f5"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/admin/css/akcija-admin.v20260910.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/admin/css/akcija-admin.v20260910.css",
+    "source_sha256": "0a50a7f822185d376d3891be6f56790f8af2cca3fe777162ef060587d27ee605"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/admin/css/b2b-settings.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/admin/css/b2b-settings.css",
+    "source_sha256": "0e0c97a06ad637eb8964a371b8be996f007e5df037ee1e05bcbc31fb3ebdd618"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/admin/css/bera-admin.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/admin/css/bera-admin.css",
+    "source_sha256": "7d2c75cf58acc97c500b74a36c210dbe26ab02720f048f4403d317ea83f5f6ae"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/admin/css/ozr_admin.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/admin/css/ozr_admin.css",
+    "source_sha256": "748386ecd1c564ce4a92f693abb26819456baaa0c930f5a4add03710d5f7b058"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/admin/css/ozr_admin.v20260830.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/admin/css/ozr_admin.v20260830.css",
+    "source_sha256": "748386ecd1c564ce4a92f693abb26819456baaa0c930f5a4add03710d5f7b058"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/admin/css/retro-admin.v20260908.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/admin/css/retro-admin.v20260908.css",
+    "source_sha256": "e9d665e1a1c7c20a07fdb65a21c32810bb7bb303ac86a0bd76fdbd1ece126fd1"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/admin/css/storefront-admin.v20260916.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/admin/css/storefront-admin.v20260916.css",
+    "source_sha256": "59cf6be94b76ea7e0377bcd774de0f9c1c44452751f9b57e5b64e661bd3c5257"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/admin/js/akcija_admin.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/admin/js/akcija_admin.js",
+    "source_sha256": "a1a1924f28f12c1a2d689da1e7ffe0fe8ef5bafaf68aa5fbefabc01693e6319a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/admin/js/akcija_admin.v20260911.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/admin/js/akcija_admin.v20260911.js",
+    "source_sha256": "ba7727d85cd189bf24e359aeaab09333388c823ed3dedfda35f85ca8733c96fc"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/admin/js/b2b-settings.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/admin/js/b2b-settings.js",
+    "source_sha256": "ed623ccc5ce659f24581a1a4efdaa0af5bfa8b70991f1c61983f18fa92a32b6c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/admin/js/retro-admin.v20260908.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/admin/js/retro-admin.v20260908.js",
+    "source_sha256": "ca78c2221aa60e19db97754081998f476d2d57d1acd9166aac04012a3c726794"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/account-mobile.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/account-mobile.css",
+    "source_sha256": "0c75d3c755aa84b7d06549992df7a44b21fed8a36dcfbf826495f9b4309e4d12"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/admin-module-switches.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/admin-module-switches.css",
+    "source_sha256": "40c9ae18f0598e509e4b58dee4639787ec21712b539a9b28ed9ce27c6bf29c29"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/auth-page.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/auth-page.css",
+    "source_sha256": "5245dc0223c701782482fb59f40c4335cb11e3bb9224d549b1500ae9cbb3de8d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/b2b.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/b2b.css",
+    "source_sha256": "68d58454aba80fb1dfbac7006beb98f17de203822e8e2effa3c6de03e9528f7e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/bera-account.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/bera-account.css",
+    "source_sha256": "110be8bfd8a47618c01c29dba78730626793dc64cecbc582a7d6af26e7f00db7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/bera-cart.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/bera-cart.css",
+    "source_sha256": "0e0ba4d6dcec68ca2ee499423d1397f7d6000e80a5d0a46663ff4e1476a79308"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/bera-catalog.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/bera-catalog.css",
+    "source_sha256": "4e80d7283313678a55872210dab251036b1cfd890de08c6837d143b9b30f1c2d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/bera-home.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/bera-home.css",
+    "source_sha256": "36ec5626b1cbd5b938c20c82b8eb3e65f05240165d3e3599bc9d251c70e1a918"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/bera-offer-popup.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/bera-offer-popup.css",
+    "source_sha256": "e897d6b7b2dd721c4dd37fed9905b9069e43e6e2d74e0b2710a6680c3518337d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/bera-orders.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/bera-orders.css",
+    "source_sha256": "83af1777e1547d892f16ad13631118096ad7e87304165e5559a04834841e7f8c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/bera-product.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/bera-product.css",
+    "source_sha256": "1dbf176dd43d6cf9c46793ebf66ee7f34e25e789f7f7ae2efa75e14caaed3bab"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/bera-wms-independent.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/bera-wms-independent.css",
+    "source_sha256": "d1fccf2726f3b726b14ca1652fcde6ef528fd419add66f255ea56b6561d3cf1f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/cart-page.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/cart-page.css",
+    "source_sha256": "6545166b8f7fc59b31f1e4c3319d41f53b2b739c84b11d1f837ec89f470e79aa"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/categories-brand-logo.v20260908.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/categories-brand-logo.v20260908.css",
+    "source_sha256": "17496716d21c6a685ecdf88135abb6567859d4f6f5dc59fa6a4b495961323664"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/checkout-page.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/checkout-page.css",
+    "source_sha256": "41b9fce292688782821e5a8df5b5d85488cfe8c8dc0447b4e35754a57c199496"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/coupon-choice.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/coupon-choice.css",
+    "source_sha256": "3c7fb5d6ca400c624eb694d8da525fab01673bab15e1ed859bd8d9a35900de9e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/customer-order-success.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/customer-order-success.css",
+    "source_sha256": "f879f5a2342556d38d5a717571277e0d9278570225c75627ba637da066d2c6bd"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/desktop-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/desktop-reference.css",
+    "source_sha256": "2f0bfb977641ea2b357824a72f6c941e2c5f1e264a02c07746426186f1d02fd5"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/fonts.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/fonts.css",
+    "source_sha256": "fe07b9ef47e7b25f174f31d6e4054ff2f795aeb41de205e15f2b1465f0ecc554"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/footer-payments.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/footer-payments.css",
+    "source_sha256": "58bce374f7aa2cbed543eb328133d7747c649d66838496375148d6602c1ed870"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/header-base.min.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/header-base.min.css",
+    "source_sha256": "2296428aff4f9664019655e1fc23e83ce60a5d417bad37f7e8d313823c750964"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/header-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/header-reference.css",
+    "source_sha256": "c2cddc4b13a18e2c8946bb5b4f600fd57113dada31acce99d5d2525c840d20ce"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/home-mobile-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/home-mobile-reference.css",
+    "source_sha256": "752281786acf9d3a37f9f7fdb59650ba497b2b800c046d65cb37210aa84e1309"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/menu-color.v20260909.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/menu-color.v20260909.css",
+    "source_sha256": "6c2a1a309f7af40ff03b553805814e09f2f8f54bdbdaf76ae69aed5bf47c7dc7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/mobile-dock.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/mobile-dock.css",
+    "source_sha256": "25276da3746163b078506646ca17d276efb514a897945736f59fc0c19b5b90d8"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/mobile-header-actions.v20260909.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/mobile-header-actions.v20260909.css",
+    "source_sha256": "a148b157fe1b1787ef0b1f4afa950659848c30c9740040f49f2703e0b167b0d0"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/monri-payment.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/monri-payment.css",
+    "source_sha256": "bb1e6310ab531705486c6929b8e9354004cd2a1389983eccbf6273e5abccfc75"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/navigation.min.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/navigation.min.css",
+    "source_sha256": "8a820d9e03d72145c9e3c88e5a626945035d5fb4048d0441a812e1dbadc855d6"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/newsletter-gray.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/newsletter-gray.css",
+    "source_sha256": "8670f4b1cf58f8eb1f7633602a8b1c62a3b67c9d49ae3e234edb75d9b3d187c4"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/panel-articles.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/panel-articles.css",
+    "source_sha256": "a5efdcb55be0865bafc910bc181d6dc8020988be6008995019eb260a1e99fd01"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/panel-blue.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/panel-blue.css",
+    "source_sha256": "fa8896146533c19221d38aa2a97b391d5f5d6efbb193c805bc0fbbf9e4e6bb22"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/panel-model-editor.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/panel-model-editor.css",
+    "source_sha256": "c05e511e1fe0bbc0d6204e49c7283609eafb13c45e8a590edba3f215734a3d95"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/panel-settings-workspace.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/panel-settings-workspace.css",
+    "source_sha256": "7bca7305669496f9580e8e2d17dee8eea9ce87917e66cb85369df43b061341c0"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/panel-settings.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/panel-settings.css",
+    "source_sha256": "2c9f9c44892c14b919110aa468470ccc34d31bc1094c1ad6cd9199db3ad93748"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/panel-shell.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/panel-shell.css",
+    "source_sha256": "3ed288343ed34f265f85eb53af292b88e8110f54204b8bd9b046643c6a4e39ed"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/payment-pages.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/payment-pages.css",
+    "source_sha256": "2e0a4529635a35315eb5d1e891e5362e6b7ffeae83acff41e316cadb6f0a9b1e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/picking-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/picking-reference.css",
+    "source_sha256": "aa074c443fbe12a84d383d2c2c35af96e9d054832408dac832257972f419525d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/popup-bundle.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/popup-bundle.css",
+    "source_sha256": "7a1ca8e90b229faaaf884dc1b366cda4e35923fcdd4be693362dd02e3db1ee58"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/prenos-mobile.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/prenos-mobile.css",
+    "source_sha256": "a4737067ed58dfe8de51d44d374fb3bdbe58167a6565430416e0637351e77bbe"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/product-detail-mobile.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/product-detail-mobile.css",
+    "source_sha256": "1a6f1e0909b0fa3c459451dde4c847aa904ba0437cfd8f7092f3095bd32636f2"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/product-inline-bundle.v20260912.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/product-inline-bundle.v20260912.css",
+    "source_sha256": "374519ee62e20db3fea51c1392770dcbfa10098b5218585549f89d403c006f3f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/product-inline-qty.v20260912.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/product-inline-qty.v20260912.css",
+    "source_sha256": "ad96eb131ab85117a61147e6be5c86bfc575db0f393c767385a9f102e66e8cad"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/product-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/product-reference.css",
+    "source_sha256": "0b35d13142117252df28027d69659daa791ddca4e03c825d087563bc58afc1ac"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/product-sale-alignment.v20260908.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/product-sale-alignment.v20260908.css",
+    "source_sha256": "7b3822013ce8cd09fb43b059b02fdd322fbaaa6facc15f18ec39946b6ea22fba"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/product-wms-location.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/product-wms-location.css",
+    "source_sha256": "d91ad4a47dcca70ceff88ca229c31b75f452ac0705d921a52b2921c9cee94c06"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/product-zoom.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/product-zoom.css",
+    "source_sha256": "a12393c573a5c5f63f535647a6d0f33be9da34a82e23d6fc2136c23d1eab67df"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/product360.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/product360.css",
+    "source_sha256": "f11bc626ae090967604b8cb0af2ac784f783fad72e22ddc21076185d7027f808"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/scratch-game.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/scratch-game.css",
+    "source_sha256": "02441f24f54f320cff6523d5bf5b901fc97e1498f3f862dd407843adf4505d9c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/search-popup-compact.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/search-popup-compact.css",
+    "source_sha256": "a5d7a9ec5cc2cae9f459d6090c54eac34aacf118fb7d5309ee162e0c1f76652f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/set-builder.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/set-builder.css",
+    "source_sha256": "38bb60c67aa5e36674a47c946feb7e8b35192f39231471281d793bbc09520947"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/site-logo-compact.v20260912.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/site-logo-compact.v20260912.css",
+    "source_sha256": "95da7c377d1245025ec528a8468b9d4de2dbac78dfb69cd9b40a3f0da1ca884f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-active-carts.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-active-carts.css",
+    "source_sha256": "958aff342eef986847ea08bcb55b1f14cbdb11b19bc579e8702a61bdcc702a4e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-alerts.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-alerts.css",
+    "source_sha256": "c76674dbffb13a26287e4dfcffb50d8b2b82497adbc0c3333492c760a7b59463"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-artikal-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-artikal-reference.css",
+    "source_sha256": "105a5cb0e59b74fc2d1f574822b7f303028c8ceb810c89d20f4de23b5b9c2210"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-artikli-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-artikli-reference.css",
+    "source_sha256": "90af511e6362b6083e003555c93f53ff69c0afbe87d008b232e92f36ab6e2dca"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-b2b-live.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-b2b-live.css",
+    "source_sha256": "449aaf98a0c693a53e3095a6b2978b71807bb03c9e1b3b58f01fa1097ce3b0a8"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-counted-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-counted-reference.css",
+    "source_sha256": "b08f5c1a6d7f8f86dfb880938f9209e84d2954e0b982ebaa32987c7700c28ea5"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-customers-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-customers-reference.css",
+    "source_sha256": "dfa5c77a059cf09ea3cdd6315c563fcbea1b490010030946d826bc11db501f19"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-daily-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-daily-reference.css",
+    "source_sha256": "d57f976d6512bda1bf27637ea1241f9747db073ae3498b7e095ce096bcda19a6"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-declaration-print.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-declaration-print.css",
+    "source_sha256": "f05cbb2ff8f7a1c11f1cc8499ba264c3a3d13b6c3dc900b7d0570387879d03c1"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-image-fit.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-image-fit.css",
+    "source_sha256": "034e47cec5ddcdeca34e53c21f8de74a97888311d59c4c158412be34811c8797"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-import-count-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-import-count-reference.css",
+    "source_sha256": "f321d33879bb60b09c1e290da68d3f9c05a98a65008821b733c7276ca269bf5c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-import-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-import-reference.css",
+    "source_sha256": "d318db4269571efea9f1731d628865c6acbae727c46624a9e02c6561376d353f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-ledger.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-ledger.css",
+    "source_sha256": "57842773b24153f2b1dc770a11a7b6846b750d220638a64d4a95b6ffb3e40855"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-levels-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-levels-reference.css",
+    "source_sha256": "af35602fe380870f73623ad57e2360e57988f96dbcbecf312a279cf8606db626"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-live-analytics.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-live-analytics.css",
+    "source_sha256": "4abfc2fa315245249fea6911e3d879a98e63bcb1eddb164507c780381663738a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-locations-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-locations-reference.css",
+    "source_sha256": "b05e7fc1462886bf8fdcf18bb0b11d278ca0496c3b8ac193148f4ad70ad64bf9"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-loyalty.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-loyalty.css",
+    "source_sha256": "19dcdf9f6553452e46accc089e2d84e0f9c127b0dd12bb76f96f5f68ca18ee33"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-magacin-menu.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-magacin-menu.css",
+    "source_sha256": "ee073a160e116bc20aff98ad2cc30b4c639550aee66c1c7d71b14da3ab821ac6"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-magacin.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-magacin.css",
+    "source_sha256": "d5ee721cc00b822862798be87e3d3809c6104550cd77fe9fa2df8a229b466fe0"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-manual-order-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-manual-order-reference.css",
+    "source_sha256": "3410429647ab68b07d95f8171ca82e4f2c2d612d1672d006fb116a97dbc2e498"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-mp-shortage.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-mp-shortage.css",
+    "source_sha256": "de3ef0ee703b1c39984ea76e13b7aea11e536efc1819de3f904117d039bd5ac4"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-new-article-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-new-article-reference.css",
+    "source_sha256": "ca5d64114224cce9821c135c4bec56289641d8389fa3b972c5500db2503811de"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-offers-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-offers-reference.css",
+    "source_sha256": "5c8b1bf8b643e880e22a85e34d826b4613daba831faccd9fc401e00e2f12c80d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-orders-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-orders-reference.css",
+    "source_sha256": "ebd0d6b6903fe337eee6afd2ed8dc7ecadd59b1d027cd2c5b1678bbbce0b3353"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-orders-validation.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-orders-validation.css",
+    "source_sha256": "3d819f49a92fcfa5236e00cee5a2671e334bbe63ddbc5170398f4b8575e69db0"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-picking-list-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-picking-list-reference.css",
+    "source_sha256": "6b519bd9a4792271a2c631f6009a2148b178b2ba9e7e9d0bbf2614d1e2b583b5"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-popis-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-popis-reference.css",
+    "source_sha256": "59239634298e672f19ea495de8e5afba57903fedabe5a90c59bc6272a8f553ca"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-popis-test.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-popis-test.css",
+    "source_sha256": "d89c2a974552a84afd8a85112c1e18df5e7345b361b1459ef6054080c0ca91ad"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-price-print.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-price-print.css",
+    "source_sha256": "58c6f22f604fb367b87b80b4f1284dfd484674421763e8bf9c19c1a83bc4e082"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-product-sets.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-product-sets.css",
+    "source_sha256": "c59e2d26a927ea7c8d01754bebddeb0029d8640cf88a5e7381a1077c84d1fc1a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-scratch.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-scratch.css",
+    "source_sha256": "6fbe6c7e63e2a8a60e0a9f3b1f222eb932d32494086d59517fbdec63d95961ed"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-site-edit.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-site-edit.css",
+    "source_sha256": "f34202cee8afd971b64a4b09c74ccbd95fc32c7fc6cebbe3ec3c768cd77971c3"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-spares-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-spares-reference.css",
+    "source_sha256": "5b2807853bce2287e65fd0a87ebc48a010d2d4982b7b05cd80ebccd7435d4303"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-stock-check-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-stock-check-reference.css",
+    "source_sha256": "629206917127f1fd20ce5b81a6761cb10f7b45671d7ac2b05d1b8d54f461347b"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-stock-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-stock-reference.css",
+    "source_sha256": "b91824a179e5c23bc8530d85be0152fafb90da5a721c2cc1a80d11e5aadd7acb"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-transfers-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-transfers-reference.css",
+    "source_sha256": "aa745c6ae0b6ad1640ae69716e3ffb0c92253bc82ec7f63a95c9100f3d005c54"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/staff-xexpress-reference.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/staff-xexpress-reference.css",
+    "source_sha256": "1bc9d68a1698bea7b81b021b6f1e87330105cf568855668ab0dfabbeecc8b475"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/storefront-extras.min.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/storefront-extras.min.css",
+    "source_sha256": "a6b0f2978385145657c7b744c1fd4d7afd38db6d998bc9e43031bf09ad7e6bb7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/style.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/style.css",
+    "source_sha256": "52d059e78ab5d1c052a430b50dffd30bc75f319f1266b810204bc13924b7e384"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/style.min.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/style.min.css",
+    "source_sha256": "eadb966d8e060e84ce882c035c9a7cae93e64cafef8463b4910429b4a31e483a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/touch-navigation.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/touch-navigation.css",
+    "source_sha256": "59c8ee00e6b94cdf2822d4cbd14c1fdaaf4b40442d74dfc7136ba6232c767bea"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/wholesale-nav.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/wholesale-nav.css",
+    "source_sha256": "3d1555cd6e25dadcfc555c89a7e69da98dc44330c85f4dc4b38fad909d597583"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/css/wishlist.css",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/css/wishlist.css",
+    "source_sha256": "1e7b351700ef02ab895bf1fcabfa5f6fff7e34ec674aa1a1c846381758cec54f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/fonts/inter-latin-400.woff2",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/fonts/inter-latin-400.woff2",
+    "source_sha256": "2301bb030a2bcaa9c763cc4771bd717aac16709c29eaba00673fcbe7cdf99a59"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/fonts/inter-latin-500.woff2",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/fonts/inter-latin-500.woff2",
+    "source_sha256": "eebf14aba456b89b7e899584e076588a92e422a45b37fb5fa36ce17519a3e8c5"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/fonts/inter-latin-600.woff2",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/fonts/inter-latin-600.woff2",
+    "source_sha256": "3022fadde78fd30c384797bcef8bebc18c96083527a850f62a58d8957a8b208f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/fonts/inter-latin-700.woff2",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/fonts/inter-latin-700.woff2",
+    "source_sha256": "7b43cb86a0e63bbb55376b4ea60d8cc9527a1421c367aa09962725e0c5140f5f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/fonts/inter-latin-ext-400.woff2",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/fonts/inter-latin-ext-400.woff2",
+    "source_sha256": "56d25f402cc61fdce9234854cfed7454a56640f40b43aea6ecccd2eb8a950863"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/fonts/inter-latin-ext-500.woff2",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/fonts/inter-latin-ext-500.woff2",
+    "source_sha256": "7e15a0f1fa0b0dc355709d096d44f7a193d13a768d31d4c110bc4f749715da2f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/fonts/inter-latin-ext-600.woff2",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/fonts/inter-latin-ext-600.woff2",
+    "source_sha256": "5f70855945ba172e94934e29808f41634939aef0f4f79187f5c802697f6f6507"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/fonts/inter-latin-ext-700.woff2",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/fonts/inter-latin-ext-700.woff2",
+    "source_sha256": "c17e9995083308c693edea87e048ac5f73b554d88b184eb12570654a4e75d8af"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/app-fishing-hero-v1.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/app-fishing-hero-v1.png",
+    "source_sha256": "87c9302ae8893f4fcfcd0eee42e3722239bf2b2353372e10ef4bf283cfcf8afb"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/b2b-icons/bag.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/b2b-icons/bag.svg",
+    "source_sha256": "4da64aacdf0a4ee9efbb48559b8395d8591bb25e0d741a0dab506943582f49b3"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/b2b-icons/bait.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/b2b-icons/bait.svg",
+    "source_sha256": "3312cec0623aeee0578380984b4ac50947cad4c2e4cb76b4274990a2f35b6f25"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/b2b-icons/camp.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/b2b-icons/camp.svg",
+    "source_sha256": "1b60fc9f367df58ad6730ec9f5903c10a5d596fc346d6f075aaf20fca8d8b62f"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/b2b-icons/clothing.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/b2b-icons/clothing.svg",
+    "source_sha256": "c21c855517b5e75e14e38cfc8f20f7a8fb5ac0204af34adb7d7c8f49fe17c2f9"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/b2b-icons/feeder.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/b2b-icons/feeder.svg",
+    "source_sha256": "2cf31b3d967a7517e9f88bffc1861b94516a77e1930523226413ef7ef6d03010"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/b2b-icons/gear.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/b2b-icons/gear.svg",
+    "source_sha256": "3acca30ed0d0a240ccd2cfe1cdb19d28f7d3281304b03fdcc881479f0435c734"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/b2b-icons/hook.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/b2b-icons/hook.svg",
+    "source_sha256": "b05eac1eb0fa32acef9c4a90c88901a048ea23c42ef2d8229369749e78434d58"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/b2b-icons/line.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/b2b-icons/line.svg",
+    "source_sha256": "707e4ffb13ff266ccc09b18f59e2cdc1aaf230368630bcfd9cb3b810b43550fc"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/b2b-icons/lure.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/b2b-icons/lure.svg",
+    "source_sha256": "59389890fe737922c27ef1bddb70408a900fe2b39f745d0854a0fb29933601af"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/b2b-icons/pin.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/b2b-icons/pin.svg",
+    "source_sha256": "5180787fff4a1c985f4eb6eb4940d2c86f38c585e4010ea3aad2da39856a2150"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/b2b-icons/reel.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/b2b-icons/reel.svg",
+    "source_sha256": "5124e2b7afa2a55f420433802f4f0de7ab1337b1d1d02524433ac256d1c9c340"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/b2b-icons/rod.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/b2b-icons/rod.svg",
+    "source_sha256": "e55046293d98fa7b132f2607253b9030a08eadde5983b25090f3f9f2f51aaf7b"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/bera-hero.webp",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/bera-hero.webp",
+    "source_sha256": "6a393935e0967c23dc5ce5fa7f63adddba74fd9627593ae2255a349d78af71fd"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/bera-logo.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/bera-logo.svg",
+    "source_sha256": "03dd17304a9a70e0b2debcd7b89e0c174dadb34a03786b49e66588129a41d4d7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/contact/messenger.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/contact/messenger.svg",
+    "source_sha256": "9b93307fcdcb698e098246caaf6ba2b9eb58410d7b527f352ddb38661bac3fb0"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/contact/viber.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/contact/viber.svg",
+    "source_sha256": "e16927d7a7ddc54119b4bfe97e7779abb42ac6de11fefbe572c4484c839fbdc3"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/contact/whatsapp.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/contact/whatsapp.svg",
+    "source_sha256": "f2f304108a21b06f9e2f559921d17a0044025d5aa45b52b7a4e8603770573ba5"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/box.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/box.png",
+    "source_sha256": "c20324855fdd44d3dba30e6ba7a7ef94769c3ea548166260c6cf18cd1512820d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/calendar.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/calendar.png",
+    "source_sha256": "a42ed4826449ef9db53b716cb7974ff2525455f83ad26f9cca9a72e817316523"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/card.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/card.png",
+    "source_sha256": "6205c3fc45153104b4e1d0af2a80373c5b59c19625092d4c0336d56cfba6a071"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/cart.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/cart.png",
+    "source_sha256": "57ba62a16c7e901b60134ddc26911bd89adc869f233838643fe82929a15dde88"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/check.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/check.png",
+    "source_sha256": "28c2b157aa052bfdc25078d4a6d4f4919dcfad7cd69fc0f2608ef3f518779134"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/document.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/document.png",
+    "source_sha256": "a5ac4ea11002091a1b1962ba96271b7c7c42f62aba28160a2199937082aef58a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/headset-white.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/headset-white.png",
+    "source_sha256": "e0d8b62ea77685957badcab18879fa263ae77657e6459787d683c60e726c34af"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/headset.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/headset.png",
+    "source_sha256": "5139bb46d767a8897ef73c43b328214518575c17fc60e2f86cd5905d453f6a7c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/pin.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/pin.png",
+    "source_sha256": "403782a28c9e7a350306dd9119b7e9d8f25cc0c61159d8ec4130e2a4e9d0cbed"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/shield-white.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/shield-white.png",
+    "source_sha256": "bf69004e15d26bcd08a409a645412b7fadb56d464708fed4323a43579687910b"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/shield.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/shield.png",
+    "source_sha256": "86d2e5298d61a2a3e83fd91b8fb40ca4b3aec437cc7ad2fb5aaa49f15d20f57c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/truck-white.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/truck-white.png",
+    "source_sha256": "0a82a66d8354a051fe3b3242efc2787cfdbf7009a234c0bb920b3be0ffc373db"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/truck.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/truck.png",
+    "source_sha256": "40215132457ce1280cab643f4aab4f523a4d346c796ce7cf796d8fef6a09153e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/email/user.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/email/user.png",
+    "source_sha256": "1813589b317e7774ce7ec004185aede6298d57c16f0a0f991eca882bdea47954"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/emails/stock-bistro.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/emails/stock-bistro.png",
+    "source_sha256": "fa021739a63e0ba29e7444b66f159816103efe8197c369e645ae191b3dcb64fa"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/maintenance-generic.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/maintenance-generic.svg",
+    "source_sha256": "d354c9a27b65afbc7bdba93c876416232ce1badae9fca7b3549df3127f27c626"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/newsletter-generic.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/newsletter-generic.svg",
+    "source_sha256": "de4f94ee0bfc2dc493595315d22ddc2b5a07254376d1085231dc095e13544864"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/objava-akcija-template-800.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/objava-akcija-template-800.png",
+    "source_sha256": "e7d93b0738fbd54739174d7ebec381f6a1a6075d0e376be66c55784674d2bc67"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/objava-akcija-template.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/objava-akcija-template.png",
+    "source_sha256": "93bf1b46ba10ae31b272889b890862087992b311226816ac2d629ecf4aa54a9e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/objava-regular-template-800.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/objava-regular-template-800.png",
+    "source_sha256": "7691bc940c346c463b123cb213222578f2e6a62bcc6a28ef210d42f2492af017"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/objava-regular-template.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/objava-regular-template.png",
+    "source_sha256": "90b77eb501b106573e6e7ed48066fba831fce0ba7cd99e7bfe7e59f224e160bd"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/payments/maestro.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/payments/maestro.png",
+    "source_sha256": "7a462576a6ed0136fa5fa1c6221240170a9a6bac3ca7f0255489d80c017f4a70"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/payments/mastercard-id-check.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/payments/mastercard-id-check.png",
+    "source_sha256": "cbf0adcdf361bf81a646ad092c7a27789b3e041925baafed12029aa3bbc059dc"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/payments/mastercard.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/payments/mastercard.png",
+    "source_sha256": "a513f940c3af82636774e756e785c3e98952e84b8d4f5011e843aa91f0ed33bc"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/payments/monri.png",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/payments/monri.png",
+    "source_sha256": "c489be558749dda0ef8697ab2b693ce439a46a67e7838d003e650bae73a290db"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/payments/raiffeisen.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/payments/raiffeisen.svg",
+    "source_sha256": "7e2b16e0c39dcd9ec1137ed666e61fa524cecf875e8d518d9a420e25526ccb41"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/payments/visa-secure.jpg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/payments/visa-secure.jpg",
+    "source_sha256": "41cb0005251ef5eb58eeb75d650bf905b5433b5378e83221e39adc6c42f60eb7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/pwa-icon.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/pwa-icon.svg",
+    "source_sha256": "73a1c73fe6c3862e038bde09f7c1c9c73cd2b7cc77b9b9a508ced0fc4781319b"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/set-builder/feeder.jpg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/set-builder/feeder.jpg",
+    "source_sha256": "3d7a7820356e9c44000165511942def8929415e8782ea09ae5f68d1a61df46fb"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/set-builder/morski.jpg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/set-builder/morski.jpg",
+    "source_sha256": "70571231fa8bdc7efe92237be30cbff9530d2a481681bd17ce258311006b621a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/set-builder/plovak.jpg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/set-builder/plovak.jpg",
+    "source_sha256": "39cd416d4e3a421c6d784271d4287a76680bdd96fc8d84634af93237e5d60b74"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/set-builder/saranski.jpg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/set-builder/saranski.jpg",
+    "source_sha256": "1ce73cbf6a5d6ebe9a0eb8eaeb6fbffc2fce11db3014278d5eda8f0a63f7c2bc"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/set-builder/som.jpg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/set-builder/som.jpg",
+    "source_sha256": "520e153ef3e0c658e7dece34be1c128d856950b883e5f4ef8d93f7080316706d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/set-builder/varalicarski.jpg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/set-builder/varalicarski.jpg",
+    "source_sha256": "8a8fb0a7518b376638670464f9020541fa8430a60acbb67d623909a6c9f945f3"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/upsell-splash-bg.webp",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/upsell-splash-bg.webp",
+    "source_sha256": "5935edc58ebd5bf59925c2887235b8f025a6ddf368f4782a54eec9740976b72d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/upsell-splash-pattern-compact.webp",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/upsell-splash-pattern-compact.webp",
+    "source_sha256": "d1bc623b90a59052ba1f738523a1c9f322620b6c4c930cc5850e973d408cf842"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/upsell-splash-pattern-mobile.webp",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/upsell-splash-pattern-mobile.webp",
+    "source_sha256": "bf8ac4647b982b470284852435d08fb351a40379fffe9c196bd0341e0888f59e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/upsell-splash-pattern-sm.webp",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/upsell-splash-pattern-sm.webp",
+    "source_sha256": "c1ee31369eecf2749ff0ee1f7564255f44d54e57bc5cc3190e63721db5ce233c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/upsell-splash-pattern.webp",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/upsell-splash-pattern.webp",
+    "source_sha256": "a5e1ef368b7c819d5b13e9bfb0ba318d4d35fb0aaec90cbeace826459773f513"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/warranty-seal.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/warranty-seal.svg",
+    "source_sha256": "f7c4e0e3430edb5c24391a3e210a9d106b8626806cd8e410a6491d7fdea07271"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/img/webshop-logo.svg",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/img/webshop-logo.svg",
+    "source_sha256": "6d894ac948ad73409d1f392eb36f5f38b77da59595666f7802337e71ff1057cb"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/account-complaints.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/account-complaints.js",
+    "source_sha256": "a143a26099a7459f522cc37f756eac6a46dd0d1a179a244a1f20c5b3cf41896e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/almost-cart.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/almost-cart.js",
+    "source_sha256": "f0ef0e6b6d6be3a3777951bc9bb87e52e722bbd0f8d248da613f4894d947d377"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/b2b.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/b2b.js",
+    "source_sha256": "f41b52c05b47c77d2cadc0ecb13a1db847642e672dba301d2f101666b9b49f13"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/barcode-check.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/barcode-check.js",
+    "source_sha256": "412dc00bb1d6b4fd2ae8910ceea44e0a3c7efcead01fb81e9548a5c5f81b1456"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/bera-brand-logo-align.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/bera-brand-logo-align.js",
+    "source_sha256": "b4a6231d9238f288379b2c42c4688726214404acdcf5a8ff20fe75ee858b0f0a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/bera-brands.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/bera-brands.js",
+    "source_sha256": "cc9fc8db5a4083d2bd49839750806919e2828d80a774f3fac0220a7a696a9895"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/bera-cart-layout.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/bera-cart-layout.js",
+    "source_sha256": "4e2b268c6c99bb377291b1d58384f817251ca5e7ef2c364a5d838742e8b455b4"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/bera-product.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/bera-product.js",
+    "source_sha256": "48219e66d371e1e06b8785d0a52dfe72221bba156a518adcd8a9bde74638cc2e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/cart-qty.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/cart-qty.js",
+    "source_sha256": "81d4b1b53e5ea33de87dc573e1dc50aeb1271693cb84d0173bbfd86a46e93322"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/cart-qty.min.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/cart-qty.min.js",
+    "source_sha256": "639f6dc2ed5c4f54770ddb07c68165e2d95b13d3f21e2568293722e9d9b742df"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/cart-stock.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/cart-stock.js",
+    "source_sha256": "3f5023e7cc59608b2b5fa526733b0097a29fbbd08cce2e67f18299cae9712cbe"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/coupon-choice.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/coupon-choice.js",
+    "source_sha256": "4855fce3818d1f1c62a53a4238f3e2ec96bdb5c00e46e636ca0e33b5e1016072"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/csrf-session.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/csrf-session.js",
+    "source_sha256": "fb3e73f4bd99bdb33b0745ce29bd6df320e866f2692954fb1b5097a4a8a40871"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/desktop-reference.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/desktop-reference.js",
+    "source_sha256": "5dee83df54b81ae776b53b9ed1618dd2d33a605eb763fa11b7906c067dc278c7"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/home-mobile-reference.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/home-mobile-reference.js",
+    "source_sha256": "e47d1913758e305e80a6400fd1b26db68ac42501e1fa89fc6392c77fe3cddbb1"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/main.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/main.js",
+    "source_sha256": "4a90f20f8d976299b012ee528cc0e553e486ad5fe54a0806cb2eb16c0d133efc"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/main.min.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/main.min.js",
+    "source_sha256": "25f3878a382200587693b13d6a57f036b0ce6a177616d7843ded620ae4d1ebc6"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/mobile-dock.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/mobile-dock.js",
+    "source_sha256": "1fee53d8b3133c3b50459f4fd32421a6a5af8487800fa79afb5e5480a1c5f34c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/mobile-search.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/mobile-search.js",
+    "source_sha256": "2e3190a1956a508225a9bf892e6e9c338fcf008fbdda725ee66a50d428b80483"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/monri-payment-status.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/monri-payment-status.js",
+    "source_sha256": "e9a1f95d2c778950d6c96ccb3336141427f5b62b760d9e7cdf1fb5032c213e46"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/panel-articles-fit.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/panel-articles-fit.js",
+    "source_sha256": "dd77a9de95314b52f6fbb7fec011f052c999ac55ff727d2b527a4849a53e1e8d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/panel-settings-workspace.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/panel-settings-workspace.js",
+    "source_sha256": "3488666eac0eccd264776f00353dcfe47ed258d4aa4e5388e3ef1bd327be0351"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/panel-settings.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/panel-settings.js",
+    "source_sha256": "7dd8d5bad8b4640c02f4f268f61624f14f1d871969027d5631f9abaf94ffe73d"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/permanent-form-inputs.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/permanent-form-inputs.js",
+    "source_sha256": "0ea06477bd7140e5e9e3bae63ab89590c92c7af73c4df2fadcf1ba02e7410929"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/ponuda-customer.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/ponuda-customer.js",
+    "source_sha256": "05c0e3f539129c39365bd1abc2a076727685ef8fc39993d06097a976f4eb2be9"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/product-detail-mobile.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/product-detail-mobile.js",
+    "source_sha256": "5f0b2488f39888cbd4816fca37190fd65a323c25522c31bf197dbf7d5ff88c69"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/product-detail.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/product-detail.js",
+    "source_sha256": "02d96e446f643bd31655b0570a6846fb8cfb3e0b1cf163623694faba2f9a3128"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/product-detail.min.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/product-detail.min.js",
+    "source_sha256": "461722a90139f606632661ec10dcb0d4c7588417b0aafb9ad935f5ee7c4af393"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/product-reference.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/product-reference.js",
+    "source_sha256": "2531f98d749fe4d9f975362b68d6f1c47f4d2e90018cd5d03216fc24946e9593"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/product-wms-list-add.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/product-wms-list-add.js",
+    "source_sha256": "f28a4fd2f31d449b5d56a546ca1541358497c5a651e19215a87702bce1110a31"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/product-wms-location.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/product-wms-location.js",
+    "source_sha256": "4b09dc8d114459b2205c1621f57684a31284255779367ff8439b428934668003"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/product-zoom.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/product-zoom.js",
+    "source_sha256": "e40e4147487f9fb3da015f014a1856215f98b2a00bf83e8786378cecf180e557"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/product360-admin.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/product360-admin.js",
+    "source_sha256": "a88c7e553901c058127f48f383df4372d27f00591891ad2120a24ea312df71ae"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/product360-gallery.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/product360-gallery.js",
+    "source_sha256": "ffb7708845fbc06fce43ebd3036df160d09cd885823d99c50b9d1234097a6d0a"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/product360.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/product360.js",
+    "source_sha256": "21054bcd0aab91751fc4b54dac003abea07c07bb387cac7a25b6367880a1641c"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/public-online-visitors.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/public-online-visitors.js",
+    "source_sha256": "9cf475238666edf8b015a023b57043aa3fc19d107d98d52c8ba0d9f8ee0921ed"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/scratch-game.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/scratch-game.js",
+    "source_sha256": "0b4f775e22952ba237a18b2866993f908daabaf105577735374b9c22db9a26e0"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/set-builder-gate.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/set-builder-gate.js",
+    "source_sha256": "a0ef71dca673c4486acc8a971ceefd4f89de1e104ef636edfbd0a2bf87854870"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/set-builder.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/set-builder.js",
+    "source_sha256": "0a1fc2676157bb4063d17c64b42d3385aa82f64ca5f002a4eab07f650d586831"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/set-builder.min.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/set-builder.min.js",
+    "source_sha256": "fa34cf46eaa5411ceefd96865b5e3f28971ab00f2e3ffa023679a6ec16f12e2e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/staff-alerts.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/staff-alerts.js",
+    "source_sha256": "4a2bdce3fb4516006cb0375918a23b15d52f6b2e0c0538b544daa3557aa222ae"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/staff-image-fit.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/staff-image-fit.js",
+    "source_sha256": "4511c81e96b187d34c802a47907ecefbe8bae54dd061f7b1022be4516b006f54"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/staff-ledger.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/staff-ledger.js",
+    "source_sha256": "4f8be48b4855ebb01dd30189cfb62c664f44be4b5495cd31337e6c68ca9d36e5"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/staff-magacin.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/staff-magacin.js",
+    "source_sha256": "600dd5bc17b38f944f87d06ffaa185a81b26df4d053f0ed3d2f45df392ff0dfc"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/staff-manual-order-draft.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/staff-manual-order-draft.js",
+    "source_sha256": "989ada9cd48f4de9b10ffaa9e34c7a9ae6cd749c73e8a77f9cc9f1ae1c74c908"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/staff-popis-test.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/staff-popis-test.js",
+    "source_sha256": "b66c62545eec75f5d2b65135d1e71f8724735e26ba9972c8d885053be60b343e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/staff-product-objava.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/staff-product-objava.js",
+    "source_sha256": "3b637a529d37e52f18dbfe2df49bb7d90c7eb2b8b17e3e5dfcd4e2058c6a28c2"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/staff-product-sets.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/staff-product-sets.js",
+    "source_sha256": "d2f5b424de16d7f54c4488e00a0882e5b8f0ac15ea55065becc26d31ad284aad"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/staff-site-edit.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/staff-site-edit.js",
+    "source_sha256": "3cc87747817ad697e56f4da977490b40a89ae1dc636adb7c69fb716f746b2327"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/staff-uvoz-popis.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/staff-uvoz-popis.js",
+    "source_sha256": "0ae5f23f4f730454b4c3a1f2ee775dec045b0650c58c024145788bfed31a8f20"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/stock-notify.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/stock-notify.js",
+    "source_sha256": "690187ed7c6ef9ebad392099a78cf1993f20d44bff7f09804c58ace295333358"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/visitor-presence.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/visitor-presence.js",
+    "source_sha256": "667e92eea2156845f150d4ccef0964da7a82f38021cd6b0a9c2425524abc404e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/wms-online-order.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/wms-online-order.js",
+    "source_sha256": "4ecfeb0a0489d4f8c92bb4aeee0caca58bec1ef9406f3ef4407f7d4ad7769702"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/wms-order-customers.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/wms-order-customers.js",
+    "source_sha256": "90a5b2dde189645c4000a2738af493a4ee8bd2614306d99a675ecf2c66eb328e"
+  },
+  {
+    "source": "/Users/bera1990/BERA-webshop/EcommerceApp/static/js/wms-picking.js",
+    "destination": "/Users/bera1990/Ecommerce/EcommerceApp/static/bera_reference/js/wms-picking.js",
+    "source_sha256": "dad4a7e1c57555803849f7790b6bd60939b5adf343c0aefe812f760b9ab5635a"
+  }
+]

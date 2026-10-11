@@ -1,0 +1,14 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'bera_reference/css/module-unlock.css' %}?v=20261011">
+<dialog id="moduleUnlockDialog" class="module-unlock-dialog">
+<form id="moduleUnlockForm" action="{% url 'staff_request_unlock' %}" method="post">
+{% csrf_token %}<input type="hidden" name="option">
+<button type="button" class="module-unlock-close" aria-label="Zatvori">×</button>
+<span class="module-unlock-symbol" aria-hidden="true">🔓</span>
+<h2>Želite li otključati ovu opciju?</h2>
+<p><strong id="moduleUnlockName"></strong></p>
+<p>Poslat ćemo zahtjev s domenom sajta i vašim kontakt podacima administratoru, koji će vas kontaktirati.</p>
+<p id="moduleUnlockMessage" role="status"></p>
+<div class="module-unlock-actions"><button type="button" class="module-unlock-cancel">Odustani</button><button type="submit" class="module-unlock-confirm">Da, pošalji zahtjev</button></div>
+</form></dialog>
+<script src="{% static 'bera_reference/js/module-unlock.js' %}?v=20261011" defer></script>

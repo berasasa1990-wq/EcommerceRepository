@@ -1,0 +1,86 @@
+[
+  {
+    "width": 1440,
+    "name": "index",
+    "status": 200,
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "name": "products",
+    "status": 200,
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "name": "product-add",
+    "status": 200,
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "name": "offers",
+    "status": 200,
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "name": "offer-add",
+    "status": 200,
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "name": "b2b",
+    "status": 200,
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "name": "index",
+    "status": 200,
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "name": "products",
+    "status": 200,
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "name": "product-add",
+    "status": 200,
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "name": "offers",
+    "status": 200,
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "name": "offer-add",
+    "status": 200,
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "name": "b2b",
+    "status": 200,
+    "errors": [],
+    "failed": []
+  }
+]

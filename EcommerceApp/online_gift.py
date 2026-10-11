@@ -219,6 +219,9 @@ def _scratch_claim_from_request(request):
 
 def scratch_status(request):
     """Only reports eligibility; it never decides a reward."""
+    from .bera_panel_modules import module_locked
+    if module_locked("sretni_greb_greb"):
+        return False
     if not request.session.session_key:
         request.session.create()
     campaign = _scratch_campaign()
@@ -237,6 +240,9 @@ def scratch_status(request):
 
 def scratch_claim(request):
     """Atomically select and persist one reward for one completed order."""
+    from .bera_panel_modules import module_locked
+    if module_locked("sretni_greb_greb"):
+        return None, False
     if not request.session.session_key:
         request.session.create()
     with transaction.atomic():

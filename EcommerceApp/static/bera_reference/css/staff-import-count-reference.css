@@ -1,0 +1,100 @@
+.is-import-count-reference .up-page{min-width:0;max-width:100%}
+.is-import-count-reference .up-page *{box-sizing:border-box}
+.is-import-count-reference .up-crumb{margin:4px 0 8px;flex-wrap:wrap;overflow-wrap:anywhere}
+.is-import-count-reference .up-head{padding:10px;border:1px solid #9b9da2;background:var(--im-metal);box-shadow:var(--im-bevel);margin-bottom:8px;gap:10px;flex-wrap:wrap}
+.is-import-count-reference .up-head h1{font-size:22px;margin:0;overflow-wrap:anywhere}
+.is-import-count-reference .up-meta{font-size:13px;color:#465164;margin:6px 0 0;line-height:1.5}
+.is-import-count-reference .up-meta span{color:#747d88}
+.is-import-count-reference :is(.up-progress,.up-card,.up-stat,.up-table-wrap){border:1px solid #9b9da2;border-radius:0;background:var(--im-panel);box-shadow:inset 1px 1px #fff}
+.is-import-count-reference .up-progress{padding:8px 10px;margin-bottom:8px}
+.is-import-count-reference .up-progress-bar{height:10px;border:1px solid #92949a;border-radius:0;background:#c5c8cc}
+.is-import-count-reference .up-progress-bar i{background:linear-gradient(#a3b2bf,#64798a);border-radius:0}
+.is-import-count-reference .up-progress-pct{margin-top:4px;color:#465164;font-size:12px}
+.is-import-count-reference .up-scan{border:1px solid #92949a;border-radius:0;background:#fff;padding:4px;gap:8px;margin-bottom:8px}
+.is-import-count-reference .up-scan-ico{background:var(--im-metal);border-radius:0;color:#111;width:40px;height:40px;flex-shrink:0}
+.is-import-count-reference .up-scan input{min-width:0;font-size:16px;color:#111}
+.is-import-count-reference .up-scan-live{background:#e5e8ea;color:#45515e;border-radius:0}
+.is-import-count-reference .up-card{grid-template-columns:96px minmax(0,1fr);padding:10px;gap:10px}
+.is-import-count-reference .up-card-img{width:96px;height:96px;background:#fff;border:1px solid #a4aab3;border-radius:0}
+.is-import-count-reference .up-card-info{min-width:0;overflow-wrap:anywhere}
+.is-import-count-reference .up-card-info strong{font-size:18px;line-height:1.3}
+.is-import-count-reference .up-card-qty{grid-column:1/-1;display:grid;grid-template-columns:1fr 2fr 1fr;gap:8px}
+.is-import-count-reference .up-arrow{display:none}
+.is-import-count-reference .up-box{min-width:0;padding:8px;border:1px solid #a4aab3;border-radius:0;background:#e4e6e9}
+.is-import-count-reference .up-box.is-count{background:#f5f5f6}
+.is-import-count-reference .up-box span,.is-import-count-reference .up-box small{color:#4e5969;letter-spacing:0}
+.is-import-count-reference .up-step button,.is-import-count-reference .up-quick,.is-import-count-reference .up-tabs button{border:1px solid #92949a;border-radius:0;background:var(--im-metal);box-shadow:var(--im-bevel);color:#111;min-height:44px}
+.is-import-count-reference .up-step button{width:44px;height:44px;flex-shrink:0}
+.is-import-count-reference .up-step input{border:1px solid #92949a;border-radius:0;height:44px;min-width:0;width:90px;font-size:24px}
+.is-import-count-reference .up-card-actions{margin:8px 0;gap:6px}
+.is-import-count-reference .up-stats{gap:6px;margin-bottom:8px}
+.is-import-count-reference .up-stat{padding:7px 10px;border-top-width:3px}
+.is-import-count-reference .up-stat.is-pop{border-top-color:#65778a}
+.is-import-count-reference .up-stat span,.is-import-count-reference .up-stat small{color:#505b6c;letter-spacing:0}
+.is-import-count-reference .up-stat b{font-size:22px}
+.is-import-count-reference .up-toolbar{gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.is-import-count-reference .up-tabs{gap:6px}
+.is-import-count-reference .up-tabs button{padding:6px 9px}
+.is-import-count-reference .up-tabs button.is-active{background:#bcc8d4;border-color:#6d8095;color:#132437;box-shadow:inset 1px 1px #8c9fb2}
+.is-import-count-reference .up-tabs button.is-active span{background:#e4eaf0;color:#132437}
+.is-import-count-reference .up-find input{border:1px solid #92949a;border-radius:0;background:#fff;min-height:44px;font-size:16px;width:100%}
+.is-import-count-reference .up-table th{background:var(--im-metal);border:1px solid #a4aab3;padding:8px;color:#39485c;letter-spacing:0}
+.is-import-count-reference .up-table td{background:#f6f6f7;border:1px solid #c1c5cb;padding:9px 8px;overflow-wrap:anywhere}
+.is-import-count-reference .up-table tr.is-active td{background:#dce6f0}
+.is-import-count-reference .up-pill{border-radius:2px}
+.is-import-count-reference .up-error{background:#f3dddd;border:1px solid #c98d8d;padding:10px;color:#922525}
+.is-import-count-reference .up-page button:disabled{opacity:.5;cursor:default}
+.is-import-count-reference .up-page :is(button,input,a):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+@media(max-width:700px){
+ .magacin-page.is-import-count-reference .mg-main{padding:4px 6px 16px}
+ .is-import-count-reference .up-head{padding:8px;gap:8px}
+ .is-import-count-reference .up-head h1{font-size:19px}
+ .is-import-count-reference .up-meta{display:block;font-size:12px}
+ .is-import-count-reference .up-head-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+ .magacin-page.is-import-count-reference .up-head-actions .mg-btn{min-height:44px;padding:6px;font-size:13px;justify-content:center;text-align:center;white-space:normal}
+ .is-import-count-reference .up-scan{position:sticky;top:0;z-index:6}
+ .is-import-count-reference .up-scan-live{display:none}
+ .is-import-count-reference .up-card{grid-template-columns:86px minmax(0,1fr);padding:8px;gap:8px}
+ .is-import-count-reference .up-card-img{width:86px;height:86px}
+ .is-import-count-reference .up-card-info strong{font-size:16px}
+ .is-import-count-reference .up-card-qty{grid-template-columns:1fr 1fr;gap:6px}
+ .is-import-count-reference .up-box.is-count{grid-column:1/-1;grid-row:2;padding:7px}
+ .is-import-count-reference .up-box b{font-size:23px}
+ .is-import-count-reference .up-step{gap:10px}
+ .is-import-count-reference .up-step input{width:120px;max-width:120px;font-size:26px}
+ .is-import-count-reference .up-card-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+ .magacin-page.is-import-count-reference .up-card-actions .mg-btn-primary{grid-column:1/-1;min-height:46px;justify-content:center}
+ .is-import-count-reference .up-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .is-import-count-reference .up-stat{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 6px}
+ .is-import-count-reference .up-stat small{display:none}
+ .is-import-count-reference .up-stat:last-child{grid-column:1/-1}
+ .is-import-count-reference .up-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible;white-space:normal}
+ .is-import-count-reference .up-tabs button{font-size:12px;padding:5px 3px}
+ .is-import-count-reference .up-tabs button:last-child{grid-column:span 2}
+ .is-import-count-reference .up-find{width:100%;min-width:0}
+ .is-import-count-reference .up-table-wrap{border:0;background:transparent;box-shadow:none;overflow:visible}
+ .is-import-count-reference .up-table{display:block;width:100%;min-width:0}
+ .is-import-count-reference .up-table thead{display:none}
+ .is-import-count-reference .up-table tbody{display:grid;gap:8px}
+ .is-import-count-reference .up-table tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid #9b9da2;background:#f6f6f7;padding:7px;gap:6px}
+ .is-import-count-reference .up-table td{display:block;border:0;padding:4px;min-width:0;font-size:14px;background:transparent}
+ .is-import-count-reference .up-table td:nth-child(2){grid-column:1/-1;grid-row:1;font-size:15px;line-height:1.35}
+ .is-import-count-reference .up-table td:nth-child(1){grid-column:1/3;grid-row:2}
+ .is-import-count-reference .up-table td:nth-child(3){display:block;grid-column:1/-1;grid-row:3;font-size:12px;color:#505b6c}
+ .is-import-count-reference .up-table td:nth-child(7){grid-column:3;grid-row:2;text-align:right}
+ .is-import-count-reference .up-table .num{grid-row:4;text-align:center;background:#e8eaed;border:1px solid #c1c5cb;font-size:18px}
+ .is-import-count-reference .up-table td::before{display:block;font-size:11px;font-weight:500;color:#505b6c;margin-bottom:3px}
+ .is-import-count-reference .up-table td:nth-child(1)::before{content:'Šifra'}
+ .is-import-count-reference .up-table td:nth-child(3)::before{content:'Barkod';display:inline;margin-right:6px}
+ .is-import-count-reference .up-table td:nth-child(4)::before{content:'U uvozu'}
+ .is-import-count-reference .up-table td:nth-child(5)::before{content:'Popisano'}
+ .is-import-count-reference .up-table td:nth-child(6)::before{content:'Razlika'}
+ .is-import-count-reference .up-table tr.is-active{background:#dce6f0;border-color:#708ca8}
+ .is-import-count-reference .up-table td.up-empty{grid-column:1/-1;text-align:center}
+ .is-import-count-reference .up-table td.up-empty::before{content:none}
+}
+
+.is-import-count-reference .up-barcode-editor{margin-top:12px}
+.is-import-count-reference .up-barcode-editor label{display:block;font-size:13px;margin-bottom:6px}
+.is-import-count-reference .up-barcode-editor>div{display:flex;gap:8px;flex-wrap:wrap}
+.is-import-count-reference .up-barcode-editor input{min-width:0;max-width:100%;flex:1 1 180px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}

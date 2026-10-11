@@ -1,0 +1,70 @@
+body.magacin-page.is-import-reference{--im-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--im-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--im-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;--mg-accent:#278922;--mg-accent-hover:#206f1c;--mg-accent-soft:#e1f0dc;--mg-accent-line:#a3bf98;background:#dedfe1!important}
+.magacin-page.is-import-reference .mg-app,.magacin-page.is-import-reference .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
+.magacin-page.is-import-reference .mg-main{padding:4px 10px 18px;min-width:0;color:#111}
+.magacin-page.is-import-reference .mg-toolbar,.magacin-page.is-import-reference .mg-chrome{padding:8px 12px;margin:0 0 8px;border:1px solid #9b9da2;border-radius:0;background:var(--im-metal);box-shadow:var(--im-bevel);gap:8px}
+.magacin-page.is-import-reference .mg-toolbar h1{font-size:22px;margin:0;color:#111;line-height:1.2}
+.magacin-page.is-import-reference .mg-count{font-size:13px;color:#505b6c;margin:5px 0 0}
+.magacin-page.is-import-reference .mg-main .mg-btn{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:0;background:var(--im-metal);box-shadow:var(--im-bevel);color:#111;font-size:14px;font-weight:750;text-decoration:none}
+.magacin-page.is-import-reference .mg-main .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:inset 2px 2px #a6e395,inset -3px -3px #1e5f18;color:#fff}
+.magacin-page.is-import-reference .mg-toolbar-actions,.magacin-page.is-import-reference .mg-uvoz-row-actions{gap:7px;flex-wrap:wrap}
+.magacin-page.is-import-reference .mg-card{padding:8px;border:1px solid #9b9da2;border-radius:0;background:var(--im-panel);box-shadow:inset 1px 1px #fff;min-width:0}
+.magacin-page.is-import-reference .mg-table{width:100%;border-collapse:collapse}
+.magacin-page.is-import-reference .mg-table th{padding:7px 8px;border:1px solid #a4aab3;background:var(--im-metal);font-size:13px;letter-spacing:0;color:#37465e}
+.magacin-page.is-import-reference .mg-table td{padding:7px 8px;border:1px solid #b6b8bd;background:linear-gradient(115deg,#f5f5f6,#e9e9ec);font-size:14px;color:#35445d}
+.magacin-page.is-import-reference .mg-table tr.is-clickable:hover td{background:#e2e8ef}
+.magacin-page.is-import-reference .mg-chrome-search input{height:40px;border:1px solid #969faa;border-radius:0;background:#fff;font-size:16px}
+.magacin-page.is-import-reference .mg-chrome-icon,.magacin-page.is-import-reference .mg-chrome-burger{border-radius:0;background:var(--im-metal);border:1px solid #92949a;box-shadow:var(--im-bevel);color:#111}
+.magacin-page.is-import-reference :is(a,button,input):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+@media(max-width:600px){.magacin-page.is-import-reference .mg-main{padding:4px 6px 18px}.magacin-page.is-import-reference .mg-toolbar h1{font-size:20px}.magacin-page.is-import-reference .mg-table-stack-uvozi tr{border:1px solid #b6b8bd;border-radius:0;background:var(--im-panel);margin-bottom:6px}.magacin-page.is-import-reference .mg-table-stack-uvozi td{border:0;background:transparent}}
+
+/* New import editor, including manually editable spreadsheet rows. */
+.magacin-page.is-new-import-reference .mg-uvoz-new{max-width:none}
+.magacin-page.is-new-import-reference .mg-field label{font-size:13px;color:#414c5e;margin-bottom:5px}
+.magacin-page.is-new-import-reference .mg-field input,.magacin-page.is-new-import-reference .mg-uvoz-paste{border:1px solid #969faa;border-radius:0;background:#fff;padding:7px 10px;font-size:15px;box-sizing:border-box;max-width:100%}
+.magacin-page.is-new-import-reference .mg-field input{min-height:36px}
+.magacin-page.is-new-import-reference .mg-uvoz-paste{min-height:110px;resize:vertical}
+.magacin-page.is-new-import-reference .mg-h{font-size:18px;color:#111;letter-spacing:0;margin:0 0 8px}
+.magacin-page.is-new-import-reference .mg-muted{color:#505b6c;font-size:13px}
+.magacin-page.is-new-import-reference .mg-uvoz-sheet{width:100%;border-collapse:collapse}
+.magacin-page.is-new-import-reference .mg-uvoz-sheet th{padding:7px 8px;border:1px solid #a4aab3;background:var(--im-metal);font-size:13px;color:#37465e}
+.magacin-page.is-new-import-reference .mg-uvoz-sheet td{padding:4px;border:1px solid #b6b8bd;background:var(--im-panel)}
+.magacin-page.is-new-import-reference .mg-uvoz-sheet input{min-height:34px;border:1px solid #a4aab3;border-radius:0;background:#fff;color:#111;padding:5px 7px;font-size:14px;box-sizing:border-box}
+.magacin-page.is-new-import-reference .mg-uvoz-actions{gap:8px;margin-top:10px}
+.magacin-page.is-new-import-reference .mg-main button:disabled{opacity:.5;cursor:default}
+.magacin-page.is-new-import-reference textarea:focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+
+/* Saved import: compact metal panels, matching the import list and editor. */
+.magacin-page.is-import-detail-reference .mg-toolbar{align-items:center}
+.magacin-page.is-import-detail-reference .mg-toolbar>div:first-child{min-width:0}
+.magacin-page.is-import-detail-reference .mg-toolbar h1{overflow-wrap:anywhere}
+.magacin-page.is-import-detail-reference .mg-toolbar-actions{align-items:center}
+.magacin-page.is-import-detail-reference .mg-toolbar-actions form{margin:0;display:flex}
+.magacin-page.is-import-detail-reference .mg-toolbar-actions .mg-btn{white-space:nowrap;justify-content:center}
+.magacin-page.is-import-detail-reference .mg-stats-row{gap:8px;margin:0 0 8px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.magacin-page.is-import-detail-reference .mg-mini-stat{padding:8px 12px;border:1px solid #9b9da2;border-radius:0;background:var(--im-panel);box-shadow:inset 1px 1px #fff}
+.magacin-page.is-import-detail-reference .mg-mini-stat span{color:#505b6c;font-size:12px}
+.magacin-page.is-import-detail-reference .mg-mini-stat strong{margin-top:2px;font-size:20px;color:#111;line-height:1.2}
+.magacin-page.is-import-detail-reference .mg-import-section-head{margin:0 0 8px;padding:7px 10px}
+.magacin-page.is-import-detail-reference .mg-import-section-head h2{margin:0;font-size:17px;color:#111}
+.magacin-page.is-import-detail-reference .mg-table-wrap{border-radius:0}
+.magacin-page.is-import-detail-reference .mg-uvoz-review{min-width:960px}
+.magacin-page.is-import-detail-reference .mg-uvoz-review th{white-space:nowrap;text-transform:none}
+.magacin-page.is-import-detail-reference .mg-uvoz-review td{vertical-align:middle}
+.magacin-page.is-import-detail-reference .mg-uvoz-review td:nth-child(2){min-width:220px}
+.magacin-page.is-import-detail-reference .mg-uvoz-review a{color:#172538;font-weight:650;text-decoration:none}
+.magacin-page.is-import-detail-reference .mg-uvoz-review a:hover{text-decoration:underline}
+.magacin-page.is-import-detail-reference .mg-uvoz-review .num{white-space:nowrap;font-variant-numeric:tabular-nums}
+.magacin-page.is-import-detail-reference .mg-muted{color:#596375}
+.magacin-page.is-import-detail-reference .mg-pill{border:1px solid #a4aab3;border-radius:2px;background:#e1e3e6;color:#35445d;font-size:12px;padding:3px 7px;white-space:nowrap}
+.magacin-page.is-import-detail-reference .mg-pill.is-manual{background:#dcebd9;border-color:#a4bda0;color:#286127}
+.magacin-page.is-import-detail-reference .mg-pill.is-out{background:#f5dddd;border-color:#d2a7a7;color:#9c2828}
+@media(max-width:700px){
+    .magacin-page.is-import-detail-reference .mg-toolbar{flex-wrap:wrap;gap:8px}
+    .magacin-page.is-import-detail-reference .mg-toolbar-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:6px}
+    .magacin-page.is-import-detail-reference .mg-toolbar-actions .mg-btn{width:100%;min-height:36px;padding:6px;font-size:13px;white-space:normal;text-align:center;box-sizing:border-box}
+    .magacin-page.is-import-detail-reference .mg-stats-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+    .magacin-page.is-import-detail-reference .mg-mini-stat{padding:7px 10px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+    .magacin-page.is-import-detail-reference .mg-mini-stat strong{font-size:18px;margin:0}
+    .magacin-page.is-import-detail-reference .mg-import-section-head .mg-toolbar-actions{display:flex;width:auto}
+    .magacin-page.is-import-detail-reference .mg-uvoz-review td{font-size:13px;padding:6px 8px}
+}

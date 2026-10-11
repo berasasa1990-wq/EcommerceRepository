@@ -1,0 +1,790 @@
+[
+  {
+    "width": 1440,
+    "label": "source",
+    "layout": [
+      {
+        "class": "header",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 118
+      },
+      {
+        "class": "bera-hero",
+        "x": 0,
+        "y": 118,
+        "width": 1440,
+        "height": 421.875
+      },
+      {
+        "class": "category-page category-page--shop home-products home-products--izdvojeno",
+        "x": 12,
+        "y": 808.875,
+        "width": 1416,
+        "height": 360.609375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference product-card--on-sale",
+        "x": 12,
+        "y": 845.015625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 250,
+        "y": 845.015625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 488,
+        "y": 845.015625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 726,
+        "y": 845.015625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 964,
+        "y": 845.015625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 1202,
+        "y": 845.015625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "bera-offer-banners",
+        "x": 12,
+        "y": 1179.484375,
+        "width": 1416,
+        "height": 165.671875
+      },
+      {
+        "class": "category-page category-page--shop home-products home-products--novo",
+        "x": 12,
+        "y": 1369.15625,
+        "width": 1416,
+        "height": 360.609375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference product-card--on-sale",
+        "x": 12,
+        "y": 1405.296875,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 250,
+        "y": 1405.296875,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 488,
+        "y": 1405.296875,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 726,
+        "y": 1405.296875,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 964,
+        "y": 1405.296875,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 1202,
+        "y": 1405.296875,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "category-page category-page--shop home-products home-products--new-offer",
+        "x": 12,
+        "y": 1739.765625,
+        "width": 1416,
+        "height": 360.609375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference product-card--on-sale",
+        "x": 12,
+        "y": 1775.90625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 250,
+        "y": 1775.90625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 488,
+        "y": 1775.90625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 726,
+        "y": 1775.90625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 964,
+        "y": 1775.90625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 1202,
+        "y": 1775.90625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "bera-wide-promo",
+        "x": 12,
+        "y": 2116.375,
+        "width": 1416,
+        "height": 212.796875
+      },
+      {
+        "class": "bera-newsletter",
+        "x": 12,
+        "y": 2537.171875,
+        "width": 1416,
+        "height": 130
+      },
+      {
+        "class": "bera-footer",
+        "x": 0,
+        "y": 2803.40625,
+        "width": 1440,
+        "height": 275.265625
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "layout": [
+      {
+        "class": "header",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 118
+      },
+      {
+        "class": "bera-hero",
+        "x": 0,
+        "y": 118,
+        "width": 1440,
+        "height": 421.875
+      },
+      {
+        "class": "category-page category-page--shop home-products home-products--izdvojeno",
+        "x": 12,
+        "y": 808.875,
+        "width": 1416,
+        "height": 360.609375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference product-card--on-sale",
+        "x": 12,
+        "y": 845.015625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 250,
+        "y": 845.015625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 488,
+        "y": 845.015625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 726,
+        "y": 845.015625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 964,
+        "y": 845.015625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 1202,
+        "y": 845.015625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "bera-offer-banners",
+        "x": 12,
+        "y": 1179.484375,
+        "width": 1416,
+        "height": 165.671875
+      },
+      {
+        "class": "category-page category-page--shop home-products home-products--novo",
+        "x": 12,
+        "y": 1369.15625,
+        "width": 1416,
+        "height": 360.609375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference product-card--on-sale",
+        "x": 12,
+        "y": 1405.296875,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 250,
+        "y": 1405.296875,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 488,
+        "y": 1405.296875,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 726,
+        "y": 1405.296875,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 964,
+        "y": 1405.296875,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 1202,
+        "y": 1405.296875,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "category-page category-page--shop home-products home-products--new-offer",
+        "x": 12,
+        "y": 1739.765625,
+        "width": 1416,
+        "height": 360.609375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference product-card--on-sale",
+        "x": 12,
+        "y": 1775.90625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 250,
+        "y": 1775.90625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 488,
+        "y": 1775.90625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 726,
+        "y": 1775.90625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 964,
+        "y": 1775.90625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 1202,
+        "y": 1775.90625,
+        "width": 226,
+        "height": 324.46875
+      },
+      {
+        "class": "bera-wide-promo",
+        "x": 12,
+        "y": 2116.375,
+        "width": 1416,
+        "height": 212.796875
+      },
+      {
+        "class": "bera-newsletter",
+        "x": 12,
+        "y": 2537.171875,
+        "width": 1416,
+        "height": 130
+      },
+      {
+        "class": "bera-footer",
+        "x": 0,
+        "y": 2803.40625,
+        "width": 1440,
+        "height": 275.265625
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "source",
+    "layout": [
+      {
+        "class": "header",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 120
+      },
+      {
+        "class": "bera-hero",
+        "x": 0,
+        "y": 120,
+        "width": 390,
+        "height": 420
+      },
+      {
+        "class": "category-page category-page--shop home-products home-products--izdvojeno",
+        "x": 8,
+        "y": 950.53125,
+        "width": 374,
+        "height": 627.0625
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference product-card--on-sale",
+        "x": 8,
+        "y": 984.125,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 200,
+        "y": 984.125,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 8,
+        "y": 1285.859375,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 200,
+        "y": 1285.859375,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "bera-offer-banners",
+        "x": 8,
+        "y": 1587.59375,
+        "width": 374,
+        "height": 307
+      },
+      {
+        "class": "category-page category-page--shop home-products home-products--novo",
+        "x": 8,
+        "y": 1914.59375,
+        "width": 374,
+        "height": 627.96875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference product-card--on-sale",
+        "x": 8,
+        "y": 1949.09375,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 200,
+        "y": 1949.09375,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 8,
+        "y": 2250.828125,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 200,
+        "y": 2250.828125,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "category-page category-page--shop home-products home-products--new-offer",
+        "x": 8,
+        "y": 2552.5625,
+        "width": 374,
+        "height": 627.96875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference product-card--on-sale",
+        "x": 8,
+        "y": 2587.0625,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 200,
+        "y": 2587.0625,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 8,
+        "y": 2888.796875,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 200,
+        "y": 2888.796875,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "bera-wide-promo",
+        "x": 8,
+        "y": 3196.53125,
+        "width": 374,
+        "height": 180
+      },
+      {
+        "class": "bera-newsletter",
+        "x": 8,
+        "y": 3634.53125,
+        "width": 374,
+        "height": 157.5
+      },
+      {
+        "class": "bera-footer",
+        "x": 0,
+        "y": 4028.578125,
+        "width": 390,
+        "height": 786.140625
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "layout": [
+      {
+        "class": "header",
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 120
+      },
+      {
+        "class": "bera-hero",
+        "x": 0,
+        "y": 120,
+        "width": 390,
+        "height": 420
+      },
+      {
+        "class": "category-page category-page--shop home-products home-products--izdvojeno",
+        "x": 8,
+        "y": 950.53125,
+        "width": 374,
+        "height": 627.0625
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference product-card--on-sale",
+        "x": 8,
+        "y": 984.125,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 200,
+        "y": 984.125,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 8,
+        "y": 1285.859375,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 200,
+        "y": 1285.859375,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "bera-offer-banners",
+        "x": 8,
+        "y": 1587.59375,
+        "width": 374,
+        "height": 307
+      },
+      {
+        "class": "category-page category-page--shop home-products home-products--novo",
+        "x": 8,
+        "y": 1914.59375,
+        "width": 374,
+        "height": 627.96875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference product-card--on-sale",
+        "x": 8,
+        "y": 1949.09375,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 200,
+        "y": 1949.09375,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 8,
+        "y": 2250.828125,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 200,
+        "y": 2250.828125,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "category-page category-page--shop home-products home-products--new-offer",
+        "x": 8,
+        "y": 2552.5625,
+        "width": 374,
+        "height": 627.96875
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference product-card--on-sale",
+        "x": 8,
+        "y": 2587.0625,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 200,
+        "y": 2587.0625,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 8,
+        "y": 2888.796875,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 200,
+        "y": 2888.796875,
+        "width": 182,
+        "height": 291.734375
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "product-card product-card--catalog product-card--home-reference",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "bera-wide-promo",
+        "x": 8,
+        "y": 3196.53125,
+        "width": 374,
+        "height": 180
+      },
+      {
+        "class": "bera-newsletter",
+        "x": 8,
+        "y": 3634.53125,
+        "width": 374,
+        "height": 157.5
+      },
+      {
+        "class": "bera-footer",
+        "x": 0,
+        "y": 4028.578125,
+        "width": 390,
+        "height": 786.140625
+      }
+    ],
+    "errors": [],
+    "failed": []
+  }
+]

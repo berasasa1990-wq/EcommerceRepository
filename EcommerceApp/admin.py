@@ -3737,7 +3737,11 @@ class B2BSettingsAdmin(admin.ModelAdmin):
 
     class Media:
         css = {'all': ('admin/css/b2b-settings.css',)}
-        js = ('admin/js/b2b-settings.js',)
+        js = (
+            'admin/js/vendor/jquery/jquery.js',
+            'admin/js/jquery.init.js',
+            'admin/js/b2b-settings.js',
+        )
 
     def has_add_permission(self, request):
         return super().has_add_permission(request) and not B2BSettings.objects.exists()
@@ -3782,6 +3786,47 @@ class B2BSubmissionAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+# Global modules stay exclusively in the superuser Django administration.
+from .models import ModulePermissions
+
+
+@admin.register(ModulePermissions)
+class ModulePermissionsAdmin(admin.ModelAdmin):
+    change_form_template = 'admin/EcommerceApp/modulepermissions/change_form.html'
+    fieldsets = (('WMS', {'fields': ('wms_zalihe', 'wms_narudzbe', 'wms_pakovanje', 'wms_prenosnice')}), ('Akcije', {'fields': ('akcije', 'sretni_greb_greb')}))
+    list_display = ('__str__',)
+
+    def changelist_view(self, request, extra_context=None):
+        if not request.user.is_superuser:
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
+        if not self.schema_ready():
+            from django.http import HttpResponse
+            return HttpResponse('Za Moduli / Dozvole primijenite migraciju 0313_bera_module_permissions.', status=503)
+        if ModulePermissions.objects.filter(pk=1).exists():
+            return redirect('admin:EcommerceApp_modulepermissions_change', object_id=1)
+        return redirect('admin:EcommerceApp_modulepermissions_add')
+
+    def has_module_permission(self, request):
+        return request.user.is_superuser and self.schema_ready()
+
+    def schema_ready(self):
+        from django.db import connection
+        return ModulePermissions._meta.db_table in connection.introspection.table_names()
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser and self.schema_ready() and not ModulePermissions.objects.exists()
 
     def has_delete_permission(self, request, obj=None):
         return False

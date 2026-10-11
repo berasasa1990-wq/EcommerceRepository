@@ -1,0 +1,24 @@
+<div class="coupon-box">
+    {% if applied_coupon_code %}
+    <form method="post" action="{% url 'remove_coupon' %}" class="coupon-remove-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
+        <p class="coupon-applied">
+            {% if applied_coupon %}{{ applied_coupon.naziv }}{% else %}Aktivan kupon{% endif %}
+            {% if applied_coupon.vrsta == 'dostava' %}<strong>Besplatna dostava</strong>
+            {% elif applied_coupon.vrsta == 'iznos' %}<strong>−{{ summary.kupon_popust }} KM</strong>
+            {% elif summary.kupon_postotak %}<strong>{{ summary.kupon_postotak }}%</strong> (−{{ summary.kupon_popust }} KM){% endif %}
+            <button type="submit" class="coupon-remove-btn">Ukloni</button>
+        </p>
+    </form>
+    {% if applied_coupon.vrsta != 'dostava' %}<p class="loyalty-code-hint loyalty-code-hint--compact">Ne vrijedi na artikle koji su na akciji.</p>{% endif %}
+
+    {% else %}
+    <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form coupon-form--loyalty-oneclick">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
+        <input type="hidden" name="choose_reward" value="1">
+        <button type="submit" class="btn btn-coupon btn-coupon--full"{% if coupon_choices|length > 1 %} data-coupon-choice-open aria-haspopup="dialog" aria-controls="couponChoiceDialog"{% endif %}>Primijeni kupon ili karticu <span aria-hidden="true">›</span></button>
+    </form>
+    {% endif %}
+</div>

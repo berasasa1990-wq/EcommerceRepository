@@ -3233,6 +3233,19 @@ def _build_unique_slug(model_cls, source_text, *, pk=None, max_length=SLUG_MAX_L
 
 
 class Product(models.Model):
+    @property
+    def wms_lokacija(self):
+        meta = ProductWMSLocationMeta.objects.filter(product_id=self.pk).select_related('lokacija').first()
+        return meta.lokacija if meta else None
+
+    @property
+    def wms_lokacija_id(self):
+        return ProductWMSLocationMeta.objects.filter(product_id=self.pk).values_list('lokacija_id', flat=True).first()
+
+    @wms_lokacija_id.setter
+    def wms_lokacija_id(self, value):
+        ProductWMSLocationMeta.objects.update_or_create(product_id=self.pk, defaults={'lokacija_id': value})
+
     is_set = models.BooleanField(default=False, db_index=True, verbose_name="Artikal je set")
     naziv = models.CharField(max_length=200)
     slug = models.SlugField(max_length=SLUG_MAX_LENGTH, unique=True, blank=True)
@@ -7232,3 +7245,206 @@ class CardPayment(models.Model):
     transaction_id = models.CharField(max_length=64, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class WMSLocation(models.Model):
+    legacy_location = models.OneToOneField(WarehouseLocation, null=True, blank=True, on_delete=models.PROTECT, related_name='bera_wms_location')
+    @property
+    def barkod(self):
+        return f'WMSLOC{self.pk:06d}' if self.pk else ''
+
+    def __str__(self):
+        return self.naziv
+
+    naziv = models.CharField(max_length=120, unique=True)
+    opis = models.CharField(max_length=240, blank=True)
+
+    class Meta:
+        db_table = 'EcommerceApp_bera_wmslocation'
+        ordering = ['naziv']
+
+
+class WMSStock(models.Model):
+    sifra = models.CharField(max_length=80)
+    naziv = models.CharField(max_length=240)
+    lokacija = models.ForeignKey(WMSLocation, on_delete=models.PROTECT, related_name='zalihe')
+    kolicina = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'EcommerceApp_bera_wmsstock'
+        ordering = ['naziv', 'sifra']
+        constraints = [models.UniqueConstraint(fields=['sifra', 'lokacija'], name='bera_wms_stock_sifra_location')]
+
+
+class WMSOrder(models.Model):
+    customer = models.ForeignKey('WMSCustomer', null=True, blank=True, on_delete=models.SET_NULL)
+    grad = models.CharField(max_length=100, blank=True)
+    postanski_broj = models.CharField(max_length=20, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    source_order = models.OneToOneField(Order, null=True, blank=True, on_delete=models.PROTECT, related_name="wms_order")
+    cancellation_reason = models.TextField(blank=True, verbose_name="Razlog otkazivanja")
+    @property
+    def display_number(self):
+        return f"{self.pk:04d}"
+
+    tip = models.CharField(max_length=12, choices=[('vp', 'Veleprodaja'), ('online', 'Online slanje')])
+    kupac = models.CharField(max_length=240)
+    email = models.EmailField(blank=True)
+    telefon = models.CharField(max_length=60, blank=True)
+    adresa = models.CharField(max_length=300, blank=True)
+    napomena = models.TextField(blank=True)
+    status = models.CharField(max_length=12, default='nova', choices=[('nova', 'Nova narudžba'), ('pakovanje', 'Odvajanje robe'), ('zapakovana', 'Završena'), ('otkazana', 'Otkazana')])
+    kreirana = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'EcommerceApp_bera_wmsorder'
+        ordering = ['-kreirana']
+
+
+class ProductWMSStock(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='wms_zalihe')
+    lokacija = models.ForeignKey(WMSLocation, on_delete=models.PROTECT, related_name='stanje_artikala')
+    kolicina = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'EcommerceApp_bera_productwmsstock'
+        constraints = [models.UniqueConstraint(fields=['product', 'lokacija'], name='bera_product_wms_location')]
+
+
+class WMSSettings(models.Model):
+    vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('17.00'), verbose_name='PDV (%)', validators=[MinValueValidator(0), MaxValueValidator(100)])
+    picking_last_location = models.ForeignKey(WMSLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', verbose_name='Lokacija koja se posljednja nudi za odvajanje')
+    show_storefront_availability = models.BooleanField(default=True, verbose_name="Prikaz dostupnosti artikala na sajtu")
+    transfer_location = models.ForeignKey(WMSLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', verbose_name='Lokacija za prenos iz Zaliha')
+
+    class Meta:
+        db_table = 'EcommerceApp_bera_wmssettings'
+
+
+class WMSTransfer(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='wms_transfers')
+    source = models.ForeignKey(WMSLocation, on_delete=models.PROTECT, related_name='outgoing_transfers')
+    destination = models.ForeignKey(WMSLocation, on_delete=models.PROTECT, related_name='incoming_transfers')
+    quantity = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'EcommerceApp_bera_wmstransfer'
+        ordering = ['-created_at', '-pk']
+        constraints = [models.CheckConstraint(condition=models.Q(quantity__gt=0), name='bera_wms_transfer_qty_positive')]
+
+
+class WMSPickLine(models.Model):
+    shortage_resolution = models.CharField(max_length=10, blank=True, choices=[('clear', 'Očišćeno'), ('keep', 'Ostavljeno')])
+    shortage_resolved_at = models.DateTimeField(null=True, blank=True)
+    order = models.ForeignKey(WMSOrder, on_delete=models.CASCADE, related_name='pick_lines')
+    item = models.ForeignKey(OrderItem, null=True, blank=True, on_delete=models.PROTECT)
+    wms_item = models.ForeignKey('WMSOrderItem', null=True, blank=True, on_delete=models.PROTECT)
+
+    @property
+    def picking_item(self):
+        return self.item if self.item_id else self.wms_item
+
+    location = models.ForeignKey(WMSLocation, on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField()
+    confirmed_quantity = models.PositiveIntegerField(default=0)
+    photo = models.ImageField(upload_to='wms/picking/%Y/%m/', blank=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'EcommerceApp_bera_wmspickline'
+        ordering = ['pk']
+        constraints = [models.UniqueConstraint(fields=['order', 'item', 'location'], name='bera_wms_pick_item_location')]
+
+
+class WMSOrderItem(models.Model):
+    order = models.ForeignKey(WMSOrder, on_delete=models.CASCADE, related_name='items')
+    artikal = models.ForeignKey(Product, null=True, on_delete=models.SET_NULL)
+    naziv = models.CharField(max_length=200)
+    sifra = models.CharField(max_length=100, blank=True)
+    kolicina = models.PositiveIntegerField()
+    bazna_cijena = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    cijena = models.DecimalField(max_digits=10, decimal_places=2)
+    popust = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+    class Meta:
+        db_table = 'EcommerceApp_bera_wmsorderitem'
+
+
+class WMSCustomer(models.Model):
+    is_deleted = models.BooleanField(default=False)
+    ime_prezime = models.CharField(max_length=240)
+    telefon = models.CharField(max_length=60)
+    adresa = models.CharField(max_length=300)
+    grad = models.CharField(max_length=100)
+    postanski_broj = models.CharField(max_length=20)
+
+    class Meta:
+        db_table = 'EcommerceApp_bera_wmscustomer'
+        ordering = ['ime_prezime', 'pk']
+
+
+class ProductWMSLocationMeta(models.Model):
+    product = models.OneToOneField(Product, on_delete=models.CASCADE, related_name='wms_meta')
+    lokacija = models.ForeignKey(WMSLocation, null=True, blank=True, on_delete=models.PROTECT, related_name='artikli')
+
+    class Meta:
+        db_table = 'EcommerceApp_bera_productwmslocationmeta'
+
+
+class ModulePermissions(models.Model):
+    wms_zalihe = models.BooleanField(default=True, verbose_name='Zalihe i Lokacije')
+    wms_lokacije = models.BooleanField(default=True, verbose_name='Lokacije')
+    wms_narudzbe = models.BooleanField(default=True, verbose_name='Narudžbe')
+    wms_pakovanje = models.BooleanField(default=True, verbose_name='Odvajanje robe')
+    wms_prenosnice = models.BooleanField(default=True, verbose_name='Prenosnice')
+    akcije = models.BooleanField(default=True, verbose_name='Akcije', help_text='Omogućava pristup Akcijama u panelu.')
+    banner_odrediste_filter = models.BooleanField(default=True,
+        verbose_name='Banner — Odredište i filter',
+        help_text='Zaključava odredište i filter bannera. Polje Link ostaje uvijek dostupno.')
+    b2b = models.BooleanField(default=True, verbose_name='B2B')
+    posjetioci_uzivo = models.BooleanField(default=True, verbose_name='Posjetioci uživo')
+    sretni_greb_greb = models.BooleanField(default=True, verbose_name='Sretni Greb-Greb')
+    stavke_aktivnih_korpi = models.BooleanField(default=True, verbose_name='Stavke aktivnih korpi')
+    loyalty = models.BooleanField(default=True, verbose_name='Loyalty')
+    poklon_vaucer = models.BooleanField(default=True, verbose_name='Poklon vaučer')
+    live_centar = models.BooleanField(default=True, verbose_name='Live centar')
+    uvoz = models.BooleanField(default=True, verbose_name='Uvoz')
+    provjera_lagera = models.BooleanField(default=True, verbose_name='Provjera lagera (Lokacije, Zalihe, Transferi)')
+    rezervni_dijelovi = models.BooleanField(default=True, verbose_name='Rezervni dijelovi')
+    stampa_cijena = models.BooleanField(default=True, verbose_name='Štampaj cijene')
+    stampa_deklaracije = models.BooleanField(default=True, verbose_name='Štampaj deklaracije')
+    dnevno_skidanje = models.BooleanField(default=True, verbose_name='Dnevno skidanje MP lagera')
+    dupli_barkodovi = models.BooleanField(default=True, verbose_name='Dupli barkodovi')
+    duguje_potrazuje = models.BooleanField(default=True, verbose_name='Duguje / Potražuje')
+    popis_robe = models.BooleanField(default=True, verbose_name='Popis robe')
+    fali_u_mp = models.BooleanField(default=True, verbose_name='Fali u MP-u')
+    nivelacije = models.BooleanField(default=True, verbose_name='Nivelacije')
+    kreiraj_ponudu = models.BooleanField(default=True, verbose_name='Kreiraj ponudu')
+    izvjestaji = models.BooleanField(default=True, verbose_name='Izvještaji')
+    artikli_u_setu = models.BooleanField(default=True, verbose_name='Artikli u setu',
+        help_text='Uključeno: dozvoljava pristup alatu Artikli u setu. Isključeno: alat je zaključan.')
+    pracenje_lagera = models.BooleanField(
+        default=True, verbose_name='Praćenje lagera (Dostupnost kol. na sajtu, Magacin: Artikli, Narudžbe, Picking, Kupci)',
+        help_text='Uključeno: dostupnost zavisi od količine. Isključeno: oznaka „Na stanju” mijenja se ručno.',
+    )
+
+    class Meta:
+        db_table = 'EcommerceApp_bera_modulepermissions'
+        verbose_name = 'Moduli / Dozvole'
+        verbose_name_plural = 'Moduli / Dozvole'
+
+    def __str__(self):
+        return 'Moduli / Dozvole'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+
+class BeraAppearance(models.Model):
+    button_color = models.CharField(max_length=7, blank=True, default='', verbose_name='Boja dugmadi')
+
+    class Meta:
+        db_table = 'EcommerceApp_bera_appearance'

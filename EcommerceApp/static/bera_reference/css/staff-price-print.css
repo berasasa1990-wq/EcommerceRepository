@@ -1,0 +1,49 @@
+/* Screen-only styling for price-printing controls; label templates are separate. */
+@media screen{
+body.magacin-page.is-price-print{--sc-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--sc-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--sc-edge:#9b9da2;--sc-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;background:#dedfe1!important}
+.magacin-page.is-price-print .mg-app,.magacin-page.is-price-print .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
+.magacin-page.is-price-print .mg-main{padding:8px 12px 18px;min-width:0}
+.magacin-page.is-price-print .mg-chrome{padding:6px 8px;gap:8px;margin-bottom:10px;min-height:0;border:1px solid var(--sc-edge);border-radius:0;background:var(--sc-metal);box-shadow:var(--sc-bevel)}
+.magacin-page.is-price-print :is(.mg-chrome-burger,.mg-chrome-icon){width:40px;height:40px;min-height:0;border:1px solid #92949a;border-radius:0;background:var(--sc-metal);box-shadow:var(--sc-bevel);color:#111;flex-shrink:0}
+.magacin-page.is-price-print .mg-chrome-search{flex:1;min-width:0;max-width:none}
+.magacin-page.is-price-print .mg-chrome-search input{height:40px;border:1px solid #8e9097;border-radius:0;background:#fff;font-size:16px}
+.magacin-page.is-price-print .mg-avatar{width:36px;height:36px;border:1px solid #aaa;background:var(--sc-metal);color:#111;font-size:16px;box-shadow:inset 1px 1px #fff}
+.magacin-page.is-price-print .sc-page{padding:0 0 16px;color:#111}
+.magacin-page.is-price-print .mg-page-head{padding:8px 12px;margin-bottom:10px;border:1px solid var(--sc-edge);background:var(--sc-metal);box-shadow:var(--sc-bevel);gap:10px}
+.magacin-page.is-price-print .mg-page-head h1{font-size:22px;line-height:1.2;text-transform:uppercase;margin:0;color:#080808}
+.magacin-page.is-price-print .mg-count{font-size:13px;color:#505b6c;margin:5px 0 0}
+.magacin-page.is-price-print .sc-modes{gap:10px}
+.magacin-page.is-price-print .sc-mode{padding:16px;border:1px solid var(--sc-edge);border-radius:0;background:var(--sc-metal);box-shadow:var(--sc-bevel);color:#111;gap:7px}
+.magacin-page.is-price-print .sc-mode:hover{background:linear-gradient(#fff,#dce1e8);border-color:#92949a}
+.magacin-page.is-price-print .sc-mode strong{font-size:20px}
+.magacin-page.is-price-print .sc-mode span{font-size:14px;color:#505b6c}
+.magacin-page.is-price-print .sc-card{padding:12px;border:1px solid var(--sc-edge);border-radius:0;background:var(--sc-panel);box-shadow:inset 1px 1px #fff}
+.magacin-page.is-price-print .sc-label{font-size:14px;color:#222b39;margin-bottom:6px}
+.magacin-page.is-price-print .sc-search{margin-bottom:10px}
+.magacin-page.is-price-print .sc-search input[type=search],.magacin-page.is-price-print .sc-card input[type=number]{min-height:40px;height:40px;border:1px solid #8e9097;border-radius:0;background:linear-gradient(110deg,#fff,#eeeef0);box-shadow:inset 1px 1px #b9bbc0;font-size:16px;padding:6px 10px;box-sizing:border-box}
+.magacin-page.is-price-print .sc-page .mg-btn{min-height:36px;padding:6px 14px;border:1px solid #92949a;border-radius:0;background:var(--sc-metal);box-shadow:var(--sc-bevel);color:#111;font-size:14px;font-weight:750}
+.magacin-page.is-price-print .sc-page .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:inset 2px 2px #a6e395,inset -3px -3px #1e5f18;color:#fff}
+.magacin-page.is-price-print .sc-page .mg-btn:hover{filter:brightness(1.08)}
+.magacin-page.is-price-print .sc-page button:disabled{opacity:.5;cursor:default}
+.magacin-page.is-price-print .sc-papir{margin:12px 0}
+.magacin-page.is-price-print .sc-papir-opts{gap:8px}
+.magacin-page.is-price-print .sc-papir-opt{padding:9px 12px;border:1px solid var(--sc-edge);border-radius:0;background:var(--sc-metal);box-shadow:var(--sc-bevel)}
+.magacin-page.is-price-print .sc-papir-opt:has(input:checked){border-color:#749168;background:linear-gradient(115deg,#e1f0dc,#bed5b4)}
+.magacin-page.is-price-print .sc-papir-opt input{accent-color:#25821b}
+.magacin-page.is-price-print .sc-papir-opt em{color:#505b6c}
+.magacin-page.is-price-print .sc-picked,.magacin-page.is-price-print .sc-list li{padding:9px 10px;border:1px solid #afb5be;border-radius:0;background:linear-gradient(115deg,#f5f5f6,#e9e9ec);box-shadow:inset 1px 1px #fff}
+.magacin-page.is-price-print .sc-suggest{border:1px solid #999da5;border-radius:0;background:#fff;box-shadow:0 4px 10px #0002;padding:0}
+.magacin-page.is-price-print .sc-suggest li{padding:9px 12px;border-bottom:1px solid #d0d5dd;border-radius:0}
+.magacin-page.is-price-print .sc-suggest li:hover{background:#e2e8ef}
+.magacin-page.is-price-print .sc-meta{color:#505b6c}
+.magacin-page.is-price-print .mg-catalog{border:1px solid var(--sc-edge);border-radius:0;background:var(--sc-panel)}
+.magacin-page.is-price-print :is(a,button,input):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+}
+@media screen and (max-width:600px){.magacin-page.is-price-print .mg-main{padding:6px}.magacin-page.is-price-print .mg-chrome{gap:5px}.magacin-page.is-price-print .mg-page-head h1{font-size:20px}.magacin-page.is-price-print .sc-card{padding:9px}.magacin-page.is-price-print .sc-mode{padding:12px}}
+
+@media screen{
+ .magacin-page.is-price-print .mg-main{padding:4px 10px 70px}
+ .magacin-page.is-price-print .sc-page{margin:0;padding-top:0}
+ .magacin-page.is-price-print .mg-page-head{margin-top:0;margin-bottom:8px}
+}
+@media screen and (max-width:600px){.magacin-page.is-price-print .mg-main{padding:4px 6px 70px}}

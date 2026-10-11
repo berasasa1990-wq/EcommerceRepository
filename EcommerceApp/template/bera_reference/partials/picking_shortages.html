@@ -1,0 +1,11 @@
+<section class="mg-card mg-picking-shortages{% if order.picking_missing_entries %} has-shortages{% endif %}" aria-label="Nepokupljeni artikli">
+    <h2 class="mg-h">Nepokupljeni artikli</h2>
+    <p class="mg-muted">Evidencija manjka — ove količine nisu naplaćene.</p>
+    <ul>
+    {% for entry in order.picking_missing_entries %}
+        <li><strong>{{ entry.naziv }}</strong>{% if entry.sifra %} · {{ entry.sifra }}{% endif %} — nije bilo na stanju: <strong>{{ entry.missing }} kom</strong></li>
+    {% empty %}
+        <li>Nema evidentiranog manjka.</li>
+    {% endfor %}
+    </ul>
+</section>

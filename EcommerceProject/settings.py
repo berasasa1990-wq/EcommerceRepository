@@ -245,7 +245,7 @@ if not DEBUG:
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    'EcommerceProject.admin_apps.BeraAdminConfig',
     'django.contrib.auth',
     'EcommerceApp.apps.EcommerceappConfig',
     'django.contrib.contenttypes',

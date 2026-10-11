@@ -1,0 +1,42 @@
+<section class="acc-card account-complaints">
+    <header class="acc-card-head"><h2>Reklamacije</h2></header>
+    <p>Izaberite narudžbu, zatim artikal za koji želite poslati reklamaciju.</p>
+    {% if orders %}
+    <form method="get" action="{% url 'account' %}#reklamacije" class="account-complaint-select">
+        <label for="complaintOrder">Izaberite narudžbu</label>
+        <select id="complaintOrder" name="complaint_order" required data-complaint-order>
+            <option value="">— Izaberite narudžbu —</option>
+            {% for order in orders %}
+            <option value="{{ order.broj }}"{% if complaint_order.pk == order.pk %} selected{% endif %}>#{{ order.broj }} · {{ order.kreirana|date:'d.m.Y.' }} · {{ order.ukupno|floatformat:2 }} KM</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn acc-btn-orange">Prikaži artikle</button>
+    </form>
+    {% if complaint_order %}
+    <h3>Artikli iz narudžbe #{{ complaint_order.broj }}</h3>
+    {% for item in complaint_order.stavke.all %}
+    <article class="account-complaint-item">
+        <div class="account-complaint-item-info">
+            <strong>{{ item.puni_naziv }}</strong>
+            <p>Šifra: {{ item.sifra|default:'—' }} · {{ item.kolicina }} kom · {{ item.cijena|floatformat:2 }} KM po komadu</p>
+        </div>
+        <details{% if item.complaint_open %} open{% endif %}>
+            <summary class="btn acc-btn-orange">Reklamacija</summary>
+            <form method="post" action="{% url 'account' %}#reklamacije" class="account-complaint-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reklamacija">
+                <input type="hidden" name="complaint_order" value="{{ complaint_order.broj }}">
+                {{ item.complaint_form.item_id }}
+                {% for error in item.complaint_form.non_field_errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+                <label for="{{ item.complaint_form.opis.id_for_label }}">Šta je problem s artiklom?</label>
+                {{ item.complaint_form.opis }}
+                {% for error in item.complaint_form.opis.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+                <p class="acc-muted">Odgovor ćemo poslati na {{ user.email }}.</p>
+                <button type="submit" class="btn acc-btn-orange">Pošalji reklamaciju</button>
+            </form>
+        </details>
+    </article>
+    {% empty %}<p>Ova narudžba nema artikala.</p>{% endfor %}
+    {% endif %}
+    {% else %}<p>Još nemate narudžbi za koje možete poslati reklamaciju.</p>{% endif %}
+</section>

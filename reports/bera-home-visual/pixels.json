@@ -1,0 +1,28 @@
+[
+  {
+    "width": 1440,
+    "source_size": [
+      1440,
+      3079
+    ],
+    "destination_size": [
+      1440,
+      3079
+    ],
+    "pixels_differing_over_10": 0,
+    "percentage": 0.0
+  },
+  {
+    "width": 390,
+    "source_size": [
+      390,
+      4885
+    ],
+    "destination_size": [
+      390,
+      4885
+    ],
+    "pixels_differing_over_10": 0,
+    "percentage": 0.0
+  }
+]

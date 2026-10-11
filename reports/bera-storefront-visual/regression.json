@@ -1,0 +1,8 @@
+{
+  "product": true,
+  "quantity_update": true,
+  "checkout_validation_and_totals": true,
+  "order_creation_existing_models": true,
+  "remove_and_empty_cart": true,
+  "authenticated_and_original_templates": true
+}

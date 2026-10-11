@@ -1,0 +1,92 @@
+[
+  {
+    "width": 1440,
+    "page": "product",
+    "source_size": [
+      1440,
+      1448
+    ],
+    "destination_size": [
+      1440,
+      1448
+    ],
+    "identical": true,
+    "maximum_channel_difference": 0,
+    "pixels_differing_over_10": 0
+  },
+  {
+    "width": 1440,
+    "page": "cart",
+    "source_size": [
+      1440,
+      1644
+    ],
+    "destination_size": [
+      1440,
+      1644
+    ],
+    "identical": true,
+    "maximum_channel_difference": 0,
+    "pixels_differing_over_10": 0
+  },
+  {
+    "width": 1440,
+    "page": "checkout",
+    "source_size": [
+      1440,
+      1183
+    ],
+    "destination_size": [
+      1440,
+      1183
+    ],
+    "identical": true,
+    "maximum_channel_difference": 0,
+    "pixels_differing_over_10": 0
+  },
+  {
+    "width": 390,
+    "page": "product",
+    "source_size": [
+      390,
+      2609
+    ],
+    "destination_size": [
+      390,
+      2609
+    ],
+    "identical": true,
+    "maximum_channel_difference": 0,
+    "pixels_differing_over_10": 0
+  },
+  {
+    "width": 390,
+    "page": "cart",
+    "source_size": [
+      390,
+      2664
+    ],
+    "destination_size": [
+      390,
+      2664
+    ],
+    "identical": true,
+    "maximum_channel_difference": 0,
+    "pixels_differing_over_10": 0
+  },
+  {
+    "width": 390,
+    "page": "checkout",
+    "source_size": [
+      390,
+      2574
+    ],
+    "destination_size": [
+      390,
+      2574
+    ],
+    "identical": true,
+    "maximum_channel_difference": 0,
+    "pixels_differing_over_10": 0
+  }
+]

@@ -1,0 +1,78 @@
+<div class="warranty-section">
+    <div class="warranty-a4">
+        <div class="warranty-a4-head">
+            <div class="warranty-a4-head-left">
+                <h2 class="warranty-a4-title">Garancija</h2>
+                <p class="warranty-a4-subtitle">Garantni list vezan za narudžbu</p>
+            </div>
+            <div class="warranty-a4-head-right">
+                <p class="warranty-a4-order">Narudžba #{{ order.broj }}</p>
+                <p class="warranty-a4-meta">
+                    Datum izdavanja: {{ datum }}<br>
+                    Vrijeme: {{ vrijeme }}
+                </p>
+            </div>
+        </div>
+
+        <table class="warranty-a4-customer" role="presentation" cellpadding="0" cellspacing="0">
+            <tr>
+                <td>
+                    <strong>Prodavac</strong>
+                    {{ site_name }}
+                </td>
+                <td>
+                    <strong>Kupac</strong>
+                    {{ order.ime_prezime }}
+                </td>
+                <td>
+                    <strong>Kontakt kupca</strong>
+                    {{ order.telefon }}<br>{{ order.email }}
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3" style="padding-top: 10px;">
+                    <strong>Adresa kupca</strong>
+                    {{ order.adresa }}, {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}
+                </td>
+            </tr>
+        </table>
+
+        <p class="warranty-order-ref">
+            <strong>Potvrda garancije za narudžbu #{{ order.broj }}</strong>
+            Ovaj garantni list izdaje se za narudžbu broj {{ order.broj }}, kreiranu {{ datum }} u {{ vrijeme }},
+            i odnosi se na sve artikle iz te narudžbe. Garancija je važeća uz originalnu potvrdu narudžbe.
+        </p>
+
+        <div class="warranty-terms">
+            <strong>Uslovi garancije u Bosni i Hercegovini</strong>
+            <p>
+                Proizvodi iz ove narudžbe pokriveni su garancijom u skladu s važećim zakonima Bosne i Hercegovine,
+                uključujući propise o zaštiti potrošača na nivou entiteta i Brčko distrikta, kao i uslovima
+                proizvođača navedenim uz pojedinačne artikle.
+            </p>
+            <p>
+                Potrošač ima pravo na reklamaciju u slučaju materijalnog nedostatka proizvoda, neusklađenosti
+                isporučenog artikla s ugovorenim, oštećenja nastalog pri transportu koje nije uzrokovano kupcem,
+                te u drugim slučajevima predviđenim zakonom. Za ostvarivanje prava iz garancije potrebno je
+                priložiti ovaj garantni list zajedno s potvrdom narudžbe #{{ order.broj }}.
+            </p>
+            <p>
+                Reklamacije se podnose putem {{ site_name }}{% if store_email %} na {{ store_email }}{% endif %}{% if store_phone %}, telefonom {{ store_phone }}{% endif %}.
+                Rok za prijavu reklamacije i način rješavanja određeni su važećim propisima i uslovima proizvođača.
+                Garancija ne pokriva oštećenja nastala nepravilnom upotrebom, neovlaštenim popravkama ili
+                intervencijama, fizičkim oštećenjem nakon preuzimanja proizvoda, normalnim habanjem i trošenjem,
+                te oštećenja nastala nepridržavanjem uputstava proizvođača.
+            </p>
+            {% if politika_garancija %}
+            <p>{{ politika_garancija }}</p>
+            {% endif %}
+        </div>
+
+        <table class="warranty-signatures" role="presentation" cellpadding="0" cellspacing="0">
+            <tr>
+                <td><div class="signature-line">Potpis / pečat prodavca</div></td>
+                <td><div class="signature-line">Datum izdavanja — {{ datum }}</div></td>
+            </tr>
+        </table>
+    </div>
+</div>

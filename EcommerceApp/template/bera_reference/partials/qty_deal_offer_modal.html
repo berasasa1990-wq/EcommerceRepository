@@ -1,0 +1,30 @@
+<div class="site-popup-overlay qty-deal-offer-overlay" id="qtyDealOfferOverlay" hidden>
+    <div class="site-popup site-popup--akcija site-popup--qty-deal-offer qty-deal-offer-popup"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="qtyDealOfferTitle">
+        <button type="button" class="site-popup-close" id="qtyDealOfferClose" aria-label="Zatvori">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+
+        <div class="qty-deal-offer-inner">
+            <p class="qty-deal-offer-kicker" id="qtyDealOfferKicker">Kupi više — veći popust</p>
+            <div class="qty-deal-offer-product">
+                <img id="qtyDealOfferImage" class="qty-deal-offer-image" src="" alt="" width="96" height="96" hidden>
+                <div class="qty-deal-offer-product-meta">
+                    <h3 class="qty-deal-offer-title" id="qtyDealOfferTitle"></h3>
+                    <p class="qty-deal-offer-base" id="qtyDealOfferBase"></p>
+                </div>
+            </div>
+            <p class="qty-deal-offer-message" id="qtyDealOfferMessage"></p>
+            <p class="qty-deal-offer-save" id="qtyDealOfferSave" hidden></p>
+            <div class="qty-deal-offer-tiers" id="qtyDealOfferTiers"></div>
+            <button type="button" class="qty-deal-offer-decline" id="qtyDealOfferDecline">
+                Ne, hvala — dodaj samo moju količinu
+            </button>
+        </div>
+    </div>
+</div>

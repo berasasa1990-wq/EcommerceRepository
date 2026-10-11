@@ -1,0 +1,153 @@
+/* Picking overview: silver controls, preserving operational status colors. */
+body.magacin-page.is-picking-list-reference{--pk-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--pk-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--pk-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;--mg-accent:#278922;--mg-accent-hover:#206f1c;background:#dedfe1!important}
+.magacin-page.is-picking-list-reference .mg-app,.magacin-page.is-picking-list-reference .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
+.magacin-page.is-picking-list-reference .mg-main{padding:4px 10px 18px;min-width:0;color:#111}
+.magacin-page.is-picking-list-reference .pk-home{max-width:none;padding:0}
+.magacin-page.is-picking-list-reference .mg-page-head,.magacin-page.is-picking-list-reference .mg-chrome{padding:8px 12px;margin:0 0 8px;border:1px solid #9b9da2;border-radius:0;background:var(--pk-metal);box-shadow:var(--pk-bevel);gap:8px}
+.magacin-page.is-picking-list-reference .mg-page-head h1{font-size:22px;line-height:1.2;margin:0;color:#111}
+.magacin-page.is-picking-list-reference .mg-count{font-size:13px;color:#505b6c;margin:5px 0 0}
+.magacin-page.is-picking-list-reference .mg-main .mg-btn,.magacin-page.is-picking-list-reference .mg-filter-tabs a,.magacin-page.is-picking-list-reference .pk-cam{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:0;background:var(--pk-metal);box-shadow:var(--pk-bevel);color:#111;font-size:14px;font-weight:750;text-decoration:none}
+.magacin-page.is-picking-list-reference .mg-filter-tabs{display:flex;gap:7px;margin-bottom:10px;border:0;flex-wrap:wrap}
+.magacin-page.is-picking-list-reference .mg-filter-tabs a{flex:1;text-align:center;justify-content:center}
+.magacin-page.is-picking-list-reference .mg-filter-tabs a.is-active{background:linear-gradient(115deg,#e1f0dc,#bed5b4);border-color:#749168;color:#23551d}
+.magacin-page.is-picking-list-reference .pk-tab-n{border-radius:0;background:#edf0f3;color:#35445d}
+.magacin-page.is-picking-list-reference .mg-card{padding:8px;border:1px solid #9b9da2;border-radius:0;background:var(--pk-panel);box-shadow:inset 1px 1px #fff;min-width:0}
+.magacin-page.is-picking-list-reference .pk-home-top{gap:8px;margin-bottom:8px}
+.magacin-page.is-picking-list-reference .mg-main input:not([type=hidden]):not([type=checkbox]){min-height:40px;border:1px solid #969faa;border-radius:0;background:#fff;font-size:16px;box-sizing:border-box}
+.magacin-page.is-picking-list-reference .pk-home-search{max-width:none}
+.magacin-page.is-picking-list-reference .pk-release{padding:8px 10px;border:1px solid #a4b69c;border-radius:0;background:#e1ecd9;color:#354d29}
+.magacin-page.is-picking-list-reference .mg-table th{padding:7px 8px;border:1px solid #a4aab3;background:var(--pk-metal);font-size:13px;letter-spacing:0;color:#37465e}
+.magacin-page.is-picking-list-reference .mg-table td{padding:7px 8px;border:1px solid #c2c7cf;font-size:14px}
+.magacin-page.is-picking-list-reference .mg-table tr:not(.is-wait-pick) td{background:linear-gradient(115deg,#f5f5f6,#e9e9ec)}
+.magacin-page.is-picking-list-reference .mg-order-name{font-size:15px}
+.magacin-page.is-picking-list-reference .mg-pill{border-radius:0}
+.magacin-page.is-picking-list-reference .pk-home-foot{padding:8px;border:1px solid #b3b9c2;border-radius:0;background:var(--pk-panel);font-size:13px;color:#505b6c}
+.magacin-page.is-picking-list-reference .mg-chrome-icon,.magacin-page.is-picking-list-reference .mg-chrome-burger{border-radius:0;background:var(--pk-metal);border:1px solid #92949a;box-shadow:var(--pk-bevel);color:#111}
+.magacin-page.is-picking-list-reference :is(a,button,input):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+@media(max-width:600px){.magacin-page.is-picking-list-reference .mg-main{padding:4px 6px 18px}.magacin-page.is-picking-list-reference .mg-page-head h1{font-size:20px}.magacin-page.is-picking-list-reference .mg-filter-tabs a{flex-basis:40%}.magacin-page.is-picking-list-reference .mg-table-stack-pick tr{border-radius:0}.magacin-page.is-picking-list-reference .mg-table-stack-pick td{border:0}}
+
+/* Active picking uses the same compact warehouse panels as the overview. */
+.is-picking-detail-reference .pk-reference{background:transparent;min-height:0;padding-bottom:12px;max-width:none;width:100%}
+.is-picking-detail-reference .pk-reference :is(.pk-bar,.pk-dock,.pk-meta,.pk-item,.pk-edit-panel,.pk-clear-panel,.pk-shortage-panel){border:1px solid #9b9da2;border-radius:0;background:var(--pk-panel);box-shadow:inset 1px 1px #fff}
+.is-picking-detail-reference .pk-reference .pk-bar{background:var(--pk-metal);padding:8px 10px;gap:8px;box-shadow:var(--pk-bevel)}
+.is-picking-detail-reference .pk-reference .pk-bar-title strong{font-size:20px}
+.is-picking-detail-reference .pk-reference .pk-status-pill{border-radius:0;background:#e1e5e9;color:#37465e;padding:6px 8px}
+.is-picking-detail-reference .pk-reference .pk-dock{padding:7px;gap:7px;margin:8px 0}
+.is-picking-detail-reference .pk-reference .pk-stage{max-width:none;padding:0 0 12px}
+.is-picking-detail-reference .pk-reference .pk-sheet{gap:8px}
+.is-picking-detail-reference .pk-reference .pk-meta{padding:9px 6px}
+.is-picking-detail-reference .pk-reference .pk-switch{min-height:44px;border-radius:0;border-color:#9b9da2}
+.is-picking-detail-reference .pk-reference :is(button,.pk-bar-back){border-radius:0;border:1px solid #92949a;background:var(--pk-metal);box-shadow:var(--pk-bevel);color:#111}
+.is-picking-detail-reference .pk-reference .pk-bar-back{display:grid;place-items:center;width:32px;height:36px;font-size:24px}
+.is-picking-detail-reference .pk-reference .pk-switch button{padding:6px 4px}
+.is-picking-detail-reference .pk-reference .pk-switch button i{font-size:16px}
+.is-picking-detail-reference .pk-reference .pk-switch button.is-on,.is-picking-detail-reference .pk-reference .pk-switch button.is-on i{background:#d3dfcd;color:#23551d}
+.is-picking-detail-reference .pk-reference .pk-item{padding:10px;margin-bottom:8px;gap:8px}
+.is-picking-detail-reference .pk-reference .pk-item.is-now{border:1px solid #749168;box-shadow:inset 1px 1px #fff}
+.is-picking-detail-reference .pk-reference .pk-item-img{border-radius:0;background-color:#fff}
+.is-picking-detail-reference .pk-reference .pk-now-go{padding:8px;border:1px solid #a8b8a1;border-radius:0;background:#e1ecd9}
+.is-picking-detail-reference .pk-reference .pk-now-go :is(span,b,small){color:#31532a}
+.is-picking-detail-reference .pk-reference .pk-item-step{border-radius:0;background:#e1e2e4}
+.is-picking-detail-reference .pk-reference .pk-item-step>button{height:40px;font-size:22px}
+.is-picking-detail-reference .pk-reference .pk-item-step .pk-all{font-size:14px}
+.is-picking-detail-reference .pk-reference .pk-step-val b{font-size:20px}
+.is-picking-detail-reference .pk-reference :is(.pk-quick-quantities button,.pk-less-row button){min-height:36px;height:36px}
+.is-picking-detail-reference .pk-reference .pk-quick-quantities button[aria-pressed="true"]{border:2px solid #749168;background:#d3dfcd}
+.is-picking-detail-reference .pk-reference :is(.pk-bar-finish,.pk-all,.pk-confirm-quantity){background:linear-gradient(115deg,#4caf36,#278922);border:1px solid #296922;color:#fff;box-shadow:inset 1px 1px #8ed47b,inset -1px -1px #20651c}
+.is-picking-detail-reference .pk-reference :is(.pk-dock .mg-btn,.pk-bar-finish,.pk-confirm-quantity){min-height:38px;padding:7px 9px;border-radius:0;font-size:14px}
+.is-picking-detail-reference .pk-reference .pk-cancel-form .mg-btn{color:#a32121}
+.is-picking-detail-reference .pk-reference :is(.pk-edit-box,.pk-clear-panel button){border-radius:0}
+.is-picking-detail-reference .pk-reference :is(.pk-edit-box summary,.pk-clear-panel button){padding:9px;min-height:38px;font-size:14px}
+.is-picking-detail-reference .pk-reference .pk-shortage-panel{max-width:none;margin:8px 0;padding:10px}
+.is-picking-detail-reference .pk-reference button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:600px){.is-picking-detail-reference .pk-reference .pk-bar-title strong{font-size:16px}.is-picking-detail-reference .pk-reference .pk-dock{gap:5px}.is-picking-detail-reference .pk-reference .pk-dock .mg-btn,.is-picking-detail-reference .pk-reference .pk-bar-finish{font-size:12px;padding:6px}}
+
+/* Tap the current picking count to enter an exact quantity. */
+.is-picking-detail-reference .pk-step-val{cursor:pointer}
+.is-picking-detail-reference .pk-step-val:focus-visible{outline:2px solid #64748b;outline-offset:3px}
+.is-picking-detail-reference .pk-step-val .pk-direct-qty{box-sizing:border-box;width:100%;min-width:65px;max-width:125px;min-height:44px;padding:5px;border:1px solid #8d959f;border-radius:0;background:#fff;color:#111;font-size:20px;text-align:center}
+.is-picking-detail-reference .pk-step-val [hidden]{display:none!important}
+@media(max-width:860px){.is-picking-detail-reference .pk-quick-quantities{display:none!important}}
+
+/* Mobile packing: larger product/location and controls filling each row. */
+@media(max-width:860px){
+ .is-picking-detail-reference .pk-reference .pk-item{display:flex;flex-direction:column;gap:7px;padding:9px}
+ .is-picking-detail-reference .pk-reference .pk-spare-tag{order:0}
+ .is-picking-detail-reference .pk-reference .pk-item-top{order:1;display:flex;align-items:center;gap:10px;width:100%}
+ .is-picking-detail-reference .pk-reference .pk-item-img{flex:0 0 clamp(110px,32vw,165px);width:clamp(110px,32vw,165px);height:clamp(125px,36vw,180px);margin:0;background-size:contain;border:1px solid #c3c7cd}
+ .is-picking-detail-reference .pk-reference .pk-item-info{flex:1;min-width:0;padding:0}
+ .is-picking-detail-reference .pk-reference .pk-item-info strong{font-size:17px;line-height:1.25}
+ .is-picking-detail-reference .pk-reference .pk-item-info p{font-size:15px;line-height:1.35;margin:5px 0}
+ .is-picking-detail-reference .pk-reference .pk-item-info span{font-size:12px}
+ .is-picking-detail-reference .pk-reference .pk-now-go{order:2;align-self:stretch;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);align-items:center;gap:3px 8px;padding:9px 12px;text-align:left;margin:0}
+ .is-picking-detail-reference .pk-reference .pk-now-go span{font-size:14px;font-weight:650}
+ .is-picking-detail-reference .pk-reference .pk-now-go b{font-size:32px;line-height:1.1;text-align:right}
+ .is-picking-detail-reference .pk-reference .pk-now-go small{grid-column:1/-1;font-size:13px;overflow-wrap:anywhere}
+ .is-picking-detail-reference .pk-reference .pk-item-step{order:3;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr);gap:5px;width:100%;margin:0}
+ .is-picking-detail-reference .pk-reference .pk-item-step>button{height:46px;min-height:46px;width:100%;margin:0}
+ .is-picking-detail-reference .pk-reference .pk-item-step .pk-all,.is-picking-detail-reference .pk-reference .pk-odvojeno-tag{grid-column:1/-1;min-height:42px;box-sizing:border-box;text-align:center;font-size:16px}
+ .is-picking-detail-reference .pk-reference .pk-step-val b{font-size:26px}
+ .is-picking-detail-reference .pk-reference .pk-less-row{order:4;display:flex;gap:5px;width:100%;margin:0}
+ .is-picking-detail-reference .pk-reference .pk-less-row>button{flex:1;min-height:44px;height:auto;font-size:15px}
+ .is-picking-detail-reference .pk-reference .pk-less-row>input{flex:1;min-width:0;width:0}
+ .is-picking-detail-reference .pk-reference .pk-less-row>[hidden]{display:none!important}
+ .is-picking-detail-reference .pk-reference .pk-dock{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:5px}
+ .is-picking-detail-reference .pk-reference .pk-dock>*{width:100%;min-width:0;margin:0;box-sizing:border-box}
+ .is-picking-detail-reference .pk-reference .pk-dock :is(button,.mg-btn){display:flex;align-items:center;justify-content:center;gap:5px;width:100%;min-height:44px;height:auto;margin:0;padding:7px;font-size:14px;box-sizing:border-box}
+ .is-picking-detail-reference .pk-reference .pk-switch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;width:100%}
+ .is-picking-detail-reference .pk-reference .pk-switch button{min-width:0;width:100%;min-height:46px;font-size:12px}
+ .is-picking-detail-reference .pk-reference .pk-confirm-quantity{width:100%;min-height:48px;margin-top:0;padding:9px;font-size:16px;box-sizing:border-box}
+}
+@media(max-width:860px){
+ .is-picking-detail-reference .pk-reference .pk-item{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ .is-picking-detail-reference .pk-reference .pk-item-top{grid-column:1/-1;grid-row:1}
+ .is-picking-detail-reference .pk-reference .pk-now-go{grid-column:1/-1;grid-row:2}
+ .is-picking-detail-reference .pk-reference .pk-item-step{display:contents}
+ .is-picking-detail-reference .pk-reference .pk-item-step>[data-pk-minus]{grid-column:1;grid-row:3;width:30%;justify-self:start}
+ .is-picking-detail-reference .pk-reference .pk-step-val{grid-column:1/-1;grid-row:3;justify-self:center;width:40%}
+ .is-picking-detail-reference .pk-reference .pk-item-step>[data-pk-plus]{grid-column:2;grid-row:3;width:30%;justify-self:end}
+ .is-picking-detail-reference .pk-reference .pk-item-step .pk-all{grid-column:2;grid-row:4;height:44px;min-height:44px}
+ .is-picking-detail-reference .pk-reference .pk-less-row{grid-column:1;grid-row:4;flex-wrap:wrap}
+ .is-picking-detail-reference .pk-reference .pk-less-row>button{flex-basis:100%;height:44px}
+ .is-picking-detail-reference .pk-reference .pk-less-row>input{flex-basis:100%;width:100%}
+ .is-picking-detail-reference .pk-reference .pk-odvojeno-tag{grid-column:1/-1;grid-row:4}
+ .is-picking-detail-reference .pk-reference .pk-spare-tag{grid-column:1/-1;grid-row:5}
+}
+@media(max-width:860px){
+ .is-picking-detail-reference .pk-reference .pk-less-row>button{order:1}
+ .is-picking-detail-reference .pk-reference .pk-less-row>input{order:2}
+ .is-picking-detail-reference .pk-reference .pk-item-step .pk-all{align-self:start}
+}
+
+@media(max-width:860px){.is-picking-detail-reference .pk-reference .pk-item-step .pk-all{grid-column:1/-1}}
+
+.pk-mobile-order-number{display:none}
+@media(max-width:860px){
+ .magacin-page.is-picking-list-reference .pk-home .mg-table-stack-pick tr.is-wait-pick{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;padding:8px 10px;margin-bottom:6px;min-height:0}
+ .magacin-page.is-picking-list-reference .pk-home .mg-table-stack-pick tr.is-wait-pick td{padding:0;border:0;min-height:0;line-height:1.25;background:transparent!important}
+ .magacin-page.is-picking-list-reference .pk-home .mg-table-stack-pick tr.is-wait-pick td:is(:nth-child(1),:nth-child(4),:nth-child(5),:nth-child(7)){display:none}
+ .magacin-page.is-picking-list-reference .pk-home .mg-table-stack-pick tr.is-wait-pick td:nth-child(3){grid-column:1/-1;grid-row:1}
+ .magacin-page.is-picking-list-reference .pk-home .mg-table-stack-pick tr.is-wait-pick td:nth-child(2){grid-column:1;grid-row:2;font-size:13px}
+ .magacin-page.is-picking-list-reference .pk-home .mg-table-stack-pick tr.is-wait-pick td:nth-child(6){grid-column:2;grid-row:2;font-size:13px;text-align:right}
+ .magacin-page.is-picking-list-reference .pk-home tr.is-wait-pick .sub,
+ .magacin-page.is-picking-list-reference .pk-home tr.is-wait-pick .pk-full-order-number{display:none}
+ .magacin-page.is-picking-list-reference .pk-home tr.is-wait-pick .pk-mobile-order-number{display:inline}
+ .magacin-page.is-picking-list-reference .pk-home tr.is-wait-pick .mg-order-name{font-size:15px;line-height:1.25}
+}
+
+@media(max-width:860px){
+ .magacin-page.is-picking-list-reference .pk-home .mg-table-stack-pick tr.is-wait-pick{grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;padding:10px}
+ .magacin-page.is-picking-list-reference .pk-home .mg-table-stack-pick tr.is-wait-pick td:nth-child(3){grid-column:1;grid-row:1;overflow:hidden}
+ .magacin-page.is-picking-list-reference .pk-home .mg-table-stack-pick tr.is-wait-pick td:nth-child(2){grid-column:2;grid-row:1;white-space:nowrap}
+ .magacin-page.is-picking-list-reference .pk-home .mg-table-stack-pick tr.is-wait-pick td:nth-child(6){grid-column:3;grid-row:1;white-space:nowrap}
+ .magacin-page.is-picking-list-reference .pk-home tr.is-wait-pick .mg-order-name{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+
+.is-picking-detail-reference .pk-reference .pk-dock{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;margin-top:0}
+.is-picking-detail-reference .pk-reference .pk-dock>*{min-width:0;width:100%;margin:0;box-sizing:border-box}
+.is-picking-detail-reference .pk-reference .pk-dock :is(.mg-btn,button){display:flex;align-items:center;justify-content:center;width:100%;height:100%;box-sizing:border-box}
+@media(max-width:600px){
+ .is-picking-detail-reference .pk-reference .pk-dock{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+ .is-picking-detail-reference .pk-reference .pk-dock :is(.mg-btn,button){font-size:12px;padding:6px 3px;min-height:40px}
+ .is-picking-detail-reference .pk-reference .pk-dock svg{display:none}
+}

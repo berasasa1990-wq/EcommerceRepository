@@ -1,0 +1,1598 @@
+[
+  {
+    "width": 1440,
+    "label": "source",
+    "section": "zalihe",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      },
+      {
+        "class": "wms-card wms-stock-search",
+        "x": 260.796875,
+        "y": 79.09375,
+        "width": 1150.40625,
+        "height": 122
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 292.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 410.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 528.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 646.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 764.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 882.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 1000.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 1118.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-card wms-stock-location-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "source",
+    "section": "narudzbe",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 260.796875,
+        "y": 153,
+        "width": 1150.40625,
+        "height": 477
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-cancel-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "source",
+    "section": "pakovanje",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout wms-picking-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 260.796875,
+        "y": 79.09375,
+        "width": 1150.40625,
+        "height": 579
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-cancel-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "source",
+    "section": "prenosnica",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "source",
+    "section": "lokacije",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      },
+      {
+        "class": "wms-card wms-form",
+        "x": 260.796875,
+        "y": 87,
+        "width": 1150.40625,
+        "height": 121
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 260.796875,
+        "y": 228,
+        "width": 1150.40625,
+        "height": 1187
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-cancel-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-shortages-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "source",
+    "section": "kupci",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      },
+      {
+        "class": "wms-card wms-form",
+        "x": 260.796875,
+        "y": 79.09375,
+        "width": 1150.40625,
+        "height": 121
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 260.796875,
+        "y": 220.09375,
+        "width": 1150.40625,
+        "height": 122
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "source",
+    "section": "podesavanje",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      },
+      {
+        "class": "wms-card wms-settings-form",
+        "x": 260.796875,
+        "y": 79.09375,
+        "width": 850,
+        "height": 518
+      },
+      {
+        "class": "wms-card wms-settings-form",
+        "x": 260.796875,
+        "y": 617.09375,
+        "width": 850,
+        "height": 318.171875
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "section": "zalihe",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      },
+      {
+        "class": "wms-card wms-stock-search",
+        "x": 260.796875,
+        "y": 79.09375,
+        "width": 1150.40625,
+        "height": 122
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 292.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 410.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 528.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 646.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 764.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 882.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 1000.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 260.796875,
+        "y": 1118.09375,
+        "width": 1142.40625,
+        "height": 108
+      },
+      {
+        "class": "wms-card wms-stock-location-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "section": "narudzbe",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 260.796875,
+        "y": 153,
+        "width": 1150.40625,
+        "height": 477
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-cancel-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "section": "pakovanje",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout wms-picking-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 260.796875,
+        "y": 79.09375,
+        "width": 1150.40625,
+        "height": 579
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-cancel-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "section": "prenosnica",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "section": "lokacije",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      },
+      {
+        "class": "wms-card wms-form",
+        "x": 260.796875,
+        "y": 87,
+        "width": 1150.40625,
+        "height": 121
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 260.796875,
+        "y": 228,
+        "width": 1150.40625,
+        "height": 1187
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-cancel-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-shortages-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "section": "kupci",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      },
+      {
+        "class": "wms-card wms-form",
+        "x": 260.796875,
+        "y": 79.09375,
+        "width": 1150.40625,
+        "height": 121
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 260.796875,
+        "y": 220.09375,
+        "width": 1150.40625,
+        "height": 122
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 1440,
+    "label": "destination",
+    "section": "podesavanje",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 232,
+        "height": 900
+      },
+      {
+        "class": "wms-content",
+        "x": 232,
+        "y": 0,
+        "width": 1208,
+        "height": 900
+      },
+      {
+        "class": "wms-card wms-settings-form",
+        "x": 260.796875,
+        "y": 79.09375,
+        "width": 850,
+        "height": 518
+      },
+      {
+        "class": "wms-card wms-settings-form",
+        "x": 260.796875,
+        "y": 617.09375,
+        "width": 850,
+        "height": 318.171875
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "source",
+    "section": "zalihe",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 1497.578125
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 390.890625
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 420.890625,
+        "width": 366,
+        "height": 1088.6875
+      },
+      {
+        "class": "wms-card wms-stock-search",
+        "x": 12,
+        "y": 472.078125,
+        "width": 366,
+        "height": 112.5
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 671.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 777.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 883.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 989.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 1095.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 1201.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 1307.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 1413.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-card wms-stock-location-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "source",
+    "section": "narudzbe",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 1435.390625
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 390.890625
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 420.890625,
+        "width": 366,
+        "height": 1026.5
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 12,
+        "y": 548.390625,
+        "width": 366,
+        "height": 879
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-cancel-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "source",
+    "section": "pakovanje",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout wms-picking-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 1615.1875
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 1615.1875
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 12,
+        "y": 101.1875,
+        "width": 366,
+        "height": 1506
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-cancel-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "source",
+    "section": "prenosnica",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 720
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 390.890625
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 449.6875,
+        "width": 366,
+        "height": 282.3125
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "source",
+    "section": "lokacije",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 2275.390625
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 390.890625
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 420.890625,
+        "width": 366,
+        "height": 1866.5
+      },
+      {
+        "class": "wms-card wms-form",
+        "x": 12,
+        "y": 483.890625,
+        "width": 366,
+        "height": 176.5
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 12,
+        "y": 680.390625,
+        "width": 366,
+        "height": 1587
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-cancel-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-shortages-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "source",
+    "section": "kupci",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 866.078125
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 390.890625
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 420.890625,
+        "width": 366,
+        "height": 457.1875
+      },
+      {
+        "class": "wms-card wms-form",
+        "x": 12,
+        "y": 472.078125,
+        "width": 366,
+        "height": 176.5
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 12,
+        "y": 668.578125,
+        "width": 366,
+        "height": 147
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "source",
+    "section": "podesavanje",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 1554.3125
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 390.890625
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 420.890625,
+        "width": 366,
+        "height": 1145.421875
+      },
+      {
+        "class": "wms-card wms-settings-form",
+        "x": 12,
+        "y": 472.078125,
+        "width": 366,
+        "height": 602
+      },
+      {
+        "class": "wms-card wms-settings-form",
+        "x": 12,
+        "y": 1094.078125,
+        "width": 366,
+        "height": 452.234375
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "section": "zalihe",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 1497.578125
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 390.890625
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 420.890625,
+        "width": 366,
+        "height": 1088.6875
+      },
+      {
+        "class": "wms-card wms-stock-search",
+        "x": 12,
+        "y": 472.078125,
+        "width": 366,
+        "height": 112.5
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 671.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 777.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 883.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 989.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 1095.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 1201.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 1307.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-stock-result",
+        "x": 12,
+        "y": 1413.578125,
+        "width": 366,
+        "height": 96
+      },
+      {
+        "class": "wms-card wms-stock-location-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "section": "narudzbe",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 1435.390625
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 390.890625
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 420.890625,
+        "width": 366,
+        "height": 1026.5
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 12,
+        "y": 548.390625,
+        "width": 366,
+        "height": 879
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-cancel-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "section": "pakovanje",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout wms-picking-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 1615.1875
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 1615.1875
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 12,
+        "y": 101.1875,
+        "width": 366,
+        "height": 1506
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-cancel-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "section": "prenosnica",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 720
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 390.890625
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 449.6875,
+        "width": 366,
+        "height": 282.3125
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "section": "lokacije",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 2275.390625
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 390.890625
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 420.890625,
+        "width": 366,
+        "height": 1866.5
+      },
+      {
+        "class": "wms-card wms-form",
+        "x": 12,
+        "y": 483.890625,
+        "width": 366,
+        "height": 176.5
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 12,
+        "y": 680.390625,
+        "width": 366,
+        "height": 1587
+      },
+      {
+        "class": "wms-card",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-cancel-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      {
+        "class": "wms-card wms-shortages-dialog",
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "section": "kupci",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 866.078125
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 390.890625
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 420.890625,
+        "width": 366,
+        "height": 457.1875
+      },
+      {
+        "class": "wms-card wms-form",
+        "x": 12,
+        "y": 472.078125,
+        "width": 366,
+        "height": 176.5
+      },
+      {
+        "class": "wms-card wms-table-wrap",
+        "x": 12,
+        "y": 668.578125,
+        "width": 366,
+        "height": 147
+      }
+    ],
+    "errors": [],
+    "failed": []
+  },
+  {
+    "width": 390,
+    "label": "destination",
+    "section": "podesavanje",
+    "status": 200,
+    "layout": [
+      {
+        "class": "wms-layout",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 1554.3125
+      },
+      {
+        "class": "wms-sidebar",
+        "x": 12,
+        "y": 12,
+        "width": 366,
+        "height": 390.890625
+      },
+      {
+        "class": "wms-content",
+        "x": 12,
+        "y": 420.890625,
+        "width": 366,
+        "height": 1145.421875
+      },
+      {
+        "class": "wms-card wms-settings-form",
+        "x": 12,
+        "y": 472.078125,
+        "width": 366,
+        "height": 602
+      },
+      {
+        "class": "wms-card wms-settings-form",
+        "x": 12,
+        "y": 1094.078125,
+        "width": 366,
+        "height": 452.234375
+      }
+    ],
+    "errors": [],
+    "failed": []
+  }
+]

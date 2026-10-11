@@ -1,0 +1,100 @@
+[
+  {
+    "width": 1440,
+    "section": "zalihe",
+    "identical": true,
+    "maximum_difference": 0,
+    "pixels_over_10": 0
+  },
+  {
+    "width": 1440,
+    "section": "narudzbe",
+    "identical": true,
+    "maximum_difference": 0,
+    "pixels_over_10": 0
+  },
+  {
+    "width": 1440,
+    "section": "pakovanje",
+    "identical": true,
+    "maximum_difference": 0,
+    "pixels_over_10": 0
+  },
+  {
+    "width": 1440,
+    "section": "prenosnica",
+    "identical": true,
+    "maximum_difference": 0,
+    "pixels_over_10": 0
+  },
+  {
+    "width": 1440,
+    "section": "lokacije",
+    "identical": true,
+    "maximum_difference": 0,
+    "pixels_over_10": 0
+  },
+  {
+    "width": 1440,
+    "section": "kupci",
+    "identical": true,
+    "maximum_difference": 0,
+    "pixels_over_10": 0
+  },
+  {
+    "width": 1440,
+    "section": "podesavanje",
+    "identical": true,
+    "maximum_difference": 0,
+    "pixels_over_10": 0
+  },
+  {
+    "width": 390,
+    "section": "zalihe",
+    "identical": true,
+    "maximum_difference": 0,
+    "pixels_over_10": 0
+  },
+  {
+    "width": 390,
+    "section": "narudzbe",
+    "identical": true,
+    "maximum_difference": 0,
+    "pixels_over_10": 0
+  },
+  {
+    "width": 390,
+    "section": "pakovanje",
+    "identical": true,
+    "maximum_difference": 0,
+    "pixels_over_10": 0
+  },
+  {
+    "width": 390,
+    "section": "prenosnica",
+    "identical": true,
+    "maximum_difference": 0,
+    "pixels_over_10": 0
+  },
+  {
+    "width": 390,
+    "section": "lokacije",
+    "identical": true,
+    "maximum_difference": 0,
+    "pixels_over_10": 0
+  },
+  {
+    "width": 390,
+    "section": "kupci",
+    "identical": false,
+    "maximum_difference": 1,
+    "pixels_over_10": 0
+  },
+  {
+    "width": 390,
+    "section": "podesavanje",
+    "identical": true,
+    "maximum_difference": 0,
+    "pixels_over_10": 0
+  }
+]

@@ -1,0 +1,18 @@
+<!doctype html><html lang="bs"><body style="margin:0;background:#edf5fc;font-family:Arial,sans-serif;color:#102343">
+<table role="presentation" style="width:100%;max-width:640px;margin:24px auto;border-spacing:0;background:white;border:1px solid #d6e9f8;border-radius:16px;overflow:hidden">
+<tr><td style="padding:28px;background:#008bc5;color:white"><h1 style="margin:0;font-size:24px">Zahtjev za otključavanje</h1><p style="margin-bottom:0">{{ domain }}</p></td></tr>
+<tr><td style="padding:28px"><h2 style="font-size:20px">{{ option }}</h2><p>Korisnik je potvrdio da želi otključati ovu opciju. Kontaktirajte ga radi dogovora.</p>
+<table style="width:100%;border-spacing:0;line-height:1.7">
+<tr><td>Sajt</td><td><a href="{{ site_url }}">{{ domain }}</a></td></tr>
+<tr><td>Ime i prezime</td><td><strong>{{ name }}</strong></td></tr>
+<tr><td>Email</td><td>{{ email|default:'Nije unesen' }}</td></tr>
+<tr><td>Telefon</td><td>{{ phone|default:'Nije unesen' }}</td></tr>
+<tr><td>Adresa</td><td>{{ address|default:'Nije unesena' }}</td></tr>
+<tr><td>Grad / poštanski broj</td><td>{{ city|default:'—' }} {{ postal }}</td></tr>
+<tr><td>Korisničko ime</td><td>{{ username }}</td></tr>
+<tr><td>ID korisnika / uloga</td><td>{{ user_id }} / {{ role }}</td></tr>
+<tr><td>Registracija</td><td>{{ joined|date:'d.m.Y. H:i' }}</td></tr>
+<tr><td>Posljednja prijava</td><td>{{ last_login|date:'d.m.Y. H:i'|default:'—' }}</td></tr>
+<tr><td>Vrijeme zahtjeva</td><td>{{ sent_at|date:'d.m.Y. H:i' }}</td></tr>
+</table><p style="color:#16803c;margin-top:24px">Zahtjev ne otključava modul automatski.</p></td></tr>
+</table></body></html>
