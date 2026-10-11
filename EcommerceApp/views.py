@@ -3021,8 +3021,6 @@ def home(request):
             'seo_description': public_brand(site_settings.meta_description) or 'Štapovi, mašinice, varalice i pribor za ribolov. Istražite ponudu Carpologija BH i naručite online uz dostavu širom BiH.',
             'seo_h1': 'Oprema za ribolov — Carpologija BH',
         }))
-    if request.user.is_superuser and request.GET.get('izgled') == 'prethodni':
-        return render(request, 'home.html', context)
     from .bera_home import homepage_context
     context.update(homepage_context(context, request))
     return render(request, 'bera_reference/home.html', context)

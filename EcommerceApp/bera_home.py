@@ -62,9 +62,9 @@ def homepage_context(context, request):
 
 
 def render_storefront(request, template, context):
-    """Keep the existing view logic and an authorized preview of its old template."""
+    """Render the active storefront while retaining existing view logic."""
     from django.shortcuts import render
-    if request.user.is_superuser and request.GET.get('izgled') == 'prethodni':
+    if template not in {'home.html', 'cart.html', 'checkout.html', 'product_detail.html', 'category.html', 'category_subcategories.html', 'brands.html'} and request.user.is_superuser and request.GET.get('izgled') == 'prethodni':
         return render(request, template, context)
     context.update(storefront_context())
     return render(request, 'bera_reference/' + template, context)
