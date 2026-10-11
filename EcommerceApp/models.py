@@ -7459,3 +7459,31 @@ class BeraAppearance(models.Model):
 
     class Meta:
         db_table = 'EcommerceApp_bera_appearance'
+
+
+class HomeBestsellerProduct(models.Model):
+    """Ručno odabrani najprodavaniji proizvodi na početnoj."""
+    postavke = models.ForeignKey(
+        SiteSettings,
+        on_delete=models.CASCADE,
+        related_name='najprodavaniji_artikli',
+        default=1,
+        editable=False,
+    )
+    artikal = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='najprodavaniji_na_pocetnoj',
+        verbose_name='Postojeći artikal',
+        limit_choices_to={'aktivan': True},
+    )
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    aktivan = models.BooleanField(default=True, verbose_name='Aktivan')
+
+    class Meta:
+        verbose_name = 'Najprodavaniji proizvod (početna)'
+        verbose_name_plural = 'Najprodavaniji proizvodi'
+        ordering = ['redoslijed', 'id']
+
+    def __str__(self):
+        return self.artikal.naziv

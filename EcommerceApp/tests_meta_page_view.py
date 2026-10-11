@@ -69,6 +69,10 @@ class MetaPageViewMiddlewareTests(SimpleTestCase):
         requests = [
             self.factory.head('/artikal/test/'),
             self.factory.get('/admin/'),
+            self.factory.get('/wms'),
+            self.factory.get('/wms/narudzbe/'),
+            self.factory.get('/panel'),
+            self.factory.get('/panel/sekcija/product/'),
             self.factory.get('/api/products/'),
             self.factory.get('/static/site.css'),
             self.factory.get('/media/image.jpg'),

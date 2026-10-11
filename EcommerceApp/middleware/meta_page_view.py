@@ -9,6 +9,8 @@ class MetaPageViewMiddleware:
 
     SKIP_PREFIXES = (
         '/admin/',
+        '/wms/',
+        '/panel/',
         '/api/',
         '/static/',
         '/media/',
@@ -42,6 +44,8 @@ class MetaPageViewMiddleware:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return False
         path = request.path or ''
+        if path in ('/wms', '/panel'):
+            return False
         if path == '/facebook-feed.xml':
             return False
         if is_background_request_path(path):

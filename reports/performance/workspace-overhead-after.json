@@ -1,0 +1,450 @@
+{
+  "/wms/": {
+    "samples": [
+      {
+        "ms": 180.77,
+        "queries": 28,
+        "status": 200,
+        "bytes": 35409,
+        "schema_queries": 15
+      },
+      {
+        "ms": 8.63,
+        "queries": 8,
+        "status": 200,
+        "bytes": 35409,
+        "schema_queries": 1
+      },
+      {
+        "ms": 7.33,
+        "queries": 8,
+        "status": 200,
+        "bytes": 35409,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 8.63,
+    "queries_last": 8,
+    "schema_queries_last": 1
+  },
+  "/wms/zalihe/?q=QA": {
+    "samples": [
+      {
+        "ms": 10.48,
+        "queries": 11,
+        "status": 200,
+        "bytes": 41128,
+        "schema_queries": 1
+      },
+      {
+        "ms": 9.21,
+        "queries": 11,
+        "status": 200,
+        "bytes": 41128,
+        "schema_queries": 1
+      },
+      {
+        "ms": 9.47,
+        "queries": 11,
+        "status": 200,
+        "bytes": 41128,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 9.47,
+    "queries_last": 11,
+    "schema_queries_last": 1
+  },
+  "/wms/narudzbe/": {
+    "samples": [
+      {
+        "ms": 20.45,
+        "queries": 35,
+        "status": 200,
+        "bytes": 48182,
+        "schema_queries": 1
+      },
+      {
+        "ms": 10.28,
+        "queries": 11,
+        "status": 200,
+        "bytes": 48182,
+        "schema_queries": 1
+      },
+      {
+        "ms": 10.05,
+        "queries": 11,
+        "status": 200,
+        "bytes": 48182,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 10.28,
+    "queries_last": 11,
+    "schema_queries_last": 1
+  },
+  "/wms/pakovanje/": {
+    "samples": [
+      {
+        "ms": 9.67,
+        "queries": 11,
+        "status": 200,
+        "bytes": 38347,
+        "schema_queries": 1
+      },
+      {
+        "ms": 9.31,
+        "queries": 11,
+        "status": 200,
+        "bytes": 38347,
+        "schema_queries": 1
+      },
+      {
+        "ms": 9.79,
+        "queries": 11,
+        "status": 200,
+        "bytes": 38347,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 9.67,
+    "queries_last": 11,
+    "schema_queries_last": 1
+  },
+  "/wms/lokacije/": {
+    "samples": [
+      {
+        "ms": 15.66,
+        "queries": 9,
+        "status": 200,
+        "bytes": 41429,
+        "schema_queries": 1
+      },
+      {
+        "ms": 10.22,
+        "queries": 9,
+        "status": 200,
+        "bytes": 41429,
+        "schema_queries": 1
+      },
+      {
+        "ms": 10.04,
+        "queries": 9,
+        "status": 200,
+        "bytes": 41429,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 10.22,
+    "queries_last": 9,
+    "schema_queries_last": 1
+  },
+  "/wms/kupci/": {
+    "samples": [
+      {
+        "ms": 11.23,
+        "queries": 15,
+        "status": 200,
+        "bytes": 34436,
+        "schema_queries": 1
+      },
+      {
+        "ms": 8.49,
+        "queries": 11,
+        "status": 200,
+        "bytes": 34436,
+        "schema_queries": 1
+      },
+      {
+        "ms": 8.38,
+        "queries": 11,
+        "status": 200,
+        "bytes": 34436,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 8.49,
+    "queries_last": 11,
+    "schema_queries_last": 1
+  },
+  "/wms/istorija/": {
+    "samples": [
+      {
+        "ms": 10.19,
+        "queries": 8,
+        "status": 200,
+        "bytes": 34571,
+        "schema_queries": 1
+      },
+      {
+        "ms": 8.61,
+        "queries": 8,
+        "status": 200,
+        "bytes": 34571,
+        "schema_queries": 1
+      },
+      {
+        "ms": 7.95,
+        "queries": 8,
+        "status": 200,
+        "bytes": 34571,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 8.61,
+    "queries_last": 8,
+    "schema_queries_last": 1
+  },
+  "/wms/narudzbe/artikli/?q=QA": {
+    "samples": [
+      {
+        "ms": 4.59,
+        "queries": 6,
+        "status": 200,
+        "bytes": 1020,
+        "schema_queries": 1
+      },
+      {
+        "ms": 3.9,
+        "queries": 6,
+        "status": 200,
+        "bytes": 1020,
+        "schema_queries": 1
+      },
+      {
+        "ms": 3.74,
+        "queries": 6,
+        "status": 200,
+        "bytes": 1020,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 3.9,
+    "queries_last": 6,
+    "schema_queries_last": 1
+  },
+  "/wms/narudzbe/kupci/?q=QA": {
+    "samples": [
+      {
+        "ms": 4.05,
+        "queries": 8,
+        "status": 200,
+        "bytes": 155,
+        "schema_queries": 1
+      },
+      {
+        "ms": 4.64,
+        "queries": 8,
+        "status": 200,
+        "bytes": 155,
+        "schema_queries": 1
+      },
+      {
+        "ms": 4.26,
+        "queries": 8,
+        "status": 200,
+        "bytes": 155,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 4.26,
+    "queries_last": 8,
+    "schema_queries_last": 1
+  },
+  "/": {
+    "samples": [
+      {
+        "ms": 97.73,
+        "queries": 41,
+        "status": 200,
+        "bytes": 138630,
+        "schema_queries": 1
+      },
+      {
+        "ms": 52.05,
+        "queries": 25,
+        "status": 200,
+        "bytes": 138627,
+        "schema_queries": 1
+      },
+      {
+        "ms": 50.84,
+        "queries": 25,
+        "status": 200,
+        "bytes": 138629,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 52.05,
+    "queries_last": 25,
+    "schema_queries_last": 1
+  },
+  "/?q=QA": {
+    "samples": [
+      {
+        "ms": 66.26,
+        "queries": 25,
+        "status": 200,
+        "bytes": 82603,
+        "schema_queries": 1
+      },
+      {
+        "ms": 50.69,
+        "queries": 19,
+        "status": 200,
+        "bytes": 82602,
+        "schema_queries": 1
+      },
+      {
+        "ms": 43.13,
+        "queries": 19,
+        "status": 200,
+        "bytes": 82601,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 50.69,
+    "queries_last": 19,
+    "schema_queries_last": 1
+  },
+  "/artikal/qa-artikal-8/": {
+    "samples": [
+      {
+        "ms": 82.17,
+        "queries": 25,
+        "status": 200,
+        "bytes": 84838,
+        "schema_queries": 1
+      },
+      {
+        "ms": 41.79,
+        "queries": 25,
+        "status": 200,
+        "bytes": 84834,
+        "schema_queries": 1
+      },
+      {
+        "ms": 46.75,
+        "queries": 25,
+        "status": 200,
+        "bytes": 84837,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 46.75,
+    "queries_last": 25,
+    "schema_queries_last": 1
+  },
+  "/korpa/": {
+    "samples": [
+      {
+        "ms": 22.06,
+        "queries": 15,
+        "status": 200,
+        "bytes": 50660,
+        "schema_queries": 1
+      },
+      {
+        "ms": 18.06,
+        "queries": 15,
+        "status": 200,
+        "bytes": 50659,
+        "schema_queries": 1
+      },
+      {
+        "ms": 17.84,
+        "queries": 15,
+        "status": 200,
+        "bytes": 50661,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 18.06,
+    "queries_last": 15,
+    "schema_queries_last": 1
+  },
+  "/nalog/": {
+    "samples": [
+      {
+        "ms": 44.6,
+        "queries": 22,
+        "status": 200,
+        "bytes": 104757,
+        "schema_queries": 1
+      },
+      {
+        "ms": 36.65,
+        "queries": 22,
+        "status": 200,
+        "bytes": 104757,
+        "schema_queries": 1
+      },
+      {
+        "ms": 32.43,
+        "queries": 22,
+        "status": 200,
+        "bytes": 104757,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 36.65,
+    "queries_last": 22,
+    "schema_queries_last": 1
+  },
+  "/panel": {
+    "samples": [
+      {
+        "ms": 46.43,
+        "queries": 8,
+        "status": 200,
+        "bytes": 44375,
+        "schema_queries": 1
+      },
+      {
+        "ms": 11.77,
+        "queries": 8,
+        "status": 200,
+        "bytes": 44375,
+        "schema_queries": 1
+      },
+      {
+        "ms": 13.21,
+        "queries": 8,
+        "status": 200,
+        "bytes": 44375,
+        "schema_queries": 1
+      }
+    ],
+    "median_ms": 13.21,
+    "queries_last": 8,
+    "schema_queries_last": 1
+  },
+  "/admin/": {
+    "samples": [
+      {
+        "ms": 91.14,
+        "queries": 13,
+        "status": 200,
+        "bytes": 6885,
+        "schema_queries": 4
+      },
+      {
+        "ms": 9.77,
+        "queries": 13,
+        "status": 200,
+        "bytes": 6885,
+        "schema_queries": 4
+      },
+      {
+        "ms": 11.28,
+        "queries": 13,
+        "status": 200,
+        "bytes": 6885,
+        "schema_queries": 4
+      }
+    ],
+    "median_ms": 11.28,
+    "queries_last": 13,
+    "schema_queries_last": 4
+  }
+}

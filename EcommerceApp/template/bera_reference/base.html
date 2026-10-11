@@ -11,7 +11,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="icon" type="image/svg+xml" href="{% static 'bera_reference/img/pwa-icon.svg' %}">
-    <link rel="stylesheet" href="{% static 'bera_reference/css/scratch-game.css' %}?v=20261011-site-scratch">
+    {% if not is_wms_workspace %}<link rel="stylesheet" href="{% static 'bera_reference/css/scratch-game.css' %}?v=20261011-site-scratch">{% endif %}
 
     <meta name="csrf-token" content="{{ csrf_token }}">
     <script>
@@ -64,7 +64,7 @@
           window.addEventListener('load', function () { window.setTimeout(go, 800); });
         }
       };
-      {% if google_tag_id %}(function loadGtagLater() {
+      {% if google_tag_id and not is_wms_workspace %}(function loadGtagLater() {
         function go() {
           if (window._gtagSrcLoaded) return;
           window._gtagSrcLoaded = true;
@@ -80,13 +80,13 @@
         }
       })();{% endif %}
     </script>
-    {% if google_tag_id %}<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+    {% if google_tag_id and not is_wms_workspace %}<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.google-analytics.com">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">{% endif %}
     <style>@media(max-width:1024px){.desktop-category-extra,.desktop-category-nav,.desktop-sale-link{display:none!important}}</style>
     <link rel="stylesheet" href="{% static 'bera_reference/css/desktop-reference.css' %}?v=20261008-account-desktop-fix" media="(min-width: 1025px)">
 
-    {% if meta_pixel_id %}
+    {% if meta_pixel_id and not is_wms_workspace %}
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin>
     <link rel="dns-prefetch" href="https://www.facebook.com">
     {% endif %}
@@ -233,7 +233,7 @@
       }
     </style>
 
-    {% if meta_pixel_id %}
+    {% if meta_pixel_id and not is_wms_workspace %}
     <!-- Meta Pixel — učitava se nakon prvog rendera da ne koči LCP -->
     <script data-cfasync="false">
     window._fbqPending = [];
@@ -777,6 +777,7 @@ body.bera-storefront-header .product-card-add-btn :is(svg,.product-card-add-btn_
         {% block content %}{% endblock %}
     </main>
 
+    {% if not is_wms_workspace %}
     {% include 'bera_reference/partials/site_popup.html' %}
     {% include 'bera_reference/partials/upsell_popup.html' %}
     {% include 'bera_reference/partials/cart_recovery_popup.html' %}
@@ -794,6 +795,7 @@ body.bera-storefront-header .product-card-add-btn :is(svg,.product-card-add-btn_
     {% endif %}
     {% include 'bera_reference/partials/catalog_variation_modal.html' %}
     {% include 'bera_reference/partials/stock_notify_popup.html' %}
+    {% endif %}
 
     <button type="button" class="scroll-top-btn" id="scrollTopBtn" aria-label="Na vrh stranice">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -810,6 +812,7 @@ body.bera-storefront-header .product-card-add-btn :is(svg,.product-card-add-btn_
     {% block structured_data %}{% endblock %}
     <script src="{% static 'bera_reference/js/csrf-session.js' %}?v=20261001" data-cookie-name="{{ csrf_cookie_name }}" defer></script>
     <script src="{% static 'bera_reference/js/main.min.js' %}?v=20260916-account-scroll-top" defer></script>
+    {% if not is_wms_workspace %}
     <script src="{% static 'bera_reference/js/desktop-reference.js' %}?v=20260914-dropdowns" defer></script>
     <script src="{% static 'bera_reference/js/stock-notify.js' %}?v=20260916-notify-no-autofocus" defer></script>
     {% if site_settings.javno_online_posjetioci %}
@@ -826,6 +829,7 @@ body.bera-storefront-header .product-card-add-btn :is(svg,.product-card-add-btn_
          data-session-key="{{ request.session.session_key|default:'' }}"></div>
     <script>idleLoadScript("{% static 'bera_reference/js/visitor-presence.js' %}?v=20260831fast");</script>
     {% endif %}
+    {% endif %}
     {% if user.is_authenticated and user.is_superuser %}
     <link rel="stylesheet" href="{% static 'bera_reference/css/staff-alerts.css' %}?v=20260909ordercard">
     <div id="staffAlertsRoot" hidden
@@ -841,6 +845,7 @@ body.bera-storefront-header .product-card-add-btn :is(svg,.product-card-add-btn_
     <link rel="stylesheet" href="{% static 'bera_reference/css/staff-site-edit.css' %}?v=20260929bulkTags">
     <script src="{% static 'bera_reference/js/staff-site-edit.js' %}?v=20260929bulkTags" defer></script>
     {% endif %}
+    {% if not is_wms_workspace %}
     <div class="setb-gate" id="setBuilderGate" hidden
          data-unlock-url="{% url 'set_builder_unlock' %}"
          data-target-url="{% url 'set_builder' %}"
@@ -861,8 +866,9 @@ body.bera-storefront-header .product-card-add-btn :is(svg,.product-card-add-btn_
         </div>
     </div>
     <script src="{% static 'bera_reference/js/set-builder-gate.js' %}?v=20260903beta" defer></script>
+    {% endif %}
     {% include 'bera_reference/partials/permanent_input_history.html' %}
-    {% if not scratch_module_locked %}
+    {% if not scratch_module_locked and not is_wms_workspace %}
     <section class="scratch-game{% if scratch_game_immediate %} scratch-game--immediate scratch-game--loading{% endif %}" id="scratchGame" data-csrf-refresh-url="{% url 'auth_csrf_token' %}" data-status-url="{% url 'scratch_status' %}" data-event-url="{% url 'scratch_event' %}" data-claim-url="{% url 'scratch_claim' %}" data-add-to-order-url="{% url 'scratch_add_product_to_order' %}"{% if scratch_game_immediate %} data-immediate="1"{% endif %}{% if scratch_game_return_url %} data-after-close-url="{{ scratch_game_return_url }}"{% endif %}{% if not scratch_game_immediate %} hidden{% endif %} aria-modal="true" role="dialog" aria-labelledby="scratchGameTitle">
       <div class="scratch-game__panel"><button class="scratch-game__close" type="button" aria-label="Zatvori">×</button>
         <h2 id="scratchGameTitle">GREB-GREB</h2>
@@ -883,6 +889,6 @@ body.bera-storefront-header .product-card-add-btn :is(svg,.product-card-add-btn_
     </script>
     {% block extra_js %}{% endblock %}
 {% if user.is_authenticated and user.is_staff or user.is_authenticated and user.is_superuser %}{% include 'bera_reference/partials/module_unlock_dialog.html' %}{% endif %}
-<script src="{% static 'bera_reference/js/bera-brand-logo-align.js' %}?v=20261008-small" defer></script>
+{% if not is_wms_workspace %}<script src="{% static 'bera_reference/js/bera-brand-logo-align.js' %}?v=20261008-small" defer></script>{% endif %}
 </body>
 </html>

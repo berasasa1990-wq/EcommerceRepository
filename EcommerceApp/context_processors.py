@@ -101,6 +101,8 @@ def _build_nav_categories():
 def _is_light_request_path(path: str) -> bool:
     """Putanje bez menija/popupova/marketing contexta (brži TTFB)."""
     path = path or ''
+    if path == '/wms' or path.startswith('/wms/'):
+        return True
     if path.startswith(('/api/', '/uzivo/', '/static/', '/media/', '/admin/', '/nalog/magacin/', '/nalog/provjera-narudzbi/')):
         return True
     if path.startswith(('/sitemap', '/robots.txt', '/healthz', '/favicon', '/feeds/')):
@@ -154,6 +156,7 @@ def nav_categories(request):
         except Exception:
             site_settings = SiteSettings()
         return {
+            'is_wms_workspace': path == '/wms' or path.startswith('/wms/'),
             'site_url': settings.SEO_CANONICAL_URL,
             'site_brand': 'Carpologija BH',
             'site_og_image_url': '',

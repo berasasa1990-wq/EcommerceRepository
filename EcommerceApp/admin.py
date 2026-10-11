@@ -3830,3 +3830,60 @@ class ModulePermissionsAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+from .models import HomeBestsellerProduct
+
+@admin.register(HomeFeaturedProduct)
+class HomeFeaturedProductAdmin(admin.ModelAdmin):
+    list_display = ('artikal', 'redoslijed', 'aktivan')
+    list_editable = ('redoslijed', 'aktivan')
+    list_filter = ('aktivan',)
+    search_fields = ('artikal__naziv', 'artikal__sifra')
+    autocomplete_fields = ('artikal',)
+    ordering = ('redoslijed', 'id')
+    fieldsets = (('Izdvojena ponuda na početnoj', {
+        'fields': ('artikal', 'redoslijed', 'aktivan'),
+        'description': 'Odaberi postojeći artikal pretragom naziva ili šifre. '
+                       'Prvih 6 aktivnih artikala prikazuje se na početnoj, po redoslijedu (manji broj ide prvi). '
+                       'Artikal mora biti aktivan i na stanju. Isključi Aktivan za uklanjanje iz ponude.',
+    }),)
+
+    def save_model(self, request, obj, form, change):
+        obj.postavke = SiteSettings.objects.get_or_create(pk=1)[0]
+        super().save_model(request, obj, form, change)
+        self.clear_home_cache()
+
+    def delete_model(self, request, obj):
+        super().delete_model(request, obj)
+        self.clear_home_cache()
+
+    def delete_queryset(self, request, queryset):
+        super().delete_queryset(request, queryset)
+        self.clear_home_cache()
+
+    @staticmethod
+    def clear_home_cache():
+        from django.core.cache import cache
+        from .views import _invalidate_storefront_product_caches
+        _invalidate_storefront_product_caches()
+
+
+@admin.register(HomeNovoProduct)
+class HomeNovoProductAdmin(HomeFeaturedProductAdmin):
+    fieldsets = (('Novo u ponudi na početnoj', {
+        'fields': ('artikal', 'redoslijed', 'aktivan'),
+        'description': 'Odaberi postojeći artikal po nazivu ili šifri. '
+                       'Prvih 6 aktivnih artikala na stanju prikazuje se u sekciji Novo u ponudi. '
+                       'Manji redoslijed ide prvi. Oznaka Novo se dodaje automatski; kod sniženja prednost ima −%.',
+    }),)
+
+
+@admin.register(HomeBestsellerProduct)
+class HomeBestsellerProductAdmin(HomeFeaturedProductAdmin):
+    fieldsets = (('Najprodavaniji proizvodi na početnoj', {
+        'fields': ('artikal', 'redoslijed', 'aktivan'),
+        'description': 'Odaberi postojeći artikal po nazivu ili šifri. '
+                       'Prvih 6 aktivnih artikala na stanju prikazuje se po redoslijedu u sekciji Najprodavaniji proizvodi. '
+                       'Manji broj ide prvi. Isključi Aktivan za uklanjanje iz sekcije.',
+    }),)
