@@ -689,3 +689,7 @@ body.bera-storefront-header .product-brand-under-price .brand-logo-normalized{di
 /* Larger brand logos, including both normalized and original images. */
 body.bera-storefront-header :is(.product-card,.product-catalog,.product-detail-info) .product-brand-under-price :is(img:not(.brand-logo-original-hidden),canvas.brand-logo-normalized){width:auto!important;max-width:78px!important;height:20px!important;object-fit:contain;object-position:left center}
 @media(max-width:767px){body.bera-storefront-header :is(.product-card,.product-catalog,.product-detail-info) .product-brand-under-price :is(img:not(.brand-logo-original-hidden),canvas.brand-logo-normalized){max-width:60px!important;height:16px!important}}
+
+/* Align the brand's visible left edge with the price above it. */
+body.bera-storefront-header :is(.product-card,.product-catalog,.product-detail-info) .product-brand-under-price{display:flex!important;justify-content:flex-start!important;align-items:center!important;align-self:flex-start!important;text-align:left!important;margin-left:0!important;padding-left:0!important;box-sizing:border-box}
+body.bera-storefront-header :is(.product-card,.product-catalog,.product-detail-info) .product-brand-under-price :is(img,canvas){margin-left:0!important;margin-right:auto!important;padding:0!important;object-position:left center!important;transform:none!important}
