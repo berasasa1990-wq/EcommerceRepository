@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="utf-8">
+    <title>Popis uvoza #{{ uvoz.popis_broj }} — manjak / višak</title>
+    <style>
+        @page { size: A4 portrait; margin: 12mm; }
+        body { font: 12px/1.35 Arial, Helvetica, sans-serif; color: #111; margin: 0; }
+        h1 { font-size: 18px; margin: 0 0 4px; }
+        h2 { font-size: 14px; margin: 16px 0 8px; }
+        .meta { color: #555; margin: 0 0 14px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        th, td { border-bottom: 1px solid #ddd; padding: 6px 5px; text-align: left; }
+        th { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #555; }
+        td.num, th.num { text-align: right; white-space: nowrap; }
+        .down { color: #b91c1c; font-weight: 700; }
+        .up { color: #1d4ed8; font-weight: 700; }
+        @media screen {
+            body { padding: 20px; }
+            .bar { margin-bottom: 16px; }
+            button { min-height: 40px; padding: 0 14px; font: inherit; font-weight: 700; }
+        }
+        @media print { .bar { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="bar"><button type="button" onclick="window.print()">Štampaj</button></div>
+    <h1>Popis uvoza #{{ uvoz.popis_broj }}</h1>
+    <p class="meta">
+        {{ uvoz.naziv }}
+        · štampa {{ printed_at|date:"d.m.Y. H:i" }}
+        {% if uvoz.popis_zavrsen_at %} · završen {{ uvoz.popis_zavrsen_at|date:"d.m.Y. H:i" }}{% endif %}
+        · {{ stats.artikala }} artikala
+    </p>
+    <p class="meta">Manjak: {{ manjak|length }} · Višak: {{ visak|length }} · Nije popisano: {{ nije|length }}</p>
+
+    <h2>Manjak</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Šifra</th>
+                <th>Artikal</th>
+                <th class="num">U uvozu</th>
+                <th class="num">Popisano</th>
+                <th class="num">Razlika</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in manjak %}
+            <tr>
+                <td>{{ row.sifra|default:"—" }}</td>
+                <td>{{ row.naziv }}</td>
+                <td class="num">{{ row.ocekivano }}</td>
+                <td class="num">{{ row.popisano }}</td>
+                <td class="num down">{{ row.razlika }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Nema manjka.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Višak</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Šifra</th>
+                <th>Artikal</th>
+                <th class="num">U uvozu</th>
+                <th class="num">Popisano</th>
+                <th class="num">Razlika</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in visak %}
+            <tr>
+                <td>{{ row.sifra|default:"—" }}</td>
+                <td>{{ row.naziv }}</td>
+                <td class="num">{{ row.ocekivano }}</td>
+                <td class="num">{{ row.popisano }}</td>
+                <td class="num up">+{{ row.razlika }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Nema viška.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if nije %}
+    <h2>Nije popisano (0)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Šifra</th>
+                <th>Artikal</th>
+                <th class="num">U uvozu</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in nije %}
+            <tr>
+                <td>{{ row.sifra|default:"—" }}</td>
+                <td>{{ row.naziv }}</td>
+                <td class="num">{{ row.ocekivano }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</body>
+</html>

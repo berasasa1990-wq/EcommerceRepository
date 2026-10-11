@@ -1,0 +1,31 @@
+{% load ecommerce_extras %}
+{# Prikaz bodova: 1 bod = 1 KM; ostvaruju samo registrovani kupci #}
+{% with bodovi=price|loyalty_bodovi %}
+{% if bodovi > 0 %}
+<div class="loyalty-points{% if compact %} loyalty-points--compact{% endif %}" data-loyalty-points data-loyalty-price="{{ price }}">
+    <span class="loyalty-points__badge" title="1 bod = 1 KM">
+        <span class="loyalty-points__value">+{{ bodovi }} bodova</span>
+        <button
+            type="button"
+            class="loyalty-points__info"
+            aria-label="Informacije o bodovima"
+            aria-expanded="false"
+            aria-controls="loyalty-points-tip-{{ product.pk|default:'x' }}{% if tip_suffix %}-{{ tip_suffix }}{% endif %}"
+            data-loyalty-points-info
+        >
+            <span aria-hidden="true">i</span>
+        </button>
+    </span>
+    <div
+        class="loyalty-points__tooltip"
+        id="loyalty-points-tip-{{ product.pk|default:'x' }}{% if tip_suffix %}-{{ tip_suffix }}{% endif %}"
+        role="tooltip"
+        hidden
+        data-loyalty-points-tooltip
+    >
+        <p><strong>+{{ bodovi }} bodova</strong> za ovaj artikal.</p>
+        <p>1 bod = 1 KM. Bodove ostvarujete samo ako ste <a href="{% url 'register' %}">registrovani</a> ili <a href="{% url 'login' %}">prijavljeni</a>.</p>
+    </div>
+</div>
+{% endif %}
+{% endwith %}

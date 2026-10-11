@@ -1,0 +1,16 @@
+{
+  "TRANSFER_PLAYWRIGHT": [
+    "scripts/transfer_visual_qa.cjs",
+    "scripts/transfer_interaction_qa.cjs"
+  ],
+  "TRANSFER_VISUAL_OUTPUT": [
+    "scripts/transfer_visual_qa.cjs"
+  ],
+  "TRANSFER_QA_PANEL_LINKS": [
+    "scripts/transfer_visual_qa.cjs"
+  ],
+  "TRANSFER_BROWSER_EXECUTABLE": [
+    "scripts/transfer_visual_qa.cjs",
+    "scripts/transfer_interaction_qa.cjs"
+  ]
+}

@@ -63,6 +63,12 @@ class EcommerceappConfig(AppConfig):
         admin.site.site_title = 'opremazaribolov.ba'
         admin.site.index_title = 'Upravljanje trgovinom'
 
+        # Register panel editors after admin autodiscovery, before system checks.
+        # URL loading can happen during checks; registering there leaves related
+        # autocomplete models unavailable to a check already in progress.
+        from .bera_panel_admin import install_panel_editors
+        install_panel_editors()
+
         from django.conf import settings
 
         if not settings.EMAIL_HOST_PASSWORD:

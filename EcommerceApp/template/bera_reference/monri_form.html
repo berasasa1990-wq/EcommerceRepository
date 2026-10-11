@@ -1,0 +1,23 @@
+{% extends 'bera_reference/base.html' %}
+{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'bera_reference/css/monri-payment.css' %}?v=20261005">{% endblock %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<section class="monri-page">
+    <div class="monri-card">
+    <div class="monri-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 9h20M6 15h4"/></svg></div>
+    <p class="monri-eyebrow">{{ shop_name }} · Kartično plaćanje</p>
+    <h1>Dovršite plaćanje karticom</h1>
+    <p>Narudžba će biti zaprimljena tek nakon potvrđene uplate. Način plaćanja: <strong>KARTICOM</strong>.</p>
+    <div class="monri-summary"><div><span>{% if payment.order_id %}Broj narudžbe{% else %}Referenca plaćanja{% endif %}</span><strong>{{ order.broj }}</strong></div><div><span>Ukupno za plaćanje</span><strong class="monri-amount">{{ order.ukupno }} KM</strong></div></div>
+    {% if payment.environment == 'test' %}<p class="monri-notice" role="status">Testno plaćanje — koristite Monri testnu karticu.</p>{% endif %}
+    <p>Podatke kartice unosite na sigurnoj Monri stranici. {{ shop_name }} ne pohranjuje broj kartice ni CVV.</p>
+    <form class="monri-actions" method="post" action="{{ endpoint }}">
+        {% for name, value in fields.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+        <button type="submit" class="monri-button">Nastavi na plaćanje <span aria-hidden="true">→</span></button>
+    </form>
+    <p class="monri-security"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Sigurno plaćanje putem Monrija</p>
+    <a class="monri-back" href="{% url 'home' %}">Nazad u prodavnicu</a>
+    </div>
+</section>
+{% endblock %}

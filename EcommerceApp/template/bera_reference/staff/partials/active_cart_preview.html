@@ -1,0 +1,84 @@
+<div class="staff-cart-preview-layout">
+    <div class="staff-cart-preview-main">
+        <div class="staff-cart-preview-items">
+            {% for item in group.items %}
+            <article class="staff-cart-preview-item">
+                <div class="staff-cart-preview-image">
+                    {% if item.variation and item.variation.slika %}
+                    <img src="{{ item.variation.slika.url }}" alt="{{ item.naziv }}" width="52" height="52" loading="lazy" decoding="async">
+                    {% elif item.product.prikazna_slika %}
+                    <img src="{{ item.product.prikazna_slika.url }}" alt="{{ item.naziv }}" width="52" height="52" loading="lazy" decoding="async">
+                    {% else %}
+                    <div class="product-image-placeholder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        </svg>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="staff-cart-preview-info">
+                    <h3 class="cart-item-title">
+                        <span class="item-display-name">
+                            <a href="{{ item.product.get_absolute_url }}" target="_blank" rel="noopener" class="staff-cart-preview-product-link">
+                                <span class="item-display-product">{{ item.naziv }}</span>
+                            </a>
+                            {% if item.varijacija_naziv %}
+                            <span class="item-display-variation">{{ item.varijacija_naziv }}</span>
+                            {% endif %}
+                        </span>
+                    </h3>
+                    {% if item.product.sifra or item.variation.sifra %}
+                    <p class="cart-item-meta">
+                        Šifra:
+                        {% if item.variation and item.variation.sifra %}{{ item.variation.sifra }}{% else %}{{ item.product.sifra }}{% endif %}
+                    </p>
+                    {% endif %}
+                    <p class="cart-item-price">{{ item.cijena }} KM</p>
+                    <p class="staff-cart-preview-added">U korpi od {{ item.dodano|date:"d.m.Y. H:i" }}</p>
+                </div>
+                <div class="staff-cart-preview-qty">
+                    <span class="staff-cart-preview-qty-label">Kol.</span>
+                    <span class="staff-cart-preview-qty-value">{{ item.kolicina }}</span>
+                </div>
+                <div class="staff-cart-preview-total">
+                    <p>{{ item.ukupno }} KM</p>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+
+    <aside class="staff-cart-preview-summary cart-summary">
+        <h3 class="staff-cart-preview-summary-title">Sažetak korpe</h3>
+        <div class="order-totals">
+            <div class="order-totals-row">
+                <span>Broj artikala</span>
+                <span>{{ group.items|length }}</span>
+            </div>
+            <div class="order-totals-row">
+                <span>Ukupno komada</span>
+                <span>{{ group.stavki }}</span>
+            </div>
+            <div class="order-totals-row order-totals-row--total">
+                <span>Ukupno</span>
+                <strong>{{ group.ukupno }} KM</strong>
+            </div>
+        </div>
+        <dl class="staff-cart-preview-meta">
+            <div>
+                <dt>Prvo dodano</dt>
+                <dd>{{ group.dodano|date:"d.m.Y. H:i" }}</dd>
+            </div>
+            <div>
+                <dt>Zadnja izmjena</dt>
+                <dd>{{ group.azurirano|date:"d.m.Y. H:i" }}</dd>
+            </div>
+            {% if not group.user_email %}
+            <div>
+                <dt>Sesija</dt>
+                <dd><code>{{ group.session_short }}</code></dd>
+            </div>
+            {% endif %}
+        </dl>
+    </aside>
+</div>

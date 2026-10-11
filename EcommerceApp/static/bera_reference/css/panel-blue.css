@@ -1,0 +1,106 @@
+/* Product list, add/change editors and their surrounding workspace. */
+body.panel-blue-editor,body.panel-blue-workspace{--primary:#008bc5;--secondary:#0874a2;--accent:#e4f5ff;--primary-fg:#fff;--body-fg:#173149;--body-bg:#f4f9fd;--darkened-bg:#edf5fb;--selected-bg:#e9f6fd;--selected-row:#e2f3fc;--border-color:#dce9f2;--hairline-color:#e7eff6;--link-fg:#007fb5;--link-hover-color:#005f90;--button-bg:#008bc5;--button-hover-bg:#006fa5;--default-button-bg:#008bc5;--default-button-hover-bg:#006fa5;background:#f4f9fd!important;color:#173149!important;color-scheme:light}
+body.panel-blue-editor #content{padding:20px!important;box-sizing:border-box;width:100%;max-width:1600px;margin:0 auto}
+body.panel-blue-editor #content h1{font-size:24px;font-weight:750;color:#0e2943;line-height:1.3;margin:0 0 20px}
+body.panel-blue-editor a:link,body.panel-blue-editor a:visited{color:#007fb5}
+body.panel-blue-editor .module,body.panel-blue-editor .inline-group{background:#fff!important;border:1px solid #dce9f2!important;border-radius:12px;box-shadow:0 3px 14px #143f6410;margin-bottom:18px;overflow:hidden}
+body.panel-blue-editor .module h2,body.panel-blue-editor .module caption,body.panel-blue-editor .inline-group h2{background:linear-gradient(120deg,#008bc5,#086b9d)!important;color:#fff!important;font-size:14px;font-weight:700;padding:13px 16px;letter-spacing:0;text-transform:none}
+body.panel-blue-editor .module h2 a,body.panel-blue-editor .module caption a{color:#fff!important}
+body.panel-blue-editor .form-row{padding:12px 16px;border-bottom:1px solid #edf3f8}
+body.panel-blue-editor .form-row .flex-container{gap:10px;flex-wrap:wrap;align-items:center}
+body.panel-blue-editor .aligned label{color:#254560;font-weight:600;min-width:150px}
+body.panel-blue-editor input[type=text],body.panel-blue-editor input[type=number],body.panel-blue-editor input[type=email],body.panel-blue-editor input[type=url],body.panel-blue-editor input[type=search],body.panel-blue-editor select,body.panel-blue-editor textarea{box-sizing:border-box;max-width:100%;min-height:38px;padding:8px 10px;border:1px solid #cadfeb!important;border-radius:8px;background:#fff!important;color:#173149!important;font:inherit;box-shadow:none}
+body.panel-blue-editor .vTextField,body.panel-blue-editor .vLargeTextField{width:min(680px,100%)}
+body.panel-blue-editor textarea{width:min(900px,100%);line-height:1.6;min-height:120px;resize:vertical}
+body.panel-blue-editor .help,body.panel-blue-editor .help-tooltip{color:#637f95;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+body.panel-blue-editor .readonly{color:#264762;overflow-wrap:anywhere}
+body.panel-blue-editor input:focus,body.panel-blue-editor select:focus,body.panel-blue-editor textarea:focus{outline:2px solid #00a5d7!important;outline-offset:2px;border-color:#0099ce!important}
+body.panel-blue-editor input[type=checkbox]{accent-color:#008bc5}
+body.panel-blue-editor .button,body.panel-blue-editor input[type=submit],body.panel-blue-editor .submit-row input,body.panel-blue-editor #changelist-search input[type=submit],body.panel-blue-editor .object-tools a{background:linear-gradient(130deg,#00acd5,#007bb3)!important;border:0!important;border-radius:8px!important;color:#fff!important;padding:10px 16px;min-height:38px;font-weight:600;box-shadow:none!important;text-transform:none}
+body.panel-blue-editor .button:hover,body.panel-blue-editor input[type=submit]:hover,body.panel-blue-editor .object-tools a:hover{background:#006fa5!important}
+body.panel-blue-editor .submit-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:#eef7fc!important;border:1px solid #d5e7f1!important;border-radius:12px;padding:14px!important;margin-top:20px}
+body.panel-blue-editor .submit-row input{margin:0!important}
+body.panel-blue-editor .submit-row a.deletelink{background:#fff0f1!important;border:1px solid #f1cdd2!important;border-radius:8px;color:#b33745!important;padding:10px 16px}
+body.panel-blue-editor #changelist{background:transparent!important;min-width:0}
+body.panel-blue-editor #changelist .changelist-form-container{min-width:0}
+body.panel-blue-editor #changelist .results{overflow-x:auto;border-radius:10px;border:1px solid #dce9f2;background:#fff}
+body.panel-blue-editor #changelist table{width:100%;border-collapse:collapse}
+body.panel-blue-editor #changelist table th,body.panel-blue-editor #changelist table td{padding:11px 12px;vertical-align:middle;border-bottom:1px solid #e7eff6;line-height:1.4;font-size:13px}
+body.panel-blue-editor #changelist table thead th{background:#e9f4fb!important;color:#264b68;font-weight:700;white-space:nowrap}
+body.panel-blue-editor #changelist table tbody tr:nth-child(even){background:#f7fbfe!important}
+body.panel-blue-editor #changelist table tbody tr:hover{background:#eaf7ff!important}
+body.panel-blue-editor #toolbar,body.panel-blue-editor #changelist .actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px!important;background:#fff!important;border:1px solid #dce9f2;border-radius:10px;margin-bottom:12px}
+body.panel-blue-editor #changelist-search{display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:100%}
+body.panel-blue-editor #searchbar{flex:1;min-width:140px;width:auto!important}
+body.panel-blue-editor #changelist-filter{background:#fff!important;border:1px solid #dce9f2;border-radius:12px;overflow:hidden}
+body.panel-blue-editor #changelist-filter h2{background:#e5f3fc!important;color:#1a5272!important}
+body.panel-blue-editor #changelist-filter h3{font-size:13px;font-weight:700;color:#264b68}
+body.panel-blue-editor #changelist-filter li.selected{border-left-color:#008bc5}
+body.panel-blue-editor .paginator{background:#fff!important;border:1px solid #dce9f2;border-radius:10px;padding:12px!important;margin-top:12px}
+body.panel-blue-editor .paginator a{background:#e8f5fc!important;color:#007fb5!important;border-radius:5px}
+body.panel-blue-editor .inline-group .tabular{overflow-x:auto}
+body.panel-blue-editor .inline-group table{min-width:100%;background:#fff}
+body.panel-blue-editor .inline-group th{background:#edf6fc!important;color:#254560}
+body.panel-blue-editor .inline-related img{max-width:160px;max-height:140px;object-fit:contain}
+body.panel-blue-workspace .settings-workspace{padding:16px 20px;color:#173149}
+body.panel-blue-workspace .settings-workspace__header h1{font-size:25px;color:#0e2943}
+body.panel-blue-workspace .settings-workspace__layout{border-color:#d8e8f2;box-shadow:0 5px 24px #143f6410;border-radius:14px;min-width:0}
+body.panel-blue-workspace .settings-workspace__sidebar{background:#f1f8fd;border-color:#d8e8f2}
+body.panel-blue-workspace .settings-workspace__group{background:linear-gradient(120deg,#008bc5,#086b9d);color:#fff;border-color:#087fb2;padding:14px 16px}
+body.panel-blue-workspace .settings-workspace__row{border-color:#e2edf5;background:#fff}
+body.panel-blue-workspace .settings-workspace__row:nth-child(odd){background:#f7fbfe}
+body.panel-blue-workspace .settings-workspace__row.is-active{background:#e1f3fd;box-shadow:inset 4px 0 #008bc5}
+body.panel-blue-workspace .settings-workspace__row:hover{background:#edf8ff}
+body.panel-blue-workspace .settings-workspace__link{color:#20435d;padding:13px 16px}
+body.panel-blue-workspace .settings-workspace__add{color:#008bc5;padding-right:12px}
+body.panel-blue-workspace .settings-workspace__add span{color:#009bc9}
+body.panel-blue-workspace :is(a,button):focus-visible,body.panel-blue-editor :is(a,button):focus-visible{outline:2px solid #009bd0;outline-offset:2px}
+@media(max-width:1000px){body.panel-blue-editor #content{padding:14px!important}body.panel-blue-editor #changelist{display:flex;flex-direction:column}body.panel-blue-editor #changelist-filter{position:static;width:100%;margin:12px 0}body.panel-blue-editor .aligned label{min-width:120px}}
+@media(max-width:600px){body.panel-blue-editor #content{padding:10px!important}body.panel-blue-editor .form-row{padding:12px}body.panel-blue-editor .aligned label{width:100%;padding:0;min-width:0}body.panel-blue-editor .aligned .help{margin-left:0;padding-left:0}body.panel-blue-editor .submit-row>*{flex:1;text-align:center}body.panel-blue-workspace .settings-workspace{padding:10px 8px}}
+/* Wrap every field into labelled cards instead of horizontally scrolling. */
+body.panel-blue-editor,body.panel-blue-workspace{min-width:0!important;max-width:100%;overflow-x:clip}
+body.panel-blue-editor :is(#container,#main,#content,#content-main,#changelist-form,.changelist-form-container,.form-row,.flex-container,.related-widget-wrapper){min-width:0!important;max-width:100%;box-sizing:border-box}
+body.panel-blue-editor #changelist .results,body.panel-blue-editor .inline-group .tabular{overflow-x:visible!important}
+:is(body.panel-blue-editor,body.panel-blue-workspace) .articles-fit-table{display:block!important;width:100%!important;min-width:0!important;table-layout:fixed}
+:is(body.panel-blue-editor,body.panel-blue-workspace) .articles-fit-table thead{display:none}
+:is(body.panel-blue-editor,body.panel-blue-workspace) .articles-fit-table tbody{display:block;width:100%}
+:is(body.panel-blue-editor,body.panel-blue-workspace) .articles-fit-table tbody tr:not(.empty-form):not(.add-row){display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(145px,100%),1fr));gap:10px;padding:14px!important;border-bottom:1px solid #dce9f2;background:#fff!important}
+:is(body.panel-blue-editor,body.panel-blue-workspace) .articles-fit-table tbody tr:nth-child(even){background:#f5faff!important}
+:is(body.panel-blue-editor,body.panel-blue-workspace) .articles-fit-table tbody :is(td,th){display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;width:auto!important;max-width:100%;padding:6px 8px!important;border:0!important;white-space:normal!important;overflow-wrap:anywhere;box-sizing:border-box}
+:is(body.panel-blue-editor,body.panel-blue-workspace) .articles-fit-table tbody :is(td,th)[data-label]::before{content:attr(data-label);color:#637f95;font-size:11px;font-weight:600;line-height:1.3}
+body.panel-blue-editor #result_list .field-naziv{grid-column:1/-1;font-size:15px;font-weight:700}
+:is(body.panel-blue-editor,body.panel-blue-workspace) .articles-fit-table :is(input,select,textarea,a,p,div){max-width:100%;min-width:0;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere}
+:is(body.panel-blue-editor,body.panel-blue-workspace) .articles-fit-table img{max-width:100%;object-fit:contain}
+:is(body.panel-blue-editor,body.panel-blue-workspace) .articles-fit-table .add-row{display:block;width:100%}
+:is(body.panel-blue-editor,body.panel-blue-workspace) .articles-fit-table .empty-form{display:none!important}
+body.panel-blue-editor .selector{display:grid!important;grid-template-columns:minmax(0,1fr) 32px minmax(0,1fr);gap:8px;width:100%!important;max-width:850px}
+body.panel-blue-editor .selector :is(.selector-available,.selector-chosen,select){width:100%!important;min-width:0!important;max-width:100%}
+body.panel-blue-editor .selector ul.selector-chooser{width:32px!important;margin:0;align-self:center}
+body.panel-blue-editor .selector .selector-filter{display:flex;flex-wrap:wrap;gap:5px}
+body.panel-blue-editor .selector .selector-filter input{width:100%!important;min-width:0!important;margin:0!important}
+body.panel-blue-editor .form-row :is(.fieldBox,.file-upload,.datetime){min-width:0;max-width:100%;overflow-wrap:anywhere}
+body.panel-blue-editor .aligned .form-row>div{display:flex;flex-wrap:wrap;gap:10px;min-width:0;max-width:100%}
+body.panel-blue-editor #changelist-search>div{display:flex;flex-wrap:wrap;gap:8px;min-width:0;max-width:100%}
+body.panel-blue-editor .actions :is(label,select){max-width:100%;min-width:0;white-space:normal}
+body.panel-blue-workspace :is(.settings-workspace,.settings-workspace__layout,.settings-workspace__content){min-width:0;max-width:100%;box-sizing:border-box}
+@media(max-width:600px){body.panel-blue-editor .selector{grid-template-columns:minmax(0,1fr)}body.panel-blue-editor .selector ul.selector-chooser{display:flex;justify-content:center;width:100%!important}:is(body.panel-blue-editor,body.panel-blue-workspace) .articles-fit-table tbody tr:not(.empty-form):not(.add-row){grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px!important}}
+/* Dashboard cards and settings share the editor palette. */
+body.panel-blue-workspace{--ozr-orange:#008bc5;--ozr-orange-hover:#006fa5;--btn-cart:#008bc5;--btn-cart-hover:#006fa5}
+body.panel-blue-workspace main{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+body.panel-blue-workspace .panel-back-arrow{color:#0875a5;border-color:#d4e7f2;background:#fff}
+body.panel-blue-workspace .panel-back-arrow:hover{background:#e5f4fc;border-color:#008bc5}
+body.panel-blue-workspace :is(.admin-btn,.loyalty-workspace__card,.settings-section,.settings-inline-row){background:#fff!important;color:#173149!important;border:1px solid #dce9f2!important;border-radius:12px;box-shadow:0 3px 14px #143f6410;min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+body.panel-blue-workspace :is(.admin-btn,.loyalty-workspace__card):hover{background:#eaf7ff!important;border-color:#008bc5!important}
+body.panel-blue-workspace :is(.admin-btn-icon,.admin-btn-arrow,.loyalty-workspace__card>span){color:#008bc5!important;background:#e8f6fe!important}
+body.panel-blue-workspace :is(.staff-page-title,.loyalty-workspace h1,.panel-settings__header h1){color:#0e2943!important}
+body.panel-blue-workspace .staff-page-hero{background:linear-gradient(135deg,#edf8ff,#dceffb)!important;border-color:#d4e7f2!important}
+body.panel-blue-workspace :is(.panel-settings button,.settings-actions button){background:linear-gradient(130deg,#00acd5,#007bb3)!important;color:#fff!important;border-radius:8px}
+body.panel-blue-workspace :is(.settings-section summary,.settings-field>span){color:#254560}
+body.panel-blue-workspace .settings-field :is(input,select,textarea){min-width:0;max-width:100%;box-sizing:border-box;border:1px solid #cadfeb;border-radius:8px;background:#fff;color:#173149}
+body.panel-blue-workspace .settings-fields{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
+body.panel-blue-workspace :is(.settings-field,.settings-actions,.panel-settings,.loyalty-workspace){min-width:0;max-width:100%;box-sizing:border-box}
+body.panel-blue-workspace .settings-actions{display:flex;flex-wrap:wrap;gap:10px;background:#eef7fc}
+body.panel-blue-workspace input[type=checkbox]{accent-color:#008bc5}
+body.panel-blue-workspace :is(input,select,textarea):focus-visible{outline:2px solid #009bd0;outline-offset:2px}
+body.panel-blue-workspace .articles-fit-table{overflow-wrap:anywhere}
+body.panel-blue-editor .selector .selector-available h2,body.panel-blue-editor .selector .selector-chosen h2{background:#e5f3fc!important;color:#254560!important}

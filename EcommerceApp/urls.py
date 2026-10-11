@@ -6,17 +6,68 @@ from django.urls import reverse_lazy
 from django.views.decorators.cache import never_cache
 
 from . import views
+from . import bera_panel
+from . import module_requests
+from . import bera_panel_settings
+from . import wms_price_print
 from . import manual_order_drafts, data_history
 from . import views_b2b
 from . import views_catalog_api
 from . import views_feed
 from . import views_ledger
 from . import views_magacin
+from . import views_wms
 from . import views_product_sets
 from . import views_site_prep
 from . import views_sync
 
 urlpatterns = [
+    path('panel/zahtjev-otkljucavanje/', module_requests.request_unlock, name='staff_request_unlock'),
+    path('panel/podesavanje-novo/', bera_panel_settings.staff_site_settings, name='staff_settings_new'),
+    path('panel/podesavanje-novo/boja-dugmadi/', bera_panel_settings.staff_button_color, name='staff_button_color'),
+    path('panel/narudzbe/', views.staff_orders_validation, name='staff_panel_orders'),
+    path('panel/narudzbe/online/', views.staff_online_orders, name='staff_panel_online_orders'),
+    path('wms/stampa-cijena/', wms_price_print.price_print, name='staff_wms_stampa_cijena'),
+    path('wms/stampa-cijena/ista/', wms_price_print.price_print, {'mode': 'ista'}, name='staff_wms_stampa_cijena_ista'),
+    path('wms/stampa-cijena/razlicite/', wms_price_print.price_print, {'mode': 'razlicite'}, name='staff_wms_stampa_cijena_razlicite'),
+    path('wms/stampa-cijena/print/', wms_price_print.price_print, {'mode': 'print'}, name='staff_wms_stampa_cijena_print'),
+    path('wms/narudzbe/kreiraj/<str:tip>/', views_wms.create_order, name='staff_wms_create_order'),
+    path('wms/narudzbe/pregled/<int:pk>/', views_wms.order_detail, name='staff_wms_order'),
+    path('wms/narudzbe/<int:pk>/izmjena/', views_wms.edit_order, name='staff_wms_edit_order'),
+    path('wms/narudzbe/<int:pk>/pakovanje/', views_wms.pack_order, name='staff_wms_pack_order'),
+    path('wms/narudzbe/<int:pk>/odvajanje/', views_wms.pick_order, name='staff_wms_pick_order'),
+    path('wms/odvajanje/istorija/', views_wms.picking_history, name='staff_wms_picking_history'),
+    path('wms/narudzbe/<int:pk>/vrati/', views_wms.restore_order, name='staff_wms_restore_order'),
+    path('wms/narudzbe/<int:pk>/otkazi/', views_wms.cancel_order, name='staff_wms_cancel_order'),
+    path('wms/lokacije/nedostaje/<int:pk>/', views_wms.resolve_shortage, name='staff_wms_resolve_shortage'),
+    path('wms/narudzbe/stampa/<str:kind>/', views_wms.print_orders, name='staff_wms_print_orders'),
+    path('wms/narudzbe/artikli/', views_wms.order_products, name='staff_wms_order_products'),
+    path('wms/narudzbe/kupci/', views_wms.order_customers, name='staff_wms_order_customers'),
+    path('wms/kupci/<int:pk>/<str:action>/', views_wms.manage_customer, name='staff_wms_manage_customer'),
+    path('wms/lokacije/<int:pk>/barkod/', views_wms.location_barcode_print, name='staff_wms_location_barcode'),
+    path('wms/lokacije/<int:pk>/', views_wms.location_detail, name='staff_wms_location'),
+    path('wms/podesavanje/excel-import/', views_wms.excel_import, name='staff_wms_excel_import'),
+    path('wms/', views_wms.workspace, name='staff_wms'),
+    path('wms/<str:section>/', views_wms.workspace, name='staff_wms_section'),
+    path('panel/podesavanja/logo/', bera_panel_settings.staff_settings_logo, name='staff_settings_logo'),
+    path('panel/podesavanja/sajt/', bera_panel_settings.staff_site_settings, name='staff_site_settings'),
+    path('panel/podesavanja', bera_panel_settings.staff_settings, name='staff_settings'),
+    path('panel/podesavanja/', bera_panel_settings.staff_settings),
+    path('panel/podesavanja/pretraga/', bera_panel_settings.staff_settings_lookup, name='staff_settings_lookup'),
+    path('panel/b2b', bera_panel_settings.staff_b2b_workspace, name='staff_b2b_workspace'),
+    path('panel/b2b/', bera_panel_settings.staff_b2b_workspace),
+    path('panel/loyalty', bera_panel_settings.staff_loyalty_workspace, name='staff_loyalty_workspace'),
+    path('panel/loyalty/', bera_panel_settings.staff_loyalty_workspace),
+    path('panel/wms', views_wms.workspace, name='staff_wms_workspace'),
+    path('panel/wms/', views_wms.workspace),
+    path('panel/wms/sekcije/', bera_panel_settings.staff_wms_workspace, name='staff_wms_model_workspace'),
+    path('panel/greb-greb', bera_panel_settings.staff_scratch_workspace, name='staff_scratch_workspace'),
+    path('panel/greb-greb/', bera_panel_settings.staff_scratch_workspace),
+    path('panel/sekcija/<slug:section>/', bera_panel_settings.staff_model_workspace, name='staff_model_workspace'),
+    path('wms', views_wms.workspace),
+
+    path('panel', bera_panel.staff_panel, name='staff_panel'),
+    path('panel/', bera_panel.staff_panel),
     path("nalog/magacin/setovi/", views_product_sets.product_sets, name="staff_magacin_setovi"),
     path('placanje/monri/potvrda/', views_monri.callback, name='monri_callback'),
     path('placanje/monri/<uuid:token>/', views_monri.start, name='monri_start'),

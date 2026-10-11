@@ -1367,6 +1367,15 @@ def _etiketa_resolve_token(raw):
     return _etiketa_resolve(text, None)
 
 
+def _render_price_workspace(request, context):
+    if request.path.startswith('/wms/'):
+        from .views_wms import context as wms_context, render as wms_render
+        context.update(wms_context('stampa_cijena'))
+        context['print_url'] = reverse('staff_wms_stampa_cijena_print')
+        return wms_render(request, 'bera_reference/staff/wms/stampa_cijena.html', context)
+    return render(request, 'staff/magacin/stampa_cijena.html', context)
+
+
 def _stampa_cijena_context(request, *, mode='izbor'):
     context = _magacin_context(
         request,
@@ -1496,7 +1505,7 @@ def magacin_artikal_stampa(request, pk):
 @user_passes_test(warehouse_user_required)
 @require_GET
 def magacin_stampa_cijena(request):
-    return render(request, 'staff/magacin/stampa_cijena.html', _stampa_cijena_context(request, mode='izbor'))
+    return _render_price_workspace(request, _stampa_cijena_context(request, mode='izbor'))
 
 
 @login_required(login_url='login')
@@ -1516,14 +1525,14 @@ def magacin_stampa_cijena_ista(request):
             'cijena_label': payload['cijena_label'],
         }
     context['picked'] = picked
-    return render(request, 'staff/magacin/stampa_cijena.html', context)
+    return _render_price_workspace(request, context)
 
 
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
 @require_GET
 def magacin_stampa_cijena_razlicite(request):
-    return render(request, 'staff/magacin/stampa_cijena.html', _stampa_cijena_context(request, mode='razlicite'))
+    return _render_price_workspace(request, _stampa_cijena_context(request, mode='razlicite'))
 
 
 @login_required(login_url='login')

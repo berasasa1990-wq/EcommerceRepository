@@ -1,0 +1,10 @@
+{% if mobile_image or desktop_image %}
+<section class="home-loyalty-banner home-loyalty-banner--uploaded home-sale-banner{% if not mobile_image %} home-desktop-banner-only{% elif not desktop_image %} home-banner-mobile-replaced{% endif %}" aria-label="Promotivna ponuda">
+    {% if banner_href %}<a href="{{ banner_href }}">{% endif %}
+    <picture>
+        {% if desktop_image %}<source media="(min-width: 1025px)" srcset="{{ desktop_image.url }}" width="1920" height="500">{% endif %}
+        <img src="{% if mobile_image %}{{ mobile_image.url }}{% else %}{{ desktop_image.url }}{% endif %}" alt="Promotivna ponuda" width="1080" height="1080" loading="lazy" decoding="async">
+    </picture>
+    {% if banner_href %}</a>{% endif %}
+</section>
+{% endif %}

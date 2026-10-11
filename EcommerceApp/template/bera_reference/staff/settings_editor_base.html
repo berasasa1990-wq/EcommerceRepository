@@ -1,0 +1,5 @@
+{% load static %}<!DOCTYPE html>
+<html lang="bs"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow">{% block page_title %}{% endblock %}{% block extra_css %}{% endblock %}</head>
+<body class="{% block body_class %}{% endblock %}">
+{% if messages %}<ul class="settings-messages">{% for message in messages %}<li>{{ message }}</li>{% endfor %}</ul>{% endif %}
+<main>{% block content %}{% endblock %}</main>{% block extra_js %}{% endblock %}</body></html>

@@ -1,0 +1,147 @@
+.b2b-live-page {
+    padding-bottom: 56px;
+}
+
+.b2b-live-body {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+}
+
+.b2b-live-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 22px;
+    padding: 14px 18px;
+    border: 1px solid #e7e7e7;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.b2b-live-summary__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.16);
+}
+
+.b2b-live-summary strong {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.b2b-live-summary span {
+    color: #666;
+    font-size: 14px;
+}
+
+.b2b-live-list {
+    display: grid;
+    gap: 14px;
+}
+
+.b2b-live-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) auto;
+    gap: 16px 24px;
+    align-items: center;
+    padding: 18px 20px;
+    border: 1px solid #e7e7e7;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.b2b-live-card__company {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #111;
+}
+
+.b2b-live-card__user {
+    margin: 0;
+    font-size: 13px;
+    color: #667;
+}
+
+.b2b-live-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.b2b-live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    font-size: 12px;
+    font-weight: 700;
+    color: #333;
+}
+
+.b2b-live-pill--live {
+    background: #ecfdf3;
+    color: #166534;
+}
+
+.b2b-live-amounts {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    text-align: right;
+}
+
+.b2b-live-amounts__gross {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: #111;
+}
+
+.b2b-live-amounts__netto {
+    font-size: 13px;
+    color: #667;
+    font-variant-numeric: tabular-nums;
+}
+
+.b2b-live-empty {
+    padding: 36px 20px;
+    border: 1px dashed #d8d8d8;
+    border-radius: 14px;
+    text-align: center;
+    color: #777;
+    background: #fafafa;
+}
+
+.b2b-live-empty strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 16px;
+    color: #222;
+}
+
+@media (max-width: 700px) {
+    .b2b-live-card {
+        grid-template-columns: 1fr;
+    }
+
+    .b2b-live-amounts {
+        align-items: flex-start;
+        text-align: left;
+        padding-top: 4px;
+        border-top: 1px solid #eee;
+    }
+}

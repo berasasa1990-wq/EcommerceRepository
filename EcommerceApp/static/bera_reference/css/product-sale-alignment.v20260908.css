@@ -1,0 +1,26 @@
+/* Akcijska cijena i dostupnost ostaju u istom redu, i na uskom ekranu. */
+.product-detail .pd-options-price.pd-options-price--sale {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    align-items: last baseline;
+    gap: 10px;
+}
+.product-detail .pd-options-price--sale .pd-options-price__price { min-width: 0; }
+.product-detail .pd-options-price--sale .card-dwell-prices {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+.product-detail .pd-options-price--sale .card-dwell-sale-cluster {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 6px;
+}
+.product-detail .pd-options-price--sale .pd-price-stock {
+    margin: 0;
+    white-space: nowrap;
+}
+.product-detail .pd-options-price--sale .price-sale { white-space: nowrap; }

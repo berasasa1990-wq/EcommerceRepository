@@ -1,0 +1,888 @@
+{% load static bera_warehouse_access %}
+{% panel_tool_locked 'staff_scratch_workspace' as scratch_module_locked %}
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    {% if media_origin %}<link rel="preconnect" href="{{ media_origin }}">{% endif %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="manifest" href="{% url 'pwa_manifest' %}">
+    <meta name="theme-color" content="#ff6500">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="icon" type="image/svg+xml" href="{% static 'bera_reference/img/pwa-icon.svg' %}">
+    <link rel="stylesheet" href="{% static 'bera_reference/css/scratch-game.css' %}?v=20261011-site-scratch">
+
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      {% if google_analytics_id %}gtag('config', '{{ google_analytics_id|escapejs }}');{% endif %}
+      {% if google_ads_id %}gtag('config', '{{ google_ads_id|escapejs }}');{% endif %}
+      window.trackGooglePurchase = function (data) {
+        if (!data || typeof gtag !== 'function') return false;
+        var transactionId = String(data.transaction_id || '');
+        if (!transactionId) return false;
+        var dedupeKey = 'gtag_purchase_' + transactionId;
+        try {
+          if (localStorage.getItem(dedupeKey)) return false;
+          localStorage.setItem(dedupeKey, '1');
+        } catch (e) {}
+        gtag('event', 'purchase', {
+          transaction_id: transactionId,
+          value: data.value,
+          currency: data.currency || 'BAM',
+          shipping: data.shipping,
+          items: data.items || []
+        });
+        return true;
+      };
+      window.idleLoadScript = function (src) {
+        function go() {
+          var s = document.createElement('script');
+          s.src = src;
+          s.defer = true;
+          document.body.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(go, { timeout: 3500 });
+        } else {
+          window.addEventListener('load', function () { window.setTimeout(go, 1500); });
+        }
+      };
+      window.idleLoadStylesheet = function (href) {
+        function go() {
+          var l = document.createElement('link');
+          l.rel = 'stylesheet';
+          l.href = href;
+          document.head.appendChild(l);
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(go, { timeout: 3500 });
+        } else {
+          window.addEventListener('load', function () { window.setTimeout(go, 800); });
+        }
+      };
+      {% if google_tag_id %}(function loadGtagLater() {
+        function go() {
+          if (window._gtagSrcLoaded) return;
+          window._gtagSrcLoaded = true;
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id={{ google_tag_id|escapejs }}';
+          document.head.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(go, { timeout: 3500 });
+        } else {
+          window.addEventListener('load', function () { window.setTimeout(go, 1200); });
+        }
+      })();{% endif %}
+    </script>
+    {% if google_tag_id %}<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+    <link rel="dns-prefetch" href="https://www.google-analytics.com">
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com">{% endif %}
+    <style>@media(max-width:1024px){.desktop-category-extra,.desktop-category-nav,.desktop-sale-link{display:none!important}}</style>
+    <link rel="stylesheet" href="{% static 'bera_reference/css/desktop-reference.css' %}?v=20261008-account-desktop-fix" media="(min-width: 1025px)">
+
+    {% if meta_pixel_id %}
+    <link rel="preconnect" href="https://connect.facebook.net" crossorigin>
+    <link rel="dns-prefetch" href="https://www.facebook.com">
+    {% endif %}
+    {% if facebook_domain_verification %}<meta name="facebook-domain-verification" content="{{ facebook_domain_verification }}">{% endif %}
+    {% if site_settings.google_site_verification %}
+    <meta name="google-site-verification" content="{{ site_settings.google_site_verification }}">
+    {% endif %}
+    {% block meta_robots %}
+    {% if meta_robots_content %}<meta name="robots" content="{{ meta_robots_content }}">{% else %}
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    {% endif %}
+    {% endblock %}
+
+    {% with site_name=site_brand %}
+    {% block page_title %}
+    <title>{{ seo_title|default:site_settings.seo_title|default:site_name }}</title>
+    {% endblock %}
+
+    {% block meta_description %}
+    {% with page_description=seo_description|default:site_settings.meta_description %}
+    {% if page_description %}
+    <meta name="description" content="{{ page_description }}">
+    {% endif %}
+    {% endwith %}
+    {% endblock %}
+
+    {# Canonical URL #}
+    {% block canonical %}
+    {% if canonical_url %}
+    <link rel="canonical" href="{{ canonical_url }}">
+    {% else %}
+    <link rel="canonical" href="{{ site_url }}{{ request.path }}">
+    {% endif %}
+    {% endblock %}
+
+    {# Open Graph / Facebook / WhatsApp / LinkedIn #}
+    <meta property="og:site_name" content="{{ site_name }}">
+    <meta property="og:locale" content="bs_BA">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{{ seo_title|default:site_settings.seo_title|default:site_name }}">
+    {% with page_description=seo_description|default:site_settings.meta_description %}
+    {% if page_description %}
+    <meta property="og:description" content="{{ page_description }}">
+    {% endif %}
+    {% endwith %}
+    {% block og_image %}
+    {% if og_image %}
+    <meta property="og:image" content="{{ og_image }}">
+    {% elif site_og_image_url %}
+    <meta property="og:image" content="{{ site_og_image_url }}">
+    <meta property="og:image:secure_url" content="{{ site_og_image_url }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    {% endif %}
+    {% endblock %}
+    <meta property="og:url" content="{% if canonical_url %}{{ canonical_url }}{% else %}{{ site_url }}{{ request.path }}{% endif %}">
+
+    {# Twitter Cards #}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo_title|default:site_settings.seo_title|default:site_name }}">
+    {% with page_description=seo_description|default:site_settings.meta_description %}
+    {% if page_description %}
+    <meta name="twitter:description" content="{{ page_description }}">
+    {% endif %}
+    {% endwith %}
+    {% block twitter_image %}
+    {% if og_image %}
+    <meta name="twitter:image" content="{{ og_image }}">
+    {% elif site_og_image_url %}
+    <meta name="twitter:image" content="{{ site_og_image_url }}">
+    {% endif %}
+    {% endblock %}
+    {% endwith %}
+
+    {% if site_settings.favicon %}
+    <link rel="icon" href="{{ site_settings.favicon.url }}" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="{{ site_settings.favicon.url }}">
+    {% endif %}
+
+    {% block lcp_preload %}{% endblock %}
+    <link rel="preload" href="{% static 'bera_reference/fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{% static 'bera_reference/fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{% static 'bera_reference/css/style.min.css' %}?v=20260915-render-header-v2" as="style">
+    <link rel="stylesheet" href="{% static 'bera_reference/css/style.min.css' %}?v=20260919-wishlist-badge">
+    <link rel="stylesheet" href="{% static 'bera_reference/css/header-base.min.css' %}?v=20260919-wishlist-mobile">
+    {% if theme_ui and theme_ui.css_vars %}
+    <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
+    {% endif %}
+    <style id="site-orange">:root{--ozr-orange:#FF5A00;--ozr-orange-hover:#E04F00;--btn-cart:#FF5A00;--btn-cart-hover:#E04F00;--btn-banner:#FF5A00;--btn-banner-hover:#E04F00;}.header{border-bottom:2px solid var(--ozr-orange,#FF5A00);}.home-products--akcija,.home-brand-strip-section--mockup{border-top:2px solid var(--ozr-orange,#FF5A00)!important;}</style>
+    <link rel="stylesheet" href="{% static 'bera_reference/css/navigation.min.css' %}?v=20260915-render-header-v2">
+    {% block extra_css %}{% endblock %}
+    <link rel="stylesheet" href="{% static 'bera_reference/css/storefront-extras.min.css' %}?v=20260915-render-header-v2">
+    {% if user.is_superuser %}
+    <style>
+        body #header .logo-brand:has(.logo-admin-panel) {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        body #header .logo-brand:has(.logo-admin-panel) > .logo {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        body #header .logo-brand:has(.logo-admin-panel) .logo-image {
+            max-width: 100%;
+        }
+        body #header .logo-admin-panel {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            min-height: 36px;
+            padding: 7px 10px;
+            border: 1px solid #dedfe4;
+            border-radius: 8px;
+            background: #f5f5f7;
+            color: #111;
+            font-size: 12px;
+            font-weight: 650;
+            line-height: 1.2;
+            text-align: center;
+            text-decoration: none;
+        }
+        body #header .logo-admin-panel:hover { border-color: #ff5a00; color: #ff5a00; }
+        body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
+    </style>
+    {% endif %}
+    <link rel="stylesheet" href="{% static 'bera_reference/css/home-mobile-reference.css' %}?v=20261008-shared-header">
+    <link rel="stylesheet" href="{% static 'bera_reference/css/mobile-dock.css' %}?v=20260919-wishlist-badge">
+    <link rel="stylesheet" href="{% static 'bera_reference/css/wishlist.css' %}?v=20260919-mobile-sheet">
+
+    <style>.desktop-trust-bar,.header-category-select,.header-register{display:none!important}</style>
+    <link rel="stylesheet" href="{% static 'bera_reference/css/header-reference.css' %}?v=20260919-wishlist-popover" media="(min-width: 1025px)">
+    <style>
+      @media (min-width: 1025px) {
+        body #header .nav-actions .reference-header-search,
+        body #header .nav-actions .mobile-home-search-action,
+        body #header .nav-actions .pd-reference-search,
+        body #header .nav-actions [data-mobile-home-search] {
+          display: none !important;
+        }
+      }
+    </style>
+
+    {% if meta_pixel_id %}
+    <!-- Meta Pixel — učitava se nakon prvog rendera da ne koči LCP -->
+    <script data-cfasync="false">
+    window._fbqPending = [];
+    window.trackMetaAddToCart = function (meta) {
+        if (typeof fbq === 'function') {
+            fbq('track', 'AddToCart', {
+                content_ids: [String(meta.content_id)],
+                content_type: 'product',
+                content_name: meta.content_name,
+                contents: [{ id: String(meta.content_id), quantity: meta.quantity || 1 }],
+                value: meta.value,
+                currency: 'BAM'
+            }, meta.event_id ? { eventID: meta.event_id } : {});
+            return;
+        }
+        window._fbqPending.push(['atc', meta]);
+    };
+    window.trackMetaPurchase = function (el) {
+        window._fbqPending.push(['purchase', el]);
+    };
+    window.trackMetaInitiateCheckout = function (el) {
+        window._fbqPending.push(['ic', el]);
+    };
+    function loadMetaPixel() {
+        if (window.fbq) return;
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window, document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '{{ meta_pixel_id|escapejs }}');
+        var metaPageViewEventId = '{{ meta_page_view_event_id|default:""|escapejs }}';
+        if (metaPageViewEventId) {
+            fbq('track', 'PageView', {}, { eventID: metaPageViewEventId });
+        } else {
+            fbq('track', 'PageView');
+        }
+        window.trackMetaPurchase = function (el) {
+            if (!el || typeof fbq !== 'function') return;
+            var payload = {
+                value: parseFloat(el.dataset.value, 10),
+                currency: 'BAM',
+                content_ids: (el.dataset.contentIds || '').split(',').filter(Boolean),
+                content_type: 'product',
+                num_items: parseInt(el.dataset.numItems, 10) || 0
+            };
+            if (el.dataset.orderId) payload.order_id = el.dataset.orderId;
+            if (el.dataset.contents) {
+                try { payload.contents = JSON.parse(el.dataset.contents); } catch (e) {}
+            }
+            fbq('track', 'Purchase', payload, el.dataset.eventId ? { eventID: el.dataset.eventId } : {});
+        };
+        window.trackMetaInitiateCheckout = function (el) {
+            if (!el || typeof fbq !== 'function' || window._metaInitiateCheckoutSent) return;
+            window._metaInitiateCheckoutSent = true;
+            var payload = {
+                currency: 'BAM',
+                value: parseFloat(el.dataset.value, 10),
+                num_items: parseInt(el.dataset.numItems, 10) || 0,
+                content_type: 'product',
+                content_ids: (el.dataset.contentIds || '').split(',').filter(Boolean)
+            };
+            if (el.dataset.contents) {
+                try { payload.contents = JSON.parse(el.dataset.contents); } catch (e) {}
+            }
+            fbq('track', 'InitiateCheckout', payload, el.dataset.eventId ? { eventID: el.dataset.eventId } : {});
+        };
+        (window._fbqPending || []).forEach(function (item) {
+            if (item[0] === 'atc') window.trackMetaAddToCart(item[1]);
+            else if (item[0] === 'purchase') window.trackMetaPurchase(item[1]);
+            else if (item[0] === 'ic') window.trackMetaInitiateCheckout(item[1]);
+        });
+        window._fbqPending = [];
+    }
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(loadMetaPixel, { timeout: 2500 });
+    } else {
+        window.addEventListener('load', loadMetaPixel);
+    }
+    </script>
+    {% endif %}
+    {# Critical header layout travels with HTML, even when a CDN serves older CSS. #}
+    <style id="site-chrome-layout">
+        body .site-chrome-sticky {
+            position: fixed !important;
+            inset: 0 0 auto !important;
+            width: 100%;
+            z-index: 1002;
+            background: #fff;
+        }
+        body .site-chrome-sticky .promo-bar,
+        body .site-chrome-sticky .header {
+            position: relative !important;
+            inset: auto !important;
+        }
+        body .site-chrome-spacer {
+            display: block;
+            height: var(--site-chrome-height, var(--site-chrome-top));
+            flex: 0 0 auto;
+        }
+        body { padding-top: 0 !important; }
+        html { scroll-padding-top: var(--site-chrome-top); }
+    </style>
+    <style>
+    .desktop-trust-bar nav a.site-wholesale-link {
+        display:inline-block; font-weight:800; letter-spacing:.06em;
+        color:#ff5a00; white-space:nowrap;
+        animation:site-wholesale-pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes site-wholesale-pulse {
+        0%,100% { opacity:1; }
+        50% { opacity:.5; }
+    }
+    .desktop-trust-bar nav a.site-wholesale-link:hover,
+    .desktop-trust-bar nav a.site-wholesale-link:focus-visible { animation:none; opacity:1; }
+    @media(prefers-reduced-motion:reduce) {
+        .desktop-trust-bar nav a.site-wholesale-link { animation:none; }
+    }
+    </style>
+{% block storefront_theme %}{% endblock %}
+<link rel="stylesheet" href="{% static 'bera_reference/css/bera-home.css' %}?v=20261010-all-catalog-image-size">
+<link rel="stylesheet" href="{% static 'bera_reference/css/bera-offer-popup.css' %}?v=20261008-blue-offers">
+{% if bera_button_color %}
+<style>
+body.bera-storefront-header .scratch-game{--scratch-accent:{{ bera_button_color }}}
+body.bera-storefront-header:not(.panel-blue-workspace):not(.wms-independent):not(.staff-shell-page) :is(.btn,.button,.bera-hero-cta,.product-card-add-btn,.checkout-submit,.cart-checkout-btn,.bera-newsletter button,main button[type=submit]),
+body.bera-storefront-header:not(.panel-blue-workspace):not(.wms-independent):not(.staff-shell-page) .product-catalog .product-card-add-btn{background:{{ bera_button_color }}!important;border-color:{{ bera_button_color }}!important;color:{{ bera_button_text }}!important}
+body.bera-storefront-header:not(.panel-blue-workspace):not(.wms-independent):not(.staff-shell-page) :is(.btn,.button,.product-card-add-btn,.bera-newsletter button,main button[type=submit]):hover{filter:brightness(.9)}
+body.bera-storefront-header :is(.product-card-corner-badge,.home-card-new-label,.home-card-sale-percent){background:{{ bera_button_color }}!important;color:#fff!important}
+body.bera-storefront-header #header .nav-toggle{color:{{ bera_button_color }}!important}
+body.bera-storefront-header #header .bera-home-nav .is-current,
+body.bera-storefront-header #header .wishlist-badge,
+body.bera-storefront-header #header .cart-badge{background:{{ bera_button_color }}!important;color:#fff!important}
+body.bera-storefront-header .bera-offer-banner__button{background:{{ bera_button_color }}!important;border-color:{{ bera_button_color }}!important;color:#fff!important}
+body.bera-storefront-header .bera-offer-banner:hover .bera-offer-banner__button{filter:brightness(.9)}
+body.bera-storefront-header.home-mobile-reference .home-section-header__see-all,
+body.bera-storefront-header .home-category-showcase-link,
+body.bera-storefront-header .bera-product-related-heading a,
+body.bera-storefront-header .bera-cart-recommendations header a{color:{{ bera_button_color }}!important}
+body.bera-storefront-header .product-card-add-btn :is(svg,.product-card-add-btn__icon){color:#fff!important;stroke:currentColor!important}
+</style>
+{% endif %}
+
+</head>
+<body data-shop-name="{{ shop_name }}" data-site-url="{{ public_site_url }}" data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="bera-storefront-header {% if request.path == '/panel' or request.path|slice:':7' == '/panel/' %}panel-blue-workspace {% endif %}{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
+    {% if request.path == '/panel' or request.path|slice:':7' == '/panel/' %}
+    <link rel="stylesheet" href="{% static 'bera_reference/css/panel-shell.css' %}?v=20261007-compact">
+    <link rel="stylesheet" href="{% static 'bera_reference/css/panel-blue.css' %}?v=20261008-all-panel">
+    <script src="{% static 'bera_reference/js/panel-articles-fit.js' %}?v=20261008-all-panel" defer></script>
+    <nav class="panel-back-nav" aria-label="Povratak"><a class="panel-back-arrow" href="{% if request.path == '/panel' or request.path == '/panel/' %}{% url 'home' %}{% elif request.path == '/panel/sekcija/scratchprize/' %}{% url 'staff_scratch_workspace' %}{% elif request.path == '/panel/sekcija/loyaltycard/' %}{% url 'staff_loyalty_workspace' %}{% elif request.path == '/panel/sekcija/warehousecustomer/' or request.path == '/panel/sekcija/warehouselocation/' or request.path == '/panel/sekcija/productwarehousemeta/' or request.path == '/panel/sekcija/warehousesynclog/' %}{% url 'staff_wms_workspace' %}{% else %}{% url 'staff_panel' %}{% endif %}" aria-label="Nazad" title="Nazad">←</a></nav>
+    {% else %}
+    {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
+    <div class="site-chrome-backdrop" aria-hidden="true"></div>
+
+    <div class="site-chrome-sticky">
+    <div class="promo-bar">
+        <div class="desktop-trust-bar">
+            <div class="desktop-trust-benefits">
+                <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4h13v13H2zM15 9h4l3 4v4h-7M5 8h7M5 11h7"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>Besplatna dostava za narudžbe iznad {{ site_settings.besplatna_dostava_od|default:'250'|floatformat:'-2' }} KM</span>
+                <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 3"/></svg>Brza dostava u roku 24h</span>
+                <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6zM7 11l3 3 6-6"/></svg>Sigurna kupovina</span>
+            </div>
+            <nav aria-label="Informacije"><a href="#footerContact">Kontakt</a><a href="{% url 'about_us' %}">O nama</a><a href="{% url 'vlog_list' %}">Blog</a><a href="{% url 'payment_methods' %}">Pomoć</a><a class="site-wholesale-link" href="{% url 'b2b_catalog' %}">VELEPRODAJA</a></nav>
+        </div>
+        <p>
+            <span data-site-edit="promo_bar_tekst" data-site-edit-placeholder="Promo tekst">{% if site_settings.promo_bar_tekst %}{{ site_settings.promo_bar_tekst }}{% endif %}</span>
+            <a href="{% url 'register' %}"{% if staff_edit_mode %} data-site-edit="promo_bar_link_tekst" data-site-edit-placeholder="Link tekst"{% endif %}>{% if site_settings.promo_bar_link_tekst %}{{ site_settings.promo_bar_link_tekst }}{% elif not staff_edit_mode %}Pridruži se sada{% endif %}</a>
+        </p>
+    </div>
+
+    <header class="header" id="header">
+        <div class="header-shell">
+            <div class="header-row header-row--primary">
+                <div class="header-leading">
+                    <button class="nav-toggle" id="navToggle" aria-label="Otvori meni">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="logo-brand">
+                    <a href="{% url 'home' %}" class="logo" aria-label="{{ shop_name }}">
+                        {% if site_settings.logo %}
+                        <img src="{{ site_settings.logo.url }}" alt="{{ shop_name }}" class="logo-image{% if site_settings.logo.width == site_settings.logo.height %} bera-logo-symbol{% endif %}" width="480" height="76" loading="eager" fetchpriority="low" decoding="async">
+                        {% else %}
+                        <strong class="logo-image">{{ shop_name }}</strong>
+                        {% endif %}
+                    </a>
+                </div>
+
+                <div class="header-search" id="headerSearch">
+                    <form class="header-search-form" method="get" action="{% url 'home' %}" id="searchForm">
+                        <span class="header-search-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="7"/>
+                                <path d="M20 20l-3-3"/>
+                            </svg>
+                        </span>
+                        <div class="search-combobox" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-haspopup="listbox">
+                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži proizvode..." autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
+                        </div>
+                        <select name="kategorija" class="header-category-select" aria-label="Kategorija pretrage">
+                            <option value="">Sve kategorije</option>
+                            {% for cat in nav_categories %}<option value="{{ cat.slug }}"{% if filter_params.kategorija == cat.slug %} selected{% endif %}>{{ cat.naziv }}</option>{% endfor %}
+                        </select>
+                        <button type="submit" class="header-search-submit" aria-label="Pretraži proizvode">
+                            <svg class="header-search-submit-icon" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/></svg>
+                            <span class="header-search-submit-label">TRAŽI</span>
+                        </button>
+                        <button type="button" class="search-close" id="searchClose" aria-label="Zatvori pretragu">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </form>
+                    <div class="search-suggestions" id="searchSuggestions" role="listbox" hidden></div>
+                </div>
+
+                <div class="nav-actions">
+                    <button type="button" class="nav-action-link reference-header-search" data-mobile-home-search aria-label="Pretraga"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.8"/><path d="m16.2 16.2 5.4 5.4"/></svg></button>
+                    {% if contact_phone %}
+                    <a href="tel:{{ contact_phone_digits|default:contact_phone }}" class="nav-action-link header-phone" aria-label="Telefon {{ contact_phone }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                        <span class="nav-action-label header-phone__text">
+                            <span class="header-phone__kicker">POZOVI NAS</span>
+                            <span class="header-phone__num">{{ contact_phone }}</span>
+                        </span>
+                    </a>
+                    {% endif %}
+
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'account' %}" class="nav-action-link account-btn" aria-label="Nalog">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 21v-1a8 7 0 0 1 16 0v1Z"/>
+                            <circle cx="12" cy="6" r="4"/>
+                        </svg>
+                        <span class="nav-action-label">Moj nalog</span>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'login' %}" class="nav-action-link account-btn" aria-label="Prijava">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 21v-1a8 7 0 0 1 16 0v1Z"/>
+                            <circle cx="12" cy="6" r="4"/>
+                        </svg>
+                        <span class="nav-action-label">Moj nalog</span>
+                    </a>
+                    {% endif %}
+                    <div class="wishlist-menu">
+                    <button type="button" class="nav-action-link reference-header-heart" data-mobile-favorites aria-label="Lista želja" aria-haspopup="dialog" aria-expanded="false" aria-controls="wishlistPopover">
+                        <span class="nav-action-icon">
+                            <svg class="wishlist-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+                            <span class="wishlist-badge" data-wishlist-count>0</span>
+                        </span>
+                        <span class="nav-action-label">Lista želja</span>
+                    </button>
+                    <div class="wishlist-popover" id="wishlistPopover" hidden>
+                        {% include 'bera_reference/partials/wishlist_panel.html' %}
+                    </div>
+                    </div>
+                    <div class="nav-cart-stack">
+                    <a href="{% url 'cart' %}" class="nav-action-link cart-btn{% if cart_count %} cart-btn--has-items{% endif %}" aria-label="Korpa" data-cart-count="{{ cart_count|default:0 }}">
+                        <span class="nav-action-icon">
+                            <svg class="cart-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 3h3l3 13h11l3-10H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
+                </svg>
+                            <span class="cart-badge">{{ cart_count|default:0 }}</span>
+                        </span>
+                        <span class="nav-action-label">Korpa</span>
+                    </a>
+                    {% if user.is_authenticated and user.is_superuser %}
+                    <div class="staff-edit-controls">
+                    {% if staff_edit_mode %}
+                    <button type="button" class="staff-missing-filter-toggle" data-staff-missing-filter-toggle aria-controls="staffMissingFilter" aria-expanded="{% if request.GET.nedostaje %}true{% else %}false{% endif %}">Filter</button>
+                    {% endif %}
+                    <form method="post" action="{% url 'staff_toggle_edit_mode' %}" class="staff-edit-toggle-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <input type="hidden" name="enabled" value="0">
+                        <label class="staff-edit-toggle">
+                            <input type="checkbox" name="enabled" value="1"{% if staff_edit_mode %} checked{% endif %} onchange="this.form.submit()">
+                            Edit
+                        </label>
+                    </form>
+                    </div>
+                    {% endif %}
+                    </div>
+                    <a class="desktop-sale-link" href="{% url 'home' %}?akcija=1#product-showcase" hidden>Akcijska ponuda <span aria-hidden="true">%</span></a>
+                    <button type="button" class="nav-action-link reference-header-menu" data-mobile-home-menu aria-label="Otvori kategorije"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg></button>
+                </div>
+            </div>
+
+            {% include 'bera_reference/partials/bera_home_nav.html' %}
+            <nav class="desktop-category-nav" aria-label="Kategorije proizvoda" hidden>
+                {% for nav_cat in nav_categories %}
+                {% if nav_cat.podkategorije.all %}
+                <details class="desktop-category-dropdown">
+                    <summary>{{ nav_cat.naziv }} <span aria-hidden="true">⌄</span></summary>
+                    <div class="desktop-category-dropdown__panel">
+                        <a class="desktop-category-dropdown__all" href="{{ nav_cat.get_absolute_url }}?all=1">Sve {{ nav_cat.naziv|lower }}</a>
+                        {% for sub in nav_cat.podkategorije.all %}
+                        <a href="{{ sub.get_absolute_url }}">{{ sub.naziv }}</a>
+                        {% endfor %}
+                    </div>
+                </details>
+                {% else %}<a href="{{ nav_cat.get_absolute_url }}">{{ nav_cat.naziv }}</a>{% endif %}
+                {% endfor %}
+            </nav>
+            <nav class="header-row header-row--categories" aria-label="Kategorije">
+                <div class="cats-dropdown{% if cats_sidebar_open %} is-open cats-dropdown--locked{% endif %}" id="catsDropdown">
+                    <button type="button" class="cats-dropdown__btn" id="catsDropdownBtn" aria-expanded="{% if cats_sidebar_open %}true{% else %}false{% endif %}" aria-controls="catsDropdownPanel"{% if cats_sidebar_open %} aria-disabled="true"{% endif %}>
+                        <span class="cats-dropdown__burger" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                                <line x1="4" y1="7" x2="20" y2="7"/>
+                                <line x1="4" y1="12" x2="20" y2="12"/>
+                                <line x1="4" y1="17" x2="20" y2="17"/>
+                            </svg>
+                        </span>
+                        <span class="cats-dropdown__btn-label">Sve kategorije</span>
+                        <span class="cats-dropdown__btn-chevron" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </span>
+                    </button>
+                    <div class="cats-dropdown__panel" id="catsDropdownPanel"{% if not cats_sidebar_open %} hidden{% endif %}>
+                        <ul class="cats-dropdown__list">
+                            {% for nav_cat in nav_categories %}
+                            <li class="cats-dropdown__item{% if nav_cat.podkategorije.all %} cats-dropdown__item--has-sub{% endif %}{% if category %}{% if nav_cat.pk == category.pk or category.roditelj_id == nav_cat.pk or category.roditelj and category.roditelj.roditelj_id == nav_cat.pk %} is-open is-current{% endif %}{% endif %}">
+                                <a href="{{ nav_cat.get_absolute_url }}" class="cats-dropdown__link"{% if nav_cat.podkategorije.all %} data-cats-toggle="1" aria-expanded="{% if category %}{% if nav_cat.pk == category.pk or category.roditelj_id == nav_cat.pk or category.roditelj and category.roditelj.roditelj_id == nav_cat.pk %}true{% else %}false{% endif %}{% else %}false{% endif %}"{% endif %}>
+                                    {% include 'bera_reference/partials/nav_category_icon.html' with naziv=nav_cat.naziv slug=nav_cat.slug %}
+                                    <span class="cats-dropdown__name">{{ nav_cat.naziv }}</span>
+                                    {% if nav_cat.podkategorije.all %}
+                                    <span class="cats-dropdown__chevron" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                                    </span>
+                                    {% endif %}
+                                </a>
+                                {% if nav_cat.podkategorije.all %}
+                                <ul class="cats-dropdown__sub">
+                                    <li class="cats-dropdown__sub-all">
+                                        <a href="{{ nav_cat.get_absolute_url }}?all=1"{% if category and category.pk == nav_cat.pk %} class="is-current"{% endif %}>
+                                            <span class="cats-dropdown__sub-arrow" aria-hidden="true">›</span>
+                                            Sve {{ nav_cat.naziv|lower }}
+                                        </a>
+                                    </li>
+                                    {% for sub in nav_cat.podkategorije.all %}
+                                    <li>
+                                        <a href="{{ sub.get_absolute_url }}"{% if category and category.pk == sub.pk %} class="is-current"{% endif %}>{{ sub.naziv }}</a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                            <li class="cats-dropdown__item cats-dropdown__item--sale{% if filter_params.akcija %} is-current{% endif %}">
+                                <a href="{% url 'home' %}?akcija=1#product-showcase" class="cats-dropdown__link cats-dropdown__link--sale">
+                                    <span class="cat-ico" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.2"/><circle cx="16" cy="16" r="2.2"/><path d="M7 17L17 7"/></svg>
+                                    </span>
+                                    <span class="cats-dropdown__name">Akcije i popusti</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mobile-nav-panel" id="mobileNavPanel">
+                    <div class="mobile-nav-panel__header">
+                        <button type="button" class="mobile-nav-panel__back" id="mobileNavClose" aria-label="Zatvori meni kategorija">
+                            <span class="mobile-nav-panel__back-icon" aria-hidden="true">‹</span>
+                            Nazad
+                        </button>
+                    </div>
+                    <ul class="nav-menu" id="navLinks">
+                    {% for category in nav_categories %}
+                    <li class="nav-item {% if category.podkategorije.all %}has-mega-menu{% endif %}"
+                        data-nav-item
+                        {% if category.podkategorije.all %}data-mega-target="mega-{{ category.slug }}"{% endif %}>
+                        <a href="{{ category.get_absolute_url }}">
+                            {{ category.naziv }}
+                            {% if category.podkategorije.all %}
+                            <span class="nav-chevron" aria-hidden="true"></span>
+                            {% endif %}
+                        </a>
+                        {% if category.podkategorije.all %}
+                        <ul class="nav-submenu">
+                            <li class="nav-submenu-all">
+                                <a href="{{ category.get_absolute_url }}?all=1">Sve u {{ category.naziv }}</a>
+                            </li>
+                            {% for sub in category.podkategorije.all %}
+                            <li class="nav-submenu-group">
+                                <a href="{{ sub.get_absolute_url }}" class="nav-submenu-title">{{ sub.naziv }}</a>
+                                {% if sub.podkategorije.all %}
+                                <ul class="nav-submenu-nested">
+                                    {% for subsub in sub.podkategorije.all %}
+                                    <li><a href="{{ subsub.get_absolute_url }}">{{ subsub.naziv }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                    <li class="nav-item nav-item--akcija">
+                        <a href="{% url 'home' %}?akcija=1#product-showcase" class="nav-link-akcija">AKCIJE</a>
+                    </li>
+                    <li class="nav-item nav-item--set">
+                        <a href="{% url 'set_builder' %}" class="nav-link-set{% if request.resolver_match.url_name == 'set_builder' %} is-current{% endif %}" data-set-builder-gate>
+                            Kreiraj svoj set
+                            <span class="nav-link-set__beta">BETA</span>
+                        </a>
+                    </li>
+                    <li class="nav-item nav-item--noviteti nav-item--akcija-mobile">
+                        <a href="{% url 'home' %}?noviteti=1#product-showcase" class="nav-link-noviteti">NOVITETI</a>
+                    </li>
+                    </ul>
+                </div>
+                <div class="mobile-nav-subview" id="mobileNavSubview" aria-hidden="true">
+                    <button type="button" class="mobile-nav-back" id="mobileNavBack">
+                        <span class="mobile-nav-back__icon" aria-hidden="true">‹</span>
+                        Nazad
+                    </button>
+                    <h2 class="mobile-nav-subview-title" id="mobileNavSubTitle"></h2>
+                    <div class="mobile-nav-subview-body" id="mobileNavSubBody"></div>
+                </div>
+
+                <span class="nav-wholesale-prompt">Želite naše usluge veleprodaje? Kliknite --&gt;</span>
+                <a href="{% url 'b2b_catalog' %}" class="nav-link-veleprodaja">VELEPRODAJA</a>
+            </nav>
+
+            {# Plutajuća dugmad Akcija/Noviteti uklonjena — sekcije su na početnoj #}
+        </div>
+
+        <div class="mega-menu-panel" id="megaMenuPanel">
+            {% for category in nav_categories %}
+            {% if category.podkategorije.all %}
+            <div class="mega-menu" id="mega-{{ category.slug }}" data-mega-menu>
+                <div class="mega-menu-inner">
+                    <div class="mega-menu-subcategories">
+                        {% for sub in category.podkategorije.all %}
+                        <div class="mega-menu-group">
+                            <p class="mega-menu-group-title">
+                                <a href="{{ sub.get_absolute_url }}">{{ sub.naziv }}</a>
+                            </p>
+                            {% if sub.podkategorije.all %}
+                            <ul>
+                                {% for subsub in sub.podkategorije.all %}
+                                <li>
+                                    <a href="{{ subsub.get_absolute_url }}">{{ subsub.naziv }}</a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </header>
+    </div>
+
+    <div class="site-chrome-spacer" aria-hidden="true"></div>
+    <script>
+    (function () {
+        var root = document.documentElement;
+        var chrome = document.querySelector('.site-chrome-sticky');
+        var promo = chrome.querySelector('.promo-bar');
+        var header = document.getElementById('header');
+        var pending = false;
+        function setHeight(name, height) {
+            var value = Math.ceil(height) + 'px';
+            if (root.style.getPropertyValue(name) !== value) root.style.setProperty(name, value);
+        }
+        function measure() {
+            pending = false;
+            // Read all geometry before writing CSS: one layout pass.
+            var promoH = promo.getBoundingClientRect().height;
+            var headerH = header.getBoundingClientRect().height;
+            var totalH = chrome.getBoundingClientRect().height;
+            setHeight('--promo-height', promoH);
+            setHeight('--header-height', headerH);
+            setHeight('--site-chrome-height', totalH);
+            setHeight('--site-chrome-top', totalH + 2);
+        }
+        function schedule() {
+            if (pending) return;
+            pending = true;
+            requestAnimationFrame(measure);
+        }
+        window.syncSiteChromeOffset = schedule;
+        measure();
+        window.addEventListener('resize', schedule, { passive: true });
+        window.addEventListener('load', schedule, { once: true });
+        if (window.ResizeObserver) {
+            var observer = new ResizeObserver(schedule);
+            observer.observe(chrome);
+            observer.observe(promo);
+            observer.observe(header);
+        }
+        if (document.fonts) document.fonts.ready.then(schedule);
+    })();
+    </script>
+
+    {% endif %}
+
+    {% block flash_messages %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for message in messages %}
+        {# Staff magacin success toasts stay off the public shop. #}
+        {% if not user.is_staff and not user.is_superuser or request.path|slice:':7' == '/nalog/' or 'success' not in message.tags %}
+        <p class="flash-message flash-message--{{ message.tags }}">{{ message }}</p>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endblock %}
+
+    <main>
+        {% if staff_edit_mode %}
+        <nav class="staff-missing-filter" id="staffMissingFilter" aria-label="Provjera artikala"{% if not request.GET.nedostaje %} hidden{% endif %}>
+            <span class="staff-missing-filter__label">Artikli kojima nedostaje:</span>
+            <a href="{% url 'home' %}?nedostaje=opis#product-showcase"{% if request.GET.nedostaje == 'opis' %} aria-current="page"{% endif %}>Opis</a>
+            <a href="{% url 'home' %}?nedostaje=slika#product-showcase"{% if request.GET.nedostaje == 'slika' %} aria-current="page"{% endif %}>Slika</a>
+            <a href="{% url 'home' %}?nedostaje=kategorija#product-showcase"{% if request.GET.nedostaje == 'kategorija' %} aria-current="page"{% endif %}>Kategorija</a>
+            <a href="{% url 'home' %}?nedostaje=tag#product-showcase"{% if request.GET.nedostaje == 'tag' %} aria-current="page"{% endif %}>Tag</a>
+            {% if request.GET.nedostaje %}<a href="{% url 'home' %}" class="staff-missing-filter__clear">Poništi</a>{% endif %}
+        </nav>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include 'bera_reference/partials/site_popup.html' %}
+    {% include 'bera_reference/partials/upsell_popup.html' %}
+    {% include 'bera_reference/partials/cart_recovery_popup.html' %}
+    {% include 'bera_reference/partials/cart_abandon_exit_popup.html' %}
+    {% include 'bera_reference/partials/cart_exit_popup.html' %}
+    {% include 'bera_reference/partials/gratis_offer_modal.html' %}
+    {% include 'bera_reference/partials/qty_deal_offer_modal.html' %}
+    {% include 'bera_reference/partials/social_proof_toast.html' %}
+
+    {% include 'bera_reference/partials/mobile_dock.html' %}
+    {% block site_footer %}{% include 'bera_reference/partials/footer.html' %}{% endblock %}
+    {% include 'bera_reference/partials/contact_float.html' %}
+    {% if site_settings.javno_online_posjetioci %}
+    {% include 'bera_reference/partials/public_online_visitors.html' %}
+    {% endif %}
+    {% include 'bera_reference/partials/catalog_variation_modal.html' %}
+    {% include 'bera_reference/partials/stock_notify_popup.html' %}
+
+    <button type="button" class="scroll-top-btn" id="scrollTopBtn" aria-label="Na vrh stranice">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="18 15 12 9 6 15"/>
+        </svg>
+    </button>
+
+    {% if organization_json_ld %}
+    <script type="application/ld+json">{{ organization_json_ld|safe }}</script>
+    {% endif %}
+    {% if website_json_ld %}
+    <script type="application/ld+json">{{ website_json_ld|safe }}</script>
+    {% endif %}
+    {% block structured_data %}{% endblock %}
+    <script src="{% static 'bera_reference/js/csrf-session.js' %}?v=20261001" data-cookie-name="{{ csrf_cookie_name }}" defer></script>
+    <script src="{% static 'bera_reference/js/main.min.js' %}?v=20260916-account-scroll-top" defer></script>
+    <script src="{% static 'bera_reference/js/desktop-reference.js' %}?v=20260914-dropdowns" defer></script>
+    <script src="{% static 'bera_reference/js/stock-notify.js' %}?v=20260916-notify-no-autofocus" defer></script>
+    {% if site_settings.javno_online_posjetioci %}
+    <script>idleLoadScript("{% static 'bera_reference/js/public-online-visitors.js' %}?v=20260716v1");</script>
+    {% endif %}
+    {% if not user.is_authenticated or not user.is_superuser %}
+    <script>idleLoadScript("{% static 'bera_reference/js/almost-cart.js' %}?v=20260712v3");</script>
+    {% endif %}
+    {# Live praćenje svih osim superusera — incognito / gost / registrovan #}
+    {% if not user.is_authenticated or not user.is_superuser %}
+    <div id="visitorPresenceRoot" hidden
+         data-heartbeat-url="{% url 'live_visitor_heartbeat' %}"
+         data-leave-url="{% url 'live_visitor_leave' %}"
+         data-session-key="{{ request.session.session_key|default:'' }}"></div>
+    <script>idleLoadScript("{% static 'bera_reference/js/visitor-presence.js' %}?v=20260831fast");</script>
+    {% endif %}
+    {% if user.is_authenticated and user.is_superuser %}
+    <link rel="stylesheet" href="{% static 'bera_reference/css/staff-alerts.css' %}?v=20260909ordercard">
+    <div id="staffAlertsRoot" hidden
+         data-logo-url="{{ brand_logo_url }}"
+         data-poll-url="{% url 'staff_site_events_poll' %}"
+         data-analytics-url="{% url 'staff_live_analytics' %}"
+         data-orders-url="{% url 'staff_online_orders' %}"
+         {% if request.resolver_match and request.resolver_match.url_name == 'staff_live_analytics' %}data-disable-toasts="1"{% endif %}></div>
+    <script src="{% static 'bera_reference/js/staff-alerts.js' %}?v=20261005-email-orders" defer></script>
+    {% endif %}
+    {% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
+    {% include 'bera_reference/partials/staff_site_editor.html' %}
+    <link rel="stylesheet" href="{% static 'bera_reference/css/staff-site-edit.css' %}?v=20260929bulkTags">
+    <script src="{% static 'bera_reference/js/staff-site-edit.js' %}?v=20260929bulkTags" defer></script>
+    {% endif %}
+    <div class="setb-gate" id="setBuilderGate" hidden
+         data-unlock-url="{% url 'set_builder_unlock' %}"
+         data-target-url="{% url 'set_builder' %}"
+         {% if request.session.set_builder_ok %}data-unlocked="1"{% endif %}
+         {% if set_builder_gate_open %}data-auto-open="1"{% endif %}>
+        <div class="setb-gate__backdrop" data-set-builder-close></div>
+        <div class="setb-gate__panel" role="dialog" aria-modal="true" aria-labelledby="setBuilderGateTitle">
+            <button type="button" class="setb-gate__close" data-set-builder-close aria-label="Zatvori">×</button>
+            <p class="setb-gate__beta">BETA</p>
+            <h2 id="setBuilderGateTitle">Kreiraj svoj set</h2>
+            <p class="setb-gate__msg">Funkcija je u test fazi i uskoro će biti dostupna svim kupcima.</p>
+            <form class="setb-gate__form" id="setBuilderGateForm">
+                <label for="setBuilderGatePassword">Lozinka za testni pristup</label>
+                <input type="password" id="setBuilderGatePassword" name="password" autocomplete="current-password" placeholder="Lozinka">
+                <p class="setb-gate__error" id="setBuilderGateError" hidden></p>
+                <button type="submit" class="setb-gate__submit">Uđi</button>
+            </form>
+        </div>
+    </div>
+    <script src="{% static 'bera_reference/js/set-builder-gate.js' %}?v=20260903beta" defer></script>
+    {% include 'bera_reference/partials/permanent_input_history.html' %}
+    {% if not scratch_module_locked %}
+    <section class="scratch-game{% if scratch_game_immediate %} scratch-game--immediate scratch-game--loading{% endif %}" id="scratchGame" data-csrf-refresh-url="{% url 'auth_csrf_token' %}" data-status-url="{% url 'scratch_status' %}" data-event-url="{% url 'scratch_event' %}" data-claim-url="{% url 'scratch_claim' %}" data-add-to-order-url="{% url 'scratch_add_product_to_order' %}"{% if scratch_game_immediate %} data-immediate="1"{% endif %}{% if scratch_game_return_url %} data-after-close-url="{{ scratch_game_return_url }}"{% endif %}{% if not scratch_game_immediate %} hidden{% endif %} aria-modal="true" role="dialog" aria-labelledby="scratchGameTitle">
+      <div class="scratch-game__panel"><button class="scratch-game__close" type="button" aria-label="Zatvori">×</button>
+        <h2 id="scratchGameTitle">GREB-GREB</h2>
+        <p id="scratchGameSubtitle" class="scratch-game__subtitle">Ogrebite i otkrijte svoju nagradu</p>
+        <div class="scratch-game__card"><div id="scratchProductReveal" class="scratch-reveal-product" hidden><p class="scratch-reveal-win">ČESTITAMO!</p><small id="scratchRevealPack" class="scratch-reveal-pack" hidden></small><div class="scratch-reveal-media"><img id="scratchRevealImage" alt=""></div><b id="scratchRevealDiscount"></b><div class="scratch-reveal-prices"><del id="scratchRevealRegularPrice"></del><strong id="scratchRevealPrice"></strong></div><span id="scratchRevealName"></span></div><strong id="scratchGameReward">Nagrada je skrivena</strong><canvas id="scratchGameCanvas" aria-label="Grebi ovdje za otkrivanje nagrade"></canvas></div>
+        <p id="scratchGameResult" class="scratch-game__result" hidden></p><div id="scratchProductChoice" hidden><p>Želite li ovaj artikal dodati u upravo kreiranu narudžbu?</p><button type="button" id="scratchAddToOrder">Dodaj u narudžbu</button><button type="button" id="scratchSkipProduct">Ne želim</button></div>
+        <button type="button" id="scratchContinue" class="scratch-game__continue" hidden>NASTAVI KUPOVINU</button>
+      </div>
+    </section>
+    <script src="{% static 'bera_reference/js/scratch-game.js' %}?v=20261011-site-scratch" defer></script>
+    {% endif %}
+    <script>
+      if ('serviceWorker' in navigator && window.isSecureContext) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('{% url "pwa_service_worker" %}', { scope: '/' }).catch(function () {});
+        });
+      }
+    </script>
+    {% block extra_js %}{% endblock %}
+{% if user.is_authenticated and user.is_staff or user.is_authenticated and user.is_superuser %}{% include 'bera_reference/partials/module_unlock_dialog.html' %}{% endif %}
+<script src="{% static 'bera_reference/js/bera-brand-logo-align.js' %}?v=20261008-small" defer></script>
+</body>
+</html>

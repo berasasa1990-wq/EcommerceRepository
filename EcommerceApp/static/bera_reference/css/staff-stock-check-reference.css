@@ -1,0 +1,33 @@
+/* Stock verification screen; print output and status semantics are unchanged. */
+@media screen{
+body.magacin-page.is-stock-check-reference{--pl-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--pl-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--pl-edge:#9b9da2;--pl-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;background:#dedfe1!important}
+.magacin-page.is-stock-check-reference .mg-app,.magacin-page.is-stock-check-reference .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
+.magacin-page.is-stock-check-reference .mg-main{padding:4px 10px 70px;min-width:0;color:#111}
+.magacin-page.is-stock-check-reference .pl-page{max-width:none;padding:0}
+.magacin-page.is-stock-check-reference .mg-page-head{padding:8px 12px;margin:0 0 8px;border:1px solid var(--pl-edge);background:var(--pl-metal);box-shadow:var(--pl-bevel)}
+.magacin-page.is-stock-check-reference .mg-page-head h1{font-size:22px;line-height:1.2;text-transform:uppercase;margin:0;color:#080808}
+.magacin-page.is-stock-check-reference .mg-count{font-size:13px;color:#505b6c;margin:5px 0 0;line-height:1.4}
+.magacin-page.is-stock-check-reference .pl-choice{gap:10px}
+.magacin-page.is-stock-check-reference .pl-choice-card{padding:16px;border:1px solid var(--pl-edge);border-radius:0;background:var(--pl-metal);box-shadow:var(--pl-bevel);color:#111}
+.magacin-page.is-stock-check-reference .pl-choice-card strong{font-size:20px}
+.magacin-page.is-stock-check-reference .pl-choice-card span{font-size:14px;color:#505b6c}
+.magacin-page.is-stock-check-reference .pl-choice-card:hover{background:linear-gradient(#fff,#dce1e8)}
+.magacin-page.is-stock-check-reference .mg-card{padding:10px;min-width:0;border:1px solid var(--pl-edge);border-radius:0;background:var(--pl-panel);box-shadow:inset 1px 1px #fff;margin-bottom:10px}
+.magacin-page.is-stock-check-reference .mg-h{font-size:18px;color:#111;letter-spacing:0;margin:0 0 8px}
+.magacin-page.is-stock-check-reference .pl-page .mg-btn,.magacin-page.is-stock-check-reference .pp-mode-tabs a,.magacin-page.is-stock-check-reference .pl-filters a{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:0;background:var(--pl-metal);box-shadow:var(--pl-bevel);color:#111;font-size:14px;font-weight:750;text-decoration:none}
+.magacin-page.is-stock-check-reference .pl-page .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:inset 2px 2px #a6e395,inset -3px -3px #1e5f18;color:#fff}
+.magacin-page.is-stock-check-reference .pp-mode-tabs a.is-on,.magacin-page.is-stock-check-reference .pl-filters a.is-on{background:linear-gradient(115deg,#e1f0dc,#bed5b4);border-color:#749168;color:#23551d}
+.magacin-page.is-stock-check-reference .pp-mode-tabs,.magacin-page.is-stock-check-reference .pl-filters{gap:7px;margin-bottom:10px;flex-wrap:wrap}
+.magacin-page.is-stock-check-reference .pl-page button:disabled{opacity:.5;cursor:default}
+.magacin-page.is-stock-check-reference .mg-field label{font-size:13px;color:#414c5e}
+.magacin-page.is-stock-check-reference .mg-field input:not([type=hidden]){min-height:36px;border:1px solid #969faa;border-radius:0;background:#fff;padding:6px 8px;font-size:15px;box-sizing:border-box;max-width:100%}
+.magacin-page.is-stock-check-reference input[type=file]::file-selector-button{border:1px solid #92949a;border-radius:0;background:var(--pl-metal);box-shadow:var(--pl-bevel);padding:5px 10px;margin-right:10px;color:#111;cursor:pointer}
+.magacin-page.is-stock-check-reference .pl-summary{gap:8px}
+.magacin-page.is-stock-check-reference .pl-summary>div{padding:9px 12px;border:1px solid var(--pl-edge);border-radius:0;background:var(--pl-panel);box-shadow:inset 1px 1px #fff}
+.magacin-page.is-stock-check-reference .mg-table{width:100%;border-collapse:collapse}
+.magacin-page.is-stock-check-reference .mg-table th{padding:7px 8px;border:1px solid #a4aab3;background:var(--pl-metal);font-size:13px;letter-spacing:0;color:#37465e}
+.magacin-page.is-stock-check-reference .mg-table td{padding:7px 8px;border:1px solid #b6b8bd;font-size:14px}
+.magacin-page.is-stock-check-reference .pl-diff{border-radius:0}
+.magacin-page.is-stock-check-reference :is(a,button,input):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
+}
+@media screen and (max-width:600px){.magacin-page.is-stock-check-reference .mg-main{padding:4px 6px 70px}.magacin-page.is-stock-check-reference .mg-page-head h1{font-size:20px}.magacin-page.is-stock-check-reference .mg-card{padding:8px}.magacin-page.is-stock-check-reference .pl-choice-card{padding:12px}}

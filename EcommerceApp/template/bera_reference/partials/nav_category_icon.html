@@ -1,0 +1,38 @@
+{# Line-art ikona kategorije prema nazivu/slug-u. #}
+{% with n=naziv|default:''|lower s=slug|default:''|lower %}
+<span class="cat-ico" aria-hidden="true">
+{% if 'masinic' in n or 'mašin' in n or 'masin' in n or 'reel' in s %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7"/><circle cx="12" cy="13" r="2.2"/><path d="M12 6V3M9.5 4.5h5"/><path d="M16.5 9.2c1.4.6 2.4 1.8 2.4 3.3"/></svg>
+{% elif 'stap' in n or 'štap' in n or 'feeder' in n or 'rod' in s %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 20l13-13"/><path d="M17 7l3-3"/><path d="M7.5 16.5h3M10 14h2.5"/></svg>
+{% elif 'strun' in n or 'najlon' in n or 'predvez' in n or 'pletenic' in n %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/><path d="M8.5 11h5M11 8.5v5"/></svg>
+{% elif 'udic' in n or 'kacket' in n or 'kačket' in n or 'trokuk' in n or 'hook' in s %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v11a5 5 0 1 0 10 0"/><path d="M8 6h3"/></svg>
+{% elif 'varalic' in n or 'virbl' in n or 'lure' in s %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6z"/><circle cx="12" cy="12" r="2"/></svg>
+{% elif 'signal' in n or 'alarm' in n %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="8" cy="14" r="3.2"/><circle cx="16" cy="14" r="3.2"/><path d="M5.5 14h-2M20.5 14h-2M8 11V8M16 11V8M10.5 7h3"/></svg>
+{% elif 'lezalj' in n or 'ležalj' in n or 'stolic' in n %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V9l7-4 7 4v11"/><path d="M5 13h14M9 13v7M15 13v7"/></svg>
+{% elif 'sator' in n or 'šator' in n or 'zaklon' in n %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19h18L12 4 3 19z"/><path d="M12 19v-6"/></svg>
+{% elif 'torb' in n or 'ruksak' in n or 'bag' in s %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="8" width="12" height="13" rx="2"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+{% elif 'kant' in n or 'posud' in n or 'pribor' in n %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8h10l-1 12H8L7 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M6 8h12"/></svg>
+{% elif 'odjec' in n or 'odjeć' in n or 'obuc' in n or 'obuć' in n or 'kap' in n %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l4-3 4 3 3 2-3 2v9H8V11L5 9l3-2z"/></svg>
+{% elif 'hranjen' in n %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 3v8a2 2 0 1 0 4 0V3M10 13v8M16 3v18"/><path d="M16 8h3"/></svg>
+{% elif 'hranilic' in n or 'olov' in n %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 7 6 11a6 6 0 1 1-12 0c0-4 6-11 6-11z"/></svg>
+{% elif 'mamc' in n or 'dip' in n or 'boile' in n %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10h12v10H8z"/><path d="M8 14h12M8 10c-3 0-4 2.5-4 5s1 5 4 5"/><circle cx="16" cy="7" r="3"/></svg>
+{% elif 'kopc' in n or 'kopč' in n %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="8" cy="12" r="4"/><circle cx="16" cy="12" r="4"/></svg>
+{% else %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg>
+{% endif %}
+</span>
+{% endwith %}

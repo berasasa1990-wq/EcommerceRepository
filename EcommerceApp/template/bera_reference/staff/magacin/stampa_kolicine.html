@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if print_jobs|length == 1 %}Količine #{{ print_jobs.0.order.broj }}{% else %}Količine za fakturu ({{ print_jobs|length }}){% endif %}</title>
+    <style>
+        @page { size: A4 portrait; margin: 16mm 24mm; }
+        * { box-sizing: border-box; }
+        html, body { width: 100%; }
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #e5e7eb;
+            font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #111;
+        }
+        .toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            max-width: 210mm;
+            margin: 0 auto 16px;
+            padding: 12px 14px;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+        }
+        .toolbar p { margin: 0; font-size: 13px; }
+        .toolbar button, .toolbar a {
+            min-height: 38px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .toolbar button {
+            border: none;
+            background: #111;
+            color: #fff;
+        }
+        .toolbar a {
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: #111;
+        }
+        .sheet {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto 16px;
+            padding: 16mm 24mm;
+            background: #fff;
+            box-shadow: 0 8px 24px rgba(0,0,0,.08);
+        }
+        h1 {
+            margin: 0 0 3px;
+            font-size: 14px;
+            letter-spacing: .03em;
+            text-transform: uppercase;
+        }
+        .sub { margin: 0 0 12px; font-size: 11px; color: #6b7280; }
+        table { width: 100%; max-width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td {
+            padding: 6px 6px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+            font-size: 12px;
+            vertical-align: top;
+        }
+        th {
+            font-size: 10px;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            color: #6b7280;
+        }
+        td.naziv, th.naziv { width: auto; overflow-wrap: anywhere; word-break: break-word; }
+        td.sifra, th.sifra { width: 28%; white-space: nowrap; font-weight: 700; letter-spacing: .02em; }
+        td.qty, th.qty { text-align: right; width: 72px; font-weight: 700; font-size: 13px; }
+        .price-note { font-size: 10px; line-height: 1.4; margin-top: 4px; font-weight: 600; color: #222; }
+        .volume-note {
+            margin: 14px 0 0;
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+        tr { break-inside: avoid; }
+        @media print {
+            html, body {
+                width: auto !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+            }
+            .toolbar { display: none !important; }
+            .sheet {
+                width: auto !important;
+                max-width: 100% !important;
+                min-height: 0 !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none;
+                overflow: visible;
+                page-break-after: always;
+            }
+            .sheet:last-child { page-break-after: auto; }
+            h1 { font-size: 13px; }
+            .sub { font-size: 10px; margin-bottom: 8px; }
+            th { font-size: 9px; }
+            td { font-size: 11px; padding: 5px 4px; }
+            td.sifra, th.sifra { font-size: 11px; width: 26%; }
+            td.qty, th.qty { font-size: 12px; width: 56px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <p><strong>Količine za fakturu</strong> · {{ print_jobs|length }} narudžb{% if print_jobs|length == 1 %}a{% else %}i{% endif %} — A4 uspravno, margine sa strana 24 mm, skala 100%.</p>
+        <div>
+            <a href="{% url 'staff_magacin_narudzbe' %}?validirane=1">← Narudžbe</a>
+            <button type="button" onclick="window.print()">Štampaj</button>
+        </div>
+    </div>
+    {% for job in print_jobs %}
+    <section class="sheet">
+        <h1>Količine za fakturu</h1>
+        <p class="sub">#{{ job.order.broj }} · {{ job.order.ime_prezime }}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th class="naziv">Naziv</th>
+                    <th class="sifra">Šifra</th>
+                    <th class="qty">Količina</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in job.stavke %}
+                <tr>
+                    <td class="naziv">{{ row.naziv }}{% if row.is_mp %} <strong>MP</strong>{% endif %}{% for note in row.price_notes %}<div class="price-note">{{ note }}</div>{% endfor %}</td>
+                    <td class="sifra">{% if row.sifra %}{{ row.sifra }}{% else %}—{% endif %}</td>
+                    <td class="qty">{{ row.kolicina }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3">Nema stavki.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% for note in job.volume_notes %}<p class="volume-note">{{ note }}</p>{% endfor %}
+    </section>
+    {% endfor %}
+</body>
+</html>

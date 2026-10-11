@@ -1,0 +1,9 @@
+{% if brand %}
+<div class="product-brand">
+    {% if brand.prikazi_logo %}
+    <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" class="brand-logo" width="200" height="48" loading="lazy" decoding="async">
+    {% else %}
+    <span class="brand-name">{{ brand.naziv }}</span>
+    {% endif %}
+</div>
+{% endif %}

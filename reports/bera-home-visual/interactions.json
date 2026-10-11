@@ -1,0 +1,20 @@
+[
+  {
+    "width": 1440,
+    "addToCart": true,
+    "cart": true,
+    "wishlist": true,
+    "newsletter": true,
+    "search": true,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "addToCart": true,
+    "cart": true,
+    "wishlist": true,
+    "newsletter": true,
+    "search": true,
+    "errors": []
+  }
+]

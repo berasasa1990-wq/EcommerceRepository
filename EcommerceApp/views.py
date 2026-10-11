@@ -163,6 +163,9 @@ def scratch_claim(request):
 
 @require_POST
 def scratch_event(request):
+    from .bera_panel_modules import module_locked
+    if module_locked("sretni_greb_greb"):
+        return JsonResponse({"ok": False, "detail": "Greb-Greb trenutno nije aktivan."}, status=403)
     from .online_gift import SCRATCH_CAMPAIGN_NAME
     event = request.POST.get('event')
     if event not in ('shown', 'revealed'):
@@ -189,6 +192,9 @@ def scratch_event(request):
 
 @require_POST
 def scratch_add_product(request):
+    from .bera_panel_modules import module_locked
+    if module_locked("sretni_greb_greb"):
+        return JsonResponse({"ok": False, "detail": "Greb-Greb trenutno nije aktivan."}, status=403)
     from .online_gift import add_scratch_discount_product
     product, error = add_scratch_discount_product(request)
     if error:
@@ -198,6 +204,9 @@ def scratch_add_product(request):
 
 @require_POST
 def scratch_add_product_to_order(request):
+    from .bera_panel_modules import module_locked
+    if module_locked("sretni_greb_greb"):
+        return JsonResponse({"ok": False, "detail": "Greb-Greb trenutno nije aktivan."}, status=403)
     from .online_gift import add_scratch_discount_product_to_order
     from .magacin import MagacinError
     try:
@@ -2917,6 +2926,8 @@ def home(request):
         'hero_slides': [_banner_to_hero_slide(b) for b in hero_banners_list],
         'grid_banners': [_banner_to_card(b) for b in grid_banners],
         'featured_cards': [_banner_to_card(b) for b in featured_banners],
+        'home_offer_slots': [next((_banner_to_card(b) for b in featured_banners if b.redoslijed == slot), None) for slot in (0, 1)],
+        'footer_promo_card': next((_banner_to_card(b) for b in featured_banners if b.redoslijed == 2), None),
         'spotlight': spotlight,
         'latest_products': latest_products,
         'featured_products': featured_products,
@@ -3010,7 +3021,11 @@ def home(request):
             'seo_description': public_brand(site_settings.meta_description) or 'Štapovi, mašinice, varalice i pribor za ribolov. Istražite ponudu Carpologija BH i naručite online uz dostavu širom BiH.',
             'seo_h1': 'Oprema za ribolov — Carpologija BH',
         }))
-    return render(request, 'home.html', context)
+    if request.user.is_superuser and request.GET.get('izgled') == 'prethodni':
+        return render(request, 'home.html', context)
+    from .bera_home import homepage_context
+    context.update(homepage_context(context, request))
+    return render(request, 'bera_reference/home.html', context)
 
 
 def vlog_detail(request, slug):
@@ -3176,7 +3191,8 @@ def brands_list(request):
             {'name': 'Brendovi', 'url': canonical},
         ])),
     }
-    return render(request, 'brands.html', context)
+    from .bera_home import render_storefront
+    return render_storefront(request, 'brands.html', context)
 
 
 def vlog_list(request):
@@ -3196,6 +3212,8 @@ def vlog_list(request):
 
 
 def category_detail(request, slug):
+    from .bera_home import render_storefront
+
     category = get_object_or_404(
         Category.objects.select_related('roditelj').prefetch_related('podkategorije__podkategorije'),
         slug=slug, aktivan=True,
@@ -3252,7 +3270,7 @@ def category_detail(request, slug):
             'canonical_url': cat_canonical,
             **category_ld,
         }
-        return render(request, 'category_subcategories.html', context)
+        return render_storefront(request, 'category_subcategories.html', context)
 
     # Normalan prikaz proizvoda (ili "Sve u kategoriji")
     category_ids = category.get_descendant_ids()
@@ -3297,7 +3315,7 @@ def category_detail(request, slug):
     }
     if _filters_active(filter_params) or filter_params.get('sort'):
         context['meta_robots_content'] = 'noindex, follow'
-    return render(request, 'category.html', context)
+    return render_storefront(request, 'category.html', context)
 
 
 def _safe_internal_path(url, request=None):
@@ -3507,7 +3525,13 @@ def product_detail(request, slug):
     context['product_bundle'] = _product_page_bundle(product)
     context['flash_offer'] = _product_page_flash_offer(product)
 
-    return render(request, 'product_detail.html', context)
+    from .bera_product_features import extract_product_features
+    from .bera_home import render_storefront
+    context['product_description'] = (product.opis or '').replace('**', '').replace('##', '')
+    context['product_description_features'] = extract_product_features(context['product_description'])
+    context['product360_frames'] = [frame.image.url for frame in product.images_360.all()] if getattr(product, 'enabled_360', False) else []
+    context['bera_product_reference'] = True
+    return render_storefront(request, 'product_detail.html', context)
 
 
 def _product_page_bundle(product):
@@ -4681,7 +4705,13 @@ def cart_view(request):
             'seo_h1': 'Korpa',
         }),
     }
-    return render(request, 'cart.html', context)
+    from .bera_home import render_storefront
+    cart_product_ids = [item['product_id'] for item in cart.cart.values()]
+    category_ids = Product.objects.filter(pk__in=cart_product_ids).values_list('kategorija_id', flat=True)
+    context['cart_recommendations'] = Product.objects.filter(
+        aktivan=True, na_stanju=True, sakriven_do_stanja=False, kategorija_id__in=category_ids,
+    ).exclude(pk__in=cart_product_ids).select_related('kategorija', 'brend').order_by('-pk')[:6]
+    return render_storefront(request, 'cart.html', context)
 
 
 @require_GET
@@ -5200,10 +5230,12 @@ def checkout(request):
         if 'akcija_popup_discount' in item:
             del item['akcija_popup_discount']
 
-    return render(request, 'checkout.html', context)
+    from .bera_home import render_storefront
+    return render_storefront(request, 'checkout.html', context)
 
 
 def order_success(request, broj):
+    from .bera_home import render_storefront
     order = get_object_or_404(
         Order.objects.prefetch_related('stavke'),
         broj=broj,
@@ -5256,7 +5288,7 @@ def order_success(request, broj):
             'items': google_purchase_items,
         },
     }
-    return render(request, 'order_success.html', context)
+    return render_storefront(request, 'order_success.html', context)
 
 
 def verify_turnstile(token, request):
@@ -5550,6 +5582,7 @@ def _account_dashboard_extras(request, *, orders, loyalty, loyalty_card, profil)
 @never_cache
 @login_required(login_url='login')
 def account(request):
+    from .bera_home import render_storefront
     from .loyalty import ba_mobile_local
 
     profil, _ = UserProfile.objects.get_or_create(user=request.user)
@@ -5684,11 +5717,13 @@ def account(request):
             profil=profil,
         ),
     }
-    return render(request, 'account/index.html', context)
+    return render_storefront(request, 'account/index.html', context)
 
 
 @login_required(login_url='login')
 def account_order_detail(request, broj):
+    from .bera_home import render_storefront
+
     order = get_object_or_404(
         Order.objects.prefetch_related('stavke'),
         broj=broj,
@@ -5704,7 +5739,7 @@ def account_order_detail(request, broj):
         'stavke': pripremi_stavke_za_racun(order),
         'pricing': order.pdv_pregled,
     }
-    return render(request, 'account/order_detail.html', context)
+    return render_storefront(request, 'account/order_detail.html', context)
 
 
 def _superuser_required(user):
@@ -5949,6 +5984,12 @@ def staff_order_detail(request, broj):
                 messages.error(request, str(exc))
             return redirect('staff_magacin_narudzbe')
 
+    if request.method == 'GET' and request.GET.get('preview') == 'email':
+        from .bera_order_preview import _order_visual_context
+        response = HttpResponse(render_to_string('bera_reference/emails/order_admin.html', _order_visual_context(order)))
+        response['Cache-Control'] = 'private, no-store'
+        return response
+
     from .magacin import order_is_editable
     from .views_magacin import _magacin_context
     can_edit = order_is_editable(order)
@@ -5960,7 +6001,8 @@ def staff_order_detail(request, broj):
             f"{reverse('staff_magacin_narudzba_nova')}?broj={order.broj}" if can_edit else ''
         ),
     }
-    return render(request, 'staff/order_detail.html', context)
+    from .bera_home import render_storefront
+    return render_storefront(request, 'staff/order_detail.html', context)
 
 
 def _send_order_to_xexpress(request, broj):
@@ -7968,11 +8010,16 @@ def staff_active_carts(request):
 @user_passes_test(_superuser_required)
 @require_GET
 def staff_orders_validation(request):
+    all_site_orders = request.resolver_match.url_name == 'staff_panel_orders'
     orders = Order.objects.filter(izvor=Order.Izvor.WEBSHOP).exclude(status=Order.Status.CEKA_PLACANJE).exclude(
         Q(ime_prezime__iexact='Prenos u MP') | Q(pick_state__kind__isnull=False, pick_state__kind='prenos_mp'),
     ).exclude(
         status__in=[Order.Status.ZAVRSENA, Order.Status.OTKAZANA],
     ).exclude(lager_status__in=[Order.LagerStatus.VALIDIRANO, Order.LagerStatus.OTKAZANO])
+    if all_site_orders:
+        orders = Order.objects.filter(izvor=Order.Izvor.WEBSHOP).exclude(
+            Q(pick_state__kind__isnull=False, pick_state__kind='prenos_mp'),
+        )
     pending_summary = orders.aggregate(count=Count('pk'), total=Sum('ukupno'))
     from .online_gift import SCRATCH_CAMPAIGN_NAME, scratch_label_for_claim
     from .models import ScratchPrize
@@ -8045,8 +8092,9 @@ def staff_orders_validation(request):
     params.pop('page', None)
     page_query = params.urlencode()
     params['sort'] = 'newest' if sort == 'oldest' else 'oldest'
-    return render(request, 'staff/orders_validation.html', {
-        **_base_context(), **dates, 'orders': page, 'pending_count': pending_summary['count'],
+    from .bera_home import render_storefront
+    return render_storefront(request, 'staff/orders_validation.html', {
+        **_base_context(), **dates, 'orders': page, 'all_site_orders': all_site_orders, 'pending_count': pending_summary['count'],
         'pending_total': pending_summary['total'] or Decimal('0.00'),
         'search_query': query, 'source': source, 'scratch': scratch, 'sort': sort,
         'source_choices': [(Order.Izvor.WEBSHOP, 'Web shop')], 'page_query': page_query,
@@ -8120,7 +8168,8 @@ def staff_online_orders(request):
         'nova_count': web_orders.filter(status=Order.Status.NOVA).count(),
         'zavrsena_count': web_orders.filter(status=Order.Status.ZAVRSENA).count(),
     }
-    return render(request, 'staff/online_orders.html', context)
+    from .bera_home import render_storefront
+    return render_storefront(request, 'staff/online_orders.html', context)
 
 
 @login_required(login_url='login')

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="utf-8">
+    <title>Akcija {{ akcija.broj }} — nivelacija {{ akcija.broj_nivelacije }}</title>
+    <style>
+        @page { size: A4 portrait; margin: 12mm; }
+        body { font: 12px/1.35 Arial, Helvetica, sans-serif; color: #111; margin: 0; }
+        h1 { font-size: 18px; margin: 0 0 4px; }
+        .meta { color: #555; margin: 0 0 14px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        th, td { border-bottom: 1px solid #ddd; padding: 7px 5px; text-align: left; vertical-align: top; }
+        th { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #555; }
+        td.n { width: 28px; }
+        td.num, th.num { text-align: right; white-space: nowrap; }
+        .sifra { color: #444; white-space: nowrap; }
+        .old { text-decoration: line-through; color: #666; }
+        .new { font-weight: 800; font-size: 14px; }
+        .pct { font-weight: 700; color: #b42318; }
+        @media screen {
+            body { padding: 20px; }
+            .bar { margin-bottom: 16px; }
+            button {
+                min-height: 40px;
+                padding: 0 14px;
+                font: inherit;
+                font-weight: 700;
+            }
+        }
+        @media print { .bar { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="bar"><button type="button" onclick="window.print()">Štampaj</button></div>
+    <h1>Akcija {{ akcija.broj }}</h1>
+    <p class="meta">
+        Nivelacija {{ akcija.broj_nivelacije }}
+        · −{{ akcija.popust_postotak }}%
+        · {{ stavke|length }} artikala
+        · štampa {{ printed_at|date:"d.m.Y. H:i" }}
+        {% if akcija.akcija_do %} · važi do {{ akcija.akcija_do|date:"d.m.Y." }}{% endif %}
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th class="n">#</th>
+                <th>Artikal</th>
+                <th>Šifra</th>
+                <th class="num">Stara cijena</th>
+                <th class="num">Nova cijena</th>
+                <th class="num">Popust</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in stavke %}
+            <tr>
+                <td class="n">{{ forloop.counter }}</td>
+                <td>{{ row.naziv }}</td>
+                <td class="sifra">{{ row.sifra|default:"—" }}</td>
+                <td class="num"><span class="old">{{ row.stara_cijena }} KM</span></td>
+                <td class="num"><span class="new">{{ row.nova_cijena }} KM</span></td>
+                <td class="num"><span class="pct">−{{ row.popust_postotak }}%</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">Nema artikala za štampu.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
