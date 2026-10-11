@@ -667,7 +667,7 @@ body.bera-storefront-header .product-catalog .catalog-pagination--top{padding-to
 
 @media(max-width:767px){
  body.bera-storefront-header .product-card .product-brand-under-price img,
- body.bera-storefront-header .product-catalog .product-card .product-brand-under-price img{max-width:27.2px!important;height:7.2px!important;width:auto!important;min-width:0!important;min-height:0!important;object-fit:contain}
+ body.bera-storefront-header .product-catalog .product-card .product-brand-under-price img{max-width:40px!important;height:11px!important;width:auto!important;min-width:0!important;min-height:0!important;object-fit:contain}
 }
 
 body.bera-storefront-header #header .logo-brand:has(.header-panel-shortcut){display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:12px;min-width:0}
