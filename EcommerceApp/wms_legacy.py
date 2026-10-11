@@ -14,6 +14,21 @@ from .models import WarehouseMovement
 from .request_performance import schema_tables
 
 _changed = ContextVar('wms_changed_products', default=None)
+_canonical_schemas = set()
+
+
+def canonical_schema_ready():
+    # Cache only a successful schema check, never stocks, users or permissions.
+    key = (connection.alias, connection.settings_dict['ENGINE'], str(connection.settings_dict['NAME']), connection.settings_dict.get('HOST'))
+    if key in _canonical_schemas:
+        return True
+    from .models import WMSPickLine
+    with connection.cursor() as cursor:
+        columns = connection.introspection.get_table_description(cursor, WMSPickLine._meta.db_table)
+    ready = 'archived_location_id' in {column.name for column in columns}
+    if ready:
+        _canonical_schemas.add(key)
+    return ready
 
 
 def stock_changed(sender, instance, **kwargs):
@@ -27,6 +42,8 @@ post_delete.connect(stock_changed, sender=ProductWMSStock, weak=False, dispatch_
 
 
 def legacy_location(location):
+    if isinstance(location, WarehouseLocation):
+        return location
     if location.legacy_location_id:
         return location.legacy_location
     code = location.naziv if len(location.naziv) <= 20 else 'WMS-' + hashlib.sha256(location.naziv.encode()).hexdigest()[:16]
@@ -145,6 +162,7 @@ def complete_legacy_orders(user, order_ids):
                 continue
             snapshot = WMSOrderItem.objects.create(
                 order=wms, artikal=item.artikal, naziv=item.naziv,
+                varijacija_id=item.varijacija_id,
                 sifra=item.sifra, kolicina=item.kolicina,
                 bazna_cijena=item.bazna_cijena, cijena=item.cijena,
                 popust=item.popust_postotak or 0,
@@ -157,37 +175,22 @@ def complete_legacy_orders(user, order_ids):
 def warehouse_compatible(view):
     @wraps(view)
     def wrapped(request, *args, **kwargs):
-        # Do not touch warehouse records for unauthorized requests.
         if not (request.user.is_authenticated and request.user.is_active and request.user.is_superuser):
             return view(request, *args, **kwargs)
         tables = schema_tables()
-        if any(model._meta.db_table not in tables for model in (WMSLocation, WMSOrder, ProductWMSLocationMeta)):
-            return HttpResponse('WMS zahtijeva migracije 0311 i 0312. Postojeći magacin ostaje dostupan na /nalog/magacin/.', status=503)
-        with connection.cursor() as cursor:
-            columns = connection.introspection.get_table_description(cursor, WMSLocation._meta.db_table)
-        if 'legacy_location_id' not in {column.name for column in columns}:
-            return HttpResponse('WMS zahtijeva migraciju 0312. Postojeći magacin ostaje dostupan na /nalog/magacin/.', status=503)
-        # The workspace permission probe has no stock operation or HTML payload.
-        if view.__name__ == 'workspace' and request.method == 'GET' and request.headers.get('X-WMS-Permissions') == '1':
-            return view(request, *args, **kwargs)
-        token = _changed.set(set())
+        if any(model._meta.db_table not in tables for model in (WMSOrder, WMSLocation)):
+            return HttpResponse('WMS zahtijeva svoje migracije. Postojeći magacin ostaje dostupan.', status=503)
+        if not canonical_schema_ready():
+            return HttpResponse('WMS direktni magacin zahtijeva migraciju 0315. Stari magacin ostaje dostupan na /nalog/magacin/.', status=503)
         try:
+            if request.method != 'POST':
+                return view(request, *args, **kwargs)
             with transaction.atomic():
-                # Refresh from existing warehouse data before working with WMS.
-                import_legacy_stock()
-                _changed.get().clear()
                 finishing = []
-                if view.__name__ == 'pick_order' and request.method == 'POST' and request.POST.get('action') == 'finish':
+                if view.__name__ == 'pick_order' and request.POST.get('action') == 'finish':
                     finishing = list(WMSOrder.objects.filter(pk=kwargs.get('pk'), status__in=['nova', 'pakovanje']).values_list('pk', flat=True))
                 response = view(request, *args, **kwargs)
-                if request.method == 'POST':
-                    completed = complete_legacy_orders(request.user, finishing)
-                    note = 'BERA WMS promjena zalihe'
-                    if view.__name__ == 'resolve_shortage' and request.POST.get('decision') == 'clear':
-                        note = 'WMS: Lokacija očišćena — Očisti nakon odvajanja'
-                    apply_wms_stock(_changed.get() - completed, request.user, note=note)
-                    if completed:
-                        import_legacy_stock(completed)
+                complete_legacy_orders(request.user, finishing)
                 return response
         except MagacinError as error:
             retained = [message for message in messages.get_messages(request) if message.level != messages.SUCCESS]
@@ -195,6 +198,4 @@ def warehouse_compatible(view):
                 messages.add_message(request, message.level, str(message))
             messages.error(request, str(error))
             return redirect(request.path)
-        finally:
-            _changed.reset(token)
     return wrapped

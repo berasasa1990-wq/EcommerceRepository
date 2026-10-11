@@ -18,7 +18,7 @@
 <button type="button" class="wms-stock-result-quantity{% if not product.stanje %} is-empty{% endif %}" data-stock-location="wmsStockLocation{{ product.pk }}" aria-haspopup="dialog" aria-label="Prikaži lokaciju artikla {{ product.naziv }}"><span>Količina</span><strong>{{ product.stanje }} <small>kom</small></strong></button>
 {% endif %}
 {% if wms_locations_enabled %}<template id="wmsStockLocation{{ product.pk }}">
-{% for stock in product.wms_zalihe.all %}{% if stock.kolicina > 0 %}{% include 'bera_reference/staff/wms/location_transfer_row.html' with source_location=stock.lokacija source_location_id=stock.lokacija_id stock_id=stock.pk %}{% endif %}{% empty %}{% if product.stanje > 0 %}{% include 'bera_reference/staff/wms/location_transfer_row.html' with source_location=product.wms_lokacija source_location_id=product.wms_lokacija_id stock_id='' %}{% endif %}{% endfor %}
+{% for stock in product.canonical_wms_stocks %}{% if stock.kolicina > 0 %}{% include 'bera_reference/staff/wms/location_transfer_row.html' with source_location=stock.location source_location_id=stock.location_id stock_id=stock.pk %}{% endif %}{% empty %}<p>Artikal nema dodijeljenu lokaciju u magacinu.</p>{% endfor %}
 </template>{% endif %}
 </article>
 {% empty %}<div class="wms-stock-empty"><span class="wms-empty-icon">{% include 'bera_reference/staff/wms/icon.html' with key='zalihe' %}</span><h3>Nema artikala za unesenu pretragu.</h3><p>Pokušajte s drugim nazivom, šifrom ili barkodom.</p></div>{% endfor %}

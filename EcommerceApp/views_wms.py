@@ -10,7 +10,9 @@ from django.shortcuts import get_object_or_404, redirect, render as django_rende
 from django.http import Http404, JsonResponse
 from django.core.exceptions import PermissionDenied
 from .bera_panel_modules import module_locked
-from .models import WMSLocation, WMSOrder, Product, ProductWMSStock, WMSSettings, WMSTransfer
+from .models import WarehouseLocation, WMSOrder, Product, WarehouseStock, WMSSettings, WMSTransfer
+from .magacin import apply_movement, set_location_counted_qty, MagacinError, is_ignored_stock_location
+from .models import WarehouseMovement
 from django.db.models import Q, Sum, Case, When, Value, IntegerField
 from django.core.paginator import Paginator
 from .warehouse_access import warehouse_user_required
@@ -57,7 +59,6 @@ def workspace(request, section='zalihe'):
     require_wms_section(section)
     ctx = context(section)
     if section == 'istorija':
-        from .models import WarehouseMovement
         from datetime import date
         rows = WarehouseMovement.objects.select_related('product', 'variation', 'location', 'to_location', 'korisnik', 'order').order_by('-kreiran', '-pk')
         query = (request.GET.get('q') or '').strip()
@@ -130,26 +131,18 @@ def workspace(request, section='zalihe'):
                 if transfer.completed_at:
                     messages.info(request, 'Prenosnica je već prenijeta.')
                 else:
-                    stock = ProductWMSStock.objects.select_for_update().filter(product=product, lokacija_id=transfer.source_id).first()
-                    if not stock and not product.wms_zalihe.exists() and product.wms_lokacija_id == transfer.source_id:
-                        stock = ProductWMSStock.objects.create(product=product, lokacija_id=transfer.source_id, kolicina=product.stanje)
-                    if not stock or stock.kolicina < transfer.quantity:
-                        messages.error(request, 'Nema dovoljno količine na izvornoj lokaciji. Prenosnica nije prenijeta.')
-                    else:
-                        target, _ = ProductWMSStock.objects.get_or_create(product=product, lokacija_id=transfer.destination_id)
-                        target.kolicina += transfer.quantity
-                        target.save(update_fields=['kolicina'])
-                        stock.kolicina -= transfer.quantity
-                        if stock.kolicina:
-                            stock.save(update_fields=['kolicina'])
-                        else:
-                            stock.delete()
-                        remaining = list(product.wms_zalihe.all())
-                        product.wms_lokacija_id = remaining[0].lokacija_id if len(remaining) == 1 else None
-                        from django.utils import timezone
-                        transfer.completed_at = timezone.now()
-                        transfer.save(update_fields=['completed_at'])
-                        messages.success(request, 'Prenosnica je prenijeta. Stanje po lokacijama je ažurirano.')
+                    if not transfer.source_id or not transfer.destination_id:
+                        raise MagacinError('Prenosnica nema povezane originalne lokacije.')
+                    stock = WarehouseStock.objects.select_for_update().filter(product=product, location=transfer.source, variation=transfer.variation).first()
+                    if not stock or max(0, stock.kolicina - stock.rezervisano) < transfer.quantity:
+                        raise MagacinError('Nema dovoljno slobodne količine. Rezervisana roba se ne može prenijeti.')
+                    apply_movement(product=product, location=transfer.source, to_location=transfer.destination,
+                                   variation=transfer.variation, tip=WarehouseMovement.Tip.TRANSFER,
+                                   kolicina=transfer.quantity, user=request.user, napomena='WMS prenos robe')
+                    from django.utils import timezone
+                    transfer.completed_at = timezone.now()
+                    transfer.save(update_fields=['completed_at'])
+                    messages.success(request, 'Prenosnica je prenijeta. Stanje po lokacijama je ažurirano.')
             return redirect('staff_wms_section', section='prenosnica')
         transfer_filter = request.GET.get('status', 'aktivne')
         if transfer_filter not in ('aktivne', 'prenijete'):
@@ -174,20 +167,20 @@ def workspace(request, section='zalihe'):
             with transaction.atomic():
                 product = get_object_or_404(Product.objects.select_for_update(), pk=request.POST.get('product_id'))
                 stock_id = request.POST.get('stock_id')
-                stock = get_object_or_404(ProductWMSStock.objects.select_for_update(), pk=stock_id, product=product) if stock_id else None
-                source_id = stock.lokacija_id if stock else product.wms_lokacija_id
+                stock = get_object_or_404(WarehouseStock.objects.select_for_update(), pk=stock_id, product=product) if stock_id else None
+                source_id = stock.location_id if stock else None
                 available = stock.kolicina if stock else product.stanje
                 expected = request.POST.get('source_location', '')
                 if not destination:
                     messages.error(request, 'Prvo izaberite lokaciju za prenos u WMS podešavanju.')
-                elif not source_id or str(source_id) != expected or (not stock and product.wms_zalihe.exists()):
+                elif not source_id or str(source_id) != expected or not stock:
                     messages.error(request, 'Raspored je promijenjen. Ponovo otvorite pregled.')
                 elif source_id == destination.pk:
                     messages.error(request, 'Artikal je već na odredišnoj lokaciji.')
                 elif quantity < 1 or quantity > available:
                     messages.error(request, 'Unesite količinu od 1 do dostupne količine na ovoj lokaciji.')
                 else:
-                    WMSTransfer.objects.create(product=product, source_id=source_id, destination=destination, quantity=quantity)
+                    WMSTransfer.objects.create(product=product, variation=stock.variation, source_id=source_id, destination=destination, quantity=quantity)
                     messages.success(request, 'Prenosnica je kreirana. Roba se premješta tek potvrdom „Prenijeto“.')
             return redirect(reverse('staff_wms_section', args=['zalihe']) + '?' + urlencode({'q': query}))
         search_submitted = 'q' in request.GET
@@ -201,8 +194,10 @@ def workspace(request, section='zalihe'):
                     When(stanje__gt=0, then=Value(0)),
                     default=Value(1), output_field=IntegerField(),
                 )
-            ).prefetch_related('wms_zalihe__lokacija').order_by('stock_priority', 'naziv', 'pk')
-        ctx.update({'transfer_settings': WMSSettings.objects.filter(pk=1).select_related('transfer_location').first(), 'locations': WMSLocation.objects.all(), 'query': query, 'search_submitted': search_submitted, 'products': Paginator(products, 30).get_page(request.GET.get('page'))})
+            ).prefetch_related('magacin_zalihe__location', 'magacin_zalihe__variation').order_by('stock_priority', 'naziv', 'pk')
+        ctx.update({'transfer_settings': WMSSettings.objects.filter(pk=1).select_related('transfer_location').first(), 'locations': WarehouseLocation.objects.all(), 'query': query, 'search_submitted': search_submitted, 'products': Paginator(products, 30).get_page(request.GET.get('page'))})
+        for product in ctx['products']:
+            product.canonical_wms_stocks = [stock for stock in product.magacin_zalihe.all() if not is_ignored_stock_location(stock.location)]
         return render(request, 'bera_reference/staff/wms/stock_search.html', ctx)
     if section in ('narudzbe', 'pakovanje'):
         from .wms_orders import sync_panel_orders
@@ -237,7 +232,7 @@ def workspace(request, section='zalihe'):
         page_query.pop('page', None)
         ctx['page_query'] = page_query.urlencode()
     else:
-        model, fields = WMSLocation, ['naziv']
+        model, fields = WarehouseLocation, ['sifra', 'naziv']
         Form = modelform_factory(model, fields=fields)
         form = Form(request.POST or None)
         if request.method == 'POST' and form.is_valid():
@@ -368,23 +363,16 @@ def pick_order(request, pk):
             remaining = item.kolicina
             locations = []
             if item.artikal_id:
-                stocks = ordered_picking_stocks(item.artikal.wms_zalihe.select_related('lokacija'))
+                stocks = ordered_picking_stocks(item.artikal.magacin_zalihe.select_related('location').filter(variation_id=getattr(item, 'varijacija_id', None)))
                 for stock in stocks:
-                    available = max(0, stock.kolicina - allocated.get(stock.pk, 0))
+                    available = max(0, stock.kolicina - (stock.rezervisano if not order.source_order_id else 0) - allocated.get(stock.pk, 0))
                     take = min(remaining, available)
                     if take:
-                        locations.append({'name': stock.lokacija.naziv, 'quantity': take, 'id': stock.lokacija_id})
+                        locations.append({'name': stock.location.label, 'quantity': take, 'id': stock.location_id})
                         allocated[stock.pk] = allocated.get(stock.pk, 0) + take
                         remaining -= take
                     if not remaining:
                         break
-                if not stocks and item.artikal.wms_lokacija_id:
-                    key = ('product', item.artikal_id)
-                    take = min(remaining, max(0, item.artikal.stanje - allocated.get(key, 0)))
-                    if take:
-                        locations.append({'name': item.artikal.wms_lokacija.naziv, 'quantity': take, 'id': item.artikal.wms_lokacija_id})
-                        allocated[key] = allocated.get(key, 0) + take
-                        remaining -= take
             rows.append({'item': item, 'locations': locations, 'missing': remaining})
     from .models import WMSPickLine
     from django.utils import timezone
@@ -449,45 +437,22 @@ def pick_order(request, pk):
                 return redirect(reverse('staff_wms_pick_order', args=[pk]) + '?line=' + str(line.pk))
             elif action == 'finish':
                 if locked.pick_lines.exists() and not locked.pick_lines.filter(confirmed_at__isnull=True).exists():
-                    # Validate every location before changing any stock.
+                    # Web orders are fulfilled once by complete_legacy_orders in
+                    # the outer transaction; manual orders use the same stock ledger.
                     totals = {}
-                    for line in locked.pick_lines.select_related('item'):
-                        product_id = line.picking_item.artikal_id
-                        if not product_id or line.confirmed_quantity > line.quantity:
-                            messages.error(request, 'Artikal ili potvrđena količina više nisu ispravni.')
-                            return redirect('staff_wms_pick_order', pk=pk)
-                        key = (product_id, line.location_id)
+                    for line in locked.pick_lines.select_related('item', 'wms_item', 'location'):
+                        item = line.picking_item
+                        if not item.artikal_id or not line.location_id or line.confirmed_quantity > line.quantity:
+                            raise MagacinError('Artikal, lokacija ili potvrđena količina nisu ispravni.')
+                        key = (item.artikal_id, getattr(item, 'varijacija_id', None), line.location_id)
                         totals[key] = totals.get(key, 0) + line.confirmed_quantity
-                    products = {product.pk: product for product in Product.objects.select_for_update().filter(
-                        pk__in={key[0] for key in totals}).order_by('pk')}
-                    stocks = {(stock.product_id, stock.lokacija_id): stock for stock in
-                              ProductWMSStock.objects.select_for_update().filter(product_id__in=products).order_by('pk')}
-                    product_totals = {}
-                    for (product_id, location_id), quantity in totals.items():
-                        product = products[product_id]
-                        stock = stocks.get((product_id, location_id))
-                        has_rows = any(key[0] == product_id for key in stocks)
-                        available = stock.kolicina if stock else (
-                            product.stanje if not has_rows and product.wms_lokacija_id == location_id else 0)
-                        product_totals[product_id] = product_totals.get(product_id, 0) + quantity
-                        if available < quantity:
-                            messages.error(request, 'Nema dovoljno robe na lokaciji. Stanje nije promijenjeno.')
-                            return redirect('staff_wms_pick_order', pk=pk)
-                    # Location balances are authoritative when allocated stock exists.
-                    starting_totals = {}
-                    for product_id in product_totals:
-                        allocated_stocks = [stock for key, stock in stocks.items() if key[0] == product_id]
-                        starting_totals[product_id] = (sum(stock.kolicina for stock in allocated_stocks)
-                                                       if allocated_stocks else products[product_id].stanje)
-                    for key, quantity in totals.items():
-                        stock = stocks.get(key)
-                        if stock:
-                            stock.kolicina -= quantity
-                            stock.save(update_fields=['kolicina'])
-                    for product_id, quantity in product_totals.items():
-                        product = products[product_id]
-                        product.stanje = starting_totals[product_id] - quantity
-                        product.save(update_fields=['stanje', 'na_stanju'])
+                    if not locked.source_order_id:
+                        for (product_id, variation_id, location_id), quantity in sorted(totals.items(), key=lambda entry: (entry[0][0], entry[0][2], entry[0][1] or 0)):
+                            if quantity:
+                                apply_movement(product=product_id, variation=variation_id,
+                                               location=WarehouseLocation.objects.get(pk=location_id),
+                                               tip=WarehouseMovement.Tip.PRODAJA, kolicina=quantity,
+                                               user=request.user, napomena=f'WMS odvajanje #{locked.display_number}')
                     locked.status = 'zapakovana'
                     locked.completed_at = timezone.now()
                     locked.save(update_fields=['status', 'completed_at'])
@@ -550,16 +515,14 @@ def resolve_shortage(request, pk):
         if not unresolved.filter(pk=pk).exists():
             return redirect('staff_wms_section', section='lokacije')
         if decision == 'clear':
-            stock = ProductWMSStock.objects.select_for_update().filter(product=product, lokacija_id=line.location_id).first()
-            quantity = stock.kolicina if stock else (product.stanje if not product.wms_zalihe.exists() and product.wms_lokacija_id == line.location_id else 0)
-            if quantity > product.stanje:
-                messages.error(request, 'Stanje artikla i lokacije nije usklađeno. Količina nije promijenjena.')
-                return redirect('staff_wms_section', section='lokacije')
-            if stock:
-                stock.kolicina = 0
-                stock.save(update_fields=['kolicina'])
-            product.stanje -= quantity
-            product.save(update_fields=['stanje'])
+            if not line.location_id:
+                raise MagacinError('Lokacija nije povezana s originalnim magacinom.')
+            stock = WarehouseStock.objects.select_for_update().filter(product=product, location=line.location, variation_id=getattr(line.picking_item, 'varijacija_id', None)).first()
+            if stock and stock.rezervisano:
+                raise MagacinError('Lokacija s rezervisanom količinom ne može se očistiti.')
+            set_location_counted_qty(location=line.location, product=product,
+                variation=getattr(line.picking_item, 'varijacija', None), qty=0,
+                user=request.user, napomena='WMS: Lokacija očišćena — Očisti nakon odvajanja')
         unresolved.update(shortage_resolution=decision, shortage_resolved_at=timezone.now())
     messages.success(request, 'Lokacija je očišćena.' if decision == 'clear' else 'Količina je ostavljena na lokaciji.')
     return redirect('staff_wms_section', section='lokacije')
@@ -788,11 +751,11 @@ def picking_alternatives(order, origin):
     missing = max(0, item.kolicina - committed)
     visited = {line.location_id for line in same_item}
     offers = []
-    for stock in ordered_picking_stocks(ProductWMSStock.objects.filter(product_id=item.artikal_id, kolicina__gt=0).exclude(lokacija_id__in=visited).select_related('lokacija')):
-        reserved = sum(line.confirmed_quantity if line.confirmed_at else line.quantity for line in lines if line.location_id == stock.lokacija_id and line.picking_item.artikal_id == item.artikal_id)
+    for stock in ordered_picking_stocks(WarehouseStock.objects.filter(product_id=item.artikal_id, variation_id=getattr(item, 'varijacija_id', None), kolicina__gt=0).exclude(location_id__in=visited).select_related('location')):
+        reserved = sum(line.confirmed_quantity if line.confirmed_at else line.quantity for line in lines if line.location_id == stock.location_id and line.picking_item.artikal_id == item.artikal_id)
         take = min(missing, max(0, stock.kolicina - reserved))
         if take:
-            offers.append({'location': stock.lokacija, 'quantity': take})
+            offers.append({'location': stock.location, 'quantity': take})
     return offers
 
 
@@ -800,10 +763,10 @@ def ordered_picking_stocks(stocks):
     settings = WMSSettings.objects.filter(pk=1).first()
     last_id = settings.picking_last_location_id if settings else None
     def sort_key(stock):
-        name = stock.lokacija.naziv.strip().casefold()
-        last = stock.lokacija_id == last_id if last_id else ('maloprodaja' in name or name == 'mp')
+        name = stock.location.label.strip().casefold()
+        last = stock.location_id == last_id if last_id else ('maloprodaja' in name or name == 'mp')
         return (last, name, stock.pk)
-    return sorted(stocks, key=sort_key)
+    return sorted((stock for stock in stocks if not is_ignored_stock_location(stock.location)), key=sort_key)
 
 
 def wms_entry_price(product, tip, regular=False):
@@ -817,7 +780,7 @@ def wms_entry_price(product, tip, regular=False):
 @user_passes_test(warehouse_user_required)
 def location_detail(request, pk):
     require_wms_section('lokacije')
-    location = get_object_or_404(WMSLocation, pk=pk)
+    location = get_object_or_404(WarehouseLocation, pk=pk)
     if request.method == 'POST':
         require_wms_section('prenosnica')
         try:
@@ -827,18 +790,18 @@ def location_detail(request, pk):
         except (ValueError, TypeError):
             messages.error(request, 'Unesite količinu i odredišnu lokaciju.')
             return redirect('staff_wms_location', pk=pk)
-        destination = get_object_or_404(WMSLocation, pk=destination_id)
+        destination = get_object_or_404(WarehouseLocation, pk=destination_id)
         with transaction.atomic():
-            stock = get_object_or_404(ProductWMSStock.objects.select_for_update(), pk=stock_id, lokacija=location)
+            stock = get_object_or_404(WarehouseStock.objects.select_for_update(), pk=stock_id, location=location)
             if quantity < 1 or quantity > stock.kolicina or destination.pk == location.pk:
                 messages.error(request, 'Provjerite količinu i izaberite drugu lokaciju.')
             else:
-                WMSTransfer.objects.create(product=stock.product, source=location, destination=destination, quantity=quantity)
+                WMSTransfer.objects.create(product=stock.product, variation=stock.variation, source=location, destination=destination, quantity=quantity)
                 messages.success(request, 'Prenosnica je kreirana. Potvrdite Prenijeto da prebacite robu.')
                 return redirect('staff_wms_section', section='prenosnica')
         return redirect('staff_wms_location', pk=pk)
-    stocks = ProductWMSStock.objects.filter(lokacija=location, kolicina__gt=0).select_related('product').order_by('product__naziv')
-    return render(request, 'bera_reference/staff/wms/location_detail.html', {**context('lokacije'), 'location': location, 'stocks': stocks, 'destinations': WMSLocation.objects.exclude(pk=pk).order_by('naziv')})
+    stocks = WarehouseStock.objects.filter(location=location, kolicina__gt=0).select_related('product').order_by('product__naziv')
+    return render(request, 'bera_reference/staff/wms/location_detail.html', {**context('lokacije'), 'location': location, 'stocks': stocks, 'destinations': WarehouseLocation.objects.exclude(pk=pk).order_by('naziv')})
 
 
 @login_required(login_url='login')
@@ -848,8 +811,8 @@ def location_barcode_print(request, pk):
     from barcode import Code128
     from barcode.writer import SVGWriter
     import base64
-    location = get_object_or_404(WMSLocation, pk=pk)
-    svg = Code128(location.barkod, writer=SVGWriter()).render({'module_width': 0.35, 'module_height': 15, 'quiet_zone': 3, 'font_size': 10})
+    location = get_object_or_404(WarehouseLocation, pk=pk)
+    svg = Code128(location.sifra, writer=SVGWriter()).render({'module_width': 0.35, 'module_height': 15, 'quiet_zone': 3, 'font_size': 10})
     image = 'data:image/svg+xml;base64,' + base64.b64encode(svg).decode('ascii')
     return render(request, 'bera_reference/staff/wms/location_barcode_print.html', {'location': location, 'barcode_image': image})
 
@@ -870,7 +833,7 @@ def excel_import(request):
             messages.error(request, 'Izaberite .xlsx datoteku do 10 MB.')
         else:
             try:
-                count = import_products(upload)
+                count = import_products(upload, user=request.user)
                 messages.success(request, f'Import uspješan: {count} artikala.')
             except ValueError as exc:
                 messages.error(request, str(exc))

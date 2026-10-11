@@ -4,7 +4,7 @@ from io import BytesIO
 from django.db import transaction
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from .models import Product, WMSLocation, ProductWMSStock, Category, Brand, Tag
+from .models import Product, WarehouseLocation, WarehouseStock, Category, Brand, Tag
 
 HEADERS = ['Naziv', 'Šifra', 'Cijena', 'Akcijska cijena', 'Barkod', 'Lokacija', 'Količina', 'Opis', 'Kategorija', 'Brend', 'Tagovi']
 
@@ -54,7 +54,7 @@ def template_bytes():
     return stream.getvalue()
 
 
-def import_products(upload):
+def import_products(upload, *, user=None):
     book = load_workbook(upload, read_only=True, data_only=False)
     try:
         sheet = book['Artikli'] if 'Artikli' in book.sheetnames else book.active
@@ -129,16 +129,18 @@ def import_products(upload):
                 product.save()
                 if tags:
                     product.tagovi.set([Tag.get_or_create_by_name(tag.strip())[0] for tag in tags.split(',') if tag.strip()])
+                from .magacin import set_location_counted_qty, MagacinError
+                import hashlib
                 for name, quantity in entry['locations'].items():
-                    location, _ = WMSLocation.objects.get_or_create(naziv=name)
-                    ProductWMSStock.objects.update_or_create(product=product, lokacija=location, defaults={'kolicina': quantity})
-                if entry['locations']:
-                    product.stanje = sum(product.wms_zalihe.values_list('kolicina', flat=True))
-                    if product.stanje > 2147483647:
-                        raise ValueError(f'Prevelika ukupna količina za šifru {code}.')
-                    ids = list(product.wms_zalihe.values_list('lokacija_id', flat=True))
-                    product.wms_lokacija_id = ids[0] if len(ids) == 1 else None
-                    product.save(update_fields=['stanje', 'na_stanju'])
+                    location_code = name if len(name) <= 20 else 'WMS-' + hashlib.sha256(name.encode()).hexdigest()[:16]
+                    location, _ = WarehouseLocation.objects.get_or_create(sifra=location_code, defaults={'naziv': name})
+                    stock = WarehouseStock.objects.select_for_update().filter(product=product, location=location, variation=None).first()
+                    if stock and quantity < stock.rezervisano:
+                        raise ValueError(f'Količina za šifru {code} manja je od rezervisane količine.')
+                    if product.varijacije.exists():
+                        raise ValueError(f'Artikal {code} ima varijacije; njegov lager uredite kroz izbor varijacije.')
+                    set_location_counted_qty(location=location, product=product, qty=quantity,
+                                             user=user, napomena='WMS Excel import')
         return len(products)
     finally:
         book.close()

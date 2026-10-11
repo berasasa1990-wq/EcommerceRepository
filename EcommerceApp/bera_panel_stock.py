@@ -51,20 +51,18 @@ class PanelProductStockMixin:
         return [path('lokacije-zalihe/', self.admin_site.admin_view(self.panel_stock_view), name='EcommerceApp_product_panel_stock')] + super().get_urls()
 
     def panel_stock_view(self, request):
-        from .models import Product, WMSLocation, WarehouseStock, ProductVariation
-        from .wms_legacy import legacy_location, import_legacy_stock
+        from .models import Product, WarehouseLocation, WarehouseStock, ProductVariation
+
         from .magacin import MagacinError, set_location_counted_qty
         if not self.stock_enabled() or not self.has_change_permission(request) or not request.user.has_perm('EcommerceApp.add_warehousemovement'):
             raise PermissionDenied
         if request.method == 'GET':
-            with transaction.atomic():
-                import_legacy_stock([request.GET.get('product')])
-            locations = WMSLocation.objects.select_related('legacy_location').order_by('naziv')
+            locations = WarehouseLocation.objects.order_by('naziv')
             variants = ProductVariation.objects.filter(artikal_id=request.GET.get('product')).order_by('pk')
             stocks = list(WarehouseStock.objects.filter(product_id=request.GET.get('product'), kolicina__gt=0).values('location_id', 'variation_id', 'kolicina', 'rezervisano'))
             return JsonResponse({'locations': [{'id': x.pk, 'name': x.naziv, 'stocks': [
                 {'variation': row['variation_id'], 'quantity': row['kolicina'], 'available': max(0, row['kolicina'] - row['rezervisano'])}
-                for row in stocks if row['location_id'] == x.legacy_location_id
+                for row in stocks if row['location_id'] == x.pk
             ]} for x in locations], 'variants': [{'id': x.pk, 'name': str(x)} for x in variants]})
         if request.method != 'POST':
             return JsonResponse({'error': 'Metoda nije dozvoljena.'}, status=405)
@@ -76,8 +74,8 @@ class PanelProductStockMixin:
                 product = Product.objects.select_for_update().get(pk=request.POST.get('product'))
                 if not self.has_change_permission(request, product):
                     raise PermissionDenied
-                wms = WMSLocation.objects.get(pk=request.POST.get('location'))
-                location = legacy_location(wms)
+                wms = WarehouseLocation.objects.get(pk=request.POST.get('location'))
+                location = wms
                 variation = None
                 if product.varijacije.exists():
                     variation = ProductVariation.objects.get(pk=request.POST.get('variation'), artikal=product)
@@ -87,9 +85,8 @@ class PanelProductStockMixin:
                 if target < 0 or (stock and target < stock.rezervisano):
                     raise MagacinError('Nema dovoljno slobodne količine na odabranoj lokaciji.')
                 set_location_counted_qty(location=location, product=product, variation=variation, qty=target, user=request.user, napomena='Panel Artikli: '+request.POST['direction'])
-                import_legacy_stock([product.pk])
             return JsonResponse({'ok': True})
-        except (ValueError, TypeError, Product.DoesNotExist, WMSLocation.DoesNotExist, ProductVariation.DoesNotExist):
+        except (ValueError, TypeError, Product.DoesNotExist, WarehouseLocation.DoesNotExist, ProductVariation.DoesNotExist):
             return JsonResponse({'error': 'Odaberite artikal, lokaciju, varijaciju ako postoji i pozitivnu količinu.'}, status=400)
         except MagacinError as exc:
             return JsonResponse({'error': str(exc)}, status=400)

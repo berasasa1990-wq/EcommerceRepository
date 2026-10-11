@@ -7316,10 +7316,12 @@ class ProductWMSStock(models.Model):
 
 
 class WMSSettings(models.Model):
+    transfer_location = models.ForeignKey(WarehouseLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', verbose_name='Lokacija za prenos')
+    picking_last_location = models.ForeignKey(WarehouseLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', verbose_name='Posljednja lokacija za odvajanje')
     vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('17.00'), verbose_name='PDV (%)', validators=[MinValueValidator(0), MaxValueValidator(100)])
-    picking_last_location = models.ForeignKey(WMSLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', verbose_name='Lokacija koja se posljednja nudi za odvajanje')
+    archived_picking_last_location = models.ForeignKey(WMSLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', verbose_name='Lokacija koja se posljednja nudi za odvajanje')
     show_storefront_availability = models.BooleanField(default=True, verbose_name="Prikaz dostupnosti artikala na sajtu")
-    transfer_location = models.ForeignKey(WMSLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', verbose_name='Lokacija za prenos iz Zaliha')
+    archived_transfer_location = models.ForeignKey(WMSLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', verbose_name='Lokacija za prenos iz Zaliha')
 
     class Meta:
         db_table = 'EcommerceApp_bera_wmssettings'
@@ -7327,8 +7329,11 @@ class WMSSettings(models.Model):
 
 class WMSTransfer(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='wms_transfers')
-    source = models.ForeignKey(WMSLocation, on_delete=models.PROTECT, related_name='outgoing_transfers')
-    destination = models.ForeignKey(WMSLocation, on_delete=models.PROTECT, related_name='incoming_transfers')
+    archived_source = models.ForeignKey(WMSLocation, null=True, blank=True, on_delete=models.PROTECT, related_name='outgoing_transfers')
+    source = models.ForeignKey(WarehouseLocation, null=True, blank=True, on_delete=models.PROTECT, related_name='bera_outgoing_transfers')
+    archived_destination = models.ForeignKey(WMSLocation, null=True, blank=True, on_delete=models.PROTECT, related_name='incoming_transfers')
+    destination = models.ForeignKey(WarehouseLocation, null=True, blank=True, on_delete=models.PROTECT, related_name='bera_incoming_transfers')
+    variation = models.ForeignKey(ProductVariation, null=True, blank=True, on_delete=models.PROTECT, related_name='+')
     quantity = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -7350,7 +7355,8 @@ class WMSPickLine(models.Model):
     def picking_item(self):
         return self.item if self.item_id else self.wms_item
 
-    location = models.ForeignKey(WMSLocation, on_delete=models.PROTECT)
+    archived_location = models.ForeignKey(WMSLocation, null=True, blank=True, on_delete=models.PROTECT)
+    location = models.ForeignKey(WarehouseLocation, null=True, blank=True, on_delete=models.PROTECT, related_name='bera_pick_lines')
     quantity = models.PositiveIntegerField()
     confirmed_quantity = models.PositiveIntegerField(default=0)
     photo = models.ImageField(upload_to='wms/picking/%Y/%m/', blank=True)
@@ -7363,6 +7369,7 @@ class WMSPickLine(models.Model):
 
 
 class WMSOrderItem(models.Model):
+    varijacija = models.ForeignKey(ProductVariation, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
     order = models.ForeignKey(WMSOrder, on_delete=models.CASCADE, related_name='items')
     artikal = models.ForeignKey(Product, null=True, on_delete=models.SET_NULL)
     naziv = models.CharField(max_length=200)

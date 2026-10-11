@@ -3,11 +3,11 @@ from collections import Counter
 from pathlib import Path
 logging.disable(50)
 import os
-assert os.environ.get('DJANGO_SETTINGS_MODULE') == 'bera_wms_qa_settings'
+assert os.environ.get('DJANGO_SETTINGS_MODULE') in ('bera_wms_qa_settings', 'canonical_qa_settings')
 django.setup()
 from django.conf import settings
 assert settings.DATABASES['default']['ENGINE']=='django.db.backends.sqlite3'
-assert str(settings.DATABASES['default']['NAME'])=='/private/tmp/bera-wms-qa.sqlite3'
+assert str(settings.DATABASES['default']['NAME']) in ('/private/tmp/bera-wms-qa.sqlite3', '/private/tmp/bera-wms-canonical-qa.sqlite3')
 from django.test import Client
 from django.test.utils import CaptureQueriesContext
 from django.db import connection, transaction
