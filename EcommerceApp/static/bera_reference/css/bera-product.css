@@ -261,5 +261,5 @@ body.bera-product-reference .product-other-options-form .product-qty-selector{bo
 body.bera-product-reference .product-other-options-form .product-qty-selector button{color:var(--wishlist-accent,#008dc3);background:#edf7fe}
 
 @media(max-width:767px){
- body.bera-product-reference .product-detail-info .product-brand-under-price img{max-width:40px!important;height:11px!important;width:40px!important;object-fit:contain}
+ body.bera-product-reference .product-detail-info .product-brand-under-price img{max-width:60px!important;height:16px!important;width:auto!important;object-fit:contain}
 }
