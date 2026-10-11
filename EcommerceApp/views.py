@@ -8028,10 +8028,6 @@ def staff_orders_validation(request):
     ).exclude(
         status__in=[Order.Status.ZAVRSENA, Order.Status.OTKAZANA],
     ).exclude(lager_status__in=[Order.LagerStatus.VALIDIRANO, Order.LagerStatus.OTKAZANO])
-    if all_site_orders:
-        orders = Order.objects.filter(izvor=Order.Izvor.WEBSHOP).exclude(
-            Q(pick_state__kind__isnull=False, pick_state__kind='prenos_mp'),
-        )
     pending_summary = orders.aggregate(count=Count('pk'), total=Sum('ukupno'))
     from .online_gift import SCRATCH_CAMPAIGN_NAME, scratch_label_for_claim
     from .models import ScratchPrize

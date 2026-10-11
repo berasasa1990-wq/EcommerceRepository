@@ -89,6 +89,8 @@ def install_panel_editors():
                 options[attribute] = 'bera_panel_admin/' + local
         bases = (editor.__class__,)
         if model._meta.model_name == 'product':
+            options['list_per_page'] = 10
+            options['list_max_show_all'] = 10
             from .bera_panel_stock import PanelProductStockMixin
             bases = (PanelProductStockMixin, *bases)
         cls = type('Panel' + editor.__class__.__name__, bases, options)
