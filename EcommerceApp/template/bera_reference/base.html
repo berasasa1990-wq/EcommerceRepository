@@ -216,7 +216,7 @@
         body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
     </style>
     {% endif %}
-    <link rel="stylesheet" href="{% static 'bera_reference/css/home-mobile-reference.css' %}?v=20261011-uniform-brand-logos">
+    <link rel="stylesheet" href="{% static 'bera_reference/css/home-mobile-reference.css' %}?v=20261011-visible-brand-logos">
     <link rel="stylesheet" href="{% static 'bera_reference/css/mobile-dock.css' %}?v=20260919-wishlist-badge">
     <link rel="stylesheet" href="{% static 'bera_reference/css/wishlist.css' %}?v=20260919-mobile-sheet">
 
@@ -357,7 +357,7 @@
     }
     </style>
 {% block storefront_theme %}{% endblock %}
-<link rel="stylesheet" href="{% static 'bera_reference/css/bera-home.css' %}?v=20261011-uniform-brand-logos">
+<link rel="stylesheet" href="{% static 'bera_reference/css/bera-home.css' %}?v=20261011-visible-brand-logos">
 <link rel="stylesheet" href="{% static 'bera_reference/css/bera-offer-popup.css' %}?v=20261008-blue-offers">
 {% if bera_button_color %}
 <style>
@@ -816,6 +816,7 @@ body.bera-storefront-header .product-card-add-btn :is(svg,.product-card-add-btn_
     {% block structured_data %}{% endblock %}
     <script src="{% static 'bera_reference/js/csrf-session.js' %}?v=20261001" data-cookie-name="{{ csrf_cookie_name }}" defer></script>
     <script src="{% static 'bera_reference/js/main.min.js' %}?v=20260916-account-scroll-top" defer></script>
+    {% if not is_wms_workspace %}<script src="{% static 'bera_reference/js/brand-logo-normalize.js' %}?v=20261011" defer></script>{% endif %}
     {% if not is_wms_workspace %}
     <script src="{% static 'bera_reference/js/desktop-reference.js' %}?v=20260914-dropdowns" defer></script>
     <script src="{% static 'bera_reference/js/stock-notify.js' %}?v=20260916-notify-no-autofocus" defer></script>
