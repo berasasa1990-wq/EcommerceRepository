@@ -17,7 +17,8 @@
     {% if bera_appearance_ready %}
     <form method="post" action="{% url 'staff_button_color' %}">{% csrf_token %}
     <label><input type="radio" name="button_mode" value="default"{% if not bera_button_color %} checked{% endif %}> Default — sadašnji plavi izgled</label>
-    <label><input type="radio" name="button_mode" value="custom"{% if bera_button_color %} checked{% endif %}> Prilagođena boja</label>
+    <label><input type="radio" name="button_mode" value="orange"{% if bera_button_orange %} checked{% endif %}> <span style="display:inline-block;width:28px;height:18px;border-radius:5px;vertical-align:middle;background:linear-gradient(180deg,rgb(255,148,1) 0%,rgb(252,115,10) 50%,rgb(244,92,2) 100%)"></span> Narandžasta — gradijent</label>
+    <label><input type="radio" name="button_mode" value="custom"{% if bera_button_color and not bera_button_orange %} checked{% endif %}> Prilagođena boja</label>
     <input type="color" name="button_color" value="{{ bera_button_color|default:'#008bc5' }}" aria-label="Boja dugmadi">
     <button type="submit">Sačuvaj boju</button>
     </form><p>Izaberite Default da vratite originalne boje i gradijente.</p>

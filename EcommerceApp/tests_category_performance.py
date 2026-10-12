@@ -32,7 +32,7 @@ class CategoryRankingPerformanceTests(TestCase):
             Product.objects.create(naziv=f'Kartica {index}', kategorija=category, cijena=index+1, opis='Opis proizvoda', na_stanju=True)
         def render(request, template, context):
             self.assertEqual(context['page_obj'].paginator.count, 55)
-            self.assertEqual(len(context['products']), 49)
+            self.assertEqual(len(context['products']), 20)
             self.assertTrue(all('opis' not in p.get_deferred_fields() for p in context['products']))
             return HttpResponse('OK')
         with patch('EcommerceApp.bera_home.render_storefront', side_effect=render):

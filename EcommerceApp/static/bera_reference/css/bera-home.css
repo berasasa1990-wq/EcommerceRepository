@@ -183,7 +183,7 @@ body.bera-home.home-mobile-reference .home-product-carousel__viewport{overflow:h
 :is(body.bera-home.home-mobile-reference .home-products,body.bera-storefront-header .product-catalog) .product-card-add-btn__icon{width:18px!important;height:18px!important}
 :is(body.bera-home.home-mobile-reference .home-products,body.bera-storefront-header .product-catalog) .home-card-stock{font-size:11px!important;color:#64819b!important;margin:4px 0 0!important}
 :is(body.bera-home.home-mobile-reference .home-products,body.bera-storefront-header .product-catalog) .price-current,
-:is(body.bera-home.home-mobile-reference .home-products,body.bera-storefront-header .product-catalog) .price-sale{font-size:18px!important;font-weight:800!important;color:#00346c!important}
+:is(body.bera-home.home-mobile-reference .home-products,body.bera-storefront-header .product-catalog) .price-sale{font-size:18px!important;font-weight:800!important;color:#008bc5!important}
 :is(body.bera-home.home-mobile-reference .home-products,body.bera-storefront-header .product-catalog) .product-sale-row{display:flex!important;align-items:center!important;gap:10px!important}
 :is(body.bera-home.home-mobile-reference .home-products,body.bera-storefront-header .product-catalog) .product-sale-box{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important}
 :is(body.bera-home.home-mobile-reference .home-products,body.bera-storefront-header .product-catalog) .card-dwell-label{display:none!important}
@@ -246,7 +246,9 @@ body.bera-home.home-mobile-reference .bera-offer-banner--uploaded{padding:0;min-
 .bera-offer-banner__uploaded-image{display:block;width:100%;height:100%;object-fit:cover}
 
 /* Wide homepage with a small, consistent inset and section spacing. */
-body.bera-home.home-mobile-reference{--home-page-inset:12px}
+body.bera-home.home-mobile-reference{--home-page-inset:20px}
+body.bera-home.home-mobile-reference .hero-carousel,
+body.bera-home.home-mobile-reference .bera-hero,
 body.bera-home.home-mobile-reference #mobileHomeCategories,
 body.bera-home.home-mobile-reference .mobile-home-benefits,
 body.bera-home.home-mobile-reference .home-trust-bar__inner,
@@ -271,7 +273,7 @@ body.bera-home.home-mobile-reference .home-products .home-section-header{margin-
 body.bera-home.home-mobile-reference .bera-offer-banners,
 body.bera-home.home-mobile-reference .featured-grid.featured-grid--promos{margin-top:20px!important;margin-bottom:0!important;gap:16px}
 @media(max-width:1024px){
- body.bera-home.home-mobile-reference{--home-page-inset:8px}
+ body.bera-home.home-mobile-reference{--home-page-inset:20px}
  body.bera-home.home-mobile-reference .home-products{margin-top:20px!important;margin-bottom:6px!important}
  body.bera-home.home-mobile-reference .bera-offer-banners,
  body.bera-home.home-mobile-reference .featured-grid.featured-grid--promos{margin-top:16px!important;gap:12px}
@@ -300,7 +302,7 @@ body.bera-home.home-mobile-reference .bera-offer-banners{margin-top:10px!importa
 
 /* Homepage prices stay visible independently of legacy sale animations. */
 body.bera-home.home-mobile-reference .home-products .home-card-prices{display:flex!important;flex-wrap:wrap;align-items:baseline;gap:4px 10px;visibility:visible!important;opacity:1!important;line-height:1.35}
-body.bera-home.home-mobile-reference .home-products .home-card-prices__current{display:inline!important;color:#00346c!important;font-size:18px!important;font-weight:800;visibility:visible!important;opacity:1!important}
+body.bera-home.home-mobile-reference .home-products .home-card-prices__current{display:inline!important;color:#008bc5!important;font-size:18px!important;font-weight:800;visibility:visible!important;opacity:1!important}
 body.bera-home.home-mobile-reference .home-products .home-card-prices__original{display:inline!important;color:#8ba0b5!important;font-size:12px!important;text-decoration:line-through!important;visibility:visible!important;opacity:1!important}
 @media(max-width:1024px){body.bera-home.home-mobile-reference .home-products .home-card-prices__current{font-size:16px!important}}
 
@@ -695,19 +697,22 @@ body.bera-storefront-header :is(.product-card,.product-catalog,.product-detail-i
 body.bera-storefront-header :is(.product-card,.product-catalog,.product-detail-info) .product-brand-under-price{display:flex!important;justify-content:flex-start!important;align-items:center!important;align-self:flex-start!important;text-align:left!important;margin-left:0!important;padding-left:0!important;box-sizing:border-box}
 body.bera-storefront-header :is(.product-card,.product-catalog,.product-detail-info) .product-brand-under-price :is(img,canvas){margin-left:0!important;margin-right:auto!important;padding:0!important;object-position:left center!important;transform:none!important}
 
-/* Mobile category shortcuts in two rows. */
+/* Mobile category shortcuts in one horizontally scrollable row. */
 @media(max-width:1024px){
  body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-category-grid{
   display:grid!important;
   grid-template-columns:none;
-  grid-template-rows:repeat(2,auto);
+  grid-template-rows:auto;
   grid-auto-flow:column;
-  grid-auto-columns:calc((100% - 24px)/5);
+  grid-auto-columns:94px;
+  overflow-x:auto;
+  scroll-snap-type:x proximity;
   gap:6px!important;
   align-items:stretch;
  }
  body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-category-grid>a{
   min-width:0!important;
+  scroll-snap-align:start;
   min-height:76px!important;
   padding:6px 2px!important;
   gap:4px!important;
@@ -747,3 +752,31 @@ body.bera-storefront-header .subcategory-footer-action .btn-view-all{max-width:1
  body.bera-storefront-header .subcategory-name{font-size:13px}
  body.bera-storefront-header .subcategory-card-inner{min-height:92px;padding:16px 10px}
 }
+
+/* Center desktop homepage sections within the same banner/product width. */
+@media(min-width:1025px){
+ body.bera-home.home-mobile-reference{--home-page-inset:max(20px,calc((100% - 1180px) / 2))}
+}
+@media(min-width:1600px){
+ body.bera-home.home-mobile-reference{--home-page-inset:max(20px,calc((100% - 1580px) / 2))}
+}
+
+/* Stock arrival notifications: orange text inside a light grey outline. */
+body.bera-storefront-header:not(.panel-blue-workspace):not(.wms-independent):not(.staff-shell-page) [data-stock-notify][data-product-id][data-notify-url]{
+ background:#fff!important;
+ border:2px solid #e5e7eb!important;
+ color:rgb(252,115,10)!important;
+ box-sizing:border-box;
+}
+
+/* Homepage banners have no decorative edge lines. */
+body.bera-home.home-mobile-reference #heroCarousel,
+body.bera-home.home-mobile-reference .bera-hero{border:0!important;outline:0!important;box-shadow:none!important}
+
+/* Current product prices follow the selected accent, with the original blue as default. */
+body.bera-storefront-header:not(.panel-blue-workspace):not(.wms-independent):not(.staff-shell-page) :is(.home-card-prices__current,.price-current,.price-sale,.product-price-current,.hm-price__now,.hm-price__sale,.card-dwell-now,.bera-related-price,.wishlist-item__price,.search-suggestion-price):not(.price-original):not(.hm-price__old){color:var(--storefront-price-color,#008bc5)!important}
+
+/* Related product amounts have their own strong element with an explicit colour. */
+body.bera-storefront-header:not(.panel-blue-workspace):not(.wms-independent):not(.staff-shell-page) .bera-related-price strong{color:var(--storefront-price-color,#008bc5)!important}
+
+body.bera-storefront-header .product-catalog .product-card--catalog>.home-card-new-label{position:absolute;top:12px;left:12px;z-index:5;padding:4px 12px;font-size:12px;font-weight:700;line-height:1.2;pointer-events:none}

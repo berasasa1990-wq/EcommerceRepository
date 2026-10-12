@@ -2162,7 +2162,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     return products, params
 
 
-CATALOG_PRODUCTS_PER_PAGE = 49
+CATALOG_PRODUCTS_PER_PAGE = 20
 HOME_PRODUCTS_PER_PAGE = CATALOG_PRODUCTS_PER_PAGE
 HOME_PRODUCT_ORDER_KEY = 'home_product_ids'
 HOME_FILTER_KEY = 'home_filter_key'

@@ -31,7 +31,12 @@ def storefront_context():
     if result['bera_appearance_ready']:
         color = BeraAppearance.objects.filter(pk=1).values_list('button_color', flat=True).first() or ''
         import re
+        result['bera_button_orange'] = color == 'orange'
+        if color == 'orange':
+            color = '#fc730a'
+            result['bera_button_background'] = 'linear-gradient(180deg, rgb(255, 148, 1) 0%, rgb(252, 115, 10) 50%, rgb(244, 92, 2) 100%)'
         if re.fullmatch(r'#[0-9a-fA-F]{6}', color):
+            result.setdefault('bera_button_background', color)
             result['bera_button_color'] = color
             result['bera_button_text'] = '#ffffff'
     return result

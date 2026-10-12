@@ -124,6 +124,7 @@
     });
     saveFavorites();
     syncWishlistUi();
+    document.addEventListener('catalog:loaded', syncWishlistUi);
     function renderFavoriteRow(item) {
         let url;
         try { url = new URL(item.url, location.origin); } catch (_) { return null; }

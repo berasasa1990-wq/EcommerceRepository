@@ -79,15 +79,12 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
 .home-trust-bar .home-trust-bar__item {
     border-color: #e5e5e5;
 }
-.hero-carousel {
-    border-bottom: 2px solid var(--ozr-orange, #FF5A00) !important;
-}
 @media (max-width: 768px) {
     body.bera-home.home-mobile-reference .hero-carousel {
-        width: 100vw !important;
+        width: 100% !important;
         max-width: none !important;
-        margin-left: calc(50% - 50vw) !important;
-        margin-right: calc(50% - 50vw) !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
     }
     body.bera-home.home-mobile-reference #heroCarousel :is(.carousel-track,.carousel-slide,.slide-image,.slide-image-link,picture) {
         width: 100% !important;
@@ -130,9 +127,9 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
 {% if lcp_image_url %}
 {% with slide=hero_slides.0 %}
 {% if slide.has_mobile_image and not slide.has_video %}
-<link rel="preload" as="image" href="{{ slide.image_mobile }}"{% if slide.image_mobile_srcset %} imagesrcset="{{ slide.image_mobile_srcset }}"{% endif %} imagesizes="100vw" media="(max-width: 768px)" fetchpriority="high">
+<link rel="preload" as="image" href="{{ slide.image_mobile }}"{% if slide.image_mobile_srcset %} imagesrcset="{{ slide.image_mobile_srcset }}"{% endif %} imagesizes="(min-width: 1620px) 1580px, (min-width: 1600px) calc(100vw - 40px), (min-width: 1220px) 1180px, calc(100vw - 40px)" media="(max-width: 768px)" fetchpriority="high">
 {% endif %}
-<link rel="preload" as="image" href="{{ lcp_image_url }}"{% if lcp_image_srcset %} imagesrcset="{{ lcp_image_srcset }}"{% endif %}{% if lcp_image_sizes %} imagesizes="{{ lcp_image_sizes }}"{% endif %}{% if slide.has_mobile_image and not slide.has_video %} media="(min-width: 768.01px)"{% endif %} fetchpriority="high">
+<link rel="preload" as="image" href="{{ lcp_image_url }}"{% if lcp_image_srcset %} imagesrcset="{{ lcp_image_srcset }}"{% endif %} imagesizes="(min-width: 1620px) 1580px, (min-width: 1600px) calc(100vw - 40px), (min-width: 1220px) 1180px, calc(100vw - 40px)"{% if slide.has_mobile_image and not slide.has_video %} media="(min-width: 768.01px)"{% endif %} fetchpriority="high">
 {% endwith %}
 {% endif %}
 {% endblock %}
@@ -156,7 +153,7 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
                     <source
                         media="(max-width: 768px)"
                         srcset="{% if slide.image_mobile_srcset %}{{ slide.image_mobile_srcset }}{% else %}{{ slide.image_mobile }}{% endif %}"
-                        sizes="100vw"
+                        sizes="(min-width: 1620px) 1580px, (min-width: 1600px) calc(100vw - 40px), (min-width: 1220px) 1180px, calc(100vw - 40px)"
                     >
                     <img
                         src="{{ slide.image }}"
@@ -165,13 +162,13 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
                         class="slide-image-img"
                         width="{{ slide.image_width }}"
                         height="{{ slide.image_height }}"
-                        sizes="100vw"
+                        sizes="(min-width: 1620px) 1580px, (min-width: 1600px) calc(100vw - 40px), (min-width: 1220px) 1180px, calc(100vw - 40px)"
                         {% if forloop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
                         decoding="async"
                     >
                 </picture>
                 {% else %}
-                <img src="{{ slide.image }}"{% if slide.image_srcset %} srcset="{{ slide.image_srcset }}"{% endif %} alt="{{ slide.title|default:'Banner' }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}" sizes="100vw"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
+                <img src="{{ slide.image }}"{% if slide.image_srcset %} srcset="{{ slide.image_srcset }}"{% endif %} alt="{{ slide.title|default:'Banner' }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}" sizes="(min-width: 1620px) 1580px, (min-width: 1600px) calc(100vw - 40px), (min-width: 1220px) 1180px, calc(100vw - 40px)"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
                 {% endif %}
                 {% if slide.url %}
                 </a>

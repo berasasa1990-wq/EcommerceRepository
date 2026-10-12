@@ -45,3 +45,13 @@ class NovitetiSelectionTests(TestCase):
         self.assertEqual({p.pk for p in response.context['page_obj']}, {chosen.pk})
         response = self.client.get('/', {'noviteti': '1', 'q': 'Drugi dostupni'})
         self.assertEqual(list(response.context['page_obj']), [])
+
+    def test_new_offer_cards_have_novo_badge_even_without_product_flag(self):
+        from django.template.loader import render_to_string
+        product = Product.objects.create(naziv='Novo iz izbora', slug='novo-iz-izbora', cijena=10, stanje=3, na_stanju=True, je_novitet=False)
+        html = render_to_string('bera_reference/partials/product_catalog_card.html', {
+            'product': product, 'home_reference_card': True, 'filter_params': {'noviteti': '1'},
+        })
+        self.assertIn('class="home-card-new-label" aria-label="Novo">Novo</span>', html)
+        dialog = render_to_string('bera_reference/partials/mobile_categories_dialog.html')
+        self.assertNotIn('Svi brendovi', dialog)

@@ -14,7 +14,9 @@
     data-category="{% if product.kategorija %}{{ product.kategorija.naziv }}{% endif %}"
     {% if product.na_stanju %}data-in-stock="1"{% endif %}
 >
-    {% if product.katalog_na_akciji %}
+    {% if filter_params.noviteti %}
+    <span class="home-card-new-label" aria-label="Novo">Novo</span>
+    {% elif product.katalog_na_akciji %}
     {% if product.katalog_akcija_postotak %}
     <span class="{% if home_reference_card %}home-card-sale-percent{% else %}product-card-corner-badge product-card-corner-badge--sale{% endif %}" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
     {% endif %}

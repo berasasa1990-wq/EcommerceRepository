@@ -49,10 +49,6 @@
             {% endif %}
             {% include 'bera_reference/partials/catalog_mobile_filter.html' %}
 
-            {% if page_obj %}
-            {% include 'bera_reference/partials/catalog_pagination.html' with filter_action=filter_action elided_page_range=elided_page_range catalog_query=catalog_query pagination_placement='top' %}
-            {% endif %}
-
             {% if products %}
             <div class="product-grid product-grid--catalog">
                 {% for product in products %}
@@ -64,7 +60,7 @@
             {% endif %}
 
             {% if page_obj %}
-            {% include 'bera_reference/partials/catalog_pagination.html' with filter_action=filter_action elided_page_range=elided_page_range catalog_query=catalog_query pagination_placement='bottom' %}
+            {% include 'bera_reference/partials/catalog_load_more.html' %}
             {% endif %}
 
             {% if filter_params.akcija and not category %}

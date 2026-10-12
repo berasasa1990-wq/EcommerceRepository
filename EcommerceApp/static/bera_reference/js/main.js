@@ -2571,6 +2571,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     bindCatalogAddButtons();
+    document.addEventListener('catalog:loaded', event => bindCatalogAddButtons(event.detail.root));
 
     document.querySelectorAll('[data-product-card]').forEach((card) => {
         const mainImage = card.querySelector('[data-main-image]');

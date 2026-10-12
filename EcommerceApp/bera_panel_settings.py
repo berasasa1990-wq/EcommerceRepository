@@ -316,11 +316,11 @@ def staff_button_color(request):
     from .models import BeraAppearance
     mode = request.POST.get('button_mode')
     color = request.POST.get('button_color', '').strip()
-    if mode not in {'default', 'custom'} or (mode == 'custom' and not re.fullmatch(r'#[0-9a-fA-F]{6}', color)):
+    if mode not in {'default', 'custom', 'orange'} or (mode == 'custom' and not re.fullmatch(r'#[0-9a-fA-F]{6}', color)):
         messages.error(request, 'Unesite ispravnu boju u formatu #008bc5.')
         return redirect('staff_settings_new')
     appearance, _ = BeraAppearance.objects.get_or_create(pk=1)
-    appearance.button_color = color.lower() if mode == 'custom' else ''
+    appearance.button_color = 'orange' if mode == 'orange' else (color.lower() if mode == 'custom' else '')
     appearance.save(update_fields=['button_color'])
-    messages.success(request, 'Boja dugmadi je sačuvana.' if mode == 'custom' else 'Vraćen je Default izgled dugmadi.')
+    messages.success(request, 'Boja dugmadi je sačuvana.' if mode != 'default' else 'Vraćen je Default izgled dugmadi.')
     return redirect('staff_settings_new')
