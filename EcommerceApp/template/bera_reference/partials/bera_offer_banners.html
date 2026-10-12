@@ -1,7 +1,7 @@
 <section class="bera-offer-banners" aria-label="Otkrijte ponudu">
     {% with card=home_offer_slots.0 %}
     {% if card %}
-    <a class="bera-offer-banner bera-offer-banner--uploaded" href="{{ card.url|default:'/?noviteti=1' }}" aria-label="{{ card.title|default:'Noviteti' }}">
+    <a class="bera-offer-banner bera-offer-banner--uploaded" href="{% url 'home' %}?noviteti=1" aria-label="{{ card.title|default:'Noviteti' }}">
         {% include 'bera_reference/partials/banner_media.html' with card=card image_class='bera-offer-banner__uploaded-image' video_class='bera-offer-banner__uploaded-image' image_sizes='(max-width: 540px) 100vw, 50vw' image_loading='lazy' %}
     </a>
     {% else %}

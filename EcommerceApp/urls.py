@@ -9,6 +9,7 @@ from . import views
 from . import bera_panel
 from . import module_requests
 from . import bera_panel_settings
+from . import wms_print_status
 from . import wms_price_print
 from . import views_b2b
 from . import views_catalog_api
@@ -46,6 +47,7 @@ urlpatterns = [
     path('wms/narudzbe/<int:pk>/vrati/', views_wms.restore_order, name='staff_wms_restore_order'),
     path('wms/narudzbe/<int:pk>/otkazi/', views_wms.cancel_order, name='staff_wms_cancel_order'),
     path('wms/lokacije/nedostaje/<int:pk>/', views_wms.resolve_shortage, name='staff_wms_resolve_shortage'),
+    path('wms/narudzbe/stampa/<str:kind>/potvrdi/', wms_print_status.acknowledge, name='staff_wms_print_acknowledge'),
     path('wms/narudzbe/stampa/<str:kind>/', views_wms.print_orders, name='staff_wms_print_orders'),
     path('wms/narudzbe/artikli/', views_wms.order_products, name='staff_wms_order_products'),
     path('wms/narudzbe/kupci/', views_wms.order_customers, name='staff_wms_order_customers'),

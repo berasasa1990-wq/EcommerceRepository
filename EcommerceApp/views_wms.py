@@ -613,6 +613,12 @@ def print_orders(request, kind):
             else:
                 orders = orders.filter(Q(source_order__kreirana__date=print_date) | Q(source_order__isnull=True, kreirana__date=print_date))
         if kind in ('racun', 'faktura'):
+            from django.db.models import Exists, OuterRef, CharField
+            from django.db.models.functions import Cast
+            from .models import SystemDataRevision
+            printed = SystemDataRevision.objects.filter(table_name=WMSOrder._meta.db_table,
+                record_key=Cast(OuterRef('pk'), CharField()), operation='PRINT', after__kind=kind)
+            orders = orders.annotate(wms_printed=Exists(printed))
             if request.GET.get('stage') != 'print':
                 return render(request, 'bera_reference/staff/wms/invoice_selection.html', {
                     **context('narudzbe'), 'orders': orders, 'print_date': print_date,

@@ -64,4 +64,30 @@ td{padding:10px 8px;border-bottom:1px solid #e2ebf2;vertical-align:top;overflow-
 </div>{% endif %}
 </section>
 {% empty %}<p class="empty">Nema završenih narudžbi za štampanje.</p>{% endfor %}
-</body></html>
+
+
+{% if kind == 'racun' or kind == 'faktura' %}
+<form id="printAcknowledgement" action="{% url 'staff_wms_print_acknowledge' kind %}" method="post" hidden>
+{% csrf_token %}{% for job in jobs %}<input type="hidden" name="orders" value="{{ job.order.pk }}">{% endfor %}
+</form>
+<script>(()=>{
+const form=document.getElementById('printAcknowledgement');
+const status=document.createElement('span');status.setAttribute('role','status');
+document.querySelector('.toolbar').appendChild(status);
+let saving=false;
+window.addEventListener('afterprint',async()=>{
+ if(saving||!form.querySelector('[name="orders"]'))return;
+ saving=true;
+ try{
+  const response=await fetch(form.action,{method:'POST',body:new FormData(form),credentials:'same-origin'});
+  if(!response.ok)throw new Error();
+  status.textContent='odštampano';
+  try{localStorage.setItem('wms-print-status',String(Date.now()));}catch(_){}
+ }catch(_){status.textContent='Oznaka štampanja nije sačuvana. Ponovite štampanje.';}
+ finally{saving=false;}
+});
+})();</script>
+{% endif %}
+
+</body>
+</html>

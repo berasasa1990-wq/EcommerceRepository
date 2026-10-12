@@ -1,4 +1,17 @@
 (() => {
+    const desktop = matchMedia('(min-width: 1025px)');
+    const mainCategories = [...document.querySelectorAll('.bera-category-menu > div > .bera-category-branch')];
+    mainCategories.forEach(category => {
+        category.addEventListener('toggle', () => {
+            if (!desktop.matches || !category.open) return;
+            mainCategories.forEach(other => { if (other !== category) other.open = false; });
+        });
+    });
+    desktop.addEventListener('change', () => {
+        if (!desktop.matches) return;
+        const firstOpen = mainCategories.find(category => category.open);
+        mainCategories.forEach(category => { if (category !== firstOpen) category.open = false; });
+    });
     const dropdowns = [...document.querySelectorAll('.desktop-category-dropdown')];
     dropdowns.forEach(dropdown => {
         dropdown.addEventListener('toggle', () => {

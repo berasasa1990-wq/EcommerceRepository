@@ -300,3 +300,8 @@ button.wms-stock-result-quantity:focus-visible { outline: 2px solid #009ed1; out
 @media(max-width:800px){.wms-product-history-dialog{padding:14px}.wms-product-history-dialog .wms-history-scroll{overflow:visible}.wms-product-history-dialog .wms-page-heading h2{font-size:18px;flex:1;min-width:0}}
 
 .wms-catalog-quantity-dialog label{display:grid;gap:8px;font-weight:600}.wms-catalog-quantity-dialog input{box-sizing:border-box;width:100%;min-width:0;padding:12px;border:1px solid #c8deed;border-radius:10px;font-size:16px;color:#102343;background:#fff}
+
+/* Already printed documents remain available for intentional reprints. */
+.wms-invoice-printed{background:#f5f9fc;color:#718497}
+.wms-invoice-printed td{opacity:.7}
+.wms-printed-badge{display:inline-flex;margin-left:6px;padding:3px 7px;border-radius:20px;background:#e6f2fa;color:#577b95;font-size:11px;font-weight:600;white-space:nowrap;text-transform:none}

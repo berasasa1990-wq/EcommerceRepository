@@ -725,3 +725,25 @@ body.bera-storefront-header :is(.product-card,.product-catalog,.product-detail-i
   flex-shrink:0;
  }
 }
+
+/* Subcategory landing: consistent rows and readable, fully wrapped labels. */
+body.bera-storefront-header .subcategory-page{padding:36px 20px 48px}
+body.bera-storefront-header .subcategory-header{margin-bottom:28px}
+body.bera-storefront-header .subcategory-main-title{font-size:clamp(24px,2.4vw,34px);line-height:1.2;letter-spacing:.35px;overflow-wrap:anywhere}
+body.bera-storefront-header .subcategory-subtitle{font-size:13px;line-height:1.5;letter-spacing:.3px}
+body.bera-storefront-header .subcategory-grid{grid-auto-flow:row;grid-template-rows:none;grid-auto-columns:auto;overflow:visible;scroll-snap-type:none;margin-bottom:28px;padding-bottom:0;align-items:stretch}
+body.bera-storefront-header .subcategory-card{min-width:0;display:flex}
+body.bera-storefront-header .subcategory-card-inner{width:100%;min-width:0;min-height:112px;padding:20px 14px}
+body.bera-storefront-header .subcategory-name{max-width:100%;min-width:0;font-size:15px;line-height:1.4;letter-spacing:.2px;white-space:normal;overflow-wrap:anywhere}
+body.bera-storefront-header .subcategory-footer-action .btn-view-all{max-width:100%;white-space:normal;text-align:center;font-size:14px}
+@media(max-width:1024px){
+ body.bera-storefront-header .subcategory-container{padding:0 8px}
+ body.bera-storefront-header .subcategory-card-inner{min-height:100px;padding:18px 12px}
+}
+@media(max-width:768px){
+ body.bera-storefront-header .subcategory-page{padding:24px 16px 36px}
+ body.bera-storefront-header .subcategory-main-title{font-size:22px}
+ body.bera-storefront-header .subcategory-subtitle{font-size:12px}
+ body.bera-storefront-header .subcategory-name{font-size:13px}
+ body.bera-storefront-header .subcategory-card-inner{min-height:92px;padding:16px 10px}
+}

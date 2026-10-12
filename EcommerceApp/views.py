@@ -431,7 +431,7 @@ def _filter_size_scope_qs(filter_params, base_qs=None, *, request=None):
     if filter_params.get('izdvojeno'):
         qs = _featured_catalog_qs(qs, request)
     if filter_params.get('noviteti'):
-        qs = qs.filter(na_stanju=True, stanje__gt=0)
+        qs = _new_offer_catalog_qs(qs)
     if filter_params.get('brend'):
         brand = Brand.objects.filter(slug=filter_params['brend']).first()
         if brand:
@@ -2010,6 +2010,14 @@ def search_suggest(request):
 
 
 
+def _new_offer_catalog_qs(qs):
+    """Use the same curated selection as the homepage Novo u ponudi section."""
+    return qs.filter(
+        pk__in=HomeNovoProduct.objects.filter(aktivan=True).values('artikal_id'),
+        na_stanju=True, stanje__gt=0,
+    )
+
+
 def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     params = _get_filter_params(request)
     search_q = _normalize_phrase(params.get('q') or '')
@@ -2036,7 +2044,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     if params.get('izdvojeno'):
         products_qs = _featured_catalog_qs(products_qs, request)
     if params.get('noviteti'):
-        products_qs = products_qs.filter(na_stanju=True, stanje__gt=0)
+        products_qs = _new_offer_catalog_qs(products_qs)
     if params.get('brend'):
         brand = Brand.objects.filter(slug=params['brend']).first()
         products_qs = products_qs.filter(brend_id=brand.pk) if brand else products_qs.none()
@@ -2105,7 +2113,8 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
         products = [product for product in products if _product_is_on_sale(product)]
 
     if params['noviteti']:
-        products = [product for product in products if product.na_stanju and product.stanje > 0]
+        selected_ids = set(HomeNovoProduct.objects.filter(aktivan=True).values_list('artikal_id', flat=True))
+        products = [product for product in products if product.pk in selected_ids and product.na_stanju and product.stanje > 0]
 
     if params['velicina']:
         size_label = params['velicina']
@@ -2833,7 +2842,7 @@ def home(request):
             catalog_title = 'Izdvojeno za vas'
             catalog_subtitle = f'{result_count} izdvojenih artikala.' if result_count else 'Trenutno nema izdvojenih artikala.'
         elif filter_params.get('noviteti'):
-            catalog_title = 'Noviteti'
+            catalog_title = 'Novo u ponudi'
             if result_count:
                 catalog_subtitle = f'{result_count} artikala na stanju.'
             else:
