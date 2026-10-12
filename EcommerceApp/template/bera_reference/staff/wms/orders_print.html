@@ -1,14 +1,67 @@
-<!doctype html><html lang="bs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ title }}</title><style>
-*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#102343;margin:0;background:#eef6fc}.toolbar{padding:16px;background:white;display:flex;align-items:center;justify-content:space-between;gap:12px}.toolbar button{background:#008fc3;color:white;border:0;border-radius:8px;padding:12px 24px;cursor:pointer}.sheet{max-width:900px;margin:24px auto;padding:30px;background:white;border:1px solid #dae8f3}.heading{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #008fc3;padding-bottom:16px}h1{font-size:24px}h2{font-size:18px}p{line-height:1.5}table{width:100%;border-collapse:collapse;font-size:14px}th{background:#eff7fd;text-align:left}th,td{padding:12px;border-bottom:1px solid #dbe9f3}.totals{margin:20px 0 0 auto;max-width:340px}.totals p{display:flex;justify-content:space-between;gap:20px}.notice{background:#eff8ff;padding:16px;border:1px solid #d6e9f8}.empty{padding:24px}@media(max-width:600px){.sheet{margin:12px;padding:16px;overflow:auto}.heading{flex-direction:column}th,td{padding:8px}}@media print{@page{size:A4;margin:14mm}body{background:white}.toolbar{display:none}.sheet{margin:0;padding:0;border:0;max-width:none;break-after:page}.sheet:last-child{break-after:auto}tr{break-inside:avoid}thead{display:table-header-group}.totals,.heading{break-inside:avoid}}
-.totals{max-width:390px;padding:18px 20px;background:#f3faff;border:1px solid #d6e9f8;border-radius:14px}.totals p{margin:10px 0;font-size:14px}.totals .vat-note{display:block;color:#16803c;font-size:12px;margin:4px 0 14px}.totals .discount{color:#16803c}.totals .grand-total{border-top:2px solid #d6e9f8;margin-top:16px;padding-top:16px;align-items:center}.totals .grand-total strong{color:#008fc3;font-size:24px;white-space:nowrap}@media print{.totals{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
-</style></head><body><div class="toolbar"><strong>{{ title }} · {{ jobs|length }} narudžbi</strong><button onclick="window.print()">Štampaj</button></div>
-{% for job in jobs %}<section class="sheet"><div class="heading"><div><h1>{% if kind == 'racun' %}Račun{% elif kind == 'faktura' %}Količine za fakturu{% else %}Najava slanja{% endif %}</h1><p>Narudžba #{% if job.order.source_order_id %}{{ job.order.source_order.broj }}{% else %}{{ job.order.display_number }}{% endif %}</p></div><div><strong>{{ job.order.kupac }}</strong>{% include "partials/order_metadata.html" with metadata_order=job.order only %}<p>{{ job.order.telefon }}<br>{{ job.order.email }}<br>{{ job.order.adresa }}{% if job.order.source_order_id %}<br>{{ job.order.source_order.grad }} {{ job.order.source_order.postanski_broj }}{% else %}<br>{{ job.order.grad }} {{ job.order.postanski_broj }}{% endif %}</p></div></div>
-{% if kind == 'najava' %}<div class="notice"><strong>Roba je odvojena i spremna za slanje.</strong><p>Način naručivanja: {{ job.order.order_source_label }}</p>{% if job.order.napomena %}<p>Napomena: {{ job.order.napomena }}</p>{% endif %}</div>{% endif %}
-<h2>Odvojeni artikli</h2><table><thead><tr>{% if kind == 'faktura' %}<th>Naziv</th><th>Šifra</th>{% else %}<th>Šifra</th><th>Artikal</th>{% endif %}{% if kind == 'najava' %}<th>Lokacije i količine</th>{% else %}<th>Količina</th>{% endif %}{% if kind == 'racun' %}<th>Cijena</th><th>Ukupno</th>{% endif %}</tr></thead><tbody>{% for item in job.items %}<tr>{% if kind == 'faktura' %}<td>{{ item.name }}</td><td>{{ item.code }}</td>{% else %}<td>{{ item.code }}</td><td>{{ item.name }}</td>{% endif %}<td>{% if kind == 'najava' %}{% for location in item.locations %}<div>{{ location.name }} — <strong>{{ location.quantity }} kom</strong></div>{% endfor %}{% else %}{{ item.quantity }} kom{% endif %}</td>{% if kind == 'racun' %}<td>{{ item.price|floatformat:2 }} KM</td><td>{{ item.total|floatformat:2 }} KM</td>{% endif %}</tr>{% empty %}<tr><td colspan="5">Nema pokupljenih artikala.</td></tr>{% endfor %}</tbody></table>
+<!doctype html>
+<html lang="bs">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ title }}</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#edf5fb;color:#152c46;font:14px/1.5 Arial,sans-serif}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:#fff;border-bottom:1px solid #dce9f2}
+.toolbar button{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border:0;border-radius:10px;background:#008fc3;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.toolbar svg{width:20px;height:20px}.print-help{font-size:12px;color:#5e7286;margin:6px 0 0}
+.sheet{width:210mm;max-width:calc(100% - 32px);margin:24px auto;padding:12mm;background:#fff;border:1px solid #dae8f3;border-radius:14px;box-shadow:0 8px 30px #153f5910}
+h1,h2,p{margin:0}.brand-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:20px;border-bottom:3px solid #008fc3}
+.brand-name{font-size:22px;font-weight:800;letter-spacing:-.6px;color:#007fac}.brand-caption{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#657d91}
+.document-title{text-align:right}.document-title h1{font-size:24px;line-height:1.2;color:#123957}.document-title p{font-size:12px;color:#5b7286;margin-top:5px}
+.heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;padding:22px 0;border-bottom:1px solid #dbe7ef}
+.section-label{display:block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#638099;margin-bottom:6px}
+.customer-name{display:block;font-size:17px;margin-bottom:5px;overflow-wrap:anywhere}.customer-details{font-size:12px;color:#4b6278;overflow-wrap:anywhere}.customer-details span{display:block}
+.order-info{font-size:12px}.order-info>p{margin-bottom:6px}.order-info .order-metadata{display:flex!important;margin-top:8px}
+h2{font-size:15px;margin:22px 0 10px;color:#123957}table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px}
+th{padding:10px 8px;background:#eef7fc;color:#27546e;font-size:10px;font-weight:700;text-align:left;border-bottom:1px solid #c8deec}
+td{padding:10px 8px;border-bottom:1px solid #e2ebf2;vertical-align:top;overflow-wrap:anywhere}
+.code{color:#546d82;font-size:11px}.quantity,.money{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}.item-name{font-weight:600}
+.totals{margin:22px 0 0 auto;width:320px;max-width:100%;padding:16px 18px;border:1px solid #cce3f1;border-radius:12px;background:#f3faff}
+.totals p{display:flex;justify-content:space-between;gap:16px;margin:8px 0;font-size:12px}.totals strong{white-space:nowrap;font-variant-numeric:tabular-nums}
+.totals .vat-note{display:block;font-size:10px;color:#617c91;margin:2px 0 12px}.totals .discount{color:#16803c}
+.totals .grand-total{border-top:1px solid #bcd9e9;padding-top:13px;margin-top:13px;align-items:center;font-weight:700}.grand-total strong{font-size:22px;color:#007fac}
+.notice{background:#eff8ff;padding:16px;border:1px solid #d6e9f8;margin-top:18px}.notice p{margin-top:6px}.empty{padding:24px}
+@media screen and (max-width:600px){.toolbar{flex-wrap:wrap;padding:14px}.sheet{max-width:calc(100% - 20px);padding:18px;margin:12px auto}.brand-row{gap:12px}.brand-name{font-size:18px}.document-title h1{font-size:20px}.heading{grid-template-columns:1fr;gap:18px}th,td{padding:8px 4px;font-size:10px}.code{font-size:9px}.grand-total strong{font-size:20px}}
+@media print{
+ @page{size:A4;margin:12mm 0}
+ body{background:#fff;font-size:12px}
+ .toolbar{display:none!important}
+ .sheet{width:auto;max-width:none;margin:0;padding:0 12mm;border:0;border-radius:0;box-shadow:none;break-after:page;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+ .sheet:last-child{break-after:auto}
+ .brand-row,.heading,.totals{break-inside:avoid}
+ h2{break-after:avoid}tr{break-inside:avoid}thead{display:table-header-group}
+ .sheet{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div class="toolbar"><div><strong>{{ title }} · {{ jobs|length }} narudžbi</strong><p class="print-help">Ako browser dodaje URL ili datum na papir, u postavkama štampe isključite „Zaglavlja i podnožja / Headers and footers“.</p></div><button type="button" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7z"/></svg>Štampaj</button></div>
+{% for job in jobs %}
+<section class="sheet">
+<div class="brand-row"><div><div class="brand-name">CARPOLOGIJABH</div><div class="brand-caption">Oprema za ribolov</div></div><div class="document-title"><h1>{% if kind == 'racun' %}Račun{% elif kind == 'faktura' %}Količine za fakturu{% else %}Najava slanja{% endif %}</h1><p>Narudžba #{% if job.order.source_order_id %}{{ job.order.source_order.broj }}{% else %}{{ job.order.display_number }}{% endif %}</p></div></div>
+<div class="heading">
+<div><span class="section-label">Kupac / primalac</span><strong class="customer-name">{{ job.order.kupac }}</strong><div class="customer-details">{% if job.order.adresa %}<span>{{ job.order.adresa }}</span>{% endif %}<span>{% if job.order.source_order_id %}{{ job.order.source_order.postanski_broj }} {{ job.order.source_order.grad }}{% else %}{{ job.order.postanski_broj }} {{ job.order.grad }}{% endif %}</span>{% if job.order.telefon %}<span>{{ job.order.telefon }}</span>{% endif %}{% if job.order.email %}<span>{{ job.order.email }}</span>{% endif %}</div></div>
+<div class="order-info"><span class="section-label">Podaci narudžbe</span><p><strong>Datum:</strong> {% if job.order.source_order_id %}{{ job.order.source_order.kreirana|date:'d.m.Y. H:i' }}{% else %}{{ job.order.kreirana|date:'d.m.Y. H:i' }}{% endif %}</p><p><strong>Tip:</strong> {{ job.order.order_source_label }}</p>{% include "partials/order_metadata.html" with metadata_order=job.order only %}</div>
+</div>
+{% if kind == 'najava' %}<div class="notice"><strong>Roba je odvojena i spremna za slanje.</strong>{% if job.order.napomena %}<p>Napomena: {{ job.order.napomena }}</p>{% endif %}</div>{% endif %}
+<h2>Odvojeni artikli</h2>
+<table>
+<colgroup>{% if kind == 'racun' %}<col style="width:12%"><col style="width:42%"><col style="width:12%"><col style="width:16%"><col style="width:18%">{% elif kind == 'faktura' %}<col style="width:62%"><col style="width:20%"><col style="width:18%">{% else %}<col style="width:16%"><col style="width:46%"><col style="width:38%">{% endif %}</colgroup>
+<thead><tr>{% if kind == 'faktura' %}<th>Naziv</th><th>Šifra</th>{% else %}<th>Šifra</th><th>Artikal</th>{% endif %}<th{% if kind != 'najava' %} class="quantity"{% endif %}>{% if kind == 'najava' %}Lokacije i količine{% else %}Količina{% endif %}</th>{% if kind == 'racun' %}<th class="money">Cijena</th><th class="money">Ukupno</th>{% endif %}</tr></thead>
+<tbody>{% for item in job.items %}<tr>{% if kind == 'faktura' %}<td class="item-name">{{ item.name }}</td><td class="code">{{ item.code }}</td>{% else %}<td class="code">{{ item.code }}</td><td class="item-name">{{ item.name }}</td>{% endif %}<td{% if kind != 'najava' %} class="quantity"{% endif %}>{% if kind == 'najava' %}{% for location in item.locations %}<div>{{ location.name }} — <strong>{{ location.quantity }} kom</strong></div>{% endfor %}{% else %}{{ item.quantity }} kom{% endif %}</td>{% if kind == 'racun' %}<td class="money">{{ item.price|floatformat:2 }} KM</td><td class="money"><strong>{{ item.total|floatformat:2 }} KM</strong></td>{% endif %}</tr>{% empty %}<tr><td colspan="{% if kind == 'racun' %}5{% else %}3{% endif %}">Nema pokupljenih artikala.</td></tr>{% endfor %}</tbody>
+</table>
 {% if kind == 'racun' %}<div class="totals">
 <p><span>Ukupan iznos</span><strong>{{ job.subtotal|floatformat:2 }} KM</strong></p>
 <p class="vat-note">PDV je uključen u cijenu.</p>
 {% if job.discount %}<p class="discount"><span>Popust</span><strong>− {{ job.discount|floatformat:2 }} KM</strong></p>{% endif %}
 {% if job.order.source_order_id %}<p><span>Dostava</span><strong>{{ job.delivery|floatformat:2 }} KM</strong></p>{% endif %}
 <p class="grand-total"><span>Ukupno za naplatu</span><strong>{{ job.total|floatformat:2 }} KM</strong></p>
-</div>{% endif %}</section>{% empty %}<p class="empty">Nema završenih narudžbi za štampanje.</p>{% endfor %}</body></html>
+</div>{% endif %}
+</section>
+{% empty %}<p class="empty">Nema završenih narudžbi za štampanje.</p>{% endfor %}
+</body></html>

@@ -7,14 +7,19 @@
 </nav>
 <div class="wms-stock-results">
 {% for transfer in transfers %}
-<article class="wms-stock-result">
+<article class="wms-stock-result wms-transfer-card">
 <div class="wms-stock-result-image">{% if transfer.product.prikazna_slika %}<img src="{{ transfer.product.prikazna_slika.url }}" alt="{{ transfer.product.naziv }}" loading="lazy">{% else %}{% include 'bera_reference/staff/wms/icon.html' with key='prenosnica' %}{% endif %}</div>
 <div class="wms-stock-result-info"><h3>{{ transfer.product.naziv }}</h3><div class="wms-stock-result-codes"><span>Šifra <strong>{{ transfer.product.sifra|default:'—' }}</strong></span><span>Izvor <strong>{{ transfer.source.naziv }}</strong></span><span>Odredište <strong>{{ transfer.destination.naziv }}</strong></span><span>Prenosnica <strong>#{{ transfer.pk }}</strong></span></div></div>
 <div class="wms-transfer-location-list">
 <div class="wms-transfer-location-chip is-source"><strong>{{ transfer.source.naziv }}</strong><span>× {{ transfer.quantity }} kom</span></div>
 
 </div>
-{% if transfer.completed_at %}<span class="wms-transfer-completed">✓ Prenijeto</span>{% elif wms_locations_enabled %}<form method="post">{% csrf_token %}<input type="hidden" name="transfer_id" value="{{ transfer.pk }}"><button type="submit" class="wms-button">Prenijeto</button></form>{% else %}<span>🔒 Zalihe su zaključane</span>{% endif %}
+{% if transfer.completed_at %}<span class="wms-transfer-completed">✓ Prenijeto</span>{% else %}
+<div class="wms-order-actions">
+{% if wms_locations_enabled %}<form method="post">{% csrf_token %}<input type="hidden" name="transfer_id" value="{{ transfer.pk }}"><button type="submit" name="action" value="complete" class="wms-button">Prenijeto</button></form>{% else %}<span>🔒 Zalihe su zaključane</span>{% endif %}
+<form method="post" onsubmit="return confirm('Otkazati prenosnicu? Roba ostaje na izvornoj lokaciji.')">{% csrf_token %}<input type="hidden" name="transfer_id" value="{{ transfer.pk }}"><button type="submit" name="action" value="cancel" class="wms-order-action wms-order-action--cancel" title="Otkaži prenosnicu" aria-label="Otkaži prenosnicu #{{ transfer.pk }}">{% include 'bera_reference/staff/wms/icon.html' with key='cancel' %}</button></form>
+</div>
+{% endif %}
 </article>
 {% empty %}<div class="wms-stock-empty"><span class="wms-empty-icon">{% include 'bera_reference/staff/wms/icon.html' with key='prenosnica' %}</span><h3>{% if transfer_filter == 'prenijete' %}Nema prenijetih prenosnica.{% else %}Nema aktivnih prenosnica.{% endif %}</h3></div>{% endfor %}
 </div>

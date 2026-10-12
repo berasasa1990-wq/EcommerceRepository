@@ -62,34 +62,11 @@ def workspace(request, section='zalihe'):
         sync_panel_orders()
     ctx = context(section)
     if section == 'istorija':
-        from datetime import date
-        rows = WarehouseMovement.objects.select_related('product', 'variation', 'location', 'to_location', 'korisnik', 'order').order_by('-kreiran', '-pk')
-        query = (request.GET.get('q') or '').strip()
-        if query:
-            rows = rows.filter(Q(product__naziv__icontains=query) | Q(product__sifra__icontains=query) |
-                               Q(location__sifra__icontains=query) | Q(location__naziv__icontains=query) |
-                               Q(to_location__sifra__icontains=query) | Q(to_location__naziv__icontains=query) |
-                               Q(napomena__icontains=query) | Q(order_number__icontains=query))
-        action = request.GET.get('tip', '')
-        if action in WarehouseMovement.Tip.values:
-            rows = rows.filter(tip=action)
-        dates = {}
-        for key, lookup in [('date_from', 'kreiran__date__gte'), ('date_to', 'kreiran__date__lte')]:
-            raw = request.GET.get(key, '')
-            try:
-                value = date.fromisoformat(raw) if raw else None
-            except ValueError:
-                value = None
-                messages.error(request, 'Unesite ispravan datum.')
-            dates[key] = value.isoformat() if value else ''
-            if value:
-                rows = rows.filter(**{lookup: value})
-        params = request.GET.copy()
-        params.pop('page', None)
+        rows = WarehouseMovement.objects.select_related(
+            'product', 'variation', 'location', 'to_location', 'korisnik', 'order',
+        ).order_by('-pk')
         return render(request, 'bera_reference/staff/wms/history.html', {
-            **ctx, **dates, 'history': Paginator(rows, 50).get_page(request.GET.get('page')),
-            'query': query, 'action': action, 'action_choices': WarehouseMovement.Tip.choices,
-            'history_query': params.urlencode(),
+            **ctx, 'history': Paginator(rows, 20).get_page(request.GET.get('page')),
         })
     if section == 'kupci':
         import json
@@ -125,14 +102,23 @@ def workspace(request, section='zalihe'):
         return render(request, 'bera_reference/staff/wms/podesavanje.html', ctx)
     if section == 'prenosnica':
         if request.method == 'POST':
-            require_wms_section('zalihe')
+            action = request.POST.get('action', 'complete')
+            if action not in ('complete', 'cancel'):
+                return JsonResponse({'error': 'Nepoznata akcija prenosnice.'}, status=400)
+            if action == 'complete':
+                require_wms_section('zalihe')
             with transaction.atomic():
                 transfer_id = request.POST.get('transfer_id')
                 product_id = get_object_or_404(WMSTransfer, pk=transfer_id).product_id
                 product = get_object_or_404(Product.objects.select_for_update(), pk=product_id)
                 transfer = get_object_or_404(WMSTransfer.objects.select_for_update(), pk=transfer_id)
                 if transfer.completed_at:
-                    messages.info(request, 'Prenosnica je već prenijeta.')
+                    messages.info(request, 'Završena prenosnica se ne može otkazati.' if action == 'cancel' else 'Prenosnica je već prenijeta.')
+                elif action == 'cancel':
+                    # Pending transfers have no stock movement to reverse.
+                    # Use the same locks as completion so only one action can win.
+                    transfer.delete()
+                    messages.success(request, 'Prenosnica je otkazana. Roba ostaje na izvornoj lokaciji.')
                 else:
                     if not transfer.source_id or not transfer.destination_id:
                         raise MagacinError('Prenosnica nema povezane originalne lokacije.')
@@ -300,13 +286,53 @@ def order_detail(request, pk):
 def edit_order(request, pk):
     require_wms_section('narudzbe')
     order = get_object_or_404(WMSOrder, pk=pk)
+    if order.source_order_id:
+        # The established order editor handles source totals, variants and reservations.
+        return redirect(reverse('staff_magacin_narudzba_nova') + '?' + urlencode({'broj': order.source_order.broj}))
+    from django import forms
+    from django.forms import inlineformset_factory
+    from .models import WMSOrderItem
+
+    class ItemForm(forms.ModelForm):
+        kolicina = forms.IntegerField(min_value=1, label='Količina')
+        cijena = forms.DecimalField(min_value=0, max_digits=10, decimal_places=2, label='Cijena po komadu (KM)')
+
+        class Meta:
+            model = WMSOrderItem
+            fields = ['artikal', 'kolicina', 'cijena']
+
+    Items = inlineformset_factory(WMSOrder, WMSOrderItem, form=ItemForm,
+                                 extra=1, can_delete=True, min_num=1, validate_min=True,
+                                 max_num=500, validate_max=True)
     Form = modelform_factory(WMSOrder, fields=['kupac', 'email', 'telefon', 'adresa', 'grad', 'postanski_broj', 'napomena'])
-    form = Form(request.POST if request.method == 'POST' else None, instance=order)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        messages.success(request, 'Narudžba je izmijenjena.')
-        return redirect('staff_wms_section', section='narudzbe')
-    return render(request, 'bera_reference/staff/wms/order_form.html', {**context('narudzbe'), 'form': form, 'order': order, 'editing': True, 'order_type': order.get_tip_display()})
+    with transaction.atomic():
+        order = get_object_or_404(WMSOrder.objects.select_for_update(), pk=pk)
+        if order.status in ('zapakovana', 'otkazana') or order.pick_lines.exists():
+            messages.error(request, 'Narudžba je završena, otkazana ili već u odvajanju i ne može se mijenjati.')
+            return redirect('staff_wms_order', pk=pk)
+        form = Form(request.POST if request.method == 'POST' else None, instance=order)
+        items = Items(request.POST if request.method == 'POST' else None, instance=order, prefix='items')
+        if request.method == 'POST':
+            valid_form, valid_items = form.is_valid(), items.is_valid()
+            if valid_form and valid_items:
+                form.save()
+                for item_form in items.forms:
+                    if not item_form.cleaned_data or item_form.cleaned_data.get('DELETE'):
+                        continue
+                    item = item_form.instance
+                    product = item.artikal
+                    if product and (not item.pk or 'artikal' in item_form.changed_data):
+                        item.naziv = product.naziv
+                        item.sifra = product.sifra or ''
+                        item.varijacija = None
+                        item.bazna_cijena = wms_entry_price(product, order.tip, regular=True)
+                items.save()
+                messages.success(request, 'Narudžba i artikli su izmijenjeni.')
+                return redirect('staff_wms_section', section='narudzbe')
+    return render(request, 'bera_reference/staff/wms/order_form.html', {
+        **context('narudzbe'), 'form': form, 'items_formset': items,
+        'order': order, 'editing': True, 'order_type': order.get_tip_display(),
+    })
 
 
 @login_required(login_url='login')
@@ -513,26 +539,44 @@ def resolve_shortage(request, pk):
     decision = request.POST.get('decision')
     if decision not in ('clear', 'keep'):
         return JsonResponse({'error': 'Izaberite Očisti ili Ostavi.'}, status=400)
-    from .models import WMSPickLine
-    line = get_object_or_404(WMSPickLine.objects.select_related('item'), pk=pk)
-    if not line.picking_item.artikal_id:
+    from .models import WMSPickLine, OrderItem, WMSOrderItem
+    line = get_object_or_404(WMSPickLine.objects.select_related('item', 'wms_item'), pk=pk)
+    item = line.picking_item
+    if item is None or not item.artikal_id:
         messages.error(request, 'Artikal više nije dostupan.')
         return redirect('staff_wms_section', section='lokacije')
-    with transaction.atomic():
-        product = Product.objects.select_for_update().get(pk=line.picking_item.artikal_id)
-        unresolved = pending_shortages().select_for_update().filter(Q(item__artikal=product) | Q(wms_item__artikal=product), location_id=line.location_id)
-        if not unresolved.filter(pk=pk).exists():
-            return redirect('staff_wms_section', section='lokacije')
-        if decision == 'clear':
-            if not line.location_id:
-                raise MagacinError('Lokacija nije povezana s originalnim magacinom.')
-            stock = WarehouseStock.objects.select_for_update().filter(product=product, location=line.location, variation_id=getattr(line.picking_item, 'varijacija_id', None)).first()
-            if stock and stock.rezervisano:
-                raise MagacinError('Lokacija s rezervisanom količinom ne može se očistiti.')
-            set_location_counted_qty(location=line.location, product=product,
-                variation=getattr(line.picking_item, 'varijacija', None), qty=0,
-                user=request.user, napomena='WMS: Lokacija očišćena — Očisti nakon odvajanja')
-        unresolved.update(shortage_resolution=decision, shortage_resolved_at=timezone.now())
+    variation_id = item.varijacija_id
+    try:
+        with transaction.atomic():
+            product = get_object_or_404(Product.objects.select_for_update(), pk=item.artikal_id)
+            # Subqueries avoid nullable outer joins in the FOR UPDATE query on PostgreSQL.
+            # Only shortages for this exact product/variant/location are resolved.
+            source_items = OrderItem.objects.filter(artikal=product, varijacija_id=variation_id).values('pk')
+            manual_items = WMSOrderItem.objects.filter(artikal=product, varijacija_id=variation_id).values('pk')
+            unresolved = pending_shortages().select_for_update().filter(
+                Q(item_id__in=source_items) | Q(wms_item_id__in=manual_items),
+                location_id=line.location_id,
+            )
+            unresolved_ids = list(unresolved.values_list('pk', flat=True))
+            if pk not in unresolved_ids:
+                return redirect('staff_wms_section', section='lokacije')
+            if decision == 'clear':
+                if not line.location_id:
+                    raise MagacinError('Lokacija nije povezana s originalnim magacinom.')
+                stock = WarehouseStock.objects.select_for_update().filter(
+                    product=product, location_id=line.location_id, variation_id=variation_id,
+                ).first()
+                if stock and stock.rezervisano:
+                    raise MagacinError('Lokacija s rezervisanom količinom ne može se očistiti.')
+                set_location_counted_qty(location=line.location, product=product,
+                    variation=item.varijacija, qty=0,
+                    user=request.user, napomena='WMS: Lokacija očišćena — Očisti nakon odvajanja')
+            WMSPickLine.objects.filter(pk__in=unresolved_ids).update(
+                shortage_resolution=decision, shortage_resolved_at=timezone.now(),
+            )
+    except MagacinError as error:
+        messages.error(request, str(error))
+        return redirect('staff_wms_section', section='lokacije')
     messages.success(request, 'Lokacija je očišćena.' if decision == 'clear' else 'Količina je ostavljena na lokaciji.')
     return redirect('staff_wms_section', section='lokacije')
 

@@ -1,0 +1,18 @@
+HTTP/2 200 
+date: Mon, 12 Oct 2026 09:17:28 GMT
+content-type: text/html; charset=utf-8
+cross-origin-opener-policy: same-origin
+permissions-policy: geolocation=(), microphone=(), payment=(), camera=(self), fullscreen=(self)
+referrer-policy: same-origin
+rndr-id: d54074d7-661d-4837
+server: cloudflare
+set-cookie: csrftoken=[REDACTED]; expires=Mon, 11 Oct 2027 09:17:28 GMT; Max-Age=31449600; Path=/; SameSite=Lax; Secure
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+vary: Cookie, Accept-Encoding
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+cf-ray: a49502ef1963fa43-BEG
+alt-svc: h3=":443"; ma=86400
+

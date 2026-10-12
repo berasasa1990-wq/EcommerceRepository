@@ -1,20 +1,15 @@
 {% extends 'bera_reference/staff/wms/base.html' %}
 {% block wms_content %}
 <header class="wms-page-heading"><h1>Istorija artikala</h1><span class="wms-results-count">{{ history.paginator.count }} zapisa</span></header>
-<form method="get" class="wms-card wms-history-filters">
-<label>Artikal, šifra, lokacija ili narudžba<input type="search" name="q" value="{{ query }}" placeholder="Pretraži istoriju"></label>
-<label>Akcija<select name="tip"><option value="">Sve akcije</option>{% for value,label in action_choices %}<option value="{{ value }}"{% if action == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-<label>Od<input type="date" name="date_from" value="{{ date_from }}"></label><label>Do<input type="date" name="date_to" value="{{ date_to }}"></label>
-<button class="wms-button">Pretraži</button><a class="wms-close" href="{% url 'staff_wms_section' 'istorija' %}">Poništi</a>
-</form>
 <div class="wms-card wms-history-scroll">
-<table class="wms-history-table"><thead><tr><th>Vrijeme</th><th>Artikal / šifra</th><th>Akcija</th><th>Količina</th><th>Odakle / lokacija</th><th>Kuda / odredište</th><th>Korisnik</th><th>Narudžba / napomena</th></tr></thead><tbody>
+<table class="wms-history-table"><thead><tr><th>ID</th><th>Vrijeme</th><th>Artikal / šifra</th><th>Akcija</th><th>Količina</th><th>Odakle / lokacija</th><th>Kuda / odredište</th><th>Korisnik</th><th>Narudžba / napomena</th></tr></thead><tbody>
 {% for row in history %}<tr>
-<td>{{ row.kreiran|date:'d.m.Y. H:i:s' }}</td><td><strong>{{ row.product.naziv }}</strong><br>{{ row.product.sifra|default:'—' }}{% if row.variation %}<br>{{ row.variation }}{% endif %}</td>
-<td>{% if 'Lokacija očišćena' in row.napomena %}Lokacija očišćena{% else %}{{ row.get_tip_display }}{% endif %}</td><td class="{% if row.kolicina < 0 %}wms-history-out{% elif row.kolicina > 0 %}wms-history-in{% endif %}"><strong>{% if row.kolicina > 0 %}+{% endif %}{{ row.kolicina }} kom</strong></td>
-<td>{{ row.source_label|default:row.location }}</td><td>{% if row.destination_label %}{{ row.destination_label }}{% elif row.to_location %}{{ row.to_location }}{% else %}—{% endif %}</td>
-<td>{{ row.korisnik|default:'Sistem' }}</td><td>{% if row.order_number %}<strong>#{{ row.order_number }}</strong><br>{% endif %}{{ row.napomena|default:'—' }}</td>
-</tr>{% empty %}<tr><td colspan="8">Nema evidentiranih kretanja za odabrane filtere.</td></tr>{% endfor %}
+<td data-label="ID"><strong>#{{ row.pk }}</strong></td>
+<td data-label="Vrijeme">{{ row.kreiran|date:'d.m.Y. H:i:s' }}</td><td data-label="Artikal / šifra"><strong>{{ row.product.naziv }}</strong><br>{{ row.product.sifra|default:'—' }}{% if row.variation %}<br>{{ row.variation }}{% endif %}</td>
+<td data-label="Akcija">{% if 'Lokacija očišćena' in row.napomena %}Lokacija očišćena{% else %}{{ row.get_tip_display }}{% endif %}</td><td data-label="Količina" class="{% if row.kolicina < 0 %}wms-history-out{% elif row.kolicina > 0 %}wms-history-in{% endif %}"><strong>{% if row.kolicina > 0 %}+{% endif %}{{ row.kolicina }} kom</strong></td>
+<td data-label="Lokacija">{{ row.source_label|default:row.location }}</td><td data-label="Odredište">{% if row.destination_label %}{{ row.destination_label }}{% elif row.to_location %}{{ row.to_location }}{% else %}—{% endif %}</td>
+<td data-label="Korisnik">{{ row.korisnik|default:'Sistem' }}</td><td data-label="Narudžba / napomena">{% if row.order_number %}<strong>#{{ row.order_number }}</strong><br>{% endif %}{{ row.napomena|default:'—' }}</td>
+</tr>{% empty %}<tr><td colspan="9">Nema evidentiranih promjena artikala.</td></tr>{% endfor %}
 </tbody></table></div>
-<nav class="wms-type-options" aria-label="Stranice istorije">{% if history.has_previous %}<a class="wms-button" href="?{{ history_query }}&amp;page={{ history.previous_page_number }}">← Prethodna</a>{% endif %}<span>Stranica {{ history.number }} / {{ history.paginator.num_pages }}</span>{% if history.has_next %}<a class="wms-button" href="?{{ history_query }}&amp;page={{ history.next_page_number }}">Sljedeća →</a>{% endif %}</nav>
+<nav class="wms-type-options" aria-label="Stranice istorije">{% if history.has_previous %}<a class="wms-button" href="?page={{ history.previous_page_number }}">← Prethodna</a>{% endif %}<span>Stranica {{ history.number }} / {{ history.paginator.num_pages }}</span>{% if history.has_next %}<a class="wms-button" href="?page={{ history.next_page_number }}">Sljedeća →</a>{% endif %}</nav>
 {% endblock %}

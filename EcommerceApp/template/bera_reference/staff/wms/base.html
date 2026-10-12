@@ -2,7 +2,7 @@
 {% block page_title %}<title>WMS Magacin — {{ wms_title }}</title>{% endblock %}
 {% block site_footer %}{% endblock %}
 {% block body_class %}wms-independent{% if wms_section == 'pakovanje' %} wms-picking-page{% endif %}{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'bera_reference/css/bera-wms-independent.css' %}?v=20261012-mobile-mockup">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'bera_reference/css/bera-wms-independent.css' %}?v=20261012-mobile-scroll">{% endblock %}
 {% block content %}
 <header class="wms-mobile-header"><a href="{% url 'staff_wms' %}" class="wms-mobile-brand"><span>{% include 'bera_reference/staff/wms/icon.html' with key='magacin' %}</span>WMS Magacin</a><a class="wms-mobile-alert" href="{% url 'staff_wms_section' 'pakovanje' %}" aria-label="Odvajanje robe: {{ wms_pending_picking }} narudžbi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>{% if wms_pending_picking %}<b>{{ wms_pending_picking }}</b>{% endif %}</a><button type="button" class="wms-mobile-menu" aria-expanded="false" aria-controls="wmsMobileSidebar" aria-label="Otvori WMS meni"><span></span><span></span><span></span></button></header>
 <button type="button" class="wms-mobile-backdrop" tabindex="-1" aria-label="Zatvori WMS meni" hidden></button>
@@ -13,7 +13,7 @@
 </aside>
 <section class="wms-content">{% block wms_content %}{% endblock %}</section>
 </div>
-<script src="{% static 'bera_reference/js/wms-mobile-shell.js' %}?v=20261012" defer></script>
+<script src="{% static 'bera_reference/js/wms-mobile-shell.js' %}?v=20261012-scroll" defer></script>
 <script>
 (() => {
  const url = "{% if wms_section %}{% url 'staff_wms_section' wms_section %}{% else %}{% url 'staff_wms' %}{% endif %}";

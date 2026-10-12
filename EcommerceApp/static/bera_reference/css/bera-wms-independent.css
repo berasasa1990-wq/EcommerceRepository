@@ -248,3 +248,42 @@ button.wms-stock-result-quantity:focus-visible { outline: 2px solid #009ed1; out
 .wms-stock-product-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:7px;margin:6px 0;color:#627b91;font-size:12px}.wms-stock-product-price strong{color:#0085b5;font-size:16px;font-weight:700}.wms-stock-product-price span{font-size:11px}@media(max-width:800px){.wms-stock-product-price{margin:5px 0;gap:5px}.wms-stock-product-price strong{font-size:14px}}
 
 .wms-print-all-picking{display:flex;align-items:center;justify-content:center;gap:10px}.wms-print-all-picking svg{width:23px;height:23px;flex-shrink:0}
+
+/* Transfer lifecycle controls fit both desktop cards and mobile rows. */
+.wms-transfer-card .wms-order-actions{flex-shrink:0}
+@media(max-width:800px){
+ .wms-stock-result.wms-transfer-card{grid-template-columns:62px minmax(0,1fr)!important}
+ .wms-transfer-card>.wms-transfer-location-list,.wms-transfer-card>.wms-order-actions,.wms-transfer-card>.wms-transfer-completed{grid-column:1/-1}
+ .wms-transfer-card>.wms-order-actions{justify-content:flex-end;flex-wrap:wrap}
+}
+
+/* Mobile WMS: one page scroll, fitted tables, and an independently scrolling drawer. */
+@media(max-width:800px){
+ html:has(body.wms-independent){overflow-x:clip}
+ body.wms-independent{padding-top:var(--wms-header-height,76px)!important;overflow-x:clip;min-width:0}
+ .wms-mobile-header{position:fixed;inset:0 0 auto;gap:10px;padding-left:14px;padding-right:14px}
+ .wms-mobile-brand{font-size:clamp(17px,5.3vw,21px);gap:8px}
+ .wms-mobile-alert,.wms-mobile-menu{flex-shrink:0}
+ body.wms-independent.wms-menu-open{position:fixed;top:var(--wms-scroll-offset,0px);left:0;right:0;width:100%}
+ .wms-menu-open{overflow:hidden}
+ .wms-sidebar{top:var(--wms-header-height,76px)!important;bottom:auto!important;height:calc(100dvh - var(--wms-header-height,76px))!important;max-height:calc(100dvh - var(--wms-header-height,76px))!important;box-sizing:border-box;display:block!important;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))!important}
+ .wms-mobile-backdrop:not([hidden]){top:var(--wms-header-height,76px)}
+ .wms-content>*{min-width:0;max-width:100%}
+ .wms-page-heading,.wms-type-options,.wms-order-actions,.wms-detail-actions{flex-wrap:wrap}
+ .wms-page-heading h1{min-width:0;overflow-wrap:anywhere}
+ .wms-form :is(input,select,textarea){min-width:0;max-width:100%;box-sizing:border-box}
+ .wms-table-wrap,.wms-history-scroll{overflow:visible;max-height:none;padding:0;background:transparent;border:0;box-shadow:none}
+ .wms-table-wrap table,.wms-history-table,.wms-table-wrap tbody,.wms-history-table tbody{display:block;width:100%;min-width:0}
+ .wms-table-wrap thead,.wms-history-table thead{display:none}
+ .wms-table-wrap tr,.wms-history-table tr{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-bottom:12px;padding:14px;background:#fff;border:1px solid #dceaf4;border-radius:12px}
+ .wms-table-wrap td,.wms-history-table td{display:block;min-width:0;max-width:100%;padding:0;border:0;white-space:normal!important;overflow-wrap:anywhere}
+ .wms-table-wrap td[data-label]::before,.wms-history-table td[data-label]::before{content:attr(data-label);display:block;color:#637b94;font-size:11px;line-height:1.5;font-weight:400;margin-bottom:2px}
+ .wms-history-table tr{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .wms-history-table td:nth-child(n+3){grid-column:1/-1}
+ .wms-location-list-action{width:auto}
+ .wms-order-actions{max-width:100%;gap:8px}
+ #orderSelectedProducts{overflow-x:visible}
+ #orderSelectedProducts .wms-selected-product{min-width:0;grid-template-columns:minmax(0,1fr) 64px 64px 30px;gap:8px}
+ #orderSelectedProducts .wms-selected-product>.wms-item-name{grid-column:1/-1;white-space:normal;overflow-wrap:anywhere}
+ .wms-shortage-row{flex-wrap:wrap}.wms-shortage-row>div{min-width:0;max-width:100%}
+}

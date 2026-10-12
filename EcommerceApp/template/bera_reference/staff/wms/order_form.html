@@ -1,1 +1,32 @@
-{% extends 'bera_reference/staff/wms/base.html' %}{% block wms_content %}<h1>{% if editing %}Izmjena narudžbe #{{ order.display_number }}{% else %}Kreiraj narudžbu{% endif %} — {{ order_type }}</h1>{% include "partials/order_metadata.html" with metadata_order=order only %}<form method="post" class="wms-card wms-form">{% csrf_token %}{{ form.as_p }}<button type="submit" class="wms-button">Sačuvaj narudžbu</button></form>{% endblock %}
+{% extends 'bera_reference/staff/wms/base.html' %}
+{% block wms_content %}
+<h1>Izmjena narudžbe #{{ order.display_number }} — {{ order_type }}</h1>
+{% include "partials/order_metadata.html" with metadata_order=order only %}
+<form method="post" class="wms-form">
+{% csrf_token %}
+<section class="wms-card"><h2>Podaci narudžbe</h2>{{ form.as_p }}</section>
+<section class="wms-card"><h2>Artikli narudžbe</h2>
+<p>Uredite artikle, količine i cijene. Označite „Obriši“ za uklanjanje stavke.</p>
+{{ items_formset.management_form }}{{ items_formset.non_form_errors }}
+<div id="wmsEditItems">
+{% for item_form in items_formset %}<div class="wms-card wms-edit-item">{% if item_form.instance.varijacija_id %}<p>Varijanta: {{ item_form.instance.varijacija.naziv }}</p>{% endif %}{{ item_form.as_p }}</div>{% endfor %}
+</div>
+<template id="wmsEmptyItem"><div class="wms-card wms-edit-item">{{ items_formset.empty_form.as_p }}</div></template>
+<button type="button" class="wms-button" id="wmsAddEditItem">Dodaj artikal</button>
+</section>
+<button type="submit" class="wms-button">Sačuvaj narudžbu</button>
+<a class="wms-button" href="{% url 'staff_wms_section' 'narudzbe' %}">Nazad</a>
+</form>
+<script>
+(function () {
+    var total = document.getElementById('id_items-TOTAL_FORMS');
+    document.getElementById('wmsAddEditItem').addEventListener('click', function () {
+        var index = Number(total.value);
+        if (index >= 500) return;
+        var html = document.getElementById('wmsEmptyItem').innerHTML.replace(/__prefix__/g, index);
+        document.getElementById('wmsEditItems').insertAdjacentHTML('beforeend', html);
+        total.value = index + 1;
+    });
+})();
+</script>
+{% endblock %}

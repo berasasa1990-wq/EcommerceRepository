@@ -1,0 +1,113 @@
+{
+  "scripts": [
+    {
+      "src": "/static/bera_reference/js/home-mobile-reference.b50bea6043bb.js?v=20260917-category-icons",
+      "defer": null
+    },
+    {
+      "src": "/static/bera_reference/js/bera-brands.f7e046b18d40.js?v=20261008",
+      "defer": null
+    },
+    {
+      "src": "/static/bera_reference/js/newsletter-subscribe.58026cb6f8c3.js?v=1",
+      "defer": null
+    },
+    {
+      "src": "/static/bera_reference/js/mobile-search.fe6044ce9d59.js?v=20260915-open-on-every-click",
+      "defer": null
+    },
+    {
+      "src": "/static/bera_reference/js/mobile-dock.036b8bcd3d5a.js?v=20260919-wishlist-mobile",
+      "defer": null
+    },
+    {
+      "src": "/static/bera_reference/js/csrf-session.65f7f73fe3d9.js?v=20261001",
+      "data-cookie-name": "csrftoken",
+      "defer": null
+    },
+    {
+      "src": "/static/bera_reference/js/main.min.68eef961003d.js?v=20260916-account-scroll-top",
+      "defer": null
+    },
+    {
+      "src": "/static/bera_reference/js/brand-logo-normalize.158dc6b030fd.js?v=20261011",
+      "defer": null
+    },
+    {
+      "src": "/static/bera_reference/js/desktop-reference.c45e453519c3.js?v=20260914-dropdowns",
+      "defer": null
+    },
+    {
+      "src": "/static/bera_reference/js/stock-notify.21256c2e1d5a.js?v=20260916-notify-no-autofocus",
+      "defer": null
+    },
+    {
+      "src": "/static/bera_reference/js/set-builder-gate.bc038f1ffcee.js?v=20260903beta",
+      "defer": null
+    },
+    {
+      "src": "/static/bera_reference/js/scratch-game.96643ad7a08c.js?v=20261011-site-scratch",
+      "defer": null
+    },
+    {
+      "src": "/static/bera_reference/js/bera-brand-logo-align.6f57b623c18b.js?v=20261008-small",
+      "defer": null
+    }
+  ],
+  "stylesheets": [
+    {
+      "rel": "stylesheet",
+      "href": "/static/bera_reference/css/scratch-game.632b5049018b.css?v=20261011-site-scratch"
+    },
+    {
+      "rel": "stylesheet",
+      "href": "/static/bera_reference/css/desktop-reference.bb417ffb3cf6.css?v=20261008-account-desktop-fix",
+      "media": "(min-width: 1025px)"
+    },
+    {
+      "rel": "stylesheet",
+      "href": "/static/bera_reference/css/home-core.bundle.03814f4f0871.css?v=20261012"
+    },
+    {
+      "rel": "stylesheet",
+      "href": "/static/bera_reference/css/navigation.min.ef53c3340407.css?v=20260915-render-header-v2"
+    },
+    {
+      "rel": "stylesheet",
+      "href": "/static/bera_reference/css/storefront-extras.min.e3ae4f3a559d.css?v=20260915-render-header-v2"
+    },
+    {
+      "rel": "stylesheet",
+      "href": "/static/bera_reference/css/home-ui.bundle.287210299e6c.css?v=20261012"
+    },
+    {
+      "rel": "stylesheet",
+      "href": "/static/bera_reference/css/header-reference.9a331d0b9842.css?v=20260919-wishlist-popover",
+      "media": "(min-width: 1025px)"
+    },
+    {
+      "rel": "stylesheet",
+      "href": "/static/bera_reference/css/bera-home.4c727c9900c0.css?v=20261012-categories-two-rows"
+    },
+    {
+      "rel": "stylesheet",
+      "href": "/static/bera_reference/css/bera-offer-popup.97662f3d5f2d.css?v=20261012-blue-cart-reminder"
+    }
+  ],
+  "fontPreloads": [
+    {
+      "rel": "preload",
+      "href": "/static/bera_reference/fonts/inter-latin-400.73aaa95eab31.woff2",
+      "as": "font",
+      "type": "font/woff2",
+      "crossorigin": null
+    },
+    {
+      "rel": "preload",
+      "href": "/static/bera_reference/fonts/inter-latin-ext-400.960533aa8d64.woff2",
+      "as": "font",
+      "type": "font/woff2",
+      "crossorigin": null
+    }
+  ]
+}

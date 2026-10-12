@@ -1,0 +1,458 @@
+[
+  {
+    "mode": "before",
+    "width": 1365,
+    "cpu": 4,
+    "initial": {
+      "tasks": [
+        {
+          "start": 3320.100000023842,
+          "duration": 111
+        },
+        {
+          "start": 3464.199999988079,
+          "duration": 121
+        },
+        {
+          "start": 4043.399999976158,
+          "duration": 126
+        },
+        {
+          "start": 4448.5,
+          "duration": 134
+        },
+        {
+          "start": 4623.300000011921,
+          "duration": 119
+        }
+      ],
+      "lcp": [
+        {
+          "time": 3340,
+          "url": ""
+        },
+        {
+          "time": 3460,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png",
+          "element": "logo-image"
+        },
+        {
+          "time": 3616,
+          "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+          "element": "slide-image-img"
+        }
+      ],
+      "navigation": [
+        {
+          "ttfb": 3007.399999976158,
+          "dom": 4154.199999988079,
+          "load": 4168.100000023842
+        }
+      ],
+      "transfer": {
+        "css": 134875,
+        "font": 186692,
+        "js": 151998
+      },
+      "logoCount": 18
+    },
+    "hotspots": [
+      {
+        "function": "(idle)",
+        "url": "",
+        "line": 0,
+        "selfMs": 5268.663
+      },
+      {
+        "function": "(program)",
+        "url": "",
+        "line": 0,
+        "selfMs": 1117.717
+      },
+      {
+        "function": "measure",
+        "url": "https://carpologijabh.ba/",
+        "line": 3399,
+        "selfMs": 100.886
+      },
+      {
+        "function": "measure",
+        "url": "https://carpologijabh.ba/",
+        "line": 3399,
+        "selfMs": 83.092
+      },
+      {
+        "function": "align",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/bera-brand-logo-align.6f57b623c18b.js?v=20261008-small",
+        "line": 3,
+        "selfMs": 82.181
+      },
+      {
+        "function": "",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 350,
+        "selfMs": 35.558
+      },
+      {
+        "function": "S",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 24,
+        "selfMs": 29.676
+      },
+      {
+        "function": "toggleScrollTopBtn",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/main.min.68eef961003d.js?v=20260916-account-scroll-top",
+        "line": 2,
+        "selfMs": 24.35
+      },
+      {
+        "function": "",
+        "url": "https://connect.facebook.net/signals/config/1059983681812075?v=2.9.419&r=stable&domain=carpologijabh.ba&hme=7459fa3e38c2784dbaf309537bed5fa7e8560fab51fb61e53e5ffafeb46a02a9&ex_m=118%2C241%2C171%2C27%2C82%2C83%2C162%2C78%2C77%2C11%2C181%2C102%2C20%2C153%2C141%2C46%2C85%2C90%2C149%2C176%2C183%2C8%2C4%2C5%2C7%2C6%2C3%2C103%2C115%2C32%2C17%2C31%2C18%2C33%2C34%2C35%2C37%2C55%2C163%2C87%2C126%2C22%2C24%2C51%2C47%2C49%2C48%2C95%2C104%2C108%2C124%2C160%2C164%2C53%2C125%2C29%2C26%2C133%2C79%2C43%2C166%2C165%2C167%2C157%2C155%2C30%2C42%2C66%2C123%2C178%2C80%2C21%2C128%2C93%2C76%2C23%2C97%2C98%2C130%2C96%2C151%2C150%2C154%2C109%2C177%2C180%2C41%2C56%2C127%2C54%2C161%2C72%2C185%2C110%2C184%2C210%2C255%2C84%2C274%2C273%2C272%2C14%2C25%2C28%2C40%2C62%2C117%2C68%2C10%2C73%2C111%2C112%2C113%2C119%2C144%2C38%2C36%2C146%2C147%2C148%2C143%2C142%2C172%2C86%2C175%2C173%2C174%2C57%2C69%2C67%2C137%2C19%2C179%2C52%2C324%2C325%2C326%2C323%2C339%2C361%2C248%2C237%2C70%2C238%2C236%2C364%2C355%2C59%2C249%2C121%2C145%2C92%2C135%2C61%2C13",
+        "line": 106,
+        "selfMs": 12.204
+      },
+      {
+        "function": "a.__fbeventsModules.a.getFbeventsModules",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 24,
+        "selfMs": 12.048
+      },
+      {
+        "function": "slideStep",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/main.min.68eef961003d.js?v=20260916-account-scroll-top",
+        "line": 71,
+        "selfMs": 6.536
+      },
+      {
+        "function": "toggleScrollTopBtn",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/main.min.68eef961003d.js?v=20260916-account-scroll-top",
+        "line": 2,
+        "selfMs": 3.521
+      },
+      {
+        "function": "a.__fbeventsModules.a.getFbeventsModules",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 24,
+        "selfMs": 3.456
+      },
+      {
+        "function": "",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/mobile-dock.036b8bcd3d5a.js?v=20260919-wishlist-mobile",
+        "line": 1,
+        "selfMs": 3.353
+      },
+      {
+        "function": "updateHeader",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/main.min.68eef961003d.js?v=20260916-account-scroll-top",
+        "line": 3,
+        "selfMs": 2.976
+      },
+      {
+        "function": "v",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 24,
+        "selfMs": 2.853
+      },
+      {
+        "function": "$",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 390,
+        "selfMs": 2.797
+      },
+      {
+        "function": "readGap",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/main.min.68eef961003d.js?v=20260916-account-scroll-top",
+        "line": 72,
+        "selfMs": 2.796
+      },
+      {
+        "function": "",
+        "url": "https://connect.facebook.net/signals/config/1059983681812075?v=2.9.419&r=stable&domain=carpologijabh.ba&hme=7459fa3e38c2784dbaf309537bed5fa7e8560fab51fb61e53e5ffafeb46a02a9&ex_m=118%2C241%2C171%2C27%2C82%2C83%2C162%2C78%2C77%2C11%2C181%2C102%2C20%2C153%2C141%2C46%2C85%2C90%2C149%2C176%2C183%2C8%2C4%2C5%2C7%2C6%2C3%2C103%2C115%2C32%2C17%2C31%2C18%2C33%2C34%2C35%2C37%2C55%2C163%2C87%2C126%2C22%2C24%2C51%2C47%2C49%2C48%2C95%2C104%2C108%2C124%2C160%2C164%2C53%2C125%2C29%2C26%2C133%2C79%2C43%2C166%2C165%2C167%2C157%2C155%2C30%2C42%2C66%2C123%2C178%2C80%2C21%2C128%2C93%2C76%2C23%2C97%2C98%2C130%2C96%2C151%2C150%2C154%2C109%2C177%2C180%2C41%2C56%2C127%2C54%2C161%2C72%2C185%2C110%2C184%2C210%2C255%2C84%2C274%2C273%2C272%2C14%2C25%2C28%2C40%2C62%2C117%2C68%2C10%2C73%2C111%2C112%2C113%2C119%2C144%2C38%2C36%2C146%2C147%2C148%2C143%2C142%2C172%2C86%2C175%2C173%2C174%2C57%2C69%2C67%2C137%2C19%2C179%2C52%2C324%2C325%2C326%2C323%2C339%2C361%2C248%2C237%2C70%2C238%2C236%2C364%2C355%2C59%2C249%2C121%2C145%2C92%2C135%2C61%2C13",
+        "line": 217,
+        "selfMs": 2.748
+      },
+      {
+        "function": "",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/bera-brand-logo-align.6f57b623c18b.js?v=20261008-small",
+        "line": 2,
+        "selfMs": 2.735
+      },
+      {
+        "function": "a.__fbeventsModules.a.getFbeventsModules",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 24,
+        "selfMs": 2.639
+      },
+      {
+        "function": "syncCookie",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/csrf-session.65f7f73fe3d9.js?v=20261001",
+        "line": 15,
+        "selfMs": 2.557
+      },
+      {
+        "function": "",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/home-mobile-reference.b50bea6043bb.js?v=20260917-category-icons",
+        "line": 1,
+        "selfMs": 2.546
+      },
+      {
+        "function": "a.__fbeventsModules.a.getFbeventsModules",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 24,
+        "selfMs": 2.487
+      },
+      {
+        "function": "",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/csrf-session.65f7f73fe3d9.js?v=20261001",
+        "line": 1,
+        "selfMs": 2.42
+      }
+    ],
+    "allTasks": [
+      {
+        "start": 3320.100000023842,
+        "duration": 111
+      },
+      {
+        "start": 3464.199999988079,
+        "duration": 121
+      },
+      {
+        "start": 4043.399999976158,
+        "duration": 126
+      },
+      {
+        "start": 4448.5,
+        "duration": 134
+      },
+      {
+        "start": 4623.300000011921,
+        "duration": 119
+      }
+    ]
+  },
+  {
+    "mode": "before",
+    "width": 390,
+    "cpu": 4,
+    "initial": {
+      "tasks": [
+        {
+          "start": 1972,
+          "duration": 121
+        },
+        {
+          "start": 2256.5,
+          "duration": 56
+        },
+        {
+          "start": 2505.600000023842,
+          "duration": 126
+        },
+        {
+          "start": 2669.2000000476837,
+          "duration": 119
+        }
+      ],
+      "lcp": [
+        {
+          "time": 1900,
+          "url": ""
+        },
+        {
+          "time": 1960,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png",
+          "element": "logo-image"
+        },
+        {
+          "time": 2116,
+          "url": "https://media.opremazaribolov.ba/banners/mobile/slika_torbe_cline.jpg",
+          "element": "slide-image-img"
+        }
+      ],
+      "navigation": [
+        {
+          "ttfb": 880.9000000357628,
+          "dom": 2302.600000023842,
+          "load": 2359
+        }
+      ],
+      "transfer": {
+        "css": 134875,
+        "font": 186692,
+        "js": 151998
+      },
+      "logoCount": 17
+    },
+    "hotspots": [
+      {
+        "function": "(idle)",
+        "url": "",
+        "line": 0,
+        "selfMs": 4564.398
+      },
+      {
+        "function": "(program)",
+        "url": "",
+        "line": 0,
+        "selfMs": 787.054
+      },
+      {
+        "function": "measure",
+        "url": "https://carpologijabh.ba/",
+        "line": 3399,
+        "selfMs": 96.524
+      },
+      {
+        "function": "",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 350,
+        "selfMs": 36.849
+      },
+      {
+        "function": "align",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/bera-brand-logo-align.6f57b623c18b.js?v=20261008-small",
+        "line": 3,
+        "selfMs": 28.694
+      },
+      {
+        "function": "S",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 24,
+        "selfMs": 19.06
+      },
+      {
+        "function": "a.__fbeventsModules.a.getFbeventsModules",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 24,
+        "selfMs": 13.891
+      },
+      {
+        "function": "",
+        "url": "https://connect.facebook.net/signals/config/1059983681812075?v=2.9.419&r=stable&domain=carpologijabh.ba&hme=7459fa3e38c2784dbaf309537bed5fa7e8560fab51fb61e53e5ffafeb46a02a9&ex_m=118%2C241%2C171%2C27%2C82%2C83%2C162%2C78%2C77%2C11%2C181%2C102%2C20%2C153%2C141%2C46%2C85%2C90%2C149%2C176%2C183%2C8%2C4%2C5%2C7%2C6%2C3%2C103%2C115%2C32%2C17%2C31%2C18%2C33%2C34%2C35%2C37%2C55%2C163%2C87%2C126%2C22%2C24%2C51%2C47%2C49%2C48%2C95%2C104%2C108%2C124%2C160%2C164%2C53%2C125%2C29%2C26%2C133%2C79%2C43%2C166%2C165%2C167%2C157%2C155%2C30%2C42%2C66%2C123%2C178%2C80%2C21%2C128%2C93%2C76%2C23%2C97%2C98%2C130%2C96%2C151%2C150%2C154%2C109%2C177%2C180%2C41%2C56%2C127%2C54%2C161%2C72%2C185%2C110%2C184%2C210%2C255%2C84%2C274%2C273%2C272%2C14%2C25%2C28%2C40%2C62%2C117%2C68%2C10%2C73%2C111%2C112%2C113%2C119%2C144%2C38%2C36%2C146%2C147%2C148%2C143%2C142%2C172%2C86%2C175%2C173%2C174%2C57%2C69%2C67%2C137%2C19%2C179%2C52%2C324%2C325%2C326%2C323%2C339%2C361%2C248%2C237%2C70%2C238%2C236%2C364%2C355%2C59%2C249%2C121%2C145%2C92%2C135%2C61%2C13",
+        "line": 106,
+        "selfMs": 12.171
+      },
+      {
+        "function": "measure",
+        "url": "https://carpologijabh.ba/",
+        "line": 3399,
+        "selfMs": 8.024
+      },
+      {
+        "function": "update",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/home-mobile-reference.b50bea6043bb.js?v=20260917-category-icons",
+        "line": 50,
+        "selfMs": 6.889
+      },
+      {
+        "function": "visibleCount",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/main.min.68eef961003d.js?v=20260916-account-scroll-top",
+        "line": 69,
+        "selfMs": 6.42
+      },
+      {
+        "function": "align",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/bera-brand-logo-align.6f57b623c18b.js?v=20261008-small",
+        "line": 3,
+        "selfMs": 5.804
+      },
+      {
+        "function": "",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/mobile-dock.036b8bcd3d5a.js?v=20260919-wishlist-mobile",
+        "line": 1,
+        "selfMs": 3.878
+      },
+      {
+        "function": "",
+        "url": "https://carpologijabh.ba/",
+        "line": 3389,
+        "selfMs": 3.701
+      },
+      {
+        "function": "a.__fbeventsModules.a.getFbeventsModules",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 24,
+        "selfMs": 3.419
+      },
+      {
+        "function": "a.__fbeventsModules.a.getFbeventsModules",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 24,
+        "selfMs": 3.031
+      },
+      {
+        "function": "",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/brand-logo-normalize.158dc6b030fd.js?v=20261011",
+        "line": 6,
+        "selfMs": 2.75
+      },
+      {
+        "function": "v",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 24,
+        "selfMs": 2.687
+      },
+      {
+        "function": "",
+        "url": "https://connect.facebook.net/signals/config/1059983681812075?v=2.9.419&r=stable&domain=carpologijabh.ba&hme=7459fa3e38c2784dbaf309537bed5fa7e8560fab51fb61e53e5ffafeb46a02a9&ex_m=118%2C241%2C171%2C27%2C82%2C83%2C162%2C78%2C77%2C11%2C181%2C102%2C20%2C153%2C141%2C46%2C85%2C90%2C149%2C176%2C183%2C8%2C4%2C5%2C7%2C6%2C3%2C103%2C115%2C32%2C17%2C31%2C18%2C33%2C34%2C35%2C37%2C55%2C163%2C87%2C126%2C22%2C24%2C51%2C47%2C49%2C48%2C95%2C104%2C108%2C124%2C160%2C164%2C53%2C125%2C29%2C26%2C133%2C79%2C43%2C166%2C165%2C167%2C157%2C155%2C30%2C42%2C66%2C123%2C178%2C80%2C21%2C128%2C93%2C76%2C23%2C97%2C98%2C130%2C96%2C151%2C150%2C154%2C109%2C177%2C180%2C41%2C56%2C127%2C54%2C161%2C72%2C185%2C110%2C184%2C210%2C255%2C84%2C274%2C273%2C272%2C14%2C25%2C28%2C40%2C62%2C117%2C68%2C10%2C73%2C111%2C112%2C113%2C119%2C144%2C38%2C36%2C146%2C147%2C148%2C143%2C142%2C172%2C86%2C175%2C173%2C174%2C57%2C69%2C67%2C137%2C19%2C179%2C52%2C324%2C325%2C326%2C323%2C339%2C361%2C248%2C237%2C70%2C238%2C236%2C364%2C355%2C59%2C249%2C121%2C145%2C92%2C135%2C61%2C13",
+        "line": 262,
+        "selfMs": 2.668
+      },
+      {
+        "function": "",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/home-mobile-reference.b50bea6043bb.js?v=20260917-category-icons",
+        "line": 1,
+        "selfMs": 2.495
+      },
+      {
+        "function": "a.__fbeventsModules.a.getFbeventsModules",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 24,
+        "selfMs": 2.476
+      },
+      {
+        "function": "value",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "line": 266,
+        "selfMs": 2.383
+      },
+      {
+        "function": "toggleScrollTopBtn",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/main.min.68eef961003d.js?v=20260916-account-scroll-top",
+        "line": 2,
+        "selfMs": 2.344
+      },
+      {
+        "function": "updateHeader",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/main.min.68eef961003d.js?v=20260916-account-scroll-top",
+        "line": 3,
+        "selfMs": 2.333
+      },
+      {
+        "function": "",
+        "url": "https://carpologijabh.ba/static/bera_reference/js/main.min.68eef961003d.js?v=20260916-account-scroll-top",
+        "line": 2,
+        "selfMs": 2.32
+      }
+    ],
+    "allTasks": [
+      {
+        "start": 1972,
+        "duration": 121
+      },
+      {
+        "start": 2256.5,
+        "duration": 56
+      },
+      {
+        "start": 2505.600000023842,
+        "duration": 126
+      },
+      {
+        "start": 2669.2000000476837,
+        "duration": 119
+      }
+    ]
+  }
+]
