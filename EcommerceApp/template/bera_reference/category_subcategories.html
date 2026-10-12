@@ -19,6 +19,11 @@
 
 
         <div class="subcategory-grid">
+            {% if direct_category_url %}
+            <a href="{{ direct_category_url }}" class="subcategory-card">
+                <div class="subcategory-card-inner"><h2 class="subcategory-name">{{ category.naziv }}</h2></div>
+            </a>
+            {% endif %}
             {% for sub in subcategories %}
             <a href="{{ sub.get_absolute_url }}" class="subcategory-card">
                 <div class="subcategory-card-inner">

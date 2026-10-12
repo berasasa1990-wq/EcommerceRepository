@@ -761,11 +761,11 @@ body.bera-storefront-header .subcategory-footer-action .btn-view-all{max-width:1
  body.bera-home.home-mobile-reference{--home-page-inset:max(20px,calc((100% - 1580px) / 2))}
 }
 
-/* Stock arrival notifications: orange text inside a light grey outline. */
+/* Stock arrival notifications follow the selected accent inside a light grey outline. */
 body.bera-storefront-header:not(.panel-blue-workspace):not(.wms-independent):not(.staff-shell-page) [data-stock-notify][data-product-id][data-notify-url]{
  background:#fff!important;
  border:2px solid #e5e7eb!important;
- color:rgb(252,115,10)!important;
+ color:var(--storefront-price-color,#008bc5)!important;
  box-sizing:border-box;
 }
 
@@ -780,3 +780,15 @@ body.bera-storefront-header:not(.panel-blue-workspace):not(.wms-independent):not
 body.bera-storefront-header:not(.panel-blue-workspace):not(.wms-independent):not(.staff-shell-page) .bera-related-price strong{color:var(--storefront-price-color,#008bc5)!important}
 
 body.bera-storefront-header .product-catalog .product-card--catalog>.home-card-new-label{position:absolute;top:12px;left:12px;z-index:5;padding:4px 12px;font-size:12px;font-weight:700;line-height:1.2;pointer-events:none}
+
+/* Align the homepage logo/header container with the banner and product columns. */
+body.bera-home.home-mobile-reference #header .header-shell{
+ width:calc(100% - 2 * var(--home-page-inset))!important;
+ max-width:none!important;
+ margin-left:var(--home-page-inset)!important;
+ margin-right:var(--home-page-inset)!important;
+ padding-left:0!important;
+ padding-right:0!important;
+ box-sizing:border-box;
+}
+body.bera-home.home-mobile-reference #header .logo-image{object-position:left center}

@@ -366,7 +366,7 @@
     }
     </style>
 {% block storefront_theme %}{% endblock %}
-<link rel="stylesheet" href="{% static 'bera_reference/css/bera-home.css' %}?v=20261012-mobile-categories-row">
+<link rel="stylesheet" href="{% static 'bera_reference/css/bera-home.css' %}?v=20261012-notify-selected-color">
 <link rel="stylesheet" href="{% static 'bera_reference/css/bera-offer-popup.css' %}?v=20261012-blue-cart-reminder">
 {% if bera_button_color %}
 <style>
@@ -917,7 +917,7 @@ body.bera-home.home-mobile-reference :is(.mobile-home-benefits span,.home-trust-
         });
       }
     </script>
-    <script src="{% static 'bera_reference/js/catalog-load-more.js' %}?v=20261012-button-only" defer></script>
+    <script src="{% static 'bera_reference/js/catalog-load-more.js' %}?v=20261012-fragment" defer></script>
     {% block extra_js %}{% endblock %}
 {% if user.is_authenticated and user.is_staff or user.is_authenticated and user.is_superuser %}{% include 'bera_reference/partials/module_unlock_dialog.html' %}{% endif %}
 {% if not is_wms_workspace %}<script src="{% static 'bera_reference/js/bera-brand-logo-align.js' %}?v=20261008-small" defer></script>{% endif %}

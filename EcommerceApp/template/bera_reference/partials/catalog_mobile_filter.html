@@ -8,6 +8,7 @@
     {% if filter_params.brend %}<input type="hidden" name="brend" value="{{ filter_params.brend }}">{% endif %}
     {% if filter_params.kategorija and hide_category_filter %}<input type="hidden" name="kategorija" value="{{ filter_params.kategorija }}">{% endif %}
     {% if filter_params.velicina %}<input type="hidden" name="velicina" value="{{ filter_params.velicina }}">{% endif %}
+    {% if catalog_direct_only %}<input type="hidden" name="direct" value="1">{% endif %}
     {% if catalog_show_all %}<input type="hidden" name="all" value="1">{% endif %}
     <label class="catalog-desktop-filter__field">
         <span>Sortiranje</span>

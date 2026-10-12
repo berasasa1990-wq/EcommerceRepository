@@ -10,6 +10,7 @@ from functools import lru_cache
 from urllib.parse import urlencode, urlparse
 
 from django.conf import settings
+from django.views.decorators.vary import vary_on_headers
 from .warehouse_access import warehouse_user_required
 from .models import SiteSettings
 from django import forms as django_forms
@@ -2766,6 +2767,7 @@ def facebook_domain_verification(request):
     return HttpResponse(body, content_type='text/html; charset=utf-8')
 
 
+@vary_on_headers('X-Catalog-Fragment')
 def home(request):
     # Fetch the four banner groups together instead of four round trips.
     banner_groups = {}
@@ -3066,6 +3068,9 @@ def home(request):
             'seo_description': public_brand(site_settings.meta_description) or 'Štapovi, mašinice, varalice i pribor za ribolov. Istražite ponudu Carpologija BH i naručite online uz dostavu širom BiH.',
             'seo_h1': 'Oprema za ribolov — Carpologija BH',
         }))
+    if request.headers.get('X-Catalog-Fragment') == '1' and filters_active:
+        fragment_context = {**context, 'products': context.get('search_products', [])}
+        return render(request, 'bera_reference/partials/catalog_results_fragment.html', fragment_context)
     from .bera_home import homepage_context
     context.update(homepage_context(context, request))
     return render(request, 'bera_reference/home.html', context)
@@ -3261,6 +3266,7 @@ def vlog_list(request):
     return render(request, 'vlog_list.html', context)
 
 
+@vary_on_headers('X-Catalog-Fragment')
 def category_detail(request, slug):
     from .bera_home import render_storefront
 
@@ -3280,7 +3286,9 @@ def category_detail(request, slug):
     )
     filter_params = _get_filter_params(request)
     show_all = request.GET.get('all') == '1'
-    show_products = show_all or _filters_active(filter_params)
+    reels_direct_option = category.slug == 'masinice' and bool(direct_subs)
+    direct_only = reels_direct_option and request.GET.get('direct') == '1'
+    show_products = show_all or direct_only or _filters_active(filter_params)
 
     category_seo = entity_seo_context(
         meta_title=category.meta_title,
@@ -3293,7 +3301,9 @@ def category_detail(request, slug):
         default_h1=category.naziv,
     )
     cat_canonical = settings.SEO_CANONICAL_URL + category.get_absolute_url()
-    if direct_subs and show_all:
+    if direct_only:
+        cat_canonical += '?direct=1'
+    elif direct_subs and show_all:
         cat_canonical += '?all=1'
     category_ld = {
         'collection_json_ld': json_ld(collection_page_json_ld(
@@ -3312,6 +3322,7 @@ def category_detail(request, slug):
             **_base_context(),
             'category': category,
             'subcategories': direct_subs,
+            'direct_category_url': category.get_absolute_url() + '?direct=1' if reels_direct_option else '',
             **category_seo,
             'seo_description': (
                 category.meta_description
@@ -3323,7 +3334,7 @@ def category_detail(request, slug):
         return render_storefront(request, 'category_subcategories.html', context)
 
     # Normalan prikaz proizvoda (ili "Sve u kategoriji")
-    category_ids = category.get_descendant_ids()
+    category_ids = [category.pk] if direct_only else category.get_descendant_ids()
     products_qs = _product_queryset(request).filter(kategorija_id__in=category_ids)
     filter_sizes = _available_sizes(products_qs)
     category_url = reverse('category', args=[category.slug])
@@ -3339,6 +3350,9 @@ def category_detail(request, slug):
         keep_all_products=bool(direct_subs),
     )
 
+    if direct_only:
+        catalog_url_params.pop('all', None)
+        catalog_url_params['direct'] = '1'
     page_obj = _paginate_catalog_products(request, products)
     if lightweight_category:
         page_ids = [product.pk for product in page_obj.object_list]
@@ -3365,12 +3379,16 @@ def category_detail(request, slug):
         'filter_reset_url': _filter_reset_url(category_url, catalog_url_params),
         'category_subnav': _category_subnav_items(category, show_all_active=show_all),
         'catalog_show_all': show_all,
+        'catalog_direct_only': direct_only,
         **category_seo,
         'canonical_url': cat_canonical,
         **category_ld,
     }
     if _filters_active(filter_params) or filter_params.get('sort'):
         context['meta_robots_content'] = 'noindex, follow'
+    if request.headers.get('X-Catalog-Fragment') == '1':
+        fragment_context = {**context, 'filter_action': category_url}
+        return render(request, 'bera_reference/partials/catalog_results_fragment.html', fragment_context)
     return render_storefront(request, 'category.html', context)
 
 

@@ -34,3 +34,20 @@ class CatalogLoadMoreTests(TestCase):
         last = _paginate_catalog_products(RequestFactory().get('/', {'page': 3}), products)
         html = render_to_string('bera_reference/partials/catalog_load_more.html', dict(context, page_obj=last))
         self.assertNotIn('data-catalog-load-more', html)
+
+    def test_fragment_preserves_cards_and_filters_with_smaller_response(self):
+        from .models import Category
+        category = Category.objects.create(naziv='Rezultati', slug='rezultati')
+        Product.objects.update(kategorija=category, na_stanju=True, stanje=5)
+        for url in ('/?q=Rezultat&page=2', '/kategorija/rezultati/?page=2'):
+            full = self.client.get(url)
+            fragment = self.client.get(url, HTTP_X_CATALOG_FRAGMENT='1')
+            self.assertEqual(full.status_code, 200)
+            self.assertEqual(fragment.status_code, 200)
+            self.assertNotContains(fragment, '<html')
+            self.assertEqual(fragment.content.count(b'data-product-card'), 20)
+            self.assertIn('X-Catalog-Fragment', fragment.headers['Vary'])
+            self.assertIn('X-Catalog-Fragment', full.headers['Vary'])
+            self.assertLess(len(fragment.content), len(full.content))
+            self.assertContains(fragment, 'page=3')
+            print(f'Fragment {url}: {len(full.content)} -> {len(fragment.content)} bytes')

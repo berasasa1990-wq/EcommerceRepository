@@ -1,0 +1,8 @@
+<section class="product-catalog">
+    <div class="product-grid product-grid--catalog">
+        {% for product in products %}
+        {% include 'bera_reference/partials/product_catalog_card.html' with product=product home_reference_card=True hide_variations=True show_akcija_expiry=filter_params.akcija image_sizes='(max-width: 1024px) 50vw, 20vw' %}
+        {% endfor %}
+    </div>
+    {% include 'bera_reference/partials/catalog_load_more.html' %}
+</section>

@@ -14,6 +14,7 @@
             <summary>{% if cat.ikonica_pocetna %}<img src="{{ cat.ikonica_pocetna.url }}" alt="" width="32" height="32">{% else %}{% include 'bera_reference/partials/nav_category_icon.html' with naziv=cat.naziv slug=cat.slug %}{% endif %}<span>{{ cat.naziv }}</span></summary>
             <div class="mobile-category-entry__children">
                 <a class="mobile-category-entry__all" href="{{ cat.get_absolute_url }}?all=1"><span aria-hidden="true">→</span> Sve iz kategorije {{ cat.naziv }}</a>
+                {% if cat.slug == 'masinice' %}<a href="{{ cat.get_absolute_url }}?direct=1">{{ cat.naziv }}</a>{% endif %}
                 {% for sub in cat.podkategorije.all %}
                 <a href="{{ sub.get_absolute_url }}">{{ sub.naziv }}</a>
                 {% for child in sub.podkategorije.all %}<a class="mobile-category-entry__nested" href="{{ child.get_absolute_url }}">{{ child.naziv }}</a>{% endfor %}

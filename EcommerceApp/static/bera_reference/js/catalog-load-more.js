@@ -11,7 +11,7 @@
         link.setAttribute('aria-disabled', 'true');
         link.textContent = 'Učitavanje…';
         try {
-            const response = await fetch(link.href, {credentials: 'same-origin'});
+            const response = await fetch(link.href, {credentials: 'same-origin', headers: {'X-Catalog-Fragment': '1'}});
             if (!response.ok || response.redirected) throw new Error('Invalid response');
             const next = new DOMParser().parseFromString(await response.text(), 'text/html');
             const nextCatalog = next.querySelector('.product-catalog');

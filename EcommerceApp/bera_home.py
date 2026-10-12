@@ -42,6 +42,18 @@ def storefront_context():
     return result
 
 
+def _selected_bestseller_products(ids, request):
+    """Keep selection order (including duplicates), hydrate only visible cards."""
+    from .views import _home_product_queryset
+    if not ids:
+        return []
+    queryset = _home_product_queryset(request).filter(pk__in=ids)
+    visible_ids = set(queryset.order_by().values_list('pk', flat=True))
+    selected_ids = [pk for pk in ids if pk in visible_ids][:6]
+    products = {product.pk: product for product in queryset.filter(pk__in=selected_ids)}
+    return [products[pk] for pk in selected_ids]
+
+
 def homepage_context(context, request):
     from .views import _home_product_queryset
     result = storefront_context()
@@ -57,8 +69,7 @@ def homepage_context(context, request):
                 cursor.execute('SELECT artikal_id FROM ' + connection.ops.quote_name(table) + ' WHERE aktivan = %s ORDER BY redoslijed, id', [True])
                 ids = [row[0] for row in cursor.fetchall()]
             if ids:
-                products = {product.pk: product for product in _home_product_queryset(request).filter(pk__in=ids)}
-                result['latest_products'] = [products[pk] for pk in ids if pk in products][:6]
+                result['latest_products'] = _selected_bestseller_products(ids, request)
     if not context.get('filters_active'):
         from .utils.seo import get_page_seo
         seo = get_page_seo('home')

@@ -18,9 +18,14 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (response) { if (!response.ok) throw new Error('Stock unavailable'); return response.json(); })
             .then(function (data) {
                 soldOut = data.items.some(function (item) { return item.sold_out; });
+                var rowsByKey = new Map();
+                document.querySelectorAll('[data-cart-key]').forEach(function (row) {
+                    var key = row.getAttribute('data-cart-key');
+                    if (!rowsByKey.has(key)) rowsByKey.set(key, []);
+                    rowsByKey.get(key).push(row);
+                });
                 data.items.forEach(function (item) {
-                    document.querySelectorAll('[data-cart-key]').forEach(function (row) {
-                        if (row.getAttribute('data-cart-key') !== item.key) return;
+                    (rowsByKey.get(item.key) || []).forEach(function (row) {
                         var label = row.querySelector('[data-stock-label]');
                         if (label) {
                             label.textContent = item.sold_out ? 'Rasprodat — uklonite iz korpe' : '✓ Na stanju';
