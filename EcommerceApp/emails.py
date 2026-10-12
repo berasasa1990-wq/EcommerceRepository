@@ -73,6 +73,8 @@ def send_coupon_reward_email(coupon):
 def _admin_order_text(order):
     lines = [
         f'Nova narudžba #{order.broj}',
+        f'Način naručivanja: {order.order_source_label}',
+        f'Način plaćanja: {order.payment_label}',
         '',
         f'Ime i prezime: {order.ime_prezime}',
         f'Email: {order.email}',
@@ -198,6 +200,8 @@ def send_customer_order_confirmation(order):
 
     customer_text = (
         f'Hvala na narudžbi #{order.broj}.\n\n'
+        f'Način naručivanja: {order.order_source_label}\n'
+        f'Način plaćanja: {order.payment_label}\n\n'
         f'Ukupno za plaćanje: {order.ukupno} KM\n\n'
         f'U prilogu emaila nalazi se potvrda narudžbe i garantni list.\n'
     )

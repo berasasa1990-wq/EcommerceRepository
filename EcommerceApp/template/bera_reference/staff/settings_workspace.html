@@ -1,8 +1,8 @@
 {% extends 'bera_reference/base.html' %}{% load static %}
 {% block page_title %}<title>{{ workspace_title }} — {{ shop_name }}</title>{% endblock %}
 {% block meta_robots %}<meta name="robots" content="noindex,nofollow">{% endblock %}
-{% block body_class %}staff-shell-page settings-workspace-page{% if workspace_group == 'Artikli' %} panel-articles-workspace{% endif %}{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'bera_reference/css/panel-settings-workspace.css' %}">{% endblock %}
+{% block body_class %}staff-shell-page settings-workspace-page{% if workspace_group == 'Artikli' %} panel-articles-workspace{% elif workspace_group == 'Akcije' %} panel-promotions-workspace{% endif %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'bera_reference/css/panel-settings-workspace.css' %}">{% if workspace_group == 'Artikli' or workspace_group == 'Akcije' %}<link rel="stylesheet" href="{% static 'bera_reference/css/panel-articles.css' %}?v=20261012-promotions">{% endif %}{% endblock %}
 {% block content %}
 <section class="settings-workspace">
 <header class="settings-workspace__header"><h1>{{ workspace_title }}</h1></header>

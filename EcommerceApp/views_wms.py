@@ -206,7 +206,7 @@ def workspace(request, section='zalihe'):
         if request.method == 'POST' and section == 'pakovanje':
             order = get_object_or_404(WMSOrder, pk=request.POST.get('order_id'))
             return redirect('staff_wms_pick_order', pk=order.pk)
-        ctx['orders'] = WMSOrder.objects.all()
+        ctx['orders'] = WMSOrder.objects.select_related('source_order__b2b_submission', 'source_order__card_payment')
         if section == 'narudzbe':
             order_filter = request.GET.get('status', 'aktivna')
             if order_filter not in ('aktivna', 'zavrsene', 'pakovanje', 'otkazana'):
@@ -227,7 +227,7 @@ def workspace(request, section='zalihe'):
                     ctx['orders'] = ctx['orders'].filter(match)
         if section == 'pakovanje':
             ctx['orders'] = ctx['orders'].exclude(status__in=['zapakovana', 'otkazana'])
-        ctx['orders'] = Paginator(ctx['orders'].select_related('source_order').order_by('-kreirana', '-pk'), 50).get_page(request.GET.get('page'))
+        ctx['orders'] = Paginator(ctx['orders'].select_related('source_order__b2b_submission', 'source_order__card_payment').order_by('-kreirana', '-pk'), 50).get_page(request.GET.get('page'))
         page_query = request.GET.copy()
         page_query.pop('page', None)
         ctx['page_query'] = page_query.urlencode()
@@ -352,7 +352,7 @@ def restore_order(request, pk):
 @user_passes_test(warehouse_user_required)
 def pick_order(request, pk):
     require_wms_section('pakovanje')
-    order = get_object_or_404(WMSOrder.objects.select_related('source_order'), pk=pk)
+    order = get_object_or_404(WMSOrder.objects.select_related('source_order__b2b_submission', 'source_order__card_payment'), pk=pk)
     if order.status not in ('nova', 'pakovanje'):
         return redirect('staff_wms_section', section='pakovanje')
     rows = []
@@ -535,7 +535,7 @@ def print_orders(request, kind):
     require_wms_section('narudzbe')
     if kind not in ('racun', 'faktura', 'najava'):
         raise Http404
-    orders = WMSOrder.objects.filter(status='zapakovana').select_related('source_order').prefetch_related('pick_lines__item', 'pick_lines__wms_item', 'pick_lines__location', 'source_order__stavke', 'items')
+    orders = WMSOrder.objects.filter(status='zapakovana').select_related('source_order__b2b_submission', 'source_order__card_payment').prefetch_related('pick_lines__item', 'pick_lines__wms_item', 'pick_lines__location', 'source_order__stavke', 'items')
     if kind == 'faktura':
         orders = orders.filter(tip='vp')
     from datetime import date
@@ -551,7 +551,7 @@ def print_orders(request, kind):
         else:
             from .wms_orders import sync_panel_orders
             sync_panel_orders()
-            orders = WMSOrder.objects.exclude(status='otkazana').exclude(source_order__status='otkazana').select_related('source_order').prefetch_related('pick_lines__item', 'pick_lines__wms_item', 'pick_lines__location', 'source_order__stavke', 'items').filter(
+            orders = WMSOrder.objects.exclude(status='otkazana').exclude(source_order__status='otkazana').select_related('source_order__b2b_submission', 'source_order__card_payment').prefetch_related('pick_lines__item', 'pick_lines__wms_item', 'pick_lines__location', 'source_order__stavke', 'items').filter(
                 Q(source_order__kreirana__date=print_date) | Q(source_order__isnull=True, kreirana__date=print_date))
         if kind in ('racun', 'faktura'):
             if request.GET.get('stage') != 'print':
@@ -659,7 +659,7 @@ def picking_history(request):
     from django.db.models.functions import Coalesce
     from .models import WMSPickLine
     require_wms_section('pakovanje')
-    rows = WMSPickLine.objects.select_related('order__source_order', 'item__artikal', 'wms_item__artikal', 'location').annotate(history_at=Coalesce('confirmed_at', 'order__completed_at', 'order__kreirana')).order_by('-history_at', '-pk')
+    rows = WMSPickLine.objects.select_related('order__source_order__b2b_submission', 'order__source_order__card_payment', 'item__artikal', 'wms_item__artikal', 'location').annotate(history_at=Coalesce('confirmed_at', 'order__completed_at', 'order__kreirana')).order_by('-history_at', '-pk')
     customer = (request.GET.get('customer') or '').strip()
     number = (request.GET.get('number') or '').strip().lstrip('#')
     if customer:

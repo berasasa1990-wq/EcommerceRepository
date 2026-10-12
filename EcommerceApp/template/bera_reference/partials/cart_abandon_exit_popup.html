@@ -1,7 +1,7 @@
 {% if cart_abandon_exit %}
 <div class="site-popup-overlay cart-abandon-overlay" id="cartAbandonExitOverlay" hidden
      data-cart-count="{{ cart_abandon_exit.qty_total|default:cart_count }}">
-    <div class="site-popup site-popup--akcija site-popup--cart-abandon" role="dialog" aria-modal="true" aria-labelledby="cartAbandonTitle">
+    <div class="site-popup site-popup--akcija site-popup--cart-abandon" role="dialog" aria-modal="true" aria-labelledby="cartAbandonTitle" aria-describedby="cartAbandonDescription">
         <h2 id="cartAbandonTitle" class="site-popup-akcija-title">{{ cart_abandon_exit.naslov }}</h2>
         <button type="button" class="site-popup-close" data-cart-abandon-close aria-label="Zatvori">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -11,8 +11,8 @@
         </button>
 
         <div class="site-popup-akcija cart-abandon-body">
-            <div class="cart-abandon-icon" aria-hidden="true">🛒</div>
-            <p class="cart-abandon-text">{{ cart_abandon_exit.tekst }}</p>
+            <div class="cart-abandon-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l3 13h11l2-10H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg></div>
+            <p class="cart-abandon-text" id="cartAbandonDescription">{{ cart_abandon_exit.tekst }}</p>
             <p class="cart-abandon-count">
                 U korpi:
                 <strong>

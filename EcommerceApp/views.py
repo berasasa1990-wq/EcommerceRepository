@@ -8050,7 +8050,10 @@ def staff_active_carts(request):
 @require_GET
 def staff_orders_validation(request):
     all_site_orders = request.resolver_match.url_name == 'staff_panel_orders'
-    orders = Order.objects.filter(izvor=Order.Izvor.WEBSHOP).exclude(status=Order.Status.CEKA_PLACANJE).exclude(
+    sources = Q(izvor=Order.Izvor.WEBSHOP)
+    if all_site_orders:
+        sources |= Q(b2b_submission__isnull=False)
+    orders = Order.objects.filter(sources).select_related('b2b_submission__account', 'card_payment').exclude(status=Order.Status.CEKA_PLACANJE).exclude(
         Q(ime_prezime__iexact='Prenos u MP') | Q(pick_state__kind__isnull=False, pick_state__kind='prenos_mp'),
     )
     cancelled = Q(status=Order.Status.OTKAZANA) | Q(lager_status=Order.LagerStatus.OTKAZANO) | Q(wms_order__status='otkazana')
@@ -8089,15 +8092,24 @@ def staff_orders_validation(request):
             orders = orders.filter(**{lookup: parsed})
     if dates['date_from'] and dates['date_to'] and dates['date_from'] > dates['date_to']:
         messages.error(request, 'Datum od mora biti prije datuma do.')
-    if source in Order.Izvor.values:
+    if all_site_orders and source == 'b2b':
+        orders = orders.filter(b2b_submission__isnull=False)
+    elif all_site_orders and source == Order.Izvor.WEBSHOP:
+        orders = orders.filter(izvor=source, b2b_submission__isnull=True)
+    elif source in Order.Izvor.values:
         orders = orders.filter(izvor=source)
     if scratch == 'yes':
         orders = orders.filter(has_scratch=True)
     elif scratch == 'no':
         orders = orders.filter(has_scratch=False)
     if query:
-        orders = orders.filter(Q(ime_prezime__icontains=query) | Q(telefon__icontains=query)
-                               | Q(email__icontains=query) | Q(broj__icontains=query))
+        search = (Q(ime_prezime__icontains=query) | Q(telefon__icontains=query)
+                  | Q(email__icontains=query) | Q(broj__icontains=query))
+        if all_site_orders:
+            search |= (Q(b2b_submission__account__company__icontains=query)
+                       | Q(b2b_submission__account__telefon__icontains=query)
+                       | Q(b2b_submission__account__email__icontains=query))
+        orders = orders.filter(search)
     sort = 'oldest' if request.GET.get('sort') == 'oldest' else 'newest'
     orders = orders.order_by('kreirana' if sort == 'oldest' else '-kreirana', '-pk')
     page = Paginator(orders, 50).get_page(request.GET.get('page'))
@@ -8125,6 +8137,11 @@ def staff_orders_validation(request):
             if order_id in rewards_by_order:
                 rewards_by_order[order_id].append(claim)
     for order in page_orders:
+        submission = getattr(order, 'b2b_submission', None)
+        order.panel_phone = submission.account.telefon if submission else order.telefon
+        order.panel_email = submission.account.email if submission else order.email
+        order.panel_customer = (submission.account.company or order.ime_prezime) if submission else order.ime_prezime
+        order.panel_payment = order.payment_label
         order.scratch_details = rewards_by_order[order.pk]
         order.scratch_count = len(order.scratch_details)
         order.scratch_used = any(
@@ -8142,7 +8159,7 @@ def staff_orders_validation(request):
         'pending_total': pending_summary['total'] or Decimal('0.00'),
         'search_query': query, 'source': source, 'scratch': scratch, 'sort': sort,
         'order_filter': order_filter,
-        'source_choices': [(Order.Izvor.WEBSHOP, 'Web shop')], 'page_query': page_query,
+        'source_choices': [(Order.Izvor.WEBSHOP, 'Web shop')] + ([('b2b', 'B2B veleprodaja')] if all_site_orders else []), 'page_query': page_query,
         'sort_query': params.urlencode(),
     })
 

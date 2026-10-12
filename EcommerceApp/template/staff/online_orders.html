@@ -68,8 +68,8 @@
                         {% endif %}
                     </div>
                     <div class="staff-online-order-meta">
-                        <span class="staff-online-order-customer">{{ order.ime_prezime }}</span>
-                        <span>{{ order.web_placanje_label }}</span>
+                        <span class="staff-online-order-customer">{{ order.ime_prezime }}</span>{% include "partials/order_metadata.html" with metadata_order=order only %}
+                        <span>{{ order.payment_label }}</span>
                         <span class="staff-online-order-date">{{ order.kreirana|date:"d.m.Y. H:i" }}</span>
                     </div>
                     <div class="staff-online-order-amount" aria-label="Iznos narudžbe">

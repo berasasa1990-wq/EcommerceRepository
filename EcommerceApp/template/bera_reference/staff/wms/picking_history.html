@@ -13,7 +13,7 @@
 <thead><tr><th>Datum / vrijeme</th><th>Narudžba</th><th>Kupac</th><th>Artikal / šifra</th><th>Lokacija</th><th>Za odvajanje</th><th>Odvojeno</th><th>Status</th></tr></thead>
 <tbody>{% for row in history %}<tr>
 <td>{{ row.history_at|date:'d.m.Y. H:i' }}</td>
-<td><a href="{% url 'staff_wms_order' row.order_id %}">#{% if row.order.source_order_id %}{{ row.order.source_order.broj }}{% else %}{{ row.order.display_number }}{% endif %}</a></td>
+<td><a href="{% url 'staff_wms_order' row.order_id %}">#{% if row.order.source_order_id %}{{ row.order.source_order.broj }}{% else %}{{ row.order.display_number }}{% endif %}</a>{% include "partials/order_metadata.html" with metadata_order=row.order only %}</td>
 <td>{{ row.order.kupac }}</td><td><strong>{{ row.picking_item.naziv }}</strong><br>{{ row.picking_item.sifra|default:'—' }}</td>
 <td>{{ row.location.naziv }}</td><td>{{ row.quantity }} kom</td><td>{{ row.confirmed_quantity }} kom</td>
 <td>{% if row.confirmed_at %}{% if row.confirmed_quantity < row.quantity %}Djelimično / nedostaje{% else %}Odvojeno{% endif %}{% else %}Čeka odvajanje{% endif %}<br>{{ row.order.get_status_display }}{% if row.shortage_resolution %}<br>{{ row.get_shortage_resolution_display }}{% endif %}</td>

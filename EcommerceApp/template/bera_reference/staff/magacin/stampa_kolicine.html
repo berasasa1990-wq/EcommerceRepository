@@ -135,7 +135,7 @@
     {% for job in print_jobs %}
     <section class="sheet">
         <h1>Količine za fakturu</h1>
-        <p class="sub">#{{ job.order.broj }} · {{ job.order.ime_prezime }}</p>
+        <p class="sub">#{{ job.order.broj }} · {{ job.order.ime_prezime }}</p>{% include "partials/order_metadata.html" with metadata_order=job.order only %}
         <table>
             <thead>
                 <tr>

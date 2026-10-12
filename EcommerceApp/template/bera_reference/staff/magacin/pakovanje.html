@@ -53,7 +53,7 @@
 {% if order %}
 <section class="mg-card" style="margin-top:16px;">
     <div class="mg-card-head">
-        <h2 class="mg-h">Narudžba #{{ order.broj }}</h2>
+        <h2 class="mg-h">Narudžba #{{ order.broj }}</h2>{% include "partials/order_metadata.html" with metadata_order=order only %}
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <a class="mg-btn" href="{% url 'staff_order_detail' order.broj %}">Otvori detalj</a>
             <a class="mg-btn" href="{% url 'staff_order_packing' order.broj %}" target="_blank" rel="noopener">Štampaj pakovanje</a>

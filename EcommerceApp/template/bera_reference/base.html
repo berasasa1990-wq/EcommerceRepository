@@ -169,8 +169,8 @@
     {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'bera_reference/fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'bera_reference/fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'bera_reference/css/style.min.css' %}?v=20260915-render-header-v2" as="style">
-    <link rel="stylesheet" href="{% static 'bera_reference/css/style.min.css' %}?v=20260919-wishlist-badge">
+    <link rel="preload" href="{% static 'bera_reference/css/style.min.css' %}?v=20261012-toast" as="style">
+    <link rel="stylesheet" href="{% static 'bera_reference/css/style.min.css' %}?v=20261012-toast">
     <link rel="stylesheet" href="{% static 'bera_reference/css/header-base.min.css' %}?v=20260919-wishlist-mobile">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
@@ -357,8 +357,8 @@
     }
     </style>
 {% block storefront_theme %}{% endblock %}
-<link rel="stylesheet" href="{% static 'bera_reference/css/bera-home.css' %}?v=20261012-brand-price-alignment">
-<link rel="stylesheet" href="{% static 'bera_reference/css/bera-offer-popup.css' %}?v=20261008-blue-offers">
+<link rel="stylesheet" href="{% static 'bera_reference/css/bera-home.css' %}?v=20261012-categories-two-rows">
+<link rel="stylesheet" href="{% static 'bera_reference/css/bera-offer-popup.css' %}?v=20261012-blue-cart-reminder">
 {% if bera_button_color %}
 <style>
 body.bera-storefront-header{--wishlist-accent:{{ bera_button_color }}}

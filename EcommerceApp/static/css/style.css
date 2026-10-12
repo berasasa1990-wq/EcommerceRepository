@@ -6998,6 +6998,16 @@ body.pd-zoom-open {
     animation: pd-ponuda-badge-pulse 1.2s ease-in-out infinite;
 }
 
+/* + PONUDA ispod dugmeta za korpu: statičan prikaz bez crvenog pulsiranja. */
+.pd-ponuda-hint:not(.pd-ponuda-hint--qty),
+.pd-ponuda-hint:not(.pd-ponuda-hint--qty) .pd-ponuda-hint__badge {
+    animation: none;
+}
+
+.pd-ponuda-hint:not(.pd-ponuda-hint--qty) .pd-ponuda-hint__pulse {
+    display: none;
+}
+
 .pd-ponuda-hint__text {
     position: relative;
     z-index: 1;
@@ -20203,74 +20213,69 @@ body.staff-edit-mode-on .staff-stock-badge--photo {
     line-height: 1.5;
 }
 
+/* Obavijest o kupovini u bojama i tipografiji prodavnice. */
 .social-proof-toast {
     position: fixed;
     left: 20px;
     bottom: calc(24px + env(safe-area-inset-bottom, 0px));
     z-index: 9400;
-    width: min(92vw, 320px);
-    padding: 14px 38px 14px 16px;
-    border-radius: 10px;
+    box-sizing: border-box;
+    width: min(calc(100vw - 40px), 360px);
+    padding: 16px 40px 16px 72px;
+    border-radius: 16px;
     background: #fff;
-    border: 1px solid var(--gray-200);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
+    border: 1px solid #e8e8e8;
+    border-left: 3px solid var(--ozr-orange, #ff5a00);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    font-family: inherit;
     transform: translateX(calc(-100% - 28px));
     opacity: 0;
     transition: transform 0.4s ease, opacity 0.35s ease;
     pointer-events: none;
 }
-
-.social-proof-toast.is-visible {
-    transform: translateX(0);
-    opacity: 1;
-    pointer-events: auto;
+.social-proof-toast[hidden] { display: none !important; }
+.social-proof-toast.is-visible { transform: translateX(0); opacity: 1; pointer-events: auto; }
+.social-proof-toast__icon {
+    position: absolute;
+    top: 18px;
+    left: 16px;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #fff2e9;
+    color: var(--ozr-orange, #ff5a00);
 }
-
+.social-proof-toast__icon svg { width: 24px; height: 24px; }
+.social-proof-toast__kicker { display: block; margin-bottom: 5px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #777; }
 .social-proof-toast__close {
     position: absolute;
-    top: 8px;
-    right: 10px;
-    width: 24px;
-    height: 24px;
+    top: 7px;
+    right: 7px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
     border: none;
+    border-radius: 8px;
     background: transparent;
-    color: var(--gray-500);
-    font-size: 20px;
+    color: #777;
+    font-size: 22px;
     line-height: 1;
     cursor: pointer;
     padding: 0;
 }
-
-.social-proof-toast__close:hover {
-    color: var(--black);
-}
-
-.social-proof-toast__text {
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.45;
-    color: var(--gray-700);
-}
-
-.social-proof-toast__text strong {
-    color: var(--black);
-    font-weight: 700;
-}
-
-.social-proof-toast__text a {
-    color: #1a5c38;
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-}
-
+.social-proof-toast__close:hover { background: #f5f5f5; color: #111; }
+.social-proof-toast__text { margin: 0; font-size: 13px; line-height: 1.55; color: #555; overflow-wrap: anywhere; }
+.social-proof-toast__text strong { color: #111; font-weight: 700; }
+.social-proof-toast__text a { display: block; margin-top: 4px; color: #111; font-weight: 650; text-decoration: none; }
+.social-proof-toast__text a:hover { color: var(--ozr-orange, #ff5a00); text-decoration: underline; text-underline-offset: 3px; }
+.social-proof-toast :is(a, button):focus-visible { outline: 2px solid var(--ozr-orange, #ff5a00); outline-offset: 2px; }
 @media (max-width: 768px) {
-    .social-proof-toast {
-        left: 12px;
-        bottom: calc(88px + env(safe-area-inset-bottom, 0px));
-        width: min(94vw, 300px);
-    }
+    .social-proof-toast { left: 12px; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width: min(calc(100vw - 24px), 360px); }
 }
+@media (prefers-reduced-motion: reduce) { .social-proof-toast { transition: none; } }
 
 .cart-toast {
     position: fixed;

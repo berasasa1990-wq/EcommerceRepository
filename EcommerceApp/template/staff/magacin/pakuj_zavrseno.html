@@ -20,7 +20,7 @@
 <section class="mg-card pk-done-summary">
     <div class="pk-done-meta">
         <p><span>Narudžba</span><strong>#{{ order.broj }}</strong></p>
-        <p><span>Kupac</span><strong>{{ order.ime_prezime }}</strong></p>
+        <p><span>Kupac</span><strong>{{ order.ime_prezime }}</strong>{% include "partials/order_metadata.html" with metadata_order=order only %}</p>
         <p><span>Status</span><strong>{% if order.status == 'otkazana' %}Otkazana{% else %}Završeno{% endif %}</strong></p>
         <p><span>Datum</span><strong>{{ order.zapakovana_at|default:order.kreirana|date:"d.m.Y. H:i" }}</strong></p>
     </div>

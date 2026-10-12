@@ -252,7 +252,7 @@ def _validated_orders_q():
 
 def _unvalidated_orders_qs():
     return (
-        Order.objects.exclude(status=Order.Status.OTKAZANA)
+        Order.objects.select_related('b2b_submission', 'card_payment').exclude(status=Order.Status.OTKAZANA)
         .exclude(status=Order.Status.CEKA_PLACANJE)
         .exclude(card_payment__status='pending')
         .exclude(status=Order.Status.REZERVACIJA)
@@ -262,7 +262,7 @@ def _unvalidated_orders_qs():
 
 def _completed_pick_qs():
     return (
-        Order.objects.filter(_validated_orders_q())
+        Order.objects.select_related('b2b_submission', 'card_payment').filter(_validated_orders_q())
         .exclude(status=Order.Status.OTKAZANA)
         .exclude(_prenos_mp_q())
     )
@@ -3134,7 +3134,7 @@ def _brza_posta_day_q(day):
 
 def _brza_posta_orders_qs(day):
     return (
-        Order.objects.filter(_validated_orders_q())
+        Order.objects.select_related('b2b_submission', 'card_payment').filter(_validated_orders_q())
         .exclude(status=Order.Status.OTKAZANA)
         .exclude(_prenos_mp_q())
         .filter(_brza_posta_day_q(day))

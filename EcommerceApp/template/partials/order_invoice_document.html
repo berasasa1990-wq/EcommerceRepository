@@ -6,7 +6,7 @@
                 <p class="doc-contact">Kontakt: <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a></p>
             </td>
             <td class="doc-meta">
-                <p class="doc-title">{% if order.is_mp_transfer %}Prenosnica u MP{% else %}Online Narudžbe{% endif %} br. {{ order.broj }}</p>
+                <p class="doc-title">{% if order.is_mp_transfer %}Prenosnica u MP{% elif order.is_b2b_order %}B2B veleprodaja{% else %}Online Narudžbe{% endif %} br. {{ order.broj }}</p>
                 <p>{% if order.is_mp_transfer %}Datum prenosa:{% else %}Datum narudžbe:{% endif %} {{ datum_kratko }} {{ vrijeme }}</p>
                 <p>Datum isporuke: {{ datum_kratko }}</p>
                 <div class="doc-order-barcode">
@@ -21,7 +21,7 @@
         <tr>
             <td>
                 <span class="party-label">KUPAC</span>
-                <span class="party-name">{{ order.display_customer_name }}</span>
+                <span class="party-name">{{ order.display_customer_name }}</span>{% include "partials/order_metadata.html" with metadata_order=order only %}
                 {{ order.adresa }}<br>
                 {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}<br>
                 Telefon: {{ order.telefon }}<br>
@@ -132,8 +132,7 @@
     </div>
 
     <div class="order-footer">
-        {% if order.card_payment or order.placeno_karticom %}Način plaćanja: KARTICOM.
-        {% else %}Način plaćanja: pouzećem pri preuzimanju pošiljke.{% endif %}
+        Način plaćanja: {{ order.payment_label }}.
         Hvala vam na kupovini.
         Kontakt: <a href="mailto:carpologijabh@gmail.com">carpologijabh@gmail.com</a>.
     </div>

@@ -4564,6 +4564,45 @@ class Order(models.Model):
     def display_customer_name(self):
         return 'Prenosnica u MP' if self.is_mp_transfer else self.ime_prezime
 
+    @property
+    def is_b2b_order(self):
+        return getattr(self, 'b2b_submission', None) is not None
+
+    @property
+    def order_source_label(self):
+        if self.is_b2b_order:
+            return 'B2B veleprodaja'
+        if self.is_mp_transfer:
+            return 'Prenosnica u MP'
+        return self.get_izvor_display()
+
+    @property
+    def payment_method(self):
+        """Shared display classification; it does not assert a payment was received."""
+        submission = getattr(self, 'b2b_submission', None)
+        if submission:
+            return submission.payment
+        if getattr(self, 'card_payment', None) or self.placeno_karticom():
+            return 'kartica'
+        for row in self.popust_detalji or []:
+            if isinstance(row, dict):
+                method = str(row.get('placanje') or '').strip().lower()
+                if method in ('gotovina', 'ziralno', 'kartica'):
+                    return method
+        if self.izvor == self.Izvor.MAGACIN:
+            from .magacin import vp_order_ziralno
+            if vp_order_ziralno(self):
+                return 'ziralno'
+        return 'gotovina'
+
+    @property
+    def payment_label(self):
+        label = {'gotovina': 'Gotovinski', 'ziralno': 'Žiralno', 'kartica': 'Karticom'}.get(self.payment_method, 'Nije evidentirano')
+        payment = getattr(self, 'card_payment', None)
+        if payment and payment.status != 'paid':
+            return f'{label} — čeka uplatu' if payment.status == 'pending' else f'{label} — uplata nije potvrđena'
+        return label
+
     def get_status_label(self):
         if self.lager_status == self.LagerStatus.VALIDIRANO:
             return 'Validatovana'
@@ -4595,14 +4634,11 @@ class Order(models.Model):
     def web_placanje_label(self):
         if getattr(self, 'card_payment', None) or self.placeno_karticom():
             return 'KARTICOM'
-        return 'POUZEĆEM' if self.izvor == self.Izvor.WEBSHOP else self.packing_placanje_label()
+        return self.payment_label.upper()
 
     def packing_placanje_label(self):
-        for row in (self.popust_detalji or []):
-            if not isinstance(row, dict):
-                continue
-            if str(row.get('placanje') or '').strip().lower() == 'ziralno':
-                return 'ŽIRALNO'
+        if self.payment_method == 'ziralno':
+            return 'ŽIRALNO'
         if getattr(self, 'card_payment', None) and not self.placeno_karticom():
             return 'KARTICA — ČEKA UPLATU'
         return 'KARTICA' if self.placeno_karticom() else 'GOTOVINSKI'
@@ -7290,6 +7326,18 @@ class WMSOrder(models.Model):
     @property
     def display_number(self):
         return f"{self.pk:04d}"
+
+    @property
+    def is_b2b_order(self):
+        return bool(self.source_order_id and self.source_order.is_b2b_order)
+
+    @property
+    def order_source_label(self):
+        return self.source_order.order_source_label if self.source_order_id else self.get_tip_display()
+
+    @property
+    def payment_label(self):
+        return self.source_order.payment_label if self.source_order_id else 'Nije evidentirano'
 
     tip = models.CharField(max_length=12, choices=[('vp', 'Veleprodaja'), ('online', 'Online slanje')])
     kupac = models.CharField(max_length=240)

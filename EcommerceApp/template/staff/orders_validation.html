@@ -22,10 +22,10 @@
     <div class="vo-table-wrap"><table class="vo-table"><thead><tr><th scope="col">#</th><th scope="col">Kupac</th><th scope="col">Način naručivanja</th><th scope="col">Iznos</th><th scope="col">Način plaćanja</th><th scope="col">Greb-Greb</th><th scope="col" aria-sort="{% if sort == 'oldest' %}ascending{% else %}descending{% endif %}"><a href="?{{ sort_query }}">Datum {% if sort == 'oldest' %}↑{% else %}↓{% endif %}</a></th><th scope="col">Akcija</th></tr></thead><tbody>
     {% for order in orders %}<tr>
         <td><a class="vo-number" href="{% url 'staff_order_detail' broj=order.broj %}">#{{ order.broj }}</a></td>
-        <td><strong>{{ order.ime_prezime }}</strong><div class="vo-contact"><span>{{ order.telefon }}</span><span>{{ order.email }}</span></div></td>
+        <td><strong>{{ order.ime_prezime }}</strong>{% include "partials/order_metadata.html" with metadata_order=order only %}<div class="vo-contact"><span>{{ order.telefon }}</span><span>{{ order.email }}</span></div></td>
         <td><span class="vo-source"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 3h3l3 13h11l3-10H6M9 20h.01M18 20h.01"/></svg>{% if order.izvor == 'webshop' %}Web shop{% else %}Ručni unos{% endif %}</span></td>
         <td class="vo-amount">{{ order.ukupno|floatformat:2 }} KM</td>
-        <td><span class="vo-source">{% if order.placeno_karticom %}Karticom{% else %}Gotovinski{% endif %}</span></td>
+        <td><span class="vo-source">{{ order.payment_label }}</span></td>
         <td>
                 <button type="button" class="vo-reward-trigger" data-reward-template="vo-reward-{{ order.pk }}" aria-haspopup="dialog" aria-controls="vo-reward-dialog" aria-label="Prikaži Greb-Greb nagradu za narudžbu {{ order.broj }}"><span class="vo-gift {% if order.scratch_used %}vo-gift-yes{% else %}vo-gift-no{% endif %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8C3 8 6 0 10 4l2 4c9 0 6-8 2-4z"/></svg><span>{% if order.scratch_used %}DA<small>{{ order.scratch_count }} nagrada</small>{% else %}NE{% endif %}</span></span><small class="vo-reward-hint">Prikaži nagradu</small></button>
                 <template id="vo-reward-{{ order.pk }}">

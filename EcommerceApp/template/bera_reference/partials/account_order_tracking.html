@@ -1,5 +1,5 @@
 <section class="account-tracking" aria-label="Praćenje narudžbe">
-    <h2>Praćenje narudžbe #{{ order.broj }}</h2>
+    <h2>Praćenje narudžbe #{{ order.broj }}</h2>{% include "partials/order_metadata.html" with metadata_order=order only %}
     <p><strong>{{ order.get_status_display }}</strong></p>
     {% if order.status == 'otkazana' %}
     <p>Narudžba je otkazana.</p>

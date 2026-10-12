@@ -219,7 +219,7 @@
 
         <div class="field">
             <span class="label">Ime i prezime</span>
-            <span class="value" data-copy-value>{{ order.ime_prezime }}</span>
+            <span class="value" data-copy-value>{{ order.ime_prezime }}</span>{% include "partials/order_metadata.html" with metadata_order=order only %}
             <button type="button" class="btn-copy-field" data-copy>Copy</button>
         </div>
         <div class="field">

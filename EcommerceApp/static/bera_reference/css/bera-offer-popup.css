@@ -38,3 +38,28 @@
 #gratisOfferOverlay .gratis-offer-btn--decline{background:#edf7ff;color:#007db7;border:1px solid #d5e9f7}
 #gratisOfferOverlay .gratis-offer-btn--decline:hover{background:#dcefff}
 @media(max-width:480px){#qtyDealOfferOverlay,#gratisOfferOverlay{padding:12px}#qtyDealOfferOverlay .qty-deal-offer-popup,#gratisOfferOverlay .gratis-offer-popup{padding:26px 16px 14px;border-radius:15px;max-height:calc(100dvh - 24px)}#qtyDealOfferOverlay .qty-deal-offer-image{width:60px;height:60px}#qtyDealOfferOverlay .qty-deal-offer-title{font-size:15px}#qtyDealOfferOverlay .qty-deal-offer-tier-now{font-size:19px}}
+
+/* Exit reminder: blue storefront palette and a readable cart summary. */
+#cartAbandonExitOverlay{padding:20px;box-sizing:border-box;background:rgba(7,28,53,.48);backdrop-filter:blur(5px);align-items:center;justify-content:center}
+#cartAbandonExitOverlay .site-popup--cart-abandon{box-sizing:border-box;width:100%;max-width:480px;max-height:calc(100dvh - 40px);overflow:auto;padding:30px 24px 22px;border:1px solid #cde7f7;border-radius:20px;background:#fff;background-image:linear-gradient(120deg,#00c5e2,#007ab7);background-size:100% 6px;background-position:top;background-repeat:no-repeat;color:#102343;box-shadow:0 24px 80px #052b4b40;text-align:center;animation:none}
+#cartAbandonExitOverlay .site-popup-akcija-title{margin:10px 30px 18px;padding:0;background:transparent;color:#102343;font-size:25px;line-height:1.25;overflow-wrap:anywhere}
+#cartAbandonExitOverlay .site-popup-close{top:14px;right:14px;width:34px;height:34px;border:1px solid #d7ebf9;border-radius:50%;background:#edf8ff;color:#007db7;box-shadow:none}
+#cartAbandonExitOverlay .site-popup-close:hover{background:#d9efff}
+#cartAbandonExitOverlay .cart-abandon-body{display:flex;flex-direction:column;gap:14px;padding:0;min-width:0}
+#cartAbandonExitOverlay .cart-abandon-icon{display:grid;place-items:center;width:64px;height:64px;margin:0 auto;border-radius:18px;background:#eaf7ff;color:#008bc3}
+#cartAbandonExitOverlay .cart-abandon-icon svg{width:34px;height:34px}
+#cartAbandonExitOverlay .cart-abandon-text{margin:0;color:#54718a;font-size:14px;line-height:1.6;overflow-wrap:anywhere}
+#cartAbandonExitOverlay .cart-abandon-count{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:5px;margin:0;padding:12px;border:1px solid #d5e9f7;border-radius:10px;background:#edf8ff;color:#007db7;font-size:14px;line-height:1.5}
+#cartAbandonExitOverlay .cart-abandon-list{margin:0;padding:4px 14px;border:1px solid #dcebf7;border-radius:12px;background:#f5faff;list-style:none;text-align:left}
+#cartAbandonExitOverlay .cart-abandon-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #dcebf7;color:#102343;font-size:13px;line-height:1.5}
+#cartAbandonExitOverlay .cart-abandon-list li:last-child{border-bottom:0}
+#cartAbandonExitOverlay .cart-abandon-item-name{min-width:0;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;font-weight:600}
+#cartAbandonExitOverlay .cart-abandon-item-qty{flex-shrink:0;padding:3px 8px;border-radius:6px;background:#e1f1fb;color:#007db7;font-weight:700}
+#cartAbandonExitOverlay .cart-abandon-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px;padding:0}
+#cartAbandonExitOverlay .cart-abandon-actions .btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-width:0;min-height:44px;width:100%;padding:12px;border-radius:10px;font-size:14px;line-height:1.4;white-space:normal;text-decoration:none;animation:none;box-shadow:none}
+#cartAbandonExitOverlay .cart-abandon-actions .cart-abandon-cta{grid-column:1/-1;background:linear-gradient(115deg,#00bddd,#007bb8)!important;border:1px solid #009bd0!important;color:#fff!important}
+#cartAbandonExitOverlay .cart-abandon-cta:hover{filter:brightness(.92)}
+#cartAbandonExitOverlay .cart-abandon-actions :is(.cart-abandon-cart,.cart-abandon-stay){background:#edf7ff!important;color:#007db7!important;border:1px solid #d5e9f7!important}
+#cartAbandonExitOverlay .cart-abandon-actions :is(.cart-abandon-cart,.cart-abandon-stay):hover{background:#dcefff!important}
+#cartAbandonExitOverlay :is(a,button):focus-visible{outline:2px solid #009bd0;outline-offset:3px}
+@media(max-width:480px){#cartAbandonExitOverlay{padding:12px}#cartAbandonExitOverlay .site-popup--cart-abandon{max-height:calc(100dvh - 24px);padding:26px 16px 16px;border-radius:16px}#cartAbandonExitOverlay .site-popup-akcija-title{font-size:22px;margin:12px 24px 16px}#cartAbandonExitOverlay .cart-abandon-actions{grid-template-columns:1fr}}

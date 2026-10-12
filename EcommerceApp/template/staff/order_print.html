@@ -926,13 +926,14 @@
                 {% for job in print_jobs %}
                     {% for line in job.packing_missing %}
                     <li>
-                        <strong>#{{ job.order.broj }}{% if line.sifra %} — {{ line.sifra }}{% endif %} — {{ line.naziv }}</strong>
+                        <strong>#{{ job.order.broj }}{% if line.sifra %} — {{ line.sifra }}{% endif %} — {{ line.naziv }}</strong>{% include "partials/order_metadata.html" with metadata_order=job.order only %}
                         <span class="mp-meta">
                             Naručeno: {{ line.kolicina }}
                         </span>
                     </li>
                     {% endfor %}
                 {% endfor %}
+                
             </ul>
             <p class="mp-check-note">
                 <strong>Dodaj</strong> = imaš ga u maloprodaji, nastavi narudžbu / štampu.

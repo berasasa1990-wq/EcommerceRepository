@@ -96,7 +96,7 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         'broj', 'korisnik', 'ime_prezime', 'email', 'telefon',
-        'ukupno', 'status', 'web_placanje_label', 'izvor', 'lager_status', 'xexpress_sifra',
+        'ukupno', 'status', 'payment_label', 'order_source_label', 'lager_status', 'xexpress_sifra',
         'odstampana', 'zapakovana', 'kreirana',
     )
     list_filter = ('status', 'izvor', 'lager_status', 'odstampana', 'zapakovana', 'kreirana')
@@ -104,14 +104,14 @@ class OrderAdmin(admin.ModelAdmin):
     readonly_fields = (
         'broj', 'kreirana', 'medjuzbir', 'dostava', 'popust',
         'ukupno', 'popust_detalji', 'odstampana', 'odstampana_at',
-        'xexpress_sifra', 'xexpress_poslano_at',
+        'xexpress_sifra', 'xexpress_poslano_at', 'order_source_label', 'payment_label',
     )
     autocomplete_fields = ('korisnik',)
     inlines = [OrderItemInline]
     fieldsets = (
         ('Narudžba', {
             'fields': (
-                'broj', 'status', 'izvor', 'lager_status', 'medjuzbir', 'popust', 'kupon_kod',
+                'broj', 'status', 'izvor', 'order_source_label', 'payment_label', 'lager_status', 'medjuzbir', 'popust', 'kupon_kod',
                 'popust_detalji', 'dostava', 'ukupno', 'kreirana',
                 'odstampana', 'odstampana_at',
             ),
@@ -120,6 +120,9 @@ class OrderAdmin(admin.ModelAdmin):
         ('Dostava', {'fields': ('adresa', 'grad', 'postanski_broj', 'napomena')}),
         ('X-Express', {'fields': ('xexpress_sifra', 'xexpress_poslano_at')}),
     )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('b2b_submission', 'card_payment')
 
 
 @admin.register(LoyaltyCard)

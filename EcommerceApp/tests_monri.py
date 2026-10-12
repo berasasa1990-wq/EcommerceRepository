@@ -305,7 +305,7 @@ class MonriTests(TestCase):
         self.callback(self.payload())
         response = self.client.get(reverse('staff_online_orders'), {'filter': 'sve'})
         self.assertIn(self.order.pk, [order.pk for order in response.context['orders']])
-        self.assertContains(response, 'KARTICOM')
+        self.assertContains(response, 'Karticom')
 
     def test_cancelled_card_order_cannot_be_accepted_by_callback(self):
         self.order.status = Order.Status.OTKAZANA

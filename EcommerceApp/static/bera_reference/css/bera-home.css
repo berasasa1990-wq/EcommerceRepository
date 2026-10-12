@@ -49,6 +49,7 @@ body.bera-home.home-mobile-reference .hero-carousel .slide-content h2{font-size:
 body.bera-home.home-mobile-reference #mobileHomeCategories{display:block!important;max-width:1424px!important;margin:22px auto 20px!important;padding:0 0!important;background:#fff;border:0!important}
 body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-heading{display:none!important}
 body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-category-grid{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;gap:12px!important;padding:0 2px 5px;scrollbar-width:thin}
+
 body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-category-grid>a{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 calc((100% - 108px)/10)!important;min-width:112px;min-height:110px!important;padding:8px!important;gap:6px!important;background:linear-gradient(145deg,#f7fbff,#eff5fa)!important;border:1px solid #f0f6fb!important;border-radius:13px!important;color:#06172d;font-size:12px!important;box-shadow:0 3px 9px #164c7510;box-sizing:border-box}
 body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-category-icon,body.bera-home.home-mobile-reference #mobileHomeCategories .cat-ico,body.bera-home.home-mobile-reference #mobileHomeCategories .cat-ico svg,body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-category-grid>a>svg{width:74px!important;height:70px!important;object-fit:contain;color:#008cc5}
 body.bera-home.home-mobile-reference .mobile-home-benefits,body.bera-home.home-mobile-reference .home-trust-bar__inner{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1424px!important;margin:0 auto 24px!important;padding:0!important}
@@ -693,3 +694,34 @@ body.bera-storefront-header :is(.product-card,.product-catalog,.product-detail-i
 /* Align the brand's visible left edge with the price above it. */
 body.bera-storefront-header :is(.product-card,.product-catalog,.product-detail-info) .product-brand-under-price{display:flex!important;justify-content:flex-start!important;align-items:center!important;align-self:flex-start!important;text-align:left!important;margin-left:0!important;padding-left:0!important;box-sizing:border-box}
 body.bera-storefront-header :is(.product-card,.product-catalog,.product-detail-info) .product-brand-under-price :is(img,canvas){margin-left:0!important;margin-right:auto!important;padding:0!important;object-position:left center!important;transform:none!important}
+
+/* Mobile category shortcuts in two rows. */
+@media(max-width:1024px){
+ body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-category-grid{
+  display:grid!important;
+  grid-template-columns:none;
+  grid-template-rows:repeat(2,auto);
+  grid-auto-flow:column;
+  grid-auto-columns:calc((100% - 24px)/5);
+  gap:6px!important;
+  align-items:stretch;
+ }
+ body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-category-grid>a{
+  min-width:0!important;
+  min-height:76px!important;
+  padding:6px 2px!important;
+  gap:4px!important;
+  font-size:10px!important;
+  line-height:1.2;
+  overflow-wrap:anywhere;
+ }
+ body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-category-icon,
+ body.bera-home.home-mobile-reference #mobileHomeCategories .cat-ico,
+ body.bera-home.home-mobile-reference #mobileHomeCategories .cat-ico svg,
+ body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-category-grid>a>svg{
+  width:38px!important;
+  max-width:100%;
+  height:38px!important;
+  flex-shrink:0;
+ }
+}

@@ -160,8 +160,7 @@
                         <span class="sub">#{{ order.pk }}</span>
                     </td>
                     <td>
-                        <strong class="mg-order-name">{{ order.display_customer_name }}</strong>
-                        {% if order.card_payment %}<span class="sub">KARTICOM</span>{% endif %}
+                        <strong class="mg-order-name">{{ order.display_customer_name }}</strong>{% include "partials/order_metadata.html" with metadata_order=order only %}
                         {% if order.telefon %}<span class="sub">{{ order.telefon }}</span>{% endif %}
                         {% if order.loyalty_popust_info %}
                         <span class="mg-pill is-loyalty">{{ order.loyalty_popust_info.label }}</span>
@@ -187,6 +186,7 @@
                     <td>
                         {% if order.is_mp_transfer %}
                         <span class="mg-pill mg-src-rucna">Prenosnica u MP</span>
+                        {% elif order.is_b2b_order %}<span class="mg-pill mg-src-vp">B2B veleprodaja</span>
                         {% elif order.is_vp %}
                         <span class="mg-pill mg-src-vp">VP</span>
                         {% elif order.izvor == 'magacin' %}
