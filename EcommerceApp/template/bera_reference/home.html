@@ -132,7 +132,7 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
 {% if slide.has_mobile_image and not slide.has_video %}
 <link rel="preload" as="image" href="{{ slide.image_mobile }}"{% if slide.image_mobile_srcset %} imagesrcset="{{ slide.image_mobile_srcset }}"{% endif %} imagesizes="100vw" media="(max-width: 768px)" fetchpriority="high">
 {% endif %}
-<link rel="preload" as="image" href="{{ lcp_image_url }}"{% if lcp_image_srcset %} imagesrcset="{{ lcp_image_srcset }}"{% endif %}{% if lcp_image_sizes %} imagesizes="{{ lcp_image_sizes }}"{% endif %}{% if slide.has_mobile_image and not slide.has_video %} media="not all and (max-width: 768px)"{% endif %} fetchpriority="high">
+<link rel="preload" as="image" href="{{ lcp_image_url }}"{% if lcp_image_srcset %} imagesrcset="{{ lcp_image_srcset }}"{% endif %}{% if lcp_image_sizes %} imagesizes="{{ lcp_image_sizes }}"{% endif %}{% if slide.has_mobile_image and not slide.has_video %} media="(min-width: 768.01px)"{% endif %} fetchpriority="high">
 {% endwith %}
 {% endif %}
 {% endblock %}

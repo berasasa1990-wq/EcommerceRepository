@@ -1,0 +1,408 @@
+[
+  {
+    "name": "desktop",
+    "width": 1365,
+    "height": 900,
+    "dpr": 1,
+    "lcp": [
+      {
+        "time": 4280,
+        "size": 18252,
+        "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png",
+        "element": "<img src=\"https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png\" alt=\"CarpologijaBH\" class=\"logo-image\" width=\"480\" height=\"76\" loading=\"eager\" fetchpriority=\"low\" decoding=\"async\">"
+      },
+      {
+        "time": 4832,
+        "size": 621075,
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "element": "<img src=\"https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp\" srcset=\"https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp 2172w\" alt=\"Banner\" class=\"slide-image-img\" width=\"2172\" height=\"724\" sizes=\"100vw\" loading=\"eager\" fetchpriority=\"high\" decoding=\"async\">"
+      }
+    ],
+    "navigation": [
+      {
+        "ttfb": 2792.699999988079,
+        "dom": 5021.100000023842,
+        "load": 5186.899999976158,
+        "transfer": 34095
+      }
+    ],
+    "hero": [
+      {
+        "src": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "naturalWidth": 1365,
+        "width": 1365,
+        "height": 455
+      }
+    ],
+    "resources": [
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/scratch-game.632b5049018b.css?v=20261011-site-scratch",
+        "start": 2826.399999976158,
+        "duration": 956.7000000476837,
+        "transfer": 2254
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "start": 2826.699999988079,
+        "duration": 182.5,
+        "transfer": 0
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/desktop-reference.bb417ffb3cf6.css?v=20261008-account-desktop-fix",
+        "start": 2826.699999988079,
+        "duration": 947.1000000238419,
+        "transfer": 9566
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/style.min.17c5e8e606da.css?v=20261012-toast",
+        "start": 2827.800000011921,
+        "duration": 1006,
+        "transfer": 89740
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/header-base.min.efe328629e5e.css?v=20260919-wishlist-mobile",
+        "start": 2827.899999976158,
+        "duration": 956.2000000476837,
+        "transfer": 1517
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/navigation.min.ef53c3340407.css?v=20260915-render-header-v2",
+        "start": 2828,
+        "duration": 947,
+        "transfer": 845
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/storefront-extras.min.e3ae4f3a559d.css?v=20260915-render-header-v2",
+        "start": 2828.100000023842,
+        "duration": 943.7999999523163,
+        "transfer": 2545
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/home-mobile-reference.eee7850d8e12.css?v=20261012-brand-price-alignment",
+        "start": 2828.100000023842,
+        "duration": 950.1999999880791,
+        "transfer": 6867
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/mobile-dock.2ba526cd907f.css?v=20260919-wishlist-badge",
+        "start": 2828.199999988079,
+        "duration": 953.1999999880791,
+        "transfer": 3580
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/wishlist.569abf59fb74.css?v=20260919-mobile-sheet",
+        "start": 2828.199999988079,
+        "duration": 953.5,
+        "transfer": 1960
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/bera-home.4c727c9900c0.css?v=20261012-categories-two-rows",
+        "start": 2828.300000011921,
+        "duration": 946.1999999880791,
+        "transfer": 14044
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/header-reference.9a331d0b9842.css?v=20260919-wishlist-popover",
+        "start": 2828.300000011921,
+        "duration": 959,
+        "transfer": 2206
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/bera-offer-popup.97662f3d5f2d.css?v=20261012-blue-cart-reminder",
+        "start": 2828.399999976158,
+        "duration": 955.2000000476837,
+        "transfer": 2275
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/home-mobile-reference.b50bea6043bb.js?v=20260917-category-icons",
+        "start": 2851.5,
+        "duration": 2035.800000011921,
+        "transfer": 1288
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/newsletter-subscribe.58026cb6f8c3.js?v=1",
+        "start": 2852.399999976158,
+        "duration": 2026.2000000476837,
+        "transfer": 769
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/bera-brands.f7e046b18d40.js?v=20261008",
+        "start": 2852.399999976158,
+        "duration": 2026.6000000238419,
+        "transfer": 607
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/mobile-search.fe6044ce9d59.js?v=20260915-open-on-every-click",
+        "start": 2854,
+        "duration": 2024.800000011921,
+        "transfer": 2477
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/mobile-dock.036b8bcd3d5a.js?v=20260919-wishlist-mobile",
+        "start": 2854,
+        "duration": 2029.199999988079,
+        "transfer": 4356
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/csrf-session.65f7f73fe3d9.js?v=20261001",
+        "start": 2854.100000023842,
+        "duration": 2031.5999999642372,
+        "transfer": 1310
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/main.min.68eef961003d.js?v=20260916-account-scroll-top",
+        "start": 2854.100000023842,
+        "duration": 2031.699999988079,
+        "transfer": 16511
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/brand-logo-normalize.158dc6b030fd.js?v=20261011",
+        "start": 2854.100000023842,
+        "duration": 2035.3999999761581,
+        "transfer": 1470
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/stock-notify.21256c2e1d5a.js?v=20260916-notify-no-autofocus",
+        "start": 2854.199999988079,
+        "duration": 2026.6000000238419,
+        "transfer": 1914
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/desktop-reference.c45e453519c3.js?v=20260914-dropdowns",
+        "start": 2854.199999988079,
+        "duration": 2033.1000000238419,
+        "transfer": 868
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/set-builder-gate.bc038f1ffcee.js?v=20260903beta",
+        "start": 2854.199999988079,
+        "duration": 2033.699999988079,
+        "transfer": 1389
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/bera-brand-logo-align.6f57b623c18b.js?v=20261008-small",
+        "start": 2854.300000011921,
+        "duration": 2026.5999999642372,
+        "transfer": 1114
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/scratch-game.96643ad7a08c.js?v=20261011-site-scratch",
+        "start": 2854.300000011921,
+        "duration": 2035.5999999642372,
+        "transfer": 3632
+      },
+      {
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "start": 4288.600000023842,
+        "duration": 243.69999998807907,
+        "transfer": 114293
+      }
+    ]
+  },
+  {
+    "name": "mobile",
+    "width": 390,
+    "height": 844,
+    "dpr": 3,
+    "lcp": [
+      {
+        "time": 2200,
+        "size": 7464,
+        "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png",
+        "element": "<img src=\"https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png\" alt=\"CarpologijaBH\" class=\"logo-image\" width=\"480\" height=\"76\" loading=\"eager\" fetchpriority=\"low\" decoding=\"async\">"
+      },
+      {
+        "time": 2608,
+        "size": 190125,
+        "url": "https://media.opremazaribolov.ba/banners/mobile/slika_torbe_cline.jpg",
+        "element": "<img src=\"https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp\" srcset=\"https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp 2172w\" alt=\"Banner\" class=\"slide-image-img\" width=\"2172\" height=\"724\" sizes=\"100vw\" loading=\"eager\" fetchpriority=\"high\" decoding=\"async\">"
+      }
+    ],
+    "navigation": [
+      {
+        "ttfb": 1221.1000000238419,
+        "dom": 2690.600000023842,
+        "load": 2697,
+        "transfer": 33902
+      }
+    ],
+    "hero": [
+      {
+        "src": "https://media.opremazaribolov.ba/banners/mobile/slika_torbe_cline.jpg",
+        "naturalWidth": 241,
+        "width": 390,
+        "height": 488
+      }
+    ],
+    "resources": [
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/scratch-game.632b5049018b.css?v=20261011-site-scratch",
+        "start": 1236.2000000476837,
+        "duration": 889.3999999761581,
+        "transfer": 2254
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "start": 1236.300000011921,
+        "duration": 106.5,
+        "transfer": 0
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/style.min.17c5e8e606da.css?v=20261012-toast",
+        "start": 1236.6000000238419,
+        "duration": 906.1000000238419,
+        "transfer": 89740
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/header-base.min.efe328629e5e.css?v=20260919-wishlist-mobile",
+        "start": 1236.7000000476837,
+        "duration": 889.8999999761581,
+        "transfer": 1517
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/navigation.min.ef53c3340407.css?v=20260915-render-header-v2",
+        "start": 1236.7000000476837,
+        "duration": 893.0999999642372,
+        "transfer": 845
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/home-mobile-reference.eee7850d8e12.css?v=20261012-brand-price-alignment",
+        "start": 1236.9000000357628,
+        "duration": 895.8000000119209,
+        "transfer": 6867
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/storefront-extras.min.e3ae4f3a559d.css?v=20260915-render-header-v2",
+        "start": 1236.9000000357628,
+        "duration": 897.3000000119209,
+        "transfer": 2545
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/mobile-dock.2ba526cd907f.css?v=20260919-wishlist-badge",
+        "start": 1236.9000000357628,
+        "duration": 906.1999999880791,
+        "transfer": 3580
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/wishlist.569abf59fb74.css?v=20260919-mobile-sheet",
+        "start": 1237,
+        "duration": 891.3000000119209,
+        "transfer": 1960
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/bera-offer-popup.97662f3d5f2d.css?v=20261012-blue-cart-reminder",
+        "start": 1237.1000000238419,
+        "duration": 890.6000000238419,
+        "transfer": 2275
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/bera-home.4c727c9900c0.css?v=20261012-categories-two-rows",
+        "start": 1237.1000000238419,
+        "duration": 902.8999999761581,
+        "transfer": 14044
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/home-mobile-reference.b50bea6043bb.js?v=20260917-category-icons",
+        "start": 1245.4000000357628,
+        "duration": 1403.199999988079,
+        "transfer": 1288
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/bera-brands.f7e046b18d40.js?v=20261008",
+        "start": 1246.800000011921,
+        "duration": 1400.300000011921,
+        "transfer": 607
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/newsletter-subscribe.58026cb6f8c3.js?v=1",
+        "start": 1246.800000011921,
+        "duration": 1401.800000011921,
+        "transfer": 769
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/mobile-dock.036b8bcd3d5a.js?v=20260919-wishlist-mobile",
+        "start": 1250.1000000238419,
+        "duration": 1396.8999999761581,
+        "transfer": 4356
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/mobile-search.fe6044ce9d59.js?v=20260915-open-on-every-click",
+        "start": 1250.1000000238419,
+        "duration": 1398.5,
+        "transfer": 2477
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/brand-logo-normalize.158dc6b030fd.js?v=20261011",
+        "start": 1250.2000000476837,
+        "duration": 1396.8999999761581,
+        "transfer": 1470
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/main.min.68eef961003d.js?v=20260916-account-scroll-top",
+        "start": 1250.2000000476837,
+        "duration": 1398.199999988079,
+        "transfer": 16511
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/csrf-session.65f7f73fe3d9.js?v=20261001",
+        "start": 1250.2000000476837,
+        "duration": 1398.2999999523163,
+        "transfer": 1310
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/desktop-reference.c45e453519c3.js?v=20260914-dropdowns",
+        "start": 1250.300000011921,
+        "duration": 1396.9000000357628,
+        "transfer": 868
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/stock-notify.21256c2e1d5a.js?v=20260916-notify-no-autofocus",
+        "start": 1250.300000011921,
+        "duration": 1398.1000000238419,
+        "transfer": 1914
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/scratch-game.96643ad7a08c.js?v=20261011-site-scratch",
+        "start": 1250.300000011921,
+        "duration": 1398.4000000357628,
+        "transfer": 3632
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/set-builder-gate.bc038f1ffcee.js?v=20260903beta",
+        "start": 1250.300000011921,
+        "duration": 1398.5,
+        "transfer": 1389
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/js/bera-brand-logo-align.6f57b623c18b.js?v=20261008-small",
+        "start": 1250.4000000357628,
+        "duration": 1398.300000011921,
+        "transfer": 1114
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/desktop-reference.bb417ffb3cf6.css?v=20261008-account-desktop-fix",
+        "start": 2131.600000023842,
+        "duration": 515.3000000119209,
+        "transfer": 9566
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/mobile/slika_torbe_cline.jpg",
+        "start": 2132.2000000476837,
+        "duration": 29.299999952316284,
+        "transfer": 0
+      },
+      {
+        "url": "https://carpologijabh.ba/static/bera_reference/css/header-reference.9a331d0b9842.css?v=20260919-wishlist-popover",
+        "start": 2133.400000035763,
+        "duration": 515.3999999761581,
+        "transfer": 2206
+      },
+      {
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "start": 2254.2000000476837,
+        "duration": 123.39999997615814,
+        "transfer": 114293
+      }
+    ]
+  }
+]

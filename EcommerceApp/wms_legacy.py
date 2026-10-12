@@ -145,7 +145,7 @@ def complete_legacy_orders(user, order_ids):
             if not line.item_id:
                 continue
             location = legacy_location(line.location)
-            state[f'{line.item_id}:{line.pk}'] = {'item_id': line.item_id, 'loc': location.sifra, 'got': line.confirmed_quantity}
+            state[f'{line.item_id}:{line.pk}'] = {'item_id': line.item_id, 'loc': location.sifra, 'got': line.confirmed_quantity, 'done': line.confirmed_at is not None}
             counts[line.item_id] = counts.get(line.item_id, 0) + line.confirmed_quantity
             completed_products.add(line.item.artikal_id)
         for item in order.stavke.filter(is_set_parent=False):

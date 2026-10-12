@@ -1,0 +1,49 @@
+{
+  "html": {
+    "date": "Mon, 12 Oct 2026 08:37:37 GMT",
+    "content-type": "text/html; charset=utf-8",
+    "cross-origin-opener-policy": "same-origin",
+    "permissions-policy": "geolocation=(), microphone=(), payment=(), camera=(self), fullscreen=(self)",
+    "referrer-policy": "same-origin",
+    "rndr-id": "256e0d72-f2ed-4305",
+    "server": "cloudflare",
+    "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+    "vary": "Cookie, Accept-Encoding",
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+    "x-render-origin-server": "gunicorn",
+    "cf-cache-status": "DYNAMIC",
+    "cf-ray": "a494c8988c040a8e-BEG",
+    "alt-svc": "h3=\":443\"; ma=86400"
+  },
+  "mobile": {
+    "date": "Mon, 12 Oct 2026 08:38:32 GMT",
+    "content-type": "image/jpeg",
+    "content-length": "193094",
+    "cache-control": "public, max-age=31536000, immutable",
+    "etag": "\"0a00723f5fb5ddb97558562157f1a625\"",
+    "last-modified": "Sun, 11 Oct 2026 20:14:36 GMT",
+    "accept-ranges": "bytes",
+    "nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+    "server": "cloudflare",
+    "age": "44631",
+    "cf-cache-status": "HIT",
+    "report-to": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=O%2FntjFl6jGnwqT05uukTVo4tJY1iJRllNQGDTQgmWxWgBj9zdYv4vLGiEbYi3zDOWLSZcjWL3z18NyN621pB5XZnPuN9%2Fkcg8ca0f44HDH%2B0t1uj1Q2v%2Br3SywpZXzbPEbuW5LON5TXiK0M%3D\"}]}",
+    "cf-ray": "a494c9f69c14562e-BEG"
+  },
+  "desktop": {
+    "date": "Mon, 12 Oct 2026 08:38:34 GMT",
+    "content-type": "image/webp",
+    "content-length": "191426",
+    "cache-control": "public, max-age=31536000, immutable",
+    "etag": "\"dfa41bc6a7ed441dd6c07005753aa630\"",
+    "last-modified": "Sun, 11 Oct 2026 20:05:14 GMT",
+    "accept-ranges": "bytes",
+    "nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+    "server": "cloudflare",
+    "age": "45194",
+    "cf-cache-status": "HIT",
+    "report-to": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=UqRakxZ7auUDI3NE3EkboAQXyHb%2BbUPZ4Ste8Hmi8Xml5yORrBuVsbSmvZgqu%2Br9NVhZZjwDepTPfQ75yniOX0UgEOXQ%2BEBG7mzKgmH3kQNsnZOtp9lq4UPELFsYM9ZJpnfNcm1UEE0W2RM%3D\"}]}",
+    "cf-ray": "a494c9ff9cb5a8bc-BEG"
+  }
+}

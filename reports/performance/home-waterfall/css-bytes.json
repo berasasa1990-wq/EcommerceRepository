@@ -1,0 +1,16 @@
+[
+  {
+    "bundle": "home-core.bundle.css",
+    "requests_before": 2,
+    "requests_after": 1,
+    "gzip_before": 90537,
+    "gzip_after": 90185
+  },
+  {
+    "bundle": "home-ui.bundle.css",
+    "requests_before": 3,
+    "requests_after": 1,
+    "gzip_before": 11507,
+    "gzip_after": 10235
+  }
+]

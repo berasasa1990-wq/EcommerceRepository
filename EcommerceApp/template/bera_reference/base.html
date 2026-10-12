@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     {% if media_origin %}<link rel="preconnect" href="{{ media_origin }}">{% endif %}
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    {% block lcp_preload %}{% endblock %}
     <link rel="manifest" href="{% url 'pwa_manifest' %}">
     <meta name="theme-color" content="#ff6500">
     <meta name="mobile-web-app-capable" content="yes">
@@ -166,12 +167,16 @@
     <link rel="apple-touch-icon" href="{{ site_settings.favicon.url }}">
     {% endif %}
 
-    {% block lcp_preload %}{% endblock %}
     <link rel="preload" href="{% static 'bera_reference/fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'bera_reference/fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
+    {% if home_css_optimized %}
+    <link rel="preload" href="{% static 'bera_reference/css/home-core.bundle.css' %}?v=20261012" as="style">
+    <link rel="stylesheet" href="{% static 'bera_reference/css/home-core.bundle.css' %}?v=20261012">
+    {% else %}
     <link rel="preload" href="{% static 'bera_reference/css/style.min.css' %}?v=20261012-toast" as="style">
     <link rel="stylesheet" href="{% static 'bera_reference/css/style.min.css' %}?v=20261012-toast">
     <link rel="stylesheet" href="{% static 'bera_reference/css/header-base.min.css' %}?v=20260919-wishlist-mobile">
+    {% endif %}
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
@@ -216,9 +221,13 @@
         body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
     </style>
     {% endif %}
+    {% if home_css_optimized %}
+    <link rel="stylesheet" href="{% static 'bera_reference/css/home-ui.bundle.css' %}?v=20261012">
+    {% else %}
     <link rel="stylesheet" href="{% static 'bera_reference/css/home-mobile-reference.css' %}?v=20261012-brand-price-alignment">
     <link rel="stylesheet" href="{% static 'bera_reference/css/mobile-dock.css' %}?v=20260919-wishlist-badge">
     <link rel="stylesheet" href="{% static 'bera_reference/css/wishlist.css' %}?v=20260919-mobile-sheet">
+    {% endif %}
 
     <style>.desktop-trust-bar,.header-category-select,.header-register{display:none!important}</style>
     <link rel="stylesheet" href="{% static 'bera_reference/css/header-reference.css' %}?v=20260919-wishlist-popover" media="(min-width: 1025px)">

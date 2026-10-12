@@ -50,8 +50,8 @@ def storefront_availability_visible(context):
         from EcommerceApp.bera_panel_modules import module_locked
     except ImportError:
         return True
-    from django.db import connection
-    if WMSSettings._meta.db_table not in connection.introspection.table_names():
+    from EcommerceApp.request_performance import schema_tables
+    if WMSSettings._meta.db_table not in schema_tables():
         return True
     visible = not module_locked('wms_zalihe') and not WMSSettings.objects.filter(pk=1, show_storefront_availability=False).exists()
     if request is not None:

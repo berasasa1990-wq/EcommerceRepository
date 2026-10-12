@@ -13,7 +13,7 @@ from .bera_panel_modules import module_locked
 from .models import WarehouseLocation, WMSOrder, Product, WarehouseStock, WMSSettings, WMSTransfer
 from .magacin import apply_movement, set_location_counted_qty, MagacinError, is_ignored_stock_location
 from .models import WarehouseMovement
-from django.db.models import Q, Sum, Case, When, Value, IntegerField
+from django.db.models import Q, Sum, Case, When, Value, IntegerField, F
 from django.core.paginator import Paginator
 from .warehouse_access import warehouse_user_required
 
@@ -186,19 +186,26 @@ def workspace(request, section='zalihe'):
                     WMSTransfer.objects.create(product=product, variation=stock.variation, source_id=source_id, destination=destination, quantity=quantity)
                     messages.success(request, 'Prenosnica je kreirana. Roba se premješta tek potvrdom „Prenijeto“.')
             return redirect(reverse('staff_wms_section', args=['zalihe']) + '?' + urlencode({'q': query}))
-        search_submitted = 'q' in request.GET
+        stock_filter = request.GET.get('stock_filter', '')
+        search_submitted = 'q' in request.GET or stock_filter == 'low'
         products = Product.objects.none()
         if search_submitted:
             products = Product.objects.all()
             if query:
-                products = products.filter(Q(naziv__icontains=query) | Q(sifra__icontains=query) | Q(barkod__icontains=query))
+                from .views import _search_exists_match, _typo_tolerant_name_match
+                products = products.filter(
+                    _search_exists_match(query) | _typo_tolerant_name_match(query)
+                    | Q(naziv__icontains=query) | Q(barkod__icontains=query) | Q(tagovi__naziv__icontains=query)
+                ).distinct()
+            if stock_filter == 'low':
+                products = products.filter(magacin_meta__min_zaliha__gt=0, stanje__lt=F('magacin_meta__min_zaliha'))
             products = products.annotate(
                 stock_priority=Case(
                     When(stanje__gt=0, then=Value(0)),
                     default=Value(1), output_field=IntegerField(),
                 )
             ).prefetch_related('varijacije', 'magacin_zalihe__location', 'magacin_zalihe__variation').order_by('stock_priority', 'naziv', 'pk')
-        ctx.update({'transfer_settings': WMSSettings.objects.filter(pk=1).select_related('transfer_location').first(), 'locations': WarehouseLocation.objects.all(), 'query': query, 'search_submitted': search_submitted, 'products': Paginator(products, 30).get_page(request.GET.get('page'))})
+        ctx.update({'transfer_settings': WMSSettings.objects.filter(pk=1).select_related('transfer_location').first(), 'locations': WarehouseLocation.objects.all(), 'query': query, 'search_submitted': search_submitted, 'stock_filter': stock_filter, 'products': Paginator(products, 30).get_page(request.GET.get('page'))})
         for product in ctx['products']:
             product.canonical_wms_stocks = [stock for stock in product.magacin_zalihe.all() if not is_ignored_stock_location(stock.location)]
         return render(request, 'bera_reference/staff/wms/stock_search.html', ctx)
@@ -469,6 +476,8 @@ def pick_order(request, pk):
     offers = picking_alternatives(order, origin) if origin else []
     current = next((line for line in lines if str(line.pk) == request.GET.get('line')), None)
     next_line = next((line for line in lines if not line.confirmed_at), None)
+    if request.GET.get('resume') == '1' and current is None:
+        current = next_line
     pending_lines = [line for line in lines if not line.confirmed_at]
     cycle_next = None
     if current and current in pending_lines and len(pending_lines) > 1:
@@ -489,7 +498,7 @@ def pick_order(request, pk):
 def pending_shortages():
     from .models import WMSPickLine
     from django.db.models import F
-    return WMSPickLine.objects.filter(order__status='zapakovana', confirmed_at__isnull=False,
+    return WMSPickLine.objects.filter(confirmed_at__isnull=False,
         confirmed_quantity__lt=F('quantity'), shortage_resolved_at__isnull=True)
 
 
@@ -541,6 +550,7 @@ def print_orders(request, kind):
     from datetime import date
     from django.utils import timezone
     print_date = timezone.localdate()
+    all_picking = kind == 'racun' and request.GET.get('scope') == 'picking'
     if kind in ('najava', 'racun', 'faktura'):
         try:
             print_date = date.fromisoformat(request.GET.get('date', '')) if request.GET.get('date') else print_date
@@ -551,13 +561,16 @@ def print_orders(request, kind):
         else:
             from .wms_orders import sync_panel_orders
             sync_panel_orders()
-            orders = WMSOrder.objects.exclude(status='otkazana').exclude(source_order__status='otkazana').select_related('source_order__b2b_submission', 'source_order__card_payment').prefetch_related('pick_lines__item', 'pick_lines__wms_item', 'pick_lines__location', 'source_order__stavke', 'items').filter(
-                Q(source_order__kreirana__date=print_date) | Q(source_order__isnull=True, kreirana__date=print_date))
+            orders = WMSOrder.objects.exclude(status='otkazana').exclude(source_order__status='otkazana').filter(source_order__b2b_submission__isnull=True).select_related('source_order__b2b_submission', 'source_order__card_payment').prefetch_related('pick_lines__item', 'pick_lines__wms_item', 'pick_lines__location', 'source_order__stavke', 'items')
+            if all_picking:
+                orders = orders.filter(status='pakovanje')
+            else:
+                orders = orders.filter(Q(source_order__kreirana__date=print_date) | Q(source_order__isnull=True, kreirana__date=print_date))
         if kind in ('racun', 'faktura'):
             if request.GET.get('stage') != 'print':
                 return render(request, 'bera_reference/staff/wms/invoice_selection.html', {
                     **context('narudzbe'), 'orders': orders, 'print_date': print_date,
-                    'print_kind': kind, 'selection_title': 'Količine za fakturu' if kind == 'faktura' else 'Štampanje računa'})
+                    'print_kind': kind, 'all_picking': all_picking, 'selection_title': 'Količine za fakturu' if kind == 'faktura' else 'Štampanje računa'})
             selected = [int(value) for value in request.GET.getlist('orders') if value.isdigit() and len(value) < 18]
             orders = orders.filter(pk__in=selected)
 

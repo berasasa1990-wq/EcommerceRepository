@@ -1,0 +1,523 @@
+[
+  {
+    "path": "/kategorija/seo-audit/?page=1",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/kategorija/seo-audit/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/kategorija/seo-audit/?page=2",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/kategorija/seo-audit/?page=2"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/kategorija/seo-audit/?page=999999",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/kategorija/seo-audit/?page=2"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/kategorija/seo-audit/?page=bad",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/kategorija/seo-audit/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/kategorija/seo-audit/",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/kategorija/seo-audit/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/artikal/seo-audit-stap/",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/artikal/seo-audit-stap/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?filter_color=light-blue&filter_status=instock&filter_tax_product_cat=133%2C141%2C159%2C164%2C166%2C1529%2C2058%2C2078%2C2096%2C2447%2C2455%2C2481&in-stock=1&on-sale=1&post_type=product&add-to-cart=33218",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?filter_by_rating=3&filter_color=light-blue&filter_status=instock%2Con_sale&filter_tax_product_cat=133%2C141%2C159%2C166%2C2058%2C2070%2C2078%2C2096%2C2447&in-stock=1&on-sale=1&post_type=product&add-to-cart=30202",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?add-to-cart=29264&filter_by_rating=4&filter_color=light-blue&filter_tax_product_cat=142%2C295%2C2066%2C2070%2C2078%2C2092%2C2097%2C2102%2C2412%2C2415%2C2417%2C2444%2C2447%2C2453%2C2456%2C2467%2C2471%2C2484%2C2500&in-stock=1&on-sale=1&post_type=product",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?filter_color=light-blue&filter_tax_product_cat=137%2C156%2C2066%2C2070%2C2078%2C2102%2C2417%2C2455%2C2467%2C2500&in-stock=1&on-sale=1&post_type=product&add-to-cart=30031",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/artikal/seo-audit-stap/dodaj/",
+    "status": 405,
+    "location": null,
+    "canonical": [],
+    "robots": []
+  },
+  {
+    "path": "/?brend=seo-audit&page=2",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/?brend=seo-audit&page=2"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?filter_color=light-blue",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?filter_status=instock%2Con_sale",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?filter_tax_product_cat=133%2C141%2C159%2C164%2C166%2C1529%2C2058%2C2078%2C2096%2C2447%2C2455%2C2481",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?filter_by_rating=3",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?add-to-cart=33218",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?in-stock=1",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?on-sale=1",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?post_type=product",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/kategorija/seo-audit/?filter_color=light-blue",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/kategorija/seo-audit/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/kategorija/seo-audit/?filter_status=instock%2Con_sale",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/kategorija/seo-audit/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/kategorija/seo-audit/?filter_tax_product_cat=133%2C141%2C159%2C164%2C166%2C1529%2C2058%2C2078%2C2096%2C2447%2C2455%2C2481",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/kategorija/seo-audit/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/kategorija/seo-audit/?filter_by_rating=3",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/kategorija/seo-audit/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/kategorija/seo-audit/?add-to-cart=33218",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/kategorija/seo-audit/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/kategorija/seo-audit/?in-stock=1",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/kategorija/seo-audit/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/kategorija/seo-audit/?on-sale=1",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/kategorija/seo-audit/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/kategorija/seo-audit/?post_type=product",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/kategorija/seo-audit/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/artikal/seo-audit-stap/?filter_color=light-blue",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/artikal/seo-audit-stap/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/artikal/seo-audit-stap/?filter_status=instock%2Con_sale",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/artikal/seo-audit-stap/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/artikal/seo-audit-stap/?filter_tax_product_cat=133%2C141%2C159%2C164%2C166%2C1529%2C2058%2C2078%2C2096%2C2447%2C2455%2C2481",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/artikal/seo-audit-stap/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/artikal/seo-audit-stap/?filter_by_rating=3",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/artikal/seo-audit-stap/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/artikal/seo-audit-stap/?add-to-cart=33218",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/artikal/seo-audit-stap/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/artikal/seo-audit-stap/?in-stock=1",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/artikal/seo-audit-stap/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/artikal/seo-audit-stap/?on-sale=1",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/artikal/seo-audit-stap/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/artikal/seo-audit-stap/?post_type=product",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/artikal/seo-audit-stap/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?brend=seo-audit&page=2&filter_color=light-blue",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/?brend=seo-audit&page=2"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?q=audit&post_type=product",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "noindex, follow"
+    ]
+  },
+  {
+    "path": "/?page=2",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/robots.txt",
+    "status": 200,
+    "location": null,
+    "canonical": [],
+    "robots": []
+  },
+  {
+    "path": "/?add-to-cart=1",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    ]
+  },
+  {
+    "path": "/?q=audit&page=2",
+    "status": 200,
+    "location": null,
+    "canonical": [
+      "https://carpologijabh.ba/"
+    ],
+    "robots": [
+      "noindex, follow"
+    ]
+  },
+  {
+    "path": "/sitemap.xml",
+    "status": 200,
+    "location": null,
+    "canonical": [],
+    "robots": []
+  },
+  {
+    "path": "/artikal/seo-audit-stap?filter_color=light-blue",
+    "status": 301,
+    "location": "/artikal/seo-audit-stap/?filter_color=light-blue",
+    "canonical": [],
+    "robots": []
+  },
+  {
+    "path": "/shop/?filter_color=light-blue&filter_status=instock%2Con_sale&filter_tax_product_cat=133%2C141%2C159%2C164%2C166%2C1529%2C2058%2C2078%2C2096%2C2447%2C2455%2C2481&filter_by_rating=3&add-to-cart=33218&in-stock=1&on-sale=1&post_type=product",
+    "status": 404,
+    "location": null,
+    "canonical": [],
+    "robots": []
+  },
+  {
+    "path": "/product/seo-audit-stap/?filter_color=light-blue&filter_status=instock%2Con_sale&filter_tax_product_cat=133%2C141%2C159%2C164%2C166%2C1529%2C2058%2C2078%2C2096%2C2447%2C2455%2C2481&filter_by_rating=3&add-to-cart=33218&in-stock=1&on-sale=1&post_type=product",
+    "status": 404,
+    "location": null,
+    "canonical": [],
+    "robots": []
+  },
+  {
+    "path": "/product-category/seo-audit/?filter_color=light-blue&filter_status=instock%2Con_sale&filter_tax_product_cat=133%2C141%2C159%2C164%2C166%2C1529%2C2058%2C2078%2C2096%2C2447%2C2455%2C2481&filter_by_rating=3&add-to-cart=33218&in-stock=1&on-sale=1&post_type=product",
+    "status": 404,
+    "location": null,
+    "canonical": [],
+    "robots": []
+  },
+  {
+    "path": "/seo-audit-unknown/?filter_color=light-blue&filter_status=instock%2Con_sale&filter_tax_product_cat=133%2C141%2C159%2C164%2C166%2C1529%2C2058%2C2078%2C2096%2C2447%2C2455%2C2481&filter_by_rating=3&add-to-cart=33218&in-stock=1&on-sale=1&post_type=product",
+    "status": 404,
+    "location": null,
+    "canonical": [],
+    "robots": []
+  },
+  {
+    "path": "/artikal/nepostojeci/?filter_color=light-blue&filter_status=instock%2Con_sale&filter_tax_product_cat=133%2C141%2C159%2C164%2C166%2C1529%2C2058%2C2078%2C2096%2C2447%2C2455%2C2481&filter_by_rating=3&add-to-cart=33218&in-stock=1&on-sale=1&post_type=product",
+    "status": 404,
+    "location": null,
+    "canonical": [],
+    "robots": []
+  },
+  {
+    "path": "/kategorija/nepostojeca/?filter_color=light-blue&filter_status=instock%2Con_sale&filter_tax_product_cat=133%2C141%2C159%2C164%2C166%2C1529%2C2058%2C2078%2C2096%2C2447%2C2455%2C2481&filter_by_rating=3&add-to-cart=33218&in-stock=1&on-sale=1&post_type=product",
+    "status": 404,
+    "location": null,
+    "canonical": [],
+    "robots": []
+  }
+]

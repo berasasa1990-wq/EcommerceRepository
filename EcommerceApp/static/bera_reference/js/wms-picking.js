@@ -1,7 +1,23 @@
 (() => {
  const quantity = document.getElementById('pickQuantity');
+ const form = document.querySelector('[data-pick-draft]');
+ const draftKey = form ? 'wms-pick-draft:' + form.dataset.pickDraft : null;
+ const saveDraft = () => {
+  if (!quantity || !draftKey) return;
+  try { localStorage.setItem(draftKey, quantity.value); } catch (_) {}
+ };
+ if (quantity && draftKey) {
+  try {
+   const saved = localStorage.getItem(draftKey);
+   if (saved !== null && saved !== '' && Number.isInteger(Number(saved)) && Number(saved) >= 0 && Number(saved) <= Number(quantity.max)) quantity.value = saved;
+  } catch (_) {}
+  quantity.addEventListener('input', saveDraft);
+  window.addEventListener('pagehide', saveDraft);
+ }
+
  document.querySelectorAll('[data-pick-step]').forEach(button => button.addEventListener('click', () => {
   quantity.value = Math.max(0, Math.min(Number(quantity.max), Number(quantity.value) + Number(button.dataset.pickStep)));
+  saveDraft();
  }));
  const photo = document.getElementById('pickPhoto');
  if (!photo) return;

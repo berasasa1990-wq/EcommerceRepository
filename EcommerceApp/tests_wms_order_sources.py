@@ -41,3 +41,47 @@ class WMSOrderSourcesTests(TestCase):
         existing.refresh_from_db()
         self.assertEqual(existing.status, 'pakovanje')
         self.assertEqual(WMSOrder.objects.filter(source_order=self.b2b).count(), 1)
+
+    def test_receipt_selection_and_direct_print_exclude_b2b(self):
+        from unittest.mock import patch
+        from django.contrib.auth import get_user_model
+        from django.http import HttpResponse
+        from django.utils import timezone
+        self.client.force_login(get_user_model().objects.create_superuser('receipt-wms', 'receipt@example.com', 'test-only'))
+        sync_panel_orders()
+        WMSOrder.objects.update(status='pakovanje')
+        expected = set(WMSOrder.objects.exclude(source_order=self.b2b).values_list('pk', flat=True))
+        b2b_id = WMSOrder.objects.get(source_order=self.b2b).pk
+        def capture(request, template, context):
+            orders = context.get('orders')
+            ids = [o.pk for o in orders] if orders is not None else [job['order'].pk for job in context['jobs']]
+            return HttpResponse(','.join(map(str, ids)))
+        with patch('EcommerceApp.views_wms.module_locked', return_value=False), patch('EcommerceApp.views_wms.render', side_effect=capture):
+            response = self.client.get('/wms/narudzbe/stampa/racun/', {'date': timezone.localdate().isoformat()})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(set(map(int, response.content.decode().split(','))), expected)
+            response = self.client.get('/wms/narudzbe/stampa/racun/', {'stage': 'print', 'orders': [*expected, b2b_id]})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(set(map(int, response.content.decode().split(','))), expected)
+
+    def test_all_picking_receipts_ignore_date_and_preserve_scope_when_printing(self):
+        from unittest.mock import patch
+        from datetime import timedelta
+        from django.contrib.auth import get_user_model
+        from django.http import HttpResponse
+        from django.utils import timezone
+        self.client.force_login(get_user_model().objects.create_superuser('all-picking', 'all@example.com', 'test-only'))
+        sync_panel_orders()
+        WMSOrder.objects.update(status='pakovanje')
+        Order.objects.filter(pk=self.manual.pk).update(kreirana=timezone.now()-timedelta(days=10))
+        extra = WMSOrder.objects.create(kupac='Nova', tip='online', status='nova')
+        ids = set(WMSOrder.objects.exclude(source_order=self.b2b).exclude(pk=extra.pk).values_list('pk', flat=True))
+        def capture(request, template, context):
+            orders = context.get('orders')
+            rows = orders if orders is not None else [job['order'] for job in context['jobs']]
+            return HttpResponse(','.join(str(order.pk) for order in rows))
+        with patch('EcommerceApp.views_wms.module_locked', return_value=False), patch('EcommerceApp.views_wms.render', side_effect=capture):
+            for stage in ('', 'print'):
+                response = self.client.get('/wms/narudzbe/stampa/racun/', {'scope': 'picking', 'stage': stage, 'orders': list(WMSOrder.objects.values_list('pk', flat=True))})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(set(map(int, response.content.decode().split(','))), ids)

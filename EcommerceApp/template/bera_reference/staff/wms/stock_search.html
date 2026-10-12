@@ -2,28 +2,31 @@
 {% block wms_content %}
 <header class="wms-page-heading"><h1>Zalihe</h1></header>
 <form method="get" class="wms-card wms-stock-search" role="search">
+{% if stock_filter %}<input type="hidden" name="stock_filter" value="{{ stock_filter }}">{% endif %}
 <label for="wmsStockQuery">Pretraga artikala</label>
-<div><input id="wmsStockQuery" type="search" name="q" value="{{ query }}" placeholder="Naziv, šifra ili barkod artikla" autofocus><button class="wms-button" type="submit">Pretraži</button></div>
+<div class="wms-search-field"><span class="wms-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></span><input id="wmsStockQuery" type="search" name="q" value="{{ query }}" placeholder="Naziv, šifra, tag ili barkod" aria-describedby="wmsSearchHint"><button class="wms-button" type="submit">Pretraži</button></div>
+<p id="wmsSearchHint" class="wms-search-hint">Pretražite po nazivu, šifri, tagu ili barkodu. Prepoznajemo i greške u kucanju naziva.</p>
 </form>
+<div class="wms-mobile-stock-shortcuts"><a href="?q="{% if not stock_filter %} class="wms-button"{% endif %}>Svi artikli</a><a href="?q={{ query|urlencode }}&amp;stock_filter=low"{% if stock_filter == 'low' %} class="wms-button"{% endif %}>Ispod minimuma</a><a href="{% url 'staff_wms_section' 'lokacije' %}">Na lokaciji {% include 'bera_reference/staff/wms/icon.html' with key='lokacije' %}</a></div>
 {% if search_submitted %}
 <div class="wms-results-heading"><div><h2>Rezultati pretrage</h2><p>{% if query %}Za „{{ query }}“{% else %}Svi artikli{% endif %}</p></div><span class="wms-results-count">{{ products.paginator.count }} artikala</span></div>
 <div class="wms-stock-results">
 {% for product in products %}
 <article class="wms-stock-result">
 <div class="wms-stock-result-image">{% if product.prikazna_slika %}<img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" loading="lazy">{% else %}{% include 'bera_reference/staff/wms/icon.html' with key='pakovanje' %}{% endif %}</div>
-<div class="wms-stock-result-info"><h3>{{ product.naziv }}</h3><div class="wms-stock-result-codes"><span>Šifra <strong>{{ product.sifra|default:'—' }}</strong></span><span>Barkod <strong>{{ product.barkod|default:'—' }}</strong></span></div></div>
+<div class="wms-stock-result-info"><h3>{{ product.naziv }}</h3><div class="wms-stock-product-price"><span>Cijena</span><strong>{{ product.cijena|floatformat:2 }} KM</strong></div><div class="wms-stock-result-codes"><span>Šifra <strong>{{ product.sifra|default:'—' }}</strong></span><span>Barkod <strong>{{ product.barkod|default:'—' }}</strong></span></div>{% if wms_locations_enabled %}<div class="wms-stock-mobile-location">{% include 'bera_reference/staff/wms/icon.html' with key='lokacije' %}{% for stock in product.canonical_wms_stocks %}{% if stock.kolicina > 0 %}<span>{{ stock.location.naziv }}</span>{% endif %}{% empty %}<span>Bez lokacije</span>{% endfor %}</div>{% endif %}</div>
 {% if not wms_locations_enabled %}
-<div class="wms-stock-result-quantity{% if not product.stanje %} is-empty{% endif %}"><span>Količina</span><strong>{{ product.stanje }} <small>kom</small></strong></div>
+<div class="wms-stock-result-quantity{% if not product.stanje %} is-empty{% elif product.stanje < product.magacin_meta.min_zaliha %} is-low{% endif %}"><span class="wms-stock-status">{% if not product.stanje %}Nema zalihe{% elif product.stanje < product.magacin_meta.min_zaliha %}Ispod min.{% else %}Na stanju{% endif %}</span><strong>{{ product.stanje }} <small>kom</small></strong></div>
 {% else %}
-<button type="button" class="wms-stock-result-quantity{% if not product.stanje %} is-empty{% endif %}" data-stock-location="wmsStockLocation{{ product.pk }}" aria-haspopup="dialog" aria-label="Prikaži lokaciju artikla {{ product.naziv }}"><span>Količina</span><strong>{{ product.stanje }} <small>kom</small></strong></button>
+<button type="button" class="wms-stock-result-quantity{% if not product.stanje %} is-empty{% elif product.stanje < product.magacin_meta.min_zaliha %} is-low{% endif %}" data-stock-location="wmsStockLocation{{ product.pk }}" aria-haspopup="dialog" aria-label="Prikaži lokaciju artikla {{ product.naziv }}"><span class="wms-stock-status">{% if not product.stanje %}Nema zalihe{% elif product.stanje < product.magacin_meta.min_zaliha %}Ispod min.{% else %}Na stanju{% endif %}</span><strong>{{ product.stanje }} <small>kom</small></strong></button>
 {% endif %}
 {% if wms_locations_enabled %}<template id="wmsStockLocation{{ product.pk }}">
 {% for stock in product.canonical_wms_stocks %}{% if stock.kolicina > 0 %}{% include 'bera_reference/staff/wms/location_transfer_row.html' with source_location=stock.location source_location_id=stock.location_id stock_id=stock.pk %}{% endif %}{% empty %}<p>Artikal nema dodijeljenu lokaciju u magacinu.</p>{% endfor %}
 </template>{% endif %}
 </article>
-{% empty %}<div class="wms-stock-empty"><span class="wms-empty-icon">{% include 'bera_reference/staff/wms/icon.html' with key='zalihe' %}</span><h3>Nema artikala za unesenu pretragu.</h3><p>Pokušajte s drugim nazivom, šifrom ili barkodom.</p></div>{% endfor %}
+{% empty %}<div class="wms-stock-empty"><span class="wms-empty-icon">{% include 'bera_reference/staff/wms/icon.html' with key='zalihe' %}</span><h3>Nema artikala za unesenu pretragu.</h3><p>Pokušajte s drugim nazivom, šifrom, tagom ili barkodom.</p></div>{% endfor %}
 </div>
-{% if products.has_other_pages %}<nav class="wms-type-options" aria-label="Stranice rezultata">{% if products.has_previous %}<a class="wms-button" href="?q={{ query|urlencode }}&amp;page={{ products.previous_page_number }}">← Prethodna</a>{% endif %}<span>{{ products.number }} / {{ products.paginator.num_pages }}</span>{% if products.has_next %}<a class="wms-button" href="?q={{ query|urlencode }}&amp;page={{ products.next_page_number }}">Sljedeća →</a>{% endif %}</nav>{% endif %}
+{% if products.has_other_pages %}<nav class="wms-type-options" aria-label="Stranice rezultata">{% if products.has_previous %}<a class="wms-button" href="?q={{ query|urlencode }}&amp;stock_filter={{ stock_filter|urlencode }}&amp;page={{ products.previous_page_number }}">← Prethodna</a>{% endif %}<span>{{ products.number }} / {{ products.paginator.num_pages }}</span>{% if products.has_next %}<a class="wms-button" href="?q={{ query|urlencode }}&amp;stock_filter={{ stock_filter|urlencode }}&amp;page={{ products.next_page_number }}">Sljedeća →</a>{% endif %}</nav>{% endif %}
 {% endif %}
 <dialog id="wmsStockLocationDialog" class="wms-card wms-stock-location-dialog" aria-labelledby="wmsLocationTitle"><header><h2 id="wmsLocationTitle">Lokacija zalihe</h2><form method="dialog"><button class="wms-close" aria-label="Zatvori">×</button></form></header><div id="wmsStockLocationContent"></div></dialog>
 {% endblock %}

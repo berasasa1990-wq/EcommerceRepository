@@ -2,7 +2,7 @@
 import json
 from django.conf import settings
 from urllib.parse import urlsplit
-from .models import SiteSettings, HomeNovoProduct, PageSEO
+from .models import SiteSettings, HomeNovoProduct
 from django.db import connection
 from .request_performance import schema_tables
 
@@ -40,6 +40,7 @@ def storefront_context():
 def homepage_context(context, request):
     from .views import _home_product_queryset
     result = storefront_context()
+    result['home_css_optimized'] = not context.get('filters_active')
     result['home_new_offer_products'] = list(_home_product_queryset(request).filter(pk__in=HomeNovoProduct.objects.filter(aktivan=True).values('artikal_id')).order_by('noviteti_na_pocetnoj__redoslijed', 'noviteti_na_pocetnoj__id').filter(noviteti_na_pocetnoj__aktivan=True).distinct()[:6]) if not context.get('filters_active') else []
 
     # Reuse the optional bestseller selection table when already present in the
@@ -54,7 +55,8 @@ def homepage_context(context, request):
                 products = {product.pk: product for product in _home_product_queryset(request).filter(pk__in=ids)}
                 result['latest_products'] = [products[pk] for pk in ids if pk in products][:6]
     if not context.get('filters_active'):
-        seo = PageSEO.objects.filter(page_key='home').first()
+        from .utils.seo import get_page_seo
+        seo = get_page_seo('home')
         if seo:
             result['seo_tekst_iznad'] = seo.seo_tekst_iznad or ''
             result['seo_tekst_ispod'] = seo.seo_tekst_ispod or ''

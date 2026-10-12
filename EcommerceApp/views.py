@@ -341,6 +341,21 @@ def _product_queryset(request=None):
     return _prefetch_product_cards(qs)
 
 
+def _category_ranking_queryset(products_qs):
+    """Keep exact price ranking without loading every catalog card's payload."""
+    from .models import AkcijaFlashLine
+    return products_qs.select_related(None).prefetch_related(None).only(
+        'pk', 'naziv', 'kategorija_id', 'brend_id', 'na_stanju', 'stanje',
+        'cijena', 'akcijska_cijena', 'akcija_do', 'prioritet_lagera',
+        'je_novitet', 'kreiran',
+    ).prefetch_related(
+        Prefetch('varijacije', queryset=_in_stock_variations_qs().only(
+            'pk', 'artikal_id', 'cijena', 'akcijska_cijena', 'redoslijed',
+        )),
+        Prefetch('akcija_flash_lines', queryset=AkcijaFlashLine.objects.select_related('akcija').filter(akcija__aktivan=True)),
+    )
+
+
 def _home_product_queryset(request=None):
     """Početna: samo artikli koji su na stanju, s količinom iz magacina."""
     return _product_queryset(request).filter(na_stanju=True, stanje__gt=0)
@@ -1441,9 +1456,10 @@ def _search_exists_match(raw):
 
 
 def _typo_tolerant_name_match(raw):
-    """Match words at >=80% similarity (one/two edits), entirely in SQL.
+    """Match name words with bounded spelling errors, entirely in SQL.
 
-    Similarity is 1 - edits / max(query length, matched word length).
+    Allow one edit for words of 3–4 letters, and >=80% similarity
+    for longer words. Both sides must have at least three letters.
     Adjacent transposition counts as one typo. Exact substring/code search
     remains unchanged.
     """
@@ -1454,8 +1470,8 @@ def _typo_tolerant_name_match(raw):
     has_tolerant_word = False
     for token in tokens:
         word_match = _q_name_contains(token)
-        # Short words and numeric product codes must remain precise.
-        if token.isalpha() and 4 <= len(token) <= 32:
+        # One/two-letter words and numeric product codes remain precise.
+        if token.isalpha() and 3 <= len(token) <= 32:
             has_tolerant_word = True
             patterns = {token}
             for index in range(len(token)):
@@ -1487,7 +1503,9 @@ def _typo_tolerant_name_match(raw):
             for candidate in patterns:
                 edits = 0 if candidate == token else (1 if candidate in single_edit_patterns else 2)
                 matched_length = len(candidate.replace('[a-z]', '?'))
-                if edits * 5 <= max(len(token), matched_length):
+                if (edits * 5 <= max(len(token), matched_length)
+                        or (edits == 1 and min(len(token), matched_length) >= 3
+                            and max(len(token), matched_length) >= 4)):
                     eligible_patterns.append(candidate)
             pattern = '(^|[^a-z0-9])(' + '|'.join(sorted(eligible_patterns)) + ')($|[^a-z0-9])'
             word_match |= Q(naziv__iregex=pattern) | Q(naziv_normalized__iregex=pattern)
@@ -3300,8 +3318,10 @@ def category_detail(request, slug):
     products_qs = _product_queryset(request).filter(kategorija_id__in=category_ids)
     filter_sizes = _available_sizes(products_qs)
     category_url = reverse('category', args=[category.slug])
+    lightweight_category = not _filters_active(filter_params)
+    ranking_qs = _category_ranking_queryset(products_qs) if lightweight_category else products_qs
     products, filter_params = _apply_product_filters(
-        products_qs,
+        ranking_qs,
         request,
         allowed_category_ids=category_ids,
     )
@@ -3311,6 +3331,10 @@ def category_detail(request, slug):
     )
 
     page_obj = _paginate_catalog_products(request, products)
+    if lightweight_category:
+        page_ids = [product.pk for product in page_obj.object_list]
+        cards = {product.pk: product for product in _product_queryset(request).filter(pk__in=page_ids)}
+        page_obj.object_list = [cards[pk] for pk in page_ids]
     if page_obj.number > 1:
         cat_canonical += ('&' if '?' in cat_canonical else '?') + f'page={page_obj.number}'
         category_ld['collection_json_ld'] = json_ld(collection_page_json_ld(
