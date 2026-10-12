@@ -1,0 +1,7 @@
+<p class="wms-history-product"><strong>{{ product.naziv }}</strong><br>Šifra: {{ product.sifra|default:'—' }} · {{ history.paginator.count }} promjena</p>
+{% include 'bera_reference/staff/wms/history_table.html' %}
+<nav class="wms-type-options" aria-label="Stranice istorije artikla">
+{% if history.has_previous %}<a class="wms-button" data-history-page href="?page={{ history.previous_page_number }}">← Prethodna</a>{% endif %}
+<span>Stranica {{ history.number }} / {{ history.paginator.num_pages }}</span>
+{% if history.has_next %}<a class="wms-button" data-history-page href="?page={{ history.next_page_number }}">Sljedeća →</a>{% endif %}
+</nav>

@@ -1,4 +1,4 @@
-{% extends 'bera_reference/staff/magacin/base.html' %}
+{% extends request.wms_tool_base|default:'bera_reference/staff/magacin/base.html' %}
 {% load static %}
 
 {% block extra_css %}
@@ -9,7 +9,7 @@
 {% block magacin_content %}
 <div class="pt-page" id="ptApp" data-url="{% url 'staff_magacin_popis_test' %}" data-lookup="{{ lookup_url }}" data-has-location="{% if location %}1{% else %}0{% endif %}">
     {% csrf_token %}
-    <a class="pt-back mg-btn" href="{% url 'staff_magacin' %}">← Nazad</a>
+    <a class="pt-back mg-btn" href="{% url 'staff_wms' %}">← Nazad</a>
     <header class="pt-head">
         <div>
             <h1>Popisivanje artikala</h1>

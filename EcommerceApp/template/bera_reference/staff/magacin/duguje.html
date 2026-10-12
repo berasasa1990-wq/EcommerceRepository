@@ -3,7 +3,7 @@
 {% block body_class %}{{ block.super }} is-ledger{% endblock %}
 {% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'bera_reference/css/staff-ledger.css' %}?v=20260907-debt-colors">{% endblock %}
 {% block magacin_content %}
-<div class="ld-header"><h1>Duguje / Potražuje</h1><div class="ld-actions"><a class="ld-btn mg-back" href="{% url 'staff_magacin' %}">← Nazad</a><a class="ld-btn" href="?export=1{% if partner %}&amp;partner={{ partner.pk }}{% endif %}">▤ Izvještaj CSV</a><button class="ld-btn" type="button" data-ld-open="ldPartner">＋ Novi kupac</button>{% if partner %}<button class="ld-btn ld-green" type="button" data-ld-open="ldDebt">＋ Unesi dug</button><button class="ld-btn ld-green" type="button" data-ld-open="ldEntry">＋ Novo knjiženje</button>{% endif %}</div></div>
+<div class="ld-header"><h1>Duguje / Potražuje</h1><div class="ld-actions"><a class="ld-btn mg-back" href="{% url 'staff_wms' %}">← Nazad</a><a class="ld-btn" href="?export=1{% if partner %}&amp;partner={{ partner.pk }}{% endif %}">▤ Izvještaj CSV</a><button class="ld-btn" type="button" data-ld-open="ldPartner">＋ Novi kupac</button>{% if partner %}<button class="ld-btn ld-green" type="button" data-ld-open="ldDebt">＋ Unesi dug</button><button class="ld-btn ld-green" type="button" data-ld-open="ldEntry">＋ Novo knjiženje</button>{% endif %}</div></div>
 {% if ledger_error %}<div class="ld-error" role="alert">{{ ledger_error }}</div>{% endif %}
 <div class="ld-layout">
 <aside class="ld-panel ld-partners"><h2>Partneri</h2><form method="get" class="ld-search"><input type="search" name="q" value="{{ query }}" placeholder="Pretraži kupca, telefon, grad…" aria-label="Pretraži partnere"><button class="ld-btn">Pronađi</button></form>

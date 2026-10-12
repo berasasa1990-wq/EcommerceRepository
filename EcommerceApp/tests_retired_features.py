@@ -49,7 +49,7 @@ class RetiredFeaturesTests(TestCase):
 
     def test_admin_panel_settings_and_promotions_still_render_without_retired_controls(self):
         self.client.force_login(self.owner)
-        response = self.client.get(reverse('staff_admin_panel'))
+        response = self.client.get(reverse('staff_panel'))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'Pregled sajta')
         response = self.client.get(reverse('admin:EcommerceApp_sitesettings_change', args=[self.settings.pk]))

@@ -1,0 +1,463 @@
+[
+  {
+    "path": "/nalog/magacin/setovi/",
+    "name": "staff_magacin_setovi",
+    "replacement": "/wms/artikli-u-setu/"
+  },
+  {
+    "path": "/nalog/magacin/historija-podataka/fajl/<int:pk>/",
+    "name": "staff_magacin_media_history_download",
+    "replacement": "/wms/operacije/historija-podataka/fajl/<int:pk>/"
+  },
+  {
+    "path": "/nalog/magacin/nacrti/uvoz/",
+    "name": "staff_magacin_draft_import",
+    "replacement": "/wms/operacije/nacrti/uvoz/"
+  },
+  {
+    "path": "/nalog/magacin/nacrti/sacuvaj/",
+    "name": "staff_magacin_draft_save",
+    "replacement": "/wms/operacije/nacrti/sacuvaj/"
+  },
+  {
+    "path": "/nalog/magacin/nacrti/historija/",
+    "name": "staff_magacin_draft_history",
+    "replacement": "/wms/operacije/nacrti/historija/"
+  },
+  {
+    "path": "/nalog/magacin/nacrti/<int:pk>/vrati/",
+    "name": "staff_magacin_draft_restore",
+    "replacement": "/wms/operacije/nacrti/<int:pk>/vrati/"
+  },
+  {
+    "path": "/nalog/magacin/historija-podataka/",
+    "name": "staff_magacin_data_history",
+    "replacement": "/wms/operacije/historija-podataka/"
+  },
+  {
+    "path": "/nalog/magacin/historija-podataka/unos/",
+    "name": "staff_magacin_save_input",
+    "replacement": "/wms/operacije/historija-podataka/unos/"
+  },
+  {
+    "path": "/nalog/magacin/duguje/",
+    "name": "staff_magacin_duguje",
+    "replacement": "/wms/operacije/duguje/"
+  },
+  {
+    "path": "/nalog/admin/",
+    "name": "staff_admin_panel"
+  },
+  {
+    "path": "/nalog/magacin/",
+    "name": "staff_magacin"
+  },
+  {
+    "path": "/nalog/magacin/pregled/",
+    "name": "staff_magacin_pregled"
+  },
+  {
+    "path": "/nalog/magacin/barkod-provjera/",
+    "name": "staff_magacin_barkod_provjera",
+    "replacement": "/wms/operacije/barkod-provjera/"
+  },
+  {
+    "path": "/nalog/magacin/dupli-barkodovi/<int:pk>/obrisi/",
+    "name": "staff_magacin_dupli_barkod_obrisi",
+    "replacement": "/wms/dupli-barkodovi/<int:pk>/obrisi/"
+  },
+  {
+    "path": "/nalog/magacin/dupli-barkodovi/",
+    "name": "staff_magacin_dupli_barkodovi",
+    "replacement": "/wms/dupli-barkodovi/"
+  },
+  {
+    "path": "/nalog/magacin/artikli/",
+    "name": "staff_magacin_artikli",
+    "replacement": "/wms/operacije/artikli/"
+  },
+  {
+    "path": "/nalog/magacin/artikli/brzi-unos/",
+    "name": "staff_magacin_brzi_unos",
+    "replacement": "/wms/operacije/artikli/brzi-unos/"
+  },
+  {
+    "path": "/nalog/magacin/artikli/brzi-unos/novi/",
+    "name": "staff_magacin_brzi_unos_novi",
+    "replacement": "/wms/operacije/artikli/brzi-unos/novi/"
+  },
+  {
+    "path": "/nalog/magacin/artikli/brzi-unos/<int:product_id>/",
+    "name": "staff_magacin_brzi_unos_aktivacija",
+    "replacement": "/wms/operacije/artikli/brzi-unos/<int:product_id>/"
+  },
+  {
+    "path": "/nalog/magacin/artikli/lookup/",
+    "name": "staff_magacin_artikli_lookup",
+    "replacement": "/wms/operacije/artikli/lookup/"
+  },
+  {
+    "path": "/nalog/magacin/stampa-cijena/",
+    "name": "staff_magacin_stampa_cijena",
+    "replacement": "/wms/stampa-cijena/"
+  },
+  {
+    "path": "/nalog/magacin/stampa-cijena/ista/",
+    "name": "staff_magacin_stampa_cijena_ista",
+    "replacement": "/wms/stampa-cijena/ista/"
+  },
+  {
+    "path": "/nalog/magacin/stampa-cijena/razlicite/",
+    "name": "staff_magacin_stampa_cijena_razlicite",
+    "replacement": "/wms/stampa-cijena/razlicite/"
+  },
+  {
+    "path": "/nalog/magacin/stampa-cijena/print/",
+    "name": "staff_magacin_stampa_cijena_print",
+    "replacement": "/wms/stampa-cijena/print/"
+  },
+  {
+    "path": "/nalog/magacin/stampa-deklaracije/",
+    "name": "staff_magacin_stampa_deklaracije",
+    "replacement": "/wms/stampaj-deklaracije/"
+  },
+  {
+    "path": "/nalog/magacin/stampa-deklaracije/<int:pk>/stampa/",
+    "name": "staff_magacin_stampa_deklaracije_print",
+    "replacement": "/wms/stampaj-deklaracije/<int:pk>/stampa/"
+  },
+  {
+    "path": "/nalog/magacin/artikli/<int:pk>/",
+    "name": "staff_magacin_artikal",
+    "replacement": "/wms/operacije/artikli/<int:pk>/"
+  },
+  {
+    "path": "/nalog/magacin/artikli/<int:pk>/stampa/",
+    "name": "staff_magacin_artikal_stampa",
+    "replacement": "/wms/operacije/artikli/<int:pk>/stampa/"
+  },
+  {
+    "path": "/nalog/magacin/artikli/<int:pk>/stampa-barkod/",
+    "name": "staff_magacin_artikal_stampa_barkod",
+    "replacement": "/wms/operacije/artikli/<int:pk>/stampa-barkod/"
+  },
+  {
+    "path": "/nalog/magacin/artikli/<int:pk>/izmjena/",
+    "name": "staff_magacin_artikal_izmjena",
+    "replacement": "/wms/operacije/artikli/<int:pk>/izmjena/"
+  },
+  {
+    "path": "/nalog/magacin/artikli/<int:pk>/istorija/",
+    "name": "staff_magacin_istorija",
+    "replacement": "/wms/operacije/artikli/<int:pk>/istorija/"
+  },
+  {
+    "path": "/nalog/magacin/lokacije/lookup/",
+    "name": "staff_magacin_lokacije_lookup",
+    "replacement": "/wms/operacije/lokacije/lookup/"
+  },
+  {
+    "path": "/nalog/magacin/lokacije/<int:pk>/stampa/",
+    "name": "staff_magacin_lokacija_stampa",
+    "replacement": "/wms/operacije/lokacije/<int:pk>/stampa/"
+  },
+  {
+    "path": "/nalog/magacin/lokacije/",
+    "name": "staff_magacin_lokacije",
+    "replacement": "/wms/operacije/lokacije/"
+  },
+  {
+    "path": "/nalog/magacin/zalihe/",
+    "name": "staff_magacin_zalihe",
+    "replacement": "/wms/operacije/zalihe/"
+  },
+  {
+    "path": "/nalog/magacin/rezervni-dijelovi/",
+    "name": "staff_magacin_rezervni_dijelovi",
+    "replacement": "/wms/rezervni-dijelovi/"
+  },
+  {
+    "path": "/nalog/magacin/dnevno-skidanje-mp/",
+    "name": "staff_magacin_mp_dnevno",
+    "replacement": "/wms/dnevno-skidanje/"
+  },
+  {
+    "path": "/nalog/magacin/transferi/",
+    "name": "staff_magacin_transferi",
+    "replacement": "/wms/operacije/transferi/"
+  },
+  {
+    "path": "/nalog/magacin/popis/",
+    "name": "staff_magacin_popis",
+    "replacement": "/wms/popis-robe/"
+  },
+  {
+    "path": "/nalog/magacin/popis/<int:pk>/",
+    "name": "staff_magacin_popis_detail",
+    "replacement": "/wms/popis-robe/<int:pk>/"
+  },
+  {
+    "path": "/nalog/magacin/popis/stampa/",
+    "name": "staff_magacin_popis_stampa",
+    "replacement": "/wms/popis-robe/stampa/"
+  },
+  {
+    "path": "/nalog/magacin/popis-test/",
+    "name": "staff_magacin_popis_test",
+    "replacement": "/wms/popis-robe/test/"
+  },
+  {
+    "path": "/nalog/magacin/provjera-lagera/",
+    "name": "staff_magacin_provjera_lagera",
+    "replacement": "/wms/operacije/provjera-lagera/"
+  },
+  {
+    "path": "/nalog/magacin/provjera-lagera/stampa/",
+    "name": "staff_magacin_provjera_lagera_stampa",
+    "replacement": "/wms/operacije/provjera-lagera/stampa/"
+  },
+  {
+    "path": "/nalog/magacin/fali-na-sajtu/",
+    "name": "staff_magacin_fali_na_sajtu",
+    "replacement": "/wms/fali-u-mp/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/",
+    "name": "staff_magacin_narudzbe",
+    "replacement": "/wms/operacije/narudzbe/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/nova/",
+    "name": "staff_magacin_narudzba_nova",
+    "replacement": "/wms/operacije/narudzbe/nova/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/nova/bulk/",
+    "name": "staff_magacin_narudzba_bulk",
+    "replacement": "/wms/operacije/narudzbe/nova/bulk/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/vp/",
+    "name": "staff_magacin_vp_narudzba",
+    "replacement": "/wms/operacije/narudzbe/vp/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/brza-posta/",
+    "name": "staff_magacin_brza_posta",
+    "replacement": "/wms/operacije/narudzbe/brza-posta/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/brza-posta/<str:broj>/",
+    "name": "staff_magacin_brza_posta_detail",
+    "replacement": "/wms/operacije/narudzbe/brza-posta/<str:broj>/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/x-express/",
+    "name": "staff_magacin_xexpress_bulk",
+    "replacement": "/wms/operacije/narudzbe/x-express/"
+  },
+  {
+    "path": "/nalog/magacin/kupci/",
+    "name": "staff_magacin_kupci",
+    "replacement": "/wms/operacije/kupci/"
+  },
+  {
+    "path": "/nalog/magacin/kupci/lookup/",
+    "name": "staff_magacin_kupci_lookup",
+    "replacement": "/wms/operacije/kupci/lookup/"
+  },
+  {
+    "path": "/nalog/magacin/kupci/sacuvaj/",
+    "name": "staff_magacin_kupci_save",
+    "replacement": "/wms/operacije/kupci/sacuvaj/"
+  },
+  {
+    "path": "/nalog/magacin/kupci/loyalty/",
+    "name": "staff_magacin_loyalty_telefon",
+    "replacement": "/wms/operacije/kupci/loyalty/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/stampa/",
+    "name": "staff_magacin_narudzbe_stampa",
+    "replacement": "/wms/operacije/narudzbe/stampa/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/stampa-kolicine/",
+    "name": "staff_magacin_narudzbe_stampa_kolicine",
+    "replacement": "/wms/operacije/narudzbe/stampa-kolicine/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/packing/",
+    "name": "staff_magacin_narudzbe_packing",
+    "replacement": "/wms/operacije/narudzbe/packing/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/packing/izbor/",
+    "name": "staff_magacin_narudzbe_packing_izbor",
+    "replacement": "/wms/operacije/narudzbe/packing/izbor/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/validiraj/",
+    "name": "staff_magacin_narudzbe_validiraj",
+    "replacement": "/wms/operacije/narudzbe/validiraj/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/odstampano/",
+    "name": "staff_magacin_narudzbe_mark_printed",
+    "replacement": "/wms/operacije/narudzbe/odstampano/"
+  },
+  {
+    "path": "/nalog/magacin/pakovanje/",
+    "name": "staff_magacin_pakovanje",
+    "replacement": "/wms/operacije/pakovanje/"
+  },
+  {
+    "path": "/nalog/magacin/pakuj/",
+    "name": "staff_magacin_pakuj",
+    "replacement": "/wms/operacije/pakuj/"
+  },
+  {
+    "path": "/nalog/magacin/pakuj/provjera/",
+    "name": "staff_magacin_pakuj_provjera",
+    "replacement": "/wms/operacije/pakuj/provjera/"
+  },
+  {
+    "path": "/nalog/magacin/pakuj/sken/",
+    "name": "staff_magacin_pakuj_sken",
+    "replacement": "/wms/operacije/pakuj/sken/"
+  },
+  {
+    "path": "/nalog/magacin/pakuj/<str:broj>/oslobodi/",
+    "name": "staff_magacin_pakuj_oslobodi",
+    "replacement": "/wms/operacije/pakuj/<str:broj>/oslobodi/"
+  },
+  {
+    "path": "/nalog/magacin/pakuj/<str:broj>/stampaj-zapakovano/",
+    "name": "staff_magacin_pakuj_stampaj_zapakovano",
+    "replacement": "/wms/operacije/pakuj/<str:broj>/stampaj-zapakovano/"
+  },
+  {
+    "path": "/nalog/magacin/narudzbe/<str:broj>/barkod.png",
+    "name": "staff_magacin_narudzba_barkod",
+    "replacement": "/wms/operacije/narudzbe/<str:broj>/barkod.png"
+  },
+  {
+    "path": "/nalog/magacin/pakuj/<str:broj>/",
+    "name": "staff_magacin_pakuj_detail",
+    "replacement": "/wms/operacije/pakuj/<str:broj>/"
+  },
+  {
+    "path": "/nalog/magacin/uvoz/",
+    "name": "staff_magacin_uvoz",
+    "replacement": "/wms/uvoz/"
+  },
+  {
+    "path": "/nalog/magacin/uvoz/novi/",
+    "name": "staff_magacin_uvoz_novi",
+    "replacement": "/wms/uvoz/novi/"
+  },
+  {
+    "path": "/nalog/magacin/uvoz/<int:pk>/cijene/",
+    "name": "staff_magacin_uvoz_cijene",
+    "replacement": "/wms/uvoz/<int:pk>/cijene/"
+  },
+  {
+    "path": "/nalog/magacin/uvoz/<int:pk>/stampa/",
+    "name": "staff_magacin_uvoz_stampa",
+    "replacement": "/wms/uvoz/<int:pk>/stampa/"
+  },
+  {
+    "path": "/nalog/magacin/uvoz/<int:pk>/popis/stampa/",
+    "name": "staff_magacin_uvoz_popis_stampa",
+    "replacement": "/wms/uvoz/<int:pk>/popis/stampa/"
+  },
+  {
+    "path": "/nalog/magacin/uvoz/<int:pk>/popis/",
+    "name": "staff_magacin_uvoz_popis",
+    "replacement": "/wms/uvoz/<int:pk>/popis/"
+  },
+  {
+    "path": "/nalog/magacin/uvoz/<int:pk>/",
+    "name": "staff_magacin_uvoz_detail",
+    "replacement": "/wms/uvoz/<int:pk>/"
+  },
+  {
+    "path": "/nalog/magacin/nivelacije/akcija/nova/",
+    "name": "staff_magacin_nivelacije_akcija_nova",
+    "replacement": "/wms/nivelacije/akcija/nova/"
+  },
+  {
+    "path": "/nalog/magacin/nivelacije/akcija/<int:pk>/stampa/",
+    "name": "staff_magacin_nivelacije_akcija_stampa",
+    "replacement": "/wms/nivelacije/akcija/<int:pk>/stampa/"
+  },
+  {
+    "path": "/nalog/magacin/nivelacije/akcija/<int:pk>/etikete/",
+    "name": "staff_magacin_nivelacije_akcija_etikete",
+    "replacement": "/wms/nivelacije/akcija/<int:pk>/etikete/"
+  },
+  {
+    "path": "/nalog/magacin/nivelacije/akcija/<int:pk>/",
+    "name": "staff_magacin_nivelacije_akcija_detail",
+    "replacement": "/wms/nivelacije/akcija/<int:pk>/"
+  },
+  {
+    "path": "/nalog/magacin/nivelacije/stampa/",
+    "name": "staff_magacin_nivelacije_stampa",
+    "replacement": "/wms/nivelacije/stampa/"
+  },
+  {
+    "path": "/nalog/magacin/nivelacije/izmjenjene/<int:pk>/",
+    "name": "staff_magacin_nivelacije_uvoz",
+    "replacement": "/wms/nivelacije/izmjenjene/<int:pk>/"
+  },
+  {
+    "path": "/nalog/magacin/nivelacije/",
+    "name": "staff_magacin_nivelacije",
+    "replacement": "/wms/nivelacije/"
+  },
+  {
+    "path": "/nalog/magacin/dobavljaci/",
+    "name": "staff_magacin_dobavljaci",
+    "replacement": "/wms/operacije/dobavljaci/"
+  },
+  {
+    "path": "/nalog/magacin/ponude/",
+    "name": "staff_magacin_ponude",
+    "replacement": "/wms/kreiraj-ponudu/"
+  },
+  {
+    "path": "/nalog/magacin/ponude/<int:pk>/",
+    "name": "staff_magacin_ponuda_detail",
+    "replacement": "/wms/kreiraj-ponudu/<int:pk>/"
+  },
+  {
+    "path": "/nalog/magacin/ponude/<int:pk>/prihvati/",
+    "name": "staff_magacin_ponuda_prihvati",
+    "replacement": "/wms/kreiraj-ponudu/<int:pk>/prihvati/"
+  },
+  {
+    "path": "/nalog/magacin/izvjestaji/",
+    "name": "staff_magacin_izvjestaji"
+  },
+  {
+    "path": "/nalog/magacin/podesavanja/",
+    "name": "staff_magacin_podesavanja"
+  },
+  {
+    "path": "/nalog/magacin/sync/istorija/",
+    "name": "staff_magacin_sync_istorija"
+  },
+  {
+    "path": "/nalog/magacin/backup/",
+    "name": "staff_magacin_backup"
+  },
+  {
+    "path": "/nalog/magacin/backup/preuzmi/<str:name>/",
+    "name": "staff_magacin_backup_download"
+  },
+  {
+    "path": "/nalog/magacin/backup/preuzmi-sada/",
+    "name": "staff_magacin_backup_download_current"
+  }
+]

@@ -1,0 +1,185 @@
+{
+  "tests": 193,
+  "failures": [
+    {
+      "test": "test_reserve_validate_and_cancel (EcommerceApp.tests_magacin.MagacinStockTests.test_reserve_validate_and_cancel)",
+      "detail": "AssertionError: 6 != 10"
+    },
+    {
+      "test": "test_artikal_history_shows_customer_from_order (EcommerceApp.tests_magacin.MagacinViewTests.test_artikal_history_shows_customer_from_order)",
+      "detail": "AssertionError: False is not true : Couldn't find 'Validacija #0001' in the following response"
+    },
+    {
+      "test": "test_artikli_and_detail_ok (EcommerceApp.tests_magacin.MagacinViewTests.test_artikli_and_detail_ok)",
+      "detail": "AssertionError: False is not true : Couldn't find 'Zadnje izmjene količina' in the following response"
+    },
+    {
+      "test": "test_create_manual_order_deducts_stock (EcommerceApp.tests_magacin.MagacinViewTests.test_create_manual_order_deducts_stock)",
+      "detail": "AssertionError: 5 != 8"
+    },
+    {
+      "test": "test_finish_pick_after_last_shortage_opens_summary_instead_of_404 (EcommerceApp.tests_magacin.MagacinViewTests.test_finish_pick_after_last_shortage_opens_summary_instead_of_404)",
+      "detail": "AssertionError: '/wms/operacije/pakuj/' != '/wms/operacije/pakuj/0001/'"
+    },
+    {
+      "test": "test_finish_pick_only_zero_cancels_order (EcommerceApp.tests_magacin.MagacinViewTests.test_finish_pick_only_zero_cancels_order)",
+      "detail": "AssertionError: 8 != 7"
+    },
+    {
+      "test": "test_finish_pick_with_zero_qty_removes_item (EcommerceApp.tests_magacin.MagacinViewTests.test_finish_pick_with_zero_qty_removes_item)",
+      "detail": "AssertionError: 4 != 3"
+    },
+    {
+      "test": "test_magacin_search_does_not_fill_site_search (EcommerceApp.tests_magacin.MagacinViewTests.test_magacin_search_does_not_fill_site_search)",
+      "detail": "AssertionError: False is not true : Couldn't find 'Na stanju' in the following response"
+    },
+    {
+      "test": "test_manual_order_without_stock_requires_mp (EcommerceApp.tests_magacin.MagacinViewTests.test_manual_order_without_stock_requires_mp)",
+      "detail": "AssertionError: 200 != 302"
+    },
+    {
+      "test": "test_mixed_order_picking_waits_for_mp_check (EcommerceApp.tests_magacin.MagacinViewTests.test_mixed_order_picking_waits_for_mp_check)",
+      "detail": "AssertionError: 200 != 302"
+    },
+    {
+      "test": "test_mp_daily_samo_promjene_hides_unchanged (EcommerceApp.tests_magacin.MagacinViewTests.test_mp_daily_samo_promjene_hides_unchanged)",
+      "detail": "AssertionError: False is not true : Couldn't find 'Prikazano 1 od 3' in the following response"
+    },
+    {
+      "test": "test_mp_daily_ukloni_preview_does_not_deduct (EcommerceApp.tests_magacin.MagacinViewTests.test_mp_daily_ukloni_preview_does_not_deduct)",
+      "detail": "AssertionError: False is not true : Couldn't find 'Unos je uklonjen' in the following response"
+    },
+    {
+      "test": "test_mp_nema_removes_item_from_order (EcommerceApp.tests_magacin.MagacinViewTests.test_mp_nema_removes_item_from_order)",
+      "detail": "AssertionError: 200 != 302"
+    },
+    {
+      "test": "test_mp_partial_found_goes_on_invoice (EcommerceApp.tests_magacin.MagacinViewTests.test_mp_partial_found_goes_on_invoice)",
+      "detail": "AssertionError: 200 != 302"
+    },
+    {
+      "test": "test_narudzbe_click_opens_detail_not_picking (EcommerceApp.tests_magacin.MagacinViewTests.test_narudzbe_click_opens_detail_not_picking)",
+      "detail": "AssertionError: False is not true : Couldn't find 'Picking' in the following response"
+    },
+    {
+      "test": "test_narudzbe_has_manual_entry (EcommerceApp.tests_magacin.MagacinViewTests.test_narudzbe_has_manual_entry)",
+      "detail": "AssertionError: False is not true : Couldn't find 'Očisti narudžbu' in the following response"
+    },
+    {
+      "test": "test_order_barcode_opens_picking (EcommerceApp.tests_magacin.MagacinViewTests.test_order_barcode_opens_picking)",
+      "detail": "AssertionError: False is not true : Couldn't find 'Preuzeo' in the following response"
+    },
+    {
+      "test": "test_order_detail_uses_magacin_look_and_back_link (EcommerceApp.tests_magacin.MagacinViewTests.test_order_detail_uses_magacin_look_and_back_link)",
+      "detail": "AssertionError: False is not true : Couldn't find 'Nazad na Magacin narudžbe' in the following response"
+    },
+    {
+      "test": "test_packing_print_marks_card_vs_cash (EcommerceApp.tests_magacin.MagacinViewTests.test_packing_print_marks_card_vs_cash)",
+      "detail": "AssertionError: False is not true : Couldn't find 'KARTICA' in the following response"
+    },
+    {
+      "test": "test_packing_print_shows_picked_validated_qty_and_locations (EcommerceApp.tests_magacin.MagacinViewTests.test_packing_print_shows_picked_validated_qty_and_locations)",
+      "detail": "AssertionError: False is not true : Couldn't find 'GOTOVINSKI' in the following response"
+    },
+    {
+      "test": "test_partial_pick_clears_location_and_deducts_remainder_only_once (EcommerceApp.tests_magacin.MagacinViewTests.test_partial_pick_clears_location_and_deducts_remainder_only_once)",
+      "detail": "AssertionError: 8 != 0"
+    },
+    {
+      "test": "test_partial_pick_exhausts_second_location_keeps_taken_and_logs_shortage (EcommerceApp.tests_magacin.MagacinViewTests.test_partial_pick_exhausts_second_location_keeps_taken_and_logs_shortage)",
+      "detail": "AssertionError: 3 != 1"
+    },
+    {
+      "test": "test_pick_ocisti_keeps_on_site_when_other_location_has_qty (EcommerceApp.tests_magacin.MagacinViewTests.test_pick_ocisti_keeps_on_site_when_other_location_has_qty)",
+      "detail": "AssertionError: 1 != 2"
+    },
+    {
+      "test": "test_pick_ocisti_zeros_location_keeps_order_item (EcommerceApp.tests_magacin.MagacinViewTests.test_pick_ocisti_zeros_location_keeps_order_item)",
+      "detail": "AssertionError: 2 != 5"
+    },
+    {
+      "test": "test_pick_queue_skips_unchecked_mp (EcommerceApp.tests_magacin.MagacinViewTests.test_pick_queue_skips_unchecked_mp)",
+      "detail": "AssertionError: Lists differ: [] != ['T-1']"
+    },
+    {
+      "test": "test_pick_zero_removes_item_and_location_qty (EcommerceApp.tests_magacin.MagacinViewTests.test_pick_zero_removes_item_and_location_qty)",
+      "detail": "AssertionError: None is not true"
+    },
+    {
+      "test": "test_picking_blocked_until_all_mp_checks_done (EcommerceApp.tests_magacin.MagacinViewTests.test_picking_blocked_until_all_mp_checks_done)",
+      "detail": "AssertionError: 200 != 302"
+    },
+    {
+      "test": "test_prenos_mp_opens_picking_and_validate_deducts (EcommerceApp.tests_magacin.MagacinViewTests.test_prenos_mp_opens_picking_and_validate_deducts)",
+      "detail": "AssertionError: False is not true : Couldn't find 'Prenos u MP' in the following response"
+    },
+    {
+      "test": "test_short_pick_missing_item_returns_json (EcommerceApp.tests_magacin.MagacinViewTests.test_short_pick_missing_item_returns_json)",
+      "detail": "AssertionError: 400 != 404"
+    },
+    {
+      "test": "test_two_requested_one_found_clears_location_and_bills_one (EcommerceApp.tests_magacin.MagacinViewTests.test_two_requested_one_found_clears_location_and_bills_one)",
+      "detail": "AssertionError: 'na računu ostaje 1 kom.' not found in 'Potvrđeno 1 kom. Zahtjev za čišćenje poslan je u Lokacije. Zaliha nije očišćena.'"
+    },
+    {
+      "test": "test_unpicked_item_is_left_off_invoice (EcommerceApp.tests_magacin.MagacinViewTests.test_unpicked_item_is_left_off_invoice)",
+      "detail": "AssertionError: False is not true : Couldn't find 'pk-edit-remove' in the following response"
+    },
+    {
+      "test": "test_validate_sells_hold_when_pick_location_has_no_stock (EcommerceApp.tests_magacin.MagacinViewTests.test_validate_sells_hold_when_pick_location_has_no_stock)",
+      "detail": "AssertionError: unexpectedly None"
+    },
+    {
+      "test": "test_validated_orders_hidden_until_validated_list (EcommerceApp.tests_magacin.MagacinViewTests.test_validated_orders_hidden_until_validated_list)",
+      "detail": "AssertionError: False is not true : Couldn't find 'Otkaži' in the following response"
+    },
+    {
+      "test": "test_vp_validate_deducts_reserved_qty_after_order_edit (EcommerceApp.tests_magacin.MagacinViewTests.test_vp_validate_deducts_reserved_qty_after_order_edit)",
+      "detail": "AssertionError: False is not true"
+    },
+    {
+      "test": "test_vp_validate_stays_until_print_packed (EcommerceApp.tests_magacin.MagacinViewTests.test_vp_validate_stays_until_print_packed)",
+      "detail": "AssertionError: False is not true"
+    },
+    {
+      "test": "test_vp_ziralno_is_skipped_on_packing_print (EcommerceApp.tests_magacin.MagacinViewTests.test_vp_ziralno_is_skipped_on_packing_print)",
+      "detail": "AssertionError: False is not true : Couldn't find 'GOTOVINSKI' in the following response"
+    },
+    {
+      "test": "test_webshop_validate_deducts_local_stock (EcommerceApp.tests_magacin.MagacinViewTests.test_webshop_validate_deducts_local_stock)",
+      "detail": "AssertionError: 'nije' != Order.LagerStatus.VALIDIRANO"
+    },
+    {
+      "test": "test_xexpress_send_from_order_detail (EcommerceApp.tests_magacin.MagacinViewTests.test_xexpress_send_from_order_detail)",
+      "detail": "AssertionError: False is not true : Couldn't find 'X-Express XE-999' in the following response"
+    },
+    {
+      "test": "test_zero_pick_without_other_location_records_missing_without_billing (EcommerceApp.tests_magacin.MagacinViewTests.test_zero_pick_without_other_location_records_missing_without_billing)",
+      "detail": "AssertionError: True is not false"
+    },
+    {
+      "test": "test_live_visitor_pages_remain_available_without_ai_and_gift_queries (EcommerceApp.tests_retired_features.RetiredFeaturesTests.test_live_visitor_pages_remain_available_without_ai_and_gift_queries)",
+      "detail": "AssertionError: 410 != 200"
+    }
+  ],
+  "errors": [
+    {
+      "test": "test_short_pick_zero_without_remaining_stock_returns_json (EcommerceApp.tests_magacin.MagacinViewTests.test_short_pick_zero_without_remaining_stock_returns_json)",
+      "detail": "KeyError: 'cancelled'"
+    },
+    {
+      "test": "test_vp_out_of_stock_asks_mp_like_regular (EcommerceApp.tests_magacin.MagacinViewTests.test_vp_out_of_stock_asks_mp_like_regular)",
+      "detail": "KeyError: 'need_mp'"
+    }
+  ],
+  "control_note": "Diagnostic comparison using old warehouse shells and unwrapped shared handlers, with the same local business logic. Not a pristine checkout or production baseline.",
+  "control_failures": 44,
+  "new_failures_compared_to_control": [
+    "test_validated_orders_hidden_until_validated_list (EcommerceApp.tests_magacin.MagacinViewTests.test_validated_orders_hidden_until_validated_list)"
+  ],
+  "subsequent_recheck": {
+    "tests": 6,
+    "passed": 6,
+    "note": "Includes the sole new comparison failure: cancellation test now checks the actual Poništi control instead of unrelated storefront chrome text Otkaži."
+  }
+}

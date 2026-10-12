@@ -79,6 +79,9 @@
     window.addEventListener('online', flush);
     window.addEventListener('pagehide', function () { persist(); flush(); });
     document.addEventListener('visibilitychange', function () { if (document.hidden) flush(); });
-    setInterval(flush, 3000);
+    // Article list refreshes only through user actions; input-triggered saves remain active.
+    if (!/^\/nalog\/magacin\/artikli\/?$/.test(location.pathname)) {
+        setInterval(flush, 3000);
+    }
     flush();
 })();

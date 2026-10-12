@@ -385,7 +385,7 @@
                         </svg>
                     </button>
                     {% if user.is_superuser or user.is_staff %}
-                    <a href="{% url 'staff_admin_panel' %}" class="nav-action-link staff-orders-btn staff-admin-nav-btn" aria-label="Admin Panel" title="Admin Panel">
+                    <a href="{% url 'staff_panel' %}" class="nav-action-link staff-orders-btn staff-admin-nav-btn" aria-label="Admin Panel" title="Admin Panel">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <rect x="3" y="3" width="7" height="7" rx="1"/>
                             <rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -414,7 +414,7 @@
                         {% endif %}
                     </a>
                     {% if user.is_superuser %}
-                    <a href="{% url 'staff_admin_panel' %}" class="logo-admin-panel">Admin<br>panel</a>
+                    <a href="{% url 'staff_panel' %}" class="logo-admin-panel">Admin<br>panel</a>
                     {% endif %}
                 </div>
 

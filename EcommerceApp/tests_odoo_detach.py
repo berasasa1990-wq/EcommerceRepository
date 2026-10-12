@@ -96,7 +96,7 @@ class OdooDetachTests(TestCase):
             session = self.client.session
             session['magacin_sync_job'] = {'log_id': WarehouseSyncLog.objects.get().pk, 'done': False}
             session.save()
-            for name in ['staff_magacin_artikli', 'staff_magacin_podesavanja']:
+            for name in ['staff_magacin_artikli', 'staff_wms']:
                 url = reverse(name, args=[self.order.broj]) if name.endswith('detail') else reverse(name)
                 self.assertEqual(self.client.get(url).status_code, 200)
         after = warehouse_snapshot()

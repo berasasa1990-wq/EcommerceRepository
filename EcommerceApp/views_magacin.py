@@ -157,18 +157,9 @@ from .models import (
     WarehouseSyncLog,
     OrderStockHold,
 )
-from .db_backup import (
-    BackupError,
-    backup_storage_status,
-    create_backup,
-    last_backup,
-    list_backups,
-    resolve_backup_file,
-    restore_backup,
-    save_uploaded_backup,
-)
+from .db_backup import last_backup
 from .views import _base_context
-from .warehouse_access import warehouse_user_required, warehouse_landing
+from .warehouse_access import warehouse_user_required
 
 logger = logging.getLogger(__name__)
 
@@ -335,6 +326,10 @@ def _magacin_nav_counts():
 
 
 def _magacin_context(request, *, section='artikli', page_title='Magacin', hide_top_search=False):
+    # Shared invoice/editor views outside /wms also use the active WMS shell.
+    if not getattr(request, 'wms_tool_section', ''):
+        request.wms_tool_section = 'narudzbe' if section == 'narudzbe' else 'zalihe'
+        request.wms_tool_base = 'bera_reference/staff/wms/legacy_tool_base.html'
     sync = last_sync()
     site_settings = SiteSettings.load()
     counts = _magacin_nav_counts()
@@ -377,10 +372,6 @@ def _parse_money(raw):
         raise MagacinError('Cijena nije validan broj.')
 
 
-@login_required(login_url='login')
-@user_passes_test(warehouse_user_required)
-def magacin_home(request):
-    return redirect(warehouse_landing(request.user))
 
 
 @login_required(login_url='login')
@@ -1386,7 +1377,7 @@ def _stampa_cijena_context(request, *, mode='izbor'):
     context.update({
         'mode': mode,
         'lookup_url': reverse('staff_magacin_artikli_lookup'),
-        'print_url': reverse('staff_magacin_stampa_cijena_print'),
+        'print_url': reverse('staff_wms_stampa_cijena_print'),
         'zebra_size': '2" × 1,224"',
     })
     return context
@@ -1395,7 +1386,7 @@ def _stampa_cijena_context(request, *, mode='izbor'):
 def _render_etiketa_print(request, items, papir='a4'):
     if not items:
         messages.error(request, 'Nema artikala za štampu.')
-        return redirect('staff_magacin_stampa_cijena')
+        return redirect('staff_wms_stampa_cijena')
     kind = _papir_kind(papir)
     if kind == 'zebra':
         for row in items:
@@ -1554,17 +1545,17 @@ def magacin_stampa_cijena_print(request):
             items.append(_artikal_etiketa_payload(product, variation, request=request))
         if not items:
             messages.error(request, 'Unesi barem jedan artikal.')
-            return redirect('staff_magacin_stampa_cijena_razlicite')
+            return redirect('staff_wms_stampa_cijena_razlicite')
         return _render_etiketa_print(request, items, papir=data.get('papir'))
 
     product, variation = _etiketa_resolve(data.get('artikal'), data.get('varijacija'))
     if product is None:
         messages.error(request, 'Izaberi artikal.')
-        return redirect('staff_magacin_stampa_cijena_ista')
+        return redirect('staff_wms_stampa_cijena_ista')
     raw_n = data.get('n')
     if raw_n is None or str(raw_n).strip() == '':
         messages.error(request, 'Unesi koliko cijena da odstampa.')
-        url = reverse('staff_magacin_stampa_cijena_ista')
+        url = reverse('staff_wms_stampa_cijena_ista')
         params = {'artikal': product.pk}
         if variation:
             params['varijacija'] = variation.pk
@@ -2241,189 +2232,12 @@ def _parse_iso_date(raw):
         return None
 
 
-def _pregled_period(request):
-    today = timezone.localdate()
-    period = (request.GET.get('period') or 'day').strip().lower()
-    date_from = _parse_iso_date(request.GET.get('from'))
-    date_to = _parse_iso_date(request.GET.get('to'))
-    if period == 'range' and date_from and date_to:
-        if date_from > date_to:
-            date_from, date_to = date_to, date_from
-        label = f'{date_from.strftime("%d.%m.%Y.")} – {date_to.strftime("%d.%m.%Y.")}'
-        return period, date_from, date_to, label
-    if period == 'month':
-        start = today.replace(day=1)
-        return 'month', start, today, 'Ovaj mjesec'
-    if period == 'year':
-        start = today.replace(month=1, day=1)
-        return 'year', start, today, 'Ova godina'
-    return 'day', today, today, 'Danas'
 
 
-def _pregled_order_stats(start, end):
-    orders = Order.objects.exclude(status=Order.Status.OTKAZANA).filter(
-        kreirana__date__gte=start,
-        kreirana__date__lte=end,
-    )
-    broj = orders.count()
-    iznos = orders.aggregate(s=Sum('ukupno'))['s'] or Decimal('0.00')
-    items = OrderItem.objects.filter(narudzba__in=orders)
-    komada = int(items.aggregate(s=Sum('kolicina'))['s'] or 0)
-    linije = items.aggregate(s=Sum(F('cijena') * F('kolicina')))['s'] or Decimal('0.00')
-    ids = set(items.exclude(artikal_id=None).values_list('artikal_id', flat=True))
-    names = set(items.filter(artikal_id=None).values_list('naziv', flat=True))
-    razlicitih = len(ids) + len(names)
-    prosjek = (linije / komada).quantize(Decimal('0.01')) if komada else Decimal('0.00')
-    lista = list(orders.order_by('-kreirana')[:20])
-    return {
-        'orders_count': broj,
-        'orders_iznos': iznos,
-        'orders_artikala': razlicitih,
-        'orders_prosjek': prosjek,
-        'orders_komada': komada,
-        'period_orders': lista,
-    }
 
 
-def _pregled_chart(group, end):
-    group = group if group in {'dani', 'mjeseci', 'godine'} else 'dani'
-    labels = []
-    starts = []
-    if group == 'godine':
-        years = list(range(end.year - 4, end.year + 1))
-        for year in years:
-            labels.append(str(year))
-            starts.append(date(year, 1, 1))
-        trunc = TruncYear('kreirana')
-    elif group == 'mjeseci':
-        cursor = date(end.year, end.month, 1)
-        months = []
-        for _ in range(12):
-            months.append(cursor)
-            month = cursor.month - 1 or 12
-            year = cursor.year if cursor.month > 1 else cursor.year - 1
-            cursor = date(year, month, 1)
-        months.reverse()
-        for item in months:
-            labels.append(item.strftime('%m.%Y.'))
-            starts.append(item)
-        trunc = TruncMonth('kreirana')
-    else:
-        days = [end - timedelta(days=offset) for offset in range(13, -1, -1)]
-        for item in days:
-            labels.append(item.strftime('%d.%m.'))
-            starts.append(item)
-        trunc = TruncDate('kreirana')
-
-    start = starts[0]
-    rows = {
-        (bucket.date() if hasattr(bucket, 'date') else bucket): row
-        for bucket, row in (
-            (
-                item['bucket'],
-                item,
-            )
-            for item in (
-                Order.objects.exclude(status=Order.Status.OTKAZANA)
-                .filter(kreirana__date__gte=start, kreirana__date__lte=end)
-                .annotate(bucket=trunc)
-                .values('bucket')
-                .annotate(broj=Count('id'), iznos=Sum('ukupno'))
-            )
-            if item['bucket']
-        )
-    }
-    series_orders = []
-    series_iznos = []
-    for item in starts:
-        match = None
-        for bucket, row in rows.items():
-            if group == 'godine' and bucket.year == item.year:
-                match = row
-                break
-            if group == 'mjeseci' and bucket.year == item.year and bucket.month == item.month:
-                match = row
-                break
-            if group == 'dani' and bucket == item:
-                match = row
-                break
-        series_orders.append(int(match['broj']) if match else 0)
-        series_iznos.append(float(match['iznos'] or 0) if match else 0)
-    return {
-        'group': group,
-        'labels': labels,
-        'orders': series_orders,
-        'iznos': series_iznos,
-    }
 
 
-@login_required(login_url='login')
-@user_passes_test(warehouse_user_required)
-def magacin_pregled(request):
-    _ensure_magacin_locations()
-    period, start, end, period_label = _pregled_period(request)
-    graf = (request.GET.get('graf') or '').strip().lower()
-    if graf not in {'dani', 'mjeseci', 'godine'}:
-        if period == 'year':
-            graf = 'mjeseci'
-        elif period == 'month':
-            graf = 'dani'
-        else:
-            graf = 'dani'
-    order_stats = _pregled_order_stats(start, end)
-    chart = _pregled_chart(graf, end)
-
-    loc_count = usable_locations().count()
-    stock_agg = countable_stock_qs().aggregate(
-        na_stanju=Sum('kolicina'),
-        rezervisano=Sum('rezervisano'),
-        redova=Count('id'),
-    )
-    na_stanju = int(stock_agg['na_stanju'] or 0)
-    rezervisano = max(0, int(stock_agg['rezervisano'] or 0))
-    low_stock = []
-    metas = ProductWarehouseMeta.objects.select_related('product').filter(min_zaliha__gt=0)
-    totals_map = {
-        row['product_id']: int(row['na_stanju'] or 0)
-        for row in countable_stock_qs().values('product_id').annotate(na_stanju=Sum('kolicina'))
-    }
-    for meta in metas:
-        qty = totals_map.get(meta.product_id, 0)
-        if qty <= meta.min_zaliha:
-            low_stock.append({'product': meta.product, 'na_stanju': qty, 'min_zaliha': meta.min_zaliha})
-    low_stock.sort(key=lambda row: row['na_stanju'])
-
-    recent = (
-        WarehouseMovement.objects.filter(
-            tip__in=[
-                WarehouseMovement.Tip.PRIJEM,
-                WarehouseMovement.Tip.PRODAJA,
-                WarehouseMovement.Tip.TRANSFER,
-                WarehouseMovement.Tip.KOREKCIJA,
-            ],
-        )
-        .select_related('product', 'location', 'to_location', 'variation')
-        .order_by('-kreiran', '-id')[:10]
-    )
-
-    context = _magacin_context(request, section='pregled', page_title='Pregled — Magacin')
-    context.update({
-        'stat_artikala': magacin_products_qs().count(),
-        'stat_lokacija': loc_count,
-        'stat_na_stanju': na_stanju,
-        'stat_rezervisano': rezervisano,
-        'stat_dostupno': max(0, na_stanju - rezervisano),
-        'low_stock': low_stock[:20],
-        'recent_movements': recent,
-        'period': period,
-        'period_label': period_label,
-        'date_from': start.isoformat(),
-        'date_to': end.isoformat(),
-        'graf': graf,
-        'chart_json': json.dumps(chart, ensure_ascii=False),
-        **order_stats,
-    })
-    return render(request, 'staff/magacin/pregled.html', context)
 
 
 @login_required(login_url='login')
@@ -4418,6 +4232,8 @@ def _create_manual_order(request, *, existing=None):
             available = display_stock_totals(spare_product)['dostupno'] + _held_qty_on_order(
                 existing, spare_product, None,
             )
+            if existing is None and available <= 0:
+                raise MagacinError(f'„{spare_product.naziv}” nije dostupan i ne može se dodati u narudžbu.')
             if available < qty and not mp_ok:
                 raise MagacinError(
                     f'„{spare_product.naziv}” nema dostupnog artikla ({available}). '
@@ -4451,6 +4267,8 @@ def _create_manual_order(request, *, existing=None):
         available = display_stock_totals(product, variation)['dostupno'] + _held_qty_on_order(
             existing, product, variation,
         )
+        if existing is None and available <= 0:
+            raise MagacinError(f'„{product.naziv}” nije dostupan i ne može se dodati u narudžbu.')
         if available < qty and not mp_ok:
             raise MagacinError(
                 f'„{product.naziv}” nema dostupnog artikla ({available}). '
@@ -7710,52 +7528,6 @@ def ponuda_javna(request, token):
     return render(request, 'ponuda_pdf.html', context)
 
 
-@login_required(login_url='login')
-@user_passes_test(warehouse_user_required)
-def magacin_izvjestaji(request):
-    order_query = (request.GET.get('narudzba') or '').strip()
-    found_orders = []
-    if order_query:
-        digits = ''.join(ch for ch in order_query if ch.isdigit())
-        filt = (
-            Q(broj__icontains=order_query)
-            | Q(ime_prezime__icontains=order_query)
-            | Q(telefon__icontains=order_query)
-        )
-        if digits and digits != order_query:
-            filt |= Q(broj__icontains=digits) | Q(telefon__icontains=digits)
-        found_orders = list(
-            Order.objects.filter(filt).order_by('-kreirana')[:50]
-        )
-    by_location = []
-    for loc in usable_locations():
-        agg = loc.zalihe.filter(kolicina__gt=0).aggregate(
-            na_stanju=Sum('kolicina'),
-            rezervisano=Sum('rezervisano'),
-            artikala=Count('product', distinct=True),
-        )
-        qty = int(agg['na_stanju'] or 0)
-        reserved = max(0, int(agg['rezervisano'] or 0))
-        by_location.append({
-            'location': loc,
-            'na_stanju': qty,
-            'rezervisano': reserved,
-            'dostupno': max(0, qty - reserved),
-            'artikala': int(agg['artikala'] or 0),
-        })
-    movements_today = WarehouseMovement.objects.filter(
-        kreiran__date=timezone.localdate(),
-    ).count()
-    context = _magacin_context(request, section='izvjestaji', page_title='Izvještaji — Magacin')
-    context.update({
-        'by_location': by_location,
-        'movements_today': movements_today,
-        'products_total': magacin_products_qs().count(),
-        'products_active': magacin_products_qs().filter(aktivan=True).count(),
-        'order_query': order_query,
-        'found_orders': found_orders,
-    })
-    return render(request, 'staff/magacin/izvjestaji.html', context)
 
 
 def _popis_is_ajax(request):
@@ -8752,6 +8524,12 @@ def _vp_stock_block(request, draft, product, variation, qty, *, mp_ok=False, rep
     existing = stavka or draft.stavke.filter(product=product, variation=stock_variation).first()
     available = display_stock_totals(product, variation)['dostupno']
     needed = qty if replace else qty + (existing.kolicina if existing else 0)
+    if available <= 0:
+        message = f'„{product.naziv}” nije dostupan i ne može se dodati u narudžbu.'
+        if _vp_is_ajax(request):
+            return JsonResponse({'ok': False, 'error': message}, status=409)
+        messages.error(request, message)
+        return redirect('staff_magacin_vp_narudzba')
     if needed <= available or mp_ok or (existing and existing.mp_ok):
         return None
     naziv = product.naziv
@@ -8938,125 +8716,18 @@ def magacin_vp_narudzba(request):
     return render(request, 'staff/magacin/vp_narudzba.html', context)
 
 
-def _backup_page_context(request, *, page_title='Backup baze — Magacin'):
-    context = _magacin_context(request, section='podesavanja', page_title=page_title)
-    context.update({
-        'backups': list_backups(),
-        'backup_status': backup_storage_status(),
-        'backup_next': reverse('staff_magacin_podesavanja'),
-    })
-    return context
 
 
-@login_required(login_url='login')
-@user_passes_test(warehouse_user_required)
-def magacin_podesavanja(request):
-    context = _backup_page_context(request, page_title='Podešavanja — Magacin')
-    context.update({
-        'location_count': WarehouseLocation.objects.count(),
-        'sync_count': WarehouseSyncLog.objects.count(),
-    })
-    return render(request, 'staff/magacin/podesavanja.html', context)
 
 
-@login_required(login_url='login')
-@user_passes_test(warehouse_user_required)
-def magacin_sync_istorija(request):
-    paginator = Paginator(WarehouseSyncLog.objects.select_related('korisnik'), 30)
-    page = paginator.get_page(request.GET.get('page') or 1)
-    context = _magacin_context(request, section='podesavanja', page_title='Istorija sync-a — Magacin')
-    context.update({'page': page})
-    return render(request, 'staff/magacin/sync_istorija.html', context)
 
 
-def _backup_redirect(request):
-    nxt = (request.POST.get('next') or request.GET.get('next') or '').strip()
-    if nxt.startswith('/') and not nxt.startswith('//'):
-        return redirect(nxt)
-    return redirect('staff_magacin_backup')
 
 
-@login_required(login_url='login')
-@user_passes_test(warehouse_user_required)
-def magacin_backup(request):
-    if request.method == 'POST':
-        action = (request.POST.get('action') or 'create').strip()
-        if action in {'restore', 'upload_restore'} and not _packing_reprint_password_ok(
-            request.POST.get('lozinka')
-        ):
-            messages.error(request, 'Pogrešna šifra.')
-            return _backup_redirect(request)
-        if action == 'upload_restore':
-            uploaded = request.FILES.get('fajl')
-            if not uploaded:
-                messages.error(request, 'Odaberi backup fajl sa diska (.sqlite3 ili .dump).')
-                return _backup_redirect(request)
-            try:
-                info = save_uploaded_backup(uploaded)
-                result = restore_backup(info['name'])
-            except BackupError as exc:
-                messages.error(request, str(exc) if str(exc) else 'Restore nije uspio.')
-                return _backup_redirect(request)
-            safety = result.get('safety') or ''
-            extra = f' Trenutno stanje je sačuvano kao {safety}.' if safety else ''
-            messages.success(
-                request,
-                f'Baza je vraćena iz {result.get("restored")}.{extra}',
-            )
-            return _backup_redirect(request)
-        if action == 'restore':
-            name = (request.POST.get('name') or '').strip()
-            try:
-                result = restore_backup(name)
-            except BackupError as exc:
-                messages.error(request, str(exc) if str(exc) else 'Restore nije uspio.')
-                return _backup_redirect(request)
-            safety = result.get('safety') or ''
-            extra = f' Trenutno stanje je sačuvano kao {safety}.' if safety else ''
-            messages.success(
-                request,
-                f'Baza je vraćena na backup {result.get("restored")}.{extra}',
-            )
-            return _backup_redirect(request)
-        try:
-            info = create_backup()
-        except BackupError as exc:
-            messages.error(request, str(exc) if str(exc) else 'Backup nije uspio.')
-            return _backup_redirect(request)
-        messages.success(
-            request,
-            f'Backup baze je spreman: {info["name"]} ({info["size_label"]}). '
-            'Preuzmi ga na svoj disk.',
-        )
-        return _backup_redirect(request)
-
-    context = _backup_page_context(request)
-    context['backup_next'] = reverse('staff_magacin_backup')
-    return render(request, 'staff/magacin/backup.html', context)
 
 
-@login_required(login_url='login')
-@user_passes_test(warehouse_user_required)
-@require_GET
-def magacin_backup_download(request, name):
-    try:
-        path = resolve_backup_file(name)
-    except BackupError as exc:
-        raise Http404(str(exc)) from exc
-    return FileResponse(path.open('rb'), as_attachment=True, filename=path.name)
 
 
-@login_required(login_url='login')
-@user_passes_test(warehouse_user_required)
-@require_GET
-def magacin_backup_download_current(request):
-    try:
-        info = create_backup(require_durable=False)
-        path = resolve_backup_file(info['name'])
-    except BackupError as exc:
-        messages.error(request, str(exc) if str(exc) else 'Backup nije uspio.')
-        return _backup_redirect(request)
-    return FileResponse(path.open('rb'), as_attachment=True, filename=path.name)
 
 
 

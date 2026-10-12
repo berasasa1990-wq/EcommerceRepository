@@ -597,6 +597,7 @@
     }
     function openQty(item) {
         if (!item || !qtyModal) return;
+        if (Number(item.dostupno) <= 0) { window.alert('Artikal nije dostupan i ne može se dodati.'); return; }
         picked = item;
         list.hidden = true;
         if (qtyName) qtyName.textContent = item.naziv || 'Artikal';
@@ -707,9 +708,10 @@
                 event.preventDefault();
                 shiftCatalogQty(row, -1);
             });
+            card.querySelector('[data-cat-plus]').disabled = (row.dostupno || 0) <= 0;
             card.querySelector('[data-cat-plus]').addEventListener('click', function (event) {
                 event.preventDefault();
-                shiftCatalogQty(row, 1);
+                openQty(row);
             });
             catalog.appendChild(card);
         });

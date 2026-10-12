@@ -181,7 +181,7 @@ def warehouse_compatible(view):
         if any(model._meta.db_table not in tables for model in (WMSOrder, WMSLocation)):
             return HttpResponse('WMS zahtijeva svoje migracije. Postojeći magacin ostaje dostupan.', status=503)
         if not canonical_schema_ready():
-            return HttpResponse('WMS direktni magacin zahtijeva migraciju 0315. Stari magacin ostaje dostupan na /nalog/magacin/.', status=503)
+            return HttpResponse('WMS direktni magacin zahtijeva migraciju 0315. Obratite se administratoru sistema.', status=503)
         try:
             if request.method != 'POST':
                 return view(request, *args, **kwargs)

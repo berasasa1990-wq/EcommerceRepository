@@ -1,0 +1,133 @@
+{% extends 'bera_reference/staff/wms/base.html' %}
+{% load static bera_warehouse_access %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block page_title %}
+<title>WMS Magacin — {{ wms_title }}</title>
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'bera_reference/css/staff-magacin.css' %}?v=20260910noteGreen">
+
+
+{% endblock %}
+
+{% block storefront_theme %}{{ block.super }}<link rel="stylesheet" href="{% static 'bera_reference/css/wms-legacy-tools.css' %}?v=20261012">{% endblock %}
+
+{% block flash_messages %}
+{% if messages %}{% for message in messages %}{% endfor %}{% endif %}
+{% endblock %}
+
+{% block body_class %}{{ block.super }} wms-legacy-tool staff-shell-page magacin-page{% if pick_fullscreen %} is-pick{% endif %}{% if magacin_section == 'artikli' %} is-artikli{% endif %}{% if magacin_section == 'narudzbe' %} is-narudzbe{% endif %}{% if magacin_section == 'nivelacije' %} is-nivelacije{% endif %}{% if magacin_section == 'uvoz' %} is-uvoz{% endif %}{% if uvoz_popis_page %} is-uvoz-popis{% endif %}{% if magacin_section == 'popis' %} is-popis{% endif %}{% if magacin_section == 'popis_test' %} is-popis-test{% endif %}{% endblock %}
+
+{% block wms_content %}
+<section class="mg-app" id="mgApp">
+    <div class="mg-main">
+        {% block magacin_before_search %}{% endblock %}
+        {% if magacin_section == 'rezervni' or magacin_section == 'popis_test' or magacin_section == 'popis' or magacin_section == 'stampa_deklaracije' or magacin_section == 'stampa_cijena' or magacin_section == 'lokacije' or magacin_section == 'zalihe' or magacin_section == 'mp_dnevno' or magacin_section == 'transferi' or magacin_section == 'provjera_lagera' or magacin_section == 'fali_na_sajtu' %}
+        <button type="button" class="mg-menu-standalone" id="mgNavToggle" aria-label="Meni magacina" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        {% else %}
+        <div class="mg-page-bar mg-chrome">
+            <button type="button" class="mg-chrome-burger" id="mgNavToggle" aria-label="Meni magacina" aria-expanded="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </button>
+            {% if magacin_section == 'narudzbe' %}
+            <form class="mg-page-search mg-chrome-search" method="get" action="{% url 'staff_magacin_narudzbe' %}" role="search">
+                {% if show_validated %}<input type="hidden" name="validirane" value="1">{% endif %}
+                {% if show_all_validated %}<input type="hidden" name="sve" value="1">{% elif show_validated and day and not is_today %}<input type="hidden" name="datum" value="{{ day|date:'Y-m-d' }}">{% endif %}
+                {% if izvor_filter and izvor_filter != 'sve' %}<input type="hidden" name="izvor" value="{{ izvor_filter }}">{% endif %}
+                <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                <input type="search" name="pretraga" value="{{ order_query }}" placeholder="Pretraži po imenu ili broju narudžbe..." autocomplete="off">
+            </form>
+            {% else %}
+            <form class="mg-page-search mg-chrome-search" method="get" action="{% url 'staff_magacin_artikli' %}" role="search" id="mgArticleSearchForm">
+                <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                <input type="search" name="pretraga" value="{{ magacin_search }}" placeholder="Pretraži artikle po nazivu, šifri ili barkodu..." autocomplete="off" id="mgArticleSearch" aria-label="Pretraži artikle po nazivu, šifri ili barkodu" enterkeyhint="search">
+                {% block article_zero_filter %}
+                {% if magacin_section == 'artikli' %}
+                <label class="mg-zero-check">
+                    <input type="checkbox" name="bez_zalihe" value="1"{% if include_zero %} checked{% endif %} onchange="this.form.submit()">
+                    Prikaži i bez zalihe
+                </label>
+                {% endif %}
+                {% endblock %}
+            </form>
+            {% endif %}
+            <div class="mg-chrome-right">
+                <button type="button" class="mg-chrome-icon" id="mgArticleScanBtn" title="Skeniraj barkod" aria-label="Skeniraj barkod">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+                        <path d="M7 8v8M10 8v8M13 8v5M16 8v8"/>
+                    </svg>
+                </button>
+                
+                <div class="mg-user" id="mgUser">
+                    <span class="mg-avatar">{{ staff_display_name|default:"AD"|slice:":2"|upper }}</span>
+                    <div class="mg-user-menu">
+                        <a href="{% url 'staff_wms_workspace' %}">WMS</a>
+                        <a href="{% url 'logout' %}">Odjava</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% block magacin_content %}{% endblock %}
+    </div>
+</section>
+<div class="mg-modal" id="mgScanModal" hidden>
+    <div class="mg-modal-bg" data-scan-close></div>
+    <div class="mg-modal-panel mg-scan-panel" role="dialog" aria-modal="true" aria-labelledby="mgScanTitle">
+        <h2 id="mgScanTitle">Skeniraj artikal</h2>
+        <p class="mg-muted">Drži barkod vodoravno u bijelom okviru, blizu kamere, uz dobro svjetlo.</p>
+        <div class="mg-scan-reader">
+            <video id="mgScanVideo" playsinline muted autoplay></video>
+            <div class="mg-scan-guide" aria-hidden="true"></div>
+        </div>
+        <p class="mg-scan-status" id="mgScanStatus" aria-live="polite"></p>
+        <div class="mg-modal-actions">
+            <label class="mg-btn" style="cursor:pointer;">
+                Učitaj sliku
+                <input type="file" id="mgBarcodeFile" accept="image/*" capture="environment" hidden>
+            </label>
+            <button type="button" class="mg-btn" data-scan-close>Zatvori</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var lockZoom = document.body.classList.contains('is-artikli')
+        || document.body.classList.contains('is-vp')
+        || document.body.classList.contains('is-popis')
+        || document.body.classList.contains('is-popis-test')
+        || document.body.classList.contains('is-uvoz-popis');
+    if (!lockZoom) return;
+    var meta = document.querySelector('meta[name="viewport"]');
+    if (meta) {
+        meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+    }
+    if (document.body.classList.contains('is-popis-test')) {
+        document.addEventListener('gesturestart', function (event) { event.preventDefault(); });
+        document.addEventListener('gesturechange', function (event) { event.preventDefault(); });
+        document.addEventListener('touchmove', function (event) {
+            if (event.touches && event.touches.length > 1) event.preventDefault();
+        }, { passive: false });
+    }
+})();
+</script>
+<script src="{% static 'bera_reference/js/staff-manual-order-draft.js' %}?v=20260916database" data-user="{{ request.user.pk }}"></script>
+<script src="{% static 'bera_reference/js/staff-magacin.js' %}?v=20261012-wms-routes"></script>
+{% if request.duplicate_barcode_message %}
+{{ request.duplicate_barcode_message|json_script:"duplicate-barcode-message" }}
+<script>window.alert(JSON.parse(document.getElementById('duplicate-barcode-message').textContent));</script>
+{% endif %}
+
+<script src="{% static 'bera_reference/js/barcode-check.js' %}?v=20260910" defer></script>
+{% block magacin_js %}{% endblock %}
+{% endblock %}

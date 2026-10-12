@@ -1,4 +1,4 @@
-{% extends 'bera_reference/staff/magacin/base.html' %}
+{% extends request.wms_tool_base|default:'bera_reference/staff/magacin/base.html' %}
 {% load static %}
 {% block extra_css %}
 {{ block.super }}

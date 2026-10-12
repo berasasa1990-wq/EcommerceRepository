@@ -1,4 +1,4 @@
-{% if social_proof %}
+{% if social_proof and request.path != '/wms/operacije/artikli/' and request.path != '/wms/artikli' %}
 <div class="social-proof-toast" id="socialProofToast" hidden aria-live="polite"
      data-poll-url="{{ social_proof.poll_url|default:'/drustveni-dokaz/' }}"
      data-interval-ms="{{ social_proof.interval_ms|default:180000 }}"

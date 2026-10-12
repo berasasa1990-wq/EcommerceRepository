@@ -6813,20 +6813,6 @@ def staff_site_edit_save(request):
     })
 
 
-@login_required(login_url='login')
-@user_passes_test(_staff_required)
-def staff_admin_panel(request):
-    from .models import Order
-
-    nova_count = 0
-    if request.user.is_superuser:
-        nova_count = Order.objects.filter(status=Order.Status.NOVA).count()
-    context = {
-        **_base_context(),
-        'is_superuser_staff': request.user.is_superuser,
-        'new_orders_count': nova_count,
-    }
-    return render(request, 'staff/admin_panel.html', context)
 
 
 @login_required(login_url='login')
@@ -7226,7 +7212,7 @@ def staff_activate_user(request):
         if is_ajax:
             return JsonResponse({'ok': False, 'message': msg}, status=404)
         messages.error(request, msg)
-        return redirect('staff_admin_panel')
+        return redirect('staff_panel')
 
     if target.is_active:
         msg = f'Nalog {target.email or target.username} je već aktivan.'

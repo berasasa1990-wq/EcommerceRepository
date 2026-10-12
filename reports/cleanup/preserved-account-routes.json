@@ -1,0 +1,146 @@
+[
+  {
+    "path": "/nalog/",
+    "name": "account"
+  },
+  {
+    "path": "/nalog/narudzba/<str:broj>/",
+    "name": "account_order_detail"
+  },
+  {
+    "path": "/nalog/provjera-narudzbi/",
+    "name": "staff_order_lookup"
+  },
+  {
+    "path": "/nalog/provjera-narudzbi/<str:broj>/",
+    "name": "staff_order_detail"
+  },
+  {
+    "path": "/nalog/provjera-narudzbi/<str:broj>/stampaj/",
+    "name": "staff_order_print"
+  },
+  {
+    "path": "/nalog/provjera-narudzbi/<str:broj>/odstampano/",
+    "name": "staff_order_mark_printed"
+  },
+  {
+    "path": "/nalog/provjera-narudzbi/<str:broj>/pakovanje/",
+    "name": "staff_order_packing"
+  },
+  {
+    "path": "/nalog/provjera-narudzbi/<str:broj>/brza-posta/",
+    "name": "staff_order_brza_posta"
+  },
+  {
+    "path": "/nalog/provjera-narudzbi/<str:broj>/x-express/",
+    "name": "staff_order_xexpress"
+  },
+  {
+    "path": "/nalog/b2b-live/",
+    "name": "staff_b2b_live"
+  },
+  {
+    "path": "/nalog/edit-mode/",
+    "name": "staff_toggle_edit_mode"
+  },
+  {
+    "path": "/nalog/site-edit/",
+    "name": "staff_site_edit_save"
+  },
+  {
+    "path": "/nalog/artikli/bulk-izmjena/",
+    "name": "staff_product_bulk_edit"
+  },
+  {
+    "path": "/nalog/artikli/ista-slika/",
+    "name": "staff_same_image_products"
+  },
+  {
+    "path": "/nalog/aktiviraj-korisnika/",
+    "name": "staff_activate_user"
+  },
+  {
+    "path": "/nalog/aktivne-korpe/",
+    "name": "staff_active_carts"
+  },
+  {
+    "path": "/nalog/greb-greb/",
+    "name": "staff_scratch_analytics"
+  },
+  {
+    "path": "/nalog/uzivo-analitika/",
+    "name": "staff_live_analytics"
+  },
+  {
+    "path": "/nalog/uzivo-analitika/podaci/",
+    "name": "staff_live_analytics_data"
+  },
+  {
+    "path": "/nalog/uzivo-obavijesti/",
+    "name": "staff_site_events_poll"
+  },
+  {
+    "path": "/nalog/pretraga-artikala/",
+    "name": "staff_product_search"
+  },
+  {
+    "path": "/nalog/loyalty/",
+    "name": "staff_loyalty_system"
+  },
+  {
+    "path": "/nalog/loyalty/sync/",
+    "name": "staff_loyalty_sync"
+  },
+  {
+    "path": "/nalog/loyalty/clan/<str:kod>/",
+    "name": "staff_loyalty_member"
+  },
+  {
+    "path": "/nalog/loyalty/kartica/<int:card_id>/slika.png",
+    "name": "staff_loyalty_card_image"
+  },
+  {
+    "path": "/nalog/loyalty/kartica/<int:card_id>/qr.png",
+    "name": "staff_loyalty_card_qr"
+  },
+  {
+    "path": "/nalog/loyalty/kartica/<int:card_id>/barkod.png",
+    "name": "staff_loyalty_card_barcode"
+  },
+  {
+    "path": "/nalog/narudzbe/",
+    "name": "staff_orders_validation"
+  },
+  {
+    "path": "/nalog/online-narudzbe/",
+    "name": "staff_online_orders"
+  },
+  {
+    "path": "/nalog/poklon-vaucer/",
+    "name": "staff_gift_voucher"
+  },
+  {
+    "path": "/nalog/poklon-vaucer/stampa/",
+    "name": "staff_gift_voucher_print"
+  },
+  {
+    "path": "/nalog/uvoz/",
+    "name": "staff_uvoz"
+  },
+  {
+    "path": "/nalog/uvoz/<int:pk>/",
+    "name": "staff_uvoz_detail"
+  },
+  {
+    "path": "/nalog/pretraga-kategorija/",
+    "name": "staff_category_search"
+  },
+  {
+    "path": "/nalog/pretraga-brendova/",
+    "name": "staff_brand_search"
+  },
+  {
+    "path": "/nalog/pretraga-tagova/",
+    "name": "staff_tag_search"
+  }
+]

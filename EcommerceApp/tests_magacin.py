@@ -876,15 +876,12 @@ class MagacinViewTests(TestCase):
             5,
         )
 
-    def test_admin_panel_has_magacin_not_carts(self):
+    def test_active_panel_links_to_wms_without_retired_admin(self):
         self.client.force_login(self.user)
-        response = self.client.get(reverse('staff_admin_panel'))
-        self.assertContains(response, 'Magacin')
-        self.assertContains(response, reverse('staff_magacin'))
-        self.assertNotContains(response, 'Aktivne korpe')
-        self.assertContains(response, 'Poklon Vaučer')
-        self.assertContains(response, reverse('staff_gift_voucher'))
-        self.assertNotContains(response, 'Online narudžbe')
+        response = self.client.get(reverse('staff_panel'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, '/nalog/admin/')
+        self.assertNotContains(response, '/nalog/magacin/')
 
     def test_gift_voucher_prints_a4(self):
         self.client.force_login(self.user)
@@ -1141,7 +1138,7 @@ class MagacinViewTests(TestCase):
         self.assertNotContains(detail, 'Ažuriraj postojeću')
         self.assertNotContains(detail, 'Ažuriraj lokacije')
         self.assertNotContains(detail, 'Dodaj na novu')
-        self.assertContains(detail, reverse('staff_magacin_stampa_cijena_ista'))
+        self.assertContains(detail, reverse('staff_wms_stampa_cijena_ista'))
         self.assertContains(detail, f'artikal={self.product.pk}')
         self.assertContains(detail, 'Štampaj')
         self.assertContains(detail, reverse('staff_magacin_artikal_izmjena', args=[self.product.pk]))
@@ -1340,23 +1337,19 @@ class MagacinViewTests(TestCase):
         self.client.force_login(self.user)
         nav = self.client.get(reverse('staff_magacin_artikli'))
         html = nav.content.decode()
-        brzi = html.find(reverse('staff_magacin_brzi_unos'))
-        stampa = html.find(reverse('staff_magacin_stampa_cijena'))
-        self.assertNotEqual(brzi, -1)
-        self.assertNotEqual(stampa, -1)
-        self.assertLess(brzi, stampa)
-        self.assertContains(nav, 'Štampaj cijenu')
+        self.assertIn(reverse('staff_wms_section', args=['stampa_cijena']), html)
+        self.assertContains(nav, 'Štampaj cijene')
 
-        home = self.client.get(reverse('staff_magacin_stampa_cijena'))
+        home = self.client.get(reverse('staff_wms_stampa_cijena'))
         self.assertEqual(home.status_code, 200)
         self.assertContains(home, 'A4')
         self.assertContains(home, 'Zebra')
         self.assertContains(home, 'Ista cijena')
         self.assertContains(home, 'Različite cijene')
-        self.assertContains(home, reverse('staff_magacin_stampa_cijena_ista'))
-        self.assertContains(home, reverse('staff_magacin_stampa_cijena_razlicite'))
+        self.assertContains(home, reverse('staff_wms_stampa_cijena_ista'))
+        self.assertContains(home, reverse('staff_wms_stampa_cijena_razlicite'))
 
-        ista = self.client.get(reverse('staff_magacin_stampa_cijena_ista'), {'artikal': self.product.pk})
+        ista = self.client.get(reverse('staff_wms_stampa_cijena_ista'), {'artikal': self.product.pk})
         self.assertEqual(ista.status_code, 200)
         self.assertContains(ista, 'Test braid')
         self.assertContains(ista, 'Koliko cijena da odstampa')
@@ -1364,13 +1357,13 @@ class MagacinViewTests(TestCase):
         self.assertContains(ista, 'value="a4"')
         self.assertContains(ista, 'value="zebra"')
 
-        missing_n = self.client.get(reverse('staff_magacin_stampa_cijena_print'), {
+        missing_n = self.client.get(reverse('staff_wms_stampa_cijena_print'), {
             'mod': 'ista',
             'artikal': self.product.pk,
         })
         self.assertEqual(missing_n.status_code, 302)
 
-        same = self.client.get(reverse('staff_magacin_stampa_cijena_print'), {
+        same = self.client.get(reverse('staff_wms_stampa_cijena_print'), {
             'mod': 'ista',
             'artikal': self.product.pk,
             'n': '4',
@@ -1381,13 +1374,13 @@ class MagacinViewTests(TestCase):
         self.assertContains(same, 'Test braid', count=4)
         self.assertContains(same, '10,00')
 
-        mixed_page = self.client.get(reverse('staff_magacin_stampa_cijena_razlicite'))
+        mixed_page = self.client.get(reverse('staff_wms_stampa_cijena_razlicite'))
         self.assertEqual(mixed_page.status_code, 200)
         self.assertContains(mixed_page, 'Dodaj artikal')
         self.assertContains(mixed_page, 'Katalog')
         self.assertContains(mixed_page, 'scCatalog')
 
-        mixed = self.client.post(reverse('staff_magacin_stampa_cijena_print'), {
+        mixed = self.client.post(reverse('staff_wms_stampa_cijena_print'), {
             'mod': 'razlicite',
             'stavka': [str(self.product.pk), str(self.zero.pk)],
         })
@@ -1396,7 +1389,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(mixed, 'Test braid', count=1)
         self.assertContains(mixed, 'Prazan lager', count=1)
 
-        zebra = self.client.get(reverse('staff_magacin_stampa_cijena_print'), {
+        zebra = self.client.get(reverse('staff_wms_stampa_cijena_print'), {
             'mod': 'ista',
             'artikal': self.product.pk,
             'n': '3',
@@ -1418,7 +1411,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(zebra, 'Štampaj na Zebra')
         self.assertNotContains(zebra, 'size: A4 portrait')
 
-        zebra_mixed = self.client.post(reverse('staff_magacin_stampa_cijena_print'), {
+        zebra_mixed = self.client.post(reverse('staff_wms_stampa_cijena_print'), {
             'mod': 'razlicite',
             'papir': 'zebra',
             'stavka': [str(self.product.pk), str(self.zero.pk)],
@@ -1433,7 +1426,7 @@ class MagacinViewTests(TestCase):
 
     def test_stampa_cijena_zebra_qr_and_print(self):
         self.client.force_login(self.user)
-        zebra = self.client.get(reverse('staff_magacin_stampa_cijena_print'), {
+        zebra = self.client.get(reverse('staff_wms_stampa_cijena_print'), {
             'mod': 'ista',
             'artikal': self.product.pk,
             'n': '2',
@@ -1461,11 +1454,8 @@ class MagacinViewTests(TestCase):
         self.client.force_login(self.user)
         nav = self.client.get(reverse('staff_magacin_artikli'))
         html = nav.content.decode()
-        cijena = html.find(reverse('staff_magacin_stampa_cijena'))
-        dekl = html.find(reverse('staff_magacin_stampa_deklaracije'))
-        self.assertNotEqual(cijena, -1)
-        self.assertNotEqual(dekl, -1)
-        self.assertLess(cijena, dekl)
+        self.assertIn(reverse('staff_wms_section', args=['stampa_cijena']), html)
+        self.assertIn(reverse('staff_magacin_stampa_deklaracije'), html)
         self.assertContains(nav, 'Štampaj deklaracije')
 
         page = self.client.get(reverse('staff_magacin_stampa_deklaracije'))
@@ -1590,14 +1580,6 @@ class MagacinViewTests(TestCase):
 
     def test_brzi_unos_same_as_admin_flow(self):
         self.client.force_login(self.user)
-        nav = self.client.get(reverse('staff_magacin_artikli'))
-        self.assertContains(nav, 'Brzi unos / Aktivacija')
-        self.assertContains(nav, reverse('staff_magacin_brzi_unos'))
-        self.assertContains(nav, 'Štampaj cijenu')
-        self.assertContains(nav, reverse('staff_magacin_stampa_cijena'))
-        self.assertContains(nav, 'Štampaj deklaracije')
-        self.assertContains(nav, reverse('staff_magacin_stampa_deklaracije'))
-
         page = self.client.get(reverse('staff_magacin_brzi_unos'))
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, 'Skeniraj barkod kamerom')
@@ -1687,12 +1669,12 @@ class MagacinViewTests(TestCase):
         self.assertNotContains(listed, 'class="mg-product-row"')
         found = self.client.get(reverse('staff_magacin_artikli'), {'pretraga': 'braid'})
         self.assertEqual(found.status_code, 302)
-        self.assertIn(f'/nalog/magacin/artikli/{self.product.pk}/', found['Location'])
+        self.assertIn(f'/wms/operacije/artikli/{self.product.pk}/', found['Location'])
         with_zero = self.client.get(reverse('staff_magacin_artikli'), {
             'pretraga': 'Prazan', 'bez_zalihe': '1',
         })
         self.assertEqual(with_zero.status_code, 302)
-        self.assertIn(f'/nalog/magacin/artikli/{self.zero.pk}/', with_zero['Location'])
+        self.assertIn(f'/wms/operacije/artikli/{self.zero.pk}/', with_zero['Location'])
         shop_only_qty = Product.objects.create(
             naziv='Samo shop kolicina',
             sifra='SHOP-Q',
@@ -1707,10 +1689,10 @@ class MagacinViewTests(TestCase):
             'pretraga': 'Samo shop', 'bez_zalihe': '1',
         })
         self.assertEqual(shown.status_code, 302)
-        self.assertIn(f'/nalog/magacin/artikli/{shop_only_qty.pk}/', shown['Location'])
+        self.assertIn(f'/wms/operacije/artikli/{shop_only_qty.pk}/', shown['Location'])
         miss = self.client.get(reverse('staff_magacin_artikli'), {'pretraga': 'ZERO-1'})
         self.assertEqual(miss.status_code, 302)
-        self.assertIn(f'/nalog/magacin/artikli/{self.zero.pk}/', miss['Location'])
+        self.assertIn(f'/wms/operacije/artikli/{self.zero.pk}/', miss['Location'])
 
     def test_search_shows_in_stock_when_any_location_has_qty(self):
         self.client.force_login(self.user)
@@ -1718,7 +1700,7 @@ class MagacinViewTests(TestCase):
         apply_movement(product=self.zero, location=mp, tip='prijem', kolicina=3)
         found = self.client.get(reverse('staff_magacin_artikli'), {'pretraga': 'Prazan'})
         self.assertEqual(found.status_code, 302)
-        self.assertIn(f'/nalog/magacin/artikli/{self.zero.pk}/', found['Location'])
+        self.assertIn(f'/wms/operacije/artikli/{self.zero.pk}/', found['Location'])
         lookup = self.client.get(reverse('staff_magacin_artikli_lookup'), {'q': 'Prazan'})
         ids = [row['id'] for row in lookup.json()['results']]
         self.assertIn(self.zero.pk, ids)
@@ -1740,16 +1722,16 @@ class MagacinViewTests(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(reverse('staff_magacin_artikli'), {'pretraga': 'TST-1'})
         self.assertEqual(response.status_code, 302)
-        self.assertIn(f'/nalog/magacin/artikli/{self.product.pk}/', response['Location'])
+        self.assertIn(f'/wms/operacije/artikli/{self.product.pk}/', response['Location'])
         self.assertIn('pretraga=TST-1', response['Location'])
         self.assertNotIn('?q=', response['Location'])
         self.assertNotIn('&q=', response['Location'])
         by_name = self.client.get(reverse('staff_magacin_artikli'), {'pretraga': self.product.naziv})
         self.assertEqual(by_name.status_code, 302)
-        self.assertIn(f'/nalog/magacin/artikli/{self.product.pk}/', by_name['Location'])
+        self.assertIn(f'/wms/operacije/artikli/{self.product.pk}/', by_name['Location'])
         unique_part = self.client.get(reverse('staff_magacin_artikli'), {'pretraga': 'braid'})
         self.assertEqual(unique_part.status_code, 302)
-        self.assertIn(f'/nalog/magacin/artikli/{self.product.pk}/', unique_part['Location'])
+        self.assertIn(f'/wms/operacije/artikli/{self.product.pk}/', unique_part['Location'])
 
     def test_magacin_search_does_not_fill_site_search(self):
         self.client.force_login(self.user)
@@ -1781,7 +1763,7 @@ class MagacinViewTests(TestCase):
     def test_other_sections_ok(self):
         self.client.force_login(self.user)
         for name in (
-            'staff_magacin_pregled',
+            'staff_wms',
             'staff_magacin_brzi_unos',
             'staff_magacin_lokacije',
             'staff_magacin_zalihe',
@@ -1792,7 +1774,6 @@ class MagacinViewTests(TestCase):
             'staff_magacin_uvoz',
             'staff_magacin_nivelacije',
             'staff_magacin_pakuj',
-            'staff_magacin_izvjestaji',
             'staff_magacin_popis',
             'staff_magacin_popis_test',
             'staff_magacin_provjera_lagera',
@@ -1913,7 +1894,7 @@ class MagacinViewTests(TestCase):
             mp = WarehouseLocation.objects.create(sifra='B-03', naziv='Maloprodaja Sarajevo')
         listed = self.client.get(reverse('staff_magacin_fali_na_sajtu'))
         self.assertEqual(listed.status_code, 200)
-        self.assertContains(listed, 'Fali na sajtu')
+        self.assertContains(listed, 'Fali u MP-u')
         self.assertContains(listed, self.product.naziv)
         self.assertContains(listed, 'T-1')
         self.assertContains(listed, 'Max za prenos')
@@ -3672,148 +3653,11 @@ class MagacinViewTests(TestCase):
         self.assertContains(pick, 'id="pkLocKicker"')
 
 
-    def test_artikli_has_no_remote_sync_buttons_and_keeps_backups(self):
+    def test_artikli_has_no_remote_sync_or_retired_backup_links(self):
         self.client.force_login(self.user)
         page = self.client.get(reverse('staff_magacin_artikli'))
-        self.assertNotContains(page, 'Sync zaliha')
-        self.assertNotContains(page, 'Sync cijena')
-        self.assertNotContains(page, 'Sync šifri')
-        self.assertNotContains(page, 'name="action" value="stock"')
-        self.assertNotContains(page, 'name="action" value="prices"')
-        self.assertNotContains(page, 'name="action" value="sifre"')
-        settings_page = self.client.get(reverse('staff_magacin_podesavanja'))
-        self.assertNotContains(settings_page, 'Sync zaliha iz Odoo')
-        self.assertNotContains(settings_page, 'Sync cijena iz Odoo')
-        self.assertNotContains(settings_page, 'Sync šifri po nazivu')
-        self.assertContains(settings_page, 'Backup baze')
-        self.assertContains(settings_page, 'Preuzmi bazu na disk')
-        self.assertContains(settings_page, 'Upload i restore')
-        self.assertContains(settings_page, reverse('staff_magacin_backup_download_current'))
-        self.assertContains(page, 'Backup baze')
-        self.assertContains(page, reverse('staff_magacin_backup'))
-
-    @override_settings(STORAGES={'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'}, 'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
-    def test_backup_create_list_and_download(self):
-        import sqlite3
-
-        self.client.force_login(self.user)
-        with TemporaryDirectory() as tmp:
-            with override_settings(MAGACIN_BACKUP_DIR=tmp):
-                created = self.client.post(
-                    reverse('staff_magacin_backup'),
-                    {'action': 'create'},
-                )
-                self.assertEqual(created.status_code, 302)
-                files = sorted(Path(tmp).glob('db-*.sqlite3'))
-                self.assertEqual(len(files), 1)
-                name = files[0].name
-                self.assertGreater(files[0].stat().st_size, 0)
-                conn = sqlite3.connect(str(files[0]))
-                try:
-                    names = [
-                        row[0]
-                        for row in conn.execute(
-                            'SELECT naziv FROM "EcommerceApp_product" WHERE sifra = ?',
-                            ['TST-1'],
-                        )
-                    ]
-                finally:
-                    conn.close()
-                self.assertEqual(names, ['Test braid'])
-                listing = self.client.get(reverse('staff_magacin_backup'))
-                self.assertContains(listing, name)
-                self.assertContains(listing, 'Restore')
-                download = self.client.get(
-                    reverse('staff_magacin_backup_download', args=[name]),
-                )
-                self.assertEqual(download.status_code, 200)
-                self.assertIn('attachment', download['Content-Disposition'])
-                missing = self.client.get(
-                    reverse('staff_magacin_backup_download', args=['db-19990101-000000.sqlite3']),
-                )
-                self.assertEqual(missing.status_code, 404)
-                self.product.naziv = 'Promijenjeno ime'
-                self.product.save(update_fields=['naziv'])
-                denied = self.client.post(reverse('staff_magacin_backup'), {
-                    'action': 'restore',
-                    'name': name,
-                    'lozinka': 'pogresno',
-                })
-                self.assertEqual(denied.status_code, 302)
-                self.product.refresh_from_db()
-                self.assertEqual(self.product.naziv, 'Promijenjeno ime')
-                with patch('EcommerceApp.views_magacin.restore_backup') as mocked:
-                    mocked.return_value = {'restored': name, 'safety': 'db-now.sqlite3'}
-                    restored = self.client.post(reverse('staff_magacin_backup'), {
-                        'action': 'restore',
-                        'name': name,
-                        'lozinka': 'admin',
-                    })
-                self.assertEqual(restored.status_code, 302)
-                mocked.assert_called_once_with(name)
-
-                settings_page = self.client.get(reverse('staff_magacin_podesavanja'))
-                self.assertContains(settings_page, name)
-                self.assertContains(settings_page, 'Preuzmi bazu na disk')
-                self.assertContains(settings_page, 'name="fajl"')
-
-                current = self.client.get(reverse('staff_magacin_backup_download_current'))
-                self.assertEqual(current.status_code, 200)
-                self.assertIn('attachment', current['Content-Disposition'])
-                self.assertGreaterEqual(len(list(Path(tmp).glob('db-*.sqlite3'))), 2)
-
-                from django.core.files.uploadedfile import SimpleUploadedFile
-                payload = SimpleUploadedFile(
-                    'db-upload-test.sqlite3',
-                    files[0].read_bytes(),
-                    content_type='application/octet-stream',
-                )
-                with patch('EcommerceApp.views_magacin.restore_backup') as uploaded_restore:
-                    uploaded_restore.return_value = {
-                        'restored': 'db-upload-test.sqlite3',
-                        'safety': 'db-now.sqlite3',
-                    }
-                    uploaded = self.client.post(
-                        reverse('staff_magacin_backup'),
-                        {
-                            'action': 'upload_restore',
-                            'lozinka': 'admin',
-                            'next': reverse('staff_magacin_podesavanja'),
-                            'fajl': payload,
-                        },
-                    )
-                self.assertEqual(uploaded.status_code, 302)
-                self.assertEqual(uploaded['Location'], reverse('staff_magacin_podesavanja'))
-                uploaded_restore.assert_called_once()
-                self.assertEqual(len(list(Path(tmp).glob('db-upload-*.sqlite3'))), 1)
-
-    @override_settings(STORAGES={'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'}, 'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
-    def test_backup_lists_all_and_never_deletes(self):
-        from .db_backup import create_backup, list_backups
-
-        self.client.force_login(self.user)
-        with TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            odd = root / 'db-prije-restore-20260723-1410.sqlite3'
-            odd.write_bytes(b'sqlite')
-            sidecar = root / 'db-20260807-113727.sqlite3-wal'
-            sidecar.write_bytes(b'')
-            with override_settings(MAGACIN_BACKUP_DIR=tmp):
-                first = create_backup()
-                second = create_backup()
-                names = {row['name'] for row in list_backups()}
-                self.assertIn(odd.name, names)
-                self.assertIn(first['name'], names)
-                self.assertIn(second['name'], names)
-                self.assertNotIn(sidecar.name, names)
-                self.assertTrue(odd.is_file())
-                self.assertTrue(Path(first['path']).is_file())
-                self.assertTrue(Path(second['path']).is_file())
-                listing = self.client.get(reverse('staff_magacin_backup'))
-                self.assertContains(listing, odd.name)
-                self.assertContains(listing, first['name'])
-                self.assertContains(listing, second['name'])
-                self.assertContains(listing, 'backup-a')
+        for text in ('Sync zaliha', 'Sync cijena', 'Sync šifri', '/nalog/magacin/', 'Backup baze'):
+            self.assertNotContains(page, text)
 
     def test_stampa_kolicine_shows_name_sifra_qty(self):
         self.client.force_login(self.user)
@@ -3848,65 +3692,7 @@ class MagacinViewTests(TestCase):
         self.assertContains(page, '>2<')
         self.assertNotContains(page, 'KM')
 
-    def test_pregled_shows_order_stats_and_chart(self):
-        self.client.force_login(self.user)
-        order = Order.objects.create(
-            ime_prezime='Ana Ribić',
-            telefon='061111111',
-            email='ana@example.com',
-            adresa='Test 1',
-            grad='Sarajevo',
-            ukupno=Decimal('30.00'),
-            izvor=Order.Izvor.MAGACIN,
-        )
-        OrderItem.objects.create(
-            narudzba=order, naziv='Test braid', cijena=Decimal('10.00'), kolicina=3,
-            artikal=self.product,
-        )
-        page = self.client.get(reverse('staff_magacin_pregled'))
-        self.assertEqual(page.status_code, 200)
-        self.assertContains(page, 'Narudžbe — Danas')
-        self.assertContains(page, '30.00 KM')
-        self.assertContains(page, 'Prosječna cijena artikla')
-        self.assertContains(page, 'mgPregledChart')
-        self.assertContains(page, 'mg-chart-wrap')
-        self.assertContains(page, 'mg-table-stack')
-        self.assertContains(page, 'Zadnje izmjene artikala')
-        self.assertContains(page, 'Verzija')
-        self.assertContains(page, order.broj)
-        month = self.client.get(reverse('staff_magacin_pregled'), {'period': 'month', 'graf': 'mjeseci'})
-        self.assertContains(month, 'Ovaj mjesec')
-        ranged = self.client.get(reverse('staff_magacin_pregled'), {
-            'period': 'range',
-            'from': timezone.localdate().isoformat(),
-            'to': timezone.localdate().isoformat(),
-            'graf': 'godine',
-        })
-        self.assertEqual(ranged.status_code, 200)
-        self.assertContains(ranged, '30.00 KM')
-        self.assertIn('godine', ranged.context['chart_json'])
 
-    def test_izvjestaji_finds_order_by_name_phone_or_number(self):
-        self.client.force_login(self.user)
-        order = Order.objects.create(
-            ime_prezime='Ana Ribić',
-            telefon='061111111',
-            email='ana@example.com',
-            adresa='Test 1',
-            grad='Sarajevo',
-            ukupno=Decimal('20.00'),
-            izvor=Order.Izvor.MAGACIN,
-        )
-        page = self.client.get(reverse('staff_magacin_izvjestaji'))
-        self.assertContains(page, 'Pronađi narudžbu')
-        self.assertNotContains(page, order.ime_prezime)
-        by_name = self.client.get(reverse('staff_magacin_izvjestaji'), {'narudzba': 'Ana'})
-        self.assertContains(by_name, order.broj)
-        self.assertContains(by_name, 'Ana Ribić')
-        by_phone = self.client.get(reverse('staff_magacin_izvjestaji'), {'narudzba': '061111111'})
-        self.assertContains(by_phone, order.broj)
-        by_broj = self.client.get(reverse('staff_magacin_izvjestaji'), {'narudzba': order.broj})
-        self.assertContains(by_broj, reverse('staff_order_detail', args=[order.broj]))
 
     @override_settings(STORAGES={
         'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
@@ -5044,7 +4830,7 @@ class MagacinViewTests(TestCase):
         found = self.client.get(reverse('staff_magacin_kupci_lookup'), {'q': 'Ana'})
         self.assertEqual(found.status_code, 200)
         self.assertEqual(found.json()['results'][0]['ime_prezime'], 'Ana Ribić')
-        self.assertIn('/nalog/magacin/narudzbe/', response['Location'])
+        self.assertIn('/wms/operacije/narudzbe/', response['Location'])
         listed = self.client.get(reverse('staff_magacin_artikli'))
         self.assertContains(listed, 'mg-nav-count')
         self.assertContains(listed, '1 za pakovanje')
@@ -6426,7 +6212,8 @@ class MagacinViewTests(TestCase):
         self.assertContains(pack_detail, 'Lokacija (odakle se uzima)')
         self.assertContains(pack_detail, 'Pokupi manje')
         self.assertContains(pack_detail, 'Pokupi sve')
-        self.assertContains(pack_detail, 'Otkaži')
+        self.assertContains(pack_detail, 'class="pk-cancel-form"')
+        self.assertContains(pack_detail, 'Poništi')
         self.assertContains(pack_detail, 'name="action" value="otkazi"')
         self.assertContains(pack_detail, 'Validatuj')
         self.assertContains(pack_detail, 'Završi picking')
@@ -6451,7 +6238,7 @@ class MagacinViewTests(TestCase):
             'action': 'validiraj',
         })
         self.assertEqual(validated.status_code, 302)
-        self.assertIn('/nalog/magacin/narudzbe/', validated['Location'])
+        self.assertIn('/wms/operacije/narudzbe/', validated['Location'])
         order.refresh_from_db()
         self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
         self.assertEqual(order.status, Order.Status.ZAVRSENA)
@@ -7059,8 +6846,8 @@ class MagacinViewTests(TestCase):
 
     def test_popis_test_page_scans_and_writes_counted_qty_to_location(self):
         self.client.force_login(self.user)
-        nav = self.client.get(reverse('staff_magacin_pregled'))
-        self.assertContains(nav, reverse('staff_magacin_popis_test'))
+        nav = self.client.get(reverse('staff_wms'))
+        self.assertContains(nav, reverse('staff_magacin_popis'))
         self.assertContains(nav, 'Popis robe')
         self.assertNotRegex(nav.content.decode(), r'>\s*Popis\s*</a>')
         page = self.client.get(reverse('staff_magacin_popis_test'))
@@ -7272,9 +7059,8 @@ class MagacinViewTests(TestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
 
         self.client.force_login(self.user)
-        nav = self.client.get(reverse('staff_magacin_pregled'))
-        self.assertContains(nav, reverse('staff_magacin_provjera_lagera'))
-        self.assertContains(nav, 'Provjera LAGERA')
+        nav = self.client.get(reverse('staff_wms'))
+        self.assertEqual(nav.status_code, 200)
         home = self.client.get(reverse('staff_magacin_provjera_lagera'))
         self.assertEqual(home.status_code, 200)
         self.assertContains(home, 'Maloprodaja')

@@ -29,7 +29,9 @@ def require_wms_section(section):
 
 
 def context(section):
-    return {'wms_section': section, 'wms_title': SECTIONS.get(section, 'WMS Magacin' if not section else 'Nova narudžba'), 'wms_sections': SECTIONS.items(), 'wms_pending_picking': WMSOrder.objects.filter(status__in=['nova', 'pakovanje']).count() if not module_locked('wms_pakovanje') else 0, 'wms_pending_transfers': WMSTransfer.objects.filter(completed_at__isnull=True).count() if not module_locked('wms_prenosnice') else 0, 'wms_locations_enabled': not module_locked('wms_zalihe'), 'wms_transfers_enabled': not module_locked('wms_prenosnice'), 'wms_locked_sections': [key for key, field in WMS_MODULES.items() if module_locked(field)]}
+    from .wms_tools import TOOLS
+    sections = [*SECTIONS.items(), *((key, title) for key, title, old, module in TOOLS)]
+    return {'wms_section': section, 'wms_title': SECTIONS.get(section, 'WMS Magacin' if not section else 'Nova narudžba'), 'wms_sections': sections, 'wms_pending_picking': WMSOrder.objects.filter(status__in=['nova', 'pakovanje']).count() if not module_locked('wms_pakovanje') else 0, 'wms_pending_transfers': WMSTransfer.objects.filter(completed_at__isnull=True).count() if not module_locked('wms_prenosnice') else 0, 'wms_locations_enabled': not module_locked('wms_zalihe'), 'wms_transfers_enabled': not module_locked('wms_prenosnice'), 'wms_locked_sections': [key for key, field in WMS_MODULES.items() if module_locked(field)] + [key for key, title, old, module in TOOLS if module_locked(module)]}
 
 
 @login_required(login_url='login')
@@ -652,6 +654,9 @@ def create_online_order(request, form, tip='online'):
     from .models import WMSOrderItem
     lines = []
     if request.method == 'POST':
+        payment = request.POST.get('payment', '') if tip == 'vp' else 'gotovina'
+        if payment not in ('gotovina', 'ziralno'):
+            form.add_error(None, 'Izaberite način plaćanja: Gotovinski ili Žiralno.')
         try:
             raw = json.loads(request.POST.get('items', '[]'))
             if not isinstance(raw, list) or not raw or len(raw) > 500:
@@ -674,10 +679,22 @@ def create_online_order(request, form, tip='online'):
             if len(products) != len(quantities):
                 raise ValueError
             lines = [{'id': pk, 'name': products[pk].naziv, 'code': products[pk].sifra, 'price': str(wms_entry_price(products[pk], tip)), 'quantity': qty, 'discount': str(discounts[pk])} for pk, qty in quantities.items()]
-            if form.is_valid():
+            if form.is_valid() and payment in ('gotovina', 'ziralno'):
                 with transaction.atomic():
+                    locked_products = list(Product.objects.select_for_update().filter(pk__in=quantities).order_by('pk'))
+                    reserved_by_product = dict(WarehouseStock.objects.filter(product_id__in=quantities).values('product_id').annotate(total=Sum('rezervisano')).values_list('product_id', 'total'))
+                    for current_product in locked_products:
+                        reserved = reserved_by_product.get(current_product.pk) or 0
+                        if not current_product.aktivan or current_product.stanje - reserved <= 0:
+                            form.add_error(None, f'Artikal „{current_product.naziv}” nije dostupan i ne može se dodati u narudžbu.')
+                    if form.errors:
+                        return render(request, 'bera_reference/staff/wms/online_order_form.html', {**context('narudzbe'), 'form': form, 'initial_items': lines, 'order_type': tip})
                     order = form.save(commit=False)
                     order.tip = tip
+                    # Keep payment in the existing note, as with legacy warehouse orders.
+                    # This avoids a schema change and makes it visible on existing documents.
+                    label = 'Gotovinski' if payment == 'gotovina' else 'Žiralno'
+                    order.napomena = f'Plaćanje: {label}\n' + (order.napomena or '')
                     from .models import WMSCustomer
                     customer_id = request.POST.get('customer_id', '')
                     if customer_id.isdigit():
@@ -897,3 +914,21 @@ for _wms_view_name in ('workspace', 'create_order', 'order_detail', 'edit_order'
                        'print_orders', 'order_products', 'order_customers', 'manage_customer',
                        'location_detail', 'location_barcode_print', 'excel_import', 'picking_history'):
     globals()[_wms_view_name] = warehouse_compatible(globals()[_wms_view_name])
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+def product_history(request, pk):
+    if request.method != 'GET':
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(['GET'])
+    require_wms_section('zalihe')
+    product = get_object_or_404(Product, pk=pk)
+    rows = WarehouseMovement.objects.filter(product=product).select_related(
+        'product', 'variation', 'location', 'to_location', 'korisnik', 'order',
+    ).order_by('-pk')
+    response = django_render(request, 'bera_reference/staff/wms/product_history.html', {
+        'product': product, 'history': Paginator(rows, 20).get_page(request.GET.get('page')),
+    })
+    response['Cache-Control'] = 'private, no-store'
+    return response

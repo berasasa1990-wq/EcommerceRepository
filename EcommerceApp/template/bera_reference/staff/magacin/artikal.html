@@ -16,7 +16,7 @@
     </a>
     <div class="mg-toolbar-actions">
         {% if product.pracenje_zaliha and not product.is_set %}<button type="button" class="mg-btn mg-btn-zalihe" id="mgZaliheBtn">Zalihe</button>{% endif %}
-        <a class="mg-btn" href="{% url 'staff_magacin_stampa_cijena_ista' %}?artikal={{ product.pk }}{% if variation %}&varijacija={{ variation.pk }}{% endif %}">Štampaj Cijenu</a>
+        <a class="mg-btn" href="{% url 'staff_wms_stampa_cijena_ista' %}?artikal={{ product.pk }}{% if variation %}&varijacija={{ variation.pk }}{% endif %}">Štampaj Cijenu</a>
         <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_artikal_izmjena' product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">Izmijeni artikal</a>
         <form method="post" class="mg-obrisi-artikal-form" onsubmit="return confirm('OBRISATI artikal „{{ product.naziv|escapejs }}”{% if product.sifra %} ({{ product.sifra|escapejs }}){% endif %} SKROZ iz baze?\n\nOvo nije skidanje sa sajta — artikal se briše trajno i ne može se vratiti.');">
             {% csrf_token %}

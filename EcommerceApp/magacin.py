@@ -2209,6 +2209,8 @@ def add_vp_stavka(draft, *, product, qty, variation=None, mp_ok=False, cijena=No
         raise MagacinError('Ova VP narudžba je završena.')
     if variation and variation.artikal_id != product.pk:
         raise MagacinError('Varijacija ne pripada artiklu.')
+    if display_stock_totals(product, variation)['dostupno'] <= 0:
+        raise MagacinError(f'„{product.naziv}” nije dostupan i ne može se dodati u narudžbu.')
     naziv = product.naziv
     sifra = product.sifra or ''
     if variation:
@@ -3936,6 +3938,8 @@ def finish_vp_narudzba(draft, *, user=None, rezervacija=False, placanje=''):
         if not row.product_id:
             raise MagacinError(f'Artikal „{row.naziv}” više ne postoji.')
         available = display_stock_totals(row.product, row.variation)['dostupno']
+        if available <= 0:
+            raise MagacinError(f'„{row.naziv}” nije dostupan i ne može se dodati u narudžbu.')
         shortfall = max(0, row.kolicina - available)
         if shortfall > 0 and not row.mp_ok:
             raise MagacinError(

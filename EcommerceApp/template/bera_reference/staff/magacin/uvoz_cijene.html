@@ -1,4 +1,4 @@
-{% extends 'bera_reference/staff/magacin/base.html' %}
+{% extends request.wms_tool_base|default:'bera_reference/staff/magacin/base.html' %}
 {% load static %}
 {% block body_class %}{{ block.super }} is-price-print{% endblock %}
 {% block extra_css %}

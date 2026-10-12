@@ -7325,7 +7325,7 @@ class WMSOrder(models.Model):
     cancellation_reason = models.TextField(blank=True, verbose_name="Razlog otkazivanja")
     @property
     def display_number(self):
-        return f"{self.pk:04d}"
+        return self.source_order.broj if self.source_order_id else f"{self.pk:04d}"
 
     @property
     def is_b2b_order(self):
@@ -7337,7 +7337,16 @@ class WMSOrder(models.Model):
 
     @property
     def payment_label(self):
-        return self.source_order.payment_label if self.source_order_id else 'Nije evidentirano'
+        if self.source_order_id:
+            return self.source_order.payment_label
+        if self.tip == 'online':
+            return 'Gotovinski'
+        first_line = (self.napomena or '').splitlines()[:1]
+        if first_line == ['Plaćanje: Gotovinski']:
+            return 'Gotovinski'
+        if first_line == ['Plaćanje: Žiralno']:
+            return 'Žiralno'
+        return 'Nije evidentirano'
 
     tip = models.CharField(max_length=12, choices=[('vp', 'Veleprodaja'), ('online', 'Online slanje')])
     kupac = models.CharField(max_length=240)

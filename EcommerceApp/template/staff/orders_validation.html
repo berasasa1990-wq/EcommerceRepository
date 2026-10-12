@@ -6,7 +6,7 @@
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/staff-orders-validation.css' %}?v=20261002-payment-scratch">{% endblock %}
 {% block content %}
 <section class="validation-orders">
-    <a class="vo-back" href="{% url 'staff_admin_panel' %}">← Nazad na Admin panel</a>
+    <a class="vo-back" href="{% url 'staff_panel' %}">← Nazad na Admin panel</a>
     <header class="vo-header">
         <div class="vo-heading"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V2h6v3M9 11h6M9 15h4"/></svg><div><h1>Narudžbe za validaciju</h1><p>Narudžbe koje još nisu validovane. Nakon validacije nestaju sa ove liste.</p></div></div>
         <div class="vo-count"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8C3 8 6 0 10 4l2 4c9 0 6-8 2-4z"/></svg><div><strong>{{ pending_count }}</strong><span>nevalidovanih narudžbi</span></div><div class="vo-count-total"><strong>{{ pending_total|floatformat:2 }} KM</strong><span>Ukupan iznos</span></div></div>

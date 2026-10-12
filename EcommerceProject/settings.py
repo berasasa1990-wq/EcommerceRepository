@@ -297,6 +297,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.template.context_processors.csrf',
                 'EcommerceApp.context_processors.csrf_settings',
+                'EcommerceApp.wms_tools.tool_context',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'EcommerceApp.context_processors.nav_categories',

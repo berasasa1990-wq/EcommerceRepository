@@ -1,4 +1,5 @@
 {% extends 'bera_reference/staff/wms/base.html' %}
+{% load static %}
 {% block wms_content %}
 <header class="wms-page-heading"><h1>Zalihe</h1></header>
 <form method="get" class="wms-card wms-stock-search" role="search">
@@ -14,7 +15,7 @@
 {% for product in products %}
 <article class="wms-stock-result">
 <div class="wms-stock-result-image">{% if product.prikazna_slika %}<img src="{{ product.prikazna_slika.url }}" alt="{{ product.naziv }}" loading="lazy">{% else %}{% include 'bera_reference/staff/wms/icon.html' with key='pakovanje' %}{% endif %}</div>
-<div class="wms-stock-result-info"><h3>{{ product.naziv }}</h3><div class="wms-stock-product-price"><span>Cijena</span><strong>{{ product.cijena|floatformat:2 }} KM</strong></div><div class="wms-stock-result-codes"><span>Šifra <strong>{{ product.sifra|default:'—' }}</strong></span><span>Barkod <strong>{{ product.barkod|default:'—' }}</strong></span></div>{% if wms_locations_enabled %}<div class="wms-stock-mobile-location">{% include 'bera_reference/staff/wms/icon.html' with key='lokacije' %}{% for stock in product.canonical_wms_stocks %}{% if stock.kolicina > 0 %}<span>{{ stock.location.naziv }}</span>{% endif %}{% empty %}<span>Bez lokacije</span>{% endfor %}</div>{% endif %}</div>
+<div class="wms-stock-result-info"><div class="wms-stock-name"><h3>{{ product.naziv }}</h3><button type="button" class="wms-product-history-button" data-product-history="{% url 'staff_wms_product_history' product.pk %}" aria-label="Istorija promjena artikla {{ product.naziv }}" title="Istorija promjena" aria-haspopup="dialog">{% include 'bera_reference/staff/wms/icon.html' with key='istorija' %}</button></div><div class="wms-stock-product-price"><span>Cijena</span><strong>{{ product.cijena|floatformat:2 }} KM</strong></div><div class="wms-stock-result-codes"><span>Šifra <strong>{{ product.sifra|default:'—' }}</strong></span><span>Barkod <strong>{{ product.barkod|default:'—' }}</strong></span></div>{% if wms_locations_enabled %}<div class="wms-stock-mobile-location">{% include 'bera_reference/staff/wms/icon.html' with key='lokacije' %}{% for stock in product.canonical_wms_stocks %}{% if stock.kolicina > 0 %}<span>{{ stock.location.naziv }}</span>{% endif %}{% empty %}<span>Bez lokacije</span>{% endfor %}</div>{% endif %}</div>
 {% if not wms_locations_enabled %}
 <div class="wms-stock-result-quantity{% if not product.stanje %} is-empty{% elif product.stanje < product.magacin_meta.min_zaliha %} is-low{% endif %}"><span class="wms-stock-status">{% if not product.stanje %}Nema zalihe{% elif product.stanje < product.magacin_meta.min_zaliha %}Ispod min.{% else %}Na stanju{% endif %}</span><strong>{{ product.stanje }} <small>kom</small></strong></div>
 {% else %}
@@ -63,4 +64,4 @@
   if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
  });
 })();
-</script>{% endblock %}
+</script><dialog id="wmsProductHistory" class="wms-product-history-dialog" aria-labelledby="wmsProductHistoryTitle"><header class="wms-page-heading"><h2 id="wmsProductHistoryTitle">Istorija promjena artikla</h2><button type="button" class="wms-close" data-history-close aria-label="Zatvori istoriju">×</button></header><div data-history-content aria-live="polite"></div></dialog><script src="{% static 'bera_reference/js/wms-product-history.js' %}?v=20261012" defer></script>{% endblock %}

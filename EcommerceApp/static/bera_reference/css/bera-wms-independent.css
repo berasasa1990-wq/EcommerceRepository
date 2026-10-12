@@ -287,3 +287,16 @@ button.wms-stock-result-quantity:focus-visible { outline: 2px solid #009ed1; out
  #orderSelectedProducts .wms-selected-product>.wms-item-name{grid-column:1/-1;white-space:normal;overflow-wrap:anywhere}
  .wms-shortage-row{flex-wrap:wrap}.wms-shortage-row>div{min-width:0;max-width:100%}
 }
+
+.wms-payment-dialog{width:420px;max-width:calc(100vw - 32px);box-sizing:border-box;border:1px solid #d6e7f3;border-radius:18px;padding:24px;color:#102343}
+.wms-payment-dialog::backdrop{background:#10234366}
+.wms-payment-dialog h2{margin:0 0 12px}.wms-payment-dialog p{color:#637b94}
+.wms-payment-options{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}.wms-payment-options .wms-button{flex:1;min-width:120px}
+
+.wms-stock-name{display:flex;align-items:flex-start;gap:8px;min-width:0}.wms-stock-name h3{flex:1;min-width:0;overflow-wrap:anywhere}
+.wms-product-history-button{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;padding:5px;border:1px solid #d4e7f5;border-radius:9px;background:#edf8ff;color:#008bc5;cursor:pointer}.wms-product-history-button svg{width:20px;height:20px}
+.wms-product-history-dialog{width:1120px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 32px);box-sizing:border-box;border:1px solid #d4e7f5;border-radius:18px;padding:20px;background:#f3f8fd;color:#102343;overflow:auto}
+.wms-product-history-dialog::backdrop{background:#10234377}.wms-product-history-dialog .wms-page-heading{gap:12px}.wms-product-history-dialog h2{font-size:20px;margin:0}.wms-product-history-dialog .wms-history-scroll{max-height:none;overflow:auto}.wms-history-product{overflow-wrap:anywhere}
+@media(max-width:800px){.wms-product-history-dialog{padding:14px}.wms-product-history-dialog .wms-history-scroll{overflow:visible}.wms-product-history-dialog .wms-page-heading h2{font-size:18px;flex:1;min-width:0}}
+
+.wms-catalog-quantity-dialog label{display:grid;gap:8px;font-weight:600}.wms-catalog-quantity-dialog input{box-sizing:border-box;width:100%;min-width:0;padding:12px;border:1px solid #c8deed;border-radius:10px;font-size:16px;color:#102343;background:#fff}

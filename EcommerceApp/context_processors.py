@@ -103,7 +103,7 @@ def _is_light_request_path(path: str) -> bool:
     path = path or ''
     if path == '/wms' or path.startswith('/wms/'):
         return True
-    if path.startswith(('/api/', '/uzivo/', '/static/', '/media/', '/admin/', '/nalog/magacin/', '/nalog/provjera-narudzbi/')):
+    if path.startswith(('/api/', '/uzivo/', '/static/', '/media/', '/admin/', '/wms/', '/nalog/provjera-narudzbi/')):
         return True
     if path.startswith(('/sitemap', '/robots.txt', '/healthz', '/favicon', '/feeds/')):
         return True
@@ -140,7 +140,7 @@ def _cached_popup_akcije():
 def _cats_sidebar_open(request):
     """Kategorije su uvijek otvorene na sajtu (ne može se sklopiti)."""
     path = getattr(request, 'path', '') or ''
-    if path.startswith('/nalog/magacin/') or path.startswith('/staff/'):
+    if path.startswith('/wms/') or path.startswith('/staff/'):
         return False
     return True
 
@@ -301,7 +301,7 @@ def nav_categories(request):
         'online_gift_reward_label': gift_label,
         'search_query': (
             ''
-            if (request.path or '').startswith('/nalog/magacin/')
+            if (request.path or '').startswith('/wms/')
             else request.GET.get('q', '').strip()
         ),
         'contact_phone': contact_phone,
