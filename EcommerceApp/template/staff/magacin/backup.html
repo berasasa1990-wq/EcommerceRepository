@@ -1,0 +1,12 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar">
+    <div>
+        <h1>Backup baze</h1>
+        <p class="mg-count">{% if backups %}{{ backups|length }} backup-a na serveru{% else %}Još nema backup-a na serveru{% endif %}.</p>
+    </div>
+    <a class="mg-btn" href="{% url 'staff_magacin_podesavanja' %}">Podešavanja</a>
+</div>
+{% include 'staff/magacin/_backup_panel.html' %}
+{% endblock %}

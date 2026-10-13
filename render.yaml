@@ -10,7 +10,6 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       python scripts/minify_assets.py
-      python scripts/build_home_css.py
       python manage.py collectstatic --noinput
       python manage.py migrate --noinput
       python manage.py bump_site_version

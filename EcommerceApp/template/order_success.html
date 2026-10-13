@@ -13,7 +13,7 @@
         <p class="monri-eyebrow">Carpologija · Potvrđena narudžba</p>
         <h1>Plaćanje uspješno</h1>
         <p>Hvala na kupovini! Vaša uplata je potvrđena i narudžba je zaprimljena.</p>
-        <div class="monri-summary"><div><span>Broj narudžbe</span><strong>{{ order.broj }}</strong>{% include "partials/order_metadata.html" with metadata_order=order only %}</div><div><span>Plaćeno karticom</span><strong class="monri-amount">{{ order.ukupno }} KM</strong></div></div>
+        <div class="monri-summary"><div><span>Broj narudžbe</span><strong>{{ order.broj }}</strong></div><div><span>Plaćeno karticom</span><strong class="monri-amount">{{ order.ukupno }} KM</strong></div></div>
         <p>Način plaćanja: <strong>KARTICOM</strong></p>
         <a class="monri-button" href="{% url 'home' %}">Nastavi kupovinu</a>
     </div></div>

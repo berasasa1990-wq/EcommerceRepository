@@ -22,17 +22,17 @@
             {% endif %}
         </div>
         {% if mode != 'izbor' %}
-        <a class="mg-btn" href="{% url 'staff_wms_stampa_cijena' %}">Nazad</a>
+        <a class="mg-btn" href="{% url 'staff_magacin_stampa_cijena' %}">Nazad</a>
         {% endif %}
     </div>
 
     {% if mode == 'izbor' %}
     <div class="sc-modes">
-        <a class="sc-mode" href="{% url 'staff_wms_stampa_cijena_ista' %}">
+        <a class="sc-mode" href="{% url 'staff_magacin_stampa_cijena_ista' %}">
             <strong>Ista cijena</strong>
             <span>Jedan artikal. Uneseš koliko kopija da ide na papir.</span>
         </a>
-        <a class="sc-mode" href="{% url 'staff_wms_stampa_cijena_razlicite' %}">
+        <a class="sc-mode" href="{% url 'staff_magacin_stampa_cijena_razlicite' %}">
             <strong>Različite cijene</strong>
             <span>Unosiš artikle redom. Na štampi je po jedna od svakog.</span>
         </a>

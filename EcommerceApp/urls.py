@@ -6,76 +6,18 @@ from django.urls import reverse_lazy
 from django.views.decorators.cache import never_cache
 
 from . import views
-from . import bera_panel
-from . import module_requests
-from . import bera_panel_settings
-from . import wms_print_status
-from . import wms_price_print
+from . import manual_order_drafts, data_history
 from . import views_b2b
 from . import views_catalog_api
 from . import views_feed
+from . import views_ledger
 from . import views_magacin
-from . import views_wms
+from . import views_product_sets
 from . import views_site_prep
 from . import views_sync
 
-def retired_live_feature(request, *args, **kwargs):
-    from django.http import HttpResponseGone
-    response = HttpResponseGone('Ova opcija je uklonjena.')
-    response['Cache-Control'] = 'no-store'
-    return response
-
-
 urlpatterns = [
-    path('panel/stara-dugmad/', bera_panel.staff_old_buttons, name='staff_old_buttons'),
-    path('panel/zahtjev-otkljucavanje/', module_requests.request_unlock, name='staff_request_unlock'),
-    path('panel/podesavanje-novo/', bera_panel_settings.staff_site_settings, name='staff_settings_new'),
-    path('panel/podesavanje-novo/boja-dugmadi/', bera_panel_settings.staff_button_color, name='staff_button_color'),
-    path('panel/narudzbe/', views.staff_orders_validation, name='staff_panel_orders'),
-    path('panel/narudzbe/online/', views.staff_online_orders, name='staff_panel_online_orders'),
-    path('wms/stampa-cijena/', wms_price_print.price_print, name='staff_wms_stampa_cijena'),
-    path('wms/stampa-cijena/ista/', wms_price_print.price_print, {'mode': 'ista'}, name='staff_wms_stampa_cijena_ista'),
-    path('wms/stampa-cijena/razlicite/', wms_price_print.price_print, {'mode': 'razlicite'}, name='staff_wms_stampa_cijena_razlicite'),
-    path('wms/stampa-cijena/print/', wms_price_print.price_print, {'mode': 'print'}, name='staff_wms_stampa_cijena_print'),
-    path('wms/zalihe/artikal/<int:pk>/istorija/', views_wms.product_history, name='staff_wms_product_history'),
-    path('wms/narudzbe/kreiraj/<str:tip>/', views_wms.create_order, name='staff_wms_create_order'),
-    path('wms/narudzbe/pregled/<int:pk>/', views_wms.order_detail, name='staff_wms_order'),
-    path('wms/narudzbe/<int:pk>/izmjena/', views_wms.edit_order, name='staff_wms_edit_order'),
-    path('wms/narudzbe/<int:pk>/pakovanje/', views_wms.pack_order, name='staff_wms_pack_order'),
-    path('wms/narudzbe/<int:pk>/odvajanje/', views_wms.pick_order, name='staff_wms_pick_order'),
-    path('wms/odvajanje/istorija/', views_wms.picking_history, name='staff_wms_picking_history'),
-    path('wms/narudzbe/<int:pk>/vrati/', views_wms.restore_order, name='staff_wms_restore_order'),
-    path('wms/narudzbe/<int:pk>/otkazi/', views_wms.cancel_order, name='staff_wms_cancel_order'),
-    path('wms/lokacije/nedostaje/<int:pk>/', views_wms.resolve_shortage, name='staff_wms_resolve_shortage'),
-    path('wms/narudzbe/stampa/<str:kind>/potvrdi/', wms_print_status.acknowledge, name='staff_wms_print_acknowledge'),
-    path('wms/narudzbe/stampa/<str:kind>/', views_wms.print_orders, name='staff_wms_print_orders'),
-    path('wms/narudzbe/artikli/', views_wms.order_products, name='staff_wms_order_products'),
-    path('wms/narudzbe/kupci/', views_wms.order_customers, name='staff_wms_order_customers'),
-    path('wms/kupci/<int:pk>/<str:action>/', views_wms.manage_customer, name='staff_wms_manage_customer'),
-    path('wms/lokacije/<int:pk>/barkod/', views_wms.location_barcode_print, name='staff_wms_location_barcode'),
-    path('wms/lokacije/<int:pk>/', views_wms.location_detail, name='staff_wms_location'),
-    path('wms/podesavanje/excel-import/', views_wms.excel_import, name='staff_wms_excel_import'),
-    path('wms/', views_wms.workspace, name='staff_wms'),
-    path('wms/<str:section>/', views_wms.workspace, name='staff_wms_section'),
-    path('panel/podesavanja/logo/', bera_panel_settings.staff_settings_logo, name='staff_settings_logo'),
-    path('panel/podesavanja/sajt/', bera_panel_settings.staff_site_settings, name='staff_site_settings'),
-    path('panel/podesavanja', bera_panel_settings.staff_settings, name='staff_settings'),
-    path('panel/podesavanja/', bera_panel_settings.staff_settings),
-    path('panel/podesavanja/pretraga/', bera_panel_settings.staff_settings_lookup, name='staff_settings_lookup'),
-    path('panel/b2b', bera_panel_settings.staff_b2b_workspace, name='staff_b2b_workspace'),
-    path('panel/b2b/', bera_panel_settings.staff_b2b_workspace),
-    path('panel/loyalty', bera_panel_settings.staff_loyalty_workspace, name='staff_loyalty_workspace'),
-    path('panel/loyalty/', bera_panel_settings.staff_loyalty_workspace),
-    path('panel/wms', views_wms.workspace, name='staff_wms_workspace'),
-    path('panel/wms/', views_wms.workspace),
-    path('panel/wms/sekcije/', bera_panel_settings.staff_wms_workspace, name='staff_wms_model_workspace'),
-    path('panel/greb-greb', bera_panel_settings.staff_scratch_workspace, name='staff_scratch_workspace'),
-    path('panel/greb-greb/', bera_panel_settings.staff_scratch_workspace),
-    path('panel/sekcija/<slug:section>/', bera_panel_settings.staff_model_workspace, name='staff_model_workspace'),
-    path('wms', views_wms.workspace),
-
-    path('panel', bera_panel.staff_panel, name='staff_panel'),
-    path('panel/', bera_panel.staff_panel),
+    path("nalog/magacin/setovi/", views_product_sets.product_sets, name="staff_magacin_setovi"),
     path('placanje/monri/potvrda/', views_monri.callback, name='monri_callback'),
     path('placanje/monri/<uuid:token>/', views_monri.start, name='monri_start'),
     path('placanje/monri/<uuid:token>/povratak/', views_monri.payment_return, name='monri_return'),
@@ -104,6 +46,13 @@ urlpatterns = [
     path('lozinka/gotovo/', never_cache(auth_views.PasswordResetCompleteView.as_view(
         template_name='auth/password_reset_complete.html',
     )), name='password_reset_complete'),
+    path('nalog/magacin/historija-podataka/fajl/<int:pk>/', data_history.media_download, name='staff_magacin_media_history_download'),
+    path('nalog/magacin/nacrti/uvoz/', manual_order_drafts.import_local_draft, name='staff_magacin_draft_import'),
+    path('nalog/magacin/nacrti/sacuvaj/', manual_order_drafts.save_draft, name='staff_magacin_draft_save'),
+    path('nalog/magacin/nacrti/historija/', manual_order_drafts.history, name='staff_magacin_draft_history'),
+    path('nalog/magacin/nacrti/<int:pk>/vrati/', manual_order_drafts.restore_revision, name='staff_magacin_draft_restore'),
+    path('nalog/magacin/historija-podataka/', data_history.history, name='staff_magacin_data_history'),
+    path('nalog/magacin/historija-podataka/unos/', data_history.save_input, name='staff_magacin_save_input'),
     path("veleprodaja/zatrazi-pristup/", views_b2b.request_access, name="b2b_request_access"),
     path("veleprodaja/zavrsi/", views_b2b.checkout, name="b2b_checkout"),
     path("veleprodaja/narudzba/<int:pk>/", views_b2b.order_confirmation, name="b2b_order"),
@@ -113,6 +62,7 @@ urlpatterns = [
     path("veleprodaja", views_b2b.catalog, name="b2b_catalog"),
     path("veleprodaja/", views_b2b.catalog),
     path("veleprodaja/odjava/", views_b2b.logout, name="b2b_logout"),
+    path('nalog/magacin/duguje/', views_ledger.ledger, name='staff_magacin_duguje'),
     path('api/sync/korisnik/', views_sync.sync_korisnik_api, name='sync_korisnik_api'),
     path('api/sync/narudzba/', views_sync.sync_narudzba_api, name='sync_narudzba_api'),
     path('api/partner/v1/products/', views_partner_stock.products, name='partner_stock_products'),
@@ -153,8 +103,8 @@ urlpatterns = [
     path('izjava-o-privatnosti/', views.privacy_statement, name='privacy_statement'),
     path('uslovi-kupovine/', views.purchase_terms, name='purchase_terms'),
     path('brendovi/', views.brands_list, name='brands_list'),
-    path('vlog/', retired_live_feature, name='vlog_list'),
-    path('vlog/<slug:slug>/', retired_live_feature, name='vlog_detail'),
+    path('vlog/', views.vlog_list, name='vlog_list'),
+    path('vlog/<slug:slug>/', views.vlog_detail, name='vlog_detail'),
     path('kategorija/<slug:slug>/', views.category_detail, name='category'),
     path('artikal/<slug:slug>/', views.product_detail, name='product_detail'),
     path('artikal/<slug:slug>/brza-izmjena/', views.staff_product_quick_edit, name='staff_product_quick_edit'),
@@ -181,10 +131,10 @@ urlpatterns = [
     path('kreiraj-set/zamjena/', views.set_builder_alternatives, name='set_builder_alternatives'),
     path('kreiraj-set/korpa/', views.set_builder_add_cart, name='set_builder_add_cart'),
     path('drustveni-dokaz/', views.social_proof_poll, name='social_proof_poll'),
-    path('uzivo/prisutan/', retired_live_feature, name='live_visitor_heartbeat'),
-    path('uzivo/odlazak/', retired_live_feature, name='live_visitor_leave'),
-    path('uzivo/javno/', retired_live_feature, name='public_online_visitors'),
-    path('uzivo/skoro-korpa/', retired_live_feature, name='almost_cart_track'),
+    path('uzivo/prisutan/', views.live_visitor_heartbeat, name='live_visitor_heartbeat'),
+    path('uzivo/odlazak/', views.live_visitor_leave, name='live_visitor_leave'),
+    path('uzivo/javno/', views.public_online_visitors, name='public_online_visitors'),
+    path('uzivo/skoro-korpa/', views.almost_cart_track, name='almost_cart_track'),
     path('narudzba/', views.checkout, name='checkout'),
     path('narudzba/uspjeh/<str:broj>/', views.order_success, name='order_success'),
     path('prijava/', views.login_view, name='login'),
@@ -215,18 +165,239 @@ urlpatterns = [
     ),
 
 
+    path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
     path('nalog/b2b-live/', views.staff_b2b_live, name='staff_b2b_live'),
     path('nalog/edit-mode/', views.staff_toggle_edit_mode, name='staff_toggle_edit_mode'),
     path('nalog/site-edit/', views.staff_site_edit_save, name='staff_site_edit_save'),
     path('nalog/artikli/bulk-izmjena/', views.staff_product_bulk_edit, name='staff_product_bulk_edit'),
     path('nalog/artikli/ista-slika/', views.staff_same_image_products, name='staff_same_image_products'),
     path('nalog/aktiviraj-korisnika/', views.staff_activate_user, name='staff_activate_user'),
-    path('nalog/aktivne-korpe/', retired_live_feature, name='staff_active_carts'),
+    path('nalog/aktivne-korpe/', views.staff_active_carts, name='staff_active_carts'),
+    path('nalog/magacin/', views_magacin.magacin_home, name='staff_magacin'),
+    path('nalog/magacin/pregled/', views_magacin.magacin_pregled, name='staff_magacin_pregled'),
+    path('nalog/magacin/barkod-provjera/', views_magacin.magacin_barkod_provjera, name='staff_magacin_barkod_provjera'),
+    path('nalog/magacin/dupli-barkodovi/<int:pk>/obrisi/', views_magacin.magacin_dupli_barkod_obrisi, name='staff_magacin_dupli_barkod_obrisi'),
+    path('nalog/magacin/dupli-barkodovi/', views_magacin.magacin_dupli_barkodovi, name='staff_magacin_dupli_barkodovi'),
+    path('nalog/magacin/artikli/', views_magacin.magacin_artikli, name='staff_magacin_artikli'),
+    path('nalog/magacin/artikli/brzi-unos/', views_magacin.magacin_brzi_unos, name='staff_magacin_brzi_unos'),
+    path(
+        'nalog/magacin/artikli/brzi-unos/novi/',
+        views_magacin.magacin_brzi_unos_novi,
+        name='staff_magacin_brzi_unos_novi',
+    ),
+    path(
+        'nalog/magacin/artikli/brzi-unos/<int:product_id>/',
+        views_magacin.magacin_brzi_unos_aktivacija,
+        name='staff_magacin_brzi_unos_aktivacija',
+    ),
+    path('nalog/magacin/artikli/lookup/', views_magacin.magacin_artikli_lookup, name='staff_magacin_artikli_lookup'),
+    path('nalog/magacin/stampa-cijena/', views_magacin.magacin_stampa_cijena, name='staff_magacin_stampa_cijena'),
+    path('nalog/magacin/stampa-cijena/ista/', views_magacin.magacin_stampa_cijena_ista, name='staff_magacin_stampa_cijena_ista'),
+    path(
+        'nalog/magacin/stampa-cijena/razlicite/',
+        views_magacin.magacin_stampa_cijena_razlicite,
+        name='staff_magacin_stampa_cijena_razlicite',
+    ),
+    path(
+        'nalog/magacin/stampa-cijena/print/',
+        views_magacin.magacin_stampa_cijena_print,
+        name='staff_magacin_stampa_cijena_print',
+    ),
+    path(
+        'nalog/magacin/stampa-deklaracije/',
+        views_magacin.magacin_stampa_deklaracije,
+        name='staff_magacin_stampa_deklaracije',
+    ),
+    path(
+        'nalog/magacin/stampa-deklaracije/<int:pk>/stampa/',
+        views_magacin.magacin_stampa_deklaracije_print,
+        name='staff_magacin_stampa_deklaracije_print',
+    ),
+    path('nalog/magacin/artikli/<int:pk>/', views_magacin.magacin_artikal, name='staff_magacin_artikal'),
+    path(
+        'nalog/magacin/artikli/<int:pk>/stampa/',
+        views_magacin.magacin_artikal_stampa,
+        name='staff_magacin_artikal_stampa',
+    ),
+    path(
+        'nalog/magacin/artikli/<int:pk>/stampa-barkod/',
+        views_magacin.magacin_artikal_stampa_barkod,
+        name='staff_magacin_artikal_stampa_barkod',
+    ),
+    path('nalog/magacin/artikli/<int:pk>/izmjena/', views_magacin.magacin_artikal_izmjena, name='staff_magacin_artikal_izmjena'),
+    path('nalog/magacin/artikli/<int:pk>/istorija/', views_magacin.magacin_istorija, name='staff_magacin_istorija'),
+    path('nalog/magacin/lokacije/lookup/', views_magacin.magacin_lokacije_lookup, name='staff_magacin_lokacije_lookup'),
+    path(
+        'nalog/magacin/lokacije/<int:pk>/stampa/',
+        views_magacin.magacin_lokacija_stampa,
+        name='staff_magacin_lokacija_stampa',
+    ),
+    path('nalog/magacin/lokacije/', views_magacin.magacin_lokacije, name='staff_magacin_lokacije'),
+    path('nalog/magacin/zalihe/', views_magacin.magacin_zalihe, name='staff_magacin_zalihe'),
+    path(
+        'nalog/magacin/rezervni-dijelovi/',
+        views_magacin.magacin_rezervni_dijelovi,
+        name='staff_magacin_rezervni_dijelovi',
+    ),
+    path(
+        'nalog/magacin/dnevno-skidanje-mp/',
+        views_magacin.magacin_mp_dnevno_skidanje,
+        name='staff_magacin_mp_dnevno',
+    ),
+    path('nalog/magacin/transferi/', views_magacin.magacin_transferi, name='staff_magacin_transferi'),
+    path('nalog/magacin/popis/', views_magacin.magacin_popis, name='staff_magacin_popis'),
+    path('nalog/magacin/popis/<int:pk>/', views_magacin.magacin_popis, name='staff_magacin_popis_detail'),
+    path('nalog/magacin/popis/stampa/', views_magacin.magacin_popis_stampa, name='staff_magacin_popis_stampa'),
+    path('nalog/magacin/popis-test/', views_magacin.magacin_popis_test, name='staff_magacin_popis_test'),
+    path('nalog/magacin/provjera-lagera/', views_magacin.magacin_provjera_lagera, name='staff_magacin_provjera_lagera'),
+    path(
+        'nalog/magacin/provjera-lagera/stampa/',
+        views_magacin.magacin_provjera_lagera_stampa,
+        name='staff_magacin_provjera_lagera_stampa',
+    ),
+    path('nalog/magacin/fali-na-sajtu/', views_magacin.magacin_fali_na_sajtu, name='staff_magacin_fali_na_sajtu'),
+    path('nalog/magacin/narudzbe/', views_magacin.magacin_narudzbe, name='staff_magacin_narudzbe'),
+    path('nalog/magacin/narudzbe/nova/', views_magacin.magacin_narudzba_nova, name='staff_magacin_narudzba_nova'),
+    path(
+        'nalog/magacin/narudzbe/nova/bulk/',
+        views_magacin.magacin_narudzba_bulk,
+        name='staff_magacin_narudzba_bulk',
+    ),
+    path('nalog/magacin/narudzbe/vp/', views_magacin.magacin_vp_narudzba, name='staff_magacin_vp_narudzba'),
+    path(
+        'nalog/magacin/narudzbe/brza-posta/',
+        views_magacin.magacin_brza_posta,
+        name='staff_magacin_brza_posta',
+    ),
+    path(
+        'nalog/magacin/narudzbe/brza-posta/<str:broj>/',
+        views_magacin.magacin_brza_posta_detail,
+        name='staff_magacin_brza_posta_detail',
+    ),
+    path(
+        'nalog/magacin/narudzbe/x-express/',
+        views_magacin.magacin_xexpress_bulk,
+        name='staff_magacin_xexpress_bulk',
+    ),
+    path('nalog/magacin/kupci/', views_magacin.magacin_kupci, name='staff_magacin_kupci'),
+    path('nalog/magacin/kupci/lookup/', views_magacin.magacin_kupci_lookup, name='staff_magacin_kupci_lookup'),
+    path('nalog/magacin/kupci/sacuvaj/', views_magacin.magacin_kupci_save, name='staff_magacin_kupci_save'),
+    path(
+        'nalog/magacin/kupci/loyalty/',
+        views_magacin.magacin_loyalty_telefon,
+        name='staff_magacin_loyalty_telefon',
+    ),
+    path('nalog/magacin/narudzbe/stampa/', views_magacin.magacin_narudzbe_stampa, name='staff_magacin_narudzbe_stampa'),
+    path(
+        'nalog/magacin/narudzbe/stampa-kolicine/',
+        views_magacin.magacin_narudzbe_stampa_kolicine,
+        name='staff_magacin_narudzbe_stampa_kolicine',
+    ),
+    path('nalog/magacin/narudzbe/packing/', views_magacin.magacin_narudzbe_packing, name='staff_magacin_narudzbe_packing'),
+    path(
+        'nalog/magacin/narudzbe/packing/izbor/',
+        views_magacin.magacin_narudzbe_packing_izbor,
+        name='staff_magacin_narudzbe_packing_izbor',
+    ),
+    path('nalog/magacin/narudzbe/validiraj/', views_magacin.magacin_narudzbe_validiraj, name='staff_magacin_narudzbe_validiraj'),
+    path(
+        'nalog/magacin/narudzbe/odstampano/',
+        views_magacin.magacin_narudzbe_mark_printed,
+        name='staff_magacin_narudzbe_mark_printed',
+    ),
+    path('nalog/magacin/pakovanje/', views_magacin.magacin_pakovanje, name='staff_magacin_pakovanje'),
+    path('nalog/magacin/pakuj/', views_magacin.magacin_pakuj, name='staff_magacin_pakuj'),
+    path('nalog/magacin/pakuj/provjera/', views_magacin.magacin_pakuj_provjera, name='staff_magacin_pakuj_provjera'),
+    path('nalog/magacin/pakuj/sken/', views_magacin.magacin_pakuj_sken, name='staff_magacin_pakuj_sken'),
+    path(
+        'nalog/magacin/pakuj/<str:broj>/oslobodi/',
+        views_magacin.magacin_pakuj_oslobodi,
+        name='staff_magacin_pakuj_oslobodi',
+    ),
+    path(
+        'nalog/magacin/pakuj/<str:broj>/stampaj-zapakovano/',
+        views_magacin.magacin_pakuj_stampaj_zapakovano,
+        name='staff_magacin_pakuj_stampaj_zapakovano',
+    ),
+    path(
+        'nalog/magacin/narudzbe/<str:broj>/barkod.png',
+        views_magacin.magacin_narudzba_barkod,
+        name='staff_magacin_narudzba_barkod',
+    ),
+    path('nalog/magacin/pakuj/<str:broj>/', views_magacin.magacin_pakuj_detail, name='staff_magacin_pakuj_detail'),
+    path('nalog/magacin/uvoz/', views_magacin.magacin_uvoz, name='staff_magacin_uvoz'),
+    path('nalog/magacin/uvoz/novi/', views_magacin.magacin_uvoz_novi, name='staff_magacin_uvoz_novi'),
+    path('nalog/magacin/uvoz/<int:pk>/cijene/', views_magacin.magacin_uvoz_cijene, name='staff_magacin_uvoz_cijene'),
+    path('nalog/magacin/uvoz/<int:pk>/stampa/', views_magacin.magacin_uvoz_stampa, name='staff_magacin_uvoz_stampa'),
+    path(
+        'nalog/magacin/uvoz/<int:pk>/popis/stampa/',
+        views_magacin.magacin_uvoz_popis_stampa,
+        name='staff_magacin_uvoz_popis_stampa',
+    ),
+    path(
+        'nalog/magacin/uvoz/<int:pk>/popis/',
+        views_magacin.magacin_uvoz_popis,
+        name='staff_magacin_uvoz_popis',
+    ),
+    path('nalog/magacin/uvoz/<int:pk>/', views_magacin.magacin_uvoz_detail, name='staff_magacin_uvoz_detail'),
+    path(
+        'nalog/magacin/nivelacije/akcija/nova/',
+        views_magacin.magacin_nivelacije_akcija_nova,
+        name='staff_magacin_nivelacije_akcija_nova',
+    ),
+    path(
+        'nalog/magacin/nivelacije/akcija/<int:pk>/stampa/',
+        views_magacin.magacin_nivelacije_akcija_stampa,
+        name='staff_magacin_nivelacije_akcija_stampa',
+    ),
+    path(
+        'nalog/magacin/nivelacije/akcija/<int:pk>/etikete/',
+        views_magacin.magacin_nivelacije_akcija_etikete,
+        name='staff_magacin_nivelacije_akcija_etikete',
+    ),
+    path(
+        'nalog/magacin/nivelacije/akcija/<int:pk>/',
+        views_magacin.magacin_nivelacije_akcija_detail,
+        name='staff_magacin_nivelacije_akcija_detail',
+    ),
+    path(
+        'nalog/magacin/nivelacije/stampa/',
+        views_magacin.magacin_nivelacije_stampa,
+        name='staff_magacin_nivelacije_stampa',
+    ),
+    path(
+        'nalog/magacin/nivelacije/izmjenjene/<int:pk>/',
+        views_magacin.magacin_nivelacije_uvoz,
+        name='staff_magacin_nivelacije_uvoz',
+    ),
+    path('nalog/magacin/nivelacije/', views_magacin.magacin_nivelacije, name='staff_magacin_nivelacije'),
+    path('nalog/magacin/dobavljaci/', views_magacin.magacin_dobavljaci, name='staff_magacin_dobavljaci'),
+    path('nalog/magacin/ponude/', views_magacin.magacin_ponude, name='staff_magacin_ponude'),
+    path('nalog/magacin/ponude/<int:pk>/', views_magacin.magacin_ponuda_detail, name='staff_magacin_ponuda_detail'),
+    path(
+        'nalog/magacin/ponude/<int:pk>/prihvati/',
+        views_magacin.magacin_ponuda_prihvati,
+        name='staff_magacin_ponuda_prihvati',
+    ),
     path('ponuda/<str:token>/', views_magacin.ponuda_javna, name='ponuda_javna'),
+    path('nalog/magacin/izvjestaji/', views_magacin.magacin_izvjestaji, name='staff_magacin_izvjestaji'),
+    path('nalog/magacin/podesavanja/', views_magacin.magacin_podesavanja, name='staff_magacin_podesavanja'),
+    path('nalog/magacin/sync/istorija/', views_magacin.magacin_sync_istorija, name='staff_magacin_sync_istorija'),
+    path('nalog/magacin/backup/', views_magacin.magacin_backup, name='staff_magacin_backup'),
+    path(
+        'nalog/magacin/backup/preuzmi/<str:name>/',
+        views_magacin.magacin_backup_download,
+        name='staff_magacin_backup_download',
+    ),
+    path(
+        'nalog/magacin/backup/preuzmi-sada/',
+        views_magacin.magacin_backup_download_current,
+        name='staff_magacin_backup_download_current',
+    ),
     path('nalog/greb-greb/', views.staff_scratch_analytics, name='staff_scratch_analytics'),
-    path('nalog/uzivo-analitika/', retired_live_feature, name='staff_live_analytics'),
-    path('nalog/uzivo-analitika/podaci/', retired_live_feature, name='staff_live_analytics_data'),
-    path('nalog/uzivo-obavijesti/', retired_live_feature, name='staff_site_events_poll'),
+    path('nalog/uzivo-analitika/', views.staff_live_analytics, name='staff_live_analytics'),
+    path('nalog/uzivo-analitika/podaci/', views.staff_live_analytics_data, name='staff_live_analytics_data'),
+    path('nalog/uzivo-obavijesti/', views.staff_site_events_poll, name='staff_site_events_poll'),
     path('nalog/pretraga-artikala/', views.staff_product_search, name='staff_product_search'),
 
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),
@@ -263,7 +434,3 @@ urlpatterns = [
     path('nalog/pretraga-brendova/', views.staff_brand_search, name='staff_brand_search'),
     path('nalog/pretraga-tagova/', views.staff_tag_search, name='staff_tag_search'),
 ]
-
-# Specific tool routes precede the generic WMS section route.
-from .wms_service_urls import urlpatterns as wms_service_patterns
-urlpatterns = wms_service_patterns + urlpatterns

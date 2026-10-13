@@ -59,7 +59,7 @@
                     <input type="checkbox" name="b" value="{{ order.broj }}" class="mg-order-check"{% if order.xexpress_sifra %} disabled{% endif %}>
                 </label>
                 <a class="bp-row-main" href="{% url 'staff_magacin_brza_posta_detail' order.broj %}?datum={{ day|date:'Y-m-d' }}">
-                    <strong>{{ order.ime_prezime }}</strong>{% include "partials/order_metadata.html" with metadata_order=order only %}
+                    <strong>{{ order.ime_prezime }}</strong>
                     <span>#{{ order.broj }} · {{ order.grad }}{% if order.xexpress_sifra %} · {{ order.xexpress_sifra }}{% endif %}</span>
                 </a>
                 <span class="bp-row-sum">{{ order.ukupno }} KM</span>

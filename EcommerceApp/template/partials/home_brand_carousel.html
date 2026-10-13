@@ -5,7 +5,7 @@
     <a href="{% url 'home' %}?brend={{ brand.slug }}#product-showcase"
        class="showcase-brand-link home-brand-grid__item"
        title="{{ brand.naziv }}">
-        <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" class="carp-brand-logo showcase-brand-logo" width="120" height="30" loading="lazy" decoding="async">
+        <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" class="showcase-brand-logo" width="120" height="30" loading="lazy" decoding="async">
     </a>
     {% endfor %}
 </div>

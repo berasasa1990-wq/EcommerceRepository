@@ -28,8 +28,21 @@ def push_staff_event(
     grad='',
     session_key='',
 ):
-    """Retired module: preserve stored history without background work."""
-    return None
+    """Snimi događaj koji superuseri vide kao toast na sajtu."""
+    tip = (tip or '').strip()
+    if tip not in {choice.value for choice in StaffSiteEvent.Tip}:
+        return None
+
+    event = StaffSiteEvent.objects.create(
+        tip=tip,
+        naslov=(naslov or StaffSiteEvent.Tip(tip).label)[:120],
+        poruka=(poruka or '')[:300],
+        ime=(ime or '')[:120],
+        email=(email or '')[:254],
+        grad=(grad or '')[:100],
+        session_key=(session_key or '')[:40],
+    )
+    return event
 
 
 def notify_visitor_online(*, ime='', email='', grad='', session_key='', trenutno_gleda=''):
@@ -128,8 +141,8 @@ def count_new_online_orders():
 
 
 def cleanup_staff_events():
-    """Retired module: preserve stored history without background work."""
-    return None
+    """Compatibility hook: evidence is retained until explicitly deleted by an administrator."""
+    return 0
 
 
 def _online_session_keys():

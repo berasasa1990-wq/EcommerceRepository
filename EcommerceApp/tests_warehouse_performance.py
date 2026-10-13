@@ -68,7 +68,7 @@ class WarehousePerformanceTests(TestCase):
     def test_search_evaluates_only_current_page(self):
         for i in range(65):
             Product.objects.create(naziv='Search benchmark %03d' % i, cijena=10, magacin_sync_at=timezone.now())
-        req = RequestFactory().get('/wms/operacije/artikli/', {'pretraga': 'Search benchmark', 'rezultati': '1'})
+        req = RequestFactory().get('/nalog/magacin/artikli/', {'pretraga': 'Search benchmark', 'rezultati': '1'})
         req.user = get_user_model().objects.create_superuser('perf', 'perf@example.com', 'test')
         req.session = {}
         with patch('EcommerceApp.views_magacin._magacin_context', return_value={}), patch('EcommerceApp.views_magacin.render', side_effect=lambda r, t, c: c):

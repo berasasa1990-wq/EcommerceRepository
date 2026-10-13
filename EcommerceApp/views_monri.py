@@ -125,8 +125,7 @@ def finish_paid_order(order):
 
 
 def payment_render(request, template, context, status=200):
-    from .bera_home import storefront_context
-    response = render(request, 'bera_reference/' + template, {**storefront_context(), **context}, status=status)
+    response = render(request, template, context, status=status)
     response['Referrer-Policy'] = 'no-referrer'
     return response
 

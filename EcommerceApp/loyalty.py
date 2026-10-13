@@ -711,7 +711,7 @@ def loyalty_member_url(kod):
 def open_card_otp_message(code):
     from_label = loyalty_from_phone_display()
     lines = [
-        'CarpologijaBH — otvaranje kartice',
+        'opremazaribolov.ba — otvaranje kartice',
         f'Vaš 6-cifreni kod: {code}',
     ]
     if from_label and from_label != '—':
@@ -1037,7 +1037,7 @@ def purchase_otp_message(code, *, iznos=None):
     """Tekst poruke za Viber/WhatsApp — kupac izdiktira kod prodavcu."""
     from_label = loyalty_from_phone_display()
     lines = [
-        'CarpologijaBH — potvrda kupovine',
+        'opremazaribolov.ba — potvrda kupovine',
         f'Vaš kod: {code}',
         'Recite ovaj kod prodavcu da se kupovina evidentira.',
     ]
@@ -1698,7 +1698,7 @@ def loyalty_card_caption(card, *, share_image_url=''):
     else:
         next_line = 'Najvisi nivo, maksimalni popust'
     return '\n'.join([
-        'Vasa loyalty kartica - CarpologijaBH',
+        'Vasa loyalty kartica - opremazaribolov.ba',
         f'Nivo: {tier["label"]} - Popust: {int(tier["postotak"])}%',
         next_line,
         f'Broj kartice: {card.kod}',
@@ -1880,14 +1880,14 @@ def _draw_front_side(card, *, cardholder_name=None):
         _paste_logo(img, logo, (lx, ly))
         draw = ImageDraw.Draw(img)
     else:
-        draw.text((width // 2 - 170, height // 2 - 20), 'CarpologijaBH', fill='white', font=font_brand)
+        draw.text((width // 2 - 170, height // 2 - 20), 'opremazaribolov.ba', fill='white', font=font_brand)
 
     # Minimalan footer na crnoj
     draw.text((width // 2 - 72, height - 48), 'LOYALTY', fill=green, font=font_tier)
     tier_label = tier['label'].upper()
     # nivo desno od LOYALTY
     draw.text((width // 2 + 20, height - 48), tier_label, fill=muted, font=font_tier)
-    draw.text((width // 2 - 70, height - 26), 'CarpologijaBH', fill=(90, 90, 90), font=font_micro)
+    draw.text((width // 2 - 70, height - 26), 'opremazaribolov.ba', fill=(90, 90, 90), font=font_micro)
 
     return img
 
@@ -2005,7 +2005,7 @@ def _draw_back_side(card, *, cardholder_name=None):
         x += tw + 10
     draw.text(
         (48, 510),
-        'Unesi broj u korpi za popust · ne vrijedi na akcije · CarpologijaBH',
+        'Unesi broj u korpi za popust · ne vrijedi na akcije · opremazaribolov.ba',
         fill=muted,
         font=font_micro,
     )

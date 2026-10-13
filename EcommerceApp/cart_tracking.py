@@ -54,21 +54,88 @@ def _attach_user_to_session(request, session_key):
 
 
 def track_cart_line_added_or_updated(request, key, item):
-    # Retired live cart tracking; the customer session cart is unchanged.
-    """Retired module: preserve stored history without background work."""
-    return None
+    session_key = get_cart_session_key(request)
+    if not session_key or not item:
+        return
+    defaults = _line_defaults(request, item)
+    if not defaults['product']:
+        return
+    existing = ActiveCartItem.objects.filter(
+        session_key=session_key,
+        line_key=key,
+    ).only('kolicina').first()
+    old_qty = existing.kolicina if existing else 0
+    created = False
+    try:
+        updated = ActiveCartItem.objects.filter(
+            session_key=session_key,
+            line_key=key,
+        ).update(**defaults)
+        if not updated:
+            ActiveCartItem.objects.create(
+                session_key=session_key,
+                line_key=key,
+                **defaults,
+            )
+            created = True
+    except OperationalError as exc:
+        if not _is_db_locked(exc):
+            raise
+        logger.warning('track_cart_line skipped (db locked): %s', exc)
+        return
+    _attach_user_to_session(request, session_key)
+
+    # Superuser obavijest: novo dodavanje ili povećanje količine (ne za superusere)
+    user = _cart_user(request)
+    if user and user.is_superuser:
+        return
+    new_qty = defaults.get('kolicina') or 0
+    if created or new_qty > old_qty:
+        try:
+            from .live_visitors import _display_email, _display_name
+            from .models import LiveVisitor
+            from .staff_alerts import notify_cart_add
+
+            ime = _display_name(user)
+            email = _display_email(user)
+            grad = ''
+            if user:
+                profil = getattr(user, 'profil', None)
+                if profil and profil.grad:
+                    grad = (profil.grad or '').strip()
+            lv = LiveVisitor.objects.filter(session_key=session_key).only('grad', 'ime', 'email').first()
+            if lv:
+                if not grad:
+                    grad = (lv.grad or '').strip()
+                if not email:
+                    email = (lv.email or '').strip()
+                if not ime or ime == 'Gost':
+                    ime = (lv.ime or '').strip() or ime
+
+            product_name = defaults.get('naziv') or ''
+            if defaults.get('varijacija_naziv'):
+                product_name = f"{product_name} — {defaults['varijacija_naziv']}"
+            notify_cart_add(
+                ime=ime,
+                email=email,
+                grad=grad,
+                session_key=session_key,
+                product_name=product_name,
+            )
+        except Exception:
+            pass
 
 
 def track_cart_line_removed(request, key):
-    # Retired live cart tracking; the customer session cart is unchanged.
-    """Retired module: preserve stored history without background work."""
-    return None
+    session_key = get_cart_session_key(request)
+    if session_key:
+        ActiveCartItem.objects.filter(session_key=session_key, line_key=key).delete()
 
 
 def track_cart_cleared(request):
-    # Retired live cart tracking; the customer session cart is unchanged.
-    """Retired module: preserve stored history without background work."""
-    return None
+    session_key = get_cart_session_key(request)
+    if session_key:
+        ActiveCartItem.objects.filter(session_key=session_key).delete()
 
 
 def _is_db_locked(exc):
@@ -76,12 +143,56 @@ def _is_db_locked(exc):
 
 
 def sync_active_cart(request, cart):
-    # Retired live cart tracking; the customer session cart is unchanged.
-    """Retired module: preserve stored history without background work."""
-    return None
+    """Potpuna usklađenost sesije i baze (npr. pri otvaranju korpe)."""
+    session_key = get_cart_session_key(request)
+    if not session_key:
+        return
+
+    current_keys = set()
+    user = _cart_user(request)
+    line_payloads = []
+    for key, item in cart.cart.items():
+        current_keys.add(key)
+        defaults = _line_defaults(request, item)
+        if not defaults['product']:
+            continue
+        defaults['user'] = user
+        line_payloads.append((key, defaults))
+
+    last_error = None
+    for attempt in range(_SQLITE_LOCK_RETRIES):
+        try:
+            with transaction.atomic():
+                for key, defaults in line_payloads:
+                    # update pa create — kraći lock od update_or_create + select_for_update
+                    updated = ActiveCartItem.objects.filter(
+                        session_key=session_key,
+                        line_key=key,
+                    ).update(**defaults)
+                    if not updated:
+                        ActiveCartItem.objects.create(
+                            session_key=session_key,
+                            line_key=key,
+                            **defaults,
+                        )
+                ActiveCartItem.objects.filter(session_key=session_key).exclude(
+                    line_key__in=current_keys,
+                ).delete()
+            return
+        except OperationalError as exc:
+            last_error = exc
+            if not _is_db_locked(exc) or attempt + 1 >= _SQLITE_LOCK_RETRIES:
+                break
+            time.sleep(_SQLITE_LOCK_SLEEP * (attempt + 1))
+        except Exception as exc:
+            logger.exception('sync_active_cart failed: %s', exc)
+            return
+
+    if last_error is not None:
+        # Korpa u sesiji i dalje radi — ne ruši stranicu zbog staff track tabele
+        logger.warning('sync_active_cart skipped after lock: %s', last_error)
 
 
 def cleanup_stale_active_cart_items():
-    # Retired live cart tracking; the customer session cart is unchanged.
-    """Retired module: preserve stored history without background work."""
-    return None
+    # Retain historical records until explicitly deleted by the owner.
+    return 0

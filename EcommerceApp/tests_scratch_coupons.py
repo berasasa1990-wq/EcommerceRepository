@@ -95,12 +95,7 @@ class ScratchCouponTests(TestCase):
         Cart(SimpleNamespace(session=session)).add(product)
         session.save()
         response = self.client.get(reverse('cart'))
-        # The current storefront uses a one-click reward chooser. Manual code
-        # submission remains supported by the existing coupon endpoint.
-        self.assertContains(response, 'name="choose_reward"')
-        applied = self.client.post(reverse('apply_coupon'), {'kod': coupon.kod, 'next': 'cart'})
-        self.assertEqual(applied.status_code, 302)
-        self.assertEqual(self.client.session.get(Cart.COUPON_KEY), coupon.kod)
+        self.assertContains(response, 'name="kod"')
 
     def test_coupon_uses_regular_price_without_stacking_sale(self):
         coupon = ensure_scratch_coupon(self.claim)

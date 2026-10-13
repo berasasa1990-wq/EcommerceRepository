@@ -7,7 +7,7 @@
                 <div class="home-products-header home-products-header--brand-showcase">
                     {% if section.brand.slika %}
                     <a href="{{ section.brand_url }}" class="home-brand-showcase-logo" title="{{ section.brand.naziv }}">
-                        <img class="carp-brand-logo" src="{{ section.brand.slika.url }}" alt="{{ section.brand.naziv }}" loading="lazy" decoding="async" width="200" height="64">
+                        <img src="{{ section.brand.slika.url }}" alt="{{ section.brand.naziv }}" loading="lazy" decoding="async" width="200" height="64">
                     </a>
                     {% else %}
                     <h2 class="home-brand-showcase-title-fallback">

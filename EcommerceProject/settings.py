@@ -245,7 +245,7 @@ if not DEBUG:
 # Application definition
 
 INSTALLED_APPS = [
-    'EcommerceProject.admin_apps.BeraAdminConfig',
+    'django.contrib.admin',
     'django.contrib.auth',
     'EcommerceApp.apps.EcommerceappConfig',
     'django.contrib.contenttypes',
@@ -255,12 +255,7 @@ INSTALLED_APPS = [
     'django.contrib.sitemaps',
 ]
 
-# Temporary aggregate diagnostics; default off, no customer/SQL data logged.
-TTFB_DIAGNOSTICS_ENABLED = _env('TTFB_DIAGNOSTICS_ENABLED', 'False').strip().lower() in ('true', '1', 'yes')
-
 MIDDLEWARE = [
-    'EcommerceApp.middleware.ttfb_diagnostics.TTFBDiagnosticsMiddleware',
-    'EcommerceApp.request_performance.RequestReadMiddleware',
     # Include the policy on early responses too (HTTPS redirects and static files).
     'EcommerceApp.middleware.permissions_policy.PermissionsPolicyMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -273,6 +268,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'EcommerceApp.media_retention.PreserveUploadsMiddleware',
+    'EcommerceApp.middleware.live_visitor.LiveVisitorMiddleware',
     'EcommerceApp.middleware.site_prep_lock.SitePrepLockMiddleware',
     'EcommerceApp.middleware.meta_page_view.MetaPageViewMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -301,7 +297,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.template.context_processors.csrf',
                 'EcommerceApp.context_processors.csrf_settings',
-                'EcommerceApp.wms_tools.tool_context',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'EcommerceApp.context_processors.nav_categories',
@@ -684,9 +679,3 @@ MONRI_MERCHANT_KEY = _MONRI_CONFIG['MONRI_MERCHANT_KEY']
 MONRI_AUTHENTICITY_TOKEN = _MONRI_CONFIG['MONRI_AUTHENTICITY_TOKEN']
 MONRI_PUBLIC_BASE_URL = _MONRI_CONFIG['MONRI_PUBLIC_BASE_URL']
 del _MONRI_CONFIG, _MONRI_PROCESS_ENV
-
-# Dedicated aggregate diagnostics logger: one stderr entry, only when middleware logs a slow request.
-LOGGING['handlers']['ttfb_console'] = {'class': 'logging.StreamHandler', 'level': 'WARNING'}
-LOGGING['loggers']['EcommerceApp.middleware.ttfb_diagnostics'] = {
-    'handlers': ['ttfb_console'], 'level': 'WARNING', 'propagate': False,
-}

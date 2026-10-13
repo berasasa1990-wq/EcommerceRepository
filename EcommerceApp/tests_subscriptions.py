@@ -32,7 +32,7 @@ class WarehouseAccessTests(TestCase):
         with self.assertNumQueries(0):
             for pattern in urlpatterns:
                 name = getattr(pattern, 'name', '') or ''
-                if name.startswith(('staff_magacin', 'staff_wms', 'staff_order_')):
+                if name.startswith(('staff_magacin', 'staff_order_')):
                     self.assertTrue(can_access_route(self.admin, name), name)
 
     def test_expired_disabled_basic_plan_cannot_block_superuser(self):
@@ -45,7 +45,7 @@ class WarehouseAccessTests(TestCase):
             'EcommerceApp.views_magacin.render', return_value=HttpResponse('Warehouse works'),
         ):
             self.assertContains(self.client.get(reverse('staff_magacin_pakuj')), 'Warehouse works')
-        self.assertTrue(can_access_route(self.admin, 'staff_magacin_artikli'))
+        self.assertTrue(can_access_route(self.admin, 'staff_magacin_backup'))
 
     def test_non_superusers_and_inactive_accounts_cannot_enter(self):
         MagacinSubscription.objects.create(
@@ -56,7 +56,7 @@ class WarehouseAccessTests(TestCase):
         self.admin.is_active = False
         self.assertFalse(warehouse_user_required(self.admin))
         self.client.force_login(self.user)
-        self.assertEqual(self.client.get(reverse('staff_wms')).status_code, 302)
+        self.assertEqual(self.client.get(reverse('staff_magacin')).status_code, 302)
         self.assertEqual(self.client.post('/nalog/magacin/sync/').status_code, 404)
 
     def test_menu_has_full_controls_and_no_subscription_locks(self):
@@ -65,9 +65,8 @@ class WarehouseAccessTests(TestCase):
         html = render_to_string('staff/magacin/base.html', {
             'request': request, 'user': self.admin, 'site_settings': SiteSettings.load(),
         })
-        self.assertIn('wmsMobileSidebar', html)
-        self.assertNotIn('/nalog/magacin/', html)
-        self.assertNotIn('/nalog/admin/', html)
+        for name in ['uvoz', 'backup', 'zalihe', 'duguje', 'stampa_cijena']:
+            self.assertIn(reverse('staff_magacin_' + name), html)
         self.assertNotIn('mg-menu-lock', html)
         self.assertNotIn('Pretplate', html)
         self.assertNotIn('nije uključeno u tvoj plan', html)

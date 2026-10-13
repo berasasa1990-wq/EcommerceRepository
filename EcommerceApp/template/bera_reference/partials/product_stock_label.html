@@ -1,5 +1,0 @@
-{% load bera_warehouse_access %}
-{% storefront_availability_visible as show_availability %}
-{% if show_availability %}
-<p class="product-stock-label product-stock-label--manual{% if not product.na_stanju %} product-stock-label--out{% endif %}">{% if product.na_stanju %}Na stanju <span class="storefront-stock-quantity">{{ product.stanje }} kom</span>{% else %}Nije na stanju{% endif %}</p>
-{% endif %}

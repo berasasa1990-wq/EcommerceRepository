@@ -373,7 +373,7 @@
             '<div class="staff-order-celebration__actions">' +
             '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--primary" data-order-celeb-orders>PREGLEDAJ NARUDŽBU <span aria-hidden="true">→</span></button>' +
             '<button type="button" class="staff-order-celebration__btn staff-order-celebration__btn--ghost" data-order-celeb-close>IZAĐI</button></div>' +
-            '<div class="soc-footer">CarpologijaBH</div></div></div>';
+            '<div class="soc-footer">OPREMAZARIBOLOV.BA</div></div></div>';
 
         document.body.appendChild(overlay);
         document.body.classList.add('staff-order-celebration-open');
@@ -418,13 +418,11 @@
         showOrderCelebration(event, pendingCount);
     }
 
-    let polling = false;
     async function poll() {
-        if (document.hidden || polling) return;
-        polling = true;
+        if (document.hidden) return;
         try {
             const url = pollUrl + (pollUrl.indexOf('?') >= 0 ? '&' : '?') +
-                'summary=1&since=' + encodeURIComponent(sinceId);
+                'since=' + encodeURIComponent(sinceId);
             const response = await fetch(url, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin',
@@ -452,8 +450,6 @@
             }
         } catch (err) {
             /* tiho */
-        } finally {
-            polling = false;
         }
     }
 

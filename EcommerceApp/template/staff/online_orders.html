@@ -3,14 +3,14 @@
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {% block page_title %}
-<title>Online narudžbe — CarpologijaBH</title>
+<title>Online narudžbe — opremazaribolov.ba</title>
 {% endblock %}
 
 {% block content %}
 <section class="staff-orders-page staff-online-orders-page">
     <div class="staff-orders-header">
         <div>
-            <a href="{% url 'staff_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
+            <a href="{% url 'staff_admin_panel' %}" class="account-back-link">← Nazad na Admin panel</a>
             <h1>Online narudžbe</h1>
             <p class="staff-orders-subtitle">Pregled novih narudžbi i pretraga po broju, emailu ili telefonu.</p>
         </div>
@@ -68,8 +68,8 @@
                         {% endif %}
                     </div>
                     <div class="staff-online-order-meta">
-                        <span class="staff-online-order-customer">{{ order.ime_prezime }}</span>{% include "partials/order_metadata.html" with metadata_order=order only %}
-                        <span>{{ order.payment_label }}</span>
+                        <span class="staff-online-order-customer">{{ order.ime_prezime }}</span>
+                        <span>{{ order.web_placanje_label }}</span>
                         <span class="staff-online-order-date">{{ order.kreirana|date:"d.m.Y. H:i" }}</span>
                     </div>
                     <div class="staff-online-order-amount" aria-label="Iznos narudžbe">

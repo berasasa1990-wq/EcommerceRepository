@@ -157,17 +157,17 @@
                 <p class="pk-date">{% if datum %}{{ datum }}{% endif %}{% if vrijeme %} · {{ vrijeme }}{% endif %}</p>
             </div>
             <div class="pk-buyer">
-                <span class="pk-buyer-name">{{ order.ime_prezime }}</span>{% include "partials/order_metadata.html" with metadata_order=order only %}
+                <span class="pk-buyer-name">{{ order.ime_prezime }}</span>
                 <span>{{ order.telefon }}</span>
                 <span>{{ order.adresa }}, {{ order.grad }}{% if order.postanski_broj %}, {{ order.postanski_broj }}{% endif %}</span>
-                {% if order.is_b2b_order %}<span class="pk-src is-vp">B2B veleprodaja</span>{% elif order.is_vp %}
+                {% if order.is_vp %}
                 <span class="pk-src is-vp">VP</span>
                 {% elif order.izvor == 'magacin' %}
                 <span class="pk-src is-web">RUČNA</span>
                 {% else %}
                 <span class="pk-src is-web">WEBSHOP</span>
                 {% endif %}
-                <span class="pk-pay {% if order.placeno_karticom %}is-card{% else %}is-cash{% endif %}">{{ order.payment_label }}</span>
+                <span class="pk-pay {% if order.placeno_karticom %}is-card{% else %}is-cash{% endif %}">{{ order.packing_placanje_label }}</span>
             </div>
         </div>
 

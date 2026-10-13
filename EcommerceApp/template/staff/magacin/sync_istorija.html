@@ -1,0 +1,40 @@
+{% extends 'staff/magacin/base.html' %}
+
+{% block magacin_content %}
+<div class="mg-toolbar"><h1>Istorija sync-a</h1></div>
+<section class="mg-card">
+    <table class="mg-table">
+        <thead>
+            <tr>
+                <th>DATUM</th>
+                <th>STATUS</th>
+                <th>IZVOR</th>
+                <th>TRAJANJE</th>
+                <th>ARTIKALA</th>
+                <th>PORUKA</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in page %}
+            <tr>
+                <td>{{ row.started_at|date:"d.m.Y H:i" }}</td>
+                <td>{{ row.get_status_display }}</td>
+                <td>{{ row.izvor }}</td>
+                <td>{{ row.trajanje_label }}</td>
+                <td>{{ row.artikala }}</td>
+                <td>{{ row.poruka|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="mg-muted">Još nema sync zapisa.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% if page.has_other_pages %}
+<nav class="mg-pager">
+    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">←</a>{% endif %}
+    <span class="is-current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?page={{ page.next_page_number }}">→</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

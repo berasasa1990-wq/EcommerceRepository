@@ -53,7 +53,7 @@
                     </td>
                     <td><strong>#{{ order.broj }}</strong></td>
                     <td>
-                        <strong>{{ order.ime_prezime }}</strong>{% include "partials/order_metadata.html" with metadata_order=order only %}
+                        <strong>{{ order.ime_prezime }}</strong>
                         {% if order.telefon %}<span class="sub">{{ order.telefon }}</span>{% endif %}
                     </td>
                     <td>{{ order.kreirana|date:"H:i" }}</td>

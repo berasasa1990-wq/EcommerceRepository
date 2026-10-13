@@ -15,10 +15,10 @@
         <tbody>
             {% for order in orders %}
             <tr>
-                <td data-label="Narudžba"><strong>#{{ order.broj }}</strong>{% include "partials/order_metadata.html" with metadata_order=order only %}</td>
+                <td data-label="Narudžba"><strong>#{{ order.broj }}</strong></td>
                 <td data-label="Datum">{{ order.kreirana|date:"d.m.Y." }}</td>
                 <td data-label="Status"><span class="order-status order-status--{{ order.status }}">{{ order.get_status_display }}</span></td>
-                <td data-label="Plaćanje">{{ order.payment_label }}</td>
+                <td data-label="Plaćanje">{{ order.web_placanje_label }}</td>
                 <td data-label="Stavke">{{ order.stavke.all|length }}</td>
                 <td data-label="Iznos"><strong>{{ order.ukupno }} KM</strong></td>
                 <td data-label=""><a href="{% url 'account_order_detail' broj=order.broj %}" class="acc-table-link">Prati narudžbu</a></td>

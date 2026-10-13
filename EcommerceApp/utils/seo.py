@@ -42,8 +42,7 @@ def get_page_seo(page_key: str) -> PageSEO | None:
     if not page_key:
         return None
     try:
-        from ..request_performance import request_read
-        return request_read(('page-seo', page_key), lambda: PageSEO.objects.filter(page_key=page_key).first())
+        return PageSEO.objects.filter(page_key=page_key).first()
     except DatabaseError:
         return None
 

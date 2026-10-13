@@ -96,7 +96,7 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         'broj', 'korisnik', 'ime_prezime', 'email', 'telefon',
-        'ukupno', 'status', 'payment_label', 'order_source_label', 'lager_status', 'xexpress_sifra',
+        'ukupno', 'status', 'web_placanje_label', 'izvor', 'lager_status', 'xexpress_sifra',
         'odstampana', 'zapakovana', 'kreirana',
     )
     list_filter = ('status', 'izvor', 'lager_status', 'odstampana', 'zapakovana', 'kreirana')
@@ -104,14 +104,14 @@ class OrderAdmin(admin.ModelAdmin):
     readonly_fields = (
         'broj', 'kreirana', 'medjuzbir', 'dostava', 'popust',
         'ukupno', 'popust_detalji', 'odstampana', 'odstampana_at',
-        'xexpress_sifra', 'xexpress_poslano_at', 'order_source_label', 'payment_label',
+        'xexpress_sifra', 'xexpress_poslano_at',
     )
     autocomplete_fields = ('korisnik',)
     inlines = [OrderItemInline]
     fieldsets = (
         ('Narudžba', {
             'fields': (
-                'broj', 'status', 'izvor', 'order_source_label', 'payment_label', 'lager_status', 'medjuzbir', 'popust', 'kupon_kod',
+                'broj', 'status', 'izvor', 'lager_status', 'medjuzbir', 'popust', 'kupon_kod',
                 'popust_detalji', 'dostava', 'ukupno', 'kreirana',
                 'odstampana', 'odstampana_at',
             ),
@@ -120,9 +120,6 @@ class OrderAdmin(admin.ModelAdmin):
         ('Dostava', {'fields': ('adresa', 'grad', 'postanski_broj', 'napomena')}),
         ('X-Express', {'fields': ('xexpress_sifra', 'xexpress_poslano_at')}),
     )
-
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('b2b_submission', 'card_payment')
 
 
 @admin.register(LoyaltyCard)
@@ -1075,7 +1072,7 @@ class CategoryAdmin(admin.ModelAdmin):
             ),
             'description': (
                 '<strong>Prioritet #1 poslije početne.</strong> Svaka kategorija treba unique sadržaj.<br>'
-                '• <b>SEO title</b> (50–60): npr. „Štapovi za šarana | Oprema za ribolov — CarpologijaBH”<br>'
+                '• <b>SEO title</b> (50–60): npr. „Štapovi za šarana | Oprema za ribolov — opremazaribolov.ba”<br>'
                 '• <b>Meta description</b> (140–160): što nudiš + benefit + CTA<br>'
                 '• <b>H1</b>: npr. „Štapovi za šarana” (može kraće od title-a)<br>'
                 '• <b>SEO tekst ispod</b>: 2–4 pasusa o kategoriji (ne copy-paste isti tekst)<br>'
@@ -2196,17 +2193,8 @@ class ProductAdmin(admin.ModelAdmin):
     )
 
     def get_queryset(self, request):
-        from django.db.models import IntegerField, OuterRef, Subquery
-        from django.db.models.functions import Coalesce
-        from .models import ProductVariation
-
         qs = super().get_queryset(request)
-        variation_count = ProductVariation.objects.filter(
-            artikal_id=OuterRef('pk'),
-        ).order_by().values('artikal_id').annotate(total=Count('pk')).values('total')
-        return qs.select_related('brend', 'kategorija', 'kategorija__roditelj').annotate(
-            varijacije_broj=Coalesce(Subquery(variation_count, output_field=IntegerField()), 0),
-        )
+        return qs.annotate(varijacije_broj=Count('varijacije', distinct=True))
 
     def get_search_results(self, request, queryset, search_term):
         """
@@ -2315,7 +2303,7 @@ class ProductAdmin(admin.ModelAdmin):
             ),
             'description': (
                 'Sva polja su <strong>opcionalna</strong>. Sistem automatski radi: '
-                '<em>Naziv | Brend | CarpologijaBH</em> + opis s benefitima.<br>'
+                '<em>Naziv | Brend | opremazaribolov.ba</em> + opis s benefitima.<br>'
                 '<strong>Ručno popuni samo</strong> za bestsellere / skupe / prioritetne artikle.<br>'
                 '• Title 50–60 znakova · Description 140–160 · H1 = kupcu jasno ime proizvoda<br>'
                 '• SEO tekst: rijetko potreban na artiklu (bolje dobar <em>Opis proizvoda</em>)<br>'
@@ -3446,7 +3434,7 @@ class ProductAdmin(admin.ModelAdmin):
         if obj and obj.slika:
             try:
                 return format_html(
-                    '<img src="{}" style="height:40px;border-radius:4px;" loading="lazy" decoding="async" />',
+                    '<img src="{}" style="height:40px;border-radius:4px;" />',
                     obj.slika.url,
                 )
             except Exception:
@@ -3749,11 +3737,7 @@ class B2BSettingsAdmin(admin.ModelAdmin):
 
     class Media:
         css = {'all': ('admin/css/b2b-settings.css',)}
-        js = (
-            'admin/js/vendor/jquery/jquery.js',
-            'admin/js/jquery.init.js',
-            'admin/js/b2b-settings.js',
-        )
+        js = ('admin/js/b2b-settings.js',)
 
     def has_add_permission(self, request):
         return super().has_add_permission(request) and not B2BSettings.objects.exists()
@@ -3801,106 +3785,3 @@ class B2BSubmissionAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
-
-
-# Global modules stay exclusively in the superuser Django administration.
-from .models import ModulePermissions
-
-
-@admin.register(ModulePermissions)
-class ModulePermissionsAdmin(admin.ModelAdmin):
-    change_form_template = 'admin/EcommerceApp/modulepermissions/change_form.html'
-    fieldsets = (('WMS', {'fields': ('wms_zalihe', 'wms_narudzbe', 'wms_pakovanje', 'wms_prenosnice')}), ('Akcije', {'fields': ('akcije', 'sretni_greb_greb')}))
-    list_display = ('__str__',)
-
-    def changelist_view(self, request, extra_context=None):
-        if not request.user.is_superuser:
-            from django.core.exceptions import PermissionDenied
-            raise PermissionDenied
-        if not self.schema_ready():
-            from django.http import HttpResponse
-            return HttpResponse('Za Moduli / Dozvole primijenite migraciju 0313_bera_module_permissions.', status=503)
-        if ModulePermissions.objects.filter(pk=1).exists():
-            return redirect('admin:EcommerceApp_modulepermissions_change', object_id=1)
-        return redirect('admin:EcommerceApp_modulepermissions_add')
-
-    def has_module_permission(self, request):
-        return request.user.is_superuser and self.schema_ready()
-
-    def schema_ready(self):
-        from django.db import connection
-        return ModulePermissions._meta.db_table in connection.introspection.table_names()
-
-    def has_view_permission(self, request, obj=None):
-        return request.user.is_superuser
-
-    def has_change_permission(self, request, obj=None):
-        return request.user.is_superuser
-
-    def has_add_permission(self, request):
-        return request.user.is_superuser and self.schema_ready() and not ModulePermissions.objects.exists()
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
-from .models import HomeBestsellerProduct
-
-@admin.register(HomeFeaturedProduct)
-class HomeFeaturedProductAdmin(admin.ModelAdmin):
-    list_display = ('artikal', 'redoslijed', 'aktivan')
-    list_editable = ('redoslijed', 'aktivan')
-    list_filter = ('aktivan',)
-    search_fields = ('artikal__naziv', 'artikal__sifra')
-    autocomplete_fields = ('artikal',)
-    ordering = ('redoslijed', 'id')
-    fieldsets = (('Izdvojena ponuda na početnoj', {
-        'fields': ('artikal', 'redoslijed', 'aktivan'),
-        'description': 'Odaberi postojeći artikal pretragom naziva ili šifre. '
-                       'Prvih 6 aktivnih artikala prikazuje se na početnoj, po redoslijedu (manji broj ide prvi). '
-                       'Artikal mora biti aktivan i na stanju. Isključi Aktivan za uklanjanje iz ponude.',
-    }),)
-
-    def save_model(self, request, obj, form, change):
-        obj.postavke = SiteSettings.objects.get_or_create(pk=1)[0]
-        super().save_model(request, obj, form, change)
-        self.clear_home_cache()
-
-    def delete_model(self, request, obj):
-        super().delete_model(request, obj)
-        self.clear_home_cache()
-
-    def delete_queryset(self, request, queryset):
-        super().delete_queryset(request, queryset)
-        self.clear_home_cache()
-
-    @staticmethod
-    def clear_home_cache():
-        from django.core.cache import cache
-        from .views import _invalidate_storefront_product_caches
-        _invalidate_storefront_product_caches()
-
-
-@admin.register(HomeNovoProduct)
-class HomeNovoProductAdmin(HomeFeaturedProductAdmin):
-    fieldsets = (('Novo u ponudi na početnoj', {
-        'fields': ('artikal', 'redoslijed', 'aktivan'),
-        'description': 'Odaberi postojeći artikal po nazivu ili šifri. '
-                       'Prvih 6 aktivnih artikala na stanju prikazuje se u sekciji Novo u ponudi. '
-                       'Manji redoslijed ide prvi. Oznaka Novo se dodaje automatski; kod sniženja prednost ima −%.',
-    }),)
-
-
-@admin.register(HomeBestsellerProduct)
-class HomeBestsellerProductAdmin(HomeFeaturedProductAdmin):
-    fieldsets = (('Najprodavaniji proizvodi na početnoj', {
-        'fields': ('artikal', 'redoslijed', 'aktivan'),
-        'description': 'Odaberi postojeći artikal po nazivu ili šifri. '
-                       'Prvih 6 aktivnih artikala na stanju prikazuje se po redoslijedu u sekciji Najprodavaniji proizvodi. '
-                       'Manji broj ide prvi. Isključi Aktivan za uklanjanje iz sekcije.',
-    }),)
-
-# Retired live monitoring and vlog editors; database history is preserved.
-for _retired_model in (HomeVlog, ActiveCartItem, StaffSiteEvent, LiveVisitor):
-    if admin.site.is_registered(_retired_model):
-        admin.site.unregister(_retired_model)

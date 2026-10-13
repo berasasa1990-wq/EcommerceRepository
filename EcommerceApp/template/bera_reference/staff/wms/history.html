@@ -1,6 +1,0 @@
-{% extends 'bera_reference/staff/wms/base.html' %}
-{% block wms_content %}
-<header class="wms-page-heading"><h1>Istorija artikala</h1><span class="wms-results-count">{{ history.paginator.count }} zapisa</span></header>
-{% include 'bera_reference/staff/wms/history_table.html' %}
-<nav class="wms-type-options" aria-label="Stranice istorije">{% if history.has_previous %}<a class="wms-button" href="?page={{ history.previous_page_number }}">← Prethodna</a>{% endif %}<span>Stranica {{ history.number }} / {{ history.paginator.num_pages }}</span>{% if history.has_next %}<a class="wms-button" href="?page={{ history.next_page_number }}">Sljedeća →</a>{% endif %}</nav>
-{% endblock %}

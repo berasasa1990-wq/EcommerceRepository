@@ -729,17 +729,6 @@ def image_responsive_meta(
     display_height = max(1, int(height * (display_width / width))) if width else default[1]
 
     storage = image_field.storage
-    if _is_remote_storage(storage):
-        # Remote dimensions are layout fallbacks, not measured intrinsic widths.
-        # Without a variant manifest, use the real original URL and no false w
-        # descriptor. The picture source and preload select that same URL.
-        return {
-            'src': image_field.url,
-            'srcset': '',
-            'preload_src': image_field.url,
-            'width': display_width,
-            'height': display_height,
-        }
     entries = []
     smallest_url = None
     smallest_width = None

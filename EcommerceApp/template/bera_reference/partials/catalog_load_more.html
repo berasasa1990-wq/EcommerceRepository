@@ -1,5 +1,0 @@
-<div class="catalog-load-more" style="text-align:center;margin:24px 0">
-    {% if page_obj.has_next %}
-    <a class="btn catalog-load-more__button" data-catalog-load-more href="{{ filter_action }}?{% if catalog_query %}{{ catalog_query }}&amp;{% endif %}page={{ page_obj.next_page_number }}#product-showcase">Prikaži više</a>
-    {% endif %}
-</div>

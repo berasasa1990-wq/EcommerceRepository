@@ -7,10 +7,10 @@ def warehouse_user_required(user):
 
 def can_access_route(user, name):
     return bool(
-        name.startswith(('staff_magacin', 'staff_wms', 'staff_order_'))
+        (name.startswith('staff_magacin') or name.startswith('staff_order_'))
         and warehouse_user_required(user)
     )
 
 
 def warehouse_landing(user):
-    return 'staff_wms' if warehouse_user_required(user) else 'account'
+    return 'staff_magacin_artikli' if warehouse_user_required(user) else 'account'

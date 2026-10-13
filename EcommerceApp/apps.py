@@ -59,15 +59,9 @@ class EcommerceappConfig(AppConfig):
         from .admin_forms import TurnstileAdminAuthenticationForm
 
         admin.site.login_form = TurnstileAdminAuthenticationForm
-        admin.site.site_header = 'CarpologijaBH Admin'
-        admin.site.site_title = 'CarpologijaBH'
+        admin.site.site_header = 'opremazaribolov.ba Admin'
+        admin.site.site_title = 'opremazaribolov.ba'
         admin.site.index_title = 'Upravljanje trgovinom'
-
-        # Register panel editors after admin autodiscovery, before system checks.
-        # URL loading can happen during checks; registering there leaves related
-        # autocomplete models unavailable to a check already in progress.
-        from .bera_panel_admin import install_panel_editors
-        install_panel_editors()
 
         from django.conf import settings
 

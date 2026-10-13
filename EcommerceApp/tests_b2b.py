@@ -663,9 +663,9 @@ class B2BTests(TestCase):
         self.assertContains(response, 'partner')
         self.assertContains(response, 'U korpi')
         self.assertContains(response, '200.00 KM')
-        panel = admin_client.get(reverse('staff_panel'))
-        self.assertEqual(panel.status_code, 200)
-        self.assertContains(panel, reverse('staff_b2b_workspace'))
+        panel = admin_client.get(reverse('staff_admin_panel'))
+        self.assertContains(panel, 'B2B Live')
+        self.assertContains(panel, reverse('staff_b2b_live'))
 
     def test_admin_autocomplete_excludes_selected_and_discount_validation(self):
         from django.core.exceptions import ValidationError

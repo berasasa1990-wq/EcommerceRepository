@@ -1,10 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     var root = document.querySelector('[data-cart-stock-url]');
     if (!root) return;
-    if (root.dataset.stockRefreshBound) return;
-    root.dataset.stockRefreshBound = '1';
     var busy = false;
-    var refreshTimer;
     var soldOut = !!document.querySelector('[data-stock-label][data-sold-out="true"]');
     var checkoutLink = document.querySelector('.btn-cart-checkout');
     var checkoutForm = document.getElementById('checkout-form');
@@ -21,14 +18,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (response) { if (!response.ok) throw new Error('Stock unavailable'); return response.json(); })
             .then(function (data) {
                 soldOut = data.items.some(function (item) { return item.sold_out; });
-                var rowsByKey = new Map();
-                document.querySelectorAll('[data-cart-key]').forEach(function (row) {
-                    var key = row.getAttribute('data-cart-key');
-                    if (!rowsByKey.has(key)) rowsByKey.set(key, []);
-                    rowsByKey.get(key).push(row);
-                });
                 data.items.forEach(function (item) {
-                    (rowsByKey.get(item.key) || []).forEach(function (row) {
+                    document.querySelectorAll('[data-cart-key]').forEach(function (row) {
+                        if (row.getAttribute('data-cart-key') !== item.key) return;
                         var label = row.querySelector('[data-stock-label]');
                         if (label) {
                             label.textContent = item.sold_out ? 'Rasprodat — uklonite iz korpe' : '✓ Na stanju';
@@ -48,11 +40,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .finally(function () { busy = false; });
     }
     refresh();
-    function queueRefresh() {
-        clearTimeout(refreshTimer);
-        refreshTimer = window.setTimeout(refresh, 100);
-    }
-    window.addEventListener('focus', queueRefresh);
-    window.addEventListener('pageshow', function (event) { if (event.persisted) queueRefresh(); });
-    document.addEventListener('visibilitychange', queueRefresh);
+    window.setInterval(refresh, 15000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
 });

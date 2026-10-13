@@ -15,7 +15,7 @@ from .online_gift import active_reward_label
 from .upsell import get_active_upsell_offer
 from .utils.seo import absolute_url
 
-_CONTACT_MESSAGE = 'Zdravo, imam pitanje sa CarpologijaBH'
+_CONTACT_MESSAGE = 'Zdravo, imam pitanje sa opremazaribolov.ba'
 
 
 def _phone_digits(phone):
@@ -101,9 +101,7 @@ def _build_nav_categories():
 def _is_light_request_path(path: str) -> bool:
     """Putanje bez menija/popupova/marketing contexta (brži TTFB)."""
     path = path or ''
-    if path == '/wms' or path.startswith('/wms/'):
-        return True
-    if path.startswith(('/api/', '/uzivo/', '/static/', '/media/', '/admin/', '/wms/', '/nalog/provjera-narudzbi/')):
+    if path.startswith(('/api/', '/uzivo/', '/static/', '/media/', '/admin/', '/nalog/magacin/', '/nalog/provjera-narudzbi/')):
         return True
     if path.startswith(('/sitemap', '/robots.txt', '/healthz', '/favicon', '/feeds/')):
         return True
@@ -140,7 +138,7 @@ def _cached_popup_akcije():
 def _cats_sidebar_open(request):
     """Kategorije su uvijek otvorene na sajtu (ne može se sklopiti)."""
     path = getattr(request, 'path', '') or ''
-    if path.startswith('/wms/') or path.startswith('/staff/'):
+    if path.startswith('/nalog/magacin/') or path.startswith('/staff/'):
         return False
     return True
 
@@ -156,7 +154,6 @@ def nav_categories(request):
         except Exception:
             site_settings = SiteSettings()
         return {
-            'is_wms_workspace': path == '/wms' or path.startswith('/wms/'),
             'site_url': settings.SEO_CANONICAL_URL,
             'site_brand': 'Carpologija BH',
             'site_og_image_url': '',
@@ -301,7 +298,7 @@ def nav_categories(request):
         'online_gift_reward_label': gift_label,
         'search_query': (
             ''
-            if (request.path or '').startswith('/wms/')
+            if (request.path or '').startswith('/nalog/magacin/')
             else request.GET.get('q', '').strip()
         ),
         'contact_phone': contact_phone,

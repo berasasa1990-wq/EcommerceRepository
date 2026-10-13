@@ -13,7 +13,7 @@
     <div class="account-order-header">
         <div>
             <a href="{% url 'account' %}" class="account-back-link">← Nazad na nalog</a>
-            <h1>Narudžba #{{ order.broj }}</h1>{% include "partials/order_metadata.html" with metadata_order=order only %}
+            <h1>Narudžba #{{ order.broj }}</h1>
             <p class="account-order-meta">
                 {{ order.kreirana|date:"d.m.Y. H:i" }}
                 · <span class="order-status order-status--{{ order.status }}">{{ order.get_status_display }}</span>
@@ -21,7 +21,7 @@
         </div>
     </div>
 
-    <p>Način plaćanja: <strong>{{ order.payment_label }}</strong></p>
+    <p>Način plaćanja: <strong>{{ order.web_placanje_label }}</strong></p>
     {% include 'partials/account_order_tracking.html' %}
 
     <div class="account-order-grid">

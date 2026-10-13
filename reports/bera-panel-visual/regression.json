@@ -1,7 +1,0 @@
-{
-  "model_lists_and_add_forms": 32,
-  "create_update_delete_existing_models": true,
-  "settings_lookup_and_validation": true,
-  "original_admin_preserved": true,
-  "existing_permissions_preserved": true
-}

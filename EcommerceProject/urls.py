@@ -23,7 +23,6 @@ from django.urls import include, path, re_path
 from django.views.generic.base import RedirectView, TemplateView
 from EcommerceApp.sitemaps import sitemap_view, sitemaps as app_sitemaps
 from EcommerceApp.views_media import serve_media
-from EcommerceApp.bera_panel_admin import panel_admin_site
 
 from django.http import HttpResponse
 
@@ -34,7 +33,6 @@ def healthz(_request):
 
 
 urlpatterns = [
-    path('panel/podesavanja/sekcije/', panel_admin_site.urls),
     path('favicon.ico', RedirectView.as_view(url=static('img/carpologija-favicon.ico')), name='favicon'),
     path('healthz', healthz, name='healthz'),
     path('healthz/', healthz),

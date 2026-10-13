@@ -49,7 +49,7 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                         {% if is_prenos_mp %}Prenos u MP{% else %}Narudžba{% endif %}
                     </span>
-                    <strong>RN-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</strong>{% include "partials/order_metadata.html" with metadata_order=order only %}
+                    <strong>RN-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</strong>
                 </div>
                 <div class="pk-meta-row">
                     <span>
@@ -129,7 +129,7 @@
     </nav>
 
     <nav class="pk-bottom" aria-label="Magacin">
-        <a href="{% url 'staff_wms' %}">
+        <a href="{% url 'staff_magacin_pregled' %}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5L12 4l8 6.5V20H4z"/></svg>
             Pregled
         </a>
@@ -145,7 +145,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-6 9 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
             Zalihe
         </a>
-        <a href="{% url 'staff_wms' %}">
+        <a href="{% url 'staff_magacin' %}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/></svg>
             Više
         </a>

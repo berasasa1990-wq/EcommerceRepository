@@ -3,7 +3,7 @@ from html.parser import HTMLParser
 from django.template import Context
 from django.template.loader import get_template, render_to_string
 from django.template.loader_tags import BlockNode
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, override_settings
 
 
 class PreloadLinks(HTMLParser):
@@ -17,13 +17,13 @@ class PreloadLinks(HTMLParser):
             self.links.append(dict(attrs))
 
 
-class HomeBannerPreloadTests(TestCase):
+class HomeBannerPreloadTests(SimpleTestCase):
     def links(self, slides=(), **overrides):
         context = {'hero_slides': slides, 'lcp_image_url': '/desktop.jpg',
                    'lcp_image_srcset': '/desktop-640.jpg 640w, /desktop.jpg 1600w',
                    'lcp_image_sizes': '100vw', **overrides}
         # Render the actual head block without unrelated database context processors.
-        template = get_template('bera_reference/home.html').template
+        template = get_template('home.html').template
         blocks = template.nodelist.get_nodes_by_type(BlockNode)
         preload = next(node for node in blocks if node.name == 'lcp_preload')
         render_context = Context(context)
@@ -36,12 +36,12 @@ class HomeBannerPreloadTests(TestCase):
         self.assertEqual(mobile['href'], '/mobile.jpg')
         self.assertEqual(mobile['imagesrcset'], '/mobile-small.jpg 480w, /mobile.jpg 1080w')
         self.assertEqual(mobile['media'], '(max-width: 768px)')
-        self.assertEqual(desktop['media'], '(min-width: 768.01px)')
+        self.assertEqual(desktop['media'], 'not all and (max-width: 768px)')
         self.assertEqual(desktop['href'], '/desktop.jpg')
         self.assertEqual(desktop['imagesrcset'], '/desktop-640.jpg 640w, /desktop.jpg 1600w')
         for link in (mobile, desktop):
             self.assertEqual(link['fetchpriority'], 'high')
-            self.assertEqual(link['imagesizes'], '(min-width: 1620px) 1580px, (min-width: 1600px) calc(100vw - 40px), (min-width: 1220px) 1180px, calc(100vw - 40px)')
+            self.assertEqual(link['imagesizes'], '100vw')
 
     def test_mobile_without_srcset_uses_single_mobile_file(self):
         links = self.links([{'has_mobile_image': True, 'image_mobile': '/mobile.jpg'}])
@@ -71,9 +71,8 @@ class HomeBannerPreloadTests(TestCase):
     })
     def test_media_preconnect_is_unique_and_precedes_hero_preloads(self):
         from .models import SiteSettings
-        html = render_to_string('bera_reference/home.html', {
+        html = render_to_string('home.html', {
             'site_settings': SiteSettings(),
-            'media_origin': 'https://media.opremazaribolov.ba',
             'lcp_image_url': '/desktop.jpg',
             'lcp_image_sizes': '100vw',
             'hero_slides': [{'has_mobile_image': True, 'has_video': False,

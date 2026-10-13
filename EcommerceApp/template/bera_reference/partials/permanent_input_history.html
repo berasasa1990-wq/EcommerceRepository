@@ -1,8 +1,0 @@
-{% load static %}
-{% if user.is_authenticated and user.is_superuser %}
-<div id="permanentInputConfig" data-user="{{ user.pk }}" data-url="{% url 'staff_magacin_save_input' %}" hidden>
-    <span hidden>{% csrf_token %}</span>
-    <span id="permanentInputStatus" role="status"></span>
-</div>
-<script src="{% static 'bera_reference/js/permanent-form-inputs.js' %}?v=20261012-no-article-poll" defer></script>
-{% endif %}

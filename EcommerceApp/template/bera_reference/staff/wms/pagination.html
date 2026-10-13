@@ -1,5 +1,0 @@
-{% if page.paginator.num_pages > 1 %}<nav class="wms-type-options" aria-label="Stranice rezultata">
-{% if page.has_previous %}<a class="wms-button" href="?{{ page_query }}&amp;page={{ page.previous_page_number }}">← Prethodna</a>{% endif %}
-<span>Stranica {{ page.number }} / {{ page.paginator.num_pages }} · {{ page.paginator.count }} rezultata</span>
-{% if page.has_next %}<a class="wms-button" href="?{{ page_query }}&amp;page={{ page.next_page_number }}">Sljedeća →</a>{% endif %}
-</nav>{% endif %}

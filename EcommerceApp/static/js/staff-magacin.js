@@ -1,12 +1,51 @@
 (function () {
     var app = document.getElementById('mgApp');
     var navBtn = document.getElementById('mgNavToggle');
-    // Older shared forms still trigger mgNavToggle; use the active WMS menu.
-    if (navBtn) {
+    var navClose = document.getElementById('mgNavClose');
+    var navBackdrop = document.getElementById('mgNavBackdrop');
+    function setMagacinNav(open) {
+        if (!app) return;
+        app.classList.toggle('nav-open', !!open);
+        if (navBackdrop) navBackdrop.hidden = !open;
+        if (navBtn) navBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (navClose) navClose.hidden = !open;
+        document.body.classList.toggle('mg-nav-lock', !!open);
+    }
+    if (navBtn && app) {
+        navBtn.setAttribute('aria-expanded', 'false');
         navBtn.addEventListener('click', function () {
-            var toggle = document.querySelector('.wms-mobile-menu');
-            if (toggle && toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
+            setMagacinNav(!app.classList.contains('nav-open'));
         });
+        app.querySelectorAll('.mg-nav a').forEach(function (link) {
+            link.addEventListener('click', function () { setMagacinNav(false); });
+        });
+        var isPhone = window.matchMedia('(max-width: 860px)').matches;
+        var fromMagacin = (document.referrer || '').indexOf('/nalog/magacin/') !== -1;
+        if (isPhone && !fromMagacin && !document.body.classList.contains('is-pick')) {
+            setMagacinNav(true);
+        }
+    }
+    if (navBackdrop) {
+        navBackdrop.addEventListener('click', function () { setMagacinNav(false); });
+    }
+    if (navClose) {
+        navClose.addEventListener('click', function () { setMagacinNav(false); });
+    }
+
+    // On phones, warehouse Back controls open navigation without leaving the page.
+    if (app) {
+        document.addEventListener('click', function (event) {
+            if (!window.matchMedia('(max-width: 860px)').matches) return;
+            var control = event.target.closest && event.target.closest('a,button');
+            if (!control || !app.contains(control) || control.closest('.mg-sidebar') || control.hasAttribute('data-picking-list')) return;
+            var label = (control.getAttribute('aria-label') || control.textContent || '')
+                .replace(/^[\s←‹«❮]+/, '').trim();
+            if (!control.matches('.mg-back,.pk-bar-back,.pt-back') && !/^nazad(?:\s|$)/i.test(label)) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            setMagacinNav(true);
+            if (navClose) navClose.focus({ preventScroll: true });
+        }, true);
     }
 
     var user = document.getElementById('mgUser');
@@ -1737,7 +1776,6 @@ function initManualOrderForm() {
     }
     function openQty(row) {
         if (!row) return;
-        if (availableOf(row.item, row.variation) <= 0) { showHint('Artikal nije dostupan i ne može se dodati.'); return; }
         pick = { item: row.item, variation: row.variation };
         if (list) list.hidden = true;
         if (qtyName) qtyName.textContent = row.naziv || 'Artikal';
@@ -1766,7 +1804,6 @@ function initManualOrderForm() {
             return;
         }
         var available = availableOf(pick.item, pick.variation);
-        if (available <= 0) { showHint('Artikal nije dostupan i ne može se dodati.'); return; }
         var existing = findRow(String(pick.item.id), pick.variation ? String(pick.variation.id) : '');
         var already = existing ? (parseInt(existing.querySelector('[name="kolicina"]').value, 10) || 0) : 0;
         var over = already + qty > available;
@@ -1849,10 +1886,9 @@ function initManualOrderForm() {
                 event.preventDefault();
                 shiftCatalogQty(row, -1);
             });
-            card.querySelector('[data-cat-plus]').disabled = (row.dostupno || 0) <= 0;
             card.querySelector('[data-cat-plus]').addEventListener('click', function (event) {
                 event.preventDefault();
-                openQty(row);
+                shiftCatalogQty(row, 1);
             });
             catalog.appendChild(card);
         });

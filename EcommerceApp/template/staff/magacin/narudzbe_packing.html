@@ -157,7 +157,7 @@
         {% for job in print_jobs %}
         <section class="pack-block">
             <div class="pack-who">
-                <strong>{{ job.order.ime_prezime }}</strong>{% include "partials/order_metadata.html" with metadata_order=job.order only %}
+                <strong>{{ job.order.ime_prezime }}</strong>
                 <span>#{{ job.order.broj }}</span>
                 {% if job.order.is_vp %}
                 <span class="pack-src is-vp">VP</span>
@@ -167,7 +167,7 @@
                 <span class="pack-src is-web">WEBSHOP</span>
                 {% endif %}
                 {% if job.order.telefon %}<span>{{ job.order.telefon }}</span>{% endif %}
-                <span class="pack-pay {% if job.order.placeno_karticom %}is-card{% else %}is-cash{% endif %}">{{ job.order.payment_label }}</span>
+                <span class="pack-pay {% if job.order.placeno_karticom %}is-card{% else %}is-cash{% endif %}">{{ job.order.packing_placanje_label }}</span>
             </div>
             {% if job.packing_lines %}
             <table class="pack-lines">

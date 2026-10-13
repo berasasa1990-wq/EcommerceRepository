@@ -14,7 +14,7 @@
         <a class="pk-bar-back" href="{% url 'staff_magacin_pakuj' %}">←</a>
         <div class="pk-bar-title">
             <strong>Prenosnica u MP</strong>
-            <span>#{{ order.broj }}</span>{% include "partials/order_metadata.html" with metadata_order=order only %}
+            <span>#{{ order.broj }}</span>
         </div>
         <button type="button" class="pk-bar-scan" id="pkPrenosScanCam" data-mg-scan-target="pkPrenosScan" data-mg-scan-title="Skeniraj artikal" title="Skener" aria-label="Skener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v5M16 8v8"/></svg>
