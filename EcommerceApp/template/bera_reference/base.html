@@ -370,7 +370,7 @@
 <link rel="stylesheet" href="{% static 'bera_reference/css/bera-offer-popup.css' %}?v=20261012-blue-cart-reminder">
 {% if bera_button_color %}
 <style>
-body.bera-storefront-header{--wishlist-accent:{{ bera_button_color }};--storefront-price-color:{{ bera_button_color }}}
+body.bera-storefront-header{--wishlist-accent:{{ bera_button_color }};--storefront-price-color:{{ bera_button_color }};--storefront-button-background:{{ bera_button_background|default:bera_button_color }}}
 body.bera-storefront-header .scratch-game{--scratch-accent:{{ bera_button_color }}}
 body.bera-storefront-header:not(.panel-blue-workspace):not(.wms-independent):not(.staff-shell-page) :is(.btn,.button,.btn-view-all,.bera-hero-cta,.product-card-add-btn,.checkout-submit,.cart-checkout-btn,.bera-newsletter button,main button[type=submit]),
 body.bera-storefront-header:not(.panel-blue-workspace):not(.wms-independent):not(.staff-shell-page) .product-catalog .product-card-add-btn{background:{{ bera_button_background|default:bera_button_color }}!important;border-color:{{ bera_button_color }}!important;color:{{ bera_button_text }}!important}
@@ -920,6 +920,5 @@ body.bera-home.home-mobile-reference :is(.mobile-home-benefits span,.home-trust-
     <script src="{% static 'bera_reference/js/catalog-load-more.js' %}?v=20261012-fragment" defer></script>
     {% block extra_js %}{% endblock %}
 {% if user.is_authenticated and user.is_staff or user.is_authenticated and user.is_superuser %}{% include 'bera_reference/partials/module_unlock_dialog.html' %}{% endif %}
-{% if not is_wms_workspace %}<script src="{% static 'bera_reference/js/bera-brand-logo-align.js' %}?v=20261008-small" defer></script>{% endif %}
 </body>
 </html>
