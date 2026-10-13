@@ -1827,7 +1827,7 @@ def _suggest_product_queryset(request=None):
     Lagani queryset za autocomplete — minimum polja, bez tagova M2M.
     """
     from .models import AkcijaFlashLine
-    qs = Product.objects.filter(aktivan=True)
+    qs = Product.objects.filter(aktivan=True).select_related('brend', 'kategorija')
     if not _staff_edit_mode_enabled(request):
         qs = qs.filter(sakriven_do_stanja=False)
     return qs.defer(

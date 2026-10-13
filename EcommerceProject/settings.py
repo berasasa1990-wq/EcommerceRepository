@@ -255,7 +255,11 @@ INSTALLED_APPS = [
     'django.contrib.sitemaps',
 ]
 
+# Temporary aggregate diagnostics; default off, no customer/SQL data logged.
+TTFB_DIAGNOSTICS_ENABLED = _env('TTFB_DIAGNOSTICS_ENABLED', 'False').strip().lower() in ('true', '1', 'yes')
+
 MIDDLEWARE = [
+    'EcommerceApp.middleware.ttfb_diagnostics.TTFBDiagnosticsMiddleware',
     'EcommerceApp.request_performance.RequestReadMiddleware',
     # Include the policy on early responses too (HTTPS redirects and static files).
     'EcommerceApp.middleware.permissions_policy.PermissionsPolicyMiddleware',
@@ -680,3 +684,9 @@ MONRI_MERCHANT_KEY = _MONRI_CONFIG['MONRI_MERCHANT_KEY']
 MONRI_AUTHENTICITY_TOKEN = _MONRI_CONFIG['MONRI_AUTHENTICITY_TOKEN']
 MONRI_PUBLIC_BASE_URL = _MONRI_CONFIG['MONRI_PUBLIC_BASE_URL']
 del _MONRI_CONFIG, _MONRI_PROCESS_ENV
+
+# Dedicated aggregate diagnostics logger: one stderr entry, only when middleware logs a slow request.
+LOGGING['handlers']['ttfb_console'] = {'class': 'logging.StreamHandler', 'level': 'WARNING'}
+LOGGING['loggers']['EcommerceApp.middleware.ttfb_diagnostics'] = {
+    'handlers': ['ttfb_console'], 'level': 'WARNING', 'propagate': False,
+}

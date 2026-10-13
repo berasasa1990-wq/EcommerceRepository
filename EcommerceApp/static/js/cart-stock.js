@@ -1,7 +1,10 @@
 document.addEventListener('DOMContentLoaded', function () {
     var root = document.querySelector('[data-cart-stock-url]');
     if (!root) return;
+    if (root.dataset.stockRefreshBound) return;
+    root.dataset.stockRefreshBound = '1';
     var busy = false;
+    var refreshTimer;
     var soldOut = !!document.querySelector('[data-stock-label][data-sold-out="true"]');
     var checkoutLink = document.querySelector('.btn-cart-checkout');
     var checkoutForm = document.getElementById('checkout-form');
@@ -45,7 +48,11 @@ document.addEventListener('DOMContentLoaded', function () {
             .finally(function () { busy = false; });
     }
     refresh();
-    window.setInterval(refresh, 15000);
-    window.addEventListener('focus', refresh);
-    document.addEventListener('visibilitychange', refresh);
+    function queueRefresh() {
+        clearTimeout(refreshTimer);
+        refreshTimer = window.setTimeout(refresh, 100);
+    }
+    window.addEventListener('focus', queueRefresh);
+    window.addEventListener('pageshow', function (event) { if (event.persisted) queueRefresh(); });
+    document.addEventListener('visibilitychange', queueRefresh);
 });

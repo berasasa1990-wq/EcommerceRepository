@@ -223,7 +223,7 @@
     </style>
     {% endif %}
     {% if home_css_optimized %}
-    <link rel="stylesheet" href="{% static 'bera_reference/css/home-ui.bundle.css' %}?v=20261012">
+    <link rel="stylesheet" href="{% static 'bera_reference/css/home-ui.bundle.css' %}?v=20261013-css-minified">
     {% else %}
     <link rel="stylesheet" href="{% static 'bera_reference/css/home-mobile-reference.css' %}?v=20261012-brand-price-alignment">
     <link rel="stylesheet" href="{% static 'bera_reference/css/mobile-dock.css' %}?v=20260919-wishlist-badge">
@@ -367,7 +367,7 @@
     }
     </style>
 {% block storefront_theme %}{% endblock %}
-<link rel="stylesheet" href="{% static 'bera_reference/css/bera-home.css' %}?v=20261012-notify-selected-color">
+<link rel="stylesheet" href="{% static 'bera_reference/css/bera-home.min.css' %}?v=20261013-css-minified">
 {% if home_css_optimized %}
 {% include 'bera_reference/partials/home_popup_css.html' %}
 {% else %}

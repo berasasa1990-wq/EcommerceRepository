@@ -50,3 +50,26 @@ class SearchPerformanceTests(TestCase):
              patch('EcommerceApp.views._typo_tolerant_name_match', wraps=_typo_tolerant_name_match) as typo:
             self.assertEqual(self.client.get('/?q=slim+fsh').status_code, 200)
             self.assertEqual(typo.call_count, 1)
+
+
+class SuggestQueryPerformanceTests(TestCase):
+    def test_joined_brand_and_category_preserve_results_without_per_item_queries(self):
+        from .models import Brand, Category
+        from .views import search_suggest, _suggest_product_queryset
+        category = Category.objects.create(naziv='Search category')
+        brand = Brand.objects.create(naziv='Search brand')
+        for index in range(12):
+            Product.objects.create(naziv=f'Performance search {index}', cijena=20,
+                kategorija=category, brend=brand, stanje=5, na_stanju=True)
+        request = RequestFactory().get('/pretraga/', {'q': 'Performance search', 'limit': 8})
+        # Warm unrelated tag caches, then compare identical inputs and result bytes.
+        search_suggest(request)
+        with patch('EcommerceApp.views._suggest_product_queryset',
+                   side_effect=lambda request=None: _suggest_product_queryset(request).select_related(None)):
+            with CaptureQueriesContext(connection) as baseline:
+                before = search_suggest(request)
+        with CaptureQueriesContext(connection) as optimized:
+            after = search_suggest(request)
+        self.assertEqual(before.content, after.content)
+        self.assertGreaterEqual(len(baseline) - len(optimized), 16)
+        print(f'Autocomplete SQL queries: {len(baseline)} -> {len(optimized)}')

@@ -21,6 +21,36 @@ class WMSOrderPaymentTests(TestCase):
             payload['payment'] = payment
         return self.client.post(reverse('staff_wms_create_order', args=[tip]), payload)
 
+    def test_quantity_cannot_exceed_stock_including_duplicate_lines(self):
+        for tip in ('online', 'vp'):
+            for quantities in ([6], [3, 3]):
+                with self.subTest(tip=tip, quantities=quantities):
+                    response = self.client.post(reverse('staff_wms_create_order', args=[tip]), {
+                        'kupac': 'Kupac', 'payment': 'gotovina',
+                        'items': json.dumps([{'id': self.product.pk, 'quantity': qty} for qty in quantities])})
+                    self.assertEqual(response.status_code, 200)
+                    self.assertContains(response, 'najviše 5 kom')
+                    self.assertFalse(WMSOrder.objects.exists())
+                    self.assertEqual(response.context['initial_items'][0]['available'], 5)
+
+    def test_exact_available_quantity_is_allowed_for_both_order_types(self):
+        for tip in ('online', 'vp'):
+            response = self.client.post(reverse('staff_wms_create_order', args=[tip]), {
+                'kupac': 'Kupac', 'payment': 'gotovina',
+                'items': json.dumps([{'id': self.product.pk, 'quantity': 5}])})
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(WMSOrder.objects.latest('pk').items.get().kolicina, 5)
+
+    def test_maximum_excludes_reserved_quantity(self):
+        from .models import WarehouseLocation, WarehouseStock
+        location = WarehouseLocation.objects.create(sifra='MAX-QTY', naziv='Max quantity')
+        WarehouseStock.objects.create(product=self.product, location=location, kolicina=5, rezervisano=4)
+        for tip in ('online', 'vp'):
+            response = self.create(tip, 'gotovina')
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, 'najviše 1 kom')
+            self.assertFalse(WMSOrder.objects.exists())
+
     def test_wholesale_cash_and_bank_transfer(self):
         for value, label in [('gotovina', 'Gotovinski'), ('ziralno', 'Žiralno')]:
             with self.subTest(payment=value):

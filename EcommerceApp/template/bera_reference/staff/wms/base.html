@@ -29,9 +29,10 @@
    }
   } catch (_) {} finally { checking = false; }
  };
- window.setInterval(check, 5000);
- document.addEventListener('visibilitychange', check);
- window.addEventListener('focus', check);
+ let refreshTimer;
+ const queueCheck = () => { clearTimeout(refreshTimer); refreshTimer = window.setTimeout(check, 100); };
+ document.addEventListener('visibilitychange', queueCheck);
+ window.addEventListener('focus', queueCheck);
 })();
 </script>
 {% endblock %}

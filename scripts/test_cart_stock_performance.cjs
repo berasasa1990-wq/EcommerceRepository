@@ -13,7 +13,7 @@ const assert = require('node:assert/strict');
     querySelectorAll(){return this.controls;}
    }));
    const events={};
-   const sandbox={Map,document:{hidden:false,addEventListener(n,fn){events[n]=fn;},getElementById(){return null;},querySelector(selector){return selector==='[data-cart-stock-url]'?{getAttribute(){return '/stock';}}:null;},querySelectorAll(){queries++;return rows;}},window:{setInterval(){},addEventListener(){}},fetch:async()=>({ok:true,json:async()=>({items:rows.map((_,i)=>({key:'key-'+i,sold_out:i%2===0,quantity:i+1}))})})};
+   const sandbox={Map,document:{hidden:false,addEventListener(n,fn){events[n]=fn;},getElementById(){return null;},querySelector(selector){return selector==='[data-cart-stock-url]'?{dataset:{},getAttribute(){return '/stock';}}:null;},querySelectorAll(){queries++;return rows;}},window:{setInterval(){},addEventListener(){}},fetch:async()=>({ok:true,json:async()=>({items:rows.map((_,i)=>({key:'key-'+i,sold_out:i%2===0,quantity:i+1}))})})};
    vm.runInNewContext(code,sandbox);events.DOMContentLoaded();
    await new Promise(resolve=>setImmediate(resolve));
    return {queries,reads,state:rows.map(row=>({sold:row.label['data-sold-out'],qty:row.qty.max,remove:row.remove.hidden,disabled:row.controls.map(c=>c.disabled)}))};

@@ -1,4 +1,5 @@
 import re
+from scripts.css_safe_minify import minify_css
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -29,7 +30,26 @@ class HomeCriticalDeliveryTests(SimpleTestCase):
         root = Path(settings.BASE_DIR) / 'EcommerceApp'
         template = (root / 'template/bera_reference/partials/home_popup_css.html').read_text()
         inline = template.split('<style id="home-popup-css">', 1)[1].rsplit('</style>', 1)[0]
-        self.assertEqual(inline, (root / 'static/bera_reference/css/bera-offer-popup.css').read_text())
+        self.assertEqual(inline, minify_css((root / 'static/bera_reference/css/bera-offer-popup.css').read_text()))
+
+    def test_minified_outputs_preserve_all_rules_and_source_order(self):
+        from scripts.build_home_css import ROOT, BUNDLES, bundle_content
+        for name, sources in BUNDLES.items():
+            self.assertEqual((ROOT / name).read_text(), minify_css(bundle_content(sources).decode()))
+        self.assertEqual((ROOT / 'bera-home.min.css').read_text(),
+                         minify_css((ROOT / 'bera-home.css').read_text()))
+
+    def test_safe_duplicate_removal_preserves_final_cascade_position(self):
+        self.assertEqual(minify_css('.a{color:red}.b{color:blue}.a{color:red}'),
+                         '.b{color:blue}.a{color:red}')
+        self.assertEqual(minify_css('.a{color:red}.a{color:blue}'),
+                         '.a{color:red}.a{color:blue}')
+        self.assertEqual(minify_css('@media(max-width:600px){.a{color:red}}.a{color:red}'),
+                         '@media(max-width:600px){.a{color:red}}.a{color:red}')
+        self.assertEqual(minify_css('.a{content:"{;foo}"}.b{color:blue}.a{content:"{;foo}"}'),
+                         '.b{color:blue}.a{content:"{;foo}"}')
+        layered='@layer one{.a{color:red}}.a{color:red}.a{color:red}'
+        self.assertEqual(minify_css(layered), layered)
 
     def product(self, name):
         return SimpleNamespace(prikazna_slika=SimpleNamespace(url='/media/' + name),

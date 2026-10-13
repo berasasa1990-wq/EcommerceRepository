@@ -249,3 +249,27 @@ body.is-cart-page .cart-item-total .coupon-price-old { font-size: 11px; }
     body.is-cart-page .cart-item-price,
     body.is-cart-page .cart-item-total { font-size: 12px; }
 }
+
+/* Keep mobile recommendation images inside their own row. */
+@media (max-width: 767px) {
+    .bera-cart-recommendation-grid article { padding: 10px; gap: 7px; }
+    .bera-cart-recommendation-image {
+        flex: 0 0 90px;
+        height: 90px;
+        min-height: 0;
+        min-width: 0;
+        overflow: hidden;
+    }
+    .bera-cart-recommendation-image img {
+        display: block;
+        width: 100%;
+        height: 90px;
+        max-width: 100%;
+        max-height: 90px;
+        object-fit: contain;
+    }
+    .bera-cart-recommendation-name { font-size: 12px; line-height: 1.35; }
+    .bera-cart-recommendation-grid strong { font-size: 15px; }
+    .bera-cart-recommendations header { gap: 10px; flex-wrap: wrap; }
+    .bera-cart-recommendations h2 { font-size: 17px; }
+}

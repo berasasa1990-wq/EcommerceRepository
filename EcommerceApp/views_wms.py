@@ -681,18 +681,24 @@ def create_online_order(request, form, tip='online'):
                     raise ValueError
                 discounts[product_id] = discount
                 quantities[product_id] = quantities.get(product_id, 0) + quantity
-            products = {product.pk: product for product in Product.objects.filter(pk__in=quantities)}
+            products = {product.pk: product for product in Product.objects.filter(pk__in=quantities).annotate(wms_reserved=Sum('magacin_zalihe__rezervisano'))}
             if len(products) != len(quantities):
                 raise ValueError
-            lines = [{'id': pk, 'name': products[pk].naziv, 'code': products[pk].sifra, 'price': str(wms_entry_price(products[pk], tip)), 'quantity': qty, 'discount': str(discounts[pk])} for pk, qty in quantities.items()]
+            lines = [{'id': pk, 'name': products[pk].naziv, 'code': products[pk].sifra, 'price': str(wms_entry_price(products[pk], tip)), 'quantity': qty, 'discount': str(discounts[pk]), 'available': max(0, products[pk].stanje - (products[pk].wms_reserved or 0))} for pk, qty in quantities.items()]
             if form.is_valid() and payment in ('gotovina', 'ziralno'):
                 with transaction.atomic():
                     locked_products = list(Product.objects.select_for_update().filter(pk__in=quantities).order_by('pk'))
                     reserved_by_product = dict(WarehouseStock.objects.filter(product_id__in=quantities).values('product_id').annotate(total=Sum('rezervisano')).values_list('product_id', 'total'))
                     for current_product in locked_products:
                         reserved = reserved_by_product.get(current_product.pk) or 0
-                        if not current_product.aktivan or current_product.stanje - reserved <= 0:
+                        available = max(0, current_product.stanje - reserved)
+                        for line in lines:
+                            if line['id'] == current_product.pk:
+                                line['available'] = available
+                        if not current_product.aktivan or available <= 0:
                             form.add_error(None, f'Artikal „{current_product.naziv}” nije dostupan i ne može se dodati u narudžbu.')
+                        elif quantities[current_product.pk] > available:
+                            form.add_error(None, f'Za artikal „{current_product.naziv}” dostupno je najviše {available} kom. Unesena količina je {quantities[current_product.pk]}.')
                     if form.errors:
                         return render(request, 'bera_reference/staff/wms/online_order_form.html', {**context('narudzbe'), 'form': form, 'initial_items': lines, 'order_type': tip})
                     order = form.save(commit=False)
