@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.conf import settings
+from django.templatetags.static import static
 from django.template.loader import render_to_string
 from django.test import SimpleTestCase, TestCase, RequestFactory
 
@@ -23,6 +24,12 @@ class HomeCriticalDeliveryTests(SimpleTestCase):
         self.assertIn('@font-face', prefix)
         self.assertIn('.header{', prefix)
         self.assertNotIn('@font-face', (css / 'home-core-rest.bundle.css').read_text())
+
+    def test_inline_popup_styles_are_identical_to_shared_stylesheet(self):
+        root = Path(settings.BASE_DIR) / 'EcommerceApp'
+        template = (root / 'template/bera_reference/partials/home_popup_css.html').read_text()
+        inline = template.split('<style id="home-popup-css">', 1)[1].rsplit('</style>', 1)[0]
+        self.assertEqual(inline, (root / 'static/bera_reference/css/bera-offer-popup.css').read_text())
 
     def product(self, name):
         return SimpleNamespace(prikazna_slika=SimpleNamespace(url='/media/' + name),
@@ -56,8 +63,10 @@ class HomeDeliveryRenderingTests(TestCase):
             'home_css_optimized': True, 'site_settings': SiteSettings(),
         })
         self.assertIn('id="home-critical-css"', html)
-        self.assertIn('/static/bera_reference/fonts/inter-latin-700.woff2', html)
-        self.assertIn('/css/home-core-rest.bundle.css', html)
+        self.assertIn('id="home-popup-css"', html)
+        self.assertNotIn('/css/bera-offer-popup.css', html)
+        self.assertIn(static('bera_reference/fonts/inter-latin-700.woff2'), html)
+        self.assertIn(static('bera_reference/css/home-core-rest.bundle.css'), html)
         self.assertNotIn('/css/home-core.bundle.css', html)
 
     def test_locked_scratch_module_has_neither_popup_nor_stylesheet(self):

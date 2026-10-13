@@ -17,6 +17,11 @@ def build():
     for name, sources in BUNDLES.items():
         (ROOT / name).write_bytes(bundle_content(sources))
     build_critical_css()
+    popup = (ROOT / "bera-offer-popup.css").read_text()
+    if "url(" in popup or "{%" in popup or "</style" in popup.lower():
+        raise ValueError("Popup CSS needs explicit URL/template escaping")
+    (CRITICAL_TEMPLATE.parent / "home_popup_css.html").write_text(
+        '<style id="home-popup-css">' + popup + '</style>\n')
 
 
 def build_critical_css():

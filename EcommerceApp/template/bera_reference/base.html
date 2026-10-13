@@ -368,7 +368,11 @@
     </style>
 {% block storefront_theme %}{% endblock %}
 <link rel="stylesheet" href="{% static 'bera_reference/css/bera-home.css' %}?v=20261012-notify-selected-color">
+{% if home_css_optimized %}
+{% include 'bera_reference/partials/home_popup_css.html' %}
+{% else %}
 <link rel="stylesheet" href="{% static 'bera_reference/css/bera-offer-popup.css' %}?v=20261012-blue-cart-reminder">
+{% endif %}
 {% if bera_button_color %}
 <style>
 body.bera-storefront-header{--wishlist-accent:{{ bera_button_color }};--storefront-price-color:{{ bera_button_color }};--storefront-button-background:{{ bera_button_background|default:bera_button_color }}}
@@ -873,7 +877,7 @@ body.bera-home.home-mobile-reference :is(.mobile-home-benefits span,.home-trust-
     {% endif %}
     {% block structured_data %}{% endblock %}
     <script src="{% static 'bera_reference/js/csrf-session.js' %}?v=20261001" data-cookie-name="{{ csrf_cookie_name }}" defer></script>
-    <script src="{% static 'bera_reference/js/main.min.js' %}?v=20261012-catalog-more" defer></script>
+    <script src="{% static 'bera_reference/js/main.min.js' %}?v=20261013-search-submit" defer></script>
     {% if not is_wms_workspace %}<script src="{% static 'bera_reference/js/brand-logo-normalize.js' %}?v=20261011" defer></script>{% endif %}
     {% if not is_wms_workspace %}
     <script src="{% static 'bera_reference/js/desktop-reference.js' %}?v=20261012-single-category" defer></script>

@@ -643,6 +643,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function navigateToSearch(query) {
+        clearTimeout(searchDebounceTimer);
+        searchFetchController?.abort();
         const trimmed = query.trim();
         if (!trimmed || !searchForm) return;
         const base = searchForm.getAttribute('action') || '/';
@@ -669,7 +671,9 @@ document.addEventListener('DOMContentLoaded', () => {
     headerSearch?.addEventListener('mouseenter', forceCloseMegaMenu);
 
     searchInput?.addEventListener('input', queueSearchSuggestions);
-    searchInput?.addEventListener('keyup', queueSearchSuggestions);
+    searchInput?.addEventListener('keyup', (event) => {
+        if (event.key !== 'Enter') queueSearchSuggestions();
+    });
     searchInput?.addEventListener('search', queueSearchSuggestions);
     window.addEventListener('resize', positionSearchSuggestions, { passive: true });
     window.addEventListener('scroll', positionSearchSuggestions, { passive: true });

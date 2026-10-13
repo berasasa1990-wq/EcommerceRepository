@@ -342,6 +342,11 @@ def _product_queryset(request=None):
     return _prefetch_product_cards(qs)
 
 
+def _search_ranking_queryset(products_qs):
+    """Rank without descriptions/brand joins; load full cards only for the page."""
+    return products_qs.select_related(None).defer('opis').prefetch_related('tagovi')
+
+
 def _category_ranking_queryset(products_qs):
     """Keep exact price ranking without loading every catalog card's payload."""
     from .models import AkcijaFlashLine
@@ -1530,8 +1535,11 @@ def _apply_search_filter(products_qs, query):
         return products_qs.none()
 
     # 1–2) Naziv (sve riječi, bilo kojim redom) + šifra
-    match = _search_exists_match(raw)
-    match |= _typo_tolerant_name_match(raw)
+    from .request_performance import request_read
+    match = request_read(
+        ('storefront-search-match', raw),
+        lambda: _search_exists_match(raw) | _typo_tolerant_name_match(raw),
+    )
 
     # 3) Explicit product tags also match phrases such as "feeder set".
     try:
@@ -2769,11 +2777,13 @@ def facebook_domain_verification(request):
 
 @vary_on_headers('X-Catalog-Fragment')
 def home(request):
+    filter_params = _get_filter_params(request)
+    filters_active = _filters_active(filter_params)
     # Fetch the four banner groups together instead of four round trips.
     banner_groups = {}
-    for banner in _banners_with_media(
+    for banner in ([] if filters_active else _banners_with_media(
         Banner.objects.filter(aktivan=True).select_related('kategorija').order_by('redoslijed', '-id')
-    ):
+    )):
         banner_groups.setdefault(banner.tip, []).append(banner)
     hero_banners = banner_groups.get(Banner.BannerType.HERO, [])
     grid_banners = _filter_banners_for_empty_categories(
@@ -2782,9 +2792,6 @@ def home(request):
     featured_banners = banner_groups.get(Banner.BannerType.FEATURED, [])
     spotlights = banner_groups.get(Banner.BannerType.SPOTLIGHT, [])
     spotlight_banner = spotlights[0] if spotlights else None
-
-    filter_params = _get_filter_params(request)
-    filters_active = _filters_active(filter_params)
 
     latest_products = []
     featured_products = []
@@ -2803,11 +2810,13 @@ def home(request):
     site_settings = SiteSettings.load()
 
     if filters_active:
+        lightweight_search = bool(filter_params.get('q')) and not filter_params.get('nedostaje')
         products_qs = (
             _prefetch_product_cards(Product.objects.all())
             if filter_params['nedostaje'] else _product_queryset(request)
         )
-        products, filter_params = _apply_product_filters(products_qs, request)
+        ranking_qs = _search_ranking_queryset(products_qs) if lightweight_search else products_qs
+        products, filter_params = _apply_product_filters(ranking_qs, request)
         scope_qs = _filter_size_scope_qs(filter_params, base_qs=products_qs, request=request)
         filter_sizes = _available_sizes(scope_qs)
         filter_size_groups = _size_filter_groups(home_url, filter_params, filter_sizes)
@@ -2817,6 +2826,11 @@ def home(request):
             per_page=CATALOG_PRODUCTS_PER_PAGE,
         )
         search_products = page_obj.object_list
+        if lightweight_search:
+            page_ids = [product.pk for product in search_products]
+            cards = {product.pk: product for product in products_qs.filter(pk__in=page_ids)}
+            search_products = [cards[pk] for pk in page_ids]
+            page_obj.object_list = search_products
         result_count = page_obj.paginator.count
         if filter_params.get('nedostaje'):
             catalog_title = {
