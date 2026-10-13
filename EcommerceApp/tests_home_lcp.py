@@ -26,7 +26,7 @@ class HomeHeroLoadingTests(TestCase):
         html = render_to_string('bera_reference/home.html', {'request':request,'user':request.user,'hero_slides':[slide], 'lcp_image_url':slide['image'],'lcp_image_sizes':'100vw','filters_active':False}, request=request)
         self.assertLess(html.index('name="viewport"'), html.index('rel="preload" as="image"'))
         self.assertLess(html.index('rel="preload" as="image"'), html.index('rel="stylesheet"'))
-        self.assertIn('href="https://media.example.com/mobile.jpg" imagesizes="100vw" media="(max-width: 768px)" fetchpriority="high"', html)
+        self.assertIn('href="https://media.example.com/mobile.jpg" imagesizes="(min-width: 1620px) 1580px, (min-width: 1600px) calc(100vw - 40px), (min-width: 1220px) 1180px, calc(100vw - 40px)" media="(max-width: 768px)" fetchpriority="high"', html)
         self.assertIn('media="(min-width: 768.01px)" fetchpriority="high"', html)
         self.assertIn('srcset="https://media.example.com/mobile.jpg"', html)
         self.assertIn('loading="eager" fetchpriority="high"', html)

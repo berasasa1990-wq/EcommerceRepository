@@ -129,7 +129,7 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
 {% if slide.has_mobile_image and not slide.has_video %}
 <link rel="preload" as="image" href="{{ slide.image_mobile }}"{% if slide.image_mobile_srcset %} imagesrcset="{{ slide.image_mobile_srcset }}"{% endif %} imagesizes="(min-width: 1620px) 1580px, (min-width: 1600px) calc(100vw - 40px), (min-width: 1220px) 1180px, calc(100vw - 40px)" media="(max-width: 768px)" fetchpriority="high">
 {% endif %}
-<link rel="preload" as="image" href="{{ lcp_image_url }}"{% if lcp_image_srcset %} imagesrcset="{{ lcp_image_srcset }}"{% endif %} imagesizes="(min-width: 1620px) 1580px, (min-width: 1600px) calc(100vw - 40px), (min-width: 1220px) 1180px, calc(100vw - 40px)"{% if slide.has_mobile_image and not slide.has_video %} media="(min-width: 768.01px)"{% endif %} fetchpriority="high">
+<link rel="preload" as="image" href="{{ lcp_image_url }}"{% if lcp_image_srcset %} imagesrcset="{{ lcp_image_srcset }}"{% endif %} imagesizes="{% if hero_slides %}(min-width: 1620px) 1580px, (min-width: 1600px) calc(100vw - 40px), (min-width: 1220px) 1180px, calc(100vw - 40px){% else %}{{ lcp_image_sizes|default:'(max-width: 768px) 50vw, 20vw' }}{% endif %}"{% if slide.has_mobile_image and not slide.has_video %} media="(min-width: 768.01px)"{% endif %} fetchpriority="high">
 {% endwith %}
 {% endif %}
 {% endblock %}
@@ -214,7 +214,6 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
 </section>
 {% endif %}
 
-{% if not hero_slides %}{% include 'bera_reference/partials/bera_default_hero.html' %}{% endif %}
 {% include 'bera_reference/partials/home_mobile_navigation.html' %}
 {% if not home_trust_items %}{% include 'bera_reference/partials/home_mobile_benefits.html' %}{% endif %}
 
@@ -293,7 +292,7 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
                 {% include 'bera_reference/partials/home_section_header.html' with title=bera_home_content.new_offer_section_title|default:'Novo u ponudi' header_mod='novo' %}
-                {% include 'bera_reference/partials/home_product_carousel.html' with products=home_new_offer_products visible_desktop=6 carousel_no_arrows=True home_section_badge='novo' %}
+                {% include 'bera_reference/partials/home_product_carousel.html' with products=home_new_offer_products visible_desktop=6 carousel_no_arrows=True home_section_badge='novo' eager_first_image=eager_first_new_offer_image %}
             </div>
         </div>
     </div>

@@ -76,6 +76,24 @@ def homepage_context(context, request):
         if seo:
             result['seo_tekst_iznad'] = seo.seo_tekst_iznad or ''
             result['seo_tekst_ispod'] = seo.seo_tekst_ispod or ''
+        result.update(homepage_product_preload({**context, **result}, request))
+    return result
+
+
+def homepage_product_preload(context, request):
+    """Match the first rendered product section after the curated selection."""
+    if context.get('hero_slides') or context.get('filters_active'):
+        return {}
+    sections = ('featured_products', 'latest_products', 'home_new_offer_products')
+    first = next((context[name][0] for name in sections if context.get(name)), None)
+    result = {'lcp_image_url': None, 'lcp_image_srcset': None,
+              'lcp_image_sizes': '(max-width: 768px) 50vw, 20vw',
+              'eager_first_novo_image': not context.get('featured_products') and bool(context.get('latest_products')),
+              'eager_first_new_offer_image': not context.get('featured_products') and not context.get('latest_products') and bool(context.get('home_new_offer_products'))}
+    if first and first.prikazna_slika:
+        image = first.prikazna_slika_responsive or {'src': first.prikazna_slika.url}
+        result['lcp_image_url'] = request.build_absolute_uri(image['src'])
+        result['lcp_image_srcset'] = image.get('srcset') or None
     return result
 
 

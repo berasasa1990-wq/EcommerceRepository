@@ -41,7 +41,7 @@ class HomeBannerPreloadTests(TestCase):
         self.assertEqual(desktop['imagesrcset'], '/desktop-640.jpg 640w, /desktop.jpg 1600w')
         for link in (mobile, desktop):
             self.assertEqual(link['fetchpriority'], 'high')
-            self.assertEqual(link['imagesizes'], '100vw')
+            self.assertEqual(link['imagesizes'], '(min-width: 1620px) 1580px, (min-width: 1600px) calc(100vw - 40px), (min-width: 1220px) 1180px, calc(100vw - 40px)')
 
     def test_mobile_without_srcset_uses_single_mobile_file(self):
         links = self.links([{'has_mobile_image': True, 'image_mobile': '/mobile.jpg'}])
