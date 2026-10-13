@@ -12,8 +12,8 @@
 <div class="wms-order-summary-row"><span>Ukupan iznosm</span><strong>{{ subtotal|floatformat:2 }} KM</strong></div>
 <p class="wms-order-vat-note">PDV je uključen u cijenu.</p>
 {% if discount %}<div class="wms-order-summary-row wms-order-discount"><span>Popust</span><strong>− {{ discount|floatformat:2 }} KM</strong></div>{% endif %}
-{% if webshop_order %}<div class="wms-order-summary-row"><span>Dostava</span><strong>{{ delivery|floatformat:2 }} KM</strong></div>{% endif %}
-<div class="wms-order-grand-total"><span>Ukupno za naplatu</span><strong>{{ order_total|floatformat:2 }} KM</strong></div>
+{% if webshop_order or delivery %}<div class="wms-order-summary-row"><span>Dostava</span><strong>{{ delivery|floatformat:2 }} KM</strong></div>{% endif %}
+<div class="wms-order-grand-total"><span>Ukupno za naplatu</span><strong>{% if order.source_order.placeno_karticom %}0.00{% else %}{{ order_total|floatformat:2 }}{% endif %} KM</strong></div>
 </div>
 </div>
 {% endblock %}

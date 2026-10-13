@@ -1,0 +1,1056 @@
+{
+  "lcp": [
+    {
+      "ms": 5896,
+      "url": "http://127.0.0.1:8000/media/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png",
+      "tag": "IMG",
+      "cls": "logo-image",
+      "renderTime": 5896,
+      "loadTime": 5781.699999988079
+    },
+    {
+      "ms": 6256,
+      "url": "http://127.0.0.1:8000/media/products/ft-1-push-lock-rigs-12.avif",
+      "tag": "IMG",
+      "cls": "",
+      "renderTime": 6256,
+      "loadTime": 6066.099999964237
+    }
+  ],
+  "tasks": [
+    57,
+    170,
+    121
+  ],
+  "cls": 0.00007664432855152193,
+  "nav": [
+    {
+      "ttfb": 128.0999999642372,
+      "load": 9720,
+      "encoded": 24723,
+      "decoded": 163051
+    }
+  ],
+  "resources": [
+    {
+      "url": "http://127.0.0.1:8000/media/products/oprema-za-ribolov-carpologijabh-g9-g-300m-20lb-lemax-braid-100-pe10-01-5779de41565.avif",
+      "start": 225.39999997615814,
+      "end": 850,
+      "responseStart": 249.30000001192093,
+      "requestStart": 248.0999999642372,
+      "encoded": 18559,
+      "decoded": 18559,
+      "transfer": 18859
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/scratch-game.css?v=20261011-site-scratch",
+      "start": 226.5,
+      "end": 564,
+      "responseStart": 252.5,
+      "requestStart": 250.80000001192093,
+      "encoded": 7015,
+      "decoded": 7015,
+      "transfer": 7315
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-400.woff2",
+      "start": 226.69999998807907,
+      "end": 947.3000000119209,
+      "responseStart": 252.5999999642372,
+      "requestStart": 251,
+      "encoded": 21564,
+      "decoded": 21564,
+      "transfer": 21864
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-ext-400.woff2",
+      "start": 228.5,
+      "end": 1816.5,
+      "responseStart": 852,
+      "requestStart": 850.8000000119209,
+      "encoded": 29268,
+      "decoded": 29268,
+      "transfer": 29568
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/home-core.bundle.css?v=20261012",
+      "start": 229.69999998807907,
+      "end": 5439.800000011921,
+      "responseStart": 252.80000001192093,
+      "requestStart": 251,
+      "encoded": 553036,
+      "decoded": 553036,
+      "transfer": 553336
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/navigation.min.css?v=20260915-render-header-v2",
+      "start": 229.80000001192093,
+      "end": 458.69999998807907,
+      "responseStart": 252.5999999642372,
+      "requestStart": 251,
+      "encoded": 1396,
+      "decoded": 1396,
+      "transfer": 1696
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/storefront-extras.min.css?v=20260915-render-header-v2",
+      "start": 229.89999997615814,
+      "end": 707,
+      "responseStart": 315.5,
+      "requestStart": 305.69999998807907,
+      "encoded": 9703,
+      "decoded": 9703,
+      "transfer": 10003
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/home-ui.bundle.css?v=20261012",
+      "start": 229.89999997615814,
+      "end": 2252.899999976158,
+      "responseStart": 459.69999998807907,
+      "requestStart": 458.80000001192093,
+      "encoded": 66507,
+      "decoded": 66507,
+      "transfer": 66807
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/bera-offer-popup.css?v=20261012-blue-cart-reminder",
+      "start": 230.5999999642372,
+      "end": 1103.3999999761581,
+      "responseStart": 708,
+      "requestStart": 707,
+      "encoded": 9194,
+      "decoded": 9194,
+      "transfer": 9494
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/bera-home.css?v=20261012-notify-selected-color",
+      "start": 230.5999999642372,
+      "end": 2537,
+      "responseStart": 565.0999999642372,
+      "requestStart": 564.0999999642372,
+      "encoded": 87460,
+      "decoded": 87460,
+      "transfer": 87760
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png",
+      "start": 230.5999999642372,
+      "end": 3308.5,
+      "responseStart": 2666.300000011921,
+      "requestStart": 2574.800000011921,
+      "encoded": 57654,
+      "decoded": 57654,
+      "transfer": 57954
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-80c285e191cb4cdeab683ab16f0d28a7.avif",
+      "start": 274.5,
+      "end": 1561.0999999642372,
+      "responseStart": 1106.199999988079,
+      "requestStart": 1104.800000011921,
+      "encoded": 9302,
+      "decoded": 9302,
+      "transfer": 9602
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-72ac901b5ab6431b95d352ca4b17fcf8.avif",
+      "start": 274.5999999642372,
+      "end": 1936.5999999642372,
+      "responseStart": 1562.3999999761581,
+      "requestStart": 1561.300000011921,
+      "encoded": 8048,
+      "decoded": 8048,
+      "transfer": 8348
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-e0e160078d9c4e2fb87453d6f738e96b.avif",
+      "start": 274.5999999642372,
+      "end": 2221.899999976158,
+      "responseStart": 1813.5,
+      "requestStart": 1812.300000011921,
+      "encoded": 10740,
+      "decoded": 10740,
+      "transfer": 11040
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-7ae7d0f9494f40c899a3824e70cef48c.avif",
+      "start": 274.5999999642372,
+      "end": 2393.199999988079,
+      "responseStart": 1949.199999988079,
+      "requestStart": 1948,
+      "encoded": 9378,
+      "decoded": 9378,
+      "transfer": 9678
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-0803e0910b94451baa26dd3b6be4d358.avif",
+      "start": 274.69999998807907,
+      "end": 3534.5,
+      "responseStart": 3314.099999964237,
+      "requestStart": 3311.5,
+      "encoded": 6297,
+      "decoded": 6297,
+      "transfer": 6597
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-52620440c60c4ae4ab649463bb146d30.avif",
+      "start": 274.69999998807907,
+      "end": 3774.800000011921,
+      "responseStart": 3538.199999988079,
+      "requestStart": 3536.699999988079,
+      "encoded": 8427,
+      "decoded": 8427,
+      "transfer": 8727
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-8dc3047c99444546ba8eee821d4a0e4d.avif",
+      "start": 274.69999998807907,
+      "end": 3983.5,
+      "responseStart": 3777.099999964237,
+      "requestStart": 3776.099999964237,
+      "encoded": 5283,
+      "decoded": 5283,
+      "transfer": 5583
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-5d593f67d0e340ff84124a42e1289cbb.avif",
+      "start": 274.80000001192093,
+      "end": 4283.300000011921,
+      "responseStart": 3986.899999976158,
+      "requestStart": 3985.300000011921,
+      "encoded": 13983,
+      "decoded": 13983,
+      "transfer": 14283
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/home-mobile-reference.js?v=20260917-category-icons",
+      "start": 274.89999997615814,
+      "end": 4479.399999976158,
+      "responseStart": 4287.699999988079,
+      "requestStart": 4286.599999964237,
+      "encoded": 2773,
+      "decoded": 2773,
+      "transfer": 3073
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/ft-1-push-lock-rigs-12.avif",
+      "start": 277.30000001192093,
+      "end": 1809.300000011921,
+      "responseStart": 948.1999999880791,
+      "requestStart": 947.3999999761581,
+      "encoded": 24809,
+      "decoded": 24809,
+      "transfer": 25109
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/bera-brands.js?v=20261008",
+      "start": 277.39999997615814,
+      "end": 4644,
+      "responseStart": 4482.800000011921,
+      "requestStart": 4482,
+      "encoded": 544,
+      "decoded": 544,
+      "transfer": 844
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/newsletter-subscribe.js?v=1",
+      "start": 277.5,
+      "end": 4809.300000011921,
+      "responseStart": 4647.199999988079,
+      "requestStart": 4646.399999976158,
+      "encoded": 820,
+      "decoded": 820,
+      "transfer": 1120
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/mobile-search.js?v=20260915-open-on-every-click",
+      "start": 300.19999998807907,
+      "end": 5018.399999976158,
+      "responseStart": 4812.699999988079,
+      "requestStart": 4811.899999976158,
+      "encoded": 5715,
+      "decoded": 5715,
+      "transfer": 6015
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/mobile-dock.js?v=20261012-catalog-more",
+      "start": 300.30000001192093,
+      "end": 5349.199999988079,
+      "responseStart": 5020.899999976158,
+      "requestStart": 5020,
+      "encoded": 16252,
+      "decoded": 16252,
+      "transfer": 16552
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/csrf-session.js?v=20261001",
+      "start": 314.69999998807907,
+      "end": 5521.800000011921,
+      "responseStart": 5352.099999964237,
+      "requestStart": 5351.399999976158,
+      "encoded": 2836,
+      "decoded": 2836,
+      "transfer": 3136
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/brand-logo-normalize.js?v=20261011",
+      "start": 314.80000001192093,
+      "end": 5694.399999976158,
+      "responseStart": 5477.899999976158,
+      "requestStart": 5476.899999976158,
+      "encoded": 3512,
+      "decoded": 3512,
+      "transfer": 3812
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/main.min.js?v=20261012-catalog-more",
+      "start": 314.80000001192093,
+      "end": 6833.599999964237,
+      "responseStart": 5442.699999988079,
+      "requestStart": 5441.699999988079,
+      "encoded": 71441,
+      "decoded": 71441,
+      "transfer": 71741
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/desktop-reference.js?v=20261012-single-category",
+      "start": 314.89999997615814,
+      "end": 5687.599999964237,
+      "responseStart": 5481.099999964237,
+      "requestStart": 5480.099999964237,
+      "encoded": 2133,
+      "decoded": 2133,
+      "transfer": 2433
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/stock-notify.js?v=20260916-notify-no-autofocus",
+      "start": 314.89999997615814,
+      "end": 5762.699999988079,
+      "responseStart": 5488.5,
+      "requestStart": 5486.699999988079,
+      "encoded": 5582,
+      "decoded": 5582,
+      "transfer": 5882
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/set-builder-gate.js?v=20260903beta",
+      "start": 314.89999997615814,
+      "end": 5738.399999976158,
+      "responseStart": 5488.599999964237,
+      "requestStart": 5486.699999988079,
+      "encoded": 3439,
+      "decoded": 3439,
+      "transfer": 3739
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/scratch-game.js?v=20261011-site-scratch",
+      "start": 314.89999997615814,
+      "end": 5844.599999964237,
+      "responseStart": 5523.399999976158,
+      "requestStart": 5522.099999964237,
+      "encoded": 11286,
+      "decoded": 11286,
+      "transfer": 11586
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/catalog-load-more.js?v=20261012-fragment",
+      "start": 314.89999997615814,
+      "end": 5881.899999976158,
+      "responseStart": 5688.699999988079,
+      "requestStart": 5687.800000011921,
+      "encoded": 1959,
+      "decoded": 1959,
+      "transfer": 2259
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/desktop-reference.css?v=20261008-account-desktop-fix",
+      "start": 569,
+      "end": 7007.199999988079,
+      "responseStart": 5695.699999988079,
+      "requestStart": 5694.599999964237,
+      "encoded": 58052,
+      "decoded": 58052,
+      "transfer": 58352
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/header-reference.css?v=20260919-wishlist-popover",
+      "start": 571.8000000119209,
+      "end": 6016.800000011921,
+      "responseStart": 5739.300000011921,
+      "requestStart": 5738.599999964237,
+      "encoded": 8023,
+      "decoded": 8023,
+      "transfer": 8323
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-700.woff2",
+      "start": 5894,
+      "end": 6728.399999976158,
+      "responseStart": 5988.199999988079,
+      "requestStart": 5986.800000011921,
+      "encoded": 22904,
+      "decoded": 22904,
+      "transfer": 23204
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-500.woff2",
+      "start": 5896.699999988079,
+      "end": 6736.099999964237,
+      "responseStart": 5988.199999988079,
+      "requestStart": 5986.899999976158,
+      "encoded": 22760,
+      "decoded": 22760,
+      "transfer": 23060
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-600.woff2",
+      "start": 6065.399999976158,
+      "end": 6991.300000011921,
+      "responseStart": 6199.199999988079,
+      "requestStart": 6198,
+      "encoded": 22820,
+      "decoded": 22820,
+      "transfer": 23120
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-ext-700.woff2",
+      "start": 6077.399999976158,
+      "end": 7223.899999976158,
+      "responseStart": 6200.099999964237,
+      "requestStart": 6198.099999964237,
+      "encoded": 32728,
+      "decoded": 32728,
+      "transfer": 33028
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/brands/images-3.png",
+      "start": 6192.699999988079,
+      "end": 7073.899999976158,
+      "responseStart": 6737.399999976158,
+      "requestStart": 6736.199999988079,
+      "encoded": 4012,
+      "decoded": 4012,
+      "transfer": 4312
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/oprema-za-ribolov-carpologijabh-bkk-duolock-snap-51-2-576935b99f2.avif",
+      "start": 6193.199999988079,
+      "end": 7388.5,
+      "responseStart": 6835.899999976158,
+      "requestStart": 6834.399999976158,
+      "encoded": 13024,
+      "decoded": 13024,
+      "transfer": 13324
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/images-8.avif",
+      "start": 6193.199999988079,
+      "end": 7396.800000011921,
+      "responseStart": 6992.599999964237,
+      "requestStart": 6991.699999988079,
+      "encoded": 8149,
+      "decoded": 8149,
+      "transfer": 8449
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/odoo-template-705_6MHGKjc.avif",
+      "start": 6194,
+      "end": 7966.599999964237,
+      "responseStart": 7008.599999964237,
+      "requestStart": 7007.5,
+      "encoded": 26768,
+      "decoded": 26768,
+      "transfer": 27068
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/odoo-template-6567.avif",
+      "start": 6194.699999988079,
+      "end": 7853.699999988079,
+      "responseStart": 7075.300000011921,
+      "requestStart": 7074.300000011921,
+      "encoded": 19962,
+      "decoded": 19962,
+      "transfer": 20262
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/odoo-template-6588.avif",
+      "start": 6194.699999988079,
+      "end": 7928.5,
+      "responseStart": 7225.399999976158,
+      "requestStart": 7224.199999988079,
+      "encoded": 18714,
+      "decoded": 18714,
+      "transfer": 19014
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/odoo-template-6576.avif",
+      "start": 6194.800000011921,
+      "end": 7960.099999964237,
+      "responseStart": 7389.899999976158,
+      "requestStart": 7388.800000011921,
+      "encoded": 13496,
+      "decoded": 13496,
+      "transfer": 13796
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-ext-600.woff2",
+      "start": 6465.899999976158,
+      "end": 7838.5,
+      "responseStart": 6729.399999976158,
+      "requestStart": 6728.599999964237,
+      "encoded": 32548,
+      "decoded": 32548,
+      "transfer": 32848
+    },
+    {
+      "url": "https://connect.facebook.net/en_US/fbevents.js",
+      "start": 6534.399999976158,
+      "end": 8327.300000011921,
+      "responseStart": 6668.099999964237,
+      "requestStart": 6646.399999976158,
+      "encoded": 113993,
+      "decoded": 433365,
+      "transfer": 114293
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/brands/images-3.png",
+      "start": 6909.699999988079,
+      "end": 7756.399999976158,
+      "responseStart": 7398.099999964237,
+      "requestStart": 7397.399999976158,
+      "encoded": 4012,
+      "decoded": 4012,
+      "transfer": 4312
+    },
+    {
+      "url": "https://connect.facebook.net/signals/config/1059983681812075?v=2.9.419&r=stable&domain=127.0.0.1&hme=7459fa3e38c2784dbaf309537bed5fa7e8560fab51fb61e53e5ffafeb46a02a9&ex_m=118%2C241%2C171%2C27%2C82%2C83%2C162%2C78%2C77%2C11%2C181%2C102%2C20%2C153%2C141%2C46%2C85%2C90%2C149%2C176%2C183%2C8%2C4%2C5%2C7%2C6%2C3%2C103%2C115%2C32%2C17%2C31%2C18%2C33%2C34%2C35%2C37%2C55%2C163%2C87%2C126%2C22%2C24%2C51%2C47%2C49%2C48%2C95%2C104%2C108%2C124%2C160%2C164%2C53%2C125%2C29%2C26%2C133%2C79%2C43%2C166%2C165%2C167%2C157%2C155%2C30%2C42%2C66%2C123%2C178%2C80%2C21%2C128%2C93%2C76%2C23%2C97%2C98%2C130%2C96%2C151%2C150%2C154%2C109%2C177%2C180%2C41%2C56%2C127%2C54%2C161%2C72%2C185%2C110%2C184%2C210%2C255%2C84%2C274%2C273%2C272%2C14%2C25%2C28%2C40%2C62%2C117%2C68%2C10%2C73%2C111%2C112%2C113%2C119%2C144%2C38%2C36%2C146%2C147%2C148%2C143%2C142%2C172%2C86%2C175%2C173%2C174%2C57%2C69%2C67%2C137%2C19%2C179%2C52%2C324%2C325%2C326%2C323%2C339%2C361%2C248%2C237%2C70%2C238%2C236%2C364%2C355%2C59%2C249%2C121%2C145%2C92%2C135%2C61%2C134%2C140%2C139%2C65%2C74%2C168%2C88%2C89%2C129%2C44%2C39%2C60%2C63%2C114%2C182%2C1%2C138%2C16%2C136%2C12%2C2%2C64%2C105%2C15%2C75%2C71%2C132%2C101%2C100%2C187%2C188%2C106%2C107%2C9%2C116%2C186%2C58%2C158%2C99%2C91%2C81%2C131%2C120%2C169%2C50%2C159%2C0%2C94%2C152%2C156%2C170%2C45%2C122%2C13%2C189",
+      "start": 8498.5,
+      "end": 9428.699999988079,
+      "responseStart": 8732.199999988079,
+      "requestStart": 8500.300000011921,
+      "encoded": 137990,
+      "decoded": 499365,
+      "transfer": 138290
+    },
+    {
+      "url": "https://connect.facebook.net//log/error?p=pixel&sl=2&v=2.9.419&e=%5BMeta%20pixel%5D%20Bot%20traffic%20detected%20and%20blocked%20-%20pixel_id%3A%201059983681812075&ue=0&rs=stable&rqm=FGET",
+      "start": 9551.599999964237,
+      "end": 9715.199999988079,
+      "responseStart": 0,
+      "requestStart": 0,
+      "encoded": 0,
+      "decoded": 0,
+      "transfer": 0
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/img/pwa-icon.svg",
+      "start": 9728.5,
+      "end": 9887.300000011921,
+      "responseStart": 9730.699999988079,
+      "requestStart": 9729.699999988079,
+      "encoded": 790,
+      "decoded": 790,
+      "transfer": 1090
+    }
+  ],
+  "styles": [
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/scratch-game.css?v=20261011-site-scratch",
+      "media": "",
+      "active": true
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/desktop-reference.css?v=20261008-account-desktop-fix",
+      "media": "(min-width: 1025px)",
+      "active": false
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/home-core.bundle.css?v=20261012",
+      "media": "",
+      "active": true
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/navigation.min.css?v=20260915-render-header-v2",
+      "media": "",
+      "active": true
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/storefront-extras.min.css?v=20260915-render-header-v2",
+      "media": "",
+      "active": true
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/home-ui.bundle.css?v=20261012",
+      "media": "",
+      "active": true
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/header-reference.css?v=20260919-wishlist-popover",
+      "media": "(min-width: 1025px)",
+      "active": false
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/bera-home.css?v=20261012-notify-selected-color",
+      "media": "",
+      "active": true
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/bera-offer-popup.css?v=20261012-blue-cart-reminder",
+      "media": "",
+      "active": true
+    }
+  ],
+  "hero": false,
+  "net": [
+    {
+      "url": "http://127.0.0.1:8000/",
+      "mime": "text/html",
+      "status": 200,
+      "headers": {
+        "Content-Encoding": "gzip",
+        "Content-Length": "24723",
+        "Vary": "X-Catalog-Fragment, Cookie, Accept-Encoding"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/oprema-za-ribolov-carpologijabh-g9-g-300m-20lb-lemax-braid-100-pe10-01-5779de41565.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "18559"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/scratch-game.css?v=20261011-site-scratch",
+      "mime": "text/css",
+      "status": 200,
+      "headers": {
+        "Content-Length": "7015"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/navigation.min.css?v=20260915-render-header-v2",
+      "mime": "text/css",
+      "status": 200,
+      "headers": {
+        "Content-Length": "1396"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-400.woff2",
+      "mime": "font/woff2",
+      "status": 200,
+      "headers": {
+        "Content-Length": "21564"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/home-core.bundle.css?v=20261012",
+      "mime": "text/css",
+      "status": 200,
+      "headers": {
+        "Content-Length": "553036"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/storefront-extras.min.css?v=20260915-render-header-v2",
+      "mime": "text/css",
+      "status": 200,
+      "headers": {
+        "Content-Length": "9703"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/home-ui.bundle.css?v=20261012",
+      "mime": "text/css",
+      "status": 200,
+      "headers": {
+        "Content-Length": "66507"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/bera-home.css?v=20261012-notify-selected-color",
+      "mime": "text/css",
+      "status": 200,
+      "headers": {
+        "Content-Length": "87460"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/bera-offer-popup.css?v=20261012-blue-cart-reminder",
+      "mime": "text/css",
+      "status": 200,
+      "headers": {
+        "Content-Length": "9194"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-ext-400.woff2",
+      "mime": "font/woff2",
+      "status": 200,
+      "headers": {
+        "Content-Length": "29268"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/ft-1-push-lock-rigs-12.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "24809"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-80c285e191cb4cdeab683ab16f0d28a7.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "9302"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-72ac901b5ab6431b95d352ca4b17fcf8.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "8048"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-e0e160078d9c4e2fb87453d6f738e96b.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "10740"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-7ae7d0f9494f40c899a3824e70cef48c.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "9378"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png",
+      "mime": "image/png",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "57654"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-0803e0910b94451baa26dd3b6be4d358.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "6297"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-52620440c60c4ae4ab649463bb146d30.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "8427"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-8dc3047c99444546ba8eee821d4a0e4d.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "5283"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/categories/icons/category-5d593f67d0e340ff84124a42e1289cbb.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "13983"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/home-mobile-reference.js?v=20260917-category-icons",
+      "mime": "text/javascript",
+      "status": 200,
+      "headers": {
+        "Content-Length": "2773"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/bera-brands.js?v=20261008",
+      "mime": "text/javascript",
+      "status": 200,
+      "headers": {
+        "Content-Length": "544"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/newsletter-subscribe.js?v=1",
+      "mime": "text/javascript",
+      "status": 200,
+      "headers": {
+        "Content-Length": "820"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/mobile-search.js?v=20260915-open-on-every-click",
+      "mime": "text/javascript",
+      "status": 200,
+      "headers": {
+        "Content-Length": "5715"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/mobile-dock.js?v=20261012-catalog-more",
+      "mime": "text/javascript",
+      "status": 200,
+      "headers": {
+        "Content-Length": "16252"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/csrf-session.js?v=20261001",
+      "mime": "text/javascript",
+      "status": 200,
+      "headers": {
+        "Content-Length": "2836"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/main.min.js?v=20261012-catalog-more",
+      "mime": "text/javascript",
+      "status": 200,
+      "headers": {
+        "Content-Length": "71441"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/brand-logo-normalize.js?v=20261011",
+      "mime": "text/javascript",
+      "status": 200,
+      "headers": {
+        "Content-Length": "3512"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/desktop-reference.js?v=20261012-single-category",
+      "mime": "text/javascript",
+      "status": 200,
+      "headers": {
+        "Content-Length": "2133"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/stock-notify.js?v=20260916-notify-no-autofocus",
+      "mime": "text/javascript",
+      "status": 200,
+      "headers": {
+        "Content-Length": "5582"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/set-builder-gate.js?v=20260903beta",
+      "mime": "text/javascript",
+      "status": 200,
+      "headers": {
+        "Content-Length": "3439"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/scratch-game.js?v=20261011-site-scratch",
+      "mime": "text/javascript",
+      "status": 200,
+      "headers": {
+        "Content-Length": "11286"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/desktop-reference.css?v=20261008-account-desktop-fix",
+      "mime": "text/css",
+      "status": 200,
+      "headers": {
+        "Content-Length": "58052"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/css/header-reference.css?v=20260919-wishlist-popover",
+      "mime": "text/css",
+      "status": 200,
+      "headers": {
+        "Content-Length": "8023"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/js/catalog-load-more.js?v=20261012-fragment",
+      "mime": "text/javascript",
+      "status": 200,
+      "headers": {
+        "Content-Length": "1959"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-700.woff2",
+      "mime": "font/woff2",
+      "status": 200,
+      "headers": {
+        "Content-Length": "22904"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-500.woff2",
+      "mime": "font/woff2",
+      "status": 200,
+      "headers": {
+        "Content-Length": "22760"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-600.woff2",
+      "mime": "font/woff2",
+      "status": 200,
+      "headers": {
+        "Content-Length": "22820"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-ext-700.woff2",
+      "mime": "font/woff2",
+      "status": 200,
+      "headers": {
+        "Content-Length": "32728"
+      }
+    },
+    {
+      "url": "https://connect.facebook.net/en_US/fbevents.js",
+      "mime": "application/x-javascript",
+      "status": 200,
+      "headers": {
+        "content-encoding": "gzip",
+        "vary": "Accept-Encoding",
+        "cache-control": "public, max-age=1200",
+        "content-length": "113993"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/fonts/inter-latin-ext-600.woff2",
+      "mime": "font/woff2",
+      "status": 200,
+      "headers": {
+        "Content-Length": "32548"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/brands/images-3.png",
+      "mime": "image/png",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "4012"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/oprema-za-ribolov-carpologijabh-bkk-duolock-snap-51-2-576935b99f2.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "13024"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/images-8.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "8149"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/odoo-template-705_6MHGKjc.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "26768"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/odoo-template-6567.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "19962"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/odoo-template-6588.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "18714"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/products/odoo-template-6576.avif",
+      "mime": "image/avif",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "13496"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/media/brands/images-3.png",
+      "mime": "image/png",
+      "status": 200,
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Length": "4012"
+      }
+    },
+    {
+      "url": "https://connect.facebook.net/signals/config/1059983681812075?v=2.9.419&r=stable&domain=127.0.0.1&hme=7459fa3e38c2784dbaf309537bed5fa7e8560fab51fb61e53e5ffafeb46a02a9&ex_m=118%2C241%2C171%2C27%2C82%2C83%2C162%2C78%2C77%2C11%2C181%2C102%2C20%2C153%2C141%2C46%2C85%2C90%2C149%2C176%2C183%2C8%2C4%2C5%2C7%2C6%2C3%2C103%2C115%2C32%2C17%2C31%2C18%2C33%2C34%2C35%2C37%2C55%2C163%2C87%2C126%2C22%2C24%2C51%2C47%2C49%2C48%2C95%2C104%2C108%2C124%2C160%2C164%2C53%2C125%2C29%2C26%2C133%2C79%2C43%2C166%2C165%2C167%2C157%2C155%2C30%2C42%2C66%2C123%2C178%2C80%2C21%2C128%2C93%2C76%2C23%2C97%2C98%2C130%2C96%2C151%2C150%2C154%2C109%2C177%2C180%2C41%2C56%2C127%2C54%2C161%2C72%2C185%2C110%2C184%2C210%2C255%2C84%2C274%2C273%2C272%2C14%2C25%2C28%2C40%2C62%2C117%2C68%2C10%2C73%2C111%2C112%2C113%2C119%2C144%2C38%2C36%2C146%2C147%2C148%2C143%2C142%2C172%2C86%2C175%2C173%2C174%2C57%2C69%2C67%2C137%2C19%2C179%2C52%2C324%2C325%2C326%2C323%2C339%2C361%2C248%2C237%2C70%2C238%2C236%2C364%2C355%2C59%2C249%2C121%2C145%2C92%2C135%2C61%2C134%2C140%2C139%2C65%2C74%2C168%2C88%2C89%2C129%2C44%2C39%2C60%2C63%2C114%2C182%2C1%2C138%2C16%2C136%2C12%2C2%2C64%2C105%2C15%2C75%2C71%2C132%2C101%2C100%2C187%2C188%2C106%2C107%2C9%2C116%2C186%2C58%2C158%2C99%2C91%2C81%2C131%2C120%2C169%2C50%2C159%2C0%2C94%2C152%2C156%2C170%2C45%2C122%2C13%2C189",
+      "mime": "application/x-javascript",
+      "status": 200,
+      "headers": {
+        "content-encoding": "gzip",
+        "vary": "Accept-Encoding",
+        "cache-control": "public, max-age=1200"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:8000/static/bera_reference/img/pwa-icon.svg",
+      "mime": "image/svg+xml",
+      "status": 200,
+      "headers": {
+        "Content-Length": "790"
+      }
+    }
+  ],
+  "breakdown": {
+    "ttfb": 128.0999999642372,
+    "loadDelay": 149.20000004768372,
+    "loadDuration": 1532,
+    "renderDelay": 4446.699999988079,
+    "lcp": 6256,
+    "resource": "http://127.0.0.1:8000/media/products/ft-1-push-lock-rigs-12.avif"
+  }
+}

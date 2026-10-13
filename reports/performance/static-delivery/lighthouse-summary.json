@@ -1,0 +1,74 @@
+[
+  {
+    "mode": "raw",
+    "sample": 0,
+    "version": "13.5.0",
+    "score": 61,
+    "fcp": 5258.946,
+    "lcp": 7958.946,
+    "tbt": 148,
+    "cls": 0.00006479262268424515,
+    "speedIndex": 5258.946,
+    "warnings": []
+  },
+  {
+    "mode": "compressed",
+    "sample": 0,
+    "version": "13.5.0",
+    "score": 84,
+    "fcp": 2260.5675,
+    "lcp": 4135.567500000001,
+    "tbt": 59,
+    "cls": 0.00006479262268424515,
+    "speedIndex": 2260.5675,
+    "warnings": []
+  },
+  {
+    "mode": "raw",
+    "sample": 1,
+    "version": "13.5.0",
+    "score": 62,
+    "fcp": 5257.7654999999995,
+    "lcp": 7957.765499999999,
+    "tbt": 86.5,
+    "cls": 0.00006479262268424515,
+    "speedIndex": 5257.7654999999995,
+    "warnings": []
+  },
+  {
+    "mode": "compressed",
+    "sample": 1,
+    "version": "13.5.0",
+    "score": 81,
+    "fcp": 2257.866,
+    "lcp": 4595.975999999999,
+    "tbt": 67,
+    "cls": 0.00006479262268424515,
+    "speedIndex": 2257.866,
+    "warnings": []
+  },
+  {
+    "mode": "raw",
+    "sample": 2,
+    "version": "13.5.0",
+    "score": 61,
+    "fcp": 5257.515,
+    "lcp": 8032.515,
+    "tbt": 101.5,
+    "cls": 0.00006479262268424515,
+    "speedIndex": 5257.515,
+    "warnings": []
+  },
+  {
+    "mode": "compressed",
+    "sample": 2,
+    "version": "13.5.0",
+    "score": 77,
+    "fcp": 2861.463,
+    "lcp": 4978.657499999999,
+    "tbt": 63.5,
+    "cls": 0.00008764437617450739,
+    "speedIndex": 2861.463,
+    "warnings": []
+  }
+]

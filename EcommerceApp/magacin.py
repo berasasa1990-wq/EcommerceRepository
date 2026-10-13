@@ -4368,9 +4368,7 @@ def recalculate_order_totals(order):
     if is_vp_order(order) or is_prenos_mp_order(order):
         dostava = Decimal('0.00')
     elif getattr(order, 'izvor', '') == Order.Izvor.MAGACIN:
-        from .pricing import _standardna_dostava
-
-        dostava, _, _, _ = _standardna_dostava(medjuzbir - debt)
+        dostava = Decimal('11.00')
     else:
         dostava = Decimal(str(order.dostava or 0)).quantize(Decimal('0.01'))
     ukupno = (medjuzbir - popust + dostava).quantize(Decimal('0.01'))

@@ -1,0 +1,104 @@
+[
+  {
+    "path": "bera_reference/css/storefront-extras.min.e3ae4f3a559d.css",
+    "totalChars": 9716,
+    "usedChars": 0,
+    "usedPercent": 0.0,
+    "examples": []
+  },
+  {
+    "path": "bera_reference/css/navigation.min.ef53c3340407.css",
+    "totalChars": 1396,
+    "usedChars": 36,
+    "usedPercent": 2.58,
+    "examples": []
+  },
+  {
+    "path": "bera_reference/css/bera-offer-popup.97662f3d5f2d.css",
+    "totalChars": 9194,
+    "usedChars": 2329,
+    "usedPercent": 25.33,
+    "examples": []
+  },
+  {
+    "path": "bera_reference/css/home-ui.bundle.287210299e6c.css",
+    "totalChars": 66507,
+    "usedChars": 32786,
+    "usedPercent": 49.3,
+    "examples": [
+      ".mobile-home-categories, :is(.home-mobile-reference, .catalog-header-reference, .bera-storefront-header) .header .mobile-home-search-action { display: none; }",
+      ":is(.home-mobile-reference, .catalog-header-reference, .bera-storefront-header) .header .mobile-home-search-action { display: inline-flex; border: 0; }",
+      ":is(.home-mobile-reference, .catalog-header-reference, .bera-storefront-header) .site-chrome-backdrop { display: none; }",
+      ":is(.home-mobile-reference, .catalog-header-reference, .bera-storefront-header) .site-chrome-sticky { position: sticky; top: 0; z-index: 1002; background: #fff; }",
+      ":is(.home-mobile-reference, .catalog-header-reference, .bera-storefront-header) .promo-bar { position: relative !important; inset: auto; width: calc(100% - 16px); margin: 0 8px; min-height: 24px; height: auto; padding: 5px 8px; background: ",
+      "body:is(.home-mobile-reference, .catalog-header-reference, .bera-storefront-header) .header { position: relative !important; inset: auto; background: #fff !important; border: 0; box-shadow: none; color: #111; }",
+      ":is(.home-mobile-reference, .catalog-header-reference, .bera-storefront-header) .header-shell { background: #fff !important; padding: 0; }",
+      "body:is(.home-mobile-reference, .catalog-header-reference, .bera-storefront-header) .header .header-row--primary { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'logo actions' 'search search'; gap: 5px 12px",
+      ":is(.home-mobile-reference, .catalog-header-reference, .bera-storefront-header) .header-leading { display: none !important; }",
+      "body:is(.home-mobile-reference, .catalog-header-reference, .bera-storefront-header) .header .header-row--primary .logo-brand { grid-area: logo; justify-self: start; align-items: flex-start; padding: 0 !important; width: 100%; }",
+      ":is(.home-mobile-reference, .catalog-header-reference, .bera-storefront-header) .header .logo-brand > .logo { transform: none; margin: 0; width: 100%; max-width: 190px; min-height: 44px; justify-content: flex-start; }",
+      ":is(.home-mobile-reference, .catalog-header-reference, .bera-storefront-header) .header .logo-brand .logo-image { width: 100%; height: auto; max-height: 52px; object-fit: contain; object-position: left center; filter: none; }"
+    ]
+  },
+  {
+    "path": "bera_reference/css/home-core.bundle.03814f4f0871.css",
+    "totalChars": 553155,
+    "usedChars": 50370,
+    "usedPercent": 9.11,
+    "examples": [
+      ".site-chrome-sticky{position:sticky;top:0;z-index:1002;background:#fff}",
+      ".site-chrome-sticky .promo-bar,.site-chrome-sticky .header{position:relative!important;inset:auto!important;top:auto!important;left:auto!important;right:auto!important}",
+      ".site-chrome-backdrop{display:none;position:fixed;top:0;left:0;right:0;height:var(--site-chrome-top);background:#0a0a0a;z-index:999;pointer-events:none}",
+      ".promo-bar{background:#0a0a0a;color:rgba(255,255,255,0.88);text-align:center;padding:6px 12px;font-size:12px;line-height:1.35;position:fixed;top:var(--staff-edit-banner-height);left:0;right:0;z-index:1000;min-height:0;height:auto;box-sizing",
+      ".header{position:fixed;top:calc(var(--staff-edit-banner-height) + var(--promo-height) - 2px);left:0;right:0;z-index:1002;background:#ffffff;transition:box-shadow var(--transition);box-shadow:0 -6px 0 0 #ffffff}",
+      ".header>.mega-menu-panel{position:absolute;top:100%}",
+      ".header-shell{position:relative;background:var(--white);z-index:1}",
+      ".header-row--primary{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-areas:\"leading logo search actions\";align-items:center;gap:16px 20px;padding:2px 24px;min-height:var(--header-top-height);position:relative;z",
+      ".header-leading{grid-area:leading;display:flex;align-items:center;gap:2px;flex-shrink:0;min-width:0}",
+      ".header-row--primary .logo-brand{grid-area:logo}",
+      ".header-row--primary .header-search{grid-area:search}",
+      ".header-row--primary .nav-actions{grid-area:actions}"
+    ]
+  },
+  {
+    "path": "bera_reference/css/scratch-game.632b5049018b.css",
+    "totalChars": 7015,
+    "usedChars": 336,
+    "usedPercent": 4.79,
+    "examples": []
+  },
+  {
+    "path": "bera_reference/css/bera-home.ebf879dce40c.css",
+    "totalChars": 87458,
+    "usedChars": 53030,
+    "usedPercent": 60.63,
+    "examples": [
+      "body.bera-storefront-header .promo-bar,body.bera-storefront-header #header .desktop-sale-link,body.bera-storefront-header #header .desktop-category-nav{display:none!important}",
+      "body.bera-storefront-header #header{background:#fff!important;border:0!important;box-shadow:none!important}",
+      "body.bera-storefront-header #header .cart-badge,body.bera-storefront-header #header .wishlist-badge{background:#008cc8!important}",
+      "body.bera-storefront-header #header .header-search-form{background:#eaf1f7!important;border:0!important;border-radius:14px!important;box-shadow:none!important}",
+      "body.bera-storefront-header #header .header-search input{background:transparent!important;color:#173149!important;font-size:13px!important}",
+      "body.bera-storefront-header #header .header-search-submit{background:transparent!important;color:#07192e!important;border:0!important;width:42px!important;min-width:42px!important}",
+      "body.bera-storefront-header #header .header-search-submit-icon{display:block!important;width:22px;height:22px}",
+      "body.bera-storefront-header #header .header-search-submit-label,body.bera-storefront-header #header .header-search-icon{display:none!important}",
+      "body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-heading{display:none!important}",
+      "body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-category-grid{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;gap:12px!important;padding:0 2px 5px;scrollbar-width:thin}",
+      "body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-category-grid>a{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 calc((100% - 108px)/10)!important;min-width:112px;min-height:110px",
+      "body.bera-home.home-mobile-reference #mobileHomeCategories .mobile-home-category-icon,body.bera-home.home-mobile-reference #mobileHomeCategories .cat-ico,body.bera-home.home-mobile-reference #mobileHomeCategories .cat-ico svg,body.bera-home"
+    ]
+  },
+  {
+    "path": "bera_reference/css/desktop-reference.bb417ffb3cf6.css",
+    "totalChars": 58050,
+    "usedChars": 0,
+    "usedPercent": 0.0,
+    "examples": []
+  },
+  {
+    "path": "bera_reference/css/header-reference.9a331d0b9842.css",
+    "totalChars": 8023,
+    "usedChars": 0,
+    "usedPercent": 0.0,
+    "examples": []
+  }
+]

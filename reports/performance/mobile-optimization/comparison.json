@@ -1,0 +1,1239 @@
+[
+  {
+    "mode": "before",
+    "width": 390,
+    "sample": 0,
+    "metrics": {
+      "tasks": [
+        123,
+        273,
+        119
+      ],
+      "lcp": [
+        {
+          "ms": 1324,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png"
+        },
+        {
+          "ms": 1632,
+          "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg"
+        }
+      ],
+      "cls": 0.00006508380660466194,
+      "reads": 12,
+      "hero": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+      "css": 9,
+      "fonts": 7,
+      "geometry": [
+        {
+          "selector": "promo-bar",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "w": 390,
+          "h": 120
+        },
+        {
+          "selector": "site-chrome-spacer",
+          "x": 0,
+          "y": 0,
+          "w": 390,
+          "h": 120
+        },
+        {
+          "selector": "heroCarousel",
+          "x": 20,
+          "y": 120,
+          "w": 350,
+          "h": 437.5
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--izdvojeno",
+          "x": 20,
+          "y": 819.875,
+          "w": 350,
+          "h": 620.5625
+        },
+        {
+          "selector": "bera-offer-banners",
+          "x": 20,
+          "y": 1450.4375,
+          "w": 350,
+          "h": 307
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--novo",
+          "x": 20,
+          "y": 1777.4375,
+          "w": 350,
+          "h": 621.46875
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--new-offer",
+          "x": 20,
+          "y": 2408.90625,
+          "w": 350,
+          "h": 621.46875
+        },
+        {
+          "selector": "bera-footer",
+          "x": 0,
+          "y": 3649.875,
+          "w": 390,
+          "h": 1047.171875
+        }
+      ]
+    },
+    "heroRequests": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": "parser",
+        "bytes": 192116
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+        "initiator": "parser",
+        "bytes": 182483
+      }
+    ]
+  },
+  {
+    "mode": "after",
+    "width": 390,
+    "sample": 0,
+    "metrics": {
+      "tasks": [
+        161,
+        111
+      ],
+      "lcp": [
+        {
+          "ms": 1356,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png"
+        },
+        {
+          "ms": 1376,
+          "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg"
+        }
+      ],
+      "cls": 0.00006508380660466194,
+      "reads": 3,
+      "hero": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+      "css": 9,
+      "fonts": 7,
+      "geometry": [
+        {
+          "selector": "promo-bar",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "w": 390,
+          "h": 120
+        },
+        {
+          "selector": "site-chrome-spacer",
+          "x": 0,
+          "y": 0,
+          "w": 390,
+          "h": 120
+        },
+        {
+          "selector": "heroCarousel",
+          "x": 20,
+          "y": 120,
+          "w": 350,
+          "h": 437.5
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--izdvojeno",
+          "x": 20,
+          "y": 819.875,
+          "w": 350,
+          "h": 620.5625
+        },
+        {
+          "selector": "bera-offer-banners",
+          "x": 20,
+          "y": 1450.4375,
+          "w": 350,
+          "h": 307
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--novo",
+          "x": 20,
+          "y": 1777.4375,
+          "w": 350,
+          "h": 621.46875
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--new-offer",
+          "x": 20,
+          "y": 2408.90625,
+          "w": 350,
+          "h": 621.46875
+        },
+        {
+          "selector": "bera-footer",
+          "x": 0,
+          "y": 3649.875,
+          "w": 390,
+          "h": 1047.171875
+        }
+      ]
+    },
+    "heroRequests": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": "parser",
+        "bytes": 192116
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+        "initiator": "parser",
+        "bytes": 182483
+      }
+    ]
+  },
+  {
+    "mode": "before",
+    "width": 390,
+    "sample": 1,
+    "metrics": {
+      "tasks": [
+        130,
+        165,
+        117
+      ],
+      "lcp": [
+        {
+          "ms": 1968,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png"
+        },
+        {
+          "ms": 1984,
+          "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg"
+        }
+      ],
+      "cls": 0.00006508380660466194,
+      "reads": 12,
+      "hero": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+      "css": 9,
+      "fonts": 7,
+      "geometry": [
+        {
+          "selector": "promo-bar",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "w": 390,
+          "h": 120
+        },
+        {
+          "selector": "site-chrome-spacer",
+          "x": 0,
+          "y": 0,
+          "w": 390,
+          "h": 120
+        },
+        {
+          "selector": "heroCarousel",
+          "x": 20,
+          "y": 120,
+          "w": 350,
+          "h": 437.5
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--izdvojeno",
+          "x": 20,
+          "y": 819.875,
+          "w": 350,
+          "h": 620.5625
+        },
+        {
+          "selector": "bera-offer-banners",
+          "x": 20,
+          "y": 1450.4375,
+          "w": 350,
+          "h": 307
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--novo",
+          "x": 20,
+          "y": 1777.4375,
+          "w": 350,
+          "h": 621.46875
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--new-offer",
+          "x": 20,
+          "y": 2408.90625,
+          "w": 350,
+          "h": 621.46875
+        },
+        {
+          "selector": "bera-footer",
+          "x": 0,
+          "y": 3649.875,
+          "w": 390,
+          "h": 1047.171875
+        }
+      ]
+    },
+    "heroRequests": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": "parser",
+        "bytes": 192116
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+        "initiator": "parser",
+        "bytes": 182483
+      }
+    ]
+  },
+  {
+    "mode": "after",
+    "width": 390,
+    "sample": 1,
+    "metrics": {
+      "tasks": [
+        155,
+        111
+      ],
+      "lcp": [
+        {
+          "ms": 2776,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png"
+        },
+        {
+          "ms": 2936,
+          "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg"
+        }
+      ],
+      "cls": 0.00006508380660466194,
+      "reads": 3,
+      "hero": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+      "css": 9,
+      "fonts": 7,
+      "geometry": [
+        {
+          "selector": "promo-bar",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "w": 390,
+          "h": 120
+        },
+        {
+          "selector": "site-chrome-spacer",
+          "x": 0,
+          "y": 0,
+          "w": 390,
+          "h": 120
+        },
+        {
+          "selector": "heroCarousel",
+          "x": 20,
+          "y": 120,
+          "w": 350,
+          "h": 437.5
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--izdvojeno",
+          "x": 20,
+          "y": 819.875,
+          "w": 350,
+          "h": 620.5625
+        },
+        {
+          "selector": "bera-offer-banners",
+          "x": 20,
+          "y": 1450.4375,
+          "w": 350,
+          "h": 307
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--novo",
+          "x": 20,
+          "y": 1777.4375,
+          "w": 350,
+          "h": 621.46875
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--new-offer",
+          "x": 20,
+          "y": 2408.90625,
+          "w": 350,
+          "h": 621.46875
+        },
+        {
+          "selector": "bera-footer",
+          "x": 0,
+          "y": 3649.875,
+          "w": 390,
+          "h": 1047.171875
+        }
+      ]
+    },
+    "heroRequests": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": "parser",
+        "bytes": 192116
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+        "initiator": "parser",
+        "bytes": 182483
+      }
+    ]
+  },
+  {
+    "mode": "before",
+    "width": 390,
+    "sample": 2,
+    "metrics": {
+      "tasks": [
+        130,
+        54,
+        192,
+        123
+      ],
+      "lcp": [
+        {
+          "ms": 2424,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png"
+        },
+        {
+          "ms": 2588,
+          "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg"
+        }
+      ],
+      "cls": 0.00006508380660466194,
+      "reads": 12,
+      "hero": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+      "css": 9,
+      "fonts": 7,
+      "geometry": [
+        {
+          "selector": "promo-bar",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "w": 390,
+          "h": 120
+        },
+        {
+          "selector": "site-chrome-spacer",
+          "x": 0,
+          "y": 0,
+          "w": 390,
+          "h": 120
+        },
+        {
+          "selector": "heroCarousel",
+          "x": 20,
+          "y": 120,
+          "w": 350,
+          "h": 437.5
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--izdvojeno",
+          "x": 20,
+          "y": 819.875,
+          "w": 350,
+          "h": 620.5625
+        },
+        {
+          "selector": "bera-offer-banners",
+          "x": 20,
+          "y": 1450.4375,
+          "w": 350,
+          "h": 307
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--novo",
+          "x": 20,
+          "y": 1777.4375,
+          "w": 350,
+          "h": 621.46875
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--new-offer",
+          "x": 20,
+          "y": 2408.90625,
+          "w": 350,
+          "h": 621.46875
+        },
+        {
+          "selector": "bera-footer",
+          "x": 0,
+          "y": 3649.875,
+          "w": 390,
+          "h": 1047.171875
+        }
+      ]
+    },
+    "heroRequests": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": "parser",
+        "bytes": 192116
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+        "initiator": "parser",
+        "bytes": 182483
+      }
+    ]
+  },
+  {
+    "mode": "after",
+    "width": 390,
+    "sample": 2,
+    "metrics": {
+      "tasks": [
+        92,
+        189,
+        132
+      ],
+      "lcp": [
+        {
+          "ms": 1604,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png"
+        },
+        {
+          "ms": 1872,
+          "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg"
+        }
+      ],
+      "cls": 0.00006508380660466194,
+      "reads": 3,
+      "hero": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+      "css": 9,
+      "fonts": 7,
+      "geometry": [
+        {
+          "selector": "promo-bar",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "w": 390,
+          "h": 120
+        },
+        {
+          "selector": "site-chrome-spacer",
+          "x": 0,
+          "y": 0,
+          "w": 390,
+          "h": 120
+        },
+        {
+          "selector": "heroCarousel",
+          "x": 20,
+          "y": 120,
+          "w": 350,
+          "h": 437.5
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--izdvojeno",
+          "x": 20,
+          "y": 819.875,
+          "w": 350,
+          "h": 620.5625
+        },
+        {
+          "selector": "bera-offer-banners",
+          "x": 20,
+          "y": 1450.4375,
+          "w": 350,
+          "h": 307
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--novo",
+          "x": 20,
+          "y": 1777.4375,
+          "w": 350,
+          "h": 621.46875
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--new-offer",
+          "x": 20,
+          "y": 2408.90625,
+          "w": 350,
+          "h": 621.46875
+        },
+        {
+          "selector": "bera-footer",
+          "x": 0,
+          "y": 3649.875,
+          "w": 390,
+          "h": 1047.171875
+        }
+      ]
+    },
+    "heroRequests": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": "parser",
+        "bytes": 192116
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+        "initiator": "parser",
+        "bytes": 182483
+      }
+    ]
+  },
+  {
+    "mode": "before",
+    "width": 1440,
+    "sample": 0,
+    "metrics": {
+      "tasks": [
+        130,
+        166,
+        191,
+        132
+      ],
+      "lcp": [
+        {
+          "ms": 1796,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png"
+        },
+        {
+          "ms": 2232,
+          "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp"
+        }
+      ],
+      "cls": 0.00015968977620314144,
+      "reads": 12,
+      "hero": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+      "css": 9,
+      "fonts": 7,
+      "geometry": [
+        {
+          "selector": "promo-bar",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "w": 1440,
+          "h": 118
+        },
+        {
+          "selector": "site-chrome-spacer",
+          "x": 0,
+          "y": 0,
+          "w": 1440,
+          "h": 118
+        },
+        {
+          "selector": "heroCarousel",
+          "x": 130,
+          "y": 118,
+          "w": 1180,
+          "h": 393.328125
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--izdvojeno",
+          "x": 130,
+          "y": 798.328125,
+          "w": 1180,
+          "h": 337.578125
+        },
+        {
+          "selector": "bera-offer-banners",
+          "x": 130,
+          "y": 1145.90625,
+          "w": 1180,
+          "h": 165.671875
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--novo",
+          "x": 130,
+          "y": 1335.578125,
+          "w": 1180,
+          "h": 337.578125
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--new-offer",
+          "x": 130,
+          "y": 1683.15625,
+          "w": 1180,
+          "h": 337.578125
+        },
+        {
+          "selector": "bera-footer",
+          "x": 0,
+          "y": 2595.53125,
+          "w": 1440,
+          "h": 491.671875
+        }
+      ]
+    },
+    "heroRequests": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": "parser",
+        "bytes": 192116
+      }
+    ]
+  },
+  {
+    "mode": "after",
+    "width": 1440,
+    "sample": 0,
+    "metrics": {
+      "tasks": [
+        111,
+        183,
+        115
+      ],
+      "lcp": [
+        {
+          "ms": 1408,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png"
+        },
+        {
+          "ms": 1684,
+          "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp"
+        }
+      ],
+      "cls": 0.00015968977620314144,
+      "reads": 3,
+      "hero": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+      "css": 9,
+      "fonts": 7,
+      "geometry": [
+        {
+          "selector": "promo-bar",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "w": 1440,
+          "h": 118
+        },
+        {
+          "selector": "site-chrome-spacer",
+          "x": 0,
+          "y": 0,
+          "w": 1440,
+          "h": 118
+        },
+        {
+          "selector": "heroCarousel",
+          "x": 130,
+          "y": 118,
+          "w": 1180,
+          "h": 393.328125
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--izdvojeno",
+          "x": 130,
+          "y": 798.328125,
+          "w": 1180,
+          "h": 337.578125
+        },
+        {
+          "selector": "bera-offer-banners",
+          "x": 130,
+          "y": 1145.90625,
+          "w": 1180,
+          "h": 165.671875
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--novo",
+          "x": 130,
+          "y": 1335.578125,
+          "w": 1180,
+          "h": 337.578125
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--new-offer",
+          "x": 130,
+          "y": 1683.15625,
+          "w": 1180,
+          "h": 337.578125
+        },
+        {
+          "selector": "bera-footer",
+          "x": 0,
+          "y": 2595.53125,
+          "w": 1440,
+          "h": 491.671875
+        }
+      ]
+    },
+    "heroRequests": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": "parser",
+        "bytes": 192116
+      }
+    ]
+  },
+  {
+    "mode": "before",
+    "width": 360,
+    "sample": 0,
+    "metrics": {
+      "tasks": [
+        95,
+        165,
+        127
+      ],
+      "lcp": [
+        {
+          "ms": 1260,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png"
+        },
+        {
+          "ms": 1392,
+          "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg"
+        }
+      ],
+      "cls": 0.00007050745715505042,
+      "reads": 12,
+      "hero": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+      "css": 9,
+      "fonts": 7,
+      "geometry": [
+        {
+          "selector": "promo-bar",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "w": 360,
+          "h": 120
+        },
+        {
+          "selector": "site-chrome-spacer",
+          "x": 0,
+          "y": 0,
+          "w": 360,
+          "h": 120
+        },
+        {
+          "selector": "heroCarousel",
+          "x": 20,
+          "y": 120,
+          "w": 320,
+          "h": 400
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--izdvojeno",
+          "x": 20,
+          "y": 782.375,
+          "w": 320,
+          "h": 599.125
+        },
+        {
+          "selector": "bera-offer-banners",
+          "x": 20,
+          "y": 1391.5,
+          "w": 320,
+          "h": 307
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--novo",
+          "x": 20,
+          "y": 1718.5,
+          "w": 320,
+          "h": 620.71875
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--new-offer",
+          "x": 20,
+          "y": 2349.21875,
+          "w": 320,
+          "h": 600.03125
+        },
+        {
+          "selector": "bera-footer",
+          "x": 0,
+          "y": 3596.34375,
+          "w": 360,
+          "h": 1025.671875
+        }
+      ]
+    },
+    "heroRequests": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": "parser",
+        "bytes": 192116
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+        "initiator": "parser",
+        "bytes": 182483
+      }
+    ]
+  },
+  {
+    "mode": "after",
+    "width": 360,
+    "sample": 0,
+    "metrics": {
+      "tasks": [
+        180,
+        108
+      ],
+      "lcp": [
+        {
+          "ms": 1232,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png"
+        },
+        {
+          "ms": 1300,
+          "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg"
+        }
+      ],
+      "cls": 0.00007050745715505042,
+      "reads": 3,
+      "hero": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+      "css": 9,
+      "fonts": 7,
+      "geometry": [
+        {
+          "selector": "promo-bar",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "w": 360,
+          "h": 120
+        },
+        {
+          "selector": "site-chrome-spacer",
+          "x": 0,
+          "y": 0,
+          "w": 360,
+          "h": 120
+        },
+        {
+          "selector": "heroCarousel",
+          "x": 20,
+          "y": 120,
+          "w": 320,
+          "h": 400
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--izdvojeno",
+          "x": 20,
+          "y": 782.375,
+          "w": 320,
+          "h": 599.125
+        },
+        {
+          "selector": "bera-offer-banners",
+          "x": 20,
+          "y": 1391.5,
+          "w": 320,
+          "h": 307
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--novo",
+          "x": 20,
+          "y": 1718.5,
+          "w": 320,
+          "h": 620.71875
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--new-offer",
+          "x": 20,
+          "y": 2349.21875,
+          "w": 320,
+          "h": 600.03125
+        },
+        {
+          "selector": "bera-footer",
+          "x": 0,
+          "y": 3596.34375,
+          "w": 360,
+          "h": 1025.671875
+        }
+      ]
+    },
+    "heroRequests": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": "parser",
+        "bytes": 192116
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+        "initiator": "parser",
+        "bytes": 182483
+      }
+    ]
+  },
+  {
+    "mode": "before",
+    "width": 430,
+    "sample": 0,
+    "metrics": {
+      "tasks": [
+        86,
+        168,
+        110
+      ],
+      "lcp": [
+        {
+          "ms": 1248,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png"
+        },
+        {
+          "ms": 1264,
+          "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg"
+        }
+      ],
+      "cls": 0,
+      "reads": 12,
+      "hero": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+      "css": 9,
+      "fonts": 7,
+      "geometry": [
+        {
+          "selector": "promo-bar",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "w": 430,
+          "h": 120
+        },
+        {
+          "selector": "site-chrome-spacer",
+          "x": 0,
+          "y": 0,
+          "w": 430,
+          "h": 120
+        },
+        {
+          "selector": "heroCarousel",
+          "x": 20,
+          "y": 120,
+          "w": 390,
+          "h": 487.5
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--izdvojeno",
+          "x": 20,
+          "y": 860.5,
+          "w": 390,
+          "h": 649.125
+        },
+        {
+          "selector": "bera-offer-banners",
+          "x": 20,
+          "y": 1519.625,
+          "w": 390,
+          "h": 307
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--novo",
+          "x": 20,
+          "y": 1846.625,
+          "w": 390,
+          "h": 650.03125
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--new-offer",
+          "x": 20,
+          "y": 2506.65625,
+          "w": 390,
+          "h": 650.03125
+        },
+        {
+          "selector": "bera-footer",
+          "x": 0,
+          "y": 3776.1875,
+          "w": 430,
+          "h": 1057.171875
+        }
+      ]
+    },
+    "heroRequests": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": "parser",
+        "bytes": 192116
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+        "initiator": "parser",
+        "bytes": 182483
+      }
+    ]
+  },
+  {
+    "mode": "after",
+    "width": 430,
+    "sample": 0,
+    "metrics": {
+      "tasks": [
+        71,
+        172,
+        135
+      ],
+      "lcp": [
+        {
+          "ms": 1260,
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png"
+        },
+        {
+          "ms": 1344,
+          "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg"
+        }
+      ],
+      "cls": 0,
+      "reads": 3,
+      "hero": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+      "css": 9,
+      "fonts": 7,
+      "geometry": [
+        {
+          "selector": "promo-bar",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "selector": "header",
+          "x": 0,
+          "y": 0,
+          "w": 430,
+          "h": 120
+        },
+        {
+          "selector": "site-chrome-spacer",
+          "x": 0,
+          "y": 0,
+          "w": 430,
+          "h": 120
+        },
+        {
+          "selector": "heroCarousel",
+          "x": 20,
+          "y": 120,
+          "w": 390,
+          "h": 487.5
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--izdvojeno",
+          "x": 20,
+          "y": 860.5,
+          "w": 390,
+          "h": 649.125
+        },
+        {
+          "selector": "bera-offer-banners",
+          "x": 20,
+          "y": 1519.625,
+          "w": 390,
+          "h": 307
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--novo",
+          "x": 20,
+          "y": 1846.625,
+          "w": 390,
+          "h": 650.03125
+        },
+        {
+          "selector": "category-page category-page--shop home-products home-products--new-offer",
+          "x": 20,
+          "y": 2506.65625,
+          "w": 390,
+          "h": 650.03125
+        },
+        {
+          "selector": "bera-footer",
+          "x": 0,
+          "y": 3776.1875,
+          "w": 430,
+          "h": 1057.171875
+        }
+      ]
+    },
+    "heroRequests": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": "parser",
+        "bytes": 192116
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+        "initiator": "parser",
+        "bytes": 182483
+      }
+    ]
+  }
+]

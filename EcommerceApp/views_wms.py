@@ -269,12 +269,12 @@ def order_detail(request, pk):
         item.regular_price = regular if regular is not None and regular > item.cijena else None
     subtotal = sum((item.line_total for item in items), Decimal('0'))
     discount = source.popust if source else Decimal('0')
-    delivery = source.dostava if source else Decimal('0')
+    delivery = source.dostava if source else (Decimal('11.00') if order.tip == 'online' else Decimal('0'))
     if source:
         order.kupac = source.ime_prezime
         for field in ('email', 'telefon', 'adresa', 'grad', 'postanski_broj', 'napomena', 'kreirana'):
             setattr(order, field, getattr(source, field))
-    total = source.ukupno if source else subtotal
+    total = source.ukupno if source else subtotal + delivery
     settings = WMSSettings.objects.filter(pk=1).first()
     vat_rate = settings.vat_rate if settings else Decimal('17.00')
     net_total = (total / (1 + vat_rate / 100)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
@@ -646,7 +646,7 @@ def print_orders(request, kind):
                     items.append({'name': item.naziv, 'code': item.sifra, 'quantity': quantity, 'price': item.cijena, 'total': total, 'locations': locations.get(item.pk, [])})
         source = order.source_order
         discount = min(subtotal, (source.popust * subtotal / source.medjuzbir).quantize(Decimal('0.01'))) if source and source.medjuzbir > 0 else Decimal('0.00')
-        delivery = source.dostava if source else Decimal('0.00')
+        delivery = source.dostava if source else (Decimal('11.00') if order.tip == 'online' else Decimal('0.00'))
         jobs.append({'order': order, 'items': items, 'subtotal': subtotal, 'discount': discount,
                      'delivery': delivery, 'total': subtotal - discount + delivery})
     if kind == 'najava':

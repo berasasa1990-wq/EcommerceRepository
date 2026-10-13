@@ -1,0 +1,18 @@
+{
+  "360": {
+    "geometryEqual": true,
+    "pixelsEqual": true
+  },
+  "390": {
+    "geometryEqual": true,
+    "pixelsEqual": false
+  },
+  "430": {
+    "geometryEqual": true,
+    "pixelsEqual": true
+  },
+  "1440": {
+    "geometryEqual": true,
+    "pixelsEqual": true
+  }
+}

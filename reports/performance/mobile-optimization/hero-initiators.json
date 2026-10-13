@@ -1,0 +1,55 @@
+[
+  {
+    "js": false,
+    "records": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": {
+          "type": "parser",
+          "url": "https://carpologijabh.ba/",
+          "lineNumber": 14,
+          "columnNumber": 294
+        },
+        "type": "Image"
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+        "initiator": {
+          "type": "parser",
+          "url": "https://carpologijabh.ba/",
+          "lineNumber": 12,
+          "columnNumber": 283
+        },
+        "type": "Image",
+        "bytes": 182344
+      }
+    ]
+  },
+  {
+    "js": true,
+    "records": [
+      {
+        "url": "https://media.opremazaribolov.ba/banners/Cline_carpologija_Travel_torba.webp",
+        "initiator": {
+          "type": "parser",
+          "url": "https://carpologijabh.ba/",
+          "lineNumber": 14,
+          "columnNumber": 294
+        },
+        "type": "Image",
+        "bytes": 191977
+      },
+      {
+        "url": "https://media.opremazaribolov.ba/banners/mobile/cline_travel_bag.jpg",
+        "initiator": {
+          "type": "parser",
+          "url": "https://carpologijabh.ba/",
+          "lineNumber": 12,
+          "columnNumber": 283
+        },
+        "type": "Image",
+        "bytes": 182352
+      }
+    ]
+  }
+]

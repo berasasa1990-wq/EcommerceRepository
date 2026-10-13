@@ -91,3 +91,31 @@ class WMSOrderPaymentTests(TestCase):
         with patch('EcommerceApp.magacin.display_stock_totals', return_value={'dostupno': 0}):
             with self.assertRaisesMessage(MagacinError, 'nije dostupan'):
                 finish_vp_narudzba(draft, placanje='gotovina')
+
+    def test_manual_online_delivery_is_added_to_detail_and_form(self):
+        from decimal import Decimal
+        self.assertEqual(self.create('online').status_code, 302)
+        order = WMSOrder.objects.latest('pk')
+        response = self.client.get(reverse('staff_wms_order', args=[order.pk]))
+        self.assertEqual(response.context['delivery'], Decimal('11.00'))
+        self.assertEqual(response.context['order_total'], Decimal('51.00'))
+        self.assertContains(response, 'Dostava')
+        form = self.client.get(reverse('staff_wms_create_order', args=['online']))
+        self.assertContains(form, 'data-delivery="11"')
+
+    def test_wholesale_does_not_add_online_delivery(self):
+        from decimal import Decimal
+        self.assertEqual(self.create('vp', 'gotovina').status_code, 302)
+        order = WMSOrder.objects.latest('pk')
+        response = self.client.get(reverse('staff_wms_order', args=[order.pk]))
+        self.assertEqual(response.context['delivery'], Decimal('0'))
+
+    def test_panel_manual_online_keeps_delivery_above_free_shipping_threshold(self):
+        from decimal import Decimal
+        from .models import Order, OrderItem
+        from .magacin import recalculate_order_totals
+        order = Order.objects.create(ime_prezime='Ručni online', izvor=Order.Izvor.MAGACIN, ukupno=0)
+        OrderItem.objects.create(narudzba=order, naziv='Artikal', cijena=Decimal('300'), kolicina=1)
+        recalculate_order_totals(order)
+        self.assertEqual(order.dostava, Decimal('11'))
+        self.assertEqual(order.ukupno, Decimal('311'))
