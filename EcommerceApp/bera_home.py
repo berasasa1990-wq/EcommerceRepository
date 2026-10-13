@@ -42,6 +42,21 @@ def storefront_context():
     return result
 
 
+def homepage_bestseller_ids():
+    """Read the optional public selection once, before hydrating fallback cards."""
+    from .request_performance import request_read
+
+    def load():
+        table = 'EcommerceApp_homebestsellerproduct'
+        if table not in schema_tables():
+            return []
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT artikal_id FROM ' + connection.ops.quote_name(table)
+                           + ' WHERE aktivan = %s ORDER BY redoslijed, id', [True])
+            return [row[0] for row in cursor.fetchall()]
+    return request_read(('homepage-bestseller-ids', connection.alias), load)
+
+
 def _selected_bestseller_products(ids, request):
     """Keep selection order (including duplicates), hydrate only visible cards."""
     from .views import _home_product_queryset
@@ -60,16 +75,6 @@ def homepage_context(context, request):
     result['home_css_optimized'] = not context.get('filters_active')
     result['home_new_offer_products'] = list(_home_product_queryset(request).filter(pk__in=HomeNovoProduct.objects.filter(aktivan=True).values('artikal_id')).order_by('noviteti_na_pocetnoj__redoslijed', 'noviteti_na_pocetnoj__id').filter(noviteti_na_pocetnoj__aktivan=True).distinct()[:6]) if not context.get('filters_active') else []
 
-    # Reuse the optional bestseller selection table when already present in the
-    # destination schema; old installations continue using their existing selection.
-    if not context.get('filters_active'):
-        table = 'EcommerceApp_homebestsellerproduct'
-        if table in schema_tables():
-            with connection.cursor() as cursor:
-                cursor.execute('SELECT artikal_id FROM ' + connection.ops.quote_name(table) + ' WHERE aktivan = %s ORDER BY redoslijed, id', [True])
-                ids = [row[0] for row in cursor.fetchall()]
-            if ids:
-                result['latest_products'] = _selected_bestseller_products(ids, request)
     if not context.get('filters_active'):
         from .utils.seo import get_page_seo
         seo = get_page_seo('home')

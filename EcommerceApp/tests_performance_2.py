@@ -63,7 +63,7 @@ class Performance2RegressionTests(TestCase):
         from django.conf import settings
         response=self.client.get('/')
         self.assertEqual(response.status_code,200)
-        self.assertContains(response, 'home-core.bundle.css')
+        self.assertContains(response, 'home-first-screen.bundle.css')
         self.assertContains(response, f'<link rel="canonical" href="{settings.SEO_CANONICAL_URL}/"')
         self.assertContains(response,'searchInput')
         self.assertContains(response,'mobile-home-dock')

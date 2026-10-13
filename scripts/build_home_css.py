@@ -1,10 +1,11 @@
 """Build minified, cascade-ordered active storefront CSS before collectstatic."""
 from pathlib import Path
-import rcssmin
 try:
     from .css_safe_minify import minify_css
+    from .css_rules import first_screen_rules
 except ImportError:  # Direct Render build command: python scripts/build_home_css.py
     from css_safe_minify import minify_css
+    from css_rules import first_screen_rules
 
 ROOT = Path(__file__).resolve().parents[1] / 'EcommerceApp/static/bera_reference/css'
 CRITICAL_TEMPLATE = ROOT.parents[2] / 'template/bera_reference/partials/home_critical_css.html'
@@ -27,12 +28,15 @@ def build():
         'storefront-extras.min.css': ('search-popup-compact.css', 'newsletter-gray.css'),
     }
     for name, sources in source_bundles.items():
-        (ROOT / name).write_text(rcssmin.cssmin(bundle_content(sources).decode('utf-8')))
+        (ROOT / name).write_text(minify_css(bundle_content(sources).decode('utf-8')))
     for name, sources in BUNDLES.items():
         content = bundle_content(sources).decode('utf-8')
         (ROOT / name).write_text(minify_css(content))
     (ROOT / "bera-home.min.css").write_text(minify_css((ROOT / "bera-home.css").read_text()))
     build_critical_css()
+    brand = ROOT.parents[1] / "css/brand-logo-layout.css"
+    (CRITICAL_TEMPLATE.parent / "brand_logo_css.html").write_text(
+        '<style id="brand-logo-css">' + minify_css(brand.read_text()) + '</style>\n')
     popup = (ROOT / "bera-offer-popup.css").read_text()
     if "url(" in popup or "{%" in popup or "</style" in popup.lower():
         raise ValueError("Popup CSS needs explicit URL/template escaping")
@@ -58,6 +62,7 @@ def build_critical_css():
     critical = re.sub(r"url\(['\"]?([^)'\"]+)['\"]?\)", static_url, critical)
     CRITICAL_TEMPLATE.write_text('{% load static %}\n<style id="home-critical-css">' + critical + '</style>\n')
     (ROOT / 'home-core-rest.bundle.css').write_text(remaining)
+    (ROOT / 'home-first-screen.bundle.css').write_text(first_screen_rules(remaining))
 
 
 if __name__ == '__main__':

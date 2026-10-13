@@ -1,0 +1,46 @@
+{
+  "mobile": {
+    "before": {
+      "score": 82,
+      "fcp": 2143.1330000000003,
+      "lcp": 4508.114,
+      "tbt": 29,
+      "cls": 6.508380660466194e-05,
+      "accessibility": 96,
+      "bestPractices": 96,
+      "seo": 100
+    },
+    "after": {
+      "score": 90,
+      "fcp": 1655.925,
+      "lcp": 3605.925,
+      "tbt": 0,
+      "cls": 6.508380660466194e-05,
+      "accessibility": 96,
+      "bestPractices": 96,
+      "seo": 100
+    }
+  },
+  "desktop": {
+    "before": {
+      "score": 99,
+      "fcp": 525.653,
+      "lcp": 972.355,
+      "tbt": 0,
+      "cls": 0.001249084034403748,
+      "accessibility": 96,
+      "bestPractices": 96,
+      "seo": 100
+    },
+    "after": {
+      "score": 99,
+      "fcp": 446.375,
+      "lcp": 925.094,
+      "tbt": 0,
+      "cls": 0.001249084034403748,
+      "accessibility": 96,
+      "bestPractices": 96,
+      "seo": 100
+    }
+  }
+}

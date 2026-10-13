@@ -51,6 +51,19 @@ class HomeCriticalDeliveryTests(SimpleTestCase):
         layered='@layer one{.a{color:red}}.a{color:red}.a{color:red}'
         self.assertEqual(minify_css(layered), layered)
 
+    def test_nested_duplicates_keep_media_context_and_final_position(self):
+        self.assertEqual(minify_css('@media(max-width:600px){.a{color:red}.b{color:blue}.a{color:red}}'),
+                         '@media(max-width:600px){.b{color:blue}.a{color:red}}')
+        self.assertEqual(minify_css('@media(max-width:600px){.a{color:red}}@media(min-width:601px){.a{color:red}}'),
+                         '@media(max-width:600px){.a{color:red}}@media(min-width:601px){.a{color:red}}')
+
+    def test_hero_critical_subset_keeps_chrome_and_responsive_conditions(self):
+        from scripts.css_rules import first_screen_rules
+        source = '.header{color:red}@media(max-width:600px){.hero-carousel{height:200px}.staff-page{padding:9px}}.product-card{color:blue}'
+        critical = first_screen_rules(source, include_products=False)
+        self.assertEqual(critical, '.header{color:red}@media(max-width:600px){.hero-carousel{height:200px}}')
+        self.assertIn('.product-card{color:blue}', first_screen_rules(source))
+
     def product(self, name):
         return SimpleNamespace(prikazna_slika=SimpleNamespace(url='/media/' + name),
                                prikazna_slika_responsive={'src': '/media/' + name,
@@ -83,11 +96,18 @@ class HomeDeliveryRenderingTests(TestCase):
             'home_css_optimized': True, 'site_settings': SiteSettings(),
         })
         self.assertIn('id="home-critical-css"', html)
+        self.assertIn('/css/home-first-screen.bundle.css', html)
+        self.assertIn('id="homeDeferredCss"', html)
+        self.assertIn("media=\"print\" onload=\"this.media='all'\"", html)
+        self.assertIn('<noscript>', html)
+        self.assertIn('id="brand-logo-css"', html)
+        self.assertNotIn('/css/brand-logo-layout.css', html)
         self.assertIn('id="home-popup-css"', html)
         self.assertNotIn('/css/bera-offer-popup.css', html)
         self.assertIn(static('bera_reference/fonts/inter-latin-700.woff2'), html)
         self.assertIn(static('bera_reference/css/home-core-rest.bundle.css'), html)
         self.assertNotIn('/css/home-core.bundle.css', html)
+        self.assertNotIn('/js/catalog-load-more.js', html)
 
     def test_locked_scratch_module_has_neither_popup_nor_stylesheet(self):
         with patch('EcommerceApp.bera_panel_modules.module_locked', return_value=True):

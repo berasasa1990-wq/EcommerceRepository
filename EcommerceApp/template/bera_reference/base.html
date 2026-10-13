@@ -12,7 +12,10 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="icon" type="image/svg+xml" href="{% static 'bera_reference/img/pwa-icon.svg' %}">
-    {% if not scratch_module_locked and not is_wms_workspace %}<link rel="stylesheet" href="{% static 'bera_reference/css/scratch-game.css' %}?v=20261011-site-scratch">{% endif %}
+    {% if not scratch_module_locked and not is_wms_workspace %}
+    <link rel="stylesheet" href="{% static 'bera_reference/css/scratch-game.css' %}?v=20261011-site-scratch"{% if not scratch_game_immediate %} media="print" onload="this.media='all'"{% endif %}>
+    <noscript><link rel="stylesheet" href="{% static 'bera_reference/css/scratch-game.css' %}?v=20261011-site-scratch"></noscript>
+    {% endif %}
 
     <meta name="csrf-token" content="{{ csrf_token }}">
     <script>
@@ -171,8 +174,31 @@
     <link rel="preload" href="{% static 'bera_reference/fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     {% if home_css_optimized %}
     {% include 'bera_reference/partials/home_critical_css.html' %}
-    <link rel="preload" href="{% static 'bera_reference/css/home-core-rest.bundle.css' %}?v=20261013" as="style">
-    <link rel="stylesheet" href="{% static 'bera_reference/css/home-core-rest.bundle.css' %}?v=20261013">
+    <link rel="stylesheet" href="{% static 'bera_reference/css/home-first-screen.bundle.css' %}?v=20261013-speed">
+    <link id="homeDeferredCss" rel="stylesheet" data-href="{% static 'bera_reference/css/home-core-rest.bundle.css' %}?v=20261013-speed">
+    <script>
+      (function () {
+        var link = document.getElementById('homeDeferredCss');
+        var started = false;
+        function load() {
+          if (started) return;
+          started = true;
+          link.href = link.dataset.href;
+          ['pointerdown', 'touchstart', 'wheel', 'keydown'].forEach(function (event) {
+            window.removeEventListener(event, load, true);
+          });
+        }
+        ['pointerdown', 'touchstart', 'wheel', 'keydown'].forEach(function (event) {
+          window.addEventListener(event, load, {capture: true, passive: true});
+        });
+        window.addEventListener('beforeprint', load, {once: true});
+        window.addEventListener('load', function () {
+          if ('requestIdleCallback' in window) requestIdleCallback(load, {timeout: 500});
+          else setTimeout(load, 0);
+        }, {once: true});
+      })();
+    </script>
+    <noscript><link rel="stylesheet" href="{% static 'bera_reference/css/home-core-rest.bundle.css' %}?v=20261013-speed"></noscript>
     {% else %}
     <link rel="preload" href="{% static 'bera_reference/css/style.min.css' %}?v=20261012-toast" as="style">
     <link rel="stylesheet" href="{% static 'bera_reference/css/style.min.css' %}?v=20261012-toast">
@@ -430,7 +456,7 @@ body.bera-home.home-mobile-reference :is(.mobile-home-benefits span,.home-trust-
 </style>
 {% endif %}
 
-    <link rel="stylesheet" href="{% static 'css/brand-logo-layout.css' %}?v=20261013">
+    {% include 'bera_reference/partials/brand_logo_css.html' %}
 </head>
 <body data-shop-name="{{ shop_name }}" data-site-url="{{ public_site_url }}" data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="bera-storefront-header {% if request.path == '/panel' or request.path|slice:':7' == '/panel/' %}panel-blue-workspace {% endif %}{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {% if request.path == '/panel' or request.path|slice:':7' == '/panel/' %}
@@ -935,7 +961,7 @@ body.bera-home.home-mobile-reference :is(.mobile-home-benefits span,.home-trust-
         });
       }
     </script>
-    <script src="{% static 'bera_reference/js/catalog-load-more.js' %}?v=20261012-fragment" defer></script>
+    {% if page_obj %}<script src="{% static 'bera_reference/js/catalog-load-more.js' %}?v=20261012-fragment" defer></script>{% endif %}
     {% block extra_js %}{% endblock %}
 {% if user.is_authenticated and user.is_staff or user.is_authenticated and user.is_superuser %}{% include 'bera_reference/partials/module_unlock_dialog.html' %}{% endif %}
 </body>

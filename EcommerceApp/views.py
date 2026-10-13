@@ -364,7 +364,7 @@ def _category_ranking_queryset(products_qs):
 
 def _home_product_queryset(request=None):
     """Početna: samo artikli koji su na stanju, s količinom iz magacina."""
-    return _product_queryset(request).filter(na_stanju=True, stanje__gt=0)
+    return _product_queryset(request).defer('opis', 'meta_title', 'meta_description').filter(na_stanju=True, stanje__gt=0)
 
 
 def _bind_variation_parents(product):
@@ -2480,7 +2480,11 @@ def _fill_home_section_products(products, request=None):
 
 
 def _home_latest_products(request=None):
-    # Svako otvaranje bira novi uzorak; ne keširaj slučajni izbor.
+    from .bera_home import homepage_bestseller_ids, _selected_bestseller_products
+    selected_ids = homepage_bestseller_ids()
+    if selected_ids:
+        return _selected_bestseller_products(selected_ids, request)
+    # Keep a fresh random sample when no curated selection exists.
     return _home_latest_products_uncached(request)
 
 
@@ -2511,6 +2515,8 @@ def _home_featured_products(request=None):
     2) Fallback: ručni HomeFeaturedProduct
     Među njima: redukovanje lagera ima prednost.
     """
+    if _staff_edit_mode_enabled(request):
+        return _home_featured_products_uncached(request)
     return _home_cache_get(
         'home_featured_products_v4',
         lambda: _home_featured_products_uncached(request),
@@ -2548,6 +2554,8 @@ def _home_featured_products_uncached(request=None):
 
 def _home_sale_products(request=None):
     """Akcijska ponuda na početnoj — artikli sa sniženom cijenom."""
+    if _staff_edit_mode_enabled(request):
+        return _home_sale_products_uncached(request)
     return _home_cache_get(
         'home_sale_products_v4',
         lambda: _home_sale_products_uncached(request),
@@ -2600,6 +2608,8 @@ def _home_promo_cards():
 
 
 def _home_category_showcases(request=None):
+    if _staff_edit_mode_enabled(request):
+        return _home_category_showcases_uncached(request)
     return _home_cache_get(
         f'home_cat_show_v5:{HOME_CATEGORY_SHOWCASE_LIMIT}',
         lambda: _home_category_showcases_uncached(request),
@@ -2639,6 +2649,8 @@ def _home_brand_showcases(request=None):
     Brend sekcije na početnoj — karusel do 10 artikala po brendu (vrte se).
     Admin: Postavke sajta → ⑥ Brend karuseli.
     """
+    if _staff_edit_mode_enabled(request):
+        return _home_brand_showcases_uncached(request)
     return _home_cache_get(
         'home_brand_show_v4',
         lambda: _home_brand_showcases_uncached(request),

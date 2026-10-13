@@ -1,0 +1,74 @@
+[
+  {
+    "width": 390,
+    "path": "",
+    "state": "normal",
+    "differences": []
+  },
+  {
+    "width": 390,
+    "path": "",
+    "state": "popup",
+    "differences": []
+  },
+  {
+    "width": 390,
+    "path": "",
+    "state": "gate",
+    "differences": []
+  },
+  {
+    "width": 390,
+    "path": "nohero",
+    "state": "normal",
+    "differences": []
+  },
+  {
+    "width": 390,
+    "path": "nohero",
+    "state": "popup",
+    "differences": []
+  },
+  {
+    "width": 390,
+    "path": "nohero",
+    "state": "gate",
+    "differences": []
+  },
+  {
+    "width": 1440,
+    "path": "",
+    "state": "normal",
+    "differences": []
+  },
+  {
+    "width": 1440,
+    "path": "",
+    "state": "popup",
+    "differences": []
+  },
+  {
+    "width": 1440,
+    "path": "",
+    "state": "gate",
+    "differences": []
+  },
+  {
+    "width": 1440,
+    "path": "nohero",
+    "state": "normal",
+    "differences": []
+  },
+  {
+    "width": 1440,
+    "path": "nohero",
+    "state": "popup",
+    "differences": []
+  },
+  {
+    "width": 1440,
+    "path": "nohero",
+    "state": "gate",
+    "differences": []
+  }
+]

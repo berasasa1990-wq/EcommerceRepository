@@ -37,7 +37,8 @@ class HomeBrandAccessibilityTests(SimpleTestCase):
             })
             self.assertEqual(image['src'], brand['slika']['url'])
             self.assertEqual(image['alt'], brand['naziv'])
-            self.assertEqual(image['class'], 'showcase-brand-logo')
+            self.assertIn('showcase-brand-logo', image['class'].split())
+            self.assertIn('carp-brand-logo', image['class'].split())
 
     def test_empty_brands_do_not_render_grid(self):
         html = render_to_string('partials/home_brand_carousel.html', {'brands': []})
