@@ -48,7 +48,7 @@
         <a href="{% url 'home' %}?brend={{ brand.slug }}#product-showcase" class="brands-card" title="{{ brand.naziv }}">
             <span class="brands-card__logo">
                 {% if brand.slika %}
-                <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" width="160" height="64" loading="lazy" decoding="async">
+                <img class="carp-brand-logo" src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" width="160" height="64" loading="lazy" decoding="async">
                 {% else %}
                 <span class="brands-card__fallback">{{ brand.naziv }}</span>
                 {% endif %}

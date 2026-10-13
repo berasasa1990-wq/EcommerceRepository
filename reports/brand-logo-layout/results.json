@@ -1,0 +1,162 @@
+[
+  {
+    "width": 1440,
+    "cls": 0,
+    "stable": true,
+    "otherImagesUnchanged": true,
+    "logos": [
+      {
+        "case": "product",
+        "x": 21,
+        "y": 35,
+        "width": 78,
+        "height": 20,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "detail",
+        "x": 10,
+        "y": 78,
+        "width": 78,
+        "height": 20,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "cart",
+        "x": 10,
+        "y": 132,
+        "width": 78,
+        "height": 20,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "legacy",
+        "x": 620,
+        "y": 185,
+        "width": 200,
+        "height": 48,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "carousel",
+        "x": 42,
+        "y": 256,
+        "width": 120,
+        "height": 30,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "showcase",
+        "x": 31,
+        "y": 319,
+        "width": 200,
+        "height": 52,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "brands",
+        "x": 640,
+        "y": 393,
+        "width": 160,
+        "height": 56,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "popular",
+        "x": 15.203125,
+        "y": 465,
+        "width": 110,
+        "height": 32,
+        "fit": "contain",
+        "position": "50% 50%"
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "cls": 0,
+    "stable": true,
+    "otherImagesUnchanged": true,
+    "logos": [
+      {
+        "case": "product",
+        "x": 19,
+        "y": 33,
+        "width": 60,
+        "height": 16,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "detail",
+        "x": 10,
+        "y": 70,
+        "width": 60,
+        "height": 16,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "cart",
+        "x": 22,
+        "y": 112,
+        "width": 60,
+        "height": 16,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "legacy",
+        "x": 95,
+        "y": 160,
+        "width": 200,
+        "height": 48,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "carousel",
+        "x": 24,
+        "y": 226,
+        "width": 120,
+        "height": 30,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "showcase",
+        "x": 31,
+        "y": 284,
+        "width": 200,
+        "height": 52,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "brands",
+        "x": 115,
+        "y": 358,
+        "width": 160,
+        "height": 56,
+        "fit": "contain",
+        "position": "50% 50%"
+      },
+      {
+        "case": "popular",
+        "x": 10,
+        "y": 430,
+        "width": 90,
+        "height": 32,
+        "fit": "contain",
+        "position": "50% 50%"
+      }
+    ]
+  }
+]

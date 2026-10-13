@@ -16,7 +16,7 @@
         <h2 id="beraBrandsTitle">Popularni brendovi</h2>
         <div class="bera-popular-brands__carousel">
             <button class="bera-popular-brands__arrow" type="button" data-brand-direction="-1" aria-label="Prethodni brendovi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
-        <div class="bera-popular-brands__row" tabindex="0" aria-label="Popularni brendovi">{% for brand in showcase_brands %}<a href="{% url 'home' %}?brend={{ brand.slug }}" title="{{ brand.naziv }}"><img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" width="120" height="40" loading="lazy"></a>{% endfor %}</div>
+        <div class="bera-popular-brands__row" tabindex="0" aria-label="Popularni brendovi">{% for brand in showcase_brands %}<a href="{% url 'home' %}?brend={{ brand.slug }}" title="{{ brand.naziv }}"><img class="carp-brand-logo" src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" width="120" height="40" loading="lazy"></a>{% endfor %}</div>
             <button class="bera-popular-brands__arrow" type="button" data-brand-direction="1" aria-label="Sljedeći brendovi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button>
         </div>
         <script src="{% static 'bera_reference/js/bera-brands.js' %}?v=20261008" defer></script>

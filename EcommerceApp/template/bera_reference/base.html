@@ -430,6 +430,7 @@ body.bera-home.home-mobile-reference :is(.mobile-home-benefits span,.home-trust-
 </style>
 {% endif %}
 
+    <link rel="stylesheet" href="{% static 'css/brand-logo-layout.css' %}?v=20261013">
 </head>
 <body data-shop-name="{{ shop_name }}" data-site-url="{{ public_site_url }}" data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="bera-storefront-header {% if request.path == '/panel' or request.path|slice:':7' == '/panel/' %}panel-blue-workspace {% endif %}{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {% if request.path == '/panel' or request.path|slice:':7' == '/panel/' %}
@@ -878,7 +879,6 @@ body.bera-home.home-mobile-reference :is(.mobile-home-benefits span,.home-trust-
     {% block structured_data %}{% endblock %}
     <script src="{% static 'bera_reference/js/csrf-session.js' %}?v=20261001" data-cookie-name="{{ csrf_cookie_name }}" defer></script>
     <script src="{% static 'bera_reference/js/main.min.js' %}?v=20261013-search-submit" defer></script>
-    {% if not is_wms_workspace %}<script src="{% static 'bera_reference/js/brand-logo-normalize.js' %}?v=20261011" defer></script>{% endif %}
     {% if not is_wms_workspace %}
     <script src="{% static 'bera_reference/js/desktop-reference.js' %}?v=20261012-single-category" defer></script>
     <script src="{% static 'bera_reference/js/stock-notify.js' %}?v=20260916-notify-no-autofocus" defer></script>
