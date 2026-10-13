@@ -57,15 +57,13 @@ def _pick_product(exclude_ids=None):
     qs = Product.objects.filter(aktivan=True, sakriven_do_stanja=False, na_stanju=True)
     if exclude_ids:
         qs = qs.exclude(pk__in=exclude_ids)
-    product_ids = list(qs.order_by('?').values_list('pk', flat=True)[:1])
-    if not product_ids:
+    product = qs.only('pk', 'naziv', 'slug').order_by('?').first()
+    if product is None:
         qs = Product.objects.filter(aktivan=True, sakriven_do_stanja=False)
         if exclude_ids:
             qs = qs.exclude(pk__in=exclude_ids)
-        product_ids = list(qs.order_by('?').values_list('pk', flat=True)[:1])
-    if not product_ids:
-        return None
-    return Product.objects.filter(pk=product_ids[0]).only('pk', 'naziv', 'slug').first()
+        product = qs.only('pk', 'naziv', 'slug').order_by('?').first()
+    return product
 
 
 def build_social_proof_payload(request=None, exclude_ids=None):

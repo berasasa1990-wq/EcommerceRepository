@@ -19,7 +19,9 @@
 
 {% block lcp_preload %}
 {% if lcp_image_url %}
-<link rel="preload" as="image" href="{{ lcp_image_url }}" fetchpriority="high">
+{% with img=product.prikazna_slika_responsive %}
+<link rel="preload" as="image" href="{{ img.src|default:lcp_image_url }}"{% if img.srcset %} imagesrcset="{{ img.srcset }}" imagesizes="(max-width: 768px) 92vw, 50vw"{% endif %} fetchpriority="high">
+{% endwith %}
 {% endif %}
 {% endblock %}
 

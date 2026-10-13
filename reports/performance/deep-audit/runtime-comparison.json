@@ -1,0 +1,546 @@
+{
+  "baseline_commit": "aa05c621",
+  "method": "Same synthetic SQLite fixtures and cache clearing, five sequential samples per route. First sample is cache-cold; median of four remaining samples. Middleware/static startup excluded. No production DB queries, external integration requests, checkout submissions, or public HTML/session caching.",
+  "routes": {
+    "/": {
+      "before": {
+        "request_ms": 22.552,
+        "sql_count": 22.0,
+        "sql_ms": 0.8654999999999999,
+        "sql_max_ms": 0.1675,
+        "template_ms": 14.77,
+        "view_inclusive_ms": 22.241
+      },
+      "after": {
+        "request_ms": 20.281,
+        "sql_count": 15.0,
+        "sql_ms": 0.718,
+        "sql_max_ms": 0.17,
+        "template_ms": 12.215,
+        "view_inclusive_ms": 19.9315
+      },
+      "before_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 99.876,
+        "sql_count": 39,
+        "sql_ms": 4.705,
+        "sql_max_ms": 0.472,
+        "template_ms": 58.846,
+        "view_inclusive_ms": 98.417,
+        "response_bytes": 214755,
+        "peak_rss_mb": 96.17,
+        "server_timing": "django;dur=99.64, sql;dur=4.67;desc=\"39 queries\", db_connect;dur=0.00;desc=\"0 attempts\""
+      },
+      "after_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 87.614,
+        "sql_count": 33,
+        "sql_ms": 4.603,
+        "sql_max_ms": 0.6,
+        "template_ms": 53.266,
+        "view_inclusive_ms": 86.593,
+        "response_bytes": 214755,
+        "peak_rss_mb": 96.2,
+        "server_timing": "django;dur=87.36, sql;dur=4.56;desc=\"33 queries\", db_connect;dur=0.00;desc=\"0 attempts\", sql_max;dur=0.60;desc=\"0 queries >=100ms\""
+      }
+    },
+    "/?q=QA": {
+      "before": {
+        "request_ms": 17.842,
+        "sql_count": 22.0,
+        "sql_ms": 1.1255000000000002,
+        "sql_max_ms": 0.28,
+        "template_ms": 7.067,
+        "view_inclusive_ms": 17.5535
+      },
+      "after": {
+        "request_ms": 16.939500000000002,
+        "sql_count": 18.0,
+        "sql_ms": 1.066,
+        "sql_max_ms": 0.28200000000000003,
+        "template_ms": 6.9915,
+        "view_inclusive_ms": 16.653
+      },
+      "before_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 23.24,
+        "sql_count": 33,
+        "sql_ms": 2.838,
+        "sql_max_ms": 0.932,
+        "template_ms": 9.499,
+        "view_inclusive_ms": 22.716,
+        "response_bytes": 89704,
+        "peak_rss_mb": 102.45,
+        "server_timing": "django;dur=23.09, sql;dur=2.82;desc=\"33 queries\", db_connect;dur=0.00;desc=\"0 attempts\""
+      },
+      "after_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 24.593,
+        "sql_count": 29,
+        "sql_ms": 2.242,
+        "sql_max_ms": 0.46,
+        "template_ms": 10.147,
+        "view_inclusive_ms": 23.703,
+        "response_bytes": 89702,
+        "peak_rss_mb": 102.52,
+        "server_timing": "django;dur=24.17, sql;dur=2.22;desc=\"29 queries\", db_connect;dur=0.00;desc=\"0 attempts\", sql_max;dur=0.46;desc=\"0 queries >=100ms\""
+      }
+    },
+    "/kategorija/qa-kategorija/": {
+      "before": {
+        "request_ms": 14.735,
+        "sql_count": 19.0,
+        "sql_ms": 0.6295,
+        "sql_max_ms": 0.122,
+        "template_ms": 7.112,
+        "view_inclusive_ms": 14.4305
+      },
+      "after": {
+        "request_ms": 14.5545,
+        "sql_count": 18.0,
+        "sql_ms": 0.627,
+        "sql_max_ms": 0.1225,
+        "template_ms": 7.025,
+        "view_inclusive_ms": 14.254999999999999
+      },
+      "before_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 18.533,
+        "sql_count": 24,
+        "sql_ms": 1.869,
+        "sql_max_ms": 0.427,
+        "template_ms": 8.217,
+        "view_inclusive_ms": 18.238,
+        "response_bytes": 86909,
+        "peak_rss_mb": 102.48,
+        "server_timing": "django;dur=18.39, sql;dur=1.86;desc=\"24 queries\", db_connect;dur=0.00;desc=\"0 attempts\""
+      },
+      "after_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 18.309,
+        "sql_count": 23,
+        "sql_ms": 2.219,
+        "sql_max_ms": 0.875,
+        "template_ms": 7.636,
+        "view_inclusive_ms": 18.015,
+        "response_bytes": 86907,
+        "peak_rss_mb": 102.59,
+        "server_timing": "django;dur=18.16, sql;dur=2.20;desc=\"23 queries\", db_connect;dur=0.00;desc=\"0 attempts\", sql_max;dur=0.87;desc=\"0 queries >=100ms\""
+      }
+    },
+    "/artikal/qa-artikal-8/": {
+      "before": {
+        "request_ms": 18.1385,
+        "sql_count": 26.0,
+        "sql_ms": 1.1110000000000002,
+        "sql_max_ms": 0.159,
+        "template_ms": 6.6875,
+        "view_inclusive_ms": 17.8465
+      },
+      "after": {
+        "request_ms": 18.198,
+        "sql_count": 25.0,
+        "sql_ms": 1.109,
+        "sql_max_ms": 0.1605,
+        "template_ms": 6.71,
+        "view_inclusive_ms": 17.9125
+      },
+      "before_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 32.154,
+        "sql_count": 31,
+        "sql_ms": 2.77,
+        "sql_max_ms": 0.413,
+        "template_ms": 11.577,
+        "view_inclusive_ms": 31.856,
+        "response_bytes": 89455,
+        "peak_rss_mb": 102.59,
+        "server_timing": "django;dur=32.00, sql;dur=2.75;desc=\"31 queries\", db_connect;dur=0.00;desc=\"0 attempts\""
+      },
+      "after_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 32.209,
+        "sql_count": 30,
+        "sql_ms": 2.876,
+        "sql_max_ms": 0.434,
+        "template_ms": 11.516,
+        "view_inclusive_ms": 31.928,
+        "response_bytes": 89522,
+        "peak_rss_mb": 103.2,
+        "server_timing": "django;dur=32.07, sql;dur=2.85;desc=\"30 queries\", db_connect;dur=0.00;desc=\"0 attempts\", sql_max;dur=0.43;desc=\"0 queries >=100ms\""
+      }
+    },
+    "/korpa/": {
+      "before": {
+        "request_ms": 21.4735,
+        "sql_count": 57.0,
+        "sql_ms": 1.4985,
+        "sql_max_ms": 0.126,
+        "template_ms": 9.168,
+        "view_inclusive_ms": 20.955
+      },
+      "after": {
+        "request_ms": 14.958,
+        "sql_count": 35.0,
+        "sql_ms": 0.9395,
+        "sql_max_ms": 0.1275,
+        "template_ms": 9.2315,
+        "view_inclusive_ms": 14.392
+      },
+      "before_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 31.08,
+        "sql_count": 62,
+        "sql_ms": 2.848,
+        "sql_max_ms": 0.326,
+        "template_ms": 13.557,
+        "view_inclusive_ms": 30.468,
+        "response_bytes": 66205,
+        "peak_rss_mb": 102.89,
+        "server_timing": "django;dur=30.92, sql;dur=2.82;desc=\"62 queries\", db_connect;dur=0.00;desc=\"0 attempts\""
+      },
+      "after_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 28.106,
+        "sql_count": 40,
+        "sql_ms": 4.601,
+        "sql_max_ms": 2.635,
+        "template_ms": 14.827,
+        "view_inclusive_ms": 27.527,
+        "response_bytes": 66203,
+        "peak_rss_mb": 103.83,
+        "server_timing": "django;dur=27.95, sql;dur=4.57;desc=\"40 queries\", db_connect;dur=0.00;desc=\"0 attempts\", sql_max;dur=2.63;desc=\"0 queries >=100ms\""
+      }
+    },
+    "/narudzba/": {
+      "before": {
+        "request_ms": 25.610999999999997,
+        "sql_count": 70.0,
+        "sql_ms": 1.9275,
+        "sql_max_ms": 0.127,
+        "template_ms": 4.875500000000001,
+        "view_inclusive_ms": 25.313
+      },
+      "after": {
+        "request_ms": 9.588000000000001,
+        "sql_count": 20.0,
+        "sql_ms": 0.5714999999999999,
+        "sql_max_ms": 0.125,
+        "template_ms": 4.5905000000000005,
+        "view_inclusive_ms": 9.294
+      },
+      "before_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 32.075,
+        "sql_count": 75,
+        "sql_ms": 2.068,
+        "sql_max_ms": 0.117,
+        "template_ms": 10.758,
+        "view_inclusive_ms": 31.778,
+        "response_bytes": 59752,
+        "peak_rss_mb": 102.89,
+        "server_timing": "django;dur=31.93, sql;dur=2.04;desc=\"75 queries\", db_connect;dur=0.00;desc=\"0 attempts\""
+      },
+      "after_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 16.514,
+        "sql_count": 25,
+        "sql_ms": 0.738,
+        "sql_max_ms": 0.117,
+        "template_ms": 9.947,
+        "view_inclusive_ms": 16.232,
+        "response_bytes": 59750,
+        "peak_rss_mb": 107.72,
+        "server_timing": "django;dur=16.37, sql;dur=0.72;desc=\"25 queries\", db_connect;dur=0.00;desc=\"0 attempts\", sql_max;dur=0.12;desc=\"0 queries >=100ms\""
+      }
+    },
+    "/nalog/": {
+      "before": {
+        "request_ms": 15.356,
+        "sql_count": 23.0,
+        "sql_ms": 0.6205,
+        "sql_max_ms": 0.1235,
+        "template_ms": 11.8225,
+        "view_inclusive_ms": 15.117
+      },
+      "after": {
+        "request_ms": 12.313500000000001,
+        "sql_count": 15.0,
+        "sql_ms": 0.417,
+        "sql_max_ms": 0.1215,
+        "template_ms": 8.4665,
+        "view_inclusive_ms": 12.068999999999999
+      },
+      "before_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 26.549,
+        "sql_count": 32,
+        "sql_ms": 2.858,
+        "sql_max_ms": 1.097,
+        "template_ms": 15.059,
+        "view_inclusive_ms": 26.297,
+        "response_bytes": 109497,
+        "peak_rss_mb": 102.89,
+        "server_timing": ""
+      },
+      "after_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 23.356,
+        "sql_count": 25,
+        "sql_ms": 2.083,
+        "sql_max_ms": 0.388,
+        "template_ms": 11.432,
+        "view_inclusive_ms": 23.111,
+        "response_bytes": 109497,
+        "peak_rss_mb": 107.98,
+        "server_timing": ""
+      }
+    },
+    "/admin/": {
+      "before": {
+        "request_ms": 5.0155,
+        "sql_count": 13.0,
+        "sql_ms": 0.393,
+        "sql_max_ms": 0.1155,
+        "template_ms": 1.222,
+        "view_inclusive_ms": 4.803000000000001
+      },
+      "after": {
+        "request_ms": 5.109,
+        "sql_count": 13.0,
+        "sql_ms": 0.401,
+        "sql_max_ms": 0.118,
+        "template_ms": 1.231,
+        "view_inclusive_ms": 4.895
+      },
+      "before_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 21.67,
+        "sql_count": 14,
+        "sql_ms": 1.065,
+        "sql_max_ms": 0.278,
+        "template_ms": 5.322,
+        "view_inclusive_ms": 21.424,
+        "response_bytes": 6773,
+        "peak_rss_mb": 105.36,
+        "server_timing": ""
+      },
+      "after_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 21.194,
+        "sql_count": 14,
+        "sql_ms": 1.612,
+        "sql_max_ms": 0.805,
+        "template_ms": 4.636,
+        "view_inclusive_ms": 20.949,
+        "response_bytes": 6773,
+        "peak_rss_mb": 111.38,
+        "server_timing": ""
+      }
+    },
+    "/panel": {
+      "before": {
+        "request_ms": 5.357,
+        "sql_count": 8.0,
+        "sql_ms": 0.2125,
+        "sql_max_ms": 0.121,
+        "template_ms": 2.0345,
+        "view_inclusive_ms": 5.112500000000001
+      },
+      "after": {
+        "request_ms": 5.531499999999999,
+        "sql_count": 8.0,
+        "sql_ms": 0.22,
+        "sql_max_ms": 0.124,
+        "template_ms": 2.0365,
+        "view_inclusive_ms": 5.2695
+      },
+      "before_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 21.298,
+        "sql_count": 13,
+        "sql_ms": 0.686,
+        "sql_max_ms": 0.298,
+        "template_ms": 3.44,
+        "view_inclusive_ms": 21.05,
+        "response_bytes": 42609,
+        "peak_rss_mb": 106.02,
+        "server_timing": "app;dur=21.2, sql;dur=0.7;desc=\"13 queries\""
+      },
+      "after_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 22.529,
+        "sql_count": 13,
+        "sql_ms": 0.661,
+        "sql_max_ms": 0.22,
+        "template_ms": 3.635,
+        "view_inclusive_ms": 22.221,
+        "response_bytes": 42609,
+        "peak_rss_mb": 112.25,
+        "server_timing": "app;dur=22.4, sql;dur=0.7;desc=\"13 queries\""
+      }
+    },
+    "/wms/": {
+      "before": {
+        "request_ms": 4.7675,
+        "sql_count": 8.0,
+        "sql_ms": 0.22,
+        "sql_max_ms": 0.11699999999999999,
+        "template_ms": 2.0220000000000002,
+        "view_inclusive_ms": 4.523
+      },
+      "after": {
+        "request_ms": 4.7885,
+        "sql_count": 8.0,
+        "sql_ms": 0.23349999999999999,
+        "sql_max_ms": 0.1265,
+        "template_ms": 1.979,
+        "view_inclusive_ms": 4.5155
+      },
+      "before_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 14.575,
+        "sql_count": 26,
+        "sql_ms": 1.574,
+        "sql_max_ms": 0.29,
+        "template_ms": 3.719,
+        "view_inclusive_ms": 14.311,
+        "response_bytes": 44107,
+        "peak_rss_mb": 106.97,
+        "server_timing": "app;dur=14.4, sql;dur=1.6;desc=\"26 queries\""
+      },
+      "after_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 15.101,
+        "sql_count": 26,
+        "sql_ms": 2.206,
+        "sql_max_ms": 0.847,
+        "template_ms": 3.747,
+        "view_inclusive_ms": 14.845,
+        "response_bytes": 44107,
+        "peak_rss_mb": 112.98,
+        "server_timing": "app;dur=15.0, sql;dur=2.2;desc=\"26 queries\""
+      }
+    },
+    "/wms/zalihe/?q=QA": {
+      "before": {
+        "request_ms": 9.754999999999999,
+        "sql_count": 20.0,
+        "sql_ms": 0.716,
+        "sql_max_ms": 0.1825,
+        "template_ms": 4.5925,
+        "view_inclusive_ms": 9.4955
+      },
+      "after": {
+        "request_ms": 9.86,
+        "sql_count": 20.0,
+        "sql_ms": 0.716,
+        "sql_max_ms": 0.186,
+        "template_ms": 4.6355,
+        "view_inclusive_ms": 9.58
+      },
+      "before_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 10.865,
+        "sql_count": 21,
+        "sql_ms": 1.038,
+        "sql_max_ms": 0.273,
+        "template_ms": 4.807,
+        "view_inclusive_ms": 10.61,
+        "response_bytes": 56940,
+        "peak_rss_mb": 107.17,
+        "server_timing": "app;dur=10.7, sql;dur=1.0;desc=\"21 queries\""
+      },
+      "after_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 11.058,
+        "sql_count": 21,
+        "sql_ms": 1.091,
+        "sql_max_ms": 0.279,
+        "template_ms": 4.802,
+        "view_inclusive_ms": 10.773,
+        "response_bytes": 56940,
+        "peak_rss_mb": 113.42,
+        "server_timing": "app;dur=10.9, sql;dur=1.1;desc=\"21 queries\""
+      }
+    },
+    "/wms/narudzbe/": {
+      "before": {
+        "request_ms": 7.12,
+        "sql_count": 10.0,
+        "sql_ms": 0.41000000000000003,
+        "sql_max_ms": 0.132,
+        "template_ms": 3.643,
+        "view_inclusive_ms": 6.838
+      },
+      "after": {
+        "request_ms": 6.865,
+        "sql_count": 10.0,
+        "sql_ms": 0.3945,
+        "sql_max_ms": 0.1255,
+        "template_ms": 3.507,
+        "view_inclusive_ms": 6.6005
+      },
+      "before_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 14.98,
+        "sql_count": 41,
+        "sql_ms": 1.743,
+        "sql_max_ms": 0.358,
+        "template_ms": 4.75,
+        "view_inclusive_ms": 14.717,
+        "response_bytes": 53212,
+        "peak_rss_mb": 107.45,
+        "server_timing": "app;dur=14.8, sql;dur=1.7;desc=\"41 queries\""
+      },
+      "after_cold": {
+        "state": "cold",
+        "status": 200,
+        "request_ms": 14.738,
+        "sql_count": 41,
+        "sql_ms": 1.657,
+        "sql_max_ms": 0.35,
+        "template_ms": 4.523,
+        "view_inclusive_ms": 14.463,
+        "response_bytes": 53212,
+        "peak_rss_mb": 113.42,
+        "server_timing": "app;dur=14.6, sql;dur=1.6;desc=\"41 queries\""
+      }
+    }
+  },
+  "peak_process_rss_mb": {
+    "before": 107.73,
+    "after": 113.42
+  },
+  "limitations": [
+    "Local in-process Django request duration is not production network TTFB.",
+    "Cold means first request after application-cache clearing, not a cold Render worker or PostgreSQL connection.",
+    "SQLite SQL duration/peak RSS cannot establish production PostgreSQL query plans, locks, Render RAM, or worker queue time."
+  ],
+  "all_http_statuses": [
+    200
+  ]
+}

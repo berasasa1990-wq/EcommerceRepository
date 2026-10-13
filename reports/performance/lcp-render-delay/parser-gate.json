@@ -1,0 +1,21 @@
+[
+  {
+    "mode": "before",
+    "cssHeld": true,
+    "downloadedImage": "http://127.0.0.1:8183/media/products/ft-1-push-lock-rigs-12.avif",
+    "cardsInDOM": 0,
+    "cardPaints": []
+  },
+  {
+    "mode": "after",
+    "cssHeld": false,
+    "downloadedImage": "http://127.0.0.1:8184/media/products/ft-1-push-lock-rigs-12.avif",
+    "cardsInDOM": 11,
+    "cardPaints": [
+      {
+        "time": 116,
+        "cardId": "2018"
+      }
+    ]
+  }
+]

@@ -62,7 +62,20 @@ def build_critical_css():
     critical = re.sub(r"url\(['\"]?([^)'\"]+)['\"]?\)", static_url, critical)
     CRITICAL_TEMPLATE.write_text('{% load static %}\n<style id="home-critical-css">' + critical + '</style>\n')
     (ROOT / 'home-core-rest.bundle.css').write_text(remaining)
-    (ROOT / 'home-first-screen.bundle.css').write_text(first_screen_rules(remaining))
+    first_screen = first_screen_rules(remaining)
+    (ROOT / 'home-first-screen.bundle.css').write_text(first_screen)
+    # Product images can finish downloading while their external critical
+    # stylesheet is still pending. Deliver the same rules at the same cascade
+    # position in compressed HTML, without that extra render-blocking request.
+    first_screen = re.sub(
+        r"url\((['\"]?)(\.\./[^)'\"\s]+)\1\)",
+        lambda match: "url('{% static 'bera_reference/" + match[2][3:] + "' %}')",
+        first_screen,
+    )
+    if '</style' in first_screen.lower():
+        raise ValueError('First-screen CSS must not close the inline style element')
+    (CRITICAL_TEMPLATE.parent / 'home_first_screen_css.html').write_text(
+        '{% load static %}\n<style id="home-first-screen-css">' + first_screen + '</style>\n')
 
 
 if __name__ == '__main__':

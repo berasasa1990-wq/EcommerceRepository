@@ -897,6 +897,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let index = 0;
             let autoplayTimer = null;
             let gap = 8;
+            let slideWidth = 0;
             const autoplayMs = parseInt(root.dataset.autoplayMs, 10) || 4500;
 
             function visibleCount() {
@@ -910,7 +911,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             function slideStep() {
-                const slideWidth = parseFloat(getComputedStyle(root).getPropertyValue('--carousel-slide-width'));
+                // updateLayout already calculated this value. Reading computed
+                // styles after writing the same CSS variable forces style work
+                // on every carousel move and resize.
                 return slideWidth + gap;
             }
 
@@ -924,7 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 gap = readGap();
                 const visible = visibleCount();
                 const viewportWidth = viewport.clientWidth;
-                const slideWidth = (viewportWidth - (visible - 1) * gap) / visible;
+                slideWidth = (viewportWidth - (visible - 1) * gap) / visible;
                 root.style.setProperty('--carousel-slide-width', `${slideWidth}px`);
                 index = Math.min(index, maxIndex());
                 updatePosition();

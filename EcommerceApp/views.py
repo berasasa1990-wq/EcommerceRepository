@@ -21,8 +21,8 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db import DatabaseError, IntegrityError, transaction
-from django.db.models import Case, Count, Exists, F, IntegerField, Max, Min, OuterRef, Prefetch, Q, Sum, Value, When
-from django.db.models.functions import Lower, Trim, TruncDate
+from django.db.models import Case, Count, Exists, F, IntegerField, Max, Min, OuterRef, Prefetch, Q, Sum, Value, When, Window
+from django.db.models.functions import Lower, RowNumber, Trim, TruncDate
 from django.utils import timezone
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -43,6 +43,7 @@ from django.views.decorators.http import require_GET, require_POST, require_http
 
 from .cart import Cart, stock_limit_message, stock_on_hand
 from .category_visibility import filter_categories_with_products, get_category_ids_with_products
+from .request_performance import request_read
 from .loyalty import (
     azuriraj_loyalty_nakon_narudzbe,
     izdaj_loyalty_karticu,
@@ -326,6 +327,7 @@ def _invalidate_storefront_product_caches():
     for key in (
         'home_latest_products_v4',
         'home_featured_products_v4',
+        'home_featured_products_v5',
         'home_sale_products_v4',
         'home_brand_show_v4',
         'showcase_brands_v2',
@@ -439,17 +441,15 @@ def _filter_size_scope_qs(filter_params, base_qs=None, *, request=None):
     if filter_params.get('noviteti'):
         qs = _new_offer_catalog_qs(qs)
     if filter_params.get('brend'):
-        brand = Brand.objects.filter(slug=filter_params['brend']).first()
+        brand = _catalog_filter_brand(filter_params['brend'])
         if brand:
             qs = qs.filter(brend_id=brand.pk)
         else:
             qs = qs.none()
     if filter_params.get('kategorija'):
-        category = Category.objects.filter(
-            slug=filter_params['kategorija'], aktivan=True,
-        ).first()
+        category = _catalog_filter_category(filter_params['kategorija'])
         if category:
-            qs = qs.filter(kategorija_id__in=category.get_descendant_ids())
+            qs = qs.filter(kategorija_id__in=_catalog_filter_category_ids(category))
         else:
             qs = qs.none()
     return qs
@@ -656,6 +656,29 @@ def _get_filter_params(request):
         'izdvojeno': request.GET.get('izdvojeno', '').strip(),
         'nedostaje': missing,
     }
+
+
+def _catalog_filter_brand(slug):
+    """Reuse a public filter lookup within one GET, including absent brands."""
+    return request_read(
+        ('catalog-filter-brand', slug),
+        lambda: Brand.objects.filter(slug=slug).first(),
+    )
+
+
+def _catalog_filter_category(slug):
+    return request_read(
+        ('catalog-filter-category', slug),
+        lambda: Category.objects.filter(slug=slug, aktivan=True).first(),
+    )
+
+
+def _catalog_filter_category_ids(category):
+    # The results and size filters traverse the same subtree several times.
+    return request_read(
+        ('catalog-filter-category-ids', category._state.db, category.pk),
+        lambda: tuple(category.get_descendant_ids()),
+    )
 
 
 _CATALOG_SCOPE_KEYS = frozenset({'all'})
@@ -1308,11 +1331,18 @@ def _product_ids_for_product_tag_query(query):
     if not raw or len(raw) < 2:
         return set()
     key = _phrase_key(raw) or raw.casefold()
-    ids = set(_product_ids_for_tag_query_cached(key))
+    def matched_ids(value):
+        # Keep cross-worker freshness: this cache ends with the current GET.
+        return request_read(
+            ('product-tag-query-ids', value),
+            lambda: _product_ids_for_tag_query_cached(value),
+        )
+
+    ids = set(matched_ids(key))
     # Dopuna: folded drugačiji od raw (diakritika)
     folded_raw = _search_fold(raw)
     if folded_raw and folded_raw != key:
-        ids |= set(_product_ids_for_tag_query_cached(folded_raw))
+        ids |= set(matched_ids(folded_raw))
     return ids
 
 
@@ -2055,12 +2085,12 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     if params.get('noviteti'):
         products_qs = _new_offer_catalog_qs(products_qs)
     if params.get('brend'):
-        brand = Brand.objects.filter(slug=params['brend']).first()
+        brand = _catalog_filter_brand(params['brend'])
         products_qs = products_qs.filter(brend_id=brand.pk) if brand else products_qs.none()
     if params.get('kategorija'):
-        category = Category.objects.filter(slug=params['kategorija'], aktivan=True).first()
+        category = _catalog_filter_category(params['kategorija'])
         if category:
-            products_qs = products_qs.filter(kategorija_id__in=category.get_descendant_ids())
+            products_qs = products_qs.filter(kategorija_id__in=_catalog_filter_category_ids(category))
         else:
             products_qs = products_qs.none()
     if allowed_category_ids is not None:
@@ -2094,15 +2124,15 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
         products = [product for product in products if product.kategorija_id in allowed]
 
     if params['kategorija']:
-        category = Category.objects.filter(slug=params['kategorija'], aktivan=True).first()
+        category = _catalog_filter_category(params['kategorija'])
         if category:
-            category_ids = set(category.get_descendant_ids())
+            category_ids = set(_catalog_filter_category_ids(category))
             if allowed_category_ids is not None:
                 category_ids &= set(allowed_category_ids)
             products = [product for product in products if product.kategorija_id in category_ids]
 
     if params['brend']:
-        brand = Brand.objects.filter(slug=params['brend']).first()
+        brand = _catalog_filter_brand(params['brend'])
         if brand:
             products = [product for product in products if product.brend_id == brand.pk]
 
@@ -2518,12 +2548,14 @@ def _home_featured_products(request=None):
     if _staff_edit_mode_enabled(request):
         return _home_featured_products_uncached(request)
     return _home_cache_get(
-        'home_featured_products_v4',
+        'home_featured_products_v5',
         lambda: _home_featured_products_uncached(request),
     )
 
 
 def _home_featured_products_uncached(request=None):
+    from .models import AkcijaFlashLine
+
     base_qs = _home_product_queryset(request)
     marked = list(
         _order_qs_by_lager_priority(
@@ -2546,6 +2578,7 @@ def _home_featured_products_uncached(request=None):
         'artikal', 'artikal__kategorija', 'artikal__brend',
     ).prefetch_related(
         Prefetch('artikal__varijacije', queryset=_in_stock_variations_qs()),
+        Prefetch('artikal__akcija_flash_lines', queryset=AkcijaFlashLine.objects.select_related('akcija').filter(akcija__aktivan=True)),
     ).order_by(
         '-artikal__prioritet_lagera', 'redoslijed', '-id',
     )[:HOME_SECTION_PRODUCT_LIMIT]
@@ -2658,21 +2691,33 @@ def _home_brand_showcases(request=None):
 
 
 def _home_brand_showcases_uncached(request=None):
-    entries = HomeBrandShowcase.objects.filter(
+    entries = list(HomeBrandShowcase.objects.filter(
         aktivan=True,
-    ).select_related('brend').order_by('redoslijed', 'id')
+    ).select_related('brend').order_by('redoslijed', 'id'))
+    if not entries:
+        return []
 
     home_url = reverse('home')
     # Strogo max 10 artikala u karuselu
     brand_limit = min(10, HOME_SECTION_PRODUCT_LIMIT)
+    # Limit each brand in SQL, then hydrate/prefetch the selected cards together.
+    # An ordinary global LIMIT would drop products from later brand sections.
+    products_by_brand = {}
+    selected = _order_qs_by_lager_priority(
+        _home_product_queryset(request).filter(brend_id__in={entry.brend_id for entry in entries}),
+        '-kreiran',
+    ).annotate(
+        _brand_section_rank=Window(
+            expression=RowNumber(),
+            partition_by=[F('brend_id')],
+            order_by=[F('prioritet_lagera').desc(), F('kreiran').desc()],
+        ),
+    ).filter(_brand_section_rank__lte=brand_limit)
+    for product in selected:
+        products_by_brand.setdefault(product.brend_id, []).append(product)
     sections = []
     for entry in entries:
-        products = list(
-            _order_qs_by_lager_priority(
-                _home_product_queryset(request).filter(brend_id=entry.brend_id),
-                '-kreiran',
-            )[:brand_limit],
-        )
+        products = products_by_brand.get(entry.brend_id, [])
         if not products:
             continue
         brand = entry.brend
@@ -2876,7 +2921,7 @@ def home(request):
             else:
                 catalog_subtitle = 'Trenutno nema artikala na stanju.'
         elif filter_params.get('brend'):
-            brand = Brand.objects.filter(slug=filter_params['brend']).first()
+            brand = _catalog_filter_brand(filter_params['brend'])
             if brand:
                 catalog_title = brand.naziv
                 if result_count:
@@ -3024,7 +3069,7 @@ def home(request):
         'catalog_subtitle': catalog_subtitle,
         'catalog_query': _catalog_query_string(filter_params),
         'elided_page_range': _catalog_page_numbers(page_obj),
-        'selected_brand': Brand.objects.filter(slug=filter_params['brend']).first() if filter_params.get('brend') else None,
+        'selected_brand': _catalog_filter_brand(filter_params['brend']) if filter_params.get('brend') else None,
         'home_section_product_visible': HOME_SECTION_PRODUCT_VISIBLE,
         'home_section_product_visible_mobile': HOME_SECTION_PRODUCT_VISIBLE_MOBILE,
         'canonical_url': settings.SEO_CANONICAL_URL + '/',
@@ -4719,7 +4764,7 @@ def _coupon_choices(request):
 def _cart_context(request, cart):
     loyalty_card = _loyalty_za_kupon(request)
     cart_items = list(cart)
-    summary = cart.sazetak(user=request.user)
+    summary = cart.sazetak(user=request.user, cart_items=cart_items)
     applied_code = cart.get_coupon_code() if cart.is_coupon_applied() else ''
     if not applied_code:
         applied_code = summary.get('kupon_kod') or ''
@@ -5304,10 +5349,10 @@ def checkout(request):
     }
     if request.method == 'GET':
         initiate_checkout_event_id = f'initiatecheckout-{uuid.uuid4().hex}'
-        track_initiate_checkout(request, cart, event_id=initiate_checkout_event_id)
+        track_initiate_checkout(request, context['cart_items'], event_id=initiate_checkout_event_id)
         initiate_contents = []
         initiate_value = Decimal('0')
-        for item in cart:
+        for item in context['cart_items']:
             content_id = str(item.get('sifra') or item['product_id'])
             quantity = item['quantity']
             price = Decimal(item['cijena'])
@@ -5321,7 +5366,7 @@ def checkout(request):
         context['meta_initiate_content_ids'] = ','.join(row['id'] for row in initiate_contents)
         context['meta_initiate_contents'] = json.dumps(initiate_contents, ensure_ascii=False)
         context['meta_initiate_value'] = initiate_value
-        context['meta_initiate_num_items'] = sum(item['quantity'] for item in cart)
+        context['meta_initiate_num_items'] = sum(item['quantity'] for item in context['cart_items'])
 
     # Remove deal and popup discount info from checkout (they only work/shows in cart/product detail)
     for item in context.get('cart_items', []):
@@ -5769,6 +5814,8 @@ def account(request):
 
     orders = list(
         Order.objects.filter(korisnik=request.user).exclude(status=Order.Status.CEKA_PLACANJE)
+        .select_related('b2b_submission', 'card_payment')
+        .defer('card_payment__checkout_snapshot', 'card_payment__checkout_context', 'card_payment__finalization_steps')
         .prefetch_related('stavke')
         .order_by('-kreirana')
     )

@@ -46,6 +46,7 @@ class TTFBDiagnosticsTests(SimpleTestCase):
         self.assertIn('existing;dur=2, django;dur=1500.00', result['Server-Timing'])
         self.assertIn('sql;dur=100.00;desc="1 queries"', result['Server-Timing'])
         self.assertIn('db_connect;dur=200.00;desc="1 attempts"', result['Server-Timing'])
+        self.assertIn('sql_max;dur=100.00', result['Server-Timing'])
         request_id = result['X-TTFB-Request-ID']
         UUID(hex=request_id)
         self.assertIn('request_id=' + request_id, logs.output[0])
@@ -53,6 +54,22 @@ class TTFBDiagnosticsTests(SimpleTestCase):
         for secret in ('customer-secret', 'private-secret', 'untrusted-secret', 'private-sql', 'private-param', 'private-password'):
             self.assertNotIn(secret, str(logs.output) + str(dict(result.headers)))
         self.assertNotIn('get_new_connection', self.database.__dict__)
+
+    def test_longest_query_and_slow_count_include_failed_queries_without_sql_text(self):
+        timings = Timings()
+        def fail(*args):
+            raise RuntimeError('driver failure')
+        with patch('EcommerceApp.middleware.ttfb_diagnostics.perf_counter',
+                   side_effect=[0, .05, 1, 1.2, 2, 2.4]):
+            timings.execute(lambda *args: None, 'SELECT private-one', ['private-param'], False, {})
+            timings.execute(lambda *args: None, 'SELECT private-two', [], False, {})
+            with self.assertRaises(RuntimeError):
+                timings.execute(fail, 'SELECT private-three', [], False, {})
+        self.assertEqual(timings.sql_count, 3)
+        self.assertAlmostEqual(timings.sql_seconds, .65)
+        self.assertAlmostEqual(timings.sql_max_seconds, .4)
+        self.assertEqual(timings.slow_sql_count, 2)
+        self.assertNotIn('private', str(timings))
 
     def test_fast_and_exact_threshold_requests_do_not_log(self):
         for duration in (.02, 1.0):

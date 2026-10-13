@@ -1,0 +1,596 @@
+{
+  "method": "Local synthetic frozen fixtures; no production database or external browser requests.",
+  "djangoFrontendTestsPassed": 25,
+  "carousel": [
+    {
+      "width": 390,
+      "beforeStyleReads": 6,
+      "afterStyleReads": 0,
+      "unchangedGeometry": true,
+      "states": {
+        "initial": [
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          },
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          },
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          }
+        ],
+        "next1": [
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          },
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          },
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          }
+        ],
+        "prev2": [
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          },
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          },
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          }
+        ],
+        "prev3": [
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          },
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          },
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          }
+        ],
+        "next4": [
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          },
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          },
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          }
+        ],
+        "resized": [
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          },
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          },
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          }
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "beforeStyleReads": 6,
+      "afterStyleReads": 0,
+      "unchangedGeometry": true,
+      "states": {
+        "initial": [
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          },
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          },
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          }
+        ],
+        "next1": [
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          },
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          },
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          }
+        ],
+        "prev2": [
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          },
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          },
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          }
+        ],
+        "prev3": [
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          },
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          },
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          }
+        ],
+        "next4": [
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          },
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          },
+          {
+            "width": "186.66666666666666px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 1180,
+            "slideWidth": 186.65625
+          }
+        ],
+        "resized": [
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          },
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          },
+          {
+            "width": "170px",
+            "transform": "translate3d(0px, 0px, 0px)",
+            "viewportWidth": 350,
+            "slideWidth": 170
+          }
+        ]
+      }
+    }
+  ],
+  "productPreload": [
+    {
+      "width": 390,
+      "before": {
+        "currentSrc": "/frontend-qa/product-1200.jpg",
+        "geometry": {
+          "x": 78,
+          "y": 162.5,
+          "width": 296,
+          "height": 296
+        },
+        "requests": [
+          "/frontend-qa/product-1200.jpg",
+          "/frontend-qa/product-400.jpg"
+        ]
+      },
+      "after": {
+        "currentSrc": "/frontend-qa/product-400.jpg",
+        "geometry": {
+          "x": 78,
+          "y": 162.5,
+          "width": 296,
+          "height": 296
+        },
+        "requests": [
+          "/frontend-qa/product-400.jpg"
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "before": {
+        "currentSrc": "/frontend-qa/product-1200.jpg",
+        "geometry": {
+          "x": 211.59375,
+          "y": 199.5,
+          "width": 561.875,
+          "height": 375
+        },
+        "requests": [
+          "/frontend-qa/product-1200.jpg",
+          "/frontend-qa/product-800.jpg"
+        ]
+      },
+      "after": {
+        "currentSrc": "/frontend-qa/product-800.jpg",
+        "geometry": {
+          "x": 211.59375,
+          "y": 199.5,
+          "width": 561.875,
+          "height": 375
+        },
+        "requests": [
+          "/frontend-qa/product-800.jpg"
+        ]
+      }
+    }
+  ],
+  "visual": {
+    "widths": [
+      390,
+      1440
+    ],
+    "pages": [
+      "home",
+      "nohero",
+      "category",
+      "search",
+      "product",
+      "cart",
+      "cart-full",
+      "checkout",
+      "nalog",
+      "wms"
+    ],
+    "pageErrorCount": 0,
+    "geometryIdenticalPairs": 20,
+    "heroFixtureRechecked": [
+      {
+        "width": 390,
+        "page": "home",
+        "geometryIdentical": true,
+        "pixelIdentical": false,
+        "maximumChannelDelta": 1
+      },
+      {
+        "width": 390,
+        "page": "nohero",
+        "geometryIdentical": true,
+        "pixelIdentical": true,
+        "maximumChannelDelta": 0
+      },
+      {
+        "width": 1440,
+        "page": "home",
+        "geometryIdentical": true,
+        "pixelIdentical": true,
+        "maximumChannelDelta": 0
+      },
+      {
+        "width": 1440,
+        "page": "nohero",
+        "geometryIdentical": true,
+        "pixelIdentical": true,
+        "maximumChannelDelta": 0
+      }
+    ],
+    "pixelComparisonsFirstPass": [
+      {
+        "width": 390,
+        "page": "home",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 390,
+        "page": "nohero",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 390,
+        "page": "category",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 390,
+        "page": "search",
+        "sameSize": true,
+        "changedPixels": 336,
+        "changedPercent": 0.03358,
+        "maximumChannelDelta": 1,
+        "bbox": [
+          196,
+          741,
+          364,
+          852
+        ]
+      },
+      {
+        "width": 390,
+        "page": "product",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 390,
+        "page": "cart",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 390,
+        "page": "cart-full",
+        "sameSize": true,
+        "changedPixels": 146,
+        "changedPercent": 0.01339,
+        "maximumChannelDelta": 1,
+        "bbox": [
+          291,
+          741,
+          364,
+          852
+        ]
+      },
+      {
+        "width": 390,
+        "page": "checkout",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 390,
+        "page": "nalog",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 390,
+        "page": "wms",
+        "sameSize": true,
+        "changedPixels": 1,
+        "changedPercent": 0.0003,
+        "maximumChannelDelta": 1,
+        "bbox": [
+          243,
+          38,
+          244,
+          39
+        ]
+      },
+      {
+        "width": 1440,
+        "page": "home",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 1440,
+        "page": "nohero",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 1440,
+        "page": "category",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 1440,
+        "page": "search",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 1440,
+        "page": "product",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 1440,
+        "page": "cart",
+        "sameSize": true,
+        "changedPixels": 3,
+        "changedPercent": 0.00021,
+        "maximumChannelDelta": 1,
+        "bbox": [
+          258,
+          763,
+          836,
+          820
+        ]
+      },
+      {
+        "width": 1440,
+        "page": "cart-full",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 1440,
+        "page": "checkout",
+        "sameSize": true,
+        "changedPixels": 877,
+        "changedPercent": 0.0435,
+        "maximumChannelDelta": 16,
+        "bbox": [
+          872,
+          1268,
+          916,
+          1302
+        ]
+      },
+      {
+        "width": 1440,
+        "page": "nalog",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      },
+      {
+        "width": 1440,
+        "page": "wms",
+        "sameSize": true,
+        "changedPixels": 0,
+        "changedPercent": 0.0,
+        "maximumChannelDelta": 0,
+        "bbox": null
+      }
+    ],
+    "pixelIdenticalPairsFirstPass": 15
+  },
+  "delayedCriticalCSS": {
+    "scenarios": 12,
+    "computedStyleDifferences": 0,
+    "fixture": "Actual synthetic desktop/mobile hero plus separate nohero variant; all 12 scenarios rechecked after fixture correction."
+  },
+  "scope": "CSS, fonts, hero images and brand logo rules unchanged in this audit. Responsive preload fix removes duplicate requests where real responsive candidates are available; current remote storage uses original URLs.",
+  "activeJavaScript": {
+    "before": {
+      "rawBytes": 71543,
+      "gzipBytes": 16257,
+      "brotliBytes": 14621
+    },
+    "after": {
+      "rawBytes": 71459,
+      "gzipBytes": 16243,
+      "brotliBytes": 14602
+    }
+  }
+}

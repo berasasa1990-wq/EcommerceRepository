@@ -17,6 +17,9 @@ QA = Path('/private/tmp/carp-mobile-static-qa')
 
 class ThreadedServer(ThreadingMixIn, WSGIServer):
     daemon_threads = True
+    # Browser preload scanners can open many simultaneous static connections.
+    # The socketserver default backlog of five drops requests during audits.
+    request_queue_size = 128
 
 class QuietHandler(WSGIRequestHandler):
     def log_message(self, *args):

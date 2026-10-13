@@ -174,7 +174,7 @@
     <link rel="preload" href="{% static 'bera_reference/fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     {% if home_css_optimized %}
     {% include 'bera_reference/partials/home_critical_css.html' %}
-    <link rel="stylesheet" href="{% static 'bera_reference/css/home-first-screen.bundle.css' %}?v=20261013-speed">
+    {% include 'bera_reference/partials/home_first_screen_css.html' %}
     <link id="homeDeferredCss" rel="stylesheet" data-href="{% static 'bera_reference/css/home-core-rest.bundle.css' %}?v=20261013-speed">
     <script>
       (function () {

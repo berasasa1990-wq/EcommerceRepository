@@ -134,7 +134,7 @@ def get_active_upsell_offer(request):
 def _exclude_cart_products(offer_context, cart):
     if not offer_context or cart is None:
         return offer_context
-    cart_product_ids = {item['product_id'] for item in cart}
+    cart_product_ids = {item['product_id'] for item in cart.cart.values()}
     products = [
         product for product in offer_context['products']
         if product['id'] not in cart_product_ids

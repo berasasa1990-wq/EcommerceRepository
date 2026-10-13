@@ -32,6 +32,14 @@ class HomeCriticalDeliveryTests(SimpleTestCase):
         inline = template.split('<style id="home-popup-css">', 1)[1].rsplit('</style>', 1)[0]
         self.assertEqual(inline, minify_css((root / 'static/bera_reference/css/bera-offer-popup.css').read_text()))
 
+    def test_inline_first_screen_preserves_rules_and_relative_asset_urls(self):
+        root = Path(settings.BASE_DIR) / 'EcommerceApp'
+        template = (root / 'template/bera_reference/partials/home_first_screen_css.html').read_text()
+        inline = template.split('<style id="home-first-screen-css">', 1)[1].rsplit('</style>', 1)[0]
+        inline = re.sub(r"\{% static 'bera_reference/([^']+)' %\}", r'../\1', inline)
+        self.assertEqual(inline, (root / 'static/bera_reference/css/home-first-screen.bundle.css').read_text())
+        self.assertIn('.product-image', inline)
+
     def test_minified_outputs_preserve_all_rules_and_source_order(self):
         from scripts.build_home_css import ROOT, BUNDLES, bundle_content
         for name, sources in BUNDLES.items():
@@ -96,7 +104,8 @@ class HomeDeliveryRenderingTests(TestCase):
             'home_css_optimized': True, 'site_settings': SiteSettings(),
         })
         self.assertIn('id="home-critical-css"', html)
-        self.assertIn('/css/home-first-screen.bundle.css', html)
+        self.assertIn('id="home-first-screen-css"', html)
+        self.assertNotIn('/css/home-first-screen.bundle.css', html)
         self.assertIn('id="homeDeferredCss"', html)
         self.assertIn("media=\"print\" onload=\"this.media='all'\"", html)
         self.assertIn('<noscript>', html)

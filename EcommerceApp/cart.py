@@ -498,7 +498,7 @@ class Cart:
     def pdv_pregled(self):
         return izracunaj_pdv(self.ukupno)
 
-    def sazetak(self, user=None):
+    def sazetak(self, user=None, *, cart_items=None):
         from .live_visitor_offer import (
             has_free_shipping_reward,
             registration_reward_coupon_code,
@@ -521,12 +521,20 @@ class Cart:
             or has_free_shipping_reward(self.request, user)
         )
 
-        scratch_reward = scratch_cart_reward(self.request, self.ukupno)
+        # The caller may already have the current rendered lines. Keep this
+        # local to the calculation; a later call always reads fresh cart state.
+        if cart_items is None:
+            cart_items = list(self)
+        subtotal = sum(
+            (Decimal(str(item.get('ukupno_stavka', 0))) for item in cart_items),
+            Decimal('0'),
+        ).quantize(Decimal('0.01'))
+        scratch_reward = scratch_cart_reward(self.request, subtotal)
         summary = izracunaj_sazetak(
-            self.ukupno,
+            subtotal,
             user=user,
             coupon_code=coupon_code,
-            cart_items=list(self),
+            cart_items=cart_items,
             recovery_discount_percent=self.get_recovery_discount_percent(),
             free_shipping_reward=free_shipping_reward,
             prize_discount_percent=reward_discount_percent(self.request) + scratch_reward['percent'],

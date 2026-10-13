@@ -1,0 +1,97 @@
+[
+  {
+    "sample": 0,
+    "status": 200,
+    "dns_ms": 46.45,
+    "connect_ms": 53.22,
+    "tls_ms": 70.68,
+    "ttfb_ms": 1530.38,
+    "total_ms": 1582.28,
+    "download_bytes": 47167,
+    "headers": {
+      "content-encoding": "gzip",
+      "server": "cloudflare",
+      "server-timing": "django;dur=1414.34, sql;dur=984.03;desc=\"16 queries\", db_connect;dur=0.00;desc=\"0 attempts\"",
+      "x-ttfb-request-id": "42216e57214649b383dce8b7806ba44d",
+      "cf-cache-status": "DYNAMIC",
+      "cf-ray": "a49eb0875a3b0380-BEG"
+    },
+    "time_outside_django_ms": 116.04
+  },
+  {
+    "sample": 1,
+    "status": 200,
+    "dns_ms": 5.54,
+    "connect_ms": 11.38,
+    "tls_ms": 26.73,
+    "ttfb_ms": 958.24,
+    "total_ms": 1005.85,
+    "download_bytes": 47024,
+    "headers": {
+      "content-encoding": "gzip",
+      "server": "cloudflare",
+      "server-timing": "django;dur=886.14, sql;dur=517.49;desc=\"16 queries\", db_connect;dur=0.00;desc=\"0 attempts\"",
+      "x-ttfb-request-id": "4e610c6200d0401a998fc6ecc62ed35f",
+      "cf-cache-status": "DYNAMIC",
+      "cf-ray": "a49eb0cfbaede297-BEG"
+    },
+    "time_outside_django_ms": 72.1
+  },
+  {
+    "sample": 2,
+    "status": 200,
+    "dns_ms": 4.41,
+    "connect_ms": 10.4,
+    "tls_ms": 23.62,
+    "ttfb_ms": 977.13,
+    "total_ms": 1004.89,
+    "download_bytes": 47119,
+    "headers": {
+      "content-encoding": "gzip",
+      "server": "cloudflare",
+      "server-timing": "django;dur=883.37, sql;dur=484.03;desc=\"17 queries\", db_connect;dur=0.00;desc=\"0 attempts\"",
+      "x-ttfb-request-id": "3051102946f94f8bafaee15443e36d28",
+      "cf-cache-status": "DYNAMIC",
+      "cf-ray": "a49eb114bf129857-BEG"
+    },
+    "time_outside_django_ms": 93.76
+  },
+  {
+    "sample": 3,
+    "status": 200,
+    "dns_ms": 5.22,
+    "connect_ms": 11.76,
+    "tls_ms": 24.98,
+    "ttfb_ms": 1062.47,
+    "total_ms": 1194.73,
+    "download_bytes": 46992,
+    "headers": {
+      "content-encoding": "gzip",
+      "server": "cloudflare",
+      "server-timing": "django;dur=992.09, sql;dur=639.24;desc=\"16 queries\", db_connect;dur=0.00;desc=\"0 attempts\"",
+      "x-ttfb-request-id": "0147037bb0274551842cb3aed9d3cfed",
+      "cf-cache-status": "DYNAMIC",
+      "cf-ray": "a49eb159cc00c687-BEG"
+    },
+    "time_outside_django_ms": 70.38
+  },
+  {
+    "sample": 4,
+    "status": 200,
+    "dns_ms": 4.63,
+    "connect_ms": 11.61,
+    "tls_ms": 26.13,
+    "ttfb_ms": 4359.15,
+    "total_ms": 4382.0,
+    "download_bytes": 46956,
+    "headers": {
+      "content-encoding": "gzip",
+      "server": "cloudflare",
+      "server-timing": "django;dur=882.28, sql;dur=535.78;desc=\"16 queries\", db_connect;dur=0.00;desc=\"0 attempts\"",
+      "x-ttfb-request-id": "2be67700112746e5b69e037bf9421278",
+      "cf-cache-status": "DYNAMIC",
+      "cf-ray": "a49eb19fea30bbed-BEG"
+    },
+    "time_outside_django_ms": 3476.87
+  }
+]

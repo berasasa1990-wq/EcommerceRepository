@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 class Timings:
     sql_seconds: float = 0.0
     sql_count: int = 0
+    sql_max_seconds: float = 0.0
+    slow_sql_count: int = 0
     connect_seconds: float = 0.0
     connect_count: int = 0
 
@@ -24,7 +26,11 @@ class Timings:
         try:
             return execute(sql, params, many, context)
         finally:
-            self.sql_seconds += perf_counter() - started
+            elapsed = perf_counter() - started
+            self.sql_seconds += elapsed
+            self.sql_max_seconds = max(self.sql_max_seconds, elapsed)
+            if elapsed >= 0.1:
+                self.slow_sql_count += 1
 
 
 @contextmanager
@@ -79,7 +85,8 @@ class TTFBDiagnosticsMiddleware:
         sql_ms = timings.sql_seconds * 1000
         connect_ms = timings.connect_seconds * 1000
         metrics = (f'django;dur={app_ms:.2f}, sql;dur={sql_ms:.2f};desc="{timings.sql_count} queries", '
-                   f'db_connect;dur={connect_ms:.2f};desc="{timings.connect_count} attempts"')
+                   f'db_connect;dur={connect_ms:.2f};desc="{timings.connect_count} attempts", '
+                   f'sql_max;dur={timings.sql_max_seconds * 1000:.2f};desc="{timings.slow_sql_count} queries >=100ms"')
         previous = response.get('Server-Timing')
         response['Server-Timing'] = f'{previous}, {metrics}' if previous else metrics
         response['X-TTFB-Request-ID'] = request_id
@@ -89,8 +96,10 @@ class TTFBDiagnosticsMiddleware:
             route = getattr(match, 'url_name', None) or 'unresolved'
             logger.warning(
                 'Slow Django request request_id=%s route=%s method=%s status=%s '
-                'django_ms=%.2f sql_execute_ms=%.2f sql_count=%s db_connect_ms=%.2f db_connect_count=%s',
+                'django_ms=%.2f sql_execute_ms=%.2f sql_count=%s db_connect_ms=%.2f db_connect_count=%s '
+                'sql_max_ms=%.2f slow_sql_count=%s',
                 request_id, route, request.method, response.status_code,
                 app_ms, sql_ms, timings.sql_count, connect_ms, timings.connect_count,
+                timings.sql_max_seconds * 1000, timings.slow_sql_count,
             )
         return response
