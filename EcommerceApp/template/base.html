@@ -353,7 +353,7 @@
     }
     </style>
     <link rel="stylesheet" href="{% static 'css/product-card-reference.css' %}?v=20261014-larger-card-photos">
-    <link rel="stylesheet" href="{% static 'css/site-orange-theme.css' %}?v=20261014-white-stock-notify-text">
+    <link rel="stylesheet" href="{% static 'css/site-orange-theme.css' %}?v=20261014-notify-label-no-fill">
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}

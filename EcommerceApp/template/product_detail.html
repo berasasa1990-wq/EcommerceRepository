@@ -72,8 +72,6 @@
                     </svg>
                 </div>
                 {% endif %}
-                <button type="button" class="pd-desktop-gallery-arrow pd-desktop-gallery-prev" data-gallery-step="-1" aria-label="Prethodna slika artikla" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
-                <button type="button" class="pd-desktop-gallery-arrow pd-desktop-gallery-next" data-gallery-step="1" aria-label="Sljedeća slika artikla" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
                 {% if product.prikazna_slika %}
                 <button type="button" class="pd-zoom-button" id="productZoomOpen" aria-label="Uvećaj sliku artikla" aria-haspopup="dialog" aria-controls="productZoomDialog">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6M7 10h6M10 7v6"/></svg>
@@ -90,7 +88,6 @@
             </div>
             {% if product.prikazna_slika or product.dodatne_slike.exists %}
             <div class="pd-gallery-bar">
-                <button type="button" class="pd-mobile-gallery-arrow pd-mobile-gallery-prev" data-gallery-step="-1" aria-label="Prethodna slika artikla" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
 
                 <div class="product-thumbnails" id="productThumbnails" aria-label="Slike proizvoda">
                     {% if product.prikazna_slika %}{% with r=product.prikazna_slika_responsive %}
@@ -114,7 +111,6 @@
                     {% endwith %}
                     {% endfor %}
                 </div>
-                <button type="button" class="pd-mobile-gallery-arrow pd-mobile-gallery-next" data-gallery-step="1" aria-label="Sljedeća slika artikla" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
             </div>
             {% endif %}
         </div>

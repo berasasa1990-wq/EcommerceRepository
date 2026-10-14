@@ -53,6 +53,7 @@
         <button type="submit" class="btn btn-coupon btn-coupon--full"{% if coupon_choices|length > 1 %} data-coupon-choice-open aria-haspopup="dialog" aria-controls="couponChoiceDialog"{% endif %}>Primijeni kupon ili karticu <span aria-hidden="true">›</span></button>
     </form>
     {% endif %}
+    {% if coupon_next and coupon_next != 'cart' %}
     <details class="coupon-code-entry">
         <summary>Greb-Greb ili drugi kod za popust</summary>
         <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form">
@@ -63,4 +64,5 @@
             <button type="submit" class="btn btn-coupon">Primijeni kod</button>
         </form>
     </details>
+    {% endif %}
 </div>
