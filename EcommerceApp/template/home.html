@@ -85,6 +85,37 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
     border-top: 2px solid var(--ozr-orange, #FF5A00) !important;
     border-bottom: 2px solid var(--ozr-orange, #FF5A00);
 }
+/* Align every homepage section with the main banner. */
+body.home-mobile-reference main > :is(section,.featured-grid,.mobile-home-benefits,.home-trust-bar,.home-loyalty-banner,.home-sale-banner,.home-shop-brands,.home-vlog,.seo-text-block) {
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+@media (min-width: 1025px) {
+    body.home-mobile-reference main {
+        width: calc(100% - 48px) !important;
+        max-width: 1600px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding: 24px 0 !important;
+        box-sizing: border-box;
+    }
+}
+@media (max-width: 1024px) {
+    body.home-mobile-reference main {
+        width: calc(100% - 8px) !important;
+        max-width: none !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        box-sizing: border-box;
+    }
+}
 </style>
 {% endblock %}
 
