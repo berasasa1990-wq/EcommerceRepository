@@ -23,31 +23,13 @@ class WebOrdersOnlyTests(TestCase):
         with patch('EcommerceApp.views.render', side_effect=lambda r, t, c: c), patch('EcommerceApp.views._base_context', return_value={}):
             return view(request)
 
-    def test_validation_list_ignores_removed_filters_and_only_includes_pending_web_orders(self):
+    def test_list_count_total_and_search_only_include_web_orders(self):
         context = self.context(staff_orders_validation)
         self.assertEqual([o.pk for o in context['orders']], [self.web.pk])
         self.assertEqual(context['pending_count'], 1)
         self.assertEqual(context['pending_total'], Decimal('25'))
-        for params in ({'q': 'Prenos'}, {'source': 'magacin'},
-                       {'scratch': 'yes'}, {'date_to': '2000-01-01'}):
-            filtered = self.context(staff_orders_validation, params)
-            self.assertEqual([o.pk for o in filtered['orders']], [self.web.pk])
-            self.assertEqual(filtered['page_query'], 'sort=newest')
-            self.assertEqual(filtered['sort_query'], 'sort=oldest')
-
-    def test_validated_completed_and_cancelled_orders_are_excluded(self):
-        for overrides in (
-            {'lager_status': Order.LagerStatus.VALIDIRANO},
-            {'lager_status': Order.LagerStatus.OTKAZANO},
-            {'status': Order.Status.ZAVRSENA},
-            {'status': Order.Status.OTKAZANA},
-            {'status': Order.Status.CEKA_PLACANJE},
-        ):
-            Order.objects.create(ime_prezime='Isključena narudžba', ukupno=100, **overrides)
-        context = self.context(staff_orders_validation)
-        self.assertEqual([o.pk for o in context['orders']], [self.web.pk])
-        self.assertEqual(context['pending_count'], 1)
-        self.assertEqual(context['pending_total'], Decimal('25'))
+        for params in ({'q': 'Prenos'}, {'source': 'magacin'}):
+            self.assertEqual(list(self.context(staff_orders_validation, params)['orders']), [])
 
     def test_legacy_online_list_and_search_exclude_transfers(self):
         context = self.context(staff_online_orders, {'filter': 'sve'})

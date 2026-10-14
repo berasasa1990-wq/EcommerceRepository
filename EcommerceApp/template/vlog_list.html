@@ -1,7 +1,4 @@
 {% extends 'base.html' %}
-{% load static %}
-
-{% block storefront_page_style %}<link rel="stylesheet" href="{% static 'css/vlog-bera.css' %}?v=20261014"><script src="{% static 'js/vlog-list.js' %}?v=20261014" defer></script>{% endblock %}
 
 {% block page_title %}
 <title>{{ seo_title }}</title>
@@ -24,7 +21,7 @@
         {% if vlogs %}
         <div class="home-vlog-grid vlog-list-grid">
             {% for vlog in vlogs %}
-            <a href="{% url 'vlog_detail' vlog.slug %}" class="home-vlog-card" aria-label="{{ vlog.naslov }}"{% if forloop.counter > 8 %} hidden{% endif %}>
+            <a href="{% url 'vlog_detail' vlog.slug %}" class="home-vlog-card" aria-label="{{ vlog.naslov }}">
                 <div class="home-vlog-card-image-wrap">
                     <img src="{{ vlog.slika_url }}"
                          {% if vlog.slika_srcset %}srcset="{{ vlog.slika_srcset }}"{% endif %}
@@ -32,15 +29,13 @@
                          class="home-vlog-card-image"
                          width="{{ vlog.image_width }}"
                          height="{{ vlog.image_height }}"
-                         sizes="(max-width: 540px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                         sizes="(max-width: 768px) 50vw, 320px"
                          loading="lazy"
                          decoding="async">
                 </div>
-                <div class="vlog-card-caption"><h2>{{ vlog.naslov }}</h2><span>Čitaj više <span aria-hidden="true">→</span></span></div>
             </a>
             {% endfor %}
         </div>
-        {% if vlogs|length > 8 %}<button type="button" class="vlog-load-more" data-vlog-more>Prikaži još</button>{% endif %}
         {% else %}
         <p class="vlog-list-empty">Trenutno nema objava na blogu.</p>
         {% endif %}

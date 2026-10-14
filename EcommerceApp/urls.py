@@ -287,7 +287,6 @@ urlpatterns = [
         views_magacin.magacin_loyalty_telefon,
         name='staff_magacin_loyalty_telefon',
     ),
-    path('nalog/magacin/narudzbe/najava/', views_magacin.magacin_narudzbe_najava, name='staff_magacin_narudzbe_najava'),
     path('nalog/magacin/narudzbe/stampa/', views_magacin.magacin_narudzbe_stampa, name='staff_magacin_narudzbe_stampa'),
     path(
         'nalog/magacin/narudzbe/stampa-kolicine/',

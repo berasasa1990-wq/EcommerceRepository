@@ -41,7 +41,7 @@
             data.results.forEach(item=>{
                 const row=element('article','mobile-search-result');const link=element('a','mobile-search-result__main');link.href=item.url;
                 const img=element('img','');img.src=item.image||'';img.alt='';if(item.image)link.append(img);
-                const copy=element('div','');copy.append(element('small','',item.brand||''),element('strong','',item.naziv),element('small','',`Šifra: ${item.sifra||''}`),element('span',item.in_stock?'search-stock':'search-stock search-stock--out',item.in_stock?'Na stanju':'Nije na stanju'));link.append(copy);row.append(link);
+                const copy=element('div','');copy.append(element('small','',item.brand||''),element('strong','',item.naziv),element('small','',`Šifra: ${item.sifra||''}`),element('span',item.in_stock?'search-stock':'search-stock search-stock--out',item.in_stock?'● Na stanju':'Nije na stanju'));link.append(copy);row.append(link);
                 const side=element('div','mobile-search-result__side');side.append(element('strong','',`${item.price.replace('.',',')} KM`));
                 if(item.in_stock && item.variation_ids?.length<=1){
                     const add=element('button','','');add.type='button';add.setAttribute('aria-label',`Dodaj u korpu — ${item.naziv}`);add.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="7" width="14" height="15" rx="2"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg>';

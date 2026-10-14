@@ -20,7 +20,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db import DatabaseError, IntegrityError, transaction
-from django.db.models import Case, Count, Exists, F, IntegerField, Max, Min, OuterRef, Subquery, Prefetch, Q, Sum, Value, When
+from django.db.models import Case, Count, Exists, F, IntegerField, Max, Min, OuterRef, Prefetch, Q, Sum, Value, When
 from django.db.models.functions import Lower, Trim, TruncDate
 from django.utils import timezone
 from django.http import Http404, HttpResponse, JsonResponse
@@ -316,7 +316,6 @@ def _invalidate_storefront_product_caches():
     for key in (
         'home_latest_products_v4',
         'home_featured_products_v4',
-        'home_featured_webshop_sales_in_stock_v2',
         'home_sale_products_v4',
         'home_brand_show_v4',
         'showcase_brands_v2',
@@ -394,16 +393,6 @@ def _akcija_products_qs(products_qs):
     ).distinct()
 
 
-def _latest_warehouse_import_products(qs):
-    """Novo contains only products linked to the latest saved warehouse import."""
-    from .models import Uvoz, UvozStavka
-    latest_id = Uvoz.objects.filter(izvor=Uvoz.Izvor.MAGACIN).order_by('-kreiran', '-pk').values_list('pk', flat=True).first()
-    if latest_id is None:
-        return qs.none()
-    product_ids = UvozStavka.objects.filter(uvoz_id=latest_id, product_id__isnull=False).values('product_id')
-    return qs.filter(pk__in=product_ids)
-
-
 def _filter_size_scope_qs(filter_params, base_qs=None, *, request=None):
     """
     QS iz kojeg se grade filteri veličina/dužina/debljina.
@@ -418,7 +407,7 @@ def _filter_size_scope_qs(filter_params, base_qs=None, *, request=None):
     if filter_params.get('izdvojeno'):
         qs = _featured_catalog_qs(qs, request)
     if filter_params.get('noviteti'):
-        qs = _latest_warehouse_import_products(qs)
+        qs = qs.filter(na_stanju=True, stanje__gt=0)
     if filter_params.get('brend'):
         brand = Brand.objects.filter(slug=filter_params['brend']).first()
         if brand:
@@ -1964,7 +1953,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     if params.get('izdvojeno'):
         products_qs = _featured_catalog_qs(products_qs, request)
     if params.get('noviteti'):
-        products_qs = _latest_warehouse_import_products(products_qs)
+        products_qs = products_qs.filter(na_stanju=True, stanje__gt=0)
     if params.get('brend'):
         brand = Brand.objects.filter(slug=params['brend']).first()
         products_qs = products_qs.filter(brend_id=brand.pk) if brand else products_qs.none()
@@ -2032,6 +2021,9 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
             _bind_variation_parents(product)
         products = [product for product in products if _product_is_on_sale(product)]
 
+    if params['noviteti']:
+        products = [product for product in products if product.na_stanju and product.stanje > 0]
+
     if params['velicina']:
         size_label = params['velicina']
         products = [
@@ -2066,8 +2058,6 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
             -p.kreiran.timestamp() if p.je_novitet else 0,
         ))
     products = _oos_at_end(products)
-    if params.get('izdvojeno') and sort not in ('rastuca', 'opadajuca'):
-        products.sort(key=lambda product: (-(product.webshop_ordered_quantity or 0), product.naziv, product.pk))
     # Store the actual submitted webshop search, not every autocomplete keystroke.
     if search_q and len(search_q) >= 2 and not request.path.startswith(('/nalog/', '/app/')):
         if request.session.session_key is None:
@@ -2080,7 +2070,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     return products, params
 
 
-CATALOG_PRODUCTS_PER_PAGE = 20
+CATALOG_PRODUCTS_PER_PAGE = 49
 HOME_PRODUCTS_PER_PAGE = CATALOG_PRODUCTS_PER_PAGE
 HOME_PRODUCT_ORDER_KEY = 'home_product_ids'
 HOME_FILTER_KEY = 'home_filter_key'
@@ -2389,40 +2379,70 @@ def _fill_home_section_products(products, request=None):
 
 
 def _home_latest_products(request=None):
+    # Svako otvaranje bira novi uzorak; ne keširaj slučajni izbor.
     return _home_latest_products_uncached(request)
 
 
 def _home_latest_products_uncached(request=None):
-    """Use the same latest-import scope and default order as the header's Novo catalog."""
-    products = list(_latest_warehouse_import_products(_product_queryset(request)))
-    products = _oos_at_end(_sort_products_by_lager_priority(products, price_sort='rastuca'))
-    return products[:HOME_SECTION_PRODUCT_LIMIT]
+    candidates = Product.objects.filter(aktivan=True, na_stanju=True, stanje__gt=0)
+    if not _staff_edit_mode_enabled(request):
+        candidates = candidates.filter(sakriven_do_stanja=False)
+    # IDs do not need product-card joins, variation counts or prefetches.
+    recent_ids = list(candidates.order_by('-kreiran', '-pk').values_list('pk', flat=True)[:50])
+    selected_ids = random.sample(recent_ids, min(HOME_SECTION_PRODUCT_LIMIT, len(recent_ids)))
+    products = {product.pk: product for product in _home_product_queryset(request).filter(pk__in=selected_ids)}
+    return [products[pk] for pk in selected_ids if pk in products]
 
 
 def _featured_catalog_qs(products_qs, request=None):
-    """Rank by quantities ordered through the webshop, excluding cancelled/unpaid orders."""
-    sales = (
-        OrderItem.objects.filter(
-            artikal_id=OuterRef('pk'), narudzba__izvor=Order.Izvor.WEBSHOP,
-        )
-        .exclude(narudzba__status__in=[Order.Status.OTKAZANA, Order.Status.CEKA_PLACANJE])
-        .order_by().values('artikal_id')
-        .annotate(quantity=Sum('kolicina')).values('quantity')
-    )
-    return products_qs.filter(na_stanju=True, stanje__gt=0).annotate(
-        webshop_ordered_quantity=Subquery(sales, output_field=IntegerField()),
-    ).filter(webshop_ordered_quantity__gt=0).order_by('-webshop_ordered_quantity', 'naziv', 'pk')
+    base_qs = _home_product_queryset(request)
+    marked = base_qs.filter(je_hit=True)
+    if marked.exists():
+        return products_qs.filter(pk__in=marked.values('pk'))
+    selected_ids = HomeFeaturedProduct.objects.filter(aktivan=True).values('artikal_id')
+    return products_qs.filter(pk__in=base_qs.filter(pk__in=selected_ids).values('pk'))
 
 
 def _home_featured_products(request=None):
+    """
+    Izdvojeni na početnoj:
+    1) Artikli označeni „HIT / Izdvojeno” (je_hit)
+    2) Fallback: ručni HomeFeaturedProduct
+    Među njima: redukovanje lagera ima prednost.
+    """
     return _home_cache_get(
-        'home_featured_webshop_sales_in_stock_v2',
+        'home_featured_products_v4',
         lambda: _home_featured_products_uncached(request),
     )
 
 
 def _home_featured_products_uncached(request=None):
-    return list(_featured_catalog_qs(_product_queryset(request), request)[:HOME_SECTION_PRODUCT_LIMIT])
+    base_qs = _home_product_queryset(request)
+    marked = list(
+        _order_qs_by_lager_priority(
+            base_qs.filter(je_hit=True),
+            '-kreiran', '-id',
+        )[:HOME_SECTION_PRODUCT_LIMIT],
+    )
+    if marked:
+        return marked
+
+    entries_qs = HomeFeaturedProduct.objects.filter(
+        aktivan=True,
+        artikal__aktivan=True,
+        artikal__na_stanju=True,
+        artikal__stanje__gt=0,
+    )
+    if not _staff_edit_mode_enabled(request):
+        entries_qs = entries_qs.filter(artikal__sakriven_do_stanja=False)
+    entries = entries_qs.select_related(
+        'artikal', 'artikal__kategorija', 'artikal__brend',
+    ).prefetch_related(
+        Prefetch('artikal__varijacije', queryset=_in_stock_variations_qs()),
+    ).order_by(
+        '-artikal__prioritet_lagera', 'redoslijed', '-id',
+    )[:HOME_SECTION_PRODUCT_LIMIT]
+    return [entry.artikal for entry in entries]
 
 
 def _home_sale_products(request=None):
@@ -2554,14 +2574,16 @@ def _home_brand_showcases_uncached(request=None):
 
 
 def _related_category_products(product, limit=HOME_SECTION_PRODUCT_LIMIT, request=None):
-    """Povezani iz iste kategorije: na stanju prvo, zatim prioritet lagera."""
+    """Slični / povezani — ista kategorija, prednost redukovanju lagera."""
     if not product.kategorija_id:
         return []
     return list(
-        _product_queryset(request)
-        .filter(kategorija_id=product.kategorija_id)
-        .exclude(pk=product.pk)
-        .order_by('-na_stanju', '-prioritet_lagera', '-kreiran', '-pk')[:limit]
+        _order_qs_by_lager_priority(
+            _product_queryset(request)
+            .filter(kategorija_id=product.kategorija_id)
+            .exclude(pk=product.pk),
+            '-kreiran',
+        )[:limit],
     )
 
 
@@ -2763,14 +2785,14 @@ def home(request):
             else:
                 catalog_subtitle = 'Trenutno nema artikala na akciji.'
         elif filter_params.get('izdvojeno'):
-            catalog_title = 'Najprodavanije'
-            catalog_subtitle = f'{result_count} artikala naručivanih preko webshopa.' if result_count else 'Trenutno nema naručenih artikala.'
+            catalog_title = 'Izdvojeno za vas'
+            catalog_subtitle = f'{result_count} izdvojenih artikala.' if result_count else 'Trenutno nema izdvojenih artikala.'
         elif filter_params.get('noviteti'):
             catalog_title = 'Noviteti'
             if result_count:
-                catalog_subtitle = f'{result_count} artikala iz posljednjeg uvoza.'
+                catalog_subtitle = f'{result_count} artikala na stanju.'
             else:
-                catalog_subtitle = 'Trenutno nema artikala iz posljednjeg uvoza.'
+                catalog_subtitle = 'Trenutno nema artikala na stanju.'
         elif filter_params.get('brend'):
             brand = Brand.objects.filter(slug=filter_params['brend']).first()
             if brand:
@@ -3482,48 +3504,10 @@ def product_detail(request, slug):
     context['product_urgency'] = build_product_urgency(product)
     context['olx_configured'] = bool(settings.OLX_API_TOKEN)
     context['staff_product_tools'] = _staff_edit_mode_enabled(request)
-    context['product_bundle'] = _product_page_plus_offer(product) or _product_page_bundle(product)
+    context['product_bundle'] = _product_page_bundle(product)
     context['flash_offer'] = _product_page_flash_offer(product)
 
     return render(request, 'product_detail.html', context)
-
-
-def _product_page_plus_offer(product):
-    """Show an active + Ponuda as a two-product offer using its existing cart flow."""
-    from .models import Akcija
-
-    if not product.na_stanju or product.stanje < 1 or product.varijacije.exists():
-        return None
-    offers = Akcija.objects.filter(
-        aktivan=True, tip=Akcija.Tip.PONUDA, artikal=product,
-        gratis_artikal__aktivan=True, gratis_artikal__na_stanju=True,
-        gratis_artikal__stanje__gte=1,
-    ).select_related('gratis_artikal').order_by('redoslijed', '-id')
-    for offer in offers:
-        if not offer.jos_traje() or offer.gratis_artikal.varijacije.exists():
-            continue
-        prices = offer.gratis_cijene_za_prikaz()
-        if not prices:
-            continue
-        items = []
-        for item, base, current in (
-            (product, product.cijena, product.prikazna_cijena),
-            (offer.gratis_artikal, offer.gratis_artikal.cijena, prices['snizena']),
-        ):
-            base = max(base, current)
-            items.append({
-                'product': item, 'quantity': 1,
-                'line_bazna': base, 'line_snizena': current,
-                'has_discount': base > current,
-            })
-        regular = sum(item['line_bazna'] for item in items)
-        total = sum(item['line_snizena'] for item in items)
-        return {
-            'akcija': offer, 'items': items, 'is_plus_offer': True,
-            'pricing': {'total_bazna': regular, 'total_snizena': total,
-                        'usteda': regular - total, 'has_discount': regular > total},
-        }
-    return None
 
 
 def _product_page_bundle(product):
@@ -5221,7 +5205,7 @@ def checkout(request):
 
 def order_success(request, broj):
     order = get_object_or_404(
-        Order.objects.prefetch_related('stavke__artikal', 'stavke__varijacija'),
+        Order.objects.prefetch_related('stavke'),
         broj=broj,
     )
     payment = getattr(order, 'card_payment', None)
@@ -5252,7 +5236,8 @@ def order_success(request, broj):
     context = {
         **_base_context(),
         'order': order,
-        'scratch_game_immediate': False,
+        'scratch_game_immediate': True,
+        'scratch_game_return_url': reverse('home'),
         **page_seo_context('order_success', defaults={
             'seo_title': 'Narudžba primljena — Carpologija BH',
             'seo_description': '',
@@ -5957,20 +5942,12 @@ def staff_order_detail(request, broj):
             return redirect('staff_magacin_narudzbe')
         if action == 'otkazi':
             from .magacin import MagacinError, cancel_order_stock
-            reason = (request.POST.get('razlog_otkazivanja') or '').strip()
-            if not reason:
-                return HttpResponse('Razlog otkazivanja je obavezan.', status=400)
             try:
-                with transaction.atomic():
-                    order = Order.objects.select_for_update().get(pk=order.pk)
-                    cancel_order_stock(order, user=request.user)
-                    order.razlog_otkazivanja = reason
-                    order.save(update_fields=['razlog_otkazivanja'])
+                cancel_order_stock(order, user=request.user)
                 messages.success(request, f'Narudžba #{order.broj} je otkazana — rezervacija je vraćena.')
             except MagacinError as exc:
                 messages.error(request, str(exc))
-                return redirect('staff_magacin_narudzbe')
-            return redirect(f"{reverse('staff_magacin_narudzbe')}?status=otkazana")
+            return redirect('staff_magacin_narudzbe')
 
     from .magacin import order_is_editable
     from .views_magacin import _magacin_context
@@ -5983,16 +5960,6 @@ def staff_order_detail(request, broj):
             f"{reverse('staff_magacin_narudzba_nova')}?broj={order.broj}" if can_edit else ''
         ),
     }
-    invoice_items = [
-        item for item in order.stavke.select_related('artikal', 'varijacija')
-        if not item.ledger_missing_line_id and item.kolicina_faktura > 0
-    ]
-    for row, item in zip(context['stavke'], invoice_items):
-        image = (
-            item.varijacija.slika if item.varijacija and item.varijacija.slika
-            else item.artikal.prikazna_slika if item.artikal else None
-        )
-        row['image_url'] = image.url if image else ''
     return render(request, 'staff/order_detail.html', context)
 
 
@@ -8012,6 +7979,34 @@ def staff_orders_validation(request):
     scratch_claims = OnlineGiftClaim.objects.filter(
         Q(scratch_tracking_enabled=True) | Q(campaign__naziv=SCRATCH_CAMPAIGN_NAME),
     )
+    orders = orders.annotate(has_scratch=Exists(scratch_claims.filter(
+        Q(scratch_trigger_order_id=OuterRef('pk')) | Q(order_id=OuterRef('pk')),
+    )))
+    query = (request.GET.get('q') or '').strip()
+    source = request.GET.get('source', '')
+    scratch = request.GET.get('scratch', '')
+    dates = {}
+    for key, lookup in [('date_from', 'kreirana__date__gte'), ('date_to', 'kreirana__date__lte')]:
+        raw = request.GET.get(key, '')
+        try:
+            parsed = date.fromisoformat(raw) if raw else None
+        except ValueError:
+            parsed = None
+            messages.error(request, 'Unesite ispravan datum.')
+        dates[key] = parsed.isoformat() if parsed else ''
+        if parsed:
+            orders = orders.filter(**{lookup: parsed})
+    if dates['date_from'] and dates['date_to'] and dates['date_from'] > dates['date_to']:
+        messages.error(request, 'Datum od mora biti prije datuma do.')
+    if source in Order.Izvor.values:
+        orders = orders.filter(izvor=source)
+    if scratch == 'yes':
+        orders = orders.filter(has_scratch=True)
+    elif scratch == 'no':
+        orders = orders.filter(has_scratch=False)
+    if query:
+        orders = orders.filter(Q(ime_prezime__icontains=query) | Q(telefon__icontains=query)
+                               | Q(email__icontains=query) | Q(broj__icontains=query))
     sort = 'oldest' if request.GET.get('sort') == 'oldest' else 'newest'
     orders = orders.order_by('kreirana' if sort == 'oldest' else '-kreirana', '-pk')
     page = Paginator(orders, 50).get_page(request.GET.get('page'))
@@ -8046,14 +8041,16 @@ def staff_orders_validation(request):
             for claim in order.scratch_details
         )
     page.object_list = page_orders
-    params = {'sort': sort}
-    page_query = urlencode(params)
+    params = request.GET.copy()
+    params.pop('page', None)
+    page_query = params.urlencode()
     params['sort'] = 'newest' if sort == 'oldest' else 'oldest'
     return render(request, 'staff/orders_validation.html', {
-        **_base_context(), 'orders': page, 'pending_count': pending_summary['count'],
+        **_base_context(), **dates, 'orders': page, 'pending_count': pending_summary['count'],
         'pending_total': pending_summary['total'] or Decimal('0.00'),
-        'sort': sort, 'page_query': page_query,
-        'sort_query': urlencode(params),
+        'search_query': query, 'source': source, 'scratch': scratch, 'sort': sort,
+        'source_choices': [(Order.Izvor.WEBSHOP, 'Web shop')], 'page_query': page_query,
+        'sort_query': params.urlencode(),
     })
 
 

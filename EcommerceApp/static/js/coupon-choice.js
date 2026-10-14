@@ -26,7 +26,7 @@
         if (event.key === 'Escape') {
             close();
         } else if (event.key === 'Tab') {
-            var focusable = dialog.querySelectorAll('button:not([disabled]), a[href]');
+            var focusable = dialog.querySelectorAll('button:not([disabled])');
             var first = focusable[0];
             var last = focusable[focusable.length - 1];
             if (event.shiftKey && document.activeElement === first) {

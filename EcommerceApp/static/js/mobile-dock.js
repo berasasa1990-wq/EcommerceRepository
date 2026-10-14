@@ -261,7 +261,6 @@
     categories?.addEventListener('close', restoreDock);
     categories?.addEventListener('cancel', restoreDock);
     categories?.querySelector('[data-categories-close]')?.addEventListener('click', closeCategories);
-    categories?.querySelector('[data-categories-brands]')?.addEventListener('click', closeCategories);
     categories?.addEventListener('click', event => { if (event.target === categories) { const r=categories.getBoundingClientRect(); if(event.clientX<r.left || event.clientX>r.right || event.clientY<r.top || event.clientY>r.bottom) closeCategories(); } });
     categories?.querySelectorAll('[data-category-entry]').forEach(entry => entry.addEventListener('toggle', () => {
         if (entry.open) categories.querySelectorAll('[data-category-entry]').forEach(other => { if (other !== entry) other.open = false; });

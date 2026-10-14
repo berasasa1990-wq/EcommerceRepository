@@ -1,45 +1,47 @@
 {% extends 'staff/magacin/base.html' %}
 {% load static %}
-{% block body_class %}{{ block.super }} is-order-overview{% endblock %}
+
+{% block body_class %}{{ block.super }} is-orders-reference is-invoice-view{% endblock %}
+
 {% block extra_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'css/staff-order-overview.css' %}?v=20261014-2">
+<link rel="stylesheet" href="{% static 'css/staff-orders-reference.css' %}?v=20260906-6">
+{% include 'partials/order_invoice_embed_styles.html' %}
+<style>
+/* Keep the warehouse shell anchored to the viewport; contain invoice overflow. */
+body.magacin-page.is-invoice-view>main{width:100%;max-width:none;margin:0;padding-left:0;padding-right:0;box-sizing:border-box}
+body.magacin-page.is-invoice-view #mgApp{width:100%;max-width:none;margin:0;direction:ltr;box-sizing:border-box}
+body.magacin-page.is-invoice-view #mgApp>.mg-main{overflow-x:auto;min-width:0}
+@media(min-width:861px){
+ body.magacin-page.is-invoice-view #mgApp{display:grid;grid-template-columns:var(--mg-sidebar) minmax(0,1fr);align-items:stretch}
+ body.magacin-page.is-invoice-view #mgApp>.mg-sidebar{grid-column:1;grid-row:1;margin:0;width:var(--mg-sidebar);min-width:0;box-sizing:border-box;transform:none}
+ body.magacin-page.is-invoice-view #mgApp>.mg-main{grid-column:2;grid-row:1;width:100%;max-width:100%}
+}
+body.magacin-page.is-invoice-view .mg-chrome,
+body.magacin-page.is-invoice-view .mg-menu-standalone{display:none}
+body.magacin-page.is-invoice-view .mg-main{flex:1;width:auto;max-width:none;margin:0;padding:4px 10px 18px;box-sizing:border-box;min-width:0}
+body.magacin-page.is-invoice-view .invoice-back-row{margin:0 0 8px}
+body.magacin-page.is-invoice-view .invoice-menu-toggle{display:none}
+@media(max-width:860px){body.magacin-page.is-invoice-view .invoice-menu-toggle{display:inline-flex}}
+body.magacin-page.is-invoice-view .invoice-back-row a{display:inline-flex;align-items:center;padding:8px 14px;border:1px solid #92949a;background:linear-gradient(115deg,#e8e8e9,#bfc1c4);box-shadow:inset 2px 2px #fff,inset -2px -2px #8f9195;color:#111;text-decoration:none;font-weight:700}
+body.magacin-page.is-invoice-view .mg-order-invoice-card{width:100%;max-width:none;padding:0;margin:0;border:0;border-radius:0;box-sizing:border-box}
+body.magacin-page.is-invoice-view .staff-order-invoice{width:100%;max-width:none;margin:0;padding:16px;box-sizing:border-box;border-radius:0}
+body.magacin-page.is-invoice-view .staff-order-invoice .doc{width:100%;max-width:none;margin:0}
+@media(max-width:600px){body.magacin-page.is-invoice-view .mg-main{padding:6px}body.magacin-page.is-invoice-view .staff-order-invoice{padding:10px;overflow-x:auto}}
+</style>
 {% endblock %}
-{% block magacin_search_bar %}
-<button type="button" class="mg-menu-standalone" id="mgNavToggle" aria-label="Meni magacina" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-{% endblock %}
+
 {% block magacin_content %}
-<div class="order-overview">
-    <header class="order-overview-head">
-        <div><p class="order-eyebrow">Pregled narudžbe</p><h1>Narudžba #{{ order.broj }}</h1></div>
-        <div class="order-actions"><a href="{% url 'staff_magacin_narudzbe' %}">← Narudžbe</a>{% if can_edit_order %}<a href="{{ edit_order_url }}">Izmijeni narudžbu</a>{% endif %}</div>
-    </header>
-    <div class="order-info-grid">
-        <section class="order-panel">
-            <h2>Podaci kupca</h2><h3>{{ order.display_customer_name }}</h3>
-            <dl class="order-details"><div><dt>Telefon</dt><dd>{{ order.telefon|default:"—" }}</dd></div><div><dt>Adresa</dt><dd>{{ order.adresa|default:"—" }}</dd></div><div><dt>Grad</dt><dd>{{ order.grad }}{% if order.postanski_broj %} {{ order.postanski_broj }}{% endif %}</dd></div>{% if order.napomena %}<div><dt>Napomena</dt><dd>{{ order.napomena|linebreaksbr }}</dd></div>{% endif %}</dl>
-        </section>
-        <section class="order-panel">
-            <h2>Informacije o narudžbi</h2>
-            <dl class="order-details"><div><dt>Status</dt><dd><span class="order-status">{{ order.get_status_label }}</span></dd></div><div><dt>Način naručivanja</dt><dd>{% if order.izvor == 'webshop' %}Online slanje{% else %}{{ order.get_izvor_display }}{% endif %}</dd></div><div><dt>Kreirano</dt><dd>{{ datum }} {{ vrijeme }}</dd></div></dl>
-        </section>
-    </div>
-    <section class="order-panel order-items">
-        <h2>Artikli <span class="order-count">{{ stavke|length }}</span></h2>
-        <div class="order-item-list">
-        {% for item in stavke %}
-            <article class="order-item">
-                <div class="order-product-image">{% if item.image_url %}<img src="{{ item.image_url }}" alt="{{ item.product_naziv|default:item.naziv }}" loading="lazy">{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-label="Nema slike"><path d="m12 3 9 5v8l-9 5-9-5V8zM3 8l9 5 9-5M12 13v8"/></svg>{% endif %}</div>
-                <div class="order-product-name"><h3>{{ item.product_naziv|default:item.naziv }}</h3>{% if item.varijacija_naziv %}<p>{{ item.varijacija_naziv }}</p>{% endif %}<p>Šifra: {{ item.sifra|default:"—" }}</p>{% if item.popust_opis %}<p class="order-discount">{{ item.popust_opis }}{% if item.discounted_unit_price %} · {{ item.discounted_qty }} kom. po {{ item.discounted_unit_price|floatformat:2 }} KM{% endif %}</p>{% endif %}</div>
-                <div class="order-item-value"><span>Cijena</span><strong class="order-money">{{ item.cijena|floatformat:2 }} KM</strong></div>
-                <div class="order-item-value"><span>Količina</span><strong>{{ item.kolicina }} kom</strong></div>
-                <div class="order-item-value"><span>Ukupno</span><strong class="order-money">{{ item.ukupno|floatformat:2 }} KM</strong></div>
-            </article>
-        {% empty %}<p>Nema artikala u narudžbi.</p>{% endfor %}
-        </div>
-    </section>
-    <section class="order-totals" aria-label="Obračun narudžbe">
-        <dl><div><dt>Bez PDV-a</dt><dd>{{ summary.pdv_artikli.bez_pdv|floatformat:2 }} KM</dd></div><div><dt>PDV (17%)</dt><dd>{{ summary.pdv_artikli.pdv|floatformat:2 }} KM</dd></div>{% if summary.popust %}<div><dt>{{ summary.popust_opis|default:"Popust" }}</dt><dd>−{{ summary.popust|floatformat:2 }} KM</dd></div>{% endif %}{% if summary.dostava %}<div><dt>Dostava</dt><dd>{{ summary.dostava|floatformat:2 }} KM</dd></div>{% endif %}<div class="order-grand-total"><dt>Ukupno za naplatu</dt><dd>{{ summary.ukupno|floatformat:2 }} KM</dd></div></dl>
-    </section>
+<div class="invoice-back-row">
+    <button type="button" class="mg-btn invoice-menu-toggle" onclick="document.getElementById('mgNavToggle').click()" aria-label="Otvori meni magacina">☰ Meni magacina</button>
+    <a href="{% url 'staff_magacin_narudzbe' %}">← Nazad na narudžbe</a>
+    {% if can_edit_order %}
+    <a href="{{ edit_order_url }}">Izmijeni narudžbu</a>
+    {% endif %}
 </div>
+<section class="mg-card mg-order-invoice-card" id="orderInvoice">
+    <div class="staff-order-invoice">
+        {% include 'partials/order_invoice_document.html' %}
+    </div>
+</section>
 {% endblock %}

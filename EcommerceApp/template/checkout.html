@@ -12,13 +12,12 @@
 {% block body_class %}is-cart-page is-checkout-page{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20261014-shared-mobile-header">
+<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20261006-desktop-wide">
 <link rel="stylesheet" href="{% static 'css/checkout-page.css' %}?v=20261006-desktop-wide">
-<link rel="stylesheet" href="{% static 'css/checkout-bera.css' %}?v=20261013">
 {% endblock %}
 
 {% block content %}
-<script src="{% static 'js/cart-stock.js' %}?v=20261014-status" defer></script>
+<script src="{% static 'js/cart-stock.js' %}?v=20260907" defer></script>
 <section data-cart-stock-url="{% url 'cart_stock' %}" class="checkout-page"{% if meta_pixel_id and meta_initiate_checkout_event_id %} data-meta-initiate-checkout data-event-id="{{ meta_initiate_checkout_event_id }}" data-num-items="{{ meta_initiate_num_items|default:0 }}" data-value="{{ meta_initiate_value }}" data-content-ids="{{ meta_initiate_content_ids }}" data-contents="{{ meta_initiate_contents }}"{% endif %}>
     <div class="checkout-heading">
         <div><h1>Plaćanje</h1><p>Unesite podatke za dostavu i potvrdite narudžbu.</p></div>

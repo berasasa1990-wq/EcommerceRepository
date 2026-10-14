@@ -17,13 +17,13 @@
         </div>
         {% endif %}
     </div>
+    <div class="product-brand-slot">
+        {% include 'partials/brand_display.html' with brand=product.brend %}
+    </div>
     {% if show_akcija_expiry and product.prikaz_akcija_istice %}
     <p class="product-sale-expiry">Akcija ističe {{ product.prikaz_akcija_istice|date:"d.m.Y." }}</p>
     {% endif %}
     <div class="product-info__price-row{% if product.pakovanje_uz_cijenu_kartica %} product-info__price-row--pack{% endif %}">
         {% include 'partials/product_card_price.html' with product=product %}
-    </div>
-    <div class="product-brand-slot">
-        {% include 'partials/product_brand_logo.html' with product=product %}
     </div>
 </div>

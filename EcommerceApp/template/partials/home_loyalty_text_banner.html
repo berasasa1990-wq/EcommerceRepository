@@ -1,7 +1,0 @@
-<section class="home-loyalty-text-banner" aria-label="Loyalty program">
-    <a class="bera-wide-promo" href="{% if user.is_authenticated %}{% url 'account' %}{% else %}{% url 'register' %}{% endif %}">
-        <div class="bera-wide-promo__copy"><span>LOYALTY PROGRAM</span><h2>VJERNOST SE ISPLATI</h2><p>Otkrijte pogodnosti za naše vjerne kupce.</p><span class="bera-offer-banner__button">{% if user.is_authenticated %}Moja loyalty kartica{% else %}Pridruži se{% endif %} <b aria-hidden="true">→</b></span></div>
-        <div class="bera-wide-promo__waves" aria-hidden="true"></div>
-        <span class="bera-wide-promo__seal" aria-hidden="true">LOYALTY<br><b>KLUB</b></span>
-    </a>
-</section>

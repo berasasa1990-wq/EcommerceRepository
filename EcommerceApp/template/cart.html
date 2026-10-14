@@ -12,9 +12,8 @@
 {% block body_class %}is-cart-page{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20261014-shared-mobile-header">
-<link rel="stylesheet" href="{% static 'css/coupon-choice.css' %}?v=20261014-auth">
-<link rel="stylesheet" href="{% static 'css/cart-bera.css' %}?v=20261014-pack-label">
+<link rel="stylesheet" href="{% static 'css/cart-page.css' %}?v=20261006-desktop-wide">
+<link rel="stylesheet" href="{% static 'css/coupon-choice.css' %}?v=20260920">
 {% endblock %}
 
 {% block content %}
@@ -54,7 +53,6 @@
             <form method="post" action="{% url 'update_cart' %}" class="cart-form">
                 {% csrf_token %}
                 <div class="cart-items" data-cart-stock-url="{% url 'cart_stock' %}">
-                <div class="bera-cart-columns" aria-hidden="true"><span>Proizvod</span><span>Cijena</span><span>Količina</span><span>Ukupno</span><span></span></div>
                 {% for item in cart_items %}
                 <article class="cart-item" data-cart-key="{{ item.key }}" data-unit-price="{% if item.deal_info and item.deal_info.has_discount and item.deal_info.discounted_unit_price %}{{ item.deal_info.discounted_unit_price }}{% elif item.discounted_unit_price %}{{ item.discounted_unit_price }}{% else %}{{ item.cijena_decimal }}{% endif %}">
                     <div class="cart-item-image">
@@ -82,22 +80,16 @@
                         </div>
                         {% endif %}
                         {% if item.sifra %}<p class="cart-item-meta">Šifra: {{ item.sifra }}</p>{% endif %}
-                        <p class="cart-item-stock" data-stock-label data-sold-out="{{ item.sold_out|yesno:'true,false' }}" role="status"{% if item.sold_out %} style="color:#b91c1c"{% endif %}>{% if item.sold_out %}Nije na stanju{% else %}Na stanju{% endif %}</p>
+                        <p class="cart-item-stock" data-stock-label data-sold-out="{{ item.sold_out|yesno:'true,false' }}" role="status"{% if item.sold_out %} style="color:#b91c1c"{% endif %}>{% if item.sold_out %}Rasprodat — uklonite iz korpe{% else %}<span aria-hidden="true">✓</span> Na stanju{% endif %}</p>
                         {% if item.pakovanje_label %}
                         <p class="cart-item-pack product-pack-line">
                             <span class="product-pack-badge product-pack-badge--card">
-                                <span class="product-pack-badge-text">{% if item.pakovanje_komada > 1 %}Cijena za {{ item.pakovanje_komada }} kom.{% else %}{{ item.pakovanje_cijena_hint }}{% endif %}</span>
+                                <span class="product-pack-badge-icon" aria-hidden="true">📦</span>
+                                <span class="product-pack-badge-text">{{ item.pakovanje_label }}</span>
                             </span>
+                            <span class="product-pack-hint">{{ item.pakovanje_cijena_hint }}</span>
                         </p>
                         {% endif %}
-
-                        {% if summary.kupon_primijenjen %}
-                            {% if item.na_akciji or item.deal_info.has_discount or item.discounted_unit_price %}
-                            <p class="cart-item-sale-notice" role="status">Artikal je već na sniženju.</p>
-                            {% endif %}
-                        {% endif %}
-                        {% include 'partials/korpa_nudjenje_inline.html' with nudjenje=item.korpa_nudjenje %}
-                    </div>
                         <p class="cart-item-price">
                             {% if item.coupon_unit_price != None %}
                                 <span class="price-discounted coupon-price-new">{{ item.coupon_unit_price }} KM</span>
@@ -115,6 +107,13 @@
                                 {{ item.cijena_decimal }} KM
                             {% endif %}
                         </p>
+                        {% if summary.kupon_primijenjen %}
+                            {% if item.na_akciji or item.deal_info.has_discount or item.discounted_unit_price %}
+                            <p class="cart-item-sale-notice" role="status">Artikal je već na sniženju.</p>
+                            {% endif %}
+                        {% endif %}
+                        {% include 'partials/korpa_nudjenje_inline.html' with nudjenje=item.korpa_nudjenje %}
+                    </div>
                     <div class="cart-item-controls">
                         <div class="cart-item-qty">
                             <label class="cart-qty-label" for="qty-{{ item.key }}">Kol.</label>
@@ -170,13 +169,16 @@
         </div>
 
         <aside class="cart-summary">
-            {% include 'partials/coupon_form.html' with coupon_next='cart' hide_code_entry=True %}
+            {% include 'partials/coupon_form.html' with coupon_next='cart' %}
             <div class="cart-review">
                 <h2>Pregled narudžbe</h2>
                 {% include 'partials/order_totals.html' with summary=summary %}<p class="cart-mobile-only cart-tax-note">PDV je uključen u cijenu.</p>
             </div>
             <div class="cart-summary-actions">
                 <a href="{% url 'checkout' %}" class="btn btn-primary btn-add-to-bag btn-cart-checkout" aria-disabled="{{ cart_has_sold_out|yesno:'true,false' }}">Nastavi na plaćanje</a>
+                <span class="cart-checkout-lock" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                </span>
             </div>
             <div class="cart-shipping-mobile">{% include 'partials/cart_free_shipping_bar.html' with summary=summary %}</div>
             <p class="cart-secure-note">Sigurna kupovina i plaćanje pouzećem</p><a class="cart-mobile-only cart-bottom-continue" href="{% url 'home' %}">Nastavi kupovinu</a>
@@ -193,7 +195,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/coupon-choice.js' %}?v=20261014-auth" defer></script>
+<script src="{% static 'js/coupon-choice.js' %}?v=20260920" defer></script>
 <script src="{% static 'js/cart-qty.js' %}?v=20260925-mobile-qty" defer></script>
-<script src="{% static 'js/cart-stock.js' %}?v=20261014-status" defer></script>
+<script src="{% static 'js/cart-stock.js' %}?v=20260907" defer></script>
 {% endblock %}

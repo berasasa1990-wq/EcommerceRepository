@@ -546,7 +546,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="search-suggestion-copy">
                     <span class="search-suggestion-name">${escapeHtml(item.naziv)}</span>
                     ${pack}
-                    <span class="search-stock${item.in_stock ? '' : ' search-stock--out'}">${item.in_stock ? 'Na stanju' : 'Nije na stanju'}</span>
                 </span>
                 <span class="search-suggestion-price${priceClass}">${escapeHtml(item.price)} KM</span>
             </a>`;
@@ -2572,7 +2571,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     bindCatalogAddButtons();
-    document.addEventListener('catalog:loaded', (event) => bindCatalogAddButtons(event.detail.root));
 
     document.querySelectorAll('[data-product-card]').forEach((card) => {
         const mainImage = card.querySelector('[data-main-image]');

@@ -49,7 +49,6 @@
 
                 <span class="cart-exit-product-meta">
                     <span class="cart-exit-product-name">{{ cart_exit_popup.product.naziv }}</span>
-                    {% include 'partials/product_stock_label.html' with product=cart_exit_popup.product %}
                     {% if cart_exit_popup.product.proizvedeno_u_japanu %}
                     <span class="cart-exit-origin">Made in Japan</span>
                     {% endif %}

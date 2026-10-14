@@ -1,15 +1,13 @@
 {% extends 'staff/magacin/base.html' %}
 {% load static %}
-{% block body_class %}{{ block.super }} is-picking-list-reference is-picking-detail-reference is-picking-blue{% endblock %}
+{% block body_class %}{{ block.super }} is-picking-list-reference is-picking-detail-reference{% endblock %}
 {% block extra_css %}{{ block.super }}
 <link rel="stylesheet" href="{% static 'css/picking-reference.css' %}?v=20260905shortages">
 <link rel="stylesheet" href="{% static 'css/staff-picking-list-reference.css' %}?v=20260907-actions-only">
-<link rel="stylesheet" href="{% static 'css/staff-picking-blue.css' %}?v=20261014-no-completed-items">
 {% endblock %}
 
 {% block magacin_content %}
 <div class="pk-app pk-list pk-reference" id="pkPickApp" data-broj="{{ order.broj }}" data-ordered="{{ pick_ordered|default:0 }}" data-picked="{{ pick_picked|default:0 }}"{% if is_prenos_mp %} data-prenos-mp="1"{% endif %}{% if is_vp_order %} data-vp="1"{% endif %}>
-    <header class="pick-blue-header"><a href="{% url 'staff_magacin_pakuj' %}" data-picking-list="1" aria-label="Nazad na odvajanje">←</a><div><h1>Odvajanje robe</h1><p>Narudžba #{{ order.broj }}</p></div><span id="pickBlueItemCounter"></span></header>
     <script type="application/json" id="pkQueue">{{ pick_queue_json|safe }}</script>
     <script type="application/json" id="pkState">{{ pick_state_json|safe }}</script>
 
@@ -45,14 +43,48 @@
 
     <section class="pk-stage" data-pk-panel="pick">
         <div id="pkCard" class="pk-sheet">
-            <details class="pick-blue-overview"><summary>Pregled odvajanja · <span id="pickBlueProgress">{{ pick_picked|default:0 }} / {{ pick_ordered|default:0 }}</span></summary>
+            <article class="pk-meta" id="pkCustomer">
+                <div class="pk-meta-row">
+                    <span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                        {% if is_prenos_mp %}Prenos u MP{% else %}Narudžba{% endif %}
+                    </span>
+                    <strong>RN-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</strong>
+                </div>
+                <div class="pk-meta-row">
+                    <span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        {% if is_prenos_mp %}Stavke{% else %}Kupac{% endif %}
+                    </span>
+                    <strong>{% if is_prenos_mp %}{{ prenos_items|length }} stavki{% else %}{{ order.ime_prezime }}{% endif %}</strong>
+                </div>
+                {% if order.loyalty_popust_info %}
+                <div class="pk-meta-row">
+                    <span>Loyalty</span>
+                    <strong>{{ order.loyalty_popust_info.label }}</strong>
+                </div>
+                {% endif %}
+                <div class="pk-meta-row">
+                    <span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>
+                        Kreirano
+                    </span>
+                    <strong>{{ order.kreirana|date:"d.m.Y H:i" }}</strong>
+                </div>
+            </article>
+
             <nav class="pk-switch" id="pkSwitch">
                 <button type="button" class="is-on" data-pk-view="now">Trenutno <i id="pkNowN">0</i></button>
                 <button type="button" data-pk-view="done">Pokupljeno <i id="pkDoneN">0</i></button>
                 <button type="button" data-pk-view="todo">Za pokupiti <i id="pkTodoN">0</i></button>
             </nav>
 
-            <div id="pickBlueCurrentList" class="pk-lines"></div>
+            <div id="pkViewNow">
+                <div class="pk-heading-row"><h2 class="pk-list-h" id="pkOpenHead">Stavke za pakovanje</h2><div class="pk-item-navigation"><button type="button" id="pkPreviousItem" aria-label="Prethodni artikal">‹</button><button type="button" id="pkNextItem" aria-label="Sljedeći artikal">›</button></div></div>
+                <div id="pkItemList" class="pk-items"></div>
+                <button type="button" class="pk-confirm-quantity" id="pkConfirmQuantity"><span aria-hidden="true">✓</span> Potvrdi količinu i nastavi</button>
+                <p class="pk-open-empty" id="pkOpenEmpty" hidden>Sve stavke su odvojene.</p>
+            </div>
             <div id="pkViewTodo" hidden>
                 <p class="pk-choose-h">Odaberi koju da pokupiš</p>
                 <div id="pkTodoList" class="pk-lines"></div>
@@ -62,13 +94,6 @@
                 <p class="pk-choose-h">Pokupljene stavke</p>
                 <div id="pkDoneList" class="pk-lines"></div>
                 <p class="pk-open-empty" id="pkDoneEmpty" hidden>Još ništa nije pokupljeno.</p>
-            </div>
-            </details>
-            <div id="pkViewNow">
-                <div class="pk-heading-row"><h2 class="pk-list-h" id="pkOpenHead">Stavke za pakovanje</h2><div class="pk-item-navigation"><button type="button" id="pkPreviousItem" aria-label="Prethodni artikal">‹</button><button type="button" id="pkNextItem" aria-label="Sljedeći artikal">›</button></div></div>
-                <div id="pkItemList" class="pk-items"></div>
-                <button type="button" class="pk-confirm-quantity" id="pkConfirmQuantity"><span aria-hidden="true">✓</span> Potvrdi količinu</button>
-                <p class="pk-open-empty" id="pkOpenEmpty" hidden>Sve stavke su odvojene.</p>
             </div>
             <span id="pkLocKicker" hidden>Lokacija (odakle se uzima)</span>
             <span hidden>Količina</span>
@@ -85,18 +110,7 @@
             <input type="number" id="pkAddQty" hidden value="0">
             <button type="button" id="pkAddQtyBtn" hidden>Dodaj</button>
         </div>
-        <div id="pkDoneAll" class="pk-done-all pick-blue-completion" hidden>
-            <aside class="pick-blue-order-summary">
-                <p><span>Kupac</span><strong>{% if is_prenos_mp %}Prenos u MP{% else %}{{ order.ime_prezime }}{% endif %}</strong></p>
-                <p><span>Ukupno artikala</span><strong id="pickBlueTotalItems"></strong></p>
-                <p><span>Status</span><strong class="pick-blue-status">U odvajanju</strong></p>
-                <p><span>Kreirano</span><strong>{{ order.kreirana|date:"d.m.Y. H:i" }}</strong></p>
-                <p class="pick-blue-completed-progress"><span id="pickBlueCompletedCount"></span><progress id="pickBlueCompletedBar" max="1" value="1" aria-label="Odvojena količina"></progress></p>
-            </aside>
-            <div class="pick-blue-completed-main">
-                <button type="button" class="pick-blue-finish" id="pickBlueFinish">Završi odvajanje</button>
-            </div>
-        </div>
+        <div id="pkDoneAll" class="pk-done-all" hidden></div>
         <p id="pkEmpty" class="pk-empty" hidden>Nema stavki za picking.</p>
     </section>
 
@@ -137,36 +151,4 @@
         </a>
     </nav>
 </div>
-<dialog id="pkFinishDialog" aria-labelledby="pkFinishTitle">
-    <div class="pk-finish-mark" aria-hidden="true">✓</div>
-    <h2 id="pkFinishTitle">Završi narudžbu #{{ order.broj }}</h2>
-    <p id="pkFinishMessage"></p>
-    <div class="pk-finish-actions"><button type="button" id="pkFinishCancel">Odustani</button><button type="button" id="pkFinishConfirm">Završi narudžbu</button></div>
-</dialog>
-{% endblock %}
-
-{% block magacin_js %}
-{{ block.super }}
-<script>
-(function () {
-    var overview = document.querySelector('.pick-blue-overview');
-    var source = document.getElementById('pkProgress');
-    var target = document.getElementById('pickBlueProgress');
-    var done = document.getElementById('pkDoneN');
-    var todo = document.getElementById('pkTodoN');
-    function progress() {
-        if (target && done && todo) target.textContent = done.textContent + ' / ' + (Number(done.textContent) + Number(todo.textContent));
-    }
-    if (source) new MutationObserver(progress).observe(source, {childList:true,characterData:true,subtree:true});
-    if (done) new MutationObserver(progress).observe(done, {childList:true,characterData:true,subtree:true});
-    progress();
-    var heading = document.getElementById('pkOpenHead');
-    var counter = document.getElementById('pickBlueItemCounter');
-    function position() { if (heading && counter) counter.textContent = heading.hidden ? '' : heading.textContent.replace(/^Stavka\s*/, ''); }
-    if (heading) new MutationObserver(position).observe(heading, {childList:true,characterData:true,subtree:true,attributes:true,attributeFilter:['hidden']});
-    position();
-    var finish = document.getElementById('pickBlueFinish');
-    if (finish) finish.addEventListener('click', function () { document.getElementById('pkValidDoneBtn').click(); });
-})();
-</script>
 {% endblock %}

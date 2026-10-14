@@ -3,21 +3,28 @@
 {% block body_class %}{{ block.super }} is-article-list{% endblock %}
 {% block extra_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'css/staff-artikli-stock.css' %}?v=20261014-1">
+<link rel="stylesheet" href="{% static 'css/staff-artikli-reference.css' %}?v=20260907-search-inset">
+<style>.article-vpc-netto{display:block;font-size:12px;font-weight:500;line-height:1.4;margin-top:4px;white-space:normal}</style>
 {% endblock %}
+
 {% block magacin_before_search %}
-<header class="stock-title"><h1>Zalihe</h1><div class="stock-tools"><a href="{% url 'staff_magacin_setovi' %}">Artikli u setu</a><a href="{% url 'staff_magacin_brzi_unos_novi' %}">＋ Novi artikal</a><button type="button" id="mgNavToggle" aria-label="Meni magacina" aria-expanded="false">☰</button></div></header>
-{% endblock %}
-{% block magacin_search_bar %}
-<section class="stock-search">
-<label for="mgArticleSearch">Pretraga artikala</label>
-<form method="get" action="{% url 'staff_magacin_artikli' %}" id="mgArticleSearchForm" role="search">
-<input type="search" name="pretraga" id="mgArticleSearch" value="{{ magacin_search }}" placeholder="Naziv, šifra ili barkod artikla" autocomplete="off">
-<button type="submit" class="stock-search-submit">Pretraži</button>
-<button type="button" id="mgArticleScanBtn" aria-label="Skeniraj barkod" title="Skeniraj barkod">Skeniraj</button>
-<label class="stock-zero"><input type="checkbox" name="bez_zalihe" value="1"{% if include_zero %} checked{% endif %}> Prikaži i bez zalihe</label>
-</form>
-</details>
+<div class="mg-toolbar article-titlebar">
+    <div>
+        <h1>Artikli</h1>
+        <p class="mg-count">
+            {% if searched %}
+            Rezultati za „{{ magacin_search }}” — {{ result_count }} artikl{{ result_count|pluralize:"a,a" }}{% if not include_zero %} na stanju{% endif %}
+            {% else %}
+            Pretraži ili skeniraj artikal. Lista se ne otvara dok ne potražiš.
+            {% endif %}
+        </p>
+    </div>
+    <div class="article-title-actions">
+        <a class="mg-btn" href="{% url 'staff_magacin_pregled' %}">‹ Nazad</a>
+        <a class="mg-btn" href="{% url 'staff_magacin_setovi' %}">Artikli u setu</a>
+        <a class="mg-btn article-new" href="{% url 'staff_magacin_brzi_unos_novi' %}">＋ Novi artikal</a>
+    </div>
+</div>
 {% endblock %}
 
 {% block magacin_content %}
@@ -26,31 +33,57 @@
 {% endif %}
 
 {% if searched %}
-<section class="stock-results">
-<header class="stock-results-heading"><div><h2>Rezultati pretrage</h2><p>{% if magacin_search %}Rezultati za „{{ magacin_search }}”{% else %}Svi artikli{% endif %}</p></div><span>{{ result_count }} artikala</span></header>
-{% for row in page %}
-<a class="stock-product" href="{% url 'staff_magacin_artikal' row.product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">
-<span class="stock-image">{% if row.product.prikazna_slika %}<img src="{{ row.product.prikazna_slika.url }}" alt="" loading="lazy" decoding="async">{% else %}<span>Bez slike</span>{% endif %}</span>
-<span class="stock-info"><strong>{{ row.product.naziv }}</strong><span class="stock-meta"><span>Šifra <b>{{ row.product.sifra|default:"—" }}</b></span><span>Barkod <b>{{ row.product.barkod|default:"—" }}</b></span></span></span>
-<span class="stock-quantity"><span>Količina</span><span><b>{{ row.na_stanju }}</b> kom</span></span>
-</a>
-{% empty %}<p class="stock-empty">Nema artikala za ovu pretragu.</p>{% endfor %}
+<section class="mg-card mg-articles-results" style="padding:14px 10px;">
+    <h2 class="mg-h">Pronađeni artikli ({{ result_count }})</h2>
+    <div class="mg-list-head">
+        <span></span>
+        <span>ARTIKAL</span>
+        <span>ŠIFRA</span>
+        <span>STANJE</span>
+        <span>MPC</span>
+    </div>
+    {% for row in page %}
+    <a class="mg-product-row{% if row.na_stanju <= 0 %} is-out{% endif %}" href="{% url 'staff_magacin_artikal' row.product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">
+        {% if row.product.prikazna_slika %}
+        <img src="{{ row.product.prikazna_slika.url }}" alt="" loading="lazy" decoding="async">
+        {% else %}
+        <span class="ph">—</span>
+        {% endif %}
+        <span class="article-result-title">
+            <strong>{{ row.product.naziv }}</strong>
+            <span class="sub">{{ row.product.brend.naziv|default:"" }}</span>
+        </span>
+        <span class="article-result-code">{{ row.product.sifra|default:"—" }}</span>
+        <span class="mg-loc-inline article-result-stock">
+            {% if row.na_stanju > 0 %}
+            <i>{{ row.na_stanju }}</i>
+            {% else %}
+            <i class="is-empty">Nema zalihe</i>
+            {% endif %}
+        </span>
+        <span class="mg-mpc">{{ row.product.prikazna_cijena }} KM<small class="article-vpc-netto" title="Cijena samo za veleprodajne kupce">VPC netto: {{ row.vpc_netto|floatformat:2 }}{% if row.vpc_netto_max != row.vpc_netto %} – {{ row.vpc_netto_max|floatformat:2 }}{% endif %} KM</small></span>
+    </a>
+    {% empty %}
+    <div class="mg-empty">
+        Nema sinhronizovanih artikala za ovu pretragu.
+    </div>
+    {% endfor %}
 </section>
 
 {% if page and page.has_other_pages %}
 <nav class="mg-pager">
     {% if page.has_previous %}
-    <a href="?page={{ page.previous_page_number }}&pretraga={{ magacin_search|urlencode }}{% if include_zero %}&bez_zalihe=1{% endif %}">← Prethodna</a>
+    <a href="?page={{ page.previous_page_number }}{% if magacin_search %}&pretraga={{ magacin_search|urlencode }}{% endif %}{% if include_zero %}&bez_zalihe=1{% endif %}">← Prethodna</a>
     {% endif %}
     <span class="is-current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
     {% if page.has_next %}
-    <a href="?page={{ page.next_page_number }}&pretraga={{ magacin_search|urlencode }}{% if include_zero %}&bez_zalihe=1{% endif %}">Sljedeća →</a>
+    <a href="?page={{ page.next_page_number }}{% if magacin_search %}&pretraga={{ magacin_search|urlencode }}{% endif %}{% if include_zero %}&bez_zalihe=1{% endif %}">Sljedeća →</a>
     {% endif %}
 </nav>
 {% endif %}
 {% endif %}
-<details class="mg-card stock-history">
-    <summary>Posljednje promjene lagera</summary>
+<section class="mg-card">
+    <h2 class="mg-h">Posljednje promjene lagera</h2>
     <div class="mg-table-wrap">
     <table class="mg-table mg-table-stack mg-table-stack-moves">
         <thead>
@@ -91,5 +124,5 @@
         </tbody>
     </table>
     </div>
-</details>
+</section>
 {% endblock %}

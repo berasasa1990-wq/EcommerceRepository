@@ -1,8 +1,0 @@
-<aside class="product-key-features" aria-label="Glavne karakteristike">
-    <h2>Glavne karakteristike</h2>
-    {% if product_description_features %}
-    <ul>{% for feature in product_description_features %}<li>{{ feature }}</li>{% endfor %}</ul>
-    {% else %}
-    <dl>{% if product.sifra %}<dt>Šifra</dt><dd>{{ product.sifra }}</dd>{% endif %}{% if product.brend %}<dt>Brend</dt><dd>{{ product.brend.naziv }}</dd>{% endif %}{% if product.kategorija %}<dt>Kategorija</dt><dd>{{ product.kategorija.naziv }}</dd>{% endif %}{% if product.pakovanje_label %}<dt>Pakovanje</dt><dd>{{ product.pakovanje_label }}</dd>{% endif %}</dl>
-    {% endif %}
-</aside>

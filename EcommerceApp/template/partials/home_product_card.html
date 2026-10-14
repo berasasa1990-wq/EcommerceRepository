@@ -12,10 +12,10 @@
 >
     {# Badge: −% na akciji, inače NOVO #}
     {% if product.katalog_akcija_postotak %}
-    <span class="hm-badge hm-badge--sale" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
+    <span class="hm-badge hm-badge--sale is-pulse" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
     {% elif product.katalog_na_akciji %}
-    <span class="hm-badge hm-badge--sale" aria-label="Akcija">Akcija</span>
-    {% elif product.je_hit or home_section_badge == 'hit' %}
+    <span class="hm-badge hm-badge--sale is-pulse" aria-label="Akcija">Akcija</span>
+    {% elif home_section_badge == 'hit' %}
     <span class="hm-badge hm-badge--top" aria-label="Hit">HIT</span>
     {% elif product.je_novitet or home_section_badge == 'novo' %}
     <span class="hm-badge hm-badge--novo" aria-label="Novo">NOVO</span>
@@ -45,7 +45,6 @@
 
             </div>
 
-            <div class="product-card__brand-row">{% include 'partials/product_brand_logo.html' with product=product %}</div>
             {% if card_variations|length > 1 %}
             <div class="catalog-variation-data" hidden aria-hidden="true">
                 {% for var in card_variations %}
@@ -72,9 +71,8 @@
                 {% endif %}
             >
                 <svg class="product-card-add-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M2 3h3l2.4 11.4a2 2 0 0 0 2 1.6H18a2 2 0 0 0 2-1.6L22 7H6"/>
-                    <circle cx="10" cy="20" r="1"/>
-                    <circle cx="18" cy="20" r="1"/>
+                    <rect x="5" y="7" width="14" height="15" rx="2"/>
+                    <path d="M9 7V5a3 3 0 0 1 6 0v2"/>
                 </svg>
                 <span>{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}</span>
             </button>

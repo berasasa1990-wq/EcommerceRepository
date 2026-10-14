@@ -46,9 +46,6 @@
     {% if applied_coupon.automatski or applied_coupon.loyalty_kartica_id %}<p class="loyalty-code-hint loyalty-code-hint--compact">Ne vrijedi na artikle koji su na akciji.</p>{% endif %}
 
     {% else %}
-    {% if not user.is_authenticated %}
-    <a href="{% url 'register' %}" class="btn btn-coupon btn-coupon--full" data-coupon-choice-open aria-haspopup="dialog" aria-controls="couponChoiceDialog">Primijeni kupon ili karticu <span aria-hidden="true">›</span></a>
-    {% else %}
     <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form coupon-form--loyalty-oneclick">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
@@ -56,8 +53,6 @@
         <button type="submit" class="btn btn-coupon btn-coupon--full"{% if coupon_choices|length > 1 %} data-coupon-choice-open aria-haspopup="dialog" aria-controls="couponChoiceDialog"{% endif %}>Primijeni kupon ili karticu <span aria-hidden="true">›</span></button>
     </form>
     {% endif %}
-    {% endif %}
-    {% if not hide_code_entry %}
     <details class="coupon-code-entry">
         <summary>Greb-Greb ili drugi kod za popust</summary>
         <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form">
@@ -68,5 +63,4 @@
             <button type="submit" class="btn btn-coupon">Primijeni kod</button>
         </form>
     </details>
-    {% endif %}
 </div>

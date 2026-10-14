@@ -1,7 +1,0 @@
-.catalog-load-more{display:flex;flex-direction:column;align-items:center;gap:12px;margin:28px 0;color:#627e94;font-size:13px;text-align:center}
-.catalog-load-more p{margin:0}
-.catalog-load-more button{min-width:200px;min-height:44px;padding:12px 26px;border:0;border-radius:10px;background:linear-gradient(120deg,#00c6e7,#007db8);color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
-.catalog-load-more button:hover{filter:brightness(.94)}
-.catalog-load-more button:disabled{opacity:.65;cursor:wait}
-.catalog-load-more button[hidden]{display:none}
-.catalog-load-more button:focus-visible{outline:3px solid #008bc5;outline-offset:3px}
