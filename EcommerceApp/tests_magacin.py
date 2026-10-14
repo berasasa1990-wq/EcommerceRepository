@@ -4831,6 +4831,26 @@ class MagacinViewTests(TestCase):
         self.assertContains(summary, 'odakle je uzeto')
         self.assertContains(summary, 'Stari Picking')
 
+    def test_customer_lookup_all_pages_and_address_search(self):
+        self.client.force_login(self.user)
+        for index in range(45):
+            WarehouseCustomer.objects.create(
+                ime_prezime=f'Picker customer {index:02d}', telefon=f'061{index:06d}',
+                adresa=f'Picker street {index}', grad='Mostar', postanski_broj='88000',
+            )
+        url = reverse('staff_magacin_kupci_lookup')
+        first = self.client.get(url, {'q': 'Picker customer'}).json()
+        second = self.client.get(url, {'q': 'Picker customer', 'page': 2}).json()
+        self.assertEqual(first['count'], 45)
+        self.assertEqual(len(first['results']), 40)
+        self.assertEqual(len(second['results']), 5)
+        self.assertTrue(first['has_next'])
+        ids = {row['id'] for row in first['results'] + second['results']}
+        self.assertEqual(len(ids), 45)
+        address = self.client.get(url, {'q': 'Picker street 44'}).json()
+        self.assertEqual(address['count'], 1)
+        self.assertEqual(address['results'][0]['ime_prezime'], 'Picker customer 44')
+
     def test_save_customer_persists_without_order(self):
         self.client.force_login(self.user)
         missing_post = self.client.post(reverse('staff_magacin_kupci_save'), {

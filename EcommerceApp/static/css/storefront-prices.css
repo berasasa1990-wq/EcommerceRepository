@@ -1,0 +1,21 @@
+/* Current prices share the homepage navy; previous prices remain muted. */
+body.bera-chrome { --storefront-price-color: #00346c; --storefront-old-price-color: #8ba0b5; }
+body.bera-chrome.bera-chrome.bera-chrome.bera-chrome.bera-chrome :is(
+    .price-current, .price-sale, .price-discounted, .price-deal,
+    .card-dwell-now, .home-card-prices__current,
+    .hm-price__now, .hm-price__sale, .bundle-pack-now,
+    .pd-inline-qty__now, .pd-inline-qty__unit,
+    .qty-deal-offer-tier-now, .coupon-price-new,
+    .cart-item-price, .cart-item-total > p,
+    .product-detail-variation-price, .success-total,
+    .bera-related-price strong, .pd-inline-bundle__prices strong,
+    .pd-inline-bundle__total strong, .pd-flash__card-prices strong,
+    .order-totals-row > span:last-child, .order-totals-row > strong
+) { color: var(--storefront-price-color) !important; }
+body.bera-chrome.bera-chrome.bera-chrome.bera-chrome.bera-chrome :is(
+    .price-original, .card-dwell-was, .home-card-prices__original,
+    .hm-price__old, .coupon-price-old, .bundle-pack-was,
+    .pd-inline-qty__was, .qty-deal-offer-tier-was,
+    .bera-related-price del, .pd-inline-bundle__prices s,
+    .pd-flash__card-prices s
+) { color: var(--storefront-old-price-color) !important; }

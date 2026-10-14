@@ -212,9 +212,12 @@
         body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
     </style>
     {% endif %}
-    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20260919-wishlist-heart">
+    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20261014-shared-cart-header">
     <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20260919-wishlist-badge">
     <link rel="stylesheet" href="{% static 'css/wishlist.css' %}?v=20260919-mobile-sheet">
+    <link rel="stylesheet" href="{% static 'css/product-cart-button.css' %}?v=20261014-visible-stock">
+    <link rel="stylesheet" href="{% static 'css/home-product-bera.css' %}?v=20261014-mobile-categories-two-by-two">
+    <link rel="stylesheet" href="{% static 'css/home-offer-banners.css' %}?v=20261014-offer-button-restored">
 
     <style>.desktop-trust-bar,.header-category-select,.header-register{display:none!important}</style>
     <link rel="stylesheet" href="{% static 'css/header-reference.css' %}?v=20260919-wishlist-popover" media="(min-width: 1025px)">
@@ -352,8 +355,21 @@
         .desktop-trust-bar nav a.site-wholesale-link { animation:none; }
     }
     </style>
+    <link rel="stylesheet" href="{% static 'css/storefront-chrome-bera.css' %}?v=20261014-blue-see-all">
+    <link rel="stylesheet" href="{% static 'css/catalog-bera.css' %}?v=20261014-visible-sale-badge">
+    <link rel="stylesheet" href="{% static 'css/home-benefits-bera.css' %}?v=20261014-mobile-two-benefits">
+    <link rel="stylesheet" href="{% static 'css/footer-bera.css' %}?v=20261014-footer-show-stock">
+    {% block storefront_page_style %}{% endblock %}
+    <link rel="stylesheet" href="{% static 'css/stock-notify-bera.css' %}?v=20261014-notify-full-label">
+    <link rel="stylesheet" href="{% static 'css/stock-status-bera.css' %}?v=20261014-visible-everywhere">
+    <link rel="stylesheet" href="{% static 'css/quantity-offer-bera.css' %}?v=20261014-picker">
+    <link rel="stylesheet" href="{% static 'css/social-proof-bera.css' %}?v=20261014">
+    <link rel="stylesheet" href="{% static 'css/product-cards-unified.css' %}?v=20261014-no-image-hover">
+    <link rel="stylesheet" href="{% static 'css/storefront-prices.css' %}?v=20261014">
+    <link rel="stylesheet" href="{% static 'css/buttons-flat.css' %}?v=20261014-matching-badge-gradient">
+    <link rel="stylesheet" href="{% static 'css/blue-surfaces-gradient.css' %}?v=20261014-matching-blue-hover">
 </head>
-<body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
+<body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="bera-chrome {% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
     <div class="site-chrome-backdrop" aria-hidden="true"></div>
 
@@ -414,7 +430,9 @@
                         {% endif %}
                     </a>
                     {% if user.is_superuser %}
-                    <a href="{% url 'staff_admin_panel' %}" class="logo-admin-panel">Admin<br>panel</a>
+                    <a href="{% url 'staff_admin_panel' %}" class="logo-admin-panel" aria-label="Admin panel" title="Admin panel">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 8-5.66M17 11l5 2v4c0 3-5 5-5 5s-5-2-5-5v-4l5-2Z"/><path d="m15 16 1.5 1.5L19 15"/></svg>
+                    </a>
                     {% endif %}
                 </div>
 
@@ -448,7 +466,6 @@
                 </div>
 
                 <div class="nav-actions">
-                    <button type="button" class="nav-action-link reference-header-search" data-mobile-home-search aria-label="Pretraga"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.8"/><path d="m16.2 16.2 5.4 5.4"/></svg></button>
                     {% if contact_phone %}
                     <a href="tel:{{ contact_phone_digits|default:contact_phone }}" class="nav-action-link header-phone" aria-label="Telefon {{ contact_phone }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -544,6 +561,7 @@
                 {% else %}<a href="{{ nav_cat.get_absolute_url }}">{{ nav_cat.naziv }}</a>{% endif %}
                 {% endfor %}
             </nav>
+            {% include 'partials/storefront_header_nav.html' %}
             <nav class="header-row header-row--categories" aria-label="Kategorije">
                 <div class="cats-dropdown{% if cats_sidebar_open %} is-open cats-dropdown--locked{% endif %}" id="catsDropdown">
                     <button type="button" class="cats-dropdown__btn" id="catsDropdownBtn" aria-expanded="{% if cats_sidebar_open %}true{% else %}false{% endif %}" aria-controls="catsDropdownPanel"{% if cats_sidebar_open %} aria-disabled="true"{% endif %}>
@@ -801,9 +819,10 @@
     {% endif %}
     {% block structured_data %}{% endblock %}
     <script src="{% static 'js/csrf-session.js' %}?v=20261001" data-cookie-name="{{ csrf_cookie_name }}" defer></script>
-    <script src="{% static 'js/main.min.js' %}?v=20260916-account-scroll-top" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20261014-all-stock" defer></script>
     <script src="{% static 'js/desktop-reference.js' %}?v=20260914-dropdowns" defer></script>
     <script src="{% static 'js/stock-notify.js' %}?v=20260916-notify-no-autofocus" defer></script>
+    <script src="{% static 'js/stock-notify-fit.js' %}?v=20261014-full-label" defer></script>
     {% if site_settings.javno_online_posjetioci %}
     <script>idleLoadScript("{% static 'js/public-online-visitors.js' %}?v=20260716v1");</script>
     {% endif %}

@@ -48,6 +48,7 @@
         new ResizeObserver(updateScrollControls).observe(thumbs);
         updateScrollControls();
     }
+    const gallery = document.getElementById('mainProductImageWrap');
     if (gallery && thumbs) {
         const counter = document.createElement('span'); counter.className = 'pd-reference-counter';
         gallery.append(counter);

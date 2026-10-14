@@ -12,19 +12,14 @@
     data-category="{% if product.kategorija %}{{ product.kategorija.naziv }}{% endif %}"
     {% if product.na_stanju %}data-in-stock="1"{% endif %}
 >
-    {% if home_reference_card and home_section_badge == 'novo' %}
-    <span class="home-card-new-label">Novo</span>
+    {% if product.katalog_akcija_postotak %}
+    <span class="product-card-corner-badge product-card-corner-badge--sale" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
+    {% elif product.katalog_na_akciji %}
+    <span class="product-card-corner-badge product-card-corner-badge--sale" aria-label="Akcija">Akcija</span>
     {% elif product.je_novitet or home_section_badge == 'novo' %}
     <span class="product-card-corner-badge product-card-corner-badge--novitet" aria-label="Novo">NOVO</span>
-    {% elif product.katalog_akcija_postotak %}
-    <span class="product-card-corner-badge product-card-corner-badge--sale is-pulse" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
     {% elif product.je_hit or home_section_badge == 'hit' %}
     <span class="product-card-corner-badge product-card-corner-badge--hit" aria-label="Izdvojeno">HIT</span>
-    {% endif %}
-    {% if home_reference_card %}
-    {% if product.katalog_na_akciji and product.katalog_akcija_postotak %}
-    <span class="home-card-sale-percent">-{{ product.katalog_akcija_postotak }}%</span>
-    {% endif %}
     {% endif %}
     <button type="button" class="home-card-heart" aria-label="Omiljeno — {{ product.naziv }}" data-favorite-id="{{ product.pk }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
@@ -33,9 +28,6 @@
         <div class="product-card__media">
             <div class="product-image">
                 <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card__media-link" aria-label="{{ product.naziv }}"{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>
-                    {% if not product.je_novitet and not product.katalog_akcija_postotak and not product.je_hit and home_section_badge != 'novo' and home_section_badge != 'hit' %}
-                    {% include 'partials/product_sale_ribbon.html' with product=product %}
-                    {% endif %}
                     {% include 'partials/product_image.html' with product=product image_loading=image_loading|default:'lazy' image_sizes=image_sizes|default:'(max-width: 768px) 100vw, 25vw' %}
                     {% include 'partials/product_staff_overlay.html' with product=product %}
                 </a>
@@ -48,14 +40,13 @@
         </div>
 
         <div class="product-card__body">
-            <span class="home-card-brand">{% if product.brend %}{{ product.brend.naziv }}{% endif %}</span>
             {% if not home_reference_card %}
             <p class="product-card__pack"{% if product.pakovanje_cijena_hint %} title="{{ product.pakovanje_cijena_hint }}"{% endif %}>{% if product.je_pakovanje %}{{ product.pakovanje_label|default:"Pakovanje" }}{% else %}&nbsp;{% endif %}</p>
             {% endif %}
             <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card__title" data-product-name{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>{{ product.naziv }}</a>
-            {% include 'partials/product_staff_missing.html' with product=product %}
+        {% include 'partials/product_staff_missing.html' with product=product %}
 
-            {% include 'partials/product_stock_label.html' with product=product %}
+
 
             {# Fiksna visina — samo Made in Japan (ne pomjera brend/cijena) #}
             <div class="product-origin-slot product-card__origin-slot">
@@ -84,6 +75,7 @@
     {% endif %}
 
     <div class="product-card__footer{% if product.pakovanje_uz_cijenu_kartica %} product-card__footer--pack{% endif %}">
+        {% include 'partials/product_stock_label.html' with product=product %}
         <div class="product-card__price-row">
             <div class="product-card__price-block">
                 {% if card_variations|length > 1 %}
@@ -91,12 +83,11 @@
                 {% else %}
                 {% include 'partials/product_card_price.html' with product=product %}
                 {% endif %}
-                {% if home_reference_card %}
-                <p class="home-card-stock{% if not product.na_stanju %} home-card-stock--out{% endif %}"><span aria-hidden="true"></span>{% if product.na_stanju %}Na stanju{% else %}Nije na stanju{% endif %}</p>
-                {% endif %}
+
             </div>
         </div>
 
+        <div class="product-card__brand-row">{% include 'partials/product_brand_logo.html' with product=product %}</div>
         <div class="product-card__cart-row">
         {% if product.na_stanju %}
         <button
@@ -116,8 +107,9 @@
             {% endif %}
         >
             <svg class="product-card-add-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="5" y="7" width="14" height="15" rx="2"/>
-                    <path d="M9 7V5a3 3 0 0 1 6 0v2"/>
+                    <path d="M2 3h3l2.4 11.4a2 2 0 0 0 2 1.6H18a2 2 0 0 0 2-1.6L22 7H6"/>
+                    <circle cx="10" cy="20" r="1"/>
+                    <circle cx="18" cy="20" r="1"/>
                 </svg>
             <span>{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }}</span>
         </button>

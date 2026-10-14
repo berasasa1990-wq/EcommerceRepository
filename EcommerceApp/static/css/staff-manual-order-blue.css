@@ -1,0 +1,245 @@
+body.magacin-page.is-manual-reference{--mg-accent:#009ac2;--mg-accent-hover:#007faa;--mg-green:#009ac2;--mg-green-text:#008db9;--mg-green-soft:#eaf7ff}
+body.magacin-page.is-manual-reference .mg-main{padding:24px 32px 36px;color:#172b4c;font-family:Inter,"Segoe UI",system-ui,sans-serif}
+.is-manual-reference .mg-order-page{max-width:none;margin:0}
+.is-manual-reference .mg-crumb{display:none}
+.is-manual-reference .mg-page-head{background:transparent!important;border:0;box-shadow:none;margin:0 0 20px;padding:0}
+.is-manual-reference .mg-page-head h1{font-size:30px;line-height:1.25;color:#172b4c;letter-spacing:-.025em}
+.is-manual-reference .mg-count{color:#7189ad;font-size:12px}
+.is-manual-reference .mg-page-bar{display:none}
+.is-manual-reference .mg-main>.mg-page-bar{display:none}
+.is-manual-reference .mg-order-customer{padding:22px;margin-bottom:20px}
+.is-manual-reference .mg-card{padding:22px;border:1px solid #d6e8fc;border-radius:15px;background:#fff;box-shadow:none}
+.is-manual-reference .mg-h{font-size:22px;text-transform:none;letter-spacing:0;color:#172b4c;margin:0 0 14px}
+.is-manual-reference .mg-order-customer .mg-h{display:flex;align-items:center;gap:14px}
+.is-manual-reference .mg-order-customer .mg-h svg{box-sizing:border-box;width:44px;height:44px;padding:9px;border-radius:12px;background:#e5f6ff;border:1px solid #bde6ff;color:#0097c1}
+.is-manual-reference .mg-btn{background:#edf7ff;color:#008fbd;border:1px solid transparent;border-radius:10px;box-shadow:none;font-family:inherit;font-size:14px;font-weight:400;min-height:40px;padding:10px 16px}
+.is-manual-reference .mg-btn:hover{background:#dff1ff}
+.is-manual-reference .mg-btn-primary,.is-manual-reference [data-cat-plus]{background:linear-gradient(110deg,#00b5ce,#0084b8);color:#fff}
+.is-manual-reference input:not([type=hidden]):not([type=checkbox]),.is-manual-reference textarea,.is-manual-reference select{box-sizing:border-box;background:#fff;color:#172b4c;border:1px solid #cfe4fa;border-radius:9px;box-shadow:none;font-family:inherit;font-size:14px;min-height:40px;padding:10px 12px}
+.is-manual-reference input:focus-visible,.is-manual-reference button:focus-visible,.is-manual-reference a:focus-visible{outline:2px solid #00add1;outline-offset:2px}
+.is-manual-reference .mg-order-build{display:block}
+.is-manual-reference .mg-order-build>.mg-card{margin-bottom:16px}
+.is-manual-reference .mg-mode-toggle{order:2;background:transparent;border:0;box-shadow:none}
+.is-manual-reference .mg-mode-toggle button{background:#edf7ff;color:#0093bf;border:0;border-radius:9px;padding:11px 15px;font-size:14px}
+.is-manual-reference #mgOrderSoloBtn{display:none}
+.is-manual-reference .mg-add-row{display:flex;flex-wrap:wrap;gap:10px}
+.is-manual-reference .mg-add-row .mg-icon-field{flex:1;min-width:180px}
+.is-manual-reference #mgOrderSearch{width:100%}
+.is-manual-reference .mg-order-lines th{background:#edf7ff;color:#7089ad;font-size:13px;font-weight:400;padding:13px 10px;border:0}
+.is-manual-reference .mg-order-lines td{padding:12px 10px;border-bottom:1px solid #e6f1fc;font-size:13px}
+.is-manual-reference .mg-order-lines{border-collapse:collapse}
+.is-manual-reference .mg-order-lines input{max-width:100px}
+.is-manual-reference .mg-order-bottom{display:flex;flex-wrap:wrap;gap:20px}
+.is-manual-reference .mg-order-summary{background:#f3faff!important;border:1px solid #d1e6ff;border-radius:14px;width:340px;margin-left:auto;box-shadow:none}
+.is-manual-reference .mg-sum-line{font-size:14px;color:#172b4c;padding:8px 0}
+.is-manual-reference .mg-sum-pay{border-top:1px solid #cfe7fb;margin-top:12px;padding-top:16px;color:#172b4c;font-size:17px}
+.is-manual-reference .mg-sum-pay strong{font-size:26px;color:#0093c0}
+.is-manual-reference .mg-order-foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:0;border:0;background:transparent;box-shadow:none}
+.is-manual-reference #mgDraftStatus{font-size:11px;margin:0 0 4px;color:#7189ad}
+.is-manual-reference #mgOrderForm>a{font-size:11px;color:#7189ad;display:inline-block;margin-bottom:14px}
+.is-manual-reference .mg-modal{z-index:200}
+.is-manual-reference .mg-modal[hidden]{display:none!important}
+.is-manual-reference .mg-modal-bg{background:rgba(42,82,105,.42);backdrop-filter:blur(5px);border:0}
+.is-manual-reference .mg-modal-panel{box-sizing:border-box;background:#fff;border:1px solid #d6e8fc;border-radius:17px;padding:24px;width:min(640px,calc(100vw - 32px));max-height:88dvh;overflow:auto;box-shadow:0 16px 60px #17344c20;color:#172b4c}
+.is-manual-reference .mg-modal-panel h2{font-size:22px;margin:0;color:#172b4c}
+.blue-modal-head{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.blue-modal-head h2{flex:1}
+.blue-new-customer{white-space:nowrap}
+.is-manual-reference .mg-modal-panel.blue-catalog-panel{width:min(1000px,calc(100vw - 32px))}
+.blue-catalog-panel>input{width:100%;margin-bottom:18px}
+.is-manual-reference .mg-catalog{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0}
+.is-manual-reference .mg-catalog[hidden]{display:none}
+.is-manual-reference .mg-catalog-item{display:flex;flex-direction:column;gap:8px;background:#f4f9ff;border:1px solid #d1e6ff;border-radius:13px;box-shadow:none;padding:12px;min-width:0;color:#172b4c}
+.is-manual-reference .mg-catalog-image{height:110px;width:100%;object-fit:contain;background:#fff;border-radius:8px}
+.is-manual-reference .mg-catalog-item>strong{font-size:14px;line-height:1.4}
+.is-manual-reference .mg-catalog-meta{font-size:13px;margin:0;color:#5b779f}
+.is-manual-reference .mg-catalog-qty{display:flex;align-items:center;gap:6px;margin-top:auto;padding-top:8px}
+.is-manual-reference .mg-catalog-qty [data-cat-plus]{flex:1;font-size:13px;padding:8px}
+.is-manual-reference .mg-catalog-qty [data-cat-minus]{padding:8px;min-width:30px}
+.is-manual-reference .mg-catalog-qty em{font-style:normal;font-size:13px}
+.is-manual-reference .mg-catalog-item.is-added{border-color:#009ac2}
+.is-manual-reference .blue-customer-list{position:static;width:auto;max-height:48dvh;overflow:auto;padding:0;margin:18px 0 0;border:0;background:transparent;box-shadow:none;list-style:none}
+.is-manual-reference .blue-customer-list li{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:14px;margin-bottom:10px;background:#f4f9ff;border:1px solid #d1e6ff;border-radius:11px;cursor:pointer;font-size:13px;color:#5b779f}
+.is-manual-reference .blue-customer-list li strong{font-size:14px;color:#284969}
+.is-manual-reference .mg-cust-grid{display:block}
+.is-manual-reference .mg-cust-search-row{display:flex}
+.is-manual-reference #mgCustomerSearch{width:100%}
+.is-manual-reference .mg-cust-field>span:first-child{display:none}
+@media(max-width:1024px){body.magacin-page.is-manual-reference .mg-main{padding:16px}.is-manual-reference .mg-main>.mg-page-bar{display:flex;background:transparent;box-shadow:none;border:0;padding:0;margin:0 0 12px}.is-manual-reference .mg-page-bar>:not(.mg-chrome-burger){display:none}.is-manual-reference .mg-catalog{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){body.magacin-page.is-manual-reference .mg-main{padding:12px}.is-manual-reference .mg-page-head h1{font-size:24px}.is-manual-reference .mg-card{padding:16px}.is-manual-reference .mg-modal-panel{padding:16px}.is-manual-reference .mg-catalog{grid-template-columns:repeat(2,minmax(0,1fr))}.is-manual-reference .mg-order-summary{width:100%}.blue-modal-head{flex-wrap:wrap}.is-manual-reference .mg-catalog-image{height:90px}.is-manual-reference .mg-catalog-qty{flex-wrap:wrap}.is-manual-reference .mg-catalog-qty [data-cat-plus]{flex-basis:100%}}
+.is-manual-reference .mg-order-meta-row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:20px;margin:16px 0}
+.is-manual-reference .mg-order-meta-row>.mg-order-meta{flex:1;min-width:260px}
+.is-manual-reference .mg-order-meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.is-manual-reference .mg-order-meta-col h3{font-size:13px;color:#5b779f}
+@media(max-width:600px){.is-manual-reference .mg-order-meta-grid{grid-template-columns:1fr}.is-manual-reference .mg-order-meta-row>.mg-order-meta{min-width:0;width:100%}}
+/* Values and layout taken from BERA-webshop's WMS online order form. */
+body.magacin-page.is-manual-reference .mg-main{color:#102343;padding:24px 32px}
+.is-manual-reference .mg-page-head{margin-bottom:0}
+.is-manual-reference .mg-page-head h1{font-size:32px;margin:0 0 6px;color:#102343}
+.is-manual-reference .mg-page-head .mg-count,.is-manual-reference .mg-page-head>a{display:none}
+.is-manual-reference #mgDraftStatus,.is-manual-reference #mgOrderForm>a{display:none}
+.is-manual-reference .mg-card{padding:20px;margin-bottom:20px;border-color:#dcebf7;border-radius:14px;box-shadow:0 4px 18px #06558208}
+.is-manual-reference .mg-h{font-size:24px;color:#102343}
+.is-manual-reference .mg-order-customer{min-height:112px}
+.is-manual-reference .mg-order-customer .mg-card-head{margin:0}
+.is-manual-reference .mg-order-customer .mg-h{margin:0;gap:16px}
+.is-manual-reference .bera-customer-icon{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border:1px solid #bde3fb;border-radius:12px;background:#e7f6ff;color:#008bc3;cursor:pointer;flex-shrink:0;padding:0}
+.is-manual-reference .mg-order-customer .bera-customer-icon svg{width:26px;height:26px;padding:0;border:0;background:transparent;border-radius:0}
+.is-manual-reference .mg-add-row{display:grid;grid-template-columns:minmax(0,1fr) 100px auto auto;gap:12px;align-items:end}
+.is-manual-reference .bera-entry-search{display:grid;gap:8px;min-width:0}
+.is-manual-reference .bera-entry-search>svg{display:none}
+.is-manual-reference .bera-entry-search label,.is-manual-reference .bera-entry-quantity{font-size:16px;font-weight:400;color:#102343}
+.is-manual-reference .bera-entry-quantity{display:grid;gap:8px}
+.is-manual-reference .mg-add-row .mg-mode-toggle{grid-column:4;grid-row:1;display:block;padding:0;margin:0}
+.is-manual-reference .bera-entry-quantity{grid-column:2;grid-row:1}
+.is-manual-reference #beraEntryAdd{grid-column:3;grid-row:1}
+.is-manual-reference #mgOrderCatalogBtn svg{display:none}
+.is-manual-reference #mgOrderSearch,.is-manual-reference #beraEntryQuantity{padding:12px;border:1px solid #cfe4f5;border-radius:8px;width:100%;height:42px;font-size:14px}
+.is-manual-reference .mg-btn,.is-manual-reference .mg-mode-toggle button{padding:11px 16px;min-height:42px;border-radius:9px;font-size:14px}
+.is-manual-reference .mg-btn-primary,.is-manual-reference [data-cat-plus]{background:linear-gradient(115deg,#00bddd,#007bb8)}
+.is-manual-reference .mg-order-added{margin-top:16px}
+.is-manual-reference .mg-order-added>.mg-card-head,.is-manual-reference #mgOrderEmpty{display:none}
+.is-manual-reference .mg-order-lines thead{background:#edf7ff}
+.is-manual-reference .mg-order-lines th{padding:12px;font-size:13px;color:#526b8c}
+.is-manual-reference .mg-order-summary{box-sizing:border-box;width:min(100%,390px);margin:20px 0 0 auto;padding:18px;background:#f3faff!important;border:1px solid #d4e8f9;border-radius:12px;box-shadow:none}
+.is-manual-reference .mg-sum-line{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:6px 0;font-size:14px}
+.is-manual-reference .bera-discount{color:#16824c}
+.is-manual-reference .mg-sum-pay{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:14px 0 4px;border-top:2px solid #d4e8f9;margin-top:10px;font-size:16px}
+.is-manual-reference .mg-sum-pay strong{font-size:24px;color:#008bc3}
+.is-manual-reference .bera-order-options{margin:12px 0 20px;font-size:12px;color:#526b8c}
+.is-manual-reference .bera-order-options>summary{cursor:pointer}
+.is-manual-reference .mg-order-foot{justify-content:flex-start}
+.is-manual-reference .blue-order-modal .mg-modal-panel{border-color:#dcebf7;border-radius:14px;padding:20px}
+.is-manual-reference .blue-order-modal .mg-modal-bg{background:#163c5860;backdrop-filter:blur(3px)}
+.is-manual-reference .blue-order-modal h2{font-size:22px}
+.is-manual-reference .blue-customer-list li{background:#f4faff;border-color:#d4e8f9;border-radius:10px;padding:14px}
+.is-manual-reference .mg-catalog-item{background:#f5faff;border-color:#d4e8f9;border-radius:12px}
+@media(max-width:1100px){.is-manual-reference .mg-add-row{grid-template-columns:minmax(0,1fr) 90px}.is-manual-reference .mg-add-row .mg-mode-toggle{grid-column:2;grid-row:2}.is-manual-reference #beraEntryAdd{grid-column:1;grid-row:2}}
+@media(max-width:600px){body.magacin-page.is-manual-reference .mg-main{padding:12px}.is-manual-reference .mg-page-head h1{font-size:24px}.is-manual-reference .mg-h{font-size:20px}.is-manual-reference .mg-order-summary{width:100%}}
+.is-manual-reference .bera-advanced-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.is-manual-reference .mg-order-search .mg-h svg{display:none}
+.is-manual-reference .mg-order-lines th:first-child,.is-manual-reference .mg-order-lines td:first-child{display:none}
+/* Anchor live suggestions directly to the article search field. */
+.is-manual-reference .bera-entry-search{position:relative;overflow:visible}
+.is-manual-reference #mgOrderSuggest{position:absolute;top:100%;left:0;right:0;width:100%;box-sizing:border-box;z-index:30;max-height:320px;overflow:auto;margin:6px 0 0;padding:6px;background:#fff;border:1px solid #cfe4f5;border-radius:10px;box-shadow:0 10px 28px #163c5820;list-style:none}
+.is-manual-reference #mgOrderSuggest[hidden]{display:none!important}
+.is-manual-reference #mgOrderSuggest li{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:10px 12px;border-radius:7px;cursor:pointer;color:#143556;font-size:14px}
+.is-manual-reference #mgOrderSuggest li:hover,.is-manual-reference #mgOrderSuggest li:focus-visible{background:#edf7ff;outline:2px solid #009ac2;outline-offset:-2px}
+.is-manual-reference #mgOrderSuggest .vp-name{font-weight:600;color:#143556}
+.is-manual-reference #mgOrderSuggest li>span:last-child{font-size:12px;color:#526b8c}
+/* Inline catalogue: cards form a responsive row beneath the entry controls. */
+.is-manual-reference #mgOrderCatalog{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin:18px 0;max-height:480px;overflow:auto;padding:2px}
+.is-manual-reference #mgOrderCatalog[hidden]{display:none!important}
+.is-manual-reference #mgOrderCatalogBtn{white-space:nowrap}
+.is-manual-reference #mgOrderCatalogBtn.is-on{background:#d8f1ff;color:#007db7;box-shadow:inset 0 0 0 1px #009ac2}
+@media(max-width:600px){.is-manual-reference #mgOrderCatalog{grid-template-columns:repeat(2,minmax(0,1fr));max-height:420px}}
+/* Align the catalogue button with quantity and Add, below their labels. */
+.is-manual-reference .mg-add-row .mg-mode-toggle{align-self:end;line-height:1;min-height:0;height:42px;display:flex;align-items:stretch}
+.is-manual-reference .mg-add-row #mgOrderCatalogBtn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:42px;min-height:42px;margin:0;padding:11px 16px;line-height:20px}
+.is-manual-reference .mg-add-row #beraEntryAdd{box-sizing:border-box;height:42px;min-height:42px;margin:0;align-self:end;line-height:20px}
+.is-manual-reference .bera-entry-quantity{margin:0;align-self:end}
+.is-manual-reference .bera-entry-quantity input{margin:0}
+/* Delivery, payment, discount and note share one horizontal row. */
+.is-manual-reference .bera-order-options .mg-order-meta-row{display:block;margin:12px 0 0}
+.is-manual-reference .bera-order-options .mg-order-meta-grid{display:grid;grid-template-columns:180px 220px 100px minmax(200px,1fr);gap:16px;align-items:end}
+.is-manual-reference .bera-order-options .mg-order-meta-col{min-width:0;margin:0;padding:0;border:0}
+.is-manual-reference .bera-order-options .mg-order-meta-col h3{display:flex;align-items:center;gap:6px;margin:0 0 8px;font-size:13px;line-height:20px;white-space:nowrap}
+.is-manual-reference .bera-order-options .mg-order-meta-col h3 svg{width:18px;height:18px}
+.is-manual-reference .bera-order-options #mgPaySelect{display:block;width:100%;height:42px}
+.is-manual-reference .bera-order-options .mg-order-pay{display:none}
+.is-manual-reference .bera-order-options .mg-order-meta-col:nth-child(2){display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 8px;align-items:center}
+.is-manual-reference .bera-order-options .mg-order-meta-col:nth-child(2) h3{grid-column:1/-1}
+.is-manual-reference .bera-order-options .mg-order-ship{margin:0;font-size:12px;white-space:nowrap}
+.is-manual-reference .bera-order-options #mgOrderNoShipBtn{padding:10px;font-size:12px;height:42px;white-space:nowrap}
+.is-manual-reference .bera-order-options #mgOrderDisc,.is-manual-reference .bera-order-options #id_napomena{width:100%;height:42px;min-height:42px;margin:0}
+.is-manual-reference .bera-order-options .mg-order-disc{display:block;margin:0}
+.is-manual-reference .bera-order-options .mg-order-meta{overflow-x:auto}
+@media(max-width:1100px){.is-manual-reference .bera-order-options .mg-order-meta-grid{min-width:780px}}
+/* Readable customer chooser and selected customer details. */
+.is-manual-reference .mg-order-customer .bera-customer-icon{width:auto;min-width:48px;padding:10px 12px;gap:9px;height:48px;font:inherit;font-size:14px;color:#007db7}
+.is-manual-reference .bera-customer-icon span{display:inline;color:#007db7;white-space:nowrap}
+.is-manual-reference .blue-order-modal .mg-modal-panel{color:#143556}
+.is-manual-reference .blue-order-modal #mgCustomerSearchWrap{width:100%;margin:0;grid-template-columns:1fr}
+.is-manual-reference .blue-order-modal .mg-cust-field{display:block;width:100%;min-width:0}
+.is-manual-reference .blue-order-modal .mg-cust-search-row{display:flex;width:100%;min-width:0;gap:10px}
+.is-manual-reference .blue-order-modal .mg-icon-field{flex:1;min-width:0;width:100%}
+.is-manual-reference .blue-order-modal #mgCustomerSearch{display:block;width:100%;height:44px;padding:10px 14px;background:#fff;color:#143556!important;-webkit-text-fill-color:#143556;opacity:1;font-size:14px;line-height:22px}
+.is-manual-reference .blue-order-modal #mgCustomerSearch::placeholder{color:#69819b!important;-webkit-text-fill-color:#69819b;opacity:1}
+.is-manual-reference .blue-order-modal .mg-icon-field>svg{display:none}
+.is-manual-reference .blue-order-modal .blue-customer-list{display:block;position:static;max-height:48dvh;width:100%;margin:16px 0 0;padding:0}
+.is-manual-reference .blue-order-modal .blue-customer-list[hidden]{display:none!important}
+.is-manual-reference .blue-order-modal .blue-customer-list li{display:flex;flex-direction:column;align-items:flex-start;white-space:normal;overflow-wrap:anywhere;gap:6px;padding:14px;color:#143556;opacity:1}
+.is-manual-reference .blue-order-modal .blue-customer-list li strong{display:block;color:#143556!important;font-size:15px;font-weight:600;line-height:1.4}
+.is-manual-reference .blue-order-modal .blue-customer-list li>span{display:block;color:#526b8c!important;font-size:13px;line-height:1.5}
+.is-manual-reference #mgCustomerLockedName{color:#143556;font-size:16px}
+.is-manual-reference #mgCustomerLockedMeta{color:#526b8c;font-size:13px}
+.is-manual-reference .mg-customer-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;color:#526b8c;font-size:12px}
+.is-manual-reference .mg-customer-pager[hidden]{display:none!important}
+.is-manual-reference .mg-customer-pager button:disabled{opacity:.45;cursor:default}
+.is-manual-reference .blue-customer-list mark{background:#d9f1ff;color:#007db7;border-radius:3px;padding:0 2px;font-weight:700}
+/* Customer picker reference: four cards, icon actions, footer pagination. */
+.is-manual-reference .customer-choice-modal{padding:20px;align-items:center}
+.is-manual-reference .customer-choice-modal .mg-modal-panel{width:min(650px,calc(100vw - 32px));padding:20px;border-radius:14px;background:#fff}
+.is-manual-reference .customer-choice-modal .blue-modal-head{gap:16px;margin-bottom:24px}
+.is-manual-reference .customer-choice-modal h2{color:#111;font-size:22px;font-weight:700;margin:0}
+.is-manual-reference .customer-choice-modal .blue-modal-head>.mg-btn{width:44px;height:44px;min-height:44px;padding:0;flex:0 0 44px;font-size:20px;line-height:1}
+.is-manual-reference .customer-choice-modal .blue-modal-head>.blue-new-customer{width:48px;height:48px;flex-basis:48px;border:1px solid #bde3fb;border-radius:12px;background:#e7f6ff}
+.is-manual-reference .customer-choice-modal .blue-new-customer svg{width:26px;height:26px}
+.is-manual-reference .customer-choice-modal #mgCustomerSearch{height:42px;margin:0;font-size:14px;border-radius:8px}
+.is-manual-reference .customer-choice-modal #mgCustomerSearch:focus{outline:2px solid #0071db;outline-offset:0}
+.is-manual-reference .customer-choice-modal #mgCustomerAdd{display:none!important}
+.is-manual-reference .customer-choice-modal #mgCustomerSuggest{margin:24px 0 0;max-height:none;padding:0;border:0;box-shadow:none;position:static}
+.is-manual-reference .customer-choice-modal #mgCustomerSuggest li{box-sizing:border-box;min-height:64px;padding:14px;margin:0 0 10px;gap:5px;background:#f4faff;border:1px solid #d4e8f9;border-radius:10px}
+.is-manual-reference .customer-choice-modal #mgCustomerSuggest li strong{font-size:14px;color:#143556!important}
+.is-manual-reference .customer-choice-modal #mgCustomerSuggest li>span{font-size:12px;line-height:1.4;color:#526b8c!important}
+.is-manual-reference .customer-choice-modal .mg-customer-pager{margin:12px 0 20px;font-size:16px;color:#111;gap:12px}
+.is-manual-reference .customer-choice-modal .mg-customer-pager button{padding:11px 16px;font-size:14px;min-height:42px}
+@media(max-width:600px){.is-manual-reference .customer-choice-modal{padding:12px}.is-manual-reference .customer-choice-modal .mg-modal-panel{padding:16px}.is-manual-reference .customer-choice-modal .blue-modal-head{gap:10px}.is-manual-reference .customer-choice-modal h2{font-size:19px}}
+.is-manual-reference .customer-choice-modal #mgCustomerSuggest{max-height:min(380px,50dvh);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#9bcfe6 #f4faff;padding-right:5px}
+/* Primary save action and centered, viewport-fitted dialogs. */
+body.magacin-page.is-manual-reference #mgOrderForm button[type="submit"][value="sacuvaj"]{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:12px 20px;border:0;border-radius:10px;background:linear-gradient(115deg,#00bddd,#007bb8)!important;color:#fff!important;font-family:inherit;font-size:14px;font-weight:600;box-shadow:0 4px 12px #008abd25;cursor:pointer}
+body.magacin-page.is-manual-reference #mgOrderForm button[type="submit"][value="sacuvaj"]:hover{background:#007bb8!important;box-shadow:0 5px 16px #008abd35}
+body.magacin-page.is-manual-reference #mgOrderForm button[type="submit"][value="sacuvaj"] svg{width:19px;height:19px;color:#fff}
+body.magacin-page.is-manual-reference .mg-modal{box-sizing:border-box;position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+body.magacin-page.is-manual-reference .mg-modal[hidden]{display:none!important}
+body.magacin-page.is-manual-reference .mg-modal-panel{box-sizing:border-box;position:relative;margin:auto;width:min(560px,calc(100vw - 40px));max-width:100%;max-height:calc(100dvh - 40px);overflow-y:auto;padding:24px;border:1px solid #d4e8f9;border-radius:16px;background:#fff;color:#143556;box-shadow:0 20px 70px #123f5c35}
+body.magacin-page.is-manual-reference .customer-choice-modal .mg-modal-panel{width:min(650px,calc(100vw - 40px))}
+body.magacin-page.is-manual-reference .mg-modal-panel h2{margin:0 0 18px;font-size:21px;line-height:1.35;color:#143556}
+body.magacin-page.is-manual-reference .blue-modal-head h2{margin:0}
+body.magacin-page.is-manual-reference .mg-modal-panel .mg-modal-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:20px}
+body.magacin-page.is-manual-reference .mg-modal-panel .mg-form-grid{gap:14px}
+body.magacin-page.is-manual-reference #mgVpPaymentDialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;width:min(440px,calc(100vw - 40px));height:fit-content;max-height:calc(100dvh - 40px);overflow-y:auto;padding:24px;border:1px solid #d4e8f9;border-radius:16px;background:#fff;color:#143556;box-shadow:0 20px 70px #123f5c35;font-family:Inter,"Segoe UI",system-ui,sans-serif}
+body.magacin-page.is-manual-reference #mgVpPaymentDialog::backdrop{background:#163c5860;backdrop-filter:blur(4px)}
+body.magacin-page.is-manual-reference #mgVpPaymentDialog h2{margin:0 0 12px;padding:0;border:0;background:transparent;box-shadow:none;font-size:21px;color:#143556}
+body.magacin-page.is-manual-reference #mgVpPaymentDescription{margin:0 0 20px;padding:0;font-size:14px;line-height:1.6;color:#526b8c}
+body.magacin-page.is-manual-reference #mgVpPaymentDialog .mg-modal-actions{display:flex;gap:12px;padding:0;margin:0}
+body.magacin-page.is-manual-reference #mgVpPaymentDialog .mg-btn{flex:1;min-height:44px;padding:12px;border:1px solid #cfe4f5;border-radius:10px;background:#edf7ff;color:#007db7;font:600 14px Inter,"Segoe UI",system-ui,sans-serif;box-shadow:none}
+@media(max-width:600px){body.magacin-page.is-manual-reference .mg-modal{padding:12px}body.magacin-page.is-manual-reference .mg-modal-panel,body.magacin-page.is-manual-reference .customer-choice-modal .mg-modal-panel{width:calc(100vw - 24px);max-height:calc(100dvh - 24px);padding:18px}body.magacin-page.is-manual-reference #mgVpPaymentDialog{width:calc(100vw - 24px);max-height:calc(100dvh - 24px);padding:18px}}
+.is-manual-reference #mgOrderCatalog .mg-catalog-qty{margin-top:auto;display:block}
+.is-manual-reference #mgOrderCatalog [data-cat-plus]{width:100%;min-height:42px}
+body.magacin-page.is-manual-reference #mgOrderQtyModal .mg-modal-panel{width:min(400px,calc(100vw - 32px))}
+body.magacin-page.is-manual-reference #mgOrderQty{display:block;width:100%;height:64px;margin:18px 0;font-size:28px;font-weight:600;text-align:center;color:#007db7;border:1px solid #bde3fb;background:#f4faff;border-radius:12px}
+body.magacin-page.is-manual-reference #mgOrderQtyModal .vp-qty-actions{display:flex;justify-content:flex-end;gap:10px}
+/* Wide catalogue dialog with four product cards per row. */
+body.magacin-page.is-manual-reference .catalog-choice-modal .mg-modal-panel{width:min(1000px,calc(100vw - 40px));padding:20px;max-height:calc(100dvh - 40px);overflow-y:auto}
+body.magacin-page.is-manual-reference .catalog-choice-modal .blue-modal-head{margin-bottom:20px;gap:16px}
+body.magacin-page.is-manual-reference .catalog-choice-modal .blue-modal-head h2{color:#111;font-size:22px}
+body.magacin-page.is-manual-reference .catalog-choice-modal .blue-modal-head button{width:44px;height:44px;padding:0;font-size:20px;flex:0 0 44px}
+body.magacin-page.is-manual-reference .catalog-choice-modal .blue-catalog-panel>input{width:100%;height:42px;padding:12px;border:1px solid #cfe4f5;border-radius:8px;margin:0 0 18px}
+body.magacin-page.is-manual-reference .catalog-choice-modal #mgOrderCatalog{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0;max-height:none;overflow:visible;padding:0}
+body.magacin-page.is-manual-reference .catalog-choice-modal .mg-catalog-item{gap:8px;min-height:290px;padding:12px;border:1px solid #d4e8f9;border-radius:12px;background:#f5faff;color:#111}
+body.magacin-page.is-manual-reference .catalog-choice-modal .mg-catalog-image{width:100%;height:110px;object-fit:contain;background:transparent;border-radius:0}
+body.magacin-page.is-manual-reference .catalog-choice-modal .mg-catalog-item>strong{font-size:14px;line-height:1.4;color:#111;overflow-wrap:anywhere}
+body.magacin-page.is-manual-reference .catalog-choice-modal .mg-catalog-meta{font-size:14px;color:#222;margin:0}
+body.magacin-page.is-manual-reference .catalog-choice-modal .mg-catalog-price{font-size:17px;color:#111;margin:0 0 4px}
+body.magacin-page.is-manual-reference .catalog-choice-modal [data-cat-plus]{width:100%;min-height:42px;background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;border:0;border-radius:9px;font-size:14px}
+body.magacin-page.is-manual-reference #mgOrderQtyModal{z-index:220}
+@media(max-width:800px){body.magacin-page.is-manual-reference .catalog-choice-modal #mgOrderCatalog{grid-template-columns:repeat(2,minmax(0,1fr))}body.magacin-page.is-manual-reference .catalog-choice-modal .mg-catalog-item{min-height:260px}}
+@media(max-width:600px){body.magacin-page.is-manual-reference .catalog-choice-modal .mg-modal-panel{width:calc(100vw - 24px);padding:16px;max-height:calc(100dvh - 24px)}body.magacin-page.is-manual-reference .catalog-choice-modal .blue-modal-head h2{font-size:19px}}
+body.magacin-page.is-manual-reference .catalog-choice-modal .mg-catalog-availability{margin:0;color:#007db7;font-size:13px;font-weight:600;line-height:1.4}
+body.magacin-page.is-manual-reference .catalog-choice-modal .mg-catalog-availability.is-unavailable{color:#b42318}
+
+.is-manual-reference .mg-order-vat-note{display:block;margin:0 0 8px;color:#27863b;font-size:12px;line-height:1.4}
+.is-manual-reference .mg-order-vat-note[hidden]{display:none}
+
+.is-manual-reference #mgOrderVatRow[hidden],.is-manual-reference #mgOrderDiscountRow[hidden]{display:none!important}

@@ -300,7 +300,7 @@ def _magacin_search_query(request):
     ).strip()
 
 
-_MAGACIN_NAV_CACHE_KEY = 'mg_nav_counts_v1'
+_MAGACIN_NAV_CACHE_KEY = 'mg_nav_counts_v2'
 
 
 def invalidate_magacin_nav_counts():
@@ -324,7 +324,8 @@ def _magacin_nav_counts():
         pack_qs = pack_qs.exclude(broj__in=locked)
     data = {
         'new_magacin_orders_count': Order.objects.filter(status=Order.Status.NOVA).exclude(_prenos_mp_q()).count(),
-        'new_pack_orders_count': pack_qs.count(),
+        'new_pack_orders_count': pack_qs.exclude(_prenos_mp_q()).count(),
+        'active_prenos_count': _unvalidated_orders_qs().filter(_prenos_mp_q()).count(),
         'notify_count': StaffSiteEvent.objects.filter(
             kreirano__gte=timezone.now() - timedelta(hours=24),
         ).count(),
@@ -818,7 +819,7 @@ def magacin_artikli(request):
     _ensure_magacin_locations()
     query = _magacin_search_query(request)
     include_zero = (request.GET.get('bez_zalihe') or '') == '1'
-    searched = bool(query)
+    searched = bool(query) or 'pretraga' in request.GET or 'page' in request.GET
     recent_movements = list(
         WarehouseMovement.objects.filter(
             tip__in=[
@@ -853,7 +854,7 @@ def magacin_artikli(request):
             include_zero = True
             context['include_zero'] = True
     unique = exact
-    if unique is None and request.GET.get('rezultati') != '1':
+    if query and unique is None and request.GET.get('rezultati') != '1':
         # Only inspect two rows to decide whether to open a unique result.
         candidates = list(products[:2])
         if len(candidates) == 1:
@@ -866,7 +867,7 @@ def magacin_artikli(request):
         return redirect(f'{url}?{urlencode(params)}')
     qs = products
 
-    paginator = Paginator(qs, 40)
+    paginator = Paginator(qs, 20)
     page = paginator.get_page(request.GET.get('page') or 1)
     product_ids = [item.pk for item in page.object_list]
     totals_by_product = {}
@@ -2996,8 +2997,10 @@ def _order_text_search_q(query):
 @user_passes_test(warehouse_user_required)
 def magacin_narudzbe(request):
     izvor = (request.GET.get('izvor') or 'sve').strip()
-    show_validated = (request.GET.get('validirane') or '') == '1'
-    show_all_validated = (request.GET.get('sve') or '') == '1'
+    status_tab = request.GET.get('status') or ''
+    show_cancelled = status_tab == 'otkazana'
+    show_validated = status_tab == 'zavrsene' or (request.GET.get('validirane') or '') == '1'
+    show_all_validated = status_tab == 'zavrsene' or (request.GET.get('sve') or '') == '1'
     order_query = (request.GET.get('pretraga') or request.GET.get('q') or '').strip()
     today = timezone.localdate()
     day = _parse_brza_posta_day(request.GET.get('datum')) if show_validated else today
@@ -3019,7 +3022,11 @@ def magacin_narudzbe(request):
     elif izvor == 'webshop':
         orders = orders.filter(izvor=Order.Izvor.WEBSHOP)
     validated_q = _validated_orders_q()
-    if order_query:
+    if show_cancelled:
+        orders = orders.filter(status=Order.Status.OTKAZANA)
+        if order_query:
+            orders = orders.filter(_order_text_search_q(order_query))
+    elif order_query:
         # Text search spans open, cancelled and validated orders, regardless of day.
         orders = orders.filter(_order_text_search_q(order_query))
     else:
@@ -3030,7 +3037,25 @@ def magacin_narudzbe(request):
                 orders = orders.filter(_brza_posta_day_q(day))
         else:
             orders = orders.exclude(validated_q)
-    order_list = list(orders[:200] if show_validated else orders[:80])
+    cancelled_page = None
+    cancelled_page_links = []
+    if show_cancelled:
+        cancelled_page = Paginator(orders.order_by('-kreirana', '-pk'), 10).get_page(request.GET.get('page'))
+        order_list = list(cancelled_page.object_list)
+        page_params = request.GET.copy()
+        page_params.pop('page', None)
+        for number in cancelled_page.paginator.get_elided_page_range(cancelled_page.number):
+            if number == cancelled_page.paginator.ELLIPSIS:
+                cancelled_page_links.append({'label': number})
+            else:
+                page_params['page'] = number
+                cancelled_page_links.append({
+                    'label': number,
+                    'url': '?' + page_params.urlencode(),
+                    'active': number == cancelled_page.number,
+                })
+    else:
+        order_list = list(orders[:200] if show_validated else orders[:80])
     if not show_validated:
         locked = pending_mp_brojevi(collect_mp_checks(order_list))
         for order in order_list:
@@ -3061,6 +3086,8 @@ def magacin_narudzbe(request):
         validated=show_validated,
     ):
         params = {}
+        if show_cancelled and not validated:
+            params['status'] = 'otkazana'
         if validated:
             params['validirane'] = '1'
             if all_validated:
@@ -3076,6 +3103,9 @@ def magacin_narudzbe(request):
     context = _magacin_context(request, section='narudzbe', page_title='Narudžbe — Magacin')
     context.update({
         'orders': order_list,
+        'show_cancelled': show_cancelled,
+        'cancelled_page': cancelled_page,
+        'cancelled_page_links': cancelled_page_links,
         'izvor_filter': izvor,
         'show_validated': show_validated,
         'show_all_validated': show_all_validated,
@@ -3266,7 +3296,7 @@ def magacin_xexpress_bulk(request):
 def magacin_narudzbe_stampa(request):
     from .views import _order_print_job
 
-    brojevi = [b.strip() for b in request.GET.getlist('b') if (b or '').strip()]
+    brojevi = _print_order_numbers(request)
     brojevi = list(dict.fromkeys(brojevi))[:30]
     if not brojevi:
         messages.error(request, 'Odaberi barem jednu narudžbu za štampu.')
@@ -3306,7 +3336,7 @@ def magacin_narudzbe_stampa(request):
 @user_passes_test(warehouse_user_required)
 def magacin_narudzbe_stampa_kolicine(request):
     from .b2b_pricing import b2b_volume_discount_notes, invoice_price_notes
-    brojevi = [b.strip() for b in request.GET.getlist('b') if (b or '').strip()]
+    brojevi = _print_order_numbers(request)
     brojevi = list(dict.fromkeys(brojevi))[:30]
     if not brojevi:
         messages.error(request, 'Odaberi barem jednu VP narudžbu za štampu količina.')
@@ -3733,6 +3763,7 @@ def magacin_artikli_lookup(request):
             'is_set': product.is_set,
             'id': product.pk,
             'naziv': product.naziv,
+            'slika': product.prikazna_slika.url if product.prikazna_slika else '',
             'sifra': product.sifra or '',
             'barkod': product.barkod or '',
             'cijena': str(product.prikazna_cijena),
@@ -3769,32 +3800,39 @@ def _phone_digits(value):
 @user_passes_test(warehouse_user_required)
 def magacin_kupci_lookup(request):
     query = (request.GET.get('q') or '').strip()
-    qs = WarehouseCustomer.objects.order_by('-azuriran', 'ime_prezime')
+    qs = WarehouseCustomer.objects.order_by('-azuriran', '-pk')
     if query:
         digits = _phone_digits(query)
         filt = (
             Q(ime_prezime__icontains=query)
             | Q(telefon__icontains=query)
             | Q(grad__icontains=query)
+            | Q(adresa__icontains=query)
+            | Q(postanski_broj__icontains=query)
+            | Q(email__icontains=query)
         )
-        if digits:
+        if digits and not any(char.isalpha() for char in query):
             filt |= Q(telefon__icontains=digits)
-        matches = list(qs.filter(filt)[:40])
-        if digits and len(matches) < 40:
-            seen = {row.pk for row in matches}
-            for row in WarehouseCustomer.objects.order_by('-azuriran'):
-                if row.pk in seen:
-                    continue
-                if digits in _phone_digits(row.telefon) or _customer_phone_key(query) == _customer_phone_key(row.telefon):
-                    matches.append(row)
-                    seen.add(row.pk)
-                if len(matches) >= 40:
-                    break
-        results = [_customer_payload(row) for row in matches]
-    else:
-        results = [_customer_payload(row) for row in qs[:40]]
+            canonical = _customer_phone_key(query)
+            matching_ids = [
+                pk for pk, phone in WarehouseCustomer.objects.values_list('pk', 'telefon')
+                if digits in _phone_digits(phone)
+                or (canonical and canonical == _customer_phone_key(phone))
+            ]
+            filt |= Q(pk__in=matching_ids)
+        qs = qs.filter(filt)
+    try:
+        page_size = max(1, min(40, int(request.GET.get('page_size') or 40)))
+    except (TypeError, ValueError):
+        page_size = 40
+    page = Paginator(qs, page_size).get_page(request.GET.get('page') or 1)
+    results = [_customer_payload(row) for row in page]
     _add_customer_excess_payload(results)
-    return JsonResponse({'results': results, 'query': query})
+    return JsonResponse({
+        'results': results, 'query': query, 'page': page.number,
+        'pages': page.paginator.num_pages, 'count': page.paginator.count,
+        'has_next': page.has_next(), 'has_previous': page.has_previous(),
+    })
 
 
 def _add_customer_excess_payload(results):
@@ -5711,9 +5749,10 @@ def magacin_pakuj_sken(request):
     return redirect('staff_magacin_pakuj_detail', broj=order.broj)
 
 
-def pending_prenos_mp_jobs():
+def pending_prenos_mp_jobs(completed=False):
     orders = (
-        _unvalidated_orders_qs()
+        (Order.objects.filter(_validated_orders_q()).exclude(status=Order.Status.OTKAZANA)
+         if completed else _unvalidated_orders_qs())
         .filter(ime_prezime='Prenos u MP')
         .prefetch_related('stavke__artikal', 'magacin_holds__location')
         .order_by('kreirana')
@@ -5786,7 +5825,7 @@ def _order_pick_status(order):
     return 'ceka'
 
 
-def collect_pick_jobs():
+def collect_pick_jobs(*, completed_limit=80):
     jobs = []
     seen = set()
     qs = list(
@@ -5808,8 +5847,10 @@ def collect_pick_jobs():
     done_qs = (
         _completed_pick_qs()
         .annotate(_item_count=Count('stavke'))
-        .order_by(F('zapakovana_at').desc(nulls_last=True), '-kreirana')[:80]
+        .order_by(F('zapakovana_at').desc(nulls_last=True), '-kreirana')
     )
+    if completed_limit is not None:
+        done_qs = done_qs[:completed_limit]
     for order in done_qs:
         if order.pk in seen:
             continue
@@ -5823,6 +5864,12 @@ def collect_pick_jobs():
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
 def magacin_pakuj(request):
+    if request.GET.get('prenosnice') == '1':
+        completed = request.GET.get('status') == 'prenijete'
+        context = _magacin_context(request, section='prenosnice', page_title='Prenosnice — Magacin')
+        context.update({'prenos_mp_jobs': pending_prenos_mp_jobs(completed=completed),
+                        'completed_transfers': completed})
+        return render(request, 'staff/magacin/prenosnice.html', context)
     claimed_order = None
     zauzeto = (request.GET.get('zauzeto') or '').strip()
     if zauzeto:
@@ -5841,7 +5888,7 @@ def magacin_pakuj(request):
     explicit_status = (request.GET.get('status') or '').strip()
     status_filter = explicit_status or 'ceka'
     query = (request.GET.get('pretraga') or request.GET.get('q') or '').strip()
-    jobs = collect_pick_jobs()
+    jobs = collect_pick_jobs(completed_limit=None if status_filter == 'zavrseno' else 80)
     counts = {
         'sve': 0,
         'ceka': 0,
@@ -5867,6 +5914,9 @@ def magacin_pakuj(request):
         ]
     if status_filter in {'ceka', 'u_toku', 'zavrseno'}:
         jobs = [job for job in jobs if job.pick_status == status_filter]
+    pick_page = Paginator(jobs, 10).get_page(request.GET.get('page')) if status_filter == 'zavrseno' else None
+    if pick_page is not None:
+        jobs = pick_page.object_list
     context = _magacin_context(request, section='pakuj', page_title='Picking — Magacin')
     context.update({
         'pick_fullscreen': False,
@@ -5875,6 +5925,7 @@ def magacin_pakuj(request):
         'mp_pending_count': len(collect_mp_customers()),
         'claimed_order': claimed_order,
         'pick_jobs': jobs,
+        'pick_page': pick_page,
         'pick_status_filter': status_filter,
         'pick_query': query,
         'pick_counts': counts,
@@ -9112,3 +9163,21 @@ def magacin_dupli_barkod_obrisi(request, pk):
     params = {'q': (request.POST.get('q') or '')[:200],
               'page': (request.POST.get('page') or '1')[:10]}
     return redirect(reverse('staff_magacin_dupli_barkodovi') + '?' + urlencode(params))
+
+
+def _print_order_numbers(request):
+    numbers = [b.strip() for b in request.GET.getlist('b') if (b or '').strip()]
+    if not numbers and request.GET.get('datum'):
+        day = _parse_brza_posta_day(request.GET.get('datum'))
+        numbers = list(Order.objects.filter(_validated_orders_q()).filter(_brza_posta_day_q(day))
+                       .exclude(status=Order.Status.OTKAZANA).exclude(_prenos_mp_q())
+                       .order_by('kreirana').values_list('broj', flat=True))
+    return numbers
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+def magacin_narudzbe_najava(request):
+    numbers = _print_order_numbers(request)
+    orders = Order.objects.filter(broj__in=numbers).exclude(status=Order.Status.OTKAZANA).order_by('kreirana')
+    return render(request, 'staff/magacin/najava_print.html', {'orders': orders, 'print_day': request.GET.get('datum', '')})

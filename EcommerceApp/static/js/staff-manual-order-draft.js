@@ -137,7 +137,7 @@
                 recoveredKey = '';
             }
             if (entry.event === 'cancel' && !blocked) {
-                window.location.assign(form.action);
+                window.location.assign(form.getAttribute('data-cancel-url') || form.getAttribute('action') || window.location.pathname);
                 return;
             }
             if (recovering && !queue.length && !blocked) { window.location.reload(); return; }

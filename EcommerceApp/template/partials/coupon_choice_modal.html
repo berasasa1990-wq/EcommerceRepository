@@ -1,8 +1,17 @@
-{% if coupon_choices|length > 1 and not applied_coupon_code %}
+{% if not user.is_authenticated or coupon_choices|length > 1 and not applied_coupon_code %}
 <div class="coupon-choice-modal" id="couponChoiceDialog" role="dialog" aria-modal="true" aria-labelledby="couponChoiceTitle" hidden>
     <button type="button" class="coupon-choice-backdrop" data-coupon-choice-close aria-label="Zatvori izbor nagrade"></button>
     <div class="coupon-choice-panel">
-        <button type="button" class="coupon-choice-close" data-coupon-choice-close aria-label="Zatvori">×</button>
+        <button type="button" class="coupon-choice-close" data-coupon-choice-close aria-label="Zatvori"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+        {% if not user.is_authenticated %}
+        <p class="coupon-choice-kicker">VAŠE POGODNOSTI</p>
+        <h2 id="couponChoiceTitle">Registrujte se za korištenje pogodnosti</h2>
+        <p class="coupon-choice-intro">Za primjenu kupona ili loyalty kartice morate imati registrovan nalog. Kreirajte nalog ili se prijavite ako ga već imate.</p>
+        <div class="coupon-choice-auth-actions">
+            <a class="coupon-choice-select" href="{% url 'register' %}">Registrujte se</a>
+            <a class="coupon-choice-auth-login" href="{% url 'login' %}?next={% url 'cart' %}">Već imate nalog? Prijavite se</a>
+        </div>
+        {% else %}
         <p class="coupon-choice-kicker">VAŠE POGODNOSTI</p>
         <h2 id="couponChoiceTitle">Odaberite nagradu</h2>
         <p class="coupon-choice-intro">Odaberite jednu pogodnost za ovu narudžbu.</p>
@@ -12,7 +21,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
                 <input type="hidden" name="kod" value="{{ coupon.kod }}">
-                <span class="coupon-choice-icon" aria-hidden="true">{% if coupon.vrsta == 'dostava' %}🚚{% else %}🎁{% endif %}</span>
+                <span class="coupon-choice-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">{% if coupon.vrsta == 'dostava' %}<path d="M2 4h13v13H2zM15 9h4l3 4v4h-7"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/>{% else %}<path d="M3 8h18v4H3zM5 12v10h14V12M12 8v14"/><path d="M12 8H8a3 3 0 1 1 3-3l1 3Zm0 0h4a3 3 0 1 0-3-3l-1 3Z"/>{% endif %}</svg></span>
                 <span class="coupon-choice-copy">
                     <strong>{{ coupon.naziv }}</strong>
                     <span>{% if coupon.vrsta == 'dostava' %}Besplatna dostava{% elif coupon.vrsta == 'iznos' %}{{ coupon.iznos }} KM popusta{% else %}{{ coupon.postotak }}% popusta{% if coupon.automatski or coupon.loyalty_kartica_id %} na artikle koji nisu na akciji{% endif %}{% endif %}</span>
@@ -21,6 +30,7 @@
             </form>
             {% endfor %}
         </div>
+        {% endif %}
     </div>
 </div>
 {% endif %}

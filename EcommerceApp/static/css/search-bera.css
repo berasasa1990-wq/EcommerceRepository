@@ -1,0 +1,42 @@
+#mobileSearchDialog{color:#10243b;background:linear-gradient(180deg,#f0f9ff 0,#fff 220px);font-family:var(--font-sans,Inter,sans-serif)}
+#mobileSearchDialog::backdrop{background:rgba(7,25,46,.48);backdrop-filter:blur(5px)}
+#mobileSearchDialog .mobile-search-head{margin-bottom:22px;gap:16px}
+#mobileSearchDialog .mobile-search-head :is(button,a[aria-label="Korpa"]){display:grid;place-items:center;width:40px;height:40px;flex-shrink:0;padding:8px;border:1px solid #dcebf5;border-radius:12px;background:#fff;color:#008bc5;box-sizing:border-box}
+#mobileSearchDialog .mobile-search-head svg{width:22px;height:22px}
+#mobileSearchDialog .mobile-search-form{gap:12px}
+#mobileSearchDialog .mobile-search-form>div{align-items:center;gap:6px;min-height:52px;padding:4px 8px;border:1px solid #b9dfef;border-radius:14px;background:#fff;box-shadow:0 3px 15px #008bc508;transition:border-color .15s,box-shadow .15s}
+#mobileSearchDialog .mobile-search-form>div:focus-within{border-color:#0099ce;box-shadow:0 0 0 3px #0099ce18}
+#mobileSearchDialog .mobile-search-form input{padding:10px 4px;font-size:16px;color:#10243b}
+#mobileSearchDialog .mobile-search-form input::placeholder{color:#7b92a5}
+#mobileSearchDialog .mobile-search-form input::-webkit-search-cancel-button{display:none}
+#mobileSearchDialog .mobile-search-form button{color:#008bc5;cursor:pointer}
+#mobileSearchDialog .mobile-search-form>div button{display:grid;place-items:center;flex-shrink:0;width:34px;height:34px;border-radius:8px}
+#mobileSearchDialog .mobile-search-form>div button:hover{background:#eaf6fc}
+#mobileSearchDialog .mobile-search-form [data-search-clear] svg{width:17px;height:17px}
+#mobileSearchDialog .mobile-search-hint{margin:12px 0 24px;color:#627e94;font-size:12px;line-height:1.5}
+#mobileSearchDialog .mobile-search-scroll{padding-right:4px;scrollbar-width:thin;scrollbar-color:#b9dfef transparent}
+#mobileSearchDialog .mobile-search-scroll h2{margin-bottom:14px;font-size:20px;font-weight:750;letter-spacing:-.4px;color:#10243b}
+#mobileSearchDialog [data-search-status]{padding:14px 16px;margin-bottom:12px;border:1px solid #dcebf5;border-radius:12px;background:#f4faff;color:#627e94;font-size:13px;line-height:1.5}
+#mobileSearchDialog [data-search-results]{display:grid;gap:10px}
+#mobileSearchDialog .mobile-search-result{gap:16px;padding:14px;border:1px solid #e1edf5;border-radius:14px;background:#fff;transition:border-color .15s,background .15s}
+#mobileSearchDialog .mobile-search-result:hover{border-color:#b9dfef;background:#fafdff}
+#mobileSearchDialog .mobile-search-result__main{gap:14px;text-decoration:none;color:#10243b}
+#mobileSearchDialog .mobile-search-result__main>div{min-width:0;overflow-wrap:normal;word-break:normal;hyphens:none}
+#mobileSearchDialog .mobile-search-result__main img{width:76px;height:76px;padding:6px;box-sizing:border-box;background:#f4f9fc;border-radius:10px;object-fit:contain}
+#mobileSearchDialog .mobile-search-result__main strong{font-size:14px;line-height:1.4}
+#mobileSearchDialog .mobile-search-result__main small{color:#7890a3;font-size:11px;margin:4px 0}
+#mobileSearchDialog .mobile-search-result__side strong{font-size:17px;color:#008bc5}
+#mobileSearchDialog .mobile-search-result__side button{width:38px;height:38px;border-radius:10px;background:linear-gradient(120deg,#00c6e7,#007db8);color:#fff;cursor:pointer}
+#mobileSearchDialog .mobile-search-result__side button:disabled{opacity:.6;cursor:wait}
+#mobileSearchDialog .mobile-search-result__more{color:#008bc5;text-decoration:none}
+#mobileSearchDialog .search-stock{display:inline-block;color:#009b6b;font-size:10px}
+#mobileSearchDialog .search-stock--out{color:#9a6170}
+#mobileSearchDialog .mobile-search-all{margin:16px 0;padding:13px 16px;border-radius:10px;background:linear-gradient(120deg,#00c6e7,#007db8);color:#fff;font-size:14px;text-decoration:none}
+#mobileSearchDialog [data-search-related] h3{color:#45617a;font-size:14px}
+#mobileSearchDialog [data-search-related] a{padding:8px 12px;border:1px solid #dcebf5;border-radius:20px;background:#f1f9fd;color:#008bc5;text-decoration:none;font-size:12px}
+#mobileSearchDialog .mobile-search-tip{margin-top:20px;padding:14px;background:#f1f9fd;color:#627e94;font-size:12px;line-height:1.5;border:1px solid #e1edf5}
+#mobileSearchDialog :is(button,a):focus-visible{outline:3px solid #008bc5;outline-offset:3px}
+#mobileSearchDialog .mobile-home-dock [data-mobile-home-search],#mobileSearchDialog .mobile-home-dock [data-mobile-home-search] svg{color:#008bc5;stroke:#008bc5}
+@media(min-width:1025px){#mobileSearchDialog{width:min(800px,calc(100vw - 64px));height:min(760px,calc(100dvh - 64px));padding:28px 32px;border:1px solid #dcebf5;border-radius:22px;box-shadow:0 24px 90px #07192e33}}
+@media(max-width:540px){#mobileSearchDialog .mobile-search-result{gap:10px;padding:10px}#mobileSearchDialog .mobile-search-result__main{gap:10px}#mobileSearchDialog .mobile-search-result__main img{width:54px;height:60px}#mobileSearchDialog .mobile-search-result__main strong{font-size:12px}#mobileSearchDialog .mobile-search-result__side strong{font-size:14px}#mobileSearchDialog .mobile-search-hint{margin-bottom:18px}#mobileSearchDialog .mobile-search-head{margin-bottom:16px}}
+@media(prefers-reduced-motion:reduce){#mobileSearchDialog *{transition:none!important}}

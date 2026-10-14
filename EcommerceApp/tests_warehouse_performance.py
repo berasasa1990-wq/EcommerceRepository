@@ -75,7 +75,18 @@ class WarehousePerformanceTests(TestCase):
             with CaptureQueriesContext(connection) as queries:
                 context = magacin_artikli(req)
         self.assertEqual(context['result_count'], 65)
-        self.assertEqual(len(context['page'].object_list), 40)
+        self.assertEqual(len(context['page'].object_list), 20)
         self.assertTrue(context['include_zero'])
         product_reads = [q['sql'] for q in queries if 'FROM "EcommerceApp_product"' in q['sql'] and 'COUNT(' not in q['sql']]
         self.assertTrue(all('LIMIT ' in sql for sql in product_reads))
+        req = RequestFactory().get('/nalog/magacin/artikli/', {'pretraga': '', 'page': '2'})
+        req.user = get_user_model().objects.get(username='perf')
+        req.session = {}
+        with patch('EcommerceApp.views_magacin._magacin_context', return_value={}), patch('EcommerceApp.views_magacin.render', side_effect=lambda r, t, c: c):
+            context = magacin_artikli(req)
+        self.assertTrue(context['searched'])
+        self.assertEqual(context['result_count'], 65)
+        self.assertEqual(context['page'].number, 2)
+        self.assertEqual(context['page'].paginator.num_pages, 4)
+        self.assertEqual(len(context['page'].object_list), 20)
+

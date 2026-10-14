@@ -70,6 +70,7 @@
                     <span class="site-popup-product-info">
                         <span class="site-popup-product-label">KUPUJETE</span>
                         <span class="site-popup-product-name">{{ akcija.artikal.naziv }}</span>
+                    {% include 'partials/product_stock_label.html' with product=akcija.artikal %}
                         <span class="site-popup-product-price product-price">
                             {% include 'partials/product_price.html' with item=akcija.artikal %}
                         </span>
@@ -96,6 +97,7 @@
                             {% endif %}
                         </span>
                         <span class="site-popup-product-name">{{ akcija.gratis_artikal.naziv }}</span>
+                    {% include 'partials/product_stock_label.html' with product=akcija.gratis_artikal %}
                         <span class="site-popup-product-price product-price">
                             {% with cijene=akcija.gratis_cijene_za_prikaz %}
                             {% if cijene %}
@@ -159,6 +161,7 @@
                         </div>
                     </div>
                     <p class="bundle-pack-card-name">{{ item.product.naziv }}</p>
+                    {% include 'partials/product_stock_label.html' with product=item.product %}
                 </article>
                 {% if not forloop.last %}
                 <div class="bundle-pack-plus" aria-hidden="true">+</div>
@@ -248,6 +251,7 @@
                 </div>
                 <div class="qty-deal-product-info">
                     <p class="qty-deal-product-name">{{ product.naziv }}</p>
+                    {% include 'partials/product_stock_label.html' with product=product %}
                     <p class="bundle-pack-card-pack">{% if product.je_pakovanje %}📦 {{ product.pakovanje_label }}{% else %}&nbsp;{% endif %}</p>
                     <p class="qty-deal-product-base">
                         Regularna cijena: <strong>{{ product.prikazna_cijena }} KM</strong>
@@ -359,6 +363,7 @@
                 </span>
                 <span class="site-popup-product-info">
                     <span class="site-popup-product-name">{{ akcija.artikal.naziv }}</span>
+                    {% include 'partials/product_stock_label.html' with product=akcija.artikal %}
                     <span class="site-popup-product-price product-price">
                         {% if akcija.tip == 'timer' %}
                             {% with cijene=akcija.timer_cijene_za_prikaz %}

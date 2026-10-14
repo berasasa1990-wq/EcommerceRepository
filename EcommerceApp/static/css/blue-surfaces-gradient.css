@@ -1,0 +1,190 @@
+/* Shared gradient for existing blue surfaces; text and icons retain their colors. */
+body.page-account .acc-dash-nav-link.is-active{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.page-account .acc-btn-orange{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.page-account .acc-btn-orange:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.page-account .am-progress span{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.is-auth-page .auth-form .btn-primary{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.is-auth-page .auth-form .btn-primary:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.is-cart-page .cart-page .btn-cart-checkout,
+body.is-cart-page .cart-page .btn-coupon,
+body.is-cart-page .cart-page .btn-coupon--full,
+body.is-cart-page .cart-page > .btn-primary{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.is-cart-page .cart-page .btn-cart-checkout:hover,
+body.is-cart-page .cart-page .btn-coupon:hover,
+body.is-cart-page .cart-page .btn-coupon--full:hover,
+body.is-cart-page .cart-page > .btn-primary:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.catalog-header-reference .product-catalog .product-card-add-btn:not(.product-card-add-btn--notify){background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.catalog-header-reference .product-catalog .product-card-add-btn:not(.product-card-add-btn--notify):hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.catalog-load-more button{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.is-checkout-page .checkout-form > .btn{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.is-checkout-page .checkout-form > .btn:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.home-mobile-reference.home-bera-cards .home-products .product-card-add-btn:not(.product-card-add-btn--notify){background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-product-reference .product-detail-purchase .btn-add-to-bag,
+body.bera-product-reference .btn-detail-variation-add{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.bera-variant-choices button[aria-pressed=true]{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-product-reference .product-lower-related .product-card-add-btn:not(.product-card-add-btn--notify){background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-product-reference .product-detail-purchase .btn-add-to-bag{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-product-reference .product-lower-related .product-card .product-card-add-btn{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome.bera-chrome .product-card button.product-card-add-btn:not(.stock-notify-action){background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body .product-card.product-card--catalog[data-product-card] .product-card-add-btn:not(.product-card-add-btn--notify){background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+#mobileSearchDialog .mobile-search-result__side button{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.is-manual-reference .mg-btn-primary,
+.is-manual-reference [data-cat-plus]{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.magacin-page.is-manual-reference #mgOrderForm button[type="submit"][value="sacuvaj"]{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.magacin-page.is-manual-reference .catalog-choice-modal [data-cat-plus]{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.is-orders-reference .mg-btn-primary{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+#orderCancelDialog .order-cancel-submit{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-toolbar-actions .mg-btn-primary{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-toolbar-actions .mg-btn-primary:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.vo-button{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.vo-button:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.is-picking-blue .pk-reference .pk-confirm-quantity{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.is-picking-blue .pk-reference .pk-bar-finish{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+html body .hm-badge--top{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome.bera-chrome.bera-chrome.bera-chrome.bera-chrome :is(
+ .product-card-add-btn:not(.product-card-add-btn--notify),
+ .btn-add-to-bag:not(.btn-add-to-bag--notify),
+ .btn-detail-variation-add,
+ [data-almost-cart],
+ form[action*="add_to_cart"] button[type="submit"]
+){background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome.bera-chrome.bera-chrome.bera-chrome.bera-chrome :is(
+ .hm-badge--sale,
+ .hm-badge--novo,
+ .hm-badge--top,
+ .product-card-corner-badge--sale,
+ .product-card-corner-badge--novitet,
+ .product-card-corner-badge--hit,
+ .home-card-sale-percent,
+ .home-card-new-label,
+ .product-detail-corner-badge--sale,
+ .product-detail-corner-badge--novitet,
+ .product-detail-corner-badge--hit
+){background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+#cartAbandonExitOverlay .cart-abandon-cta{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.is-cart-page .cart-shipping-progress-fill,
+body.is-cart-page .cart-loyalty-bar span{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.catalog-header-reference:has(.product-catalog) .catalog-desktop-filter__apply{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.catalog-header-reference:has(.product-catalog) .catalog-desktop-filter__apply:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.catalog-header-reference:has(.product-catalog) .catalog-page-link--active{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.coupon-choice-select{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.coupon-choice-select:hover, .coupon-choice-select:focus-visible{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits__item,.home-trust-bar__item)::before{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.home-mobile-reference.home-bera-cards .home-products .product-card-corner-badge,body.home-mobile-reference.home-bera-cards .home-products .home-card-new-label,body.home-mobile-reference.home-bera-cards .home-products .home-card-sale-percent{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.success-step-icon.is-complete{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.success-step-line{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.success-primary{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.bundle-pack-deal{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.bundle-pack-deal--compact{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.bundle-pack-deal--hero{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pk-prenos .pk-bar{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.prenos-info-icon{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.bera-product-new{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-product-reference .product-detail-purchase .btn-add-to-bag,body.bera-product-reference .btn-detail-variation-add{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-product-reference .pd-desktop-dot.is-active{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-product-reference .bera-product-details .product-detail-description li::before{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pd-inline-bundle__recommended{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pd-inline-bundle--offer .pd-inline-bundle__button{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pd-inline-bundle--offer .pd-inline-bundle__button:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pd-quantity-option--single .pd-quantity-radio{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pd-quantity-discount{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-product-reference .product-key-features li::before{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome .pd-inline-qty__cta{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome .pd-inline-qty__cta:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome .qty-deal-tier-card .qty-deal-tier-cta{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome .is-selected .pd-inline-qty__radio:after{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome .pd-inline-qty__pct{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+#mobileSearchDialog .mobile-search-all{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome .social-proof-toast__close:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.staff-alert-toast__btn--offer:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.staff-alerts-feedback{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.magacin-page.is-article-list .mg-pager .is-current{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.stock-search .stock-search-submit{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.is-ledger .ld-dialog::backdrop{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.la-card-act--bulk-offer{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.cart-toast{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.loy-table tbody tr:hover td{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.mg-prenos-tabs a.is-active,.mg-prenos-action{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pk-bar{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pk-bar-dark{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pk-step .pk-all{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pk-track i{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pk-add-btn{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.is-manual-reference .mg-btn-primary,.is-manual-reference [data-cat-plus]{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.is-manual-reference .blue-order-modal .mg-modal-bg{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.magacin-page.is-manual-reference #mgOrderForm button[type="submit"][value="sacuvaj"]:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.magacin-page.is-manual-reference #mgVpPaymentDialog::backdrop{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.magacin-page.is-mp-shortage .mg-pager .is-current{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.bera-order-status a.is-active{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+#beraPrintDialog::backdrop{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+#orderCancelDialog::backdrop{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.order-pagination a.is-active{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+#pkFinishDialog::backdrop{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+#pkFinishConfirm{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pick-blue-completed-progress progress::-webkit-progress-value{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pick-blue-completed-progress progress::-moz-progress-bar{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.magacin-page.is-picking-blue .pk-reference button.pick-blue-finish{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.magacin-page.is-picking-blue .pk-reference button.pick-blue-finish:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.magacin-page.is-picking-blue .pk-reference button:is(.pk-confirm-quantity,.pk-bar-finish,.pick-blue-finish),
+body.magacin-page.is-picking-blue #pkFinishConfirm{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.magacin-page.is-picking-blue .pk-reference button:is(.pk-confirm-quantity,.pk-bar-finish,.pick-blue-finish):hover,
+body.magacin-page.is-picking-blue #pkFinishConfirm:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.is-picking-overview-blue .picking-start{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.is-picking-overview-blue .picking-start:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.is-picking-overview-blue .mg-filter-tabs a.is-active{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.magacin-page.is-picking-overview-blue .mg-orders-page .mg-filter-tabs a.is-active{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.is-picking-overview-blue .picking-pagination a{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.staff-stock-badge--hidden,
+body.staff-edit-mode-on .staff-stock-badge--hidden{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.is-spares .mg-pager .is-current{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.magacin-page.is-stock-reference .mg-pager .is-current{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome.bera-chrome.bera-chrome #header .cart-badge,body.bera-chrome.bera-chrome.bera-chrome #header .wishlist-badge{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.bera-home-nav .is-current{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome #header .logo-admin-panel{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome #header .logo-admin-panel:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome .mobile-home-dock :is(.mobile-dock-cart-count,.mobile-dock-favorites-count){background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome.bera-chrome.bera-chrome.bera-chrome :is(.home-card-sale-percent,.product-card-corner-badge--sale,.hm-badge--sale,.card-dwell-badge,.pd-inline-qty__pct,.qty-deal-tier-badge,.qty-deal-offer-tier-badge){background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome .mobile-category-entry[open] summary::before{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+body.bera-chrome .mobile-categories-extra--sale{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.home-brand-showcase-link:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.contact-float--toggle{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.contact-float--toggle:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.contact-float-group.is-open .contact-float--toggle{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.contact-float--viber{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.contact-float--messenger{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.staff-objava-modal__actions #staffObjavaGenerate{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.staff-stock-badge--hidden{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.btn-viber-card{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.btn-viber-card:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.pd-dwell-flash{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.fish-advisor__panel{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.fish-advisor__messages{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.fish-advisor__msg--bot .fish-advisor__bubble{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.fish-advisor__product{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.fish-advisor__product:hover{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.fish-advisor__product-img{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.fish-advisor__options{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.fish-advisor__hint{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.staff-dash-kpi--orders::before{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.staff-dash-source--google .staff-dash-source__bar > span,
+.staff-dash-source--google_ads .staff-dash-source__bar > span{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.staff-dash-source--facebook .staff-dash-source__bar > span,
+.staff-dash-source--facebook_ads .staff-dash-source__bar > span{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+.vlog-load-more{background:linear-gradient(180deg,#00c6df 0%,#0094cd 100%)!important;}
+
+/* Darker companion gradient for interactive blue controls. */
+html body :is(button,input[type="submit"],a):is(.btn-primary,.mg-btn-primary,.pk-confirm-quantity,.pick-blue-finish,.pk-bar-finish,.picking-start,.vlog-load-more,.catalog-load-more-btn):hover:not(:disabled),
+body.bera-chrome.bera-chrome.bera-chrome.bera-chrome.bera-chrome :is(
+ .product-card-add-btn:not(.product-card-add-btn--notify),
+ .btn-add-to-bag:not(.btn-add-to-bag--notify),
+ .btn-detail-variation-add,
+ [data-almost-cart],
+ form[action*="add_to_cart"] button[type="submit"]
+):hover:not(:disabled){
+ background:linear-gradient(180deg,#00adc4 0%,#007fb0 100%)!important;
+ color:#fff!important;
+ border-color:transparent!important;
+ box-shadow:none!important;
+ text-shadow:none!important;
+ filter:none!important;
+}

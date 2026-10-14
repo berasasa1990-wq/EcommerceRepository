@@ -49,6 +49,7 @@
             {% for item in related %}
             <article class="pd-flash__card">
                 <h3 class="pd-flash__card-name">{{ item.product.naziv }}</h3>
+                {% include 'partials/product_stock_label.html' with product=item.product %}
                 <a href="{{ item.product.get_absolute_url }}" class="pd-flash__card-media">
                     {% if item.product.prikazna_slika %}
                     <img src="{{ item.product.prikazna_slika.url }}" alt="{{ item.product.naziv }}" width="180" height="180" loading="lazy" decoding="async">

@@ -1,0 +1,36 @@
+.bera-offer-banner{position:relative;display:flex;align-items:center;min-height:144px;border-radius:12px;overflow:hidden;text-decoration:none;padding:18px 30px;box-sizing:border-box;isolation:isolate}
+.bera-offer-banner--dark{background:linear-gradient(120deg,#041625,#06466a 65%,#05243b);color:white!important}
+.bera-offer-banner--dark:before{content:'';position:absolute;width:70%;height:2px;right:-5%;top:48%;transform:rotate(-27deg);background:#79eaff;box-shadow:0 0 12px 5px #00bbef70;z-index:-1}
+.bera-offer-banner--light{background:linear-gradient(110deg,#dfe9f1,#f6f8fa);color:#07192e!important}
+.bera-offer-banner__copy{position:relative;z-index:2;max-width:70%}
+.bera-offer-banner__copy>span:first-child{font-size:10px;font-weight:700;letter-spacing:.26em}
+.bera-offer-banner h2{font-size:clamp(18px,2vw,30px);font-weight:850;line-height:1.1;margin:4px 0}
+.bera-offer-banner p{font-size:14px;margin:0 0 8px}
+.bera-offer-banner__button{display:inline-flex;align-items:center;gap:18px;padding:8px 22px;border-radius:24px;color:#fff;background:linear-gradient(#00c9eb,#007dbe);font-size:13px;font-weight:650;box-shadow:0 3px 8px #0078ae30}
+.bera-offer-banner__button b{font-size:21px;font-weight:400;line-height:1}
+.bera-offer-banner__image{position:absolute;right:14px;top:10px;bottom:10px;width:34%;display:flex;align-items:center;justify-content:center}
+.bera-offer-banner__image img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
+.bera-offer-banner--dark .bera-offer-banner__image img{mix-blend-mode:normal;border-radius:12px}
+
+.bera-offer-banners{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;width:calc(100% - 72px);max-width:1424px;margin:22px auto 8px;box-sizing:border-box}
+.bera-offer-banner__copy{max-width:100%}
+@media(max-width:1024px){.bera-offer-banners{width:calc(100% - 32px);margin:16px auto 6px;gap:14px}.bera-offer-banner{min-height:150px;padding:16px}.bera-offer-banner h2{font-size:20px}.bera-offer-banner p{font-size:12px}.bera-offer-banner__button{font-size:11px;padding:8px 12px}}
+@media(max-width:540px){.bera-offer-banners{grid-template-columns:1fr}.bera-offer-banner{min-height:138px}}
+
+.bera-wide-promo{display:flex;position:relative;align-items:center;min-height:210px;border-radius:10px;overflow:hidden;background:radial-gradient(ellipse at 80% 10%,#bfeeff 0,transparent 45%),linear-gradient(120deg,#021b31,#007bb7 60%,#b2e4f8);color:white!important;text-decoration:none;isolation:isolate}
+.bera-wide-promo__copy{padding:28px 42px;position:relative;z-index:2}.bera-wide-promo__copy>span:first-child{font-size:13px;letter-spacing:.35em}.bera-wide-promo h2{font-size:38px;font-weight:850;margin:6px 0;line-height:1.1;color:#fff}.bera-wide-promo p{font-size:16px;margin:0 0 18px}.bera-wide-promo__art{display:block;width:100%;height:auto;aspect-ratio:6.4;object-fit:cover}
+.bera-wide-promo__waves{position:absolute;width:60%;height:130%;right:8%;top:35%;border-radius:50%;transform:rotate(-20deg);background:linear-gradient(160deg,#00d9ff,#005f9f 35%,#013b71 65%,#00b7e2);box-shadow:0 -2px 2px #86edff,0 -15px 55px #00b8ec60}.bera-wide-promo__waves:after{content:'';position:absolute;width:110%;height:80%;left:15%;top:30%;border-radius:50%;background:linear-gradient(160deg,#24d2ef,#004a93);box-shadow:0 -2px 3px #99f3ff}
+.bera-wide-promo__seal{position:absolute;right:5%;top:24px;border-radius:50%;width:102px;height:102px;display:flex;flex-direction:column;justify-content:center;text-align:center;background:linear-gradient(#00c8e9,#0088cb);border:1px solid #8ceaff;font-size:12px;line-height:1.4}.bera-wide-promo__seal b{font-size:20px}
+.home-text-banner{width:calc(100% - 32px);max-width:1424px;margin:16px auto;box-sizing:border-box}
+@media(max-width:767px){.bera-wide-promo{min-height:180px}.bera-wide-promo__copy{padding:20px;max-width:75%}.bera-wide-promo h2{font-size:26px}.bera-wide-promo p{font-size:12px}.bera-wide-promo__seal{width:64px;height:64px;right:12px;top:20px;font-size:8px}.bera-wide-promo__seal b{font-size:13px}}
+
+body.home-mobile-reference.home-bera-cards main>.home-text-banner{order:3}
+/* Shared edges for homepage cards and written promotional banners. */
+body.home-mobile-reference.home-bera-cards :is(.home-products,.bera-offer-banners,.home-text-banner){width:calc(100% - 48px)!important;max-width:1392px!important;margin-left:auto!important;margin-right:auto!important;padding-left:0!important;padding-right:0!important;box-sizing:border-box}
+body.home-mobile-reference.home-bera-cards .home-products :is(.product-catalog,.catalog-layout,.catalog-products,.home-product-carousel){padding-left:0!important;padding-right:0!important;width:100%!important;box-sizing:border-box}
+@media(max-width:1024px){body.home-mobile-reference.home-bera-cards :is(.home-products,.bera-offer-banners,.home-text-banner){width:calc(100% - 24px)!important}}
+/* Match the compact spacing used between product sections and the wide banner. */
+body.home-mobile-reference.home-bera-cards :is(.bera-offer-banners,.home-text-banner){margin-top:6px!important;margin-bottom:8px!important}
+
+body.home-mobile-reference.home-bera-cards .home-loyalty-text-banner{width:calc(100% - 48px)!important;max-width:1392px!important;margin-left:auto!important;margin-right:auto!important;box-sizing:border-box}
+@media(max-width:1024px){body.home-mobile-reference.home-bera-cards .home-loyalty-text-banner{width:calc(100% - 24px)!important}}

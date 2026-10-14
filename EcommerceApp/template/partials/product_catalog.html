@@ -49,12 +49,9 @@
             {% endif %}
             {% include 'partials/catalog_mobile_filter.html' %}
 
-            {% if page_obj %}
-            {% include 'partials/catalog_pagination.html' with filter_action=filter_action elided_page_range=elided_page_range catalog_query=catalog_query pagination_placement='top' %}
-            {% endif %}
 
             {% if products %}
-            <div class="product-grid product-grid--catalog">
+            <div class="product-grid product-grid--catalog" data-catalog-grid>
                 {% for product in products %}
                 {% include 'partials/product_catalog_card.html' with product=product home_reference_card=True hide_variations=True hide_brand=hide_brand show_akcija_expiry=show_akcija_expiry image_sizes='(max-width: 768px) 50vw, 20vw' %}
                 {% endfor %}

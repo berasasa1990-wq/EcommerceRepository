@@ -1,0 +1,165 @@
+body.magacin-page.is-picking-blue{--mg-sidebar:236px;--mg-bg:#f4f9ff;background:#f4f9ff!important;color:#172b4c}
+body.magacin-page.is-picking-blue .mg-app{background:#f4f9ff;min-height:100dvh}
+body.magacin-page.is-picking-blue .mg-sidebar{display:flex!important}
+body.magacin-page.is-picking-blue .mg-main{padding:24px 32px!important;background:#f4f9ff!important;min-width:0}
+body.magacin-page.is-picking-blue .mg-chrome{display:none}
+body.magacin-page.is-picking-blue .pk-app.pk-reference{background:transparent;color:#172b4c;max-width:1200px;margin:0 auto;padding:0;min-height:0;height:auto;overflow:visible}
+.pick-blue-header{display:flex;align-items:center;gap:20px;margin-bottom:24px}
+.pick-blue-header>a{font-size:30px;text-decoration:none;color:#214e70}
+.pick-blue-header h1{font-size:28px;line-height:1.3;margin:0;color:#172b4c}
+.pick-blue-header p{font-size:15px;color:#7189ad;margin:6px 0 0}
+body.is-picking-blue .pk-reference .pk-stage,body.is-picking-blue .pk-reference .pk-sheet{display:block;padding:0;margin:0;background:transparent;border:0;box-shadow:none;max-width:none;height:auto;overflow:visible}
+.pick-blue-overview{padding:18px;margin-bottom:22px;border:1px solid #d1e6ff;border-radius:14px;background:#fbfdff}
+.pick-blue-overview>summary{color:#008eb8;font-weight:600;font-size:16px;cursor:pointer}
+body.is-picking-blue .pk-reference .pk-meta{margin-top:16px;background:#fff;border-color:#d1e6ff;border-radius:12px;color:#172b4c}
+body.is-picking-blue .pk-reference .pk-switch{margin-top:14px}
+body.is-picking-blue .pk-reference .pk-heading-row{display:none}
+body.is-picking-blue .pk-reference #pkViewNow{max-width:650px;margin:0 auto}
+body.is-picking-blue .pk-reference .pk-items{display:block;margin:0;padding:0}
+body.is-picking-blue .pk-reference .pk-item{display:flex;flex-direction:column;gap:16px;padding:0;margin:0;border:0;background:transparent;box-shadow:none}
+body.is-picking-blue .pk-reference .pk-item-top{order:1;display:flex;align-items:center;gap:20px;padding:22px;border:1px solid #d1e6ff;border-radius:14px;background:#fbfdff}
+body.is-picking-blue .pk-reference .pk-item-img{width:90px;height:90px;flex:0 0 90px;background-color:transparent;background-size:contain;border:0;border-radius:10px}
+body.is-picking-blue .pk-reference .pk-item-n,body.is-picking-blue .pk-reference .pk-item-info>strong{display:none}
+body.is-picking-blue .pk-reference .pk-item-info{min-width:0;flex:1}
+body.is-picking-blue .pk-reference .pk-item-info p{font-size:20px;font-weight:700;color:#172b4c;margin:0 0 8px;line-height:1.35}
+body.is-picking-blue .pk-reference .pk-item-info span{font-size:15px;color:#7189ad}
+body.is-picking-blue .pk-reference .pk-now-go{order:2;display:flex;align-items:center;gap:12px;padding:18px 20px;border:1px solid #d1e6ff;border-radius:14px;background:#fbfdff;color:#172b4c;text-align:left;margin:0}
+body.is-picking-blue .pk-reference .pk-now-go>span{font-size:16px;color:#172b4c;flex:1}
+body.is-picking-blue .pk-reference .pk-now-go>b{font-size:17px;background:#e0f2ff;border-radius:24px;padding:7px 14px;color:#172b4c}
+body.is-picking-blue .pk-reference .pk-now-go>small{display:none}
+body.is-picking-blue .pk-reference .pk-item-step{order:3;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:0;padding:18px 20px;border:1px solid #d1e6ff;border-radius:14px;background:#fbfdff}
+body.is-picking-blue .pk-reference .pk-item-step:before{content:'Količina za odvajanje';flex-basis:100%;text-align:center;font-size:14px;font-weight:600;margin-bottom:14px;color:#172b4c}
+body.is-picking-blue .pk-reference .pk-item-step>button[data-pk-minus],body.is-picking-blue .pk-reference .pk-item-step>button[data-pk-plus]{width:50px;height:50px;min-height:50px;background:#eaf7ff;border:1px solid #cfe7fb;border-radius:0;color:#007db7;font-size:23px;padding:0}
+body.is-picking-blue .pk-reference .pk-item-step>button[data-pk-minus]{border-radius:10px 0 0 10px}
+body.is-picking-blue .pk-reference .pk-item-step>button[data-pk-plus]{border-radius:0 10px 10px 0}
+body.is-picking-blue .pk-reference .pk-step-val{display:flex;align-items:center;justify-content:center;gap:8px;min-width:100px;height:50px;border-top:1px solid #cfe7fb;border-bottom:1px solid #cfe7fb;background:#f4f9ff;color:#172b4c;padding:0}
+body.is-picking-blue .pk-reference .pk-step-val b{font-size:22px;font-weight:400}
+body.is-picking-blue .pk-reference .pk-step-val small{font-size:12px;color:#7189ad}
+body.is-picking-blue .pk-reference .pk-all{flex-basis:100%;max-width:240px;background:#edf7ff;color:#007db7;border:0;border-radius:8px;margin:10px 20% 0;padding:8px;font-size:12px}
+body.is-picking-blue .pk-reference .pk-confirm-quantity{display:block;width:100%;margin:16px 0;min-height:54px;padding:14px;border:0;border-radius:12px;background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;font-size:17px;font-weight:600;box-shadow:none}
+body.is-picking-blue .pk-reference .pk-quick-quantities{display:none!important}
+body.is-picking-blue .pk-reference .pk-less-row{order:4}
+body.is-picking-blue .pk-reference .pk-dock{position:static;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;order:0;margin:0 0 18px;padding:0;border:0;background:transparent;box-shadow:none}
+body.is-picking-blue .pk-reference .pk-dock .mg-btn{border:1px solid #d1e6ff;background:#edf7ff;color:#007db7;border-radius:9px;box-shadow:none;font-size:12px;padding:8px 12px}
+body.is-picking-blue .pk-reference .pk-bar-finish{background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;border:0;border-radius:9px;box-shadow:none;padding:10px 16px;font-size:13px}
+body.is-picking-blue .pk-reference .pk-shortage-panel{margin:24px 0 0;border-color:#d1e6ff;border-radius:14px;background:#fff;font-size:13px}
+body.is-picking-blue .pk-reference .pk-bottom{display:none}
+@media(max-width:1024px){body.magacin-page.is-picking-blue .mg-sidebar{display:none!important}body.magacin-page.is-picking-blue .mg-app.nav-open .mg-sidebar{display:flex!important}body.magacin-page.is-picking-blue .mg-main{padding:16px!important}}
+@media(max-width:600px){.pick-blue-header h1{font-size:23px}body.is-picking-blue .pk-reference .pk-item-top{padding:16px;gap:14px}body.is-picking-blue .pk-reference .pk-item-img{width:70px;height:70px;flex-basis:70px}body.is-picking-blue .pk-reference .pk-item-info p{font-size:17px}body.is-picking-blue .pk-reference .pk-now-go{padding:14px}body.is-picking-blue .pk-reference .pk-now-go>span{font-size:13px}}
+/* BERA picking: quantity is directly editable; actions stay below the work area. */
+body.is-picking-blue .pk-reference{display:flex!important;flex-direction:column}
+body.is-picking-blue .pk-reference>.pick-blue-header{order:0}
+body.is-picking-blue .pk-reference>.pk-stage{order:1}
+body.is-picking-blue .pk-reference>.pk-dock{order:2;margin:24px 0 0;padding-top:16px;border-top:1px solid #d4e8f9}
+body.is-picking-blue .pk-reference>.pk-shortage-panel{order:3}
+#pickBlueItemCounter{margin-left:auto;white-space:nowrap;color:#214e70;font-size:16px}
+body.is-picking-blue .pk-reference .pk-item-step .pk-all{display:none}
+body.is-picking-blue .pk-reference .pk-direct-qty{display:block;box-sizing:border-box;width:100px;max-width:100px;height:50px;min-height:50px;padding:0 8px;background:#f4f9ff;border:0;border-radius:0;box-shadow:none;text-align:center;font:400 24px Inter,"Segoe UI",system-ui,sans-serif;color:#172b4c}
+body.is-picking-blue .pk-reference .pk-direct-qty::-webkit-inner-spin-button,body.is-picking-blue .pk-reference .pk-direct-qty::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+body.is-picking-blue .pk-reference .pk-direct-qty{appearance:textfield;-moz-appearance:textfield}
+body.is-picking-blue .pk-reference .pk-step-val{min-width:100px}
+body.is-picking-blue .pk-reference .pk-item-step:after{content:'kom';margin-left:12px;color:#7189ad;font-size:16px}
+body.is-picking-blue .pk-reference .pk-now-go>b{white-space:nowrap}
+body.is-picking-blue .pk-reference .pk-switch button{background:#edf7ff;border:1px solid #d4e8f9;border-radius:9px;color:#007db7;box-shadow:none;padding:10px 14px}
+body.is-picking-blue .pk-reference .pk-switch button.is-on{background:#dff3ff;color:#007db7}
+body.is-picking-blue .pk-reference .pk-lines{background:transparent}
+body.is-picking-blue .pk-reference .pk-line{background:#fff;border-color:#d4e8f9;border-radius:10px;color:#172b4c}
+/* Reference geometry: only the picking controls appear in the closed overview. */
+body.magacin-page.is-picking-blue .pk-reference .pk-sheet{gap:0}
+body.is-picking-blue .pick-blue-header{gap:20px;margin-bottom:24px;min-height:60px}
+body.is-picking-blue .pick-blue-overview{box-sizing:border-box;padding:20px 18px;margin:0 0 22px;min-height:62px;background:linear-gradient(110deg,#fff,#f8fbff)}
+body.is-picking-blue .pk-reference #pkViewNow{width:100%;max-width:650px}
+body.is-picking-blue .pk-reference .pk-item{gap:16px}
+body.is-picking-blue .pk-reference .pk-item-top{box-sizing:border-box;min-height:138px;padding:24px;gap:18px;background:linear-gradient(110deg,#fff,#f8fbff)}
+body.is-picking-blue .pk-reference .pk-now-go{box-sizing:border-box;min-height:72px;padding:18px 20px;background:linear-gradient(110deg,#fff,#f8fbff)}
+body.is-picking-blue .pk-reference .pk-item-step{box-sizing:border-box;min-height:122px;padding:20px;background:linear-gradient(110deg,#fff,#f8fbff)}
+body.is-picking-blue .pk-reference .pk-item-step:before{margin-bottom:14px;font-size:14px;line-height:20px}
+body.is-picking-blue .pk-reference .pk-confirm-quantity{box-sizing:border-box;min-height:56px;margin:16px 0 0;font-size:17px;line-height:24px;background:linear-gradient(115deg,#00bddd,#007bb8)}
+body.is-picking-blue .pk-reference .pk-confirm-quantity>span{display:none}
+body.is-picking-blue .pk-reference .pk-bar-prog{display:none}
+body.is-picking-blue .pk-reference .pk-spare-tag{order:0}
+body.is-picking-blue .pk-reference .pick-blue-overview .pk-dock{margin-top:16px;padding:12px 0 0;border-top:1px solid #d4e8f9}
+body.is-picking-blue .pk-reference .pick-blue-overview .pk-shortage-panel{padding:14px;margin-top:16px}
+@media(max-width:600px){body.is-picking-blue .pk-reference .pk-item-top{min-height:118px;padding:18px}body.is-picking-blue .pk-reference .pk-now-go{gap:8px}body.is-picking-blue .pk-reference .pk-now-go>b{font-size:14px;padding:7px 10px}}
+
+#pkFinishDialog{position:fixed;inset:0;margin:auto;box-sizing:border-box;width:min(420px,calc(100vw - 32px));max-height:90dvh;overflow:auto;padding:26px;border:1px solid #d4e8f9;border-radius:16px;background:#fff;color:#172b4c;box-shadow:0 20px 70px #123f5c35;font-family:Inter,system-ui,sans-serif;text-align:center}
+#pkFinishDialog::backdrop{background:#163c5860;backdrop-filter:blur(3px)}
+.pk-finish-mark{display:grid;place-items:center;width:52px;height:52px;margin:0 auto 16px;border-radius:50%;background:#e3f5ff;color:#008bc3;font-size:28px}
+#pkFinishDialog h2{margin:0 0 12px;font-size:22px;line-height:1.3}
+#pkFinishMessage{margin:0;color:#7189ad;line-height:1.6;white-space:pre-line}
+.pk-finish-actions{display:flex;justify-content:center;gap:10px;margin-top:24px}
+.pk-finish-actions button{padding:11px 16px;border:1px solid #d4e8f9;border-radius:9px;background:#edf7ff;color:#007db7;font:inherit;font-size:14px;cursor:pointer}
+#pkFinishConfirm{background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;border-color:transparent}
+.pk-finish-actions button:focus-visible{outline:3px solid #008bc3;outline-offset:3px}
+
+/* Review the picked goods before submitting the existing finish action. */
+body.is-picking-blue .pk-reference.is-pick-complete #pkViewNow{display:none!important}
+body.is-picking-blue .pk-reference .pick-blue-completion{display:grid;grid-template-columns:310px minmax(0,1fr);gap:26px;margin:0;padding:0;background:transparent;border:0;box-shadow:none;text-align:left;color:#172b4c}
+.pick-blue-order-summary{padding:20px 18px;border:1px solid #d1e6ff;border-radius:14px;background:linear-gradient(110deg,#fff,#f8fbff);align-self:start}
+.pick-blue-order-summary p{margin:0 0 24px}
+.pick-blue-order-summary p:last-child{margin-bottom:0}
+.pick-blue-order-summary p>span{display:block;margin-bottom:6px;color:#7189ad;font-size:15px}
+.pick-blue-order-summary strong{display:block;font-size:17px;line-height:1.5}
+.pick-blue-order-summary .pick-blue-status{display:inline-block;border-radius:24px;background:#dff3ff;color:#008eb8;padding:3px 12px}
+.pick-blue-completed-progress progress{display:block;width:100%;height:8px;margin-top:10px;border:0;border-radius:8px;overflow:hidden;appearance:none;background:#dfedf7;accent-color:#008eb8}
+.pick-blue-completed-progress progress::-webkit-progress-bar{background:#dfedf7}
+.pick-blue-completed-progress progress::-webkit-progress-value{background:#008eb8;border-radius:8px}
+.pick-blue-completed-progress progress::-moz-progress-bar{background:#008eb8;border-radius:8px}
+.pick-blue-completed-main{min-width:0}
+.pick-blue-completed-main h2{margin:0 0 18px;font-size:22px;line-height:1.25;color:#172b4c}
+.pick-blue-completed-item{display:flex;align-items:center;gap:18px;padding:20px;margin-bottom:16px;border:1px solid #d1e6ff;border-radius:14px;background:linear-gradient(110deg,#fff,#f8fbff)}
+.pick-blue-completed-item img{width:76px;height:90px;object-fit:contain;border-radius:8px}
+.pick-blue-completed-item>div{flex:1;min-width:0}
+.pick-blue-completed-item h3{margin:0 0 6px;font-size:18px;line-height:1.35;overflow-wrap:anywhere;color:#172b4c}
+.pick-blue-completed-item p{margin:0;color:#7189ad;font-size:15px;line-height:1.45}
+.pick-blue-completed-mark{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:#00b453;color:white;font-size:24px}
+body.magacin-page.is-picking-blue .pk-reference button.pick-blue-finish{display:flex;align-items:center;justify-content:center;gap:14px;width:100%;min-height:60px;margin-top:24px;padding:12px 20px;border:1px solid #009ace;border-radius:14px;background:#009ace;color:#fff;font:600 17px/24px Inter,system-ui,sans-serif;box-shadow:0 5px 14px #0879c522;cursor:pointer;transition:background .18s,box-shadow .18s}
+body.magacin-page.is-picking-blue .pk-reference button.pick-blue-finish:hover{background:#007caf;box-shadow:0 6px 18px #0879c533}
+body.magacin-page.is-picking-blue .pk-reference button.pick-blue-finish:focus-visible{outline:3px solid #008bc3;outline-offset:3px}
+@media(max-width:700px){body.is-picking-blue .pk-reference .pick-blue-completion{grid-template-columns:1fr;gap:22px}.pick-blue-order-summary{display:grid;grid-template-columns:1fr 1fr;gap:18px}.pick-blue-order-summary p{margin:0}.pick-blue-order-summary .pick-blue-completed-progress{grid-column:1/-1}.pick-blue-completed-item{padding:16px;gap:12px}.pick-blue-completed-item img{width:60px;height:70px}}
+
+body.is-picking-blue .pk-reference>.pk-dock{display:none!important}
+body.is-picking-blue .pk-reference .pick-blue-overview .pk-switch{display:flex;gap:8px;margin-bottom:14px}
+body.is-picking-blue .pk-reference .pick-blue-overview .pk-switch button{flex:1;min-width:0;flex-direction:row;align-items:center;justify-content:center;gap:6px;padding:10px 6px;font-size:13px}
+body.is-picking-blue .pk-reference .pick-blue-overview .pk-switch button i{font-size:13px;color:inherit}
+body.is-picking-blue .pk-reference .pick-blue-overview .pk-line{display:flex;align-items:center;gap:12px;width:100%;min-width:0;padding:12px;box-sizing:border-box;text-align:left;box-shadow:none}
+body.is-picking-blue .pk-reference .pick-blue-overview .pk-line>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+body.is-picking-blue .pk-reference .pick-blue-overview .pk-line>em{flex:0 0 auto;white-space:nowrap;font-size:13px;font-style:normal;color:#008eb8}
+body.is-picking-blue .pk-reference .pick-blue-overview .pk-choose-h{display:none}
+
+/* Flat controls: remove the inherited metallic bevel and layered fills. */
+body.magacin-page.is-picking-blue .pk-reference button,
+body.magacin-page.is-picking-blue #pkFinishDialog button{
+    appearance:none;
+    -webkit-appearance:none;
+    background-image:none;
+    box-shadow:none;
+    text-shadow:none;
+    border-style:solid;
+}
+body.magacin-page.is-picking-blue .pk-reference button:is(.pk-confirm-quantity,.pk-bar-finish,.pick-blue-finish),
+body.magacin-page.is-picking-blue #pkFinishConfirm{
+    background:#009ace;
+    border-color:#009ace;
+    color:#fff;
+    box-shadow:none;
+}
+body.magacin-page.is-picking-blue .pk-reference button:is(.pk-confirm-quantity,.pk-bar-finish,.pick-blue-finish):hover,
+body.magacin-page.is-picking-blue #pkFinishConfirm:hover{
+    background:#007caf;
+    border-color:#007caf;
+    box-shadow:none;
+}
+body.magacin-page.is-picking-blue .pk-reference .pk-switch{
+    background:transparent;
+    border:0;
+    box-shadow:none;
+    overflow:visible;
+}
+body.magacin-page.is-picking-blue .pk-reference .pk-switch button i,
+body.magacin-page.is-picking-blue .pk-reference .pk-switch button.is-on i{
+    background:transparent;
+    border:0;
+    box-shadow:none;
+    color:inherit;
+}

@@ -4358,6 +4358,7 @@ class Order(models.Model):
         verbose_name='Korisnik',
     )
     broj = models.CharField(max_length=20, unique=True, editable=False)
+    razlog_otkazivanja = models.TextField(blank=True, verbose_name='Razlog otkazivanja')
     ime_prezime = models.CharField(max_length=200)
     email = models.EmailField()
     telefon = models.CharField(max_length=30)
@@ -6593,6 +6594,39 @@ class WarehouseCustomer(models.Model):
             models.Index(fields=['telefon']),
         ]
 
+    def _validate_unique_phone(self):
+        from django.core.exceptions import ValidationError
+        from .customer_identity import customer_phone_key
+        key = customer_phone_key(self.telefon)
+        if not key:
+            return
+        others = WarehouseCustomer.objects.exclude(pk=self.pk)
+        if any(customer_phone_key(phone) == key for phone in others.values_list('telefon', flat=True).iterator()):
+            raise ValidationError({'telefon': 'Već postoji kupac s tim telefonom. Izaberite postojećeg kupca.'})
+
+    def _validate_unique_name(self):
+        from django.core.exceptions import ValidationError
+        from .customer_identity import customer_name_key
+        key = customer_name_key(self.ime_prezime)
+        if key and any(customer_name_key(name) == key for name in WarehouseCustomer.objects.exclude(pk=self.pk).values_list('ime_prezime', flat=True).iterator()):
+            raise ValidationError({'ime_prezime': 'Već postoji kupac s tim imenom. Izaberite postojećeg kupca.'})
+
+    def clean(self):
+        super().clean()
+        self._validate_unique_name()
+        self._validate_unique_phone()
+
+    def save(self, *args, **kwargs):
+        from django.db import transaction
+        with transaction.atomic():
+            SiteSettings.objects.get_or_create(pk=1)
+            SiteSettings.objects.select_for_update().get(pk=1)
+            self._validate_unique_name()
+            old_phone = type(self).objects.filter(pk=self.pk).values_list('telefon', flat=True).first() if self.pk else None
+            if old_phone != self.telefon:
+                self._validate_unique_phone()
+            return super().save(*args, **kwargs)
+
     def __str__(self):
         return f'{self.ime_prezime} {self.telefon}'.strip()
 
@@ -6915,6 +6949,7 @@ class WarehouseLedgerLine(models.Model):
 class B2BAccount(models.Model):
     username = models.CharField('Korisničko ime', max_length=150, unique=True)
     company = models.CharField('Firma / kupac', max_length=200)
+    company_key = models.CharField(max_length=200, unique=True, null=True, editable=False)
     ime_prezime = models.CharField('Ime i prezime', max_length=200, blank=True)
     telefon = models.CharField('Telefon', max_length=30, blank=True)
     adresa = models.CharField('Adresa', max_length=300, blank=True)
@@ -6941,6 +6976,36 @@ class B2BAccount(models.Model):
 
     def __str__(self):
         return f'{self.company} ({self.username})'
+
+    def _validate_customer_name(self):
+        from django.core.exceptions import ValidationError
+        name_key = ' '.join((self.company or '').split()).casefold()
+        if not name_key:
+            return
+        accounts = B2BAccount.objects.all()
+        if self.pk:
+            accounts = accounts.exclude(pk=self.pk)
+        for company in accounts.values_list('company', flat=True).iterator():
+            if ' '.join((company or '').split()).casefold() == name_key:
+                raise ValidationError({'company': 'Već postoji B2B kupac s tim imenom. Izaberite postojećeg kupca.'})
+
+    def clean(self):
+        super().clean()
+        self.company = ' '.join((self.company or '').split())
+        self._validate_customer_name()
+
+    def save(self, *args, **kwargs):
+        from django.db import transaction
+        with transaction.atomic():
+            # Serialize name checks, including concurrent creation of new accounts.
+            SiteSettings.objects.get_or_create(pk=1)
+            SiteSettings.objects.select_for_update().get(pk=1)
+            self.company = ' '.join((self.company or '').split())
+            self._validate_customer_name()
+            self.company_key = self.company.casefold() or None
+            if kwargs.get('update_fields') is not None and 'company' in kwargs['update_fields']:
+                kwargs['update_fields'] = set(kwargs['update_fields']) | {'company_key'}
+            return super().save(*args, **kwargs)
 
     def set_password(self, raw_password):
         from django.contrib.auth.hashers import make_password

@@ -823,3 +823,57 @@ class B2BTests(TestCase):
         order = Order.objects.get(telefon='061777123')
         self.assertEqual(order.ukupno, Decimal('430.56'))
         self.assertEqual(order.stavke.get().b2b_pricing_snapshot['netto'], '184.00')
+
+
+class B2BCustomerNameTests(TestCase):
+    def test_duplicate_name_rejected_and_existing_account_edit_allowed(self):
+        from django.core.exceptions import ValidationError
+        account = B2BAccount.objects.create(username='name-first', company='Sasa Bera')
+        with self.assertRaises(ValidationError):
+            B2BAccount.objects.create(username='name-second', company='  SASA   bera  ')
+        self.assertEqual(B2BAccount.objects.count(), 1)
+        account.telefon = '061123456'
+        account.save()
+        account.refresh_from_db()
+        self.assertEqual(account.telefon, '061123456')
+
+    def test_rename_to_another_customers_name_rejected(self):
+        from django.core.exceptions import ValidationError
+        B2BAccount.objects.create(username='name-first', company='First customer')
+        account = B2BAccount.objects.create(username='name-second', company='Second customer')
+        account.company = 'FIRST CUSTOMER'
+        with self.assertRaises(ValidationError):
+            account.save()
+        account.refresh_from_db()
+        self.assertEqual(account.company, 'Second customer')
+
+    def test_warehouse_customer_phone_cannot_repeat_in_another_format(self):
+        from django.core.exceptions import ValidationError
+        from .models import WarehouseCustomer
+        customer = WarehouseCustomer.objects.create(ime_prezime='First', telefon='061123456')
+        with self.assertRaises(ValidationError):
+            WarehouseCustomer.objects.create(ime_prezime='Second', telefon='+387 61 123 456')
+        customer.adresa = 'New address'
+        customer.save()
+        self.assertEqual(WarehouseCustomer.objects.count(), 1)
+
+    def test_merge_b2b_names_preserves_contact_data_and_brand_discounts(self):
+        from importlib import import_module
+        from django.apps import apps
+        from django.db import connection
+        B2BAccount.objects.bulk_create([
+            B2BAccount(username='merge-first', company='Merge customer'),
+            B2BAccount(username='merge-second', company=' MERGE   CUSTOMER ', telefon='061123456'),
+        ])
+        first = B2BAccount.objects.get(username='merge-first')
+        second = B2BAccount.objects.get(username='merge-second')
+        brand = Brand.objects.create(naziv='Merge brand')
+        discount = B2BAccountBrandRabat.objects.create(account=second, brand=brand, postotak=Decimal('5'))
+        migration = import_module('EcommerceApp.migrations.0311_unique_b2b_customer_names')
+        from types import SimpleNamespace
+        migration.merge_b2b_names(apps, SimpleNamespace(connection=connection))
+        first.refresh_from_db()
+        discount.refresh_from_db()
+        self.assertEqual(B2BAccount.objects.count(), 1)
+        self.assertEqual(first.telefon, '061123456')
+        self.assertEqual(discount.account_id, first.pk)

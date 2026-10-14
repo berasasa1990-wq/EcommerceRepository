@@ -1,0 +1,90 @@
+/* Buying benefits beneath the category icons. */
+body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits,.home-trust-bar__inner){grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important}
+body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits__item,.home-trust-bar__item){justify-content:flex-start!important;align-items:center!important;gap:14px!important;padding:20px 18px!important;min-height:96px!important;border:1px solid #dceef8!important;border-radius:16px!important;background:linear-gradient(135deg,#f5fbff,#eaf5fc)!important;box-shadow:0 5px 18px #0a65910a;overflow:hidden}
+body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits__item,.home-trust-bar__item)::after{display:none!important}
+body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits__item,.home-trust-bar__item)::before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:3px;border-radius:0 4px 4px 0;background:linear-gradient(#00c8e5,#007db7)}
+body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits__item>svg,.home-trust-bar__icon){display:flex;align-items:center;justify-content:center;flex:0 0 48px;width:48px!important;height:48px!important;box-sizing:border-box;border-radius:14px;background:linear-gradient(135deg,#ddf7ff,#cbeafb);color:#008bc5!important}
+body.home-mobile-reference.home-bera-cards .mobile-home-benefits__item>svg{padding:9px}
+body.home-mobile-reference.home-bera-cards .home-trust-bar__icon svg{width:30px!important;height:30px!important;color:#008bc5!important}
+body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits strong,.home-trust-bar__title){font-size:15px!important;line-height:1.35;font-weight:750!important;text-transform:none!important;color:#0c3c59!important;overflow-wrap:anywhere}
+body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits span,.home-trust-bar__sub){display:block;font-size:12px!important;line-height:1.5;color:#57778e!important;margin-top:3px}
+@media(max-width:1100px){body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits,.home-trust-bar__inner){grid-template-columns:repeat(2,minmax(0,1fr))!important}body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits__item,.home-trust-bar__item){flex-direction:row!important;text-align:left!important;min-width:0}}
+@media(max-width:540px){body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits,.home-trust-bar__inner){gap:8px!important}body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits__item,.home-trust-bar__item){padding:14px 10px!important;gap:8px!important;min-height:88px!important;border-radius:12px!important}body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits__item>svg,.home-trust-bar__icon){flex-basis:36px;width:36px!important;height:36px!important;border-radius:10px}body.home-mobile-reference.home-bera-cards .mobile-home-benefits__item>svg{padding:6px}body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits strong,.home-trust-bar__title){font-size:12px!important}body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits span,.home-trust-bar__sub){font-size:10px!important}}
+
+
+body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits,.home-trust-bar__inner){display:grid!important;width:calc(100% - 32px)!important;max-width:1424px!important;padding:0!important;margin:16px auto 24px!important;background:transparent!important;border:0!important;box-sizing:border-box}
+body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits__item,.home-trust-bar__item){display:flex!important;position:relative!important;box-sizing:border-box;min-width:0}
+body.home-mobile-reference.home-bera-cards .home-trust-bar{background:transparent!important;border:0!important;padding:0!important}
+body.home-mobile-reference.home-bera-cards :is(.mobile-home-benefits__item>div,.home-trust-bar__copy){min-width:0}
+/* One consistent gap between homepage sections, without stacked margins. */
+body.home-mobile-reference.home-bera-cards main{display:flex!important;flex-direction:column!important;gap:28px!important}
+body.home-mobile-reference.home-bera-cards main>:is(section,aside,div){margin-top:0!important;margin-bottom:0!important}
+body.home-mobile-reference.home-bera-cards main>.home-trust-bar .home-trust-bar__inner{margin-top:0!important;margin-bottom:0!important}
+body.home-mobile-reference.home-bera-cards main>:is(.home-products,.home-brand-strip-section,.home-trust-bar){padding-top:0!important;padding-bottom:0!important}
+/* Legacy carousel minimum height leaves empty space below shorter BERA cards. */
+body.home-mobile-reference.home-bera-cards main .home-products .home-product-carousel{min-height:0!important;height:auto!important}
+body.home-mobile-reference.home-bera-cards main>.home-products,
+body.home-mobile-reference.home-bera-cards main>.home-text-banner,
+body.home-mobile-reference.home-bera-cards main>.bera-offer-banners{margin-top:0!important;margin-bottom:0!important}
+/* Center homepage section headings and use italic type. */
+body.home-mobile-reference.home-bera-cards .home-section-header{display:grid!important;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;align-items:center!important;gap:8px!important}
+body.home-mobile-reference.home-bera-cards .home-section-header__text{grid-column:2!important;text-align:center!important;min-width:0}
+body.home-mobile-reference.home-bera-cards .home-section-header__actions{grid-column:3!important;justify-self:end!important}
+body.home-mobile-reference.home-bera-cards :is(.home-section-header__title,.mobile-home-heading h2,.home-shop-brands__heading h2){text-align:center!important;font-style:italic!important}
+body.home-mobile-reference.home-bera-cards .mobile-home-heading{position:relative;justify-content:center!important}
+@media(max-width:540px){body.home-mobile-reference.home-bera-cards .home-section-header{grid-template-columns:minmax(0,1fr)!important}body.home-mobile-reference.home-bera-cards .home-section-header__text{grid-column:1!important}body.home-mobile-reference.home-bera-cards .home-section-header__actions{grid-column:1!important;justify-self:end!important}}
+/* Balance the space above and below homepage section names. */
+body.home-mobile-reference.home-bera-cards main .home-section-header{min-height:56px!important;margin-top:0!important;margin-bottom:0!important;padding-top:14px!important;padding-bottom:14px!important;box-sizing:border-box;align-items:center!important}
+body.home-mobile-reference.home-bera-cards .home-section-header__text{align-self:center!important;display:flex;flex-direction:column;justify-content:center;align-items:center}
+body.home-mobile-reference.home-bera-cards .home-section-header__title{margin:0!important;line-height:1.2!important}
+body.home-mobile-reference.home-bera-cards .home-section-header__actions{align-self:center!important}
+/* Equal space on both sides of headings following another homepage section. */
+body.home-mobile-reference.home-bera-cards main>:is(section,aside,div)+.home-products{margin-top:-28px!important}
+body.home-mobile-reference.home-bera-cards .home-section-header--category-showcase .home-section-header__actions{justify-self:end!important;text-align:right}
+@media(max-width:540px){body.home-mobile-reference.home-bera-cards .home-section-header--category-showcase .home-section-header__actions{grid-column:1!important;justify-self:end!important}}
+body.home-mobile-reference.home-bera-cards :is(.home-section-header--novo,.home-section-header--category-showcase) .home-section-header__title{font-family:inherit!important;font-size:21px!important;font-weight:700!important;letter-spacing:-.6px!important;line-height:1.2!important;font-style:italic!important;color:#111!important;text-transform:none!important}
+@media(min-width:1025px){body.home-mobile-reference.home-bera-cards :is(.home-section-header--novo,.home-section-header--category-showcase) .home-section-header__title{font-size:20px!important;letter-spacing:-.3px!important}}
+/* Align the homepage hero and category icons with the product section edges. */
+body.home-mobile-reference.home-bera-cards main>:is(.hero-carousel,#mobileHomeCategories){width:calc(100% - 48px)!important;max-width:1392px!important;margin-left:auto!important;margin-right:auto!important;box-sizing:border-box}
+body.home-mobile-reference.home-bera-cards #mobileHomeCategories{padding-left:0!important;padding-right:0!important}
+@media(max-width:1024px){body.home-mobile-reference.home-bera-cards main>:is(.hero-carousel,#mobileHomeCategories){width:calc(100% - 24px)!important}}
+body.home-mobile-reference.home-bera-cards main>:is(.mobile-home-benefits,.home-trust-bar){width:calc(100% - 48px)!important;max-width:1392px!important;margin-left:auto!important;margin-right:auto!important;box-sizing:border-box}
+body.home-mobile-reference.home-bera-cards main>.home-trust-bar .home-trust-bar__inner{width:100%!important;max-width:none!important}
+@media(max-width:1024px){body.home-mobile-reference.home-bera-cards main>:is(.mobile-home-benefits,.home-trust-bar){width:calc(100% - 24px)!important}}
+/* Half-sized horizontal homepage gutters. */
+body.home-mobile-reference.home-bera-cards main{padding-left:12px!important;padding-right:12px!important}
+body.home-mobile-reference.home-bera-cards main>.home-products{padding-left:12px!important;padding-right:12px!important}
+body.home-mobile-reference.home-bera-cards main>:is(.hero-carousel,#mobileHomeCategories,.mobile-home-benefits,.home-trust-bar){width:calc(100% - 24px)!important;max-width:1416px!important;margin-left:auto!important;margin-right:auto!important}
+@media(max-width:1024px){body.home-mobile-reference.home-bera-cards main{padding-left:0!important;padding-right:0!important}body.home-mobile-reference.home-bera-cards main>.home-products{padding-left:6px!important;padding-right:6px!important}body.home-mobile-reference.home-bera-cards main>:is(.hero-carousel,#mobileHomeCategories,.mobile-home-benefits,.home-trust-bar){width:calc(100% - 12px)!important}}
+/* Tighter desktop homepage edges. */
+@media(min-width:1025px){body.home-mobile-reference.home-bera-cards main{padding-left:6px!important;padding-right:6px!important}body.home-mobile-reference.home-bera-cards main>.home-products{padding-left:6px!important;padding-right:6px!important}body.home-mobile-reference.home-bera-cards main>:is(.hero-carousel,#mobileHomeCategories,.mobile-home-benefits,.home-trust-bar){width:calc(100% - 12px)!important;max-width:1428px!important}}
+/* Halve the full distance from the viewport edge to homepage content. */
+@media(min-width:1025px){
+ body.home-mobile-reference.home-bera-cards main{box-sizing:border-box;width:min(100%,calc(50% + 726px))!important;max-width:none!important;margin-left:auto!important;margin-right:auto!important;padding-left:6px!important;padding-right:6px!important}
+ body.home-mobile-reference.home-bera-cards main>:is(.hero-carousel,#mobileHomeCategories,.mobile-home-benefits,.home-trust-bar,.home-products,.bera-offer-banners,.home-text-banner,.home-brand-strip-section,.home-shop-brands){box-sizing:border-box;width:calc(100% - 12px)!important;max-width:none!important;margin-left:auto!important;margin-right:auto!important}
+ body.home-mobile-reference.home-bera-cards main>.home-products{padding-left:0!important;padding-right:0!important}
+ body.bera-chrome.home-mobile-reference.home-bera-cards #header .header-shell{width:min(calc(100% - 24px),calc(50% + 712px))!important;max-width:none!important;margin-left:auto!important;margin-right:auto!important}
+}
+/* The same viewport-to-content spacing on category, search and brand links. */
+@media(min-width:1025px){
+ body.bera-chrome.catalog-header-reference main{box-sizing:border-box;width:min(100%,calc(50% + 726px))!important;max-width:none!important;margin-left:auto!important;margin-right:auto!important;padding-left:6px!important;padding-right:6px!important}
+ body.bera-chrome.catalog-header-reference main :is(.category-page,.subcategory-page,.brands-page,.home-search-results){box-sizing:border-box;width:calc(100% - 12px)!important;max-width:none!important;margin-left:auto!important;margin-right:auto!important;padding-left:0!important;padding-right:0!important}
+ body.bera-chrome.bera-chrome.catalog-header-reference #header .header-shell{width:min(calc(100% - 24px),calc(50% + 712px))!important;max-width:none!important;margin-left:auto!important;margin-right:auto!important}
+}
+/* Loyalty promo shares the product grid's outer edges. */
+body.home-mobile-reference.home-bera-cards main>.home-loyalty-text-banner{box-sizing:border-box;width:calc(100% - 12px)!important;max-width:none!important;margin-left:auto!important;margin-right:auto!important}
+body.home-mobile-reference.home-bera-cards .home-loyalty-text-banner>.bera-wide-promo{display:block;width:100%;box-sizing:border-box}
+/* Category shortcuts align exactly with the homepage product grid. */
+body.home-mobile-reference.home-bera-cards main>#mobileHomeCategories{box-sizing:border-box;width:calc(100% - 12px)!important;max-width:none!important;margin-left:auto!important;margin-right:auto!important;padding-left:0!important;padding-right:0!important}
+body.home-mobile-reference.home-bera-cards #mobileHomeCategories :is(.mobile-home-heading,.mobile-home-category-grid){box-sizing:border-box;width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important;padding-left:0!important;padding-right:0!important}
+
+/* Category shortcuts share the delivery-benefit's blue surfaces. */
+body.bera-chrome #mobileHomeCategories .mobile-home-category-grid > a{background:linear-gradient(135deg,#f5fbff,#eaf5fc)!important;border:1px solid #dceef8!important;box-shadow:0 5px 18px #0a65910a!important;color:#234963!important}
+body.bera-chrome #mobileHomeCategories .mobile-home-category-grid > a > :is(.mobile-home-category-icon,.cat-ico,svg){background:transparent!important;border-radius:0!important;color:#008bc5!important;box-sizing:border-box!important;padding:0}
+body.bera-chrome #mobileHomeCategories .mobile-home-category-grid > a:hover{background:linear-gradient(135deg,#e6f7ff,#dceffb)!important}
+body.bera-chrome #mobileHomeCategories .home-category-controls button{background:#e0f2ff!important;border-color:#cce9fc!important;color:#008bc5!important}
+
+@media(max-width:767px){
+ body.home-mobile-reference.home-bera-cards .mobile-home-benefits__item--desktop-only{display:none!important}
+ body.home-mobile-reference.home-bera-cards .mobile-home-benefits{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}

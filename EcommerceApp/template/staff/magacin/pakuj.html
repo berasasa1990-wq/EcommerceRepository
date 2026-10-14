@@ -1,17 +1,17 @@
 {% extends 'staff/magacin/base.html' %}
 {% load static %}
-{% block body_class %}{{ block.super }} is-picking-list-reference{% endblock %}
+{% block body_class %}{{ block.super }} is-picking-list-reference is-picking-overview-blue{% endblock %}
 {% block extra_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'css/staff-picking-list-reference.css' %}?v=20260907-waiting-one-row">
+<link rel="stylesheet" href="{% static 'css/staff-picking-overview-blue.css' %}?v=20261014-completed-pagination">
 {% endblock %}
 
 {% block magacin_content %}
 <div class="mg-orders-page pk-home" id="pkListApp">
     <div class="mg-page-head">
         <div>
-            <h1>Picking</h1>
-            <p class="mg-count">Lista svih pick lista. Odaberite listu za prikaz detalja i početak operacije.</p>
+            <h1>Odvajanje robe</h1>
+            <p class="mg-count">Odaberite narudžbu za odvajanje robe.</p>
         </div>
         <a class="mg-btn mg-btn-pill pk-refresh" href="{{ request.get_full_path }}" aria-label="Osveži">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
@@ -29,7 +29,6 @@
     {% endif %}
     <div class="pk-home-top">
         <div class="mg-filter-tabs">
-            <a href="?status=sve{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'sve' %}is-active{% endif %}">Sve</a>
             <a href="?status=ceka{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'ceka' %}is-active{% endif %}">Čeka picking</a>
             <a href="?status=u_toku{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'u_toku' %}is-active{% endif %}">U toku{% if pick_counts.u_toku %}<i class="pk-tab-n">{{ pick_counts.u_toku }}</i>{% endif %}</a>
             <a href="?status=zavrseno{% if pick_query %}&pretraga={{ pick_query|urlencode }}{% endif %}" class="{% if pick_status_filter == 'zavrseno' %}is-active{% endif %}">Završeno{% if pick_counts.zavrseno %}<i class="pk-tab-n">{{ pick_counts.zavrseno }}</i>{% endif %}</a>
@@ -44,67 +43,30 @@
 
     <section class="mg-card mg-orders-card">
         <div class="mg-table-wrap">
-        <table class="mg-table mg-table-stack mg-table-stack-pick">
-            <thead>
-                <tr>
-                    <th>PICK LISTA</th>
-                    <th>NARUDŽBA</th>
-                    <th>KUPAC</th>
-                    <th>STAVKI</th>
-                    <th>STATUS</th>
-                    <th>KREIRANO</th>
-                    <th class="mg-more-col"></th>
-                </tr>
-            </thead>
+        <table class="mg-table picking-overview-table{% if pick_status_filter == 'zavrseno' %} is-completed-compact{% endif %}">
+            <thead><tr><th>Narudžba</th><th>Kupac</th><th>Tip</th><th>Status</th><th>Datum</th><th></th></tr></thead>
             <tbody>
-                {% for order in pick_jobs %}
-                <tr class="is-clickable{% if order.pick_status == 'ceka' %} is-wait-pick{% endif %}" onclick="location.href='{{ order.pick_open_url }}'">
-                    <td>
-                        <strong class="mg-order-rn">PL-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</strong>
-                        <span class="sub">#{{ order.pk }}</span>
-                    </td>
-                    <td><span class="pk-full-order-number">RN-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</span><span class="pk-mobile-order-number">#{{ order.broj }}</span></td>
-                    <td>
-                        <strong class="mg-order-name">{{ order.display_customer_name }}</strong>
-                        {% if order.telefon %}<span class="sub">{{ order.telefon }}</span>{% endif %}
-                    </td>
-                    <td>{{ order.stavki }} stavki</td>
-                    <td>
-                        {% if order.pick_status == 'zavrseno' %}
-                        <span class="mg-pill mg-st-zavrsena">Završeno</span>
-                        {% elif order.pick_status == 'u_toku' %}
-                        <span class="mg-pill mg-st-nova">U toku</span>
-                        {% else %}
-                        <span class="mg-pill mg-st-ceka">Čeka picking</span>
-                        {% endif %}
-                    </td>
-                    <td class="mg-order-date">
-                        <span>{{ order.kreirana|date:"d.m.Y" }}</span>
-                        <span class="sub">{{ order.kreirana|date:"H:i" }}</span>
-                    </td>
-                    <td class="mg-more-col">
-                        <a class="mg-row-more" href="{{ order.pick_open_url }}" aria-label="Otvori">›</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="mg-muted">
-                        {% if pick_status_filter == 'ceka' %}
-                        Nema narudžbi koje čekaju picking.
-                        {% elif pick_status_filter == 'u_toku' %}
-                        Nema pickinga u toku.
-                        {% elif pick_status_filter == 'zavrseno' %}
-                        Nema završenih pick lista.
-                        {% else %}
-                        Nema pick lista.
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
+            {% for order in pick_jobs %}
+            <tr>
+                <td data-label="Narudžba"><a href="{{ order.pick_open_url }}">#{{ order.broj }}</a></td>
+                <td data-label="Kupac">{{ order.display_customer_name|default:order.ime_prezime }}</td>
+                <td data-label="Tip">{% if order.ime_prezime == 'Prenos u MP' %}Prenosnica{% elif order.vp_kupac %}Veleprodaja{% else %}Online slanje{% endif %}</td>
+                <td data-label="Status">{% if order.pick_status == 'zavrseno' %}Odvojeno{% elif order.pick_status == 'u_toku' %}U odvajanju{% else %}Čeka odvajanje{% endif %}</td>
+                <td data-label="Datum">{{ order.kreirana|date:"d.m.Y. H:i" }}</td>
+                <td class="picking-action">{% if order.pick_status == 'zavrseno' %}<a class="picking-view-icon" href="{{ order.pick_open_url }}" aria-label="Pregled narudžbe #{{ order.broj }}" title="Pregled narudžbe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></a>{% elif order.pick_status == 'u_toku' %}<a class="picking-start" href="{{ order.pick_open_url }}">Nastavi</a>{% else %}<a class="picking-start" href="{{ order.pick_open_url }}">Započni</a>{% endif %}</td>
+            </tr>
+            {% empty %}<tr><td colspan="6" class="mg-muted">Nema narudžbi za prikaz.</td></tr>{% endfor %}
             </tbody>
         </table>
         </div>
-        <p class="pk-home-foot">Prikazano {{ pick_jobs|length }} rezultata</p>
+        <p class="pk-home-foot">{% if pick_page %}Prikazano {{ pick_page.start_index }}–{{ pick_page.end_index }} od {{ pick_page.paginator.count }} rezultata{% else %}Prikazano {{ pick_jobs|length }} rezultata{% endif %}</p>
+        {% if pick_page.paginator.num_pages > 1 %}
+        <nav class="picking-pagination" aria-label="Stranice završenih narudžbi">
+            {% if pick_page.has_previous %}<a href="?status=zavrseno&amp;page={{ pick_page.previous_page_number }}{% if pick_query %}&amp;pretraga={{ pick_query|urlencode }}{% endif %}" aria-label="Prethodna stranica">‹</a>{% endif %}
+            <span>{{ pick_page.number }} / {{ pick_page.paginator.num_pages }}</span>
+            {% if pick_page.has_next %}<a href="?status=zavrseno&amp;page={{ pick_page.next_page_number }}{% if pick_query %}&amp;pretraga={{ pick_query|urlencode }}{% endif %}" aria-label="Sljedeća stranica">›</a>{% endif %}
+        </nav>
+        {% endif %}
     </section>
 
     {% if vp_orders %}

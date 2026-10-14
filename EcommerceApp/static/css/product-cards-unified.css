@@ -1,0 +1,51 @@
+/* Shared card order and price palette across the storefront. */
+body.bera-chrome.bera-chrome .product-card.product-card--catalog .product-card__footer{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;margin-top:auto!important}
+body.bera-chrome.bera-chrome .product-card .product-card__brand-row{display:flex!important;align-items:center!important;min-height:24px;order:0!important;color:#10243b}
+body.bera-chrome.bera-chrome .product-card__brand-row .product-name-brand-logo{margin:0!important;align-self:flex-start}
+body.bera-chrome.bera-chrome .product-card :is(.home-card-prices__current,.price-current,.price-sale,.card-dwell-now,.hm-price__now,.hm-price__sale){color:#00346c!important;font-weight:750!important;font-size:18px!important;animation:none!important}
+body.bera-chrome.bera-chrome .product-card :is(.home-card-prices__original,.price-original,.card-dwell-was,.hm-price__old){color:#8ba0b5!important;font-size:12px!important;text-decoration:line-through!important}
+body.bera-chrome.bera-chrome .product-card :is(.home-card-prices,.product-sale-row,.hm-price){display:flex!important;flex-direction:row!important;align-items:baseline!important;flex-wrap:wrap!important;gap:6px!important}
+body.bera-chrome.bera-chrome .product-card .hm-price__old{order:1!important}
+body.bera-chrome.bera-chrome .product-card :is(.card-dwell-deal,.product-sale-box){background:transparent!important;border:0!important;box-shadow:none!important;animation:none!important;padding:0!important}
+body.bera-chrome.bera-chrome .product-card .card-dwell-label{display:none!important}
+body.bera-chrome.bera-chrome .product-card .product-stock-label{display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:4px!important;margin:0!important;min-height:18px!important;font-size:11px!important}
+body.bera-chrome.bera-chrome .product-card .product-stock-label--in .product-stock-label__available{color:#20a861!important}
+body.bera-chrome.bera-chrome .product-card .product-stock-label--out .product-stock-label__available{color:#df5151!important}
+body.bera-chrome.bera-chrome .product-card .product-stock-label__qty{color:#10243b!important}
+body.bera-chrome.bera-chrome .product-card .product-card__cart-row{width:100%!important;flex:0 0 auto!important}
+body.bera-chrome.bera-chrome .product-card button.product-card-add-btn:not(.stock-notify-action){width:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;background:linear-gradient(180deg,#00c6e7,#008bc5)!important;color:#fff!important;border:0!important;border-radius:9px!important;min-height:34px!important}
+body.bera-chrome.bera-chrome .product-card button.product-card-add-btn:not(.stock-notify-action)>span{display:inline!important}
+@media(max-width:540px){body.bera-chrome.bera-chrome .product-card :is(.home-card-prices__current,.price-current,.price-sale,.card-dwell-now,.hm-price__now,.hm-price__sale){font-size:14px!important}body.bera-chrome.bera-chrome .product-card :is(.home-card-prices__original,.price-original,.card-dwell-was,.hm-price__old){font-size:10px!important}}
+
+/* Identical logo slots sit flush with the price's left edge. */
+body.bera-chrome.bera-chrome .product-card .product-card__brand-row{height:18px!important;min-height:18px!important;justify-content:flex-start!important;margin:0!important;padding:0!important}
+body.bera-chrome.bera-chrome .product-card .product-card__brand-row .product-name-brand-logo{position:relative!important;display:block!important;width:64px!important;height:18px!important;margin:0!important;padding:0!important;overflow:hidden!important}
+body.bera-chrome.bera-chrome .product-card .product-card__brand-row .product-name-brand-logo:not(.product-name-brand-logo--trimmed) img{position:static!important;width:64px!important;max-width:64px!important;height:18px!important;object-fit:contain!important;object-position:left center!important}
+body.bera-chrome.bera-chrome .product-card .product-brand-slot{height:18px!important;margin:0!important;padding:0!important;text-align:left!important}
+body.bera-chrome.bera-chrome .product-card .product-brand-slot .brand-logo{display:block!important;width:64px!important;height:18px!important;object-fit:contain!important;object-position:left center!important;margin:0!important}
+
+/* Show brand artwork on every product-card variant. */
+body.bera-chrome.bera-chrome.bera-chrome .product-card :is(.product-card__brand-row,.product-brand-slot){display:flex!important;align-items:center!important;justify-content:flex-start!important;visibility:visible!important;opacity:1!important;height:18px!important;min-height:18px!important;margin:0!important;padding:0!important}
+body.bera-chrome.bera-chrome.bera-chrome .product-card .product-name-brand-logo{display:block!important;position:relative!important;width:64px!important;height:18px!important;overflow:hidden!important;margin:0!important;padding:0!important;align-self:flex-start!important}
+body.bera-chrome.bera-chrome.bera-chrome .product-card .product-name-brand-logo:not(.product-name-brand-logo--trimmed) img{position:static!important;width:64px!important;height:18px!important;max-width:64px!important;object-fit:contain!important;object-position:left center!important}
+body.bera-chrome.bera-chrome.bera-chrome .product-card .product-card__brand-name{display:block!important;color:#10243b;font-size:12px;line-height:18px}
+
+/* Each card has one promotional label, never a stack of labels. */
+body.bera-chrome.bera-chrome.bera-chrome.bera-chrome .product-card > :is(.hm-badge,.product-card-corner-badge,.home-card-new-label,.home-card-sale-percent){display:inline-block!important;visibility:visible!important;opacity:1!important;position:absolute;top:12px!important;left:12px!important;z-index:3}
+
+body.bera-chrome.bera-chrome.bera-chrome.bera-chrome .product-card > :is(.hm-badge,.product-card-corner-badge,.home-card-new-label,.home-card-sale-percent) ~ :is(.hm-badge,.product-card-corner-badge,.home-card-new-label,.home-card-sale-percent){display:none!important}
+body.bera-chrome.bera-chrome.bera-chrome .product-card:has(> :is(.hm-badge,.product-card-corner-badge,.home-card-new-label,.home-card-sale-percent)) :is(.product-sale-ribbon,.card-dwell-badge){display:none!important}
+
+/* Reduce brand artwork by 25%, preserving the trimmed image geometry. */
+body.bera-chrome.bera-chrome.bera-chrome .product-card .product-name-brand-logo{transform:scale(.75);transform-origin:left center}
+body.bera-chrome.bera-chrome.bera-chrome .product-card .product-brand-slot .brand-logo{width:48px!important;height:14px!important;max-width:48px!important}
+
+/* Product photos stay unchanged when hovering over the card or image. */
+body.bera-chrome.bera-chrome.bera-chrome .product-card :is(.product-image,.product-card__media-link,.hm-media),
+body.bera-chrome.bera-chrome.bera-chrome .product-card :is(.product-image,.product-card__media-link,.hm-media) img{
+ opacity:1!important;filter:none!important;transition:none!important;
+}
+body.bera-chrome.bera-chrome.bera-chrome .product-card:hover :is(.product-image,.product-card__media-link,.hm-media),
+body.bera-chrome.bera-chrome.bera-chrome .product-card:hover :is(.product-image,.product-card__media-link,.hm-media) img{
+ opacity:1!important;filter:none!important;
+}

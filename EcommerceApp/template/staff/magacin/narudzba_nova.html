@@ -3,7 +3,7 @@
 {% block body_class %}{{ block.super }} is-manual-reference{% endblock %}
 {% block extra_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'css/staff-manual-order-reference.css' %}?v=20260907retroPayment">
+<link rel="stylesheet" href="{% static 'css/staff-manual-order-blue.css' %}?v=20261014-vp-vat">
 {% endblock %}
 
 {% block magacin_content %}
@@ -11,7 +11,7 @@
     <nav class="mg-crumb">Narudžbe / {% if existing_order %}{% if existing_order.status == 'rezervacija' %}Rezervacija{% else %}Narudžba{% endif %} #{{ existing_order.broj }}{% else %}Nova ručna narudžba{% endif %}</nav>
     <div class="mg-page-head">
         <div>
-            <h1>{% if existing_order %}{% if existing_order.status == 'rezervacija' %}Rezervacija{% else %}Narudžba{% endif %} #{{ existing_order.broj }}{% else %}Nova narudžba{% endif %}</h1>
+            <h1>{% if existing_order %}{% if existing_order.status == 'rezervacija' %}Rezervacija{% else %}Narudžba{% endif %} #{{ existing_order.broj }}{% else %}Nova narudžba — Online slanje{% endif %}</h1>
             <p class="mg-count" id="mgOrderIntro">{% if existing_order %}{% if existing_order.status == 'rezervacija' %}Zaliha je rezervisana. Dodaj ili izbaci artikle, pa Sačuvaj kad je narudžba gotova.{% else %}Ako si greškom ubacio artikal, izbaci ga ili dodaj ispravan. Sačuvaj — picking se usklađuje.{% endif %}{% else %}Kreiraj narudžbu dodavanjem kupca i artikala.{% endif %}</p>
         </div>
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_narudzbe' %}">
@@ -20,7 +20,7 @@
         </a>
     </div>
 
-<form data-debt-total="{{ debt_total|default:0 }}" data-missing-fulfillment-count="{{ missing_fulfillment_items|length }}" data-invoice-only-total="{{ invoice_only_total|default:0 }}" id="mgOrderForm" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{{ customer_lookup_url }}" data-customer-save="{% url 'staff_magacin_kupci_save' %}" data-loyalty-lookup="{{ loyalty_lookup_url }}" data-bulk-url="{% url 'staff_magacin_narudzba_bulk' %}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
+<form data-debt-total="{{ debt_total|default:0 }}" data-missing-fulfillment-count="{{ missing_fulfillment_items|length }}" data-invoice-only-total="{{ invoice_only_total|default:0 }}" id="mgOrderForm" data-cancel-url="{% url 'staff_magacin_narudzbe' %}" method="post" action="{% url 'staff_magacin_narudzba_nova' %}" data-lookup-url="{% url 'staff_magacin_artikli_lookup' %}" data-customer-lookup="{% url 'staff_magacin_kupci_lookup' %}" data-customer-save="{% url 'staff_magacin_kupci_save' %}" data-loyalty-lookup="{{ loyalty_lookup_url }}" data-bulk-url="{% url 'staff_magacin_narudzba_bulk' %}" data-dostava-cijena="{{ site_settings.dostava_cijena|default:'11.00' }}" data-besplatna-od="{{ site_settings.besplatna_dostava_od|default:'250.00' }}">
     {% csrf_token %}
     <input type="hidden" name="draft_token" id="mgDraftToken" value="{{ draft_token }}" data-save-url="{% url 'staff_magacin_draft_save' %}" data-import-url="{% url 'staff_magacin_draft_import' %}">
     <input type="hidden" name="draft_version" id="mgDraftVersion" value="{{ order_draft.version }}">
@@ -32,8 +32,7 @@
     <section class="mg-card mg-order-customer" id="mgCustomerCard">
         <div class="mg-card-head">
             <h2 class="mg-h">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Kupac
+                <button type="button" id="mgChooseCustomer" class="bera-customer-icon" aria-label="Izaberi kupca" title="Izaberi kupca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span>Izaberi kupca</span></button>
             </h2>
         </div>
         <div class="mg-cust-grid" id="mgCustomerSearchWrap">
@@ -80,7 +79,7 @@
     <section class="mg-card vp-box vp-search" id="mgOrderSearchBox">
         <h2 class="mg-h">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
-            Dodavanje artikala
+            Artikli
         </h2>
         <div class="vp-row vp-entry has-catalog mg-input-row mg-add-row">
             <div class="mg-mode-toggle" role="group" aria-label="Način dodavanja">
@@ -90,23 +89,24 @@
                 </button>
                 <button type="button" id="mgOrderCatalogBtn" aria-pressed="false">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                    Katalog pregled
+                    Kataloški unos
                 </button>
             </div>
-            <div class="mg-icon-field">
+            <div class="mg-icon-field bera-entry-search"><label for="mgOrderSearch">Artikal</label>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
-                <input type="search" id="mgOrderSearch" placeholder="Pretraži ili skeniraj artikal (naziv, šifra, barkod)..." autocomplete="off">
+                <input type="search" id="mgOrderSearch" placeholder="Pretraži ili skeniraj artikal (naziv, šifra, barkod)..." autocomplete="off" aria-controls="mgOrderSuggest" aria-expanded="false">
+                <ul class="vp-suggest" id="mgOrderSuggest" aria-label="Prijedlozi artikala" hidden></ul>
             </div>
+            <label class="bera-entry-quantity">Količina<input id="beraEntryQuantity" type="number" min="1" step="1" value="1"></label>
+            <button type="button" class="mg-btn mg-btn-primary" id="beraEntryAdd">Dodaj</button>
             <button type="button" class="mg-btn" id="mgSpareBtn">Slanje rezervnog dijela</button>
             <button type="button" class="mg-btn" id="mgOrderBulk">Bulk</button>
         </div>
-        <ul class="vp-suggest" id="mgOrderSuggest" hidden></ul>
         <div id="mgOrderCatalog" class="mg-catalog" hidden></div>
         <p class="vp-bulk-result" id="mgOrderBulkResult" hidden></p>
         <p id="mgOrderQtyHint" class="mg-qty-hint" hidden></p>
-    </section>
 
-    <section class="mg-card mg-order-added">
+    <section class="mg-order-added">
         <div class="mg-card-head">
             <h2 class="mg-h">Stavke narudžbe</h2>
             <span class="mg-muted" id="mgOrderAddedCount">0 stavki</span>
@@ -183,8 +183,18 @@
             <p>Dodaj artikle da bi kreirao narudžbu.</p>
         </div>
     </section>
+        <aside class="mg-card mg-order-summary">
+            <div class="mg-sum-line"><span id="mgOrderGoodsLabel">Ukupan iznos</span><b id="mgOrderGoods">0,00 KM</b></div>
+            <div class="mg-sum-line" id="mgOrderVatRow" hidden><span>PDV 17%:</span><b id="mgOrderVat">0,00 KM</b></div>
+            <small id="mgOrderVatNote" class="mg-order-vat-note">PDV uračunat u cijenu</small>
+            <div class="mg-sum-line"><span>Dostava:</span><b id="mgOrderShipVal">11,00 KM</b></div>
+            <div class="mg-sum-line bera-discount" id="mgOrderDiscountRow"><span>Popust</span><b id="beraDiscountTotal">− 0,00 KM</b></div>
+            <div class="mg-sum-pay"><span id="mgOrderTotalLabel">Ukupno</span><strong id="mgOrderTotal">11,00 KM</strong></div>
+        </aside>
+    </section>
     </div>
 
+    <details class="bera-order-options"><summary>Dostava, plaćanje i dodatne opcije</summary>
     <div class="mg-order-meta-row">
         <section class="mg-card mg-order-meta">
             <div class="mg-order-meta-grid">
@@ -242,14 +252,10 @@
                 </div>
             </div>
         </section>
-        <aside class="mg-card mg-order-summary">
-            <div class="mg-sum-line"><span id="mgOrderGoodsLabel">Ukupno artikli:</span><b id="mgOrderGoods">0,00 KM</b></div>
-            <div class="mg-sum-line"><span>Dostava:</span><b id="mgOrderShipVal">11,00 KM</b></div>
-            <div class="mg-sum-line" id="mgOrderVatRow" hidden><span>PDV 17%:</span><b id="mgOrderVat">0,00 KM</b></div>
-            <div class="mg-sum-pay"><span id="mgOrderTotalLabel">ZA PLAĆANJE:</span><strong id="mgOrderTotal">11,00 KM</strong></div>
-        </aside>
+
     </div>
 
+    </details>
     <div class="mg-order-foot">
         <button type="button" class="mg-btn" id="mgOrderClear">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
@@ -391,7 +397,7 @@
 
 <div class="mg-modal" id="mgOrderQtyModal" hidden>
     <div class="mg-modal-bg" data-order-qty-close></div>
-    <div class="mg-modal-panel vp-qty-panel" role="dialog">
+    <div class="mg-modal-panel vp-qty-panel" role="dialog" aria-modal="true" aria-labelledby="mgOrderQtyName">
         <p class="vp-qty-kicker">Količina</p>
         <h2 id="mgOrderQtyName">Artikal</h2>
         <p id="mgOrderQtyMeta" class="vp-qty-meta"></p>
@@ -420,4 +426,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block magacin_js %}
+{{ block.super }}
+<script src="{% static 'js/staff-manual-order-blue.js' %}?v=20261014-vp-vat"></script>
 {% endblock %}

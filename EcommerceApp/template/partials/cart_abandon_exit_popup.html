@@ -1,4 +1,6 @@
+{% load static %}
 {% if cart_abandon_exit %}
+<link rel="stylesheet" href="{% static 'css/cart-abandon-bera.css' %}?v=20261014">
 <div class="site-popup-overlay cart-abandon-overlay" id="cartAbandonExitOverlay" hidden
      data-cart-count="{{ cart_abandon_exit.qty_total|default:cart_count }}">
     <div class="site-popup site-popup--akcija site-popup--cart-abandon" role="dialog" aria-modal="true" aria-labelledby="cartAbandonTitle">
@@ -11,7 +13,7 @@
         </button>
 
         <div class="site-popup-akcija cart-abandon-body">
-            <div class="cart-abandon-icon" aria-hidden="true">🛒</div>
+            <div class="cart-abandon-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h2l2.2 11.2a1.2 1.2 0 0 0 1.2 1h10.2a1.2 1.2 0 0 0 1.2-1L21 7H5"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg></div>
             <p class="cart-abandon-text">{{ cart_abandon_exit.tekst }}</p>
             <p class="cart-abandon-count">
                 U korpi:
@@ -47,11 +49,8 @@
             <a href="{% url 'checkout' %}" class="btn btn-primary site-popup-cta cart-abandon-cta">
                 Završi narudžbu
             </a>
-            <a href="{% url 'cart' %}" class="btn btn-cart-secondary cart-abandon-cart">
-                Otvori korpu
-            </a>
             <button type="button" class="btn btn-cart-secondary cart-abandon-stay" data-cart-abandon-close>
-                Nastavi kupovinu
+                Izađi
             </button>
         </div>
     </div>

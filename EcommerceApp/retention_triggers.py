@@ -49,7 +49,10 @@ def install_history(connection, baseline=False):
                 if baseline:
                     cursor.execute(f'''INSERT INTO {audit} (table_name, record_key, operation, "before", "after", created_at)
                         SELECT {literal}, CAST(t.{quote(pk)} AS text), 'BASELINE', NULL, to_jsonb(t), CURRENT_TIMESTAMP
-                        FROM {quoted} t''')
+                        FROM {quoted} t WHERE NOT EXISTS (
+                            SELECT 1 FROM {audit} h WHERE h.table_name = {literal}
+                            AND h.record_key = CAST(t.{quote(pk)} AS text)
+                        )''')
             else:
                 def row_json(prefix):
                     chunks = []
@@ -80,10 +83,50 @@ def install_history(connection, baseline=False):
                 if baseline:
                     cursor.execute(f'''INSERT INTO {audit} (table_name, record_key, operation, "before", "after", created_at)
                         SELECT {literal}, CAST(t.{quote(pk)} AS TEXT), 'BASELINE', NULL, {row_json('t')},
-                        STRFTIME('%Y-%m-%d %H:%M:%f', 'now') FROM {quoted} t''')
+                        STRFTIME('%Y-%m-%d %H:%M:%f', 'now') FROM {quoted} t
+                        WHERE NOT EXISTS (SELECT 1 FROM {audit} h WHERE h.table_name = {literal}
+                            AND h.record_key = CAST(t.{quote(pk)} AS TEXT))''')
+
+    install_history_guards(connection)
 
 
 def refresh_history_triggers(sender, using, **kwargs):
     from django.db import connections
     if sender.name == 'EcommerceApp':
         install_history(connections[using])
+
+
+def install_history_guards(connection):
+    """Keep committed history append-only, even for direct SQL."""
+    quote = connection.ops.quote_name
+    audit = quote(AUDIT_TABLE)
+    with connection.cursor() as cursor:
+        tables = connection.introspection.table_names(cursor)
+        if AUDIT_TABLE not in tables:
+            return
+        if connection.vendor == 'sqlite':
+            for operation in ('UPDATE', 'DELETE'):
+                name = quote('protect_system_history_' + operation.lower())
+                cursor.execute(f'DROP TRIGGER IF EXISTS {name}')
+                cursor.execute(f"""CREATE TRIGGER {name} BEFORE {operation} ON {audit}
+                    BEGIN SELECT RAISE(ABORT, 'Permanent history cannot be modified or deleted'); END""")
+        elif connection.vendor == 'postgresql':
+            cursor.execute("""CREATE OR REPLACE FUNCTION ecommerce_block_history_loss()
+                RETURNS trigger AS $$ BEGIN
+                RAISE EXCEPTION 'Permanent history cannot be modified, deleted or truncated';
+                END; $$ LANGUAGE plpgsql;""")
+            cursor.execute(f'DROP TRIGGER IF EXISTS protect_system_history ON {audit}')
+            cursor.execute(f"""CREATE TRIGGER protect_system_history BEFORE UPDATE OR DELETE ON {audit}
+                FOR EACH ROW EXECUTE FUNCTION ecommerce_block_history_loss()""")
+            # TRUNCATE bypasses row-level history triggers. Refuse it on tracked tables.
+            for table in tables:
+                if table.lower() in EXCLUDED and table != AUDIT_TABLE:
+                    continue
+                if not table.lower().startswith(('ecommerceapp_', 'auth_')) and table != 'django_admin_log':
+                    continue
+                quoted = quote(table)
+                cursor.execute(f'DROP TRIGGER IF EXISTS protect_history_truncate ON {quoted}')
+                cursor.execute(f"""CREATE TRIGGER protect_history_truncate BEFORE TRUNCATE ON {quoted}
+                    FOR EACH STATEMENT EXECUTE FUNCTION ecommerce_block_history_loss()""")
+        else:
+            raise RuntimeError('Permanent history requires SQLite or PostgreSQL.')

@@ -1,0 +1,21 @@
+{% extends 'staff/magacin/base.html' %}
+{% block magacin_content %}
+<div class="mg-prenosnice">
+    <h1>Prenosnice</h1>
+    <nav class="mg-prenos-tabs" aria-label="Status prenosnica">
+        <a href="?prenosnice=1" class="{% if not completed_transfers %}is-active{% endif %}">Aktivne</a>
+        <a href="?prenosnice=1&amp;status=prenijete" class="{% if completed_transfers %}is-active{% endif %}">Prenijete</a>
+    </nav>
+    {% for job in prenos_mp_jobs %}
+    <article class="mg-prenos-row">
+        <div class="mg-prenos-image">{% if job.slika %}<img src="{{ job.slika }}" alt="{{ job.naziv }}" loading="lazy">{% else %}<span>Bez slike</span>{% endif %}</div>
+        <div class="mg-prenos-info">
+            <h2>{{ job.naziv }}</h2>
+            <div class="mg-prenos-meta"><span>Šifra <strong>{{ job.sifra|default:'—' }}</strong></span><span>Izvor <strong>{{ job.lokacija|default:job.order.adresa }}</strong></span><span>Odredište <strong>Maloprodaja</strong></span><span>Prenosnica <strong>#{{ job.order.broj }}</strong></span></div>
+        </div>
+        <span class="mg-prenos-qty"><strong>{{ job.lokacija|default:job.order.adresa }}</strong> × {{ job.qty }} kom</span>
+        {% if completed_transfers %}<span class="mg-prenos-action">Prenijeto</span>{% else %}<a class="mg-prenos-action" href="{% url 'staff_magacin_pakuj_detail' job.order.broj %}">Prenesi</a>{% endif %}
+    </article>
+    {% empty %}<p class="mg-prenos-empty">{% if completed_transfers %}Nema prenijetih prenosnica.{% else %}Nema aktivnih prenosnica.{% endif %}</p>{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+/* Recent purchases use the storefront's blue and turquoise palette. */
+body.bera-chrome .social-proof-toast {
+    box-sizing: border-box;
+    border: 1px solid #cce9fc;
+    border-left: 4px solid #009ace;
+    border-radius: 14px;
+    background: linear-gradient(120deg, #f0f9ff, #fff);
+    box-shadow: 0 10px 28px rgba(15, 83, 122, .14);
+    color: #10243b;
+}
+body.bera-chrome .social-proof-toast__text { color: #426581; line-height: 1.55; }
+body.bera-chrome .social-proof-toast__text strong { color: #10243b; }
+body.bera-chrome .social-proof-toast__text a { color: #008bc5; text-underline-offset: 3px; }
+body.bera-chrome .social-proof-toast__text a:hover { color: #006da4; }
+body.bera-chrome .social-proof-toast__close {
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #e0f2ff;
+    color: #008bc5;
+}
+body.bera-chrome .social-proof-toast__close:hover { background: #cce9fc; color: #006da4; }
+body.bera-chrome .social-proof-toast :is(a, button):focus-visible {
+    outline: 2px solid #009ace;
+    outline-offset: 3px;
+}

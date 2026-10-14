@@ -1,0 +1,37 @@
+body.magacin-page.is-article-list .mg-main{padding:24px 32px 32px;color:#172b4c;font-family:Inter,"Segoe UI",system-ui,sans-serif}
+.is-article-list .stock-title{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+.is-article-list .stock-title h1{margin:0;font-size:30px;line-height:1.2;letter-spacing:-.025em;color:#172b4c}
+.stock-tools{display:flex;align-items:center;gap:14px;font-size:12px}
+.stock-tools a{color:#008db9;text-decoration:none}
+.stock-tools button{display:none}
+.stock-search{padding:22px;border:1px solid #d6e8fc;border-radius:16px;background:#fff;margin-bottom:28px}
+.stock-search>label{display:block;font-size:15px;font-weight:650;margin-bottom:10px}
+.stock-search form{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.stock-search input[type=search]{box-sizing:border-box;flex:1;min-width:160px;height:48px;border:1px solid #cfe5f9;border-radius:12px;padding:0 16px;background:#f8fbff;color:#172b4c;font:inherit;font-size:16px}
+.stock-search input[type=search]:focus{outline:2px solid #00add1;outline-offset:3px}
+.stock-search button{height:46px;padding:0 22px;border:1px solid #d6e8fc;border-radius:10px;background:#eff8ff;color:#008db9;font:inherit;font-size:15px;cursor:pointer}
+.stock-search .stock-search-submit{background:linear-gradient(110deg,#00b5ce,#0084b8);color:#fff;border:0}
+.stock-zero{flex-basis:100%;display:flex;align-items:center;gap:6px;font-size:12px;color:#7089ad}
+.stock-zero input{accent-color:#009bc3}
+.stock-results-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.stock-results-heading h2{margin:0 0 6px;font-size:21px;color:#172b4c}
+.stock-results-heading p{margin:0;color:#7089ad;font-size:14px}
+.stock-results-heading>span{background:#e2f4ff;color:#0094c1;border-radius:30px;padding:8px 14px;font-size:14px;white-space:nowrap}
+.stock-product{display:flex;align-items:center;gap:20px;padding:16px 18px;margin-bottom:12px;border:1px solid #d1e6ff;border-radius:14px;background:#fff;color:#172b4c;text-decoration:none}
+.stock-product:hover{border-color:#00add1;background:#fbfdff}
+.stock-image{display:grid;place-items:center;flex:0 0 70px;height:76px;border:1px solid #edf4fb;border-radius:12px;background:#f7faff;overflow:hidden;font-size:11px;color:#7089ad}
+.stock-image img{width:100%;height:100%;object-fit:contain;padding:5px;box-sizing:border-box}
+.stock-info{flex:1;min-width:0}
+.stock-info>strong{display:block;font-size:18px;line-height:1.35;font-weight:700;margin-bottom:9px}
+.stock-meta{display:flex;flex-wrap:wrap;gap:6px 20px;color:#7189ad;font-size:13px}
+.stock-meta b{color:#5b779f;font-weight:700;overflow-wrap:anywhere}
+.stock-quantity{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex:0 0 auto;min-width:86px;min-height:66px;border:1px solid #bce5ff;border-radius:13px;background:#eff9ff;color:#0094c1;font-size:12px}
+.stock-quantity>span:last-child{font-size:13px;font-weight:700}
+.stock-quantity b{font-size:25px;margin-right:3px}
+.stock-empty{padding:24px;background:#fff;border:1px solid #d6e8fc;border-radius:14px;color:#7089ad}
+.stock-history{margin-top:24px;font-size:13px}
+.stock-history summary{cursor:pointer;color:#5b779f;padding:8px}
+.stock-history[open] summary{margin-bottom:14px}
+.stock-product:focus-visible,.stock-tools a:focus-visible{outline:2px solid #00add1;outline-offset:3px}
+@media(max-width:1024px){body.magacin-page.is-article-list .mg-main{padding:16px}.stock-tools button{display:block;border:1px solid #d6e8fc;background:#fff;color:#008db9;border-radius:8px;padding:8px 12px}.stock-title{flex-wrap:wrap}.stock-title h1{font-size:26px}}
+@media(max-width:600px){body.magacin-page.is-article-list .mg-main{padding:12px}.stock-search{padding:16px}.stock-search input[type=search]{flex-basis:100%;font-size:16px}.stock-search button{flex:1;padding:0 12px}.stock-product{padding:12px;gap:12px}.stock-image{flex-basis:54px;height:62px}.stock-info>strong{font-size:14px}.stock-meta{font-size:11px;gap:4px 8px}.stock-quantity{min-width:58px;min-height:58px}.stock-quantity b{font-size:21px}.stock-results-heading h2{font-size:18px}.stock-results-heading>span{font-size:12px}.stock-tools{gap:10px}}

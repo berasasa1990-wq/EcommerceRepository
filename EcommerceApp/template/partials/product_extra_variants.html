@@ -1,0 +1,12 @@
+{% if similar_name_products %}
+<section class="product-extra-variants product-lower-related">
+    <div class="product-detail-related">
+        <header class="home-products-header"><h2>Dodatne varijante proizvoda</h2></header>
+        <div class="product-extra-variants-grid">
+        {% for opt in similar_name_products|slice:':5' %}
+            {% include 'partials/product_catalog_card.html' with product=opt home_reference_card=True hide_variations=True %}
+        {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}

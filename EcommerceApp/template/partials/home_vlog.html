@@ -21,17 +21,6 @@
             <div class="home-vlog-grid home-vlog-grid--cards">
                 {% for vlog in home_vlogs %}
                 <a href="{% url 'vlog_detail' vlog.slug %}" class="home-vlog-card home-vlog-card--rich" aria-label="{{ vlog.naslov }}">
-                    <div class="home-vlog-card-image-wrap">
-                        <img src="{{ vlog.slika_url }}"
-                             {% if vlog.slika_srcset %}srcset="{{ vlog.slika_srcset }}"{% endif %}
-                             alt="{{ vlog.naslov }}"
-                             class="home-vlog-card-image"
-                             width="800"
-                             height="500"
-                             sizes="(max-width: 768px) 100vw, 33vw"
-                             loading="lazy"
-                             decoding="async">
-                    </div>
                     <div class="home-vlog-card__body">
                         {% if vlog.datum %}
                         <time class="home-vlog-card__date" datetime="{{ vlog.datum|date:'Y-m-d' }}">{{ vlog.datum|date:"d.m.Y." }}</time>
@@ -50,8 +39,9 @@
             {% endif %}
 
             {% if site_settings.prikazi_newsletter %}
-            <aside class="home-newsletter home-newsletter--image" aria-label="Prijavi se na naš newsletter">
-                <img class="home-newsletter__banner" src="{% static 'img/newsletter-banner-final.png' %}" width="2162" height="727" alt="Budi uvijek u toku. Prijavi se na naš newsletter za nove proizvode, akcije, savjete za ribolov i posebne ponude. Možeš se odjaviti u bilo kojem trenutku." loading="lazy" decoding="async">
+            <aside class="home-newsletter home-newsletter--text" aria-label="Prijavi se na naš newsletter">
+                <h3>Budi uvijek u toku</h3>
+                <p>Prijavi se za nove proizvode, akcije i savjete za ribolov.</p>
                 <form class="home-newsletter__form" id="homeNewsletterForm" action="{% url 'newsletter_subscribe' %}" method="post" novalidate>
                     {% csrf_token %}
                     <label class="visually-hidden" for="homeNewsletterEmail">Tvoja email adresa</label>

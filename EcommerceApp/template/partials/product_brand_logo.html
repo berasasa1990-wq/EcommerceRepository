@@ -1,0 +1,7 @@
+{% load brand_logo %}
+{% if product.brend.slika %}
+{% brand_logo_geometry product.brend.slika as logo %}
+<div class="product-name-brand-logo{% if logo %} product-name-brand-logo--trimmed{% endif %}"{% if logo %} style="width:64px!important;height:18px!important"{% endif %}><img src="{{ product.brend.slika.url }}" alt="{{ product.brend.naziv }}" loading="lazy" decoding="async"{% if logo %} style="position:absolute!important;object-fit:fill!important;width:{{ logo.image_width }}px!important;height:{{ logo.image_height }}px!important;max-width:none!important;left:{{ logo.left }}px!important;top:{{ logo.top }}px!important"{% endif %}></div>
+{% elif product.brend %}
+<span class="product-card__brand-name">{{ product.brend.naziv }}</span>
+{% endif %}

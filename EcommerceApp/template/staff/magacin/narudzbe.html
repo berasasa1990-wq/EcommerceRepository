@@ -3,8 +3,10 @@
 {% block body_class %}{{ block.super }} is-orders-reference{% endblock %}
 {% block extra_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'css/staff-orders-reference.css' %}?v=20260906-6">
+<link rel="stylesheet" href="{% static 'css/staff-orders-bera.css' %}?v=20261014-brand-actions">
 {% endblock %}
+
+{% block magacin_search_bar %}<button type="button" class="mg-menu-standalone" id="mgNavToggle" aria-label="Meni magacina" aria-expanded="false">☰</button>{% endblock %}
 
 {% block magacin_content %}
 <div class="mg-orders-page">
@@ -14,7 +16,7 @@
             <span class="mg-orders-title-ico" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.5L22 8H6.4"/></svg>
             </span>
-            {% if order_query %}Rezultati pretrage — svi statusi{% elif show_validated %}Validatovane narudžbe{% else %}Narudžbe{% endif %}
+            Narudžbe
         </h1>
         <p class="mg-count">
             {% if order_query %}
@@ -28,10 +30,10 @@
             {% endif %}
         </p>
     </div>
-    <div class="mg-toolbar-actions">
+    <div class="mg-toolbar-actions"><button type="button" class="bera-print-action" title="Štampaj odvojene narudžbe" aria-label="Štampaj odvojene narudžbe" onclick="document.getElementById('beraPrintDialog').showModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 8V3h12v5M6 17H3V9h18v8h-3M6 14h12v7H6z"/></svg></button>
         <a class="mg-btn mg-btn-pill mg-btn-primary" href="{% url 'staff_magacin_narudzba_nova' %}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-            Nova ručna narudžba
+            Kreiraj narudžbu
         </a>
         <a class="mg-btn mg-btn-pill" href="{% url 'staff_magacin_brza_posta' %}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h11v10H3z"/><path d="M14 10h4l3 3v4h-7"/><circle cx="7" cy="18.5" r="1.5"/><circle cx="17.5" cy="18.5" r="1.5"/></svg>
@@ -52,21 +54,13 @@
         {% endif %}
     </div>
 </div>
+<nav class="bera-order-status" aria-label="Status narudžbi">
+<a href="{% url 'staff_magacin_narudzbe' %}" class="{% if not show_validated and not show_cancelled %}is-active{% endif %}">Aktivna</a>
+<a href="?status=zavrsene" class="{% if show_validated %}is-active{% endif %}">Završene</a>
+<a href="?status=otkazana" class="{% if show_cancelled %}is-active{% endif %}">Otkazana</a>
+</nav>
 <div class="mg-orders-panel">
-<div class="mg-filter-tabs">
-    <a href="{% url 'staff_magacin_narudzbe' %}{% if qs_sve %}?{{ qs_sve }}{% endif %}" class="{% if izvor_filter == 'sve' %}is-active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-        Sve
-    </a>
-    <a href="{% url 'staff_magacin_narudzbe' %}?{{ qs_magacin }}" class="{% if izvor_filter == 'magacin' %}is-active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Ručne
-    </a>
-    <a href="{% url 'staff_magacin_narudzbe' %}?{{ qs_webshop }}" class="{% if izvor_filter == 'webshop' %}is-active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
-        Webshop
-    </a>
-</div>
+
 {% if show_validated and not show_all_validated %}
 <nav class="bp-days" aria-label="Datum validacije">
     <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}?{{ qs_prev_day }}">← {{ prev_day|date:"d.m." }}</a>
@@ -85,7 +79,9 @@
     {% endif %}
 </nav>
 {% endif %}
+{% if show_validated or order_query %}
 <form method="get" action="{% url 'staff_magacin_narudzbe' %}" class="mg-orders-find" role="search">
+<label class="bera-search-label">Pretraži narudžbe</label>
     {% if show_validated %}<input type="hidden" name="validirane" value="1">{% endif %}
     {% if show_all_validated %}<input type="hidden" name="sve" value="1">{% elif show_validated and not is_today %}<input type="hidden" name="datum" value="{{ day|date:'Y-m-d' }}">{% endif %}
     {% if izvor_filter and izvor_filter != 'sve' %}<input type="hidden" name="izvor" value="{{ izvor_filter }}">{% endif %}
@@ -101,49 +97,22 @@
     <a class="mg-btn" href="{% url 'staff_magacin_narudzbe' %}{% if qs_clear %}?{{ qs_clear }}{% endif %}">Poništi</a>
     {% endif %}
 </form>
+{% endif %}
 
 <form id="mgPrintForm" method="get" action="{% url 'staff_magacin_narudzbe_stampa' %}" target="_blank" class="mg-orders-form">
-    <div class="mg-bulk-bar">
-        <label class="mg-check">
-            <input type="checkbox" id="mgSelectAll">
-            Odaberi sve
-        </label>
-        <button type="submit" class="mg-btn mg-btn-pill" id="mgPrintSelected" disabled>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a1 1 0 0 1-1-1v-7h18v7a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>
-            {% if show_validated %}Štampaj račune{% else %}Štampaj odabrane{% endif %}
-        </button>
-        {% if show_validated %}
-        <button type="submit" class="mg-btn mg-btn-pill" id="mgPrintQtySelected" formaction="{% url 'staff_magacin_narudzbe_stampa_kolicine' %}" formtarget="_blank" disabled>
-            Štampaj količine za fakturu
-        </button>
-        <button type="button" class="mg-btn mg-btn-pill mg-btn-primary" id="mgXexpressSelected" disabled>
-            Pošalji u X-Express
-        </button>
-        {% endif %}
-        {% if not show_validated %}
-        <button type="button" class="mg-btn mg-btn-pill" id="mgValidateSelected" disabled>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
-            Validiraj odabrane
-        </button>
-        {% endif %}
-        <a class="mg-btn mg-btn-pill{% if not packing_ready_count %} is-packing-idle{% endif %}" id="mgPackingSelected" href="{% url 'staff_magacin_narudzbe_packing' %}" target="_blank" rel="noopener" data-packing-count="{{ packing_ready_count|default:0 }}"{% if not packing_ready_count %} data-packing-reprint="1"{% endif %}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-            Štampaj packing{% if packing_ready_count %} ({{ packing_ready_count }}){% endif %}
-        </a>
-        <span class="mg-muted" id="mgSelectedCount">0 odabrano</span>
-    </div>
+    
     <section class="mg-card mg-orders-card">
         <div class="mg-table-wrap">
         <table class="mg-table mg-table-stack mg-table-stack-narudzbe">
             <thead>
                 <tr>
                     <th class="mg-check-col"></th>
-                    <th>BROJ</th>
-                    <th>KUPAC</th>
-                    <th>IZVOR</th>
-                    <th>STATUS</th>
+                    <th>Narudžba</th>
+                    <th>Kupac</th>
+                    <th>Tip</th>
+                    <th>Status</th>
                     <th class="mg-order-loc">LAGER</th>
-                    <th>DATUM</th>
+                    <th>Datum</th>
                     <th>NAPOMENA</th>
                     <th class="num">UKUPNO</th>
                     <th class="mg-more-col"></th>
@@ -156,11 +125,12 @@
                         <input type="checkbox" name="b" value="{{ order.broj }}" class="mg-order-check"{% if order.needs_mp_check %} data-mp="1"{% endif %}{% if order.is_vp %} data-vp="1"{% endif %}>
                     </td>
                     <td>
-                        <strong class="mg-order-rn">RN-{{ order.kreirana|date:"Y" }}-{{ order.broj }}</strong>
-                        <span class="sub">#{{ order.pk }}</span>
+                        <strong class="mg-order-rn">#{{ order.broj }}</strong>
+                        
                     </td>
                     <td>
                         <strong class="mg-order-name">{{ order.display_customer_name }}</strong>
+                        {% if show_cancelled and order.razlog_otkazivanja %}<span class="order-cancel-reason">Razlog otkazivanja: {{ order.razlog_otkazivanja }}</span>{% endif %}
                         {% if order.card_payment %}<span class="sub">KARTICOM</span>{% endif %}
                         {% if order.telefon %}<span class="sub">{{ order.telefon }}</span>{% endif %}
                         {% if order.loyalty_popust_info %}
@@ -188,11 +158,11 @@
                         {% if order.is_mp_transfer %}
                         <span class="mg-pill mg-src-rucna">Prenosnica u MP</span>
                         {% elif order.is_vp %}
-                        <span class="mg-pill mg-src-vp">VP</span>
+                        <span class="mg-pill mg-src-vp">Veleprodaja</span>
                         {% elif order.izvor == 'magacin' %}
-                        <span class="mg-pill mg-src-rucna">Ručna</span>
+                        <span class="mg-pill mg-src-rucna">Online slanje</span>
                         {% else %}
-                        <span class="mg-pill mg-src-web">Webshop</span>
+                        <span class="mg-pill mg-src-web">Online slanje</span>
                         {% endif %}
                     </td>
                     <td>
@@ -210,8 +180,7 @@
                         {% endif %}
                     </td>
                     <td class="mg-order-date">
-                        <span>{{ order.kreirana|date:"d.m.Y" }}</span>
-                        <span class="sub">{{ order.kreirana|date:"H:i" }}</span>
+                        {{ order.kreirana|date:"d.m.Y. H:i" }}
                     </td>
                     <td class="mg-order-note">
                         {% if order.lista_napomena %}
@@ -222,6 +191,10 @@
                     </td>
                     <td class="num mg-order-sum">{{ order.ukupno }} KM</td>
                     <td class="mg-more-col" data-stop-row>
+                        <a class="bera-row-action" href="{% url 'staff_order_detail' order.broj %}" title="Pogledaj narudžbu" aria-label="Pogledaj narudžbu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                        {% if order.can_edit_from_list %}<a class="bera-row-action" href="{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}" title="Izmijeni narudžbu" aria-label="Izmijeni narudžbu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m15 3 6 6-12 12H3v-6L15 3ZM12 6l6 6"/></svg></a>{% endif %}
+                        {% if order.can_edit_from_list %}<button type="button" data-cancel-order="{{ order.broj }}" data-cancel-url="{% url 'staff_order_detail' order.broj %}" class="bera-row-action bera-row-delete" title="Otkaži narudžbu" aria-label="Otkaži narudžbu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 8 8 8m0-8-8 8"/></svg></button>{% endif %}
+
                         {% if show_validated %}
                         <a class="mg-order-print" href="{% url 'staff_magacin_narudzbe_stampa' %}?b={{ order.broj }}" target="_blank" rel="noopener" title="Štampaj račun" aria-label="Štampaj račun">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a1 1 0 0 1-1-1v-7h18v7a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>
@@ -230,18 +203,6 @@
                         <a class="mg-order-print" href="{% url 'staff_magacin_narudzbe_stampa_kolicine' %}?b={{ order.broj }}" target="_blank" rel="noopener" title="Štampaj količine za fakturu" aria-label="Štampaj količine za fakturu">Količine</a>
                         {% endif %}
                         {% endif %}
-                        <details class="order-row-menu">
-                            <summary class="mg-row-more" aria-label="Opcije narudžbe">⋮</summary>
-                            <div class="order-row-menu-panel">
-                                {% if order.can_edit_from_list %}
-                                <a href="{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}">Izmijeni narudžbu</a>
-                                {% endif %}
-                                {% if order.lager_status == 'rezervisano' %}
-                                <button type="submit" form="cancelOrder{{ order.pk }}">Otkaži narudžbu</button>
-                                {% endif %}
-                                <a href="{% url 'staff_order_detail' order.broj %}">Prikaži fakturu</a>
-                            </div>
-                        </details>
                     </td>
                 </tr>
                 {% empty %}
@@ -275,6 +236,57 @@
         </table>
         </div>
     </section>
+{% if cancelled_page and cancelled_page.paginator.num_pages > 1 %}
+<nav class="order-pagination" aria-label="Stranice otkazanih narudžbi">
+    <span>Stranica {{ cancelled_page.number }} od {{ cancelled_page.paginator.num_pages }}</span>
+    {% for link in cancelled_page_links %}
+        {% if link.url %}<a href="{{ link.url }}"{% if link.active %} class="is-active" aria-current="page"{% endif %}>{{ link.label }}</a>{% else %}<span>{{ link.label }}</span>{% endif %}
+    {% endfor %}
+</nav>
+{% endif %}
+<details class="bera-order-bulk"><summary>Dodatni filteri i štampanje</summary><div class="mg-filter-tabs">
+    <a href="{% url 'staff_magacin_narudzbe' %}{% if qs_sve %}?{{ qs_sve }}{% endif %}" class="{% if izvor_filter == 'sve' %}is-active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        Sve
+    </a>
+    <a href="{% url 'staff_magacin_narudzbe' %}?{{ qs_magacin }}" class="{% if izvor_filter == 'magacin' %}is-active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Ručne
+    </a>
+    <a href="{% url 'staff_magacin_narudzbe' %}?{{ qs_webshop }}" class="{% if izvor_filter == 'webshop' %}is-active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+        Webshop
+    </a>
+</div><div class="mg-bulk-bar">
+        <label class="mg-check">
+            <input type="checkbox" id="mgSelectAll">
+            Odaberi sve
+        </label>
+        <button type="submit" class="mg-btn mg-btn-pill" id="mgPrintSelected" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a1 1 0 0 1-1-1v-7h18v7a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>
+            {% if show_validated %}Štampaj račune{% else %}Štampaj odabrane{% endif %}
+        </button>
+        {% if show_validated %}
+        <button type="submit" class="mg-btn mg-btn-pill" id="mgPrintQtySelected" formaction="{% url 'staff_magacin_narudzbe_stampa_kolicine' %}" formtarget="_blank" disabled>
+            Štampaj količine za fakturu
+        </button>
+        <button type="button" class="mg-btn mg-btn-pill mg-btn-primary" id="mgXexpressSelected" disabled>
+            Pošalji u X-Express
+        </button>
+        {% endif %}
+        {% if not show_validated %}
+        <button type="button" class="mg-btn mg-btn-pill" id="mgValidateSelected" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+            Validiraj odabrane
+        </button>
+        {% endif %}
+        <a class="mg-btn mg-btn-pill{% if not packing_ready_count %} is-packing-idle{% endif %}" id="mgPackingSelected" href="{% url 'staff_magacin_narudzbe_packing' %}" target="_blank" rel="noopener" data-packing-count="{{ packing_ready_count|default:0 }}"{% if not packing_ready_count %} data-packing-reprint="1"{% endif %}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Štampaj packing{% if packing_ready_count %} ({{ packing_ready_count }}){% endif %}
+        </a>
+        <span class="mg-muted" id="mgSelectedCount">0 odabrano</span>
+    </div>
+    </details>
 </form>
 </div>
 </div>
@@ -302,11 +314,56 @@
     <input type="hidden" name="next" value="{{ request.get_full_path }}">
 </form>
 {% endif %}
-{% if order.lager_status == 'rezervisano' %}
-<form id="cancelOrder{{ order.pk }}" method="post" action="{% url 'staff_order_detail' order.broj %}" onsubmit="return confirm('Otkazati narudžbu?');" hidden>
-    {% csrf_token %}
-    <input type="hidden" name="action" value="otkazi">
-</form>
-{% endif %}
+
 {% endfor %}
+{% endblock %}
+
+{% block magacin_js %}
+{{ block.super }}
+<dialog id="beraPrintDialog" aria-labelledby="beraPrintTitle">
+<header><h2 id="beraPrintTitle">Štampaj odvojene narudžbe</h2><button type="button" class="mg-btn" data-print-close aria-label="Zatvori">×</button></header>
+<div id="beraPrintChoices">
+<button type="button" class="mg-btn mg-btn-primary" id="beraPrintPicking">Štampaj picking{% if packing_ready_count %} ({{ packing_ready_count }}){% endif %}</button>
+<button type="button" class="mg-btn mg-btn-primary" data-print-url="{% url 'staff_magacin_narudzbe_stampa' %}">Štampanje računa</button>
+<button type="button" class="mg-btn mg-btn-primary" data-print-url="{% url 'staff_magacin_narudzbe_stampa_kolicine' %}">Štampanje za fakturu — količine</button>
+<button type="button" class="mg-btn mg-btn-primary" data-print-url="{% url 'staff_magacin_narudzbe_najava' %}">Štampanje najave</button>
+</div>
+<form id="beraPrintDateForm" method="get" target="_blank" hidden>
+<label for="beraPrintDate">Datum</label><input id="beraPrintDate" name="datum" type="date" value="{{ today|date:'Y-m-d' }}" required>
+<div id="beraPrintSelectedInputs"></div>
+<button class="mg-btn mg-btn-primary" type="submit">Nastavi</button><button class="mg-btn" type="button" id="beraPrintBack">← Nazad</button>
+</form>
+</dialog>
+<script>
+(function(){var dialog=document.getElementById('beraPrintDialog'),choices=document.getElementById('beraPrintChoices'),form=document.getElementById('beraPrintDateForm');function reset(){choices.hidden=false;form.hidden=true;}dialog.querySelector('[data-print-close]').addEventListener('click',function(){dialog.close();});dialog.querySelectorAll('[data-print-url]').forEach(function(button){button.addEventListener('click',function(){form.action=button.dataset.printUrl;var inputs=document.getElementById('beraPrintSelectedInputs');inputs.replaceChildren();document.querySelectorAll('.mg-order-check:checked').forEach(function(check){var input=document.createElement('input');input.type='hidden';input.name='b';input.value=check.value;inputs.append(input);});choices.hidden=true;form.hidden=false;document.getElementById('beraPrintDate').focus();});});document.getElementById('beraPrintPicking').addEventListener('click',function(){dialog.close();document.getElementById('mgPackingSelected').click();});document.getElementById('beraPrintBack').addEventListener('click',reset);dialog.addEventListener('close',reset);form.addEventListener('submit',function(){dialog.close();});})();
+</script>
+
+<dialog id="orderCancelDialog" aria-labelledby="orderCancelTitle">
+    <form method="post" id="orderCancelForm">
+        {% csrf_token %}<input type="hidden" name="action" value="otkazi">
+        <h2 id="orderCancelTitle">Otkaži narudžbu</h2>
+        <label for="orderCancelReason">Razlog otkazivanja (obavezno)</label>
+        <textarea id="orderCancelReason" name="razlog_otkazivanja" rows="2" required></textarea>
+        <div class="order-cancel-actions"><button type="button" class="mg-btn" id="orderCancelClose">Odustani</button><button type="submit" class="mg-btn order-cancel-submit">Otkaži narudžbu</button></div>
+    </form>
+</dialog>
+<script>
+(function () {
+    var dialog = document.getElementById('orderCancelDialog');
+    var form = document.getElementById('orderCancelForm');
+    var reason = document.getElementById('orderCancelReason');
+    document.querySelectorAll('[data-cancel-order]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            form.action = button.dataset.cancelUrl;
+            document.getElementById('orderCancelTitle').textContent = 'Otkaži narudžbu #' + button.dataset.cancelOrder;
+            form.reset(); reason.setCustomValidity(''); dialog.showModal(); reason.focus();
+        });
+    });
+    reason.addEventListener('input', function () { reason.setCustomValidity(reason.value.trim() ? '' : 'Unesite razlog otkazivanja.'); });
+    form.addEventListener('submit', function (event) {
+        if (!reason.value.trim()) { event.preventDefault(); reason.setCustomValidity('Unesite razlog otkazivanja.'); reason.reportValidity(); }
+    });
+    document.getElementById('orderCancelClose').addEventListener('click', function () { dialog.close(); });
+})();
+</script>
 {% endblock %}

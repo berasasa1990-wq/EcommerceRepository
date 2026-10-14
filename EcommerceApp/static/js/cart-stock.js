@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (row.getAttribute('data-cart-key') !== item.key) return;
                         var label = row.querySelector('[data-stock-label]');
                         if (label) {
-                            label.textContent = item.sold_out ? 'Rasprodat — uklonite iz korpe' : '✓ Na stanju';
+                            label.textContent = item.sold_out ? 'Nije na stanju' : 'Na stanju';
                             label.style.color = item.sold_out ? '#b91c1c' : '';
                             label.setAttribute('data-sold-out', item.sold_out ? 'true' : 'false');
                         }

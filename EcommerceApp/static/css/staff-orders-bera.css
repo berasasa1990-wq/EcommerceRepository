@@ -1,0 +1,89 @@
+body.magacin-page.is-orders-reference .mg-main{padding:24px 32px;background:#f5faff;color:#102343}
+.is-orders-reference .mg-orders-page{max-width:none;margin:0;padding:0}
+.is-orders-reference .mg-page-head{background:transparent!important;border:0;padding:0;margin:0 0 20px;box-shadow:none;align-items:center}
+.is-orders-reference .mg-page-head h1{font-size:27px;color:#102343;line-height:1.3;margin:0}
+.is-orders-reference .mg-orders-title-ico,.is-orders-reference .mg-page-head .mg-count{display:none}
+.is-orders-reference .mg-toolbar-actions{display:flex;flex-wrap:wrap;gap:10px}
+.is-orders-reference .mg-toolbar-actions>a:not(.mg-btn-primary){display:none}
+.is-orders-reference .mg-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;border:0;border-radius:9px;background:#edf7ff;color:#007db7;font:inherit;font-size:14px;box-shadow:none;text-decoration:none}
+.is-orders-reference .mg-btn-primary{background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff}
+.bera-order-status{display:flex;gap:10px;margin-bottom:20px}
+.bera-order-status a{padding:10px 18px;border-radius:10px;border:1px solid #d4e8f9;color:#007dac;background:#fff;text-decoration:none;font-size:14px}
+.bera-order-status a.is-active{background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;border-color:transparent}
+.is-orders-reference .mg-orders-panel{padding:0;background:transparent;border:0;box-shadow:none}
+.is-orders-reference .mg-filter-tabs{display:flex;gap:10px;margin:0 0 16px;flex-wrap:wrap}
+.is-orders-reference .mg-filter-tabs a{background:#edf7ff;color:#007db7;border:1px solid #d4e8f9;border-radius:9px;padding:8px 12px;font-size:12px;box-shadow:none}
+.is-orders-reference .mg-filter-tabs svg{display:none}
+.is-orders-reference .mg-filter-tabs a.is-active{background:#dff3ff}
+.is-orders-reference .mg-card.mg-orders-card{padding:0;border:1px solid #dcebf7;border-radius:14px;background:#fff;box-shadow:0 4px 18px #06558208}
+.is-orders-reference .mg-table{width:100%;border-collapse:collapse;font-size:14px}
+.is-orders-reference .mg-table th{background:#edf6ff;color:#335772;text-align:left;padding:14px;font-size:14px;letter-spacing:0;border:0;font-weight:600}
+.is-orders-reference .mg-table td{padding:16px 14px;background:#fff;color:#143556;border-bottom:1px solid #e4eef7;font-size:14px}
+.is-orders-reference .mg-table th:nth-child(6),.is-orders-reference .mg-table td:nth-child(6),.is-orders-reference .mg-table th:nth-child(8),.is-orders-reference .mg-table td:nth-child(8),.is-orders-reference .mg-table th:nth-child(9),.is-orders-reference .mg-table td:nth-child(9){display:none}
+.is-orders-reference .mg-table .mg-check-col{display:none}
+.is-orders-reference .mg-orders-form:has(.bera-order-bulk[open]) .mg-table .mg-check-col{display:table-cell}
+.is-orders-reference .mg-order-rn,.is-orders-reference .mg-order-name{font-size:14px;font-weight:500;color:#143556}
+.is-orders-reference .mg-pill{background:transparent;color:#143556;border:0;font-size:13px;padding:0;font-weight:400;box-shadow:none}
+.bera-row-action{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;margin:2px;border:1px solid #cfe6f8;border-radius:9px;background:#edf7ff;color:#0085bc;text-decoration:none;font-size:20px}
+.is-orders-reference .mg-more-col{white-space:nowrap}
+.is-orders-reference .order-row-menu{display:inline-block;vertical-align:middle}
+.is-orders-reference .mg-row-more{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:#edf7ff;border:1px solid #cfe6f8;border-radius:9px;color:#0085bc}
+.bera-order-bulk{margin:0 0 16px;color:#526b8c;font-size:12px}
+.bera-order-bulk>summary{cursor:pointer}
+.is-orders-reference .mg-bulk-bar{display:flex;flex-wrap:wrap;gap:10px;background:transparent;border:0;padding:14px 0;box-shadow:none}
+.is-orders-reference .mg-orders-search input,.is-orders-reference .mg-chrome-search input{border:1px solid #d4e8f9;border-radius:8px;background:#fff;color:#143556;padding:10px 12px;font-size:14px}
+.is-orders-reference .mg-chrome{background:#fff;border:1px solid #dcebf7;border-radius:12px;box-shadow:none;margin:0 0 20px}
+@media(max-width:1024px){body.magacin-page.is-orders-reference .mg-main{padding:16px}}
+@media(max-width:600px){.is-orders-reference .mg-page-head h1{font-size:24px}.is-orders-reference .mg-table td{padding:10px}.is-orders-reference .mg-table .mg-more-col{display:flex;flex-wrap:wrap;gap:6px}}
+/* Match BERA's order heading, six columns and action positions. */
+body.magacin-page.is-orders-reference .mg-main{padding:24px 28px;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.is-orders-reference .mg-page-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.is-orders-reference .mg-page-head h1{font-family:inherit;font-size:27px;font-weight:700;line-height:1.3}
+.is-orders-reference .mg-toolbar-actions{gap:16px;align-items:center}
+.is-orders-reference .bera-print-action,.is-orders-reference .bera-row-action{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;padding:7px;border:1px solid #cfe6f8;border-radius:9px;background:#edf7ff;color:#0085bc;cursor:pointer;margin:0 3px}
+.is-orders-reference .bera-row-action svg,.is-orders-reference .bera-print-action svg{width:22px;height:22px}
+.is-orders-reference .mg-order-rn,.is-orders-reference .mg-order-name{font-weight:400;font-size:14px}
+.is-orders-reference .mg-table .mg-order-name+.sub{display:none}
+.is-orders-reference .mg-table .mg-pill{font-size:14px}
+.is-orders-reference .mg-table .mg-order-date{white-space:nowrap}
+.is-orders-reference .mg-orders-form>.bera-order-bulk{margin:18px 0 0}
+.is-orders-reference .mg-orders-form>.bera-order-bulk .mg-filter-tabs{margin-top:14px}
+.is-orders-reference .mg-orders-find{display:flex;flex-wrap:wrap;gap:10px;padding:20px;background:#fff;border:1px solid #dcebf7;border-radius:14px;margin-bottom:20px}
+.is-orders-reference .bera-search-label{display:block;flex-basis:100%;font-size:14px;font-weight:600;color:#335772}
+.is-orders-reference .mg-orders-find .mg-icon-field{flex:1;min-width:180px}
+.is-orders-reference .mg-orders-find input[type=search]{width:100%;padding:12px 14px;border:1px solid #cce4f7;border-radius:9px;background:#f8fcff;font:inherit}
+@media(min-width:1025px){.is-orders-reference .mg-main>.mg-menu-standalone{display:none}}
+#beraPrintDialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;width:min(440px,calc(100vw - 24px));max-height:90dvh;overflow:auto;padding:20px;border:1px solid #dcebf7;border-radius:14px;background:#fff;color:#102343;box-shadow:0 20px 70px #123f5c35;font-family:Inter,system-ui,sans-serif}
+#beraPrintDialog::backdrop{background:#163c5860;backdrop-filter:blur(3px)}
+#beraPrintDialog header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+#beraPrintDialog h2{flex:1;font-size:20px;margin:0;line-height:1.3}
+#beraPrintChoices{display:grid;gap:12px}
+#beraPrintChoices[hidden],#beraPrintDateForm[hidden]{display:none!important}
+#beraPrintChoices button{width:100%;min-height:46px;justify-content:center;text-align:center}
+#beraPrintDateForm{display:grid;gap:12px}
+#beraPrintDateForm input[type=date]{padding:12px;border:1px solid #d4e8f9;border-radius:8px;font:inherit;width:100%;box-sizing:border-box}
+#beraPrintDialog button:focus-visible{outline:3px solid #008bc3;outline-offset:2px}
+
+.is-orders-reference .bera-row-action.bera-row-delete{color:#dc2626;background:#fff1f2;border-color:#fecaca}
+.is-orders-reference .bera-row-action.bera-row-delete:hover{color:#b91c1c;background:#fee2e2;border-color:#f87171}
+
+.order-cancel-reason{display:inline-block;margin-left:8px;color:#b91c1c;font-size:13px;white-space:normal;overflow-wrap:anywhere}
+#orderCancelDialog{position:fixed;inset:0;margin:auto;width:min(380px,calc(100vw - 32px));max-height:90dvh;overflow:auto;box-sizing:border-box;padding:20px;border:1px solid #dcebf7;border-radius:14px;background:#fff;color:#102343;box-shadow:0 20px 70px #123f5c35;font-family:Inter,system-ui,sans-serif}
+#orderCancelDialog::backdrop{background:#163c5860;backdrop-filter:blur(3px)}
+#orderCancelDialog h2{margin:0 0 18px;font-size:21px}
+#orderCancelDialog label{display:block;margin-bottom:8px}
+#orderCancelReason{width:100%;height:66px;min-height:66px;max-height:120px;box-sizing:border-box;padding:8px 10px;border:1px solid #d4e8f9;border-radius:8px;background:#f5faff;color:#102343;font:inherit;font-size:14px;resize:vertical}
+#orderCancelReason:focus{outline:2px solid #008bc3;outline-offset:2px}
+.order-cancel-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+#orderCancelDialog .order-cancel-submit{background:linear-gradient(115deg,#00bddd,#007bb8);border-color:transparent;color:#fff}
+
+.order-pagination{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin:18px 0;color:#335772;font-size:14px}
+.order-pagination a{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;box-sizing:border-box;padding:6px 10px;border:1px solid #d4e8f9;border-radius:8px;background:#fff;color:#007db7;text-decoration:none}
+.order-pagination a.is-active{background:linear-gradient(115deg,#00bddd,#007bb8);color:#fff;border-color:transparent}
+.order-pagination>span:first-child{margin-right:8px}
+
+body.magacin-page.is-orders-reference .mg-orders-page .mg-orders-title-ico{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:#e3f5ff;color:#008bc3;box-shadow:none;flex-shrink:0}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-orders-title-ico svg{width:25px;height:25px;color:inherit}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-toolbar-actions .mg-btn-primary{background:linear-gradient(115deg,#00bddd,#007bb8);border:1px solid transparent;color:#fff;box-shadow:none}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-toolbar-actions .mg-btn-primary:hover{background:linear-gradient(115deg,#00a9c7,#006da4);color:#fff}
+body.magacin-page.is-orders-reference .mg-orders-page .mg-toolbar-actions .mg-btn-primary svg{color:inherit}
