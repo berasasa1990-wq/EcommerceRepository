@@ -78,13 +78,7 @@
                 </button>
                 {% endif %}
                 <div class="pd-desktop-dots" id="pdDesktopDots" hidden></div>
-                {% if similar_name_products %}
-                <button type="button" class="product-other-options-btn pd-image-options" id="productOtherOptionsBtn" data-other-options-open>
-                    <svg class="pd-options-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 6h9m6 0h7M3 14h3m6 0h13M3 22h14m6 0h2"/><circle cx="15" cy="6" r="3"/><circle cx="9" cy="14" r="3"/><circle cx="20" cy="22" r="3"/></svg>
-                    <span class="pd-options-label">Opcije</span>
-                    <span class="product-other-options-btn__count">{{ similar_name_products|length }}</span>
-                </button>
-                {% endif %}
+
             </div>
             {% if product.prikazna_slika or product.dodatne_slike.exists %}
             <div class="pd-gallery-bar">
@@ -113,6 +107,15 @@
                 </div>
             </div>
             {% endif %}
+            <div class="pd-options-below-image">
+                {% if similar_name_products %}
+                <button type="button" class="product-other-options-btn pd-image-options" id="productOtherOptionsBtn" data-other-options-open>
+                    <svg class="pd-options-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 6h9m6 0h7M3 14h3m6 0h13M3 22h14m6 0h2"/><circle cx="15" cy="6" r="3"/><circle cx="9" cy="14" r="3"/><circle cx="20" cy="22" r="3"/></svg>
+                    <span class="pd-options-label">Opcije</span>
+                    <span class="product-other-options-btn__count">{{ similar_name_products|length }}</span>
+                </button>
+                {% endif %}
+            </div>
         </div>
 
         <div class="product-detail-info" id="productDetailInfo"
@@ -494,7 +497,7 @@
             {% if not product.varijacije.count %}
             {% if not product.na_stanju %}
             <div class="product-detail-purchase">
-                {% include 'partials/stock_notify_button.html' with product=product btn_class='btn btn-primary btn-add-to-bag btn-add-to-bag--notify' notify_label='Obavijesti me kada dođe na stanje' %}
+                {% include 'partials/stock_notify_button.html' with product=product btn_class='btn btn-primary btn-add-to-bag btn-add-to-bag--notify' notify_label='Obavijesti pri dolasku' %}
             </div>
             {% else %}
             <form method="post" action="{% url 'add_to_cart' product.slug %}" class="add-to-cart-form" id="mainAddToCartForm">
@@ -531,7 +534,7 @@
             {% endif %}
             {% elif not product_available %}
             <div class="product-detail-purchase">
-                {% include 'partials/stock_notify_button.html' with product=product btn_class='btn btn-primary btn-add-to-bag btn-add-to-bag--notify' notify_label='Obavijesti me kada dođe na stanje' %}
+                {% include 'partials/stock_notify_button.html' with product=product btn_class='btn btn-primary btn-add-to-bag btn-add-to-bag--notify' notify_label='Obavijesti pri dolasku' %}
             </div>
             {% endif %}
 

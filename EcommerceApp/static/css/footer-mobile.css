@@ -1,0 +1,32 @@
+/* Compact mobile footer: contact left, links and opening hours right. */
+@media(max-width:767px){
+ html body footer.footer--mockup .footer-main{padding:20px 16px 16px!important}
+ html body footer.footer--mockup .footer-grid--mockup{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:16px 18px!important;align-items:start}
+ html body footer.footer--mockup .footer-column{min-width:0;margin:0!important;padding:0!important;grid-column:auto!important}
+ html body footer.footer--mockup .footer-column--brand{grid-column:1!important;grid-row:1 / span 2}
+ html body footer.footer--mockup .footer-column--secure{grid-column:2!important;grid-row:2}
+ html body footer.footer--mockup :is(.footer-contact-list,.footer-link-list,.footer-hours){margin:0!important;padding:0!important;gap:5px!important;list-style:none}
+ html body footer.footer--mockup :is(.footer-contact-list li,.footer-hours li){font-size:12px!important;line-height:1.5;overflow-wrap:anywhere;margin-bottom:6px}
+ html body footer.footer--mockup .footer-contact-list a{min-width:0;overflow-wrap:anywhere}
+ html body footer.footer--mockup .footer-contact-list svg{width:15px;height:15px;flex:0 0 15px}
+ html body footer.footer--mockup .footer-link-list a{font-size:12px!important;min-height:28px!important;line-height:1.4}
+ html body footer.footer--mockup .footer-brand-desc:empty{display:none}
+ html body footer.footer--mockup .footer-brand-desc{margin:0!important}
+ html body footer.footer--mockup .footer-brand-title{display:block;margin-bottom:12px;font-size:16px!important}
+ html body footer.footer--mockup .footer-section-title{margin:0 0 8px!important;font-size:13px!important}
+ html body footer.footer--mockup .footer-social{margin-top:10px!important;gap:8px}
+ html body footer.footer--mockup .footer-subscribe{padding:16px!important;gap:10px!important;margin-bottom:18px!important}
+ html body footer.footer--mockup .footer-subscribe-title{font-size:18px!important;line-height:1.25}
+ html body footer.footer--mockup .footer-subscribe-sub{font-size:12px!important;margin-top:5px}
+ html body footer.footer--mockup .footer-subscribe-form{display:flex!important;flex-direction:row!important;gap:8px!important;min-width:0}
+ html body footer.footer--mockup .footer-subscribe-form input{flex:1;min-width:0!important;width:0!important;height:42px!important}
+ html body footer.footer--mockup .footer-subscribe-btn{width:auto!important;flex:0 0 auto;padding:9px 12px!important;font-size:12px!important;min-height:42px}
+ html body footer.footer--mockup .footer-features{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px 14px!important;margin-bottom:20px!important;padding:12px 0!important}
+ html body footer.footer--mockup .footer-feature{min-width:0;padding:0!important;border:0!important}
+ html body footer.footer--mockup .footer-feature strong{font-size:12px!important}
+ html body footer.footer--mockup .footer-feature span{font-size:11px!important}
+ html body footer.footer--mockup .footer-feature:last-child{grid-column:1 / -1}
+ html body footer.footer--mockup .footer-bottom{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 12px;padding:12px 16px!important;text-align:center}
+ html body footer.footer--mockup .footer-bottom p{margin:0!important;font-size:11px!important}
+ html body .footer-payment-security__logos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));justify-items:center;gap:10px!important;padding:12px!important}
+}

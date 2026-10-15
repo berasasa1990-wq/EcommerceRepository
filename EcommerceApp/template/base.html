@@ -353,7 +353,7 @@
     }
     </style>
     <link rel="stylesheet" href="{% static 'css/product-card-reference.css' %}?v=20261014-larger-card-photos">
-    <link rel="stylesheet" href="{% static 'css/site-orange-theme.css' %}?v=20261014-notify-label-no-fill">
+    <link rel="stylesheet" href="{% static 'css/site-orange-theme.css' %}?v=20261015-options-below-image">
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
@@ -388,12 +388,7 @@
                     </button>
                     {% if user.is_superuser or user.is_staff %}
                     <a href="{% url 'staff_admin_panel' %}" class="nav-action-link staff-orders-btn staff-admin-nav-btn" aria-label="Admin Panel" title="Admin Panel">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <rect x="3" y="3" width="7" height="7" rx="1"/>
-                            <rect x="14" y="3" width="7" height="7" rx="1"/>
-                            <rect x="3" y="14" width="7" height="7" rx="1"/>
-                            <rect x="14" y="14" width="7" height="7" rx="1"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 9-5M17 11l4 2v4c0 3-4 5-4 5s-4-2-4-5v-4l4-2Z"/><path d="m15 16 1.5 1.5L19 15"/></svg>
                         <span class="nav-action-label">Admin Panel</span>
                     </a>
                     {% endif %}
@@ -416,7 +411,7 @@
                         {% endif %}
                     </a>
                     {% if user.is_superuser %}
-                    <a href="{% url 'staff_admin_panel' %}" class="logo-admin-panel">Admin<br>panel</a>
+                    <a href="{% url 'staff_admin_panel' %}" class="logo-admin-panel" aria-label="Admin panel" title="Admin panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 9-5M17 11l4 2v4c0 3-4 5-4 5s-4-2-4-5v-4l4-2Z"/><path d="m15 16 1.5 1.5L19 15"/></svg></a>
                     {% endif %}
                 </div>
 
@@ -429,7 +424,7 @@
                             </svg>
                         </span>
                         <div class="search-combobox" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-haspopup="listbox">
-                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu, brandu ili kategoriji..." autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
+                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu ili sifri" autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
                         </div>
                         <select name="kategorija" class="header-category-select" aria-label="Kategorija pretrage">
                             <option value="">Sve kategorije</option>

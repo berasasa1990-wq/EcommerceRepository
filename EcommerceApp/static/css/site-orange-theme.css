@@ -211,3 +211,26 @@ html body button[data-stock-notify]:hover{background:#fff!important;background-i
 /* Notification label never paints a second background inside the button. */
 html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design button[data-stock-notify] > span,
 html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design button[data-stock-notify] [data-stock-notify-label]{background:transparent!important;background-image:none!important;color:#f17800!important;border:0!important;box-shadow:none!important;text-shadow:none!important}
+
+/* Admin access uses an orange administrator icon. */
+html body #header :is(.logo-admin-panel,.staff-admin-nav-btn){background:transparent!important;color:#f17800!important;border:0!important;box-shadow:none!important}
+html body #header :is(.logo-admin-panel,.staff-admin-nav-btn) svg{display:block;width:26px;height:26px;color:#f17800!important;stroke:currentColor!important;fill:none!important}
+html body #header .logo-admin-panel{display:inline-flex;align-items:center;justify-content:center;padding:6px}
+
+/* Separate mobile search text from the orange magnifier button. */
+@media(max-width:1024px){
+ html body #header form#searchForm .search-combobox{flex:1 1 auto!important;min-width:0!important;padding-left:0!important;padding-right:10px!important;box-sizing:border-box}
+ html body #header form#searchForm input#searchInput{box-sizing:border-box;width:100%!important;min-width:0!important;padding-left:16px!important;padding-right:8px!important;text-indent:0!important}
+ html body #header form#searchForm .header-search-submit{flex:0 0 40px!important;width:40px!important;min-width:40px!important}
+}
+
+/* Product detail notifications match the outlined notification on cards. */
+html body.product-mobile-reference .product-detail .product-detail-purchase button.btn.btn-primary.btn-add-to-bag--notify[data-stock-notify],
+html body .product-detail .product-detail-purchase button.btn.btn-primary.btn-add-to-bag--notify[data-stock-notify]{background:#fff!important;background-image:none!important;color:#f17800!important;border:1px solid #f17800!important;box-shadow:none!important;text-shadow:none!important;filter:none!important}
+html body .product-detail button.btn-add-to-bag--notify[data-stock-notify] [data-stock-notify-label]{background:transparent!important;background-image:none!important;color:#f17800!important;box-shadow:none!important}
+
+/* Product options occupy their own row below the photo gallery. */
+html body .product-gallery .pd-options-below-image{grid-column:2;grid-row:2;display:flex;justify-content:flex-end;min-width:0;margin-top:12px}
+html body .product-gallery .pd-options-below-image:not(:has(button)){display:none}
+html body .product-gallery .pd-options-below-image #productOtherOptionsBtn{position:static!important;inset:auto!important;transform:none!important;margin:0!important;max-width:100%}
+@media(max-width:767px){html body .product-gallery .pd-options-below-image{grid-column:1 / -1;grid-row:auto}}
