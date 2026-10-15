@@ -1,0 +1,42 @@
+{% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/warehouse-import-check.css' %}?v=20261015">{% endblock %}
+{% block magacin_content %}
+<div class="import-check">
+    <header class="import-check-heading"><div><h1>Novi artikli uvoz</h1><p>Provjeri koje šifre još nisu pronađene u nazivima artikala.</p></div><button type="button" id="mgNavToggle" class="import-check-menu" aria-label="Meni magacina" aria-expanded="false">☰</button></header>
+    <form method="post" class="import-check-panel">
+        {% csrf_token %}
+        <label for="excelRows">Zalijepi tri kolone iz Excela</label>
+        <p id="excelRowsHint">Redoslijed: šifra, količina, fakturna. Provjerava se samo šifra iz prve kolone. Možeš uključiti zaglavlje „Šifra“. Najviše 5.000 redova po provjeri.</p>
+        <textarea id="excelRows" name="excel_rows" rows="12" required spellcheck="false" aria-describedby="excelRowsHint" placeholder="Šifra&#9;Količina&#9;Fakturna">{{ excel_rows }}</textarea>
+        {% if import_check_error %}<p class="import-check-error" role="alert">{{ import_check_error }}</p>{% endif %}
+        <button type="submit" class="import-check-submit">Provjeri šifre</button>
+        <p class="import-check-note">Pretraga obuhvata nazive svih artikala, uključujući artikle bez zalihe. Velika i mala slova se ne razlikuju. Ova provjera ne upisuje artikle niti mijenja lager.</p>
+    </form>
+    {% if missing_codes != None %}
+    <section class="import-check-panel" aria-labelledby="importCheckResult">
+        <h2 id="importCheckResult">Šifre koje nisu pronađene</h2>
+        <p>Provjereno: {{ checked_count }} različitih šifri. Nije pronađeno: {{ missing_codes|length }}.</p>
+        {% if missing_codes %}
+        <label for="missingCodes">Šifre za provjeru i unos</label>
+        <textarea id="missingCodes" readonly rows="10" spellcheck="false">{{ missing_codes_text }}</textarea>
+        <button type="button" class="import-check-copy" id="copyMissingCodes">Kopiraj šifre</button> <a class="import-check-bulk-link" href="{% url 'staff_magacin_artikli_bulk' %}">Dodaj artikle bulk</a><span id="copyMissingStatus" role="status"></span>
+        {% else %}<p class="import-check-success">Sve šifre pronađene su u nazivima postojećih artikala.</p>{% endif %}
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
+{% block magacin_js %}{{ block.super }}
+<script>
+(function () {
+    var button = document.getElementById('copyMissingCodes');
+    if (!button) return;
+    button.addEventListener('click', async function () {
+        var field = document.getElementById('missingCodes');
+        var status = document.getElementById('copyMissingStatus');
+        try { await navigator.clipboard.writeText(field.value); status.textContent = 'Šifre su kopirane.'; }
+        catch (error) { field.focus(); field.select(); status.textContent = 'Šifre su označene. Kopiraj ih ručno.'; }
+    });
+})();
+</script>
+{% endblock %}

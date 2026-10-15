@@ -3234,6 +3234,9 @@ def _build_unique_slug(model_cls, source_text, *, pk=None, max_length=SLUG_MAX_L
 
 class Product(models.Model):
     is_set = models.BooleanField(default=False, db_index=True, verbose_name="Artikal je set")
+    pracenje_zaliha = models.BooleanField(default=True)
+    modul_sakriven = models.BooleanField(default=False)
+    enabled_360 = models.BooleanField(default=False)
     naziv = models.CharField(max_length=200)
     slug = models.SlugField(max_length=SLUG_MAX_LENGTH, unique=True, blank=True)
     sifra = models.CharField(

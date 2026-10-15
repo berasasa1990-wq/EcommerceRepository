@@ -1,0 +1,28 @@
+{% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/warehouse-import-check.css' %}?v=20261015-bulk">{% endblock %}
+{% block magacin_content %}
+<div class="import-check">
+    <header class="import-check-heading"><div><h1>Dodaj opis bulk</h1><p>Jedan artikal po redu, najviše 400 opisa.</p></div><button type="button" id="mgNavToggle" class="import-check-menu" aria-label="Meni magacina" aria-expanded="false">☰</button></header>
+    <p><a href="{% url 'staff_magacin_artikli_bulk' %}">‹ Nazad na artikle</a></p>
+    {% for message in messages %}<p class="import-check-success" role="status">{{ message }}</p>{% endfor %}
+    {% if bulk_error %}<p class="import-check-error" role="alert">{{ bulk_error }}</p>{% endif %}
+    {% if prepared_rows %}
+    <section class="import-check-panel">
+        <h2>Pregled prije dodavanja</h2>
+        <div class="import-bulk-table-wrap"><table class="import-bulk-table">
+            <thead><tr><th>Naziv</th><th>Brend</th><th>Opis</th></tr></thead>
+            <tbody>{% for row in prepared_rows %}<tr><td>{{ row.naziv }}</td><td>{{ row.brand_name }}</td><td>{{ row.opis }}</td></tr>{% endfor %}</tbody>
+        </table></div>
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="create"><input type="hidden" name="draft_token" value="{{ draft_token }}"><button type="submit">Dodaj artikle</button></form>
+    </section>
+    {% endif %}
+    <form method="post" class="import-check-panel">
+        {% csrf_token %}
+        <label for="bulkDescriptions">Šifra - opis</label>
+        <p id="descriptionHint">Šifra prije crtice traži se u pripremljenim nazivima. Dodaj opis za svaki artikal. Sačuvaj opise priprema završni pregled, bez upisa artikala u bazu.</p>
+        <textarea id="bulkDescriptions" name="descriptions_text" rows="12" required aria-describedby="descriptionHint" placeholder="K0340051 - Ribolovna mašinica veličine 5000.&#10;K0310381 - Komplet držača za svjetleće ampule.">{{ descriptions_text }}</textarea>
+        <button type="submit">Sačuvaj opise</button>
+    </form>
+</div>
+{% endblock %}

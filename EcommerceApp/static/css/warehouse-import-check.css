@@ -1,0 +1,26 @@
+.import-check{max-width:1100px;margin:0 auto;color:#17263c}
+.import-check-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}
+.import-check h1{font-size:28px;line-height:1.25;margin:0 0 8px}
+.import-check h2{font-size:21px;margin:0 0 12px}
+.import-check p{font-size:14px;line-height:1.6;color:#64748b;margin:0 0 14px}
+.import-check-panel{padding:22px;margin-bottom:20px;border:1px solid #dce4ed;border-radius:12px;background:#fff}
+.import-check label{display:block;font-size:15px;font-weight:650;margin-bottom:10px}
+.import-check textarea{box-sizing:border-box;display:block;width:100%;max-width:100%;padding:14px;margin:0 0 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fbfdff;color:#17263c;font:13px/1.6 ui-monospace,monospace;resize:vertical;tab-size:16;white-space:pre;overflow:auto}
+.import-check textarea:focus-visible{outline:2px solid #008cb6;outline-offset:2px}
+.import-check button{padding:10px 16px;border:0;border-radius:8px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;line-height:1.4}
+.import-check .import-check-note{font-size:12px;margin:14px 0 0}
+.import-check .import-check-error{color:#b42318}
+.import-check .import-check-success{color:#187744}
+#copyMissingStatus{display:inline-block;font-size:13px;margin:8px 12px;color:#64748b}
+.import-check .import-check-menu{display:none}
+@media(max-width:1024px){.import-check .import-check-menu{display:block}}
+@media(max-width:600px){.import-check h1{font-size:23px}.import-check-panel{padding:16px}.import-check textarea{font-size:12px}.import-check p{font-size:13px}}
+.import-check-bulk-link{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border:1px solid #cbd5e1;border-radius:8px;color:#17263c;background:#fff;text-decoration:none;font-size:14px;font-weight:600;margin:4px 0}
+.import-bulk-table-wrap{overflow:auto;margin-bottom:18px}
+.import-bulk-table{width:100%;border-collapse:collapse;font-size:14px}
+.import-bulk-table th{text-align:left;padding:10px 8px;color:#64748b}
+.import-bulk-table td{padding:8px;border-top:1px solid #e2e8f0}
+.import-bulk-table td:first-child{width:70%}
+.import-bulk-table input,.import-bulk-table select{box-sizing:border-box;display:block;width:100%;min-width:140px;min-height:40px;padding:8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#17263c;font:inherit}
+.import-bulk-table input{min-width:220px}
+.import-check [hidden]{display:none!important}

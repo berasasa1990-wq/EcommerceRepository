@@ -9,7 +9,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20260910noteGreen">
-<link rel="stylesheet" href="{% static 'css/staff-magacin-menu.css' %}?v=20261015-restored-gray-menu">
+<link rel="stylesheet" href="{% static 'css/staff-magacin-menu.css' %}?v=20261015-blue-menu-colors">
 {% endblock %}
 
 {% block flash_messages %}
@@ -143,6 +143,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M12 18V11M9 14l3-3 3 3"/></svg>
                 Uvoz
             </a>
+            <a href="{% url 'staff_magacin_novi_artikli_uvoz' %}" class="{% if magacin_section == 'novi_artikli_uvoz' %}is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h5"/></svg>
+                Novi artikli uvoz
+            </a>
             {% endif %}
             {% if request.user|warehouse_can:"staff_magacin_nivelacije" %}
             <a href="{% url 'staff_magacin_nivelacije' %}" class="{% if magacin_section == 'nivelacije' %}is-active{% endif %}">
@@ -196,6 +200,7 @@
 
     <div class="mg-main">
         {% block magacin_before_search %}{% endblock %}
+        {% if not hide_top_search %}
         {% if magacin_section == 'rezervni' or magacin_section == 'popis_test' or magacin_section == 'popis' or magacin_section == 'stampa_deklaracije' or magacin_section == 'stampa_cijena' or magacin_section == 'lokacije' or magacin_section == 'zalihe' or magacin_section == 'mp_dnevno' or magacin_section == 'transferi' or magacin_section == 'provjera_lagera' or magacin_section == 'fali_na_sajtu' %}
         <button type="button" class="mg-menu-standalone" id="mgNavToggle" aria-label="Meni magacina" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -247,6 +252,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
         {% endif %}
         {% block magacin_content %}{% endblock %}
     </div>

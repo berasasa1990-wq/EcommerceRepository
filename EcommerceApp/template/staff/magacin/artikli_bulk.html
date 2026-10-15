@@ -1,0 +1,31 @@
+{% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/warehouse-import-check.css' %}?v=20261015-bulk">{% endblock %}
+{% block magacin_content %}
+<div class="import-check">
+    <header class="import-check-heading"><div><h1>Dodaj artikle bulk</h1><p>Zalijepi nazive artikala. Brend se automatski traži u svakom nazivu.</p></div><button type="button" id="mgNavToggle" class="import-check-menu" aria-label="Meni magacina" aria-expanded="false">☰</button></header>
+    <p><a href="{% url 'staff_magacin_novi_artikli_uvoz' %}">‹ Nazad na provjeru šifri</a></p>
+    {% for message in messages %}<p class="import-check-success" role="status">{{ message }}</p>{% endfor %}
+    <form method="post" action="{% url 'staff_magacin_artikli_bulk' %}" class="import-check-panel" id="bulkPrepareForm">
+        {% csrf_token %}<input type="hidden" name="action" value="preview">
+        <label for="bulkNames">Nazivi artikala iz Excela</label>
+        <p id="bulkNamesHint">Jedan naziv po redu, najviše 400 artikala. Ako kopiraš više kolona, naziv mora biti u prvoj.</p>
+        <textarea id="bulkNames" name="names_text" rows="8" required spellcheck="false" aria-describedby="bulkNamesHint" placeholder="MT13704 MATE ITANA Carp štap&#10;FOX Collection jakna">{{ names_text }}</textarea>
+        <button type="submit">Prepoznaj brendove</button>
+    </form>
+    <p class="import-check-error" id="bulkError" role="alert">{{ bulk_error }}</p>
+    <p id="bulkPreviewStatus" role="status"></p>
+    {{ bulk_brands|json_script:'bulkBrands' }}
+    <form method="post" class="import-check-panel" id="bulkSaveForm"{% if not bulk_rows %} hidden{% endif %}>
+        {% csrf_token %}<input type="hidden" name="action" value="save"><input type="hidden" name="names_text" id="bulkSourceText" value="{{ names_text }}">
+        <h2>Pregled artikala</h2>
+        <p>Provjeri naziv i brend. Ako brend nije prepoznat, odaberi ga prije dodavanja.</p>
+        <div class="import-bulk-table-wrap"><table class="import-bulk-table"><thead><tr><th scope="col">Naziv</th><th scope="col">Brend</th></tr></thead><tbody id="bulkPreviewRows">
+        {% for row in bulk_rows %}<tr><td><input name="product_name" value="{{ row.naziv }}" maxlength="200" required aria-label="Naziv artikla {{ forloop.counter }}"></td><td><select name="brand_id" required aria-label="Brend artikla {{ forloop.counter }}"><option value="">Odaberi brend</option>{% for brand in bulk_brands %}<option value="{{ brand.id }}"{% if brand.id|stringformat:'s' == row.brand_id|stringformat:'s' %} selected{% endif %}>{{ brand.naziv }}</option>{% endfor %}</select></td></tr>{% endfor %}
+        </tbody></table></div>
+        <button type="submit" id="bulkSaveButton">Dodaj opis bulk</button>
+        <p class="import-check-note">Klikom se pripremaju nazivi i brendovi te otvara unos opisa. Artikli se upisuju u bazu tek završnim dugmetom „Dodaj artikle“. Novi artikli imaju cijenu 0 i zalihu 0 te su skriveni od kupaca dok ih ne dopuniš. Isti naziv neće se dodavati ponovo; uneseni opis sačuvat će se postojećem artiklu.</p>
+    </form>
+</div>
+{% endblock %}
+{% block magacin_js %}{{ block.super }}<script src="{% static 'js/warehouse-article-bulk.js' %}?v=20261015-url-fix"></script>{% endblock %}

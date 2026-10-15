@@ -819,30 +819,13 @@ def magacin_artikli(request):
     query = _magacin_search_query(request)
     include_zero = (request.GET.get('bez_zalihe') or '') == '1'
     searched = bool(query)
-    recent_movements = list(
-        WarehouseMovement.objects.filter(
-            tip__in=[
-                WarehouseMovement.Tip.PRIJEM,
-                WarehouseMovement.Tip.PRODAJA,
-                WarehouseMovement.Tip.TRANSFER,
-                WarehouseMovement.Tip.KOREKCIJA,
-            ],
-        )
-        .select_related('product', 'variation', 'location', 'to_location', 'korisnik')
-        .order_by('-kreiran', '-id')[:10]
-    )
-    for movement in recent_movements:
-        movement.korisnik_label = _movement_korisnik_label(movement)
-    context = _magacin_context(request, section='artikli', page_title='Artikli — Magacin')
+    context = _magacin_context(request, section='artikli', page_title='Artikli — Magacin', hide_top_search=True)
     context.update({
         'searched': searched,
-        'recent_movements': recent_movements,
         'page': None,
         'result_count': 0,
         'magacin_notice': request.session.pop('magacin_page_notice', '') or '',
     })
-    if not searched:
-        return render(request, 'staff/magacin/artikli.html', context)
 
     # Non-exact searches already fall back to all stock states. Search once,
     # then preserve the original filter/redirect behavior without loading all rows.
@@ -853,7 +836,7 @@ def magacin_artikli(request):
             include_zero = True
             context['include_zero'] = True
     unique = exact
-    if unique is None and request.GET.get('rezultati') != '1':
+    if searched and unique is None and request.GET.get('rezultati') != '1':
         # Only inspect two rows to decide whether to open a unique result.
         candidates = list(products[:2])
         if len(candidates) == 1:
@@ -923,6 +906,104 @@ def magacin_artikli(request):
         'result_count': paginator.count,
     })
     return render(request, 'staff/magacin/artikli.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+def magacin_novi_artikli_uvoz(request):
+    from .warehouse_import_check import parse_excel_codes, missing_name_codes
+
+    pasted = request.POST.get('excel_rows', '') if request.method == 'POST' else ''
+    missing = None
+    checked_count = 0
+    error = ''
+    if request.method == 'POST':
+        try:
+            codes = parse_excel_codes(pasted)
+            checked_count = len(codes)
+            missing = missing_name_codes(
+                codes, Product.objects.values_list('naziv', flat=True).iterator(chunk_size=2000),
+            )
+        except ValueError as exc:
+            error = str(exc)
+    context = _magacin_context(request, section='novi_artikli_uvoz',
+                               page_title='Novi artikli uvoz', hide_top_search=True)
+    context.update({'excel_rows': pasted, 'missing_codes': missing,
+                    'missing_codes_text': '\n'.join(missing or []),
+                    'checked_count': checked_count, 'import_check_error': error})
+    return render(request, 'staff/magacin/novi_artikli_uvoz.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+def magacin_artikli_bulk(request):
+    from .warehouse_import_check import parse_bulk_names, detect_brand, save_bulk_products
+
+    brands = list(Brand.objects.order_by('naziv').values('id', 'naziv'))
+    pasted = request.POST.get('names_text', '')
+    rows = []
+    error = ''
+    if request.method == 'POST':
+        action = request.POST.get('action', 'preview')
+        try:
+            if action == 'save':
+                names = request.POST.getlist('product_name')
+                ids = request.POST.getlist('brand_id')
+                if len(names) != len(ids):
+                    raise ValueError('Svaki naziv mora imati odabran brend.')
+                rows = [{'naziv': name, 'brand_id': brand_id} for name, brand_id in zip(names, ids)]
+                if not rows or len(rows) > 400:
+                    raise ValueError('Pripremi između 1 i 400 artikala.')
+                valid_brands = {str(brand['id']) for brand in brands}
+                if any(not row['naziv'].strip() or len(row['naziv']) > 200 or row['brand_id'] not in valid_brands for row in rows):
+                    raise ValueError('Provjeri nazive i odaberi postojeći brend za svaki artikal.')
+                request.session['warehouse_bulk_draft'] = rows
+                request.session.pop('warehouse_bulk_ready', None)
+                return redirect('staff_magacin_opisi_bulk')
+            names = parse_bulk_names(pasted)
+            rows = [{'naziv': name, 'brand_id': detect_brand(name, brands) or ''} for name in names]
+        except ValueError as exc:
+            error = str(exc)
+        if action == 'preview' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'rows': rows, 'error': error}, status=400 if error else 200)
+    context = _magacin_context(request, section='novi_artikli_uvoz',
+                               page_title='Dodaj artikle bulk', hide_top_search=True)
+    context.update({'bulk_brands': brands, 'bulk_rows': rows, 'bulk_error': error, 'names_text': pasted})
+    return render(request, 'staff/magacin/artikli_bulk.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+def magacin_opisi_bulk(request):
+    from .warehouse_import_check import prepare_bulk_descriptions, save_bulk_products
+    import uuid
+    pasted = request.POST.get('descriptions_text', '')
+    error = ''
+    if request.method == 'POST':
+        try:
+            if request.POST.get('action') == 'create':
+                ready = request.session.get('warehouse_bulk_ready')
+                if not ready or request.POST.get('draft_token') != ready['token']:
+                    raise ValueError('Pregled je istekao ili je već spremljen. Pripremi artikle ponovo.')
+                created, skipped = save_bulk_products(ready['rows'])
+                request.session.pop('warehouse_bulk_ready', None)
+                request.session.pop('warehouse_bulk_draft', None)
+                messages.success(request, f'Dodano artikala: {len(created)}. Opisi spremljeni i za postojeće artikle: {len(skipped)}.')
+                return redirect('staff_magacin_artikli_bulk')
+            request.session.pop('warehouse_bulk_ready', None)
+            rows = prepare_bulk_descriptions(request.session.get('warehouse_bulk_draft', []), pasted)
+            request.session['warehouse_bulk_ready'] = {'rows': rows, 'token': uuid.uuid4().hex}
+            return redirect('staff_magacin_opisi_bulk')
+        except ValueError as exc:
+            error = str(exc)
+    ready = request.session.get('warehouse_bulk_ready')
+    brand_names = dict(Brand.objects.values_list('id', 'naziv'))
+    preview = [dict(row, brand_name=brand_names.get(int(row['brand_id']), '' )) for row in ready['rows']] if ready else []
+    context = _magacin_context(request, section='novi_artikli_uvoz',
+                               page_title='Dodaj opis bulk', hide_top_search=True)
+    context.update({'descriptions_text': pasted, 'bulk_error': error,
+                    'prepared_rows': preview, 'draft_token': ready['token'] if ready else ''})
+    return render(request, 'staff/magacin/opisi_bulk.html', context)
 
 
 @login_required(login_url='login')

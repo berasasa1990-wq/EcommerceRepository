@@ -1,23 +1,23 @@
-/* Magacin sidebar — same silver 3D buttons as B2B categories. */
+/* Blue warehouse menu. */
 body.magacin-page .mg-app .mg-sidebar{
-  --menu-metal:linear-gradient(#f2f3f6,#d5d9df);
-  --menu-bevel:inset 1px 1px 0 #fff,inset -1px -1px 0 #8d959e;
-  background:linear-gradient(#e8eaee,#d4d8de);
-  border-right:1px solid #9aa3ab;
-  color:#1b2128;
-  scrollbar-color:#a4a8af #dedfe2;
+  --menu-metal:linear-gradient(#009fc2,#0078aa);
+  --menu-bevel:none;
+  background:linear-gradient(165deg,#009fc2,#0078aa 65%,#006b9e);
+  border-right:1px solid #0078aa;
+  color:#fff;
+  scrollbar-color:#53bad5 #0086b2;
 }
 body.magacin-page .mg-app .mg-side-top{
   padding:10px 8px;
   margin-bottom:6px;
   gap:8px;
-  background:linear-gradient(#f1f3f6,#d6dae0);
-  border-bottom:1px solid #a7afb6;
-  box-shadow:inset 0 1px #fff;
+  background:transparent;
+  border-bottom:1px solid #ffffff35;
+  box-shadow:none;
 }
 body.magacin-page .mg-app .mg-brand-lockup{
   padding:6px 8px;
-  color:#1b2128;
+  color:#fff;
   font-size:16px;
   font-weight:800;
   letter-spacing:.02em;
@@ -26,11 +26,11 @@ body.magacin-page .mg-app .mg-brand-lockup{
 body.magacin-page .mg-app .mg-brand-cube{
   width:32px;
   height:32px;
-  border:1px solid #9aa3ab;
+  border:1px solid #ffffff35;
   border-radius:3px;
   background:var(--menu-metal);
   box-shadow:var(--menu-bevel);
-  color:#1b2128;
+  color:#fff;
 }
 body.magacin-page .mg-app .mg-brand-cube svg{width:18px;height:18px}
 body.magacin-page .mg-app .mg-nav{gap:4px;padding:4px 8px 12px}
@@ -38,11 +38,11 @@ body.magacin-page .mg-app .mg-nav :is(a,.mg-nav-locked){
   min-height:42px;
   box-sizing:border-box;
   padding:10px 12px;
-  border:1px solid #9aa3ab;
+  border:1px solid #ffffff35;
   border-radius:10px;
   background:var(--menu-metal);
   box-shadow:var(--menu-bevel);
-  color:#1b2128;
+  color:#fff;
   font-size:13px;
   font-weight:700;
   line-height:1.25;
@@ -50,49 +50,49 @@ body.magacin-page .mg-app .mg-nav :is(a,.mg-nav-locked){
 body.magacin-page .mg-app .mg-nav :is(a,.mg-nav-locked) svg{
   width:20px;
   height:20px;
-  color:#171b1f;
+  color:#fff;
 }
 body.magacin-page .mg-app .mg-nav a:not(.mg-nav-locked)::after{
   content:"›";
   margin-left:auto;
   font-size:18px;
   font-weight:400;
-  color:#6a727c;
+  color:#fff;
   line-height:1;
 }
 body.magacin-page .mg-app .mg-nav a:hover:not(.is-active):not(.mg-nav-locked),
 body.magacin-page .mg-app .mg-nav a.is-active{
-  background:linear-gradient(#dcecc8,#c3d8a8);
-  border-color:#8eaa72;
-  box-shadow:inset 1px 1px 0 #f3fae8,inset -1px -1px 0 #8eaa72;
-  color:#163b13;
+  background:#ffffff26;
+  border-color:#ffffff55;
+  box-shadow:none;
+  color:#fff;
   font-weight:800;
 }
 body.magacin-page .mg-app .mg-nav a.is-active svg,
-body.magacin-page .mg-app .mg-nav a:hover:not(.mg-nav-locked) svg{color:#23551d}
+body.magacin-page .mg-app .mg-nav a:hover:not(.mg-nav-locked) svg{color:#fff}
 body.magacin-page .mg-app .mg-nav a.is-active::after,
-body.magacin-page .mg-app .mg-nav a:hover:not(.mg-nav-locked)::after{color:#4d6a42}
+body.magacin-page .mg-app .mg-nav a:hover:not(.mg-nav-locked)::after{color:#fff}
 body.magacin-page .mg-app .mg-nav a.is-blink-pack{
   animation:mg-pack-blink 1.2s ease-in-out infinite;
 }
 body.magacin-page .mg-app .mg-sidebar :is(.mg-history-btn,.mg-side-close){
   min-height:36px;
   padding:6px 10px;
-  border:1px solid #9aa3ab;
+  border:1px solid #ffffff35;
   border-radius:10px;
   background:var(--menu-metal);
   box-shadow:var(--menu-bevel);
-  color:#171c23;
+  color:#fff;
   font-size:13px;
   font-weight:700;
   text-decoration:none;
 }
 body.magacin-page .mg-app .mg-sidebar :is(.mg-history-btn,.mg-side-close):hover{
-  background:linear-gradient(#dcecc8,#c3d8a8);
-  border-color:#8eaa72;
+  background:#ffffff26;
+  border-color:#ffffff55;
 }
 body.magacin-page .mg-app .mg-sidebar button:disabled{opacity:.55;cursor:default}
-body.magacin-page .mg-app .mg-sidebar :is(.mg-sync-meta,.mg-version,.mg-side-label){color:#5d6670}
+body.magacin-page .mg-app .mg-sidebar :is(.mg-sync-meta,.mg-version,.mg-side-label){color:#d9f3ff}
 body.magacin-page .mg-app .mg-sidebar :is(a,button):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
 @media(max-width:600px){
   body.magacin-page .mg-app .mg-nav :is(a,.mg-nav-locked){min-height:44px;font-size:13.5px}
@@ -107,7 +107,7 @@ body.magacin-page .mg-app .mg-sidebar :is(a,button):focus-visible{outline:3px so
   width:42px;
   height:42px;
   padding:8px;
-  border:1px solid #9aa3ab;
+  border:1px solid #ffffff35;
   border-radius:10px;
   background:linear-gradient(#f2f3f6,#d5d9df);
   box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #8d959e;
@@ -123,20 +123,20 @@ body.magacin-page .mg-app .mg-sidebar .mg-nav-locked{
   align-items:center;
   gap:8px;
   cursor:not-allowed;
-  color:#626872;
-  background:linear-gradient(#e4e6ea,#c9ced4);
+  color:#b6dbe8;
+  background:#ffffff12;
   animation:none;
   text-decoration:none;
 }
 body.magacin-page .mg-app .mg-sidebar .mg-nav-locked:hover{
-  background:linear-gradient(#e4e6ea,#c9ced4);
-  color:#626872;
+  background:#ffffff12;
+  color:#b6dbe8;
 }
 body.magacin-page .mg-app .mg-sidebar .mg-menu-lock{
   width:16px;
   height:16px;
   flex:0 0 16px;
   margin-left:auto;
-  color:#626872;
+  color:#b6dbe8;
 }
 body.magacin-page .mg-app .mg-side-foot>.mg-nav-locked{margin-bottom:6px}
