@@ -3233,6 +3233,7 @@ def _build_unique_slug(model_cls, source_text, *, pk=None, max_length=SLUG_MAX_L
 
 
 class Product(models.Model):
+    obrisan_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False, verbose_name='Uklonjen iz kataloga')
     is_set = models.BooleanField(default=False, db_index=True, verbose_name="Artikal je set")
     pracenje_zaliha = models.BooleanField(default=True)
     modul_sakriven = models.BooleanField(default=False)

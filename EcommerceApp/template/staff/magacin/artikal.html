@@ -18,12 +18,14 @@
         {% if not product.is_set %}<button type="button" class="mg-btn mg-btn-zalihe" id="mgZaliheBtn">Zalihe</button>{% endif %}
         <a class="mg-btn" href="{% url 'staff_magacin_stampa_cijena_ista' %}?artikal={{ product.pk }}{% if variation %}&varijacija={{ variation.pk }}{% endif %}">Štampaj Cijenu</a>
         <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_artikal_izmjena' product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">Izmijeni artikal</a>
-        <form method="post" class="mg-obrisi-artikal-form" onsubmit="return confirm('OBRISATI artikal „{{ product.naziv|escapejs }}”{% if product.sifra %} ({{ product.sifra|escapejs }}){% endif %} SKROZ iz baze?\n\nOvo nije skidanje sa sajta — artikal se briše trajno i ne može se vratiti.');">
+        {% if request.user.is_superuser %}
+        <form method="post" class="mg-obrisi-artikal-form" onsubmit="return confirm('Obrisati ovaj artikal? Ako ima zaštićenu historiju, bit će uklonjen iz kataloga uz očuvanje narudžbi i evidencije.');">
             {% csrf_token %}
             <input type="hidden" name="action" value="obrisi">
             {% if magacin_search %}<input type="hidden" name="pretraga" value="{{ magacin_search }}">{% endif %}
             <button type="submit" class="mg-btn mg-btn-danger">Obriši artikal</button>
         </form>
+        {% endif %}
     </div>
 </div>
 {% if product.is_set %}

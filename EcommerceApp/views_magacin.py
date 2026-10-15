@@ -1163,11 +1163,11 @@ def magacin_artikal(request, pk):
             elif action == 'obrisi':
                 naziv = product.naziv or ''
                 sifra = product.sifra or ''
-                obrisi_artikal_iz_baze(product)
+                result = obrisi_artikal_iz_baze(product, user=request.user)
                 request.session['magacin_page_notice'] = (
                     f'Artikal „{naziv}”'
                     + (f' ({sifra})' if sifra else '')
-                    + ' je obrisan iz baze.'
+                    + (' je uklonjen iz kataloga. Narudžbe i historija su sačuvane.' if result == 'archived' else ' je obrisan iz baze.')
                 )
                 request.session.modified = True
                 dest = reverse('staff_magacin_artikli')

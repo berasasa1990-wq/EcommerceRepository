@@ -317,7 +317,7 @@ def _invalidate_storefront_product_caches():
         'home_latest_products_v4',
         'home_featured_products_v4',
         'home_sale_products_v4',
-        'home_brand_show_v4',
+        'home_brand_show_v5',
         'showcase_brands_v2',
         'home_cat_show_v5:6',
     ):
@@ -2536,11 +2536,11 @@ def _home_category_showcases_uncached(request=None):
 
 def _home_brand_showcases(request=None):
     """
-    Brend sekcije na početnoj — karusel do 10 artikala po brendu (vrte se).
+    Brend sekcije na početnoj — do 4 artikla po brendu.
     Admin: Postavke sajta → ⑥ Brend karuseli.
     """
     return _home_cache_get(
-        'home_brand_show_v4',
+        'home_brand_show_v5',
         lambda: _home_brand_showcases_uncached(request),
     )
 
@@ -2551,8 +2551,8 @@ def _home_brand_showcases_uncached(request=None):
     ).select_related('brend').order_by('redoslijed', 'id')
 
     home_url = reverse('home')
-    # Strogo max 10 artikala u karuselu
-    brand_limit = min(10, HOME_SECTION_PRODUCT_LIMIT)
+    # Najviše četiri artikla iz svakog brenda.
+    brand_limit = min(4, HOME_SECTION_PRODUCT_LIMIT)
     sections = []
     for entry in entries:
         products = list(
@@ -2569,7 +2569,7 @@ def _home_brand_showcases_uncached(request=None):
             'title': entry.display_title(),
             'brand': brand,
             'brand_url': brand_url,
-            'products': products[:10],
+            'products': products[:brand_limit],
         })
     return sections
 

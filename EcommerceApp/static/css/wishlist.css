@@ -158,8 +158,9 @@
     min-height: 48px;
     padding: 12px 16px;
     border-radius: 12px;
-    background: #ff5100;
-    color: #fff !important;
+    background: #fff;
+    border: 1px solid #f17800;
+    color: #f17800 !important;
     font-size: 15px;
     font-weight: 700;
     text-decoration: none;
@@ -170,11 +171,11 @@
     fill: none;
     stroke: currentColor;
 }
-.wishlist-panel__cta:hover { filter: brightness(0.96); }
+.wishlist-panel__cta:hover { background: #fff; color: #cb6500 !important; border-color: #cb6500; }
 .wishlist-panel:has(.wishlist-item--empty) .wishlist-panel__cta { display: none; }
 
 .wishlist-menu.is-open .reference-header-heart {
-    background: #fff1ea;
+    background: transparent;
     border-radius: 12px;
 }
 

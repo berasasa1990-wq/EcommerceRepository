@@ -48,37 +48,30 @@ class MagacinError(Exception):
     pass
 
 
-def obrisi_artikal_iz_baze(product):
-    """Trajno obriši artikal iz baze, uključujući slike i magacin zalihe."""
+def obrisi_artikal_iz_baze(product, *, user=None):
+    """Superusers may remove articles while retaining protected business history."""
     from django.db.models.deletion import ProtectedError
+    from django.utils import timezone
 
+    if not user or not user.is_authenticated or not user.is_superuser:
+        raise MagacinError('Samo superuser može obrisati artikal.')
     if product is None or not getattr(product, 'pk', None):
         raise MagacinError('Artikal nije pronađen.')
-    if product.magacin_kretanja.exists():
-        raise MagacinError('Artikal ima sačuvanu istoriju kretanja i ne može se obrisati. '
-                           'Evidenciju može ručno obrisati samo superuser.')
-    try:
-        with transaction.atomic():
-            if getattr(product, 'slika', None):
-                try:
-                    product.slika.delete(save=False)
-                except Exception:
-                    pass
-            for img in list(product.dodatne_slike.all()):
-                try:
-                    if img.slika:
-                        img.slika.delete(save=False)
-                except Exception:
-                    pass
-            product.delete()
-    except ProtectedError as exc:
-        raise MagacinError(
-            'Artikal se ne može obrisati jer postoje povezani podaci koji to sprečavaju.'
-        ) from exc
-    except IntegrityError as exc:
-        raise MagacinError(
-            'Artikal se ne može obrisati zbog povezanih zapisa u bazi.'
-        ) from exc
+    with transaction.atomic():
+        locked = Product.objects.select_for_update().get(pk=product.pk)
+        if not locked.magacin_kretanja.exists():
+            try:
+                with transaction.atomic():
+                    # Keep image files: linked historical records may still need them.
+                    locked.delete()
+                return 'deleted'
+            except (ProtectedError, IntegrityError):
+                pass
+        locked.obrisan_at = timezone.now()
+        locked.aktivan = False
+        locked.na_stanju = False
+        locked.save(update_fields=['obrisan_at', 'aktivan', 'na_stanju'])
+        return 'archived'
 
 
 logger = logging.getLogger(__name__)
@@ -1560,7 +1553,8 @@ def move_uvoz_leftovers_to_mp(*, user=None):
 def magacin_products_qs():
     """Postojeći lokalni Magacin katalog; historijska polja zadržavaju obuhvat."""
     return Product.objects.filter(
-        Q(magacin_sync_at__isnull=False) | Q(odoo_template_id__isnull=False) | Q(is_set=True)
+        Q(magacin_sync_at__isnull=False) | Q(odoo_template_id__isnull=False) | Q(is_set=True),
+        obrisan_at__isnull=True,
     )
 
 
