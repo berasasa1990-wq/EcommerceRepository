@@ -352,8 +352,8 @@
         .desktop-trust-bar nav a.site-wholesale-link { animation:none; }
     }
     </style>
-    <link rel="stylesheet" href="{% static 'css/product-card-reference.css' %}?v=20261014-larger-card-photos">
-    <link rel="stylesheet" href="{% static 'css/site-orange-theme.css' %}?v=20261015-options-below-image">
+    <link rel="stylesheet" href="{% static 'css/product-card-reference.css' %}?v=20261015-shorter-cart-buttons">
+    <link rel="stylesheet" href="{% static 'css/site-orange-theme.css' %}?v=20261015-black-stock-quantity">
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
@@ -784,13 +784,7 @@
     {% include 'partials/catalog_variation_modal.html' %}
     {% include 'partials/stock_notify_popup.html' %}
 
-    {% if request.resolver_match.url_name != 'home' %}
-    <button type="button" class="scroll-top-btn" id="scrollTopBtn" aria-label="Na vrh stranice">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="18 15 12 9 6 15"/>
-        </svg>
-    </button>
-    {% endif %}
+
 
     {% if organization_json_ld %}
     <script type="application/ld+json">{{ organization_json_ld|safe }}</script>
