@@ -76,13 +76,14 @@
     }
     .mobile-home-dock > a, .mobile-home-dock > button {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 5px; min-width: 0; min-height: 44px; padding: 0; border: 0; background: none;
-        color: #555862; font: inherit; font-size: 11px; text-decoration: none;
+        gap: 5px; min-width: 0; min-height: 44px; padding: 0; border: 0; background: transparent;
+        box-shadow: none;
+        color: #f17800; font: inherit; font-size: 11px; text-decoration: none;
     }
-    .mobile-home-dock svg { width: 25px; height: 25px; fill: none; stroke: #080808; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; }
+    .mobile-home-dock svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; }
     .mobile-home-dock [aria-current] { color: #ff6000; }
     .mobile-home-dock [aria-current] svg { stroke: #ff6000; }
-    .mobile-home-dock > a:first-child[aria-current] svg { fill: #ff6000; }
+    .mobile-home-dock > a:first-child[aria-current] svg { fill: none; }
     .home-mobile-reference .product-card--home-reference .home-card-heart { pointer-events: auto; border: 0; padding: 6px; background: transparent; cursor: pointer; }
     .mobile-home-dock .mobile-dock-favorites { position: relative; }
     .mobile-home-dock .mobile-dock-favorites-count {

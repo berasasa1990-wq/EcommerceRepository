@@ -926,12 +926,12 @@ def magacin_novi_artikli_uvoz(request):
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
 def magacin_novi_uvozi_istorija(request, pk=None):
-    from .warehouse_import_check import import_history_tsv, INPUT_HISTORY_MARKER, resolve_input_history_names, input_history_lines
-    imports = Uvoz.objects.filter(izvor=Uvoz.Izvor.MAGACIN, napomena__startswith=INPUT_HISTORY_MARKER).order_by('-kreiran', '-pk')
+    from .warehouse_import_check import import_history_tsv, INPUT_HISTORY_MARKER, resolve_input_history_names, input_history_lines, new_article_history_q
+    imports = Uvoz.objects.filter(new_article_history_q(), izvor=Uvoz.Izvor.MAGACIN).order_by('-kreiran', '-pk')
     selected = get_object_or_404(imports, pk=pk) if pk is not None else None
     lines = resolve_input_history_names(list(selected.stavke.order_by('redoslijed', 'pk'))) if selected else []
     session_values = request.session.get('warehouse_excel_values', [])
-    session_input = request.GET.get('posljednji') == '1' and bool(session_values)
+    session_input = selected is None and bool(session_values) and (request.GET.get('posljednji') == '1' or not request.GET.get('page'))
     if session_input:
         try:
             lines = input_history_lines(session_values)
@@ -6566,9 +6566,10 @@ def magacin_uvoz(request):
             )
         return redirect('staff_magacin_uvoz')
 
+    from .warehouse_import_check import new_article_history_q
     uvozi = attach_uvoz_list_metrics(
         Uvoz.objects.filter(izvor=Uvoz.Izvor.MAGACIN)
-        .exclude(napomena__startswith='[novi-artikli-unos]')
+        .exclude(new_article_history_q())
         .select_related('kreirao')
         .order_by('-kreiran')[:200]
     )

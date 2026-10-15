@@ -379,3 +379,12 @@ def resolve_input_history_names(lines):
             if len(matches) == 1:
                 line.artikal_naziv = matches[0].naziv
     return lines
+
+
+def new_article_history_q():
+    from django.db.models import Q
+    # Earlier bulk saves predate the explicit history marker.
+    return Q(napomena__startswith=INPUT_HISTORY_MARKER) | (
+        Q(naziv='Novi artikli bulk') &
+        (Q(napomena__startswith='Bulk unos naziva, brenda i opisa.') | Q(napomena=''))
+    )

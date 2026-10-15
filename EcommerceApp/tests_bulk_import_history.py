@@ -109,3 +109,22 @@ class BulkImportHistoryTests(TestCase):
         self.assertEqual(response.context['imports_page'].paginator.count, 0)
         self.assertIn('REC01 FOX Found later\t8\t9.50', response.context['import_excel_text'])
         self.assertNotContains(response, 'Real warehouse import')
+
+    def test_legacy_bulk_record_without_marker_is_visible(self):
+        entry = Uvoz.objects.create(naziv='Novi artikli bulk', izvor=Uvoz.Izvor.MAGACIN,
+                                    napomena='Bulk unos naziva, brenda i opisa. Količine su iz izvornog Excela; ovaj unos ne mijenja lager.')
+        UvozStavka.objects.create(uvoz=entry, artikal_naziv='Ranije unesen naziv', kolicina=2, fakturna='5.25')
+        response = self.client.get(reverse('staff_magacin_novi_uvozi_istorija'))
+        self.assertEqual(response.context['imports_page'].paginator.count, 1)
+        response = self.client.get(reverse('staff_magacin_novi_uvoz_istorija_detail', args=[entry.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Ranije unesen naziv\t2.000\t5.2500', response.context['import_excel_text'])
+
+    def test_previous_session_list_is_shown_without_extra_click(self):
+        session = self.client.session
+        session['warehouse_excel_values'] = [{'code': 'OLD99', 'kolicina': '6', 'fakturna': '2.50'}]
+        session.save()
+        response = self.client.get(reverse('staff_magacin_novi_uvozi_istorija'))
+        self.assertTrue(response.context['session_input'])
+        self.assertIn('OLD99\t6\t2.50', response.context['import_excel_text'])
+        self.assertNotContains(response, 'Još nema sačuvanih')

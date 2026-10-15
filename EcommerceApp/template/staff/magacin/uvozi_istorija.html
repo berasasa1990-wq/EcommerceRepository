@@ -24,7 +24,7 @@
         <div class="import-history-list">{% for item in imports_page %}
         {% ifchanged %}<h3>{{ item.kreiran|date:'d.m.Y.' }}</h3>{% endifchanged %}
         <a class="import-check-bulk-link" href="{% url 'staff_magacin_novi_uvoz_istorija_detail' item.pk %}"><span class="import-history-date">{{ item.kreiran|date:'H:i' }}</span><span class="import-history-name">{{ item.naziv }} #{{ item.pk }}</span><span class="import-history-count">{{ item.broj_redova }} artikala</span></a>
-        {% empty %}<p>Još nema sačuvanih unosa novih artikala.</p>{% endfor %}</div>
+        {% empty %}{% if has_session_input %}<p>Posljednji spisak iz sesije prikazan je iznad.</p>{% else %}<p>Nema ranijih sačuvanih spiskova. Unosi napravljeni prije uvođenja istorije mogu se prikazati samo ako su ostali sačuvani u bazi ili sesiji.</p>{% endif %}{% endfor %}</div>
         <nav class="import-history-pagination" aria-label="Stranice istorije uvoza">
         {% if imports_page.has_previous %}<a href="?page={{ imports_page.previous_page_number }}">‹ Prethodna</a>{% endif %}
         <span>{{ imports_page.number }} / {{ imports_page.paginator.num_pages }}</span>
