@@ -77,5 +77,8 @@ class WarehousePerformanceTests(TestCase):
         self.assertEqual(context['result_count'], 65)
         self.assertEqual(len(context['page'].object_list), 40)
         self.assertTrue(context['include_zero'])
+        self.assertNotIn('vpc_netto', context['page'].object_list[0])
+        self.assertNotIn('locations', context['page'].object_list[0])
+        self.assertFalse(any('FROM "EcommerceApp_productvariation"' in q['sql'] for q in queries))
         product_reads = [q['sql'] for q in queries if 'FROM "EcommerceApp_product"' in q['sql'] and 'COUNT(' not in q['sql']]
         self.assertTrue(all('LIMIT ' in sql for sql in product_reads))

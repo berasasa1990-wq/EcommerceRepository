@@ -1,6 +1,6 @@
 /* Blue warehouse menu. */
 body.magacin-page .mg-app .mg-sidebar{
-  --menu-metal:linear-gradient(#009fc2,#0078aa);
+  --menu-background:linear-gradient(#009fc2,#0078aa);
   --menu-bevel:none;
   background:linear-gradient(165deg,#009fc2,#0078aa 65%,#006b9e);
   border-right:1px solid #0078aa;
@@ -28,7 +28,7 @@ body.magacin-page .mg-app .mg-brand-cube{
   height:32px;
   border:1px solid #ffffff35;
   border-radius:3px;
-  background:var(--menu-metal);
+  background:var(--menu-background);
   box-shadow:var(--menu-bevel);
   color:#fff;
 }
@@ -40,7 +40,7 @@ body.magacin-page .mg-app .mg-nav :is(a,.mg-nav-locked){
   padding:10px 12px;
   border:1px solid #ffffff35;
   border-radius:10px;
-  background:var(--menu-metal);
+  background:var(--menu-background);
   box-shadow:var(--menu-bevel);
   color:#fff;
   font-size:13px;
@@ -73,14 +73,14 @@ body.magacin-page .mg-app .mg-nav a:hover:not(.mg-nav-locked) svg{color:#fff}
 body.magacin-page .mg-app .mg-nav a.is-active::after,
 body.magacin-page .mg-app .mg-nav a:hover:not(.mg-nav-locked)::after{color:#fff}
 body.magacin-page .mg-app .mg-nav a.is-blink-pack{
-  animation:mg-pack-blink 1.2s ease-in-out infinite;
+  animation:mg-menu-pack-blink 1.2s ease-in-out infinite;
 }
 body.magacin-page .mg-app .mg-sidebar :is(.mg-history-btn,.mg-side-close){
   min-height:36px;
   padding:6px 10px;
   border:1px solid #ffffff35;
   border-radius:10px;
-  background:var(--menu-metal);
+  background:var(--menu-background);
   box-shadow:var(--menu-bevel);
   color:#fff;
   font-size:13px;
@@ -109,9 +109,9 @@ body.magacin-page .mg-app .mg-sidebar :is(a,button):focus-visible{outline:3px so
   padding:8px;
   border:1px solid #ffffff35;
   border-radius:10px;
-  background:linear-gradient(#f2f3f6,#d5d9df);
-  box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #8d959e;
-  color:#111;
+  background:linear-gradient(#009fc2,#0078aa);
+  box-shadow:none;
+  color:#fff;
   cursor:pointer;
 }
 .magacin-page .mg-menu-standalone svg{width:24px;height:24px}
@@ -140,3 +140,16 @@ body.magacin-page .mg-app .mg-sidebar .mg-menu-lock{
   color:#b6dbe8;
 }
 body.magacin-page .mg-app .mg-side-foot>.mg-nav-locked{margin-bottom:6px}
+
+body.magacin-page .mg-app .mg-side-foot{
+  background:transparent;
+  border-color:#ffffff35;
+  box-shadow:none;
+}
+body.magacin-page .mg-app .mg-sync-meta strong{color:#fff}
+
+body.magacin-page .mg-app .mg-nav-count{background:#fff;color:#0078aa}
+@keyframes mg-menu-pack-blink{
+  0%,100%{background:#ffffff12}
+  50%{background:#ffffff30}
+}

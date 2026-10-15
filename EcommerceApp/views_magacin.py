@@ -847,7 +847,8 @@ def magacin_artikli(request):
         if include_zero:
             params['bez_zalihe'] = '1'
         return redirect(f'{url}?{urlencode(params)}')
-    qs = products
+    # This list shows images, identifiers and quantities only, not variants/prices.
+    qs = products.prefetch_related(None) if hasattr(products, 'prefetch_related') else products
 
     paginator = Paginator(qs, 40)
     page = paginator.get_page(request.GET.get('page') or 1)
@@ -867,10 +868,6 @@ def magacin_artikli(request):
                 'dostupno': max(0, na_stanju - rezervisano),
             }
 
-    from django.db.models import prefetch_related_objects
-    prefetch_related_objects(page.object_list, 'varijacije')
-    divisors = brand_divisors()
-    discounts = discounts_for(product_ids)
     rows = []
     for product in page.object_list:
         totals = totals_by_product.get(product.pk) or {
@@ -880,26 +877,7 @@ def magacin_artikli(request):
         }
         if product.is_set:
             totals = display_stock_totals(product)
-        prices = [net_price(product, variant, discounts, divisors) for variant in list(product.varijacije.all()) or [None]]
-        rows.append({'product': product, **totals, 'locations': [],
-                     'vpc_netto': min(prices), 'vpc_netto_max': max(prices)})
-    locs_by_product = {}
-    if product_ids:
-        for stock in (
-            recorded_stock_qs(WarehouseStock.objects.filter(product_id__in=product_ids, kolicina__gt=0))
-            .select_related('location')
-            .order_by('location__sifra')
-        ):
-            dostupno = max(0, int(stock.kolicina or 0) - max(0, int(stock.rezervisano or 0)))
-            if dostupno <= 0:
-                continue
-            locs_by_product.setdefault(stock.product_id, []).append({
-                'sifra': stock.location.sifra,
-                'naziv': stock.location.naziv,
-                'dostupno': dostupno,
-            })
-    for row in rows:
-        row['locations'] = locs_by_product.get(row['product'].pk) or []
+        rows.append({'product': product, **totals})
     page.object_list = rows
     context.update({
         'page': page,
