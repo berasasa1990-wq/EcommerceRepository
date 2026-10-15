@@ -28,9 +28,11 @@ def calculation(raw):
     values = {key: number(data.get(key)) for key in NUMBERS}
     if values['kurs'] <= 0 or values['iznos_fakture'] <= 0:
         raise ValueError('Kurs i iznos fakture moraju biti veći od nule.')
-    percent = (values['carina'] + values['prevoz'] + values['ostali_troskovi']) / values['iznos_fakture'] * 100
+    invoice_km = values['iznos_fakture'] * values['kurs']
+    percent = (values['carina'] + values['prevoz'] + values['ostali_troskovi']) / invoice_km * 100
     return {**{key: str(value) for key, value in values.items()},
             'jci': str(data.get('jci', ''))[:200], 'faktura': str(data.get('faktura', ''))[:200],
+            'faktura_km': str(invoice_km.quantize(Decimal('.01'), rounding=ROUND_HALF_UP)),
             'trosak_bez_pdv_pct': str(percent.quantize(Decimal('.000001'), rounding=ROUND_HALF_UP))}
 
 
@@ -51,7 +53,7 @@ def calculate_rows(rows, config):
         qty = row.get('kolicina')
         row['ukupno_fakturna'] = (invoice * qty).quantize(Decimal('.01'), rounding=ROUND_HALF_UP) if invoice is not None and qty is not None else None
         row['vpc_netto'] = (mpc / Decimal('1.17') / Decimal('1.38')).quantize(Decimal('.0001'), rounding=ROUND_HALF_UP) if mpc is not None else None
-        row['nabavna'] = (invoice * Decimal(config['kurs']) * (1 + (Decimal(config['carina']) + Decimal(config['prevoz']) + Decimal(config['ostali_troskovi'])) / Decimal(config['iznos_fakture']))).quantize(Decimal('.0001'), rounding=ROUND_HALF_UP) if invoice is not None else None
+        row['nabavna'] = (invoice * Decimal(config['kurs']) * (1 + (Decimal(config['carina']) + Decimal(config['prevoz']) + Decimal(config['ostali_troskovi'])) / (Decimal(config['iznos_fakture']) * Decimal(config['kurs'])))).quantize(Decimal('.0001'), rounding=ROUND_HALF_UP) if invoice is not None else None
         row['vpc_marza'] = (row['vpc_netto'] / row['nabavna'] * 100).quantize(Decimal('.000001'), rounding=ROUND_HALF_UP) if row['nabavna'] and row['vpc_netto'] is not None else None
         for field in ('nabavna', 'vpc_netto'):
             if row[field] is not None and row[field] >= Decimal('100000000'):

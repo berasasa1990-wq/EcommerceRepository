@@ -17,9 +17,12 @@
         ['jci','faktura','kurs','iznos_fakture','prevoz','carina','pdv','ostali_troskovi'].forEach(function (name) { data[name] = form.elements.namedItem(name).value.trim(); });
         return data;
     }
-    function rate(data) { return (num(data.carina) + num(data.prevoz) + num(data.ostali_troskovi)) / num(data.iznos_fakture) * 100; }
+    function rate(data) { return (num(data.carina) + num(data.prevoz) + num(data.ostali_troskovi)) / (num(data.iznos_fakture) * num(data.kurs)) * 100; }
     function showRate() {
-        var value = rate(read());
+        var data = read();
+        var km = num(data.iznos_fakture) * num(data.kurs);
+        document.getElementById('uvozInvoiceKM').value = Number.isFinite(km) && km > 0 ? km.toFixed(2) : '';
+        var value = rate(data);
         document.getElementById('uvozCostPercent').textContent = Number.isFinite(value) ? value.toFixed(4) + '%' : '—';
     }
     document.querySelectorAll('[data-calculation-open]').forEach(function (button) {
@@ -37,6 +40,7 @@
         if (!valid) { event.preventDefault(); document.getElementById('uvozCalculationError').textContent = 'Provjeri brojeve. Kurs i iznos fakture moraju biti veći od nule.'; return; }
         if (form.dataset.savedImport === '1') return;
         event.preventDefault();
+        data.faktura_km = String(num(data.iznos_fakture) * num(data.kurs));
         data.trosak_bez_pdv_pct = String(rate(data));
         config = data; hidden.value = JSON.stringify(config);
         document.dispatchEvent(new Event('uvoz-calculation-updated'));

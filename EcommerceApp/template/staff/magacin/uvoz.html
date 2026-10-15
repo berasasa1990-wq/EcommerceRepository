@@ -42,7 +42,7 @@
             <tbody>
                 {% for u in uvozi %}
                 <tr class="is-clickable" onclick="location.href='{% url 'staff_magacin_uvoz_detail' u.pk %}'">
-                    <td><strong>{{ u.naziv }}</strong></td>
+                    <td><strong>{{ u.naziv }}</strong>{% if u.kalkulacija.faktura %}<br><span class="mg-muted">Broj fakture: {{ u.kalkulacija.faktura }}</span>{% endif %}</td>
                     <td>{{ u.kreiran|date:"d.m.Y. H:i" }}</td>
                     <td class="num">{{ u.list_stavki }}</td>
                     <td class="num">{% if u.list_azurirano %}{{ u.list_azurirano }}{% else %}—{% endif %}</td>
