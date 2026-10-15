@@ -75,10 +75,22 @@ class WarehousePerformanceTests(TestCase):
             with CaptureQueriesContext(connection) as queries:
                 context = magacin_artikli(req)
         self.assertEqual(context['result_count'], 65)
-        self.assertEqual(len(context['page'].object_list), 40)
+        self.assertEqual(len(context['page'].object_list), 10)
+        self.assertEqual(context['page'].paginator.num_pages, 7)
         self.assertTrue(context['include_zero'])
         self.assertNotIn('vpc_netto', context['page'].object_list[0])
         self.assertNotIn('locations', context['page'].object_list[0])
         self.assertFalse(any('FROM "EcommerceApp_productvariation"' in q['sql'] for q in queries))
         product_reads = [q['sql'] for q in queries if 'FROM "EcommerceApp_product"' in q['sql'] and 'COUNT(' not in q['sql']]
         self.assertTrue(all('LIMIT ' in sql for sql in product_reads))
+
+    def test_default_list_shows_newest_ten_with_pagination(self):
+        products = [Product.objects.create(naziv='Latest %02d' % i, cijena=10, magacin_sync_at=timezone.now()) for i in range(12)]
+        req = RequestFactory().get('/nalog/magacin/artikli/')
+        req.user = get_user_model().objects.create_superuser('latest', 'latest@example.com', 'test')
+        req.session = {}
+        with patch('EcommerceApp.views_magacin._magacin_context', return_value={}), patch('EcommerceApp.views_magacin.render', side_effect=lambda r, t, c: c), patch('EcommerceApp.views_magacin.search_products') as search:
+            context = magacin_artikli(req)
+        self.assertEqual([row['product'].pk for row in context['page']], [product.pk for product in reversed(products[-10:])])
+        self.assertTrue(context['page'].has_next())
+        search.assert_not_called()

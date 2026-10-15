@@ -10,7 +10,7 @@
 </form>
 {% if magacin_notice %}<p class="stock-notice" role="status">{{ magacin_notice }}</p>{% endif %}
 <section aria-labelledby="stockResultsTitle">
-    <header class="stock-results-heading"><div><h1 id="stockResultsTitle">Rezultati pretrage</h1><p>{% if searched %}Rezultati za „{{ magacin_search }}“{% else %}Svi artikli{% endif %}</p></div><span class="stock-result-count">{{ result_count }} artikala</span></header>
+    <header class="stock-results-heading"><div><h1 id="stockResultsTitle">Rezultati pretrage</h1><p>{% if searched %}Rezultati za „{{ magacin_search }}“{% else %}Najnoviji artikli{% endif %}</p></div><span class="stock-result-count">{{ result_count }} artikala</span></header>
     <div class="stock-results">
     {% for row in page %}
         <a class="stock-result" href="{% url 'staff_magacin_artikal' row.product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">

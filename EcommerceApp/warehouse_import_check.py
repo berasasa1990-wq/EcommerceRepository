@@ -277,11 +277,17 @@ def save_bulk_import_history(rows, created, skipped, user):
         except InvalidOperation as exc:
             raise ValueError(f'Neispravna količina ili fakturna vrijednost: {value}') from exc
 
+    source_ids = {row.get('source_input_id') for row in rows if row.get('source_input_id')}
+    if len(source_ids) == 1:
+        source = Uvoz.objects.filter(pk=next(iter(source_ids)), napomena__startswith=INPUT_HISTORY_MARKER).first()
+        if source:
+            # Full initial list is already stored; do not replace it with the missing subset.
+            return source
     lines = [(row, number(row.get('kolicina'), 3), number(row.get('fakturna'), 4)) for row in rows]
     uvoz = Uvoz.objects.create(
         naziv='Novi artikli bulk', izvor=Uvoz.Izvor.MAGACIN, kreirao=user,
         broj_redova=len(rows), broj_kreirano=len(created), broj_azurirano=len(skipped),
-        zaliha_primljena=False, napomena='Bulk unos naziva, brenda i opisa. Količine su iz izvornog Excela; ovaj unos ne mijenja lager.',
+        zaliha_primljena=False, napomena=INPUT_HISTORY_MARKER + ' Bulk unos naziva, brenda i opisa. Količine su iz izvornog Excela; ovaj unos ne mijenja lager.',
     )
     for index, (row, qty, invoice) in enumerate(lines, 1):
         UvozStavka.objects.create(uvoz=uvoz, artikal_naziv=row['naziv'], kolicina=qty,
@@ -300,3 +306,76 @@ def import_history_tsv(rows):
         writer.writerow([name, '' if row.kolicina is None else format(row.kolicina, 'f'),
                          '' if row.fakturna is None else format(row.fakturna, 'f')])
     return output.getvalue()
+
+
+INPUT_HISTORY_MARKER = '[novi-artikli-unos]'
+
+
+def input_history_lines(values):
+    """Resolve the entire first paste, preserving its quantities and invoices."""
+    from decimal import Decimal, InvalidOperation
+    from types import SimpleNamespace
+    from .models import Product
+    products = list(Product.objects.only('pk', 'naziv', 'sifra').order_by('pk'))
+    lines = []
+    for value in values:
+        matches = match_description_product(value['code'], products)
+        def decimal_cell(raw):
+            text = str(raw or '').strip().replace(' ', '').replace('\u00a0', '')
+            if not text:
+                return None
+            if ',' in text:
+                text = text.replace('.', '').replace(',', '.')
+            try:
+                number = Decimal(text)
+                if not number.is_finite():
+                    raise InvalidOperation
+                return number
+            except InvalidOperation as exc:
+                raise ValueError(f"Neispravna vrijednost za {value['code']}: {raw}") from exc
+        lines.append(SimpleNamespace(
+            artikal_naziv=matches[0].naziv if len(matches) == 1 else value['code'],
+            product_id=matches[0].pk if len(matches) == 1 else None,
+            kolicina=decimal_cell(value.get('kolicina')), fakturna=decimal_cell(value.get('fakturna')),
+            code=value['code'],
+        ))
+    return lines
+
+
+def save_input_history(values, user):
+    from django.db import transaction
+    from .models import Uvoz, UvozStavka
+    lines = input_history_lines(values)
+    # Validate against model precision before saving anything.
+    instances = []
+    for index, line in enumerate(lines, 1):
+        instance = UvozStavka(artikal_naziv=line.artikal_naziv, kolicina=line.kolicina,
+                             fakturna=line.fakturna, product_id=line.product_id,
+                             poruka=line.code, redoslijed=index)
+        for name in ('artikal_naziv', 'kolicina', 'fakturna', 'poruka'):
+            from django.core.exceptions import ValidationError
+            try:
+                instance._meta.get_field(name).clean(getattr(instance, name), instance)
+            except ValidationError as exc:
+                raise ValueError(f'{line.code}: neispravna vrijednost za {name}.') from exc
+        instances.append(instance)
+    with transaction.atomic():
+        entry = Uvoz.objects.create(naziv='Novi artikli — prvi unos', izvor=Uvoz.Izvor.MAGACIN,
+                                   kreirao=user, broj_redova=len(instances), zaliha_primljena=False,
+                                   napomena=INPUT_HISTORY_MARKER + ' Cijeli prvi spisak šifri, količina i fakturnih vrijednosti. Ne mijenja lager.')
+        for instance in instances:
+            instance.uvoz = entry
+        UvozStavka.objects.bulk_create(instances)
+    return entry
+
+
+def resolve_input_history_names(lines):
+    """Missing product names become visible after bulk creation, without losing rows."""
+    from .models import Product
+    products = list(Product.objects.only('pk', 'naziv', 'sifra').order_by('pk'))
+    for line in lines:
+        if line.poruka and (not line.product_id or line.artikal_naziv == line.poruka):
+            matches = match_description_product(line.poruka, products)
+            if len(matches) == 1:
+                line.artikal_naziv = matches[0].naziv
+    return lines

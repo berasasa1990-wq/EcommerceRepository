@@ -829,9 +829,14 @@ def magacin_artikli(request):
 
     # Non-exact searches already fall back to all stock states. Search once,
     # then preserve the original filter/redirect behavior without loading all rows.
-    products, exact = search_products(query, limit=None, include_zero=True)
+    if searched:
+        products, exact = search_products(query, limit=None, include_zero=True)
+    else:
+        from .magacin import magacin_products_qs
+        products = magacin_products_qs().order_by('-kreiran', '-pk')
+        exact = None
     if not exact and not include_zero:
-        has_products = products.exists() if hasattr(products, 'exists') else bool(products)
+        has_products = True if not searched else (products.exists() if hasattr(products, 'exists') else bool(products))
         if has_products:
             include_zero = True
             context['include_zero'] = True
@@ -850,7 +855,7 @@ def magacin_artikli(request):
     # This list shows images, identifiers and quantities only, not variants/prices.
     qs = products.prefetch_related(None) if hasattr(products, 'prefetch_related') else products
 
-    paginator = Paginator(qs, 40)
+    paginator = Paginator(qs, 10)
     page = paginator.get_page(request.GET.get('page') or 1)
     product_ids = [item.pk for item in page.object_list]
     totals_by_product = {}
@@ -899,8 +904,11 @@ def magacin_novi_artikli_uvoz(request):
         try:
             codes = parse_excel_codes(pasted)
             if hasattr(request, 'session'):
-                from .warehouse_import_check import excel_import_values
-                request.session['warehouse_excel_values'] = excel_import_values(pasted)
+                from .warehouse_import_check import excel_import_values, save_input_history
+                values = excel_import_values(pasted)
+                entry = save_input_history(values, request.user)
+                request.session['warehouse_excel_values'] = values
+                request.session['warehouse_excel_history_id'] = entry.pk
             checked_count = len(codes)
             missing = missing_name_codes(
                 codes, Product.objects.values_list('naziv', flat=True).iterator(chunk_size=2000),
@@ -918,15 +926,23 @@ def magacin_novi_artikli_uvoz(request):
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
 def magacin_novi_uvozi_istorija(request, pk=None):
-    from .warehouse_import_check import import_history_tsv
-    imports = Uvoz.objects.filter(izvor=Uvoz.Izvor.MAGACIN).order_by('-kreiran', '-pk')
+    from .warehouse_import_check import import_history_tsv, INPUT_HISTORY_MARKER, resolve_input_history_names, input_history_lines
+    imports = Uvoz.objects.filter(izvor=Uvoz.Izvor.MAGACIN, napomena__startswith=INPUT_HISTORY_MARKER).order_by('-kreiran', '-pk')
     selected = get_object_or_404(imports, pk=pk) if pk is not None else None
-    lines = list(selected.stavke.order_by('redoslijed', 'pk')) if selected else []
+    lines = resolve_input_history_names(list(selected.stavke.order_by('redoslijed', 'pk'))) if selected else []
+    session_values = request.session.get('warehouse_excel_values', [])
+    session_input = request.GET.get('posljednji') == '1' and bool(session_values)
+    if session_input:
+        try:
+            lines = input_history_lines(session_values)
+        except ValueError:
+            lines = []
     context = _magacin_context(request, section='novi_artikli_uvoz',
-                               page_title='Istorija zadnjih uvoza', hide_top_search=True)
+                               page_title='Istorija unosa novih artikala', hide_top_search=True)
     context.update({'imports_page': Paginator(imports, 10).get_page(request.GET.get('page')),
                     'selected_import': selected, 'import_lines': lines,
-                    'import_excel_text': import_history_tsv(lines) if selected else ''})
+                    'session_input': session_input, 'has_session_input': bool(session_values),
+                    'import_excel_text': import_history_tsv(lines) if selected or session_input else ''})
     return render(request, 'staff/magacin/uvozi_istorija.html', context)
 
 
@@ -955,6 +971,9 @@ def magacin_artikli_bulk(request):
                     raise ValueError('Provjeri nazive i odaberi postojeći brend za svaki artikal.')
                 from .warehouse_import_check import attach_import_values
                 rows = attach_import_values(rows, request.session.get('warehouse_excel_values', []))
+                source_id = request.session.get('warehouse_excel_history_id')
+                if source_id:
+                    rows = [dict(row, source_input_id=source_id) for row in rows]
                 request.session['warehouse_bulk_draft'] = rows
                 request.session.pop('warehouse_bulk_ready', None)
                 return redirect('staff_magacin_opisi_bulk')
@@ -6549,6 +6568,7 @@ def magacin_uvoz(request):
 
     uvozi = attach_uvoz_list_metrics(
         Uvoz.objects.filter(izvor=Uvoz.Izvor.MAGACIN)
+        .exclude(napomena__startswith='[novi-artikli-unos]')
         .select_related('kreirao')
         .order_by('-kreiran')[:200]
     )

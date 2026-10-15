@@ -3,11 +3,13 @@
 {% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/warehouse-import-check.css' %}?v=20261015-blue-workspace">{% endblock %}
 {% block magacin_content %}
 <div class="import-check">
-    <header class="import-check-heading"><h1>Istorija zadnjih uvoza</h1><button type="button" id="mgNavToggle" class="import-check-menu" aria-label="Meni magacina" aria-expanded="false">☰</button></header>
+    <header class="import-check-heading"><h1>Istorija unosa novih artikala</h1><button type="button" id="mgNavToggle" class="import-check-menu" aria-label="Meni magacina" aria-expanded="false">☰</button></header>
     <p><a href="{% url 'staff_magacin_novi_artikli_uvoz' %}">‹ Novi artikli uvoz</a></p>
-    {% if selected_import %}
+    <p>Ovdje su prvi spiskovi iz „Novi artikli uvoz“: postojeći i novi artikli zajedno, uz količinu i fakturnu vrijednost iz prvog kopiranja. Za još nepoznate nazive prikazana je šifra.</p>
+    {% if has_session_input %}<p><a class="import-check-bulk-link" href="{% url 'staff_magacin_novi_uvozi_istorija' %}?posljednji=1">Posljednji prvi unos — svi artikli iz sesije</a></p>{% endif %}
+    {% if selected_import or session_input %}
     <section class="import-check-panel">
-        <h2>{{ selected_import.kreiran|date:'d.m.Y. H:i' }} · {{ selected_import.naziv }} #{{ selected_import.pk }}</h2>
+        <h2>{% if session_input %}Posljednji prvi unos — svi artikli{% else %}{{ selected_import.kreiran|date:'d.m.Y. H:i' }} · {{ selected_import.naziv }} #{{ selected_import.pk }}{% endif %}</h2>
         <p>{{ import_lines|length }} artikala. Prazna polja znače da podatak nije zabilježen pri uvozu. Fakturna vrijednost je vrijednost iz kolone „Fakturna“.</p>
         <div class="import-bulk-table-wrap"><table class="import-bulk-table"><thead><tr><th>Naziv artikla</th><th>Količina</th><th>Fakturna vrijednost</th></tr></thead><tbody>
         {% for row in import_lines %}<tr><td>{{ row.artikal_naziv }}</td><td>{{ row.kolicina|default_if_none:'—' }}</td><td>{{ row.fakturna|default_if_none:'—' }}</td></tr>{% empty %}<tr><td colspan="3">Nema zabilježenih stavki.</td></tr>{% endfor %}
@@ -18,11 +20,11 @@
     </section>
     {% endif %}
     <section class="import-check-panel">
-        <h2>Uvozi po datumu</h2>
+        <h2>Unosi po datumu</h2>
         <div class="import-history-list">{% for item in imports_page %}
         {% ifchanged %}<h3>{{ item.kreiran|date:'d.m.Y.' }}</h3>{% endifchanged %}
         <a class="import-check-bulk-link" href="{% url 'staff_magacin_novi_uvoz_istorija_detail' item.pk %}"><span class="import-history-date">{{ item.kreiran|date:'H:i' }}</span><span class="import-history-name">{{ item.naziv }} #{{ item.pk }}</span><span class="import-history-count">{{ item.broj_redova }} artikala</span></a>
-        {% empty %}<p>Još nema sačuvanih uvoza.</p>{% endfor %}</div>
+        {% empty %}<p>Još nema sačuvanih unosa novih artikala.</p>{% endfor %}</div>
         <nav class="import-history-pagination" aria-label="Stranice istorije uvoza">
         {% if imports_page.has_previous %}<a href="?page={{ imports_page.previous_page_number }}">‹ Prethodna</a>{% endif %}
         <span>{{ imports_page.number }} / {{ imports_page.paginator.num_pages }}</span>

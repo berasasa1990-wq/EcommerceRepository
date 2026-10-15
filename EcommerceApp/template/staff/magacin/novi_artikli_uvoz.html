@@ -4,7 +4,7 @@
 {% block magacin_content %}
 <div class="import-check">
     <header class="import-check-heading"><div><h1>Novi artikli uvoz</h1><p>Provjeri koje šifre još nisu pronađene u nazivima artikala.</p></div><button type="button" id="mgNavToggle" class="import-check-menu" aria-label="Meni magacina" aria-expanded="false">☰</button></header>
-    <p><a class="import-check-bulk-link" href="{% url 'staff_magacin_novi_uvozi_istorija' %}">Istorija zadnjih uvoza</a></p>
+    <p><a class="import-check-bulk-link" href="{% url 'staff_magacin_novi_uvozi_istorija' %}">Istorija unosa novih artikala</a></p>
     <form method="post" class="import-check-panel">
         {% csrf_token %}
         <label for="excelRows">Zalijepi tri kolone iz Excela</label>

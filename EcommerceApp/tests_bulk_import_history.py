@@ -46,7 +46,7 @@ class BulkImportHistoryTests(TestCase):
     def test_history_has_ten_latest_imports_and_excludes_site_imports(self):
         Uvoz.objects.create(naziv='Sajt only', izvor=Uvoz.Izvor.SAJT)
         for i in range(12):
-            Uvoz.objects.create(naziv=f'Magacin {i}', izvor=Uvoz.Izvor.MAGACIN)
+            Uvoz.objects.create(naziv=f'Magacin {i}', izvor=Uvoz.Izvor.MAGACIN, napomena='[novi-artikli-unos]')
         response = self.client.get(reverse('staff_magacin_novi_uvozi_istorija'))
         self.assertEqual(len(response.context['imports_page']), 10)
         self.assertEqual(response.context['imports_page'].paginator.count, 12)
@@ -79,3 +79,33 @@ class BulkImportHistoryTests(TestCase):
         self.assertFalse(Product.objects.filter(naziv='BAD01 FOX štap').exists())
         self.assertFalse(Uvoz.objects.exists())
         self.assertIn('warehouse_bulk_ready', self.client.session)
+
+    def test_full_first_input_keeps_existing_and_new_codes_then_resolves_new_name(self):
+        from .models import Product
+        from .warehouse_import_check import save_input_history
+        old = Product.objects.create(naziv='OLD01 FOX Existing', cijena=10)
+        values = [{'code': 'OLD01', 'kolicina': '7', 'fakturna': '12.50'}, {'code': 'NEW02', 'kolicina': '3', 'fakturna': '4.25'}]
+        entry = save_input_history(values, self.user)
+        self.assertEqual(entry.stavke.count(), 2)
+        self.assertEqual(entry.stavke.get(poruka='OLD01').artikal_naziv, old.naziv)
+        Product.objects.create(naziv='NEW02 KORUM New', cijena=10)
+        response = self.client.get(reverse('staff_magacin_novi_uvoz_istorija_detail', args=[entry.pk]))
+        text = response.context['import_excel_text']
+        self.assertIn('OLD01 FOX Existing\t7.000\t12.5000', text)
+        self.assertIn('NEW02 KORUM New\t3.000\t4.2500', text)
+        returned = save_bulk_import_history([{'naziv': 'NEW02 KORUM New', 'source_input_id': entry.pk}], [], [], self.user)
+        self.assertEqual(returned.pk, entry.pk)
+        self.assertEqual(entry.stavke.count(), 2)
+        self.assertEqual(Uvoz.objects.count(), 1)
+
+    def test_history_excludes_normal_warehouse_imports_and_shows_previous_session_input(self):
+        from .models import Product
+        Uvoz.objects.create(naziv='Real warehouse import', izvor=Uvoz.Izvor.MAGACIN)
+        Product.objects.create(naziv='REC01 FOX Found later', cijena=10)
+        session = self.client.session
+        session['warehouse_excel_values'] = [{'code': 'REC01', 'kolicina': '8', 'fakturna': '9.50'}]
+        session.save()
+        response = self.client.get(reverse('staff_magacin_novi_uvozi_istorija') + '?posljednji=1')
+        self.assertEqual(response.context['imports_page'].paginator.count, 0)
+        self.assertIn('REC01 FOX Found later\t8\t9.50', response.context['import_excel_text'])
+        self.assertNotContains(response, 'Real warehouse import')
