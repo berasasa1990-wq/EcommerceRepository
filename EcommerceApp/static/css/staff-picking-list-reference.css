@@ -1,62 +1,62 @@
 /* Picking overview: silver controls, preserving operational status colors. */
-body.magacin-page.is-picking-list-reference{--pk-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--pk-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--pk-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;--mg-accent:#278922;--mg-accent-hover:#206f1c;background:#dedfe1!important}
-.magacin-page.is-picking-list-reference .mg-app,.magacin-page.is-picking-list-reference .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
+body.magacin-page.is-picking-list-reference{--pk-metal:#f5faff;--pk-panel:#f5faff;--pk-bevel:none;--mg-accent:#0078aa;--mg-accent-hover:#006c99;background:#dedfe1!important}
+.magacin-page.is-picking-list-reference .mg-app,.magacin-page.is-picking-list-reference .mg-main{background:#f5faff;min-height:100vh}
 .magacin-page.is-picking-list-reference .mg-main{padding:4px 10px 18px;min-width:0;color:#111}
 .magacin-page.is-picking-list-reference .pk-home{max-width:none;padding:0}
-.magacin-page.is-picking-list-reference .mg-page-head,.magacin-page.is-picking-list-reference .mg-chrome{padding:8px 12px;margin:0 0 8px;border:1px solid #9b9da2;border-radius:0;background:var(--pk-metal);box-shadow:var(--pk-bevel);gap:8px}
+.magacin-page.is-picking-list-reference .mg-page-head,.magacin-page.is-picking-list-reference .mg-chrome{padding:8px 12px;margin:0 0 8px;border:1px solid #9b9da2;border-radius:10px;background:var(--pk-metal);box-shadow:none;gap:8px}
 .magacin-page.is-picking-list-reference .mg-page-head h1{font-size:22px;line-height:1.2;margin:0;color:#111}
 .magacin-page.is-picking-list-reference .mg-count{font-size:13px;color:#505b6c;margin:5px 0 0}
-.magacin-page.is-picking-list-reference .mg-main .mg-btn,.magacin-page.is-picking-list-reference .mg-filter-tabs a,.magacin-page.is-picking-list-reference .pk-cam{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:0;background:var(--pk-metal);box-shadow:var(--pk-bevel);color:#111;font-size:14px;font-weight:750;text-decoration:none}
+.magacin-page.is-picking-list-reference .mg-main .mg-btn,.magacin-page.is-picking-list-reference .mg-filter-tabs a,.magacin-page.is-picking-list-reference .pk-cam{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:10px;background:var(--pk-metal);box-shadow:none;color:#111;font-size:14px;font-weight:750;text-decoration:none}
 .magacin-page.is-picking-list-reference .mg-filter-tabs{display:flex;gap:7px;margin-bottom:10px;border:0;flex-wrap:wrap}
 .magacin-page.is-picking-list-reference .mg-filter-tabs a{flex:1;text-align:center;justify-content:center}
 .magacin-page.is-picking-list-reference .mg-filter-tabs a.is-active{background:linear-gradient(115deg,#e1f0dc,#bed5b4);border-color:#749168;color:#23551d}
-.magacin-page.is-picking-list-reference .pk-tab-n{border-radius:0;background:#edf0f3;color:#35445d}
-.magacin-page.is-picking-list-reference .mg-card{padding:8px;border:1px solid #9b9da2;border-radius:0;background:var(--pk-panel);box-shadow:inset 1px 1px #fff;min-width:0}
+.magacin-page.is-picking-list-reference .pk-tab-n{border-radius:10px;background:#edf0f3;color:#35445d}
+.magacin-page.is-picking-list-reference .mg-card{padding:8px;border:1px solid #9b9da2;border-radius:10px;background:var(--pk-panel);box-shadow:none;min-width:0}
 .magacin-page.is-picking-list-reference .pk-home-top{gap:8px;margin-bottom:8px}
-.magacin-page.is-picking-list-reference .mg-main input:not([type=hidden]):not([type=checkbox]){min-height:40px;border:1px solid #969faa;border-radius:0;background:#fff;font-size:16px;box-sizing:border-box}
+.magacin-page.is-picking-list-reference .mg-main input:not([type=hidden]):not([type=checkbox]){min-height:40px;border:1px solid #969faa;border-radius:10px;background:#fff;font-size:16px;box-sizing:border-box}
 .magacin-page.is-picking-list-reference .pk-home-search{max-width:none}
-.magacin-page.is-picking-list-reference .pk-release{padding:8px 10px;border:1px solid #a4b69c;border-radius:0;background:#e1ecd9;color:#354d29}
+.magacin-page.is-picking-list-reference .pk-release{padding:8px 10px;border:1px solid #a4b69c;border-radius:10px;background:#e1ecd9;color:#354d29}
 .magacin-page.is-picking-list-reference .mg-table th{padding:7px 8px;border:1px solid #a4aab3;background:var(--pk-metal);font-size:13px;letter-spacing:0;color:#37465e}
 .magacin-page.is-picking-list-reference .mg-table td{padding:7px 8px;border:1px solid #c2c7cf;font-size:14px}
-.magacin-page.is-picking-list-reference .mg-table tr:not(.is-wait-pick) td{background:linear-gradient(115deg,#f5f5f6,#e9e9ec)}
+.magacin-page.is-picking-list-reference .mg-table tr:not(.is-wait-pick) td{background:#f5faff}
 .magacin-page.is-picking-list-reference .mg-order-name{font-size:15px}
-.magacin-page.is-picking-list-reference .mg-pill{border-radius:0}
-.magacin-page.is-picking-list-reference .pk-home-foot{padding:8px;border:1px solid #b3b9c2;border-radius:0;background:var(--pk-panel);font-size:13px;color:#505b6c}
-.magacin-page.is-picking-list-reference .mg-chrome-icon,.magacin-page.is-picking-list-reference .mg-chrome-burger{border-radius:0;background:var(--pk-metal);border:1px solid #92949a;box-shadow:var(--pk-bevel);color:#111}
+.magacin-page.is-picking-list-reference .mg-pill{border-radius:10px}
+.magacin-page.is-picking-list-reference .pk-home-foot{padding:8px;border:1px solid #b3b9c2;border-radius:10px;background:var(--pk-panel);font-size:13px;color:#505b6c}
+.magacin-page.is-picking-list-reference .mg-chrome-icon,.magacin-page.is-picking-list-reference .mg-chrome-burger{border-radius:10px;background:var(--pk-metal);border:1px solid #92949a;box-shadow:none;color:#111}
 .magacin-page.is-picking-list-reference :is(a,button,input):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
-@media(max-width:600px){.magacin-page.is-picking-list-reference .mg-main{padding:4px 6px 18px}.magacin-page.is-picking-list-reference .mg-page-head h1{font-size:20px}.magacin-page.is-picking-list-reference .mg-filter-tabs a{flex-basis:40%}.magacin-page.is-picking-list-reference .mg-table-stack-pick tr{border-radius:0}.magacin-page.is-picking-list-reference .mg-table-stack-pick td{border:0}}
+@media(max-width:600px){.magacin-page.is-picking-list-reference .mg-main{padding:4px 6px 18px}.magacin-page.is-picking-list-reference .mg-page-head h1{font-size:20px}.magacin-page.is-picking-list-reference .mg-filter-tabs a{flex-basis:40%}.magacin-page.is-picking-list-reference .mg-table-stack-pick tr{border-radius:10px}.magacin-page.is-picking-list-reference .mg-table-stack-pick td{border:0}}
 
 /* Active picking uses the same compact warehouse panels as the overview. */
 .is-picking-detail-reference .pk-reference{background:transparent;min-height:0;padding-bottom:12px;max-width:none;width:100%}
-.is-picking-detail-reference .pk-reference :is(.pk-bar,.pk-dock,.pk-meta,.pk-item,.pk-edit-panel,.pk-clear-panel,.pk-shortage-panel){border:1px solid #9b9da2;border-radius:0;background:var(--pk-panel);box-shadow:inset 1px 1px #fff}
-.is-picking-detail-reference .pk-reference .pk-bar{background:var(--pk-metal);padding:8px 10px;gap:8px;box-shadow:var(--pk-bevel)}
+.is-picking-detail-reference .pk-reference :is(.pk-bar,.pk-dock,.pk-meta,.pk-item,.pk-edit-panel,.pk-clear-panel,.pk-shortage-panel){border:1px solid #9b9da2;border-radius:10px;background:var(--pk-panel);box-shadow:none}
+.is-picking-detail-reference .pk-reference .pk-bar{background:var(--pk-metal);padding:8px 10px;gap:8px;box-shadow:none}
 .is-picking-detail-reference .pk-reference .pk-bar-title strong{font-size:20px}
-.is-picking-detail-reference .pk-reference .pk-status-pill{border-radius:0;background:#e1e5e9;color:#37465e;padding:6px 8px}
+.is-picking-detail-reference .pk-reference .pk-status-pill{border-radius:10px;background:#e1e5e9;color:#37465e;padding:6px 8px}
 .is-picking-detail-reference .pk-reference .pk-dock{padding:7px;gap:7px;margin:8px 0}
 .is-picking-detail-reference .pk-reference .pk-stage{max-width:none;padding:0 0 12px}
 .is-picking-detail-reference .pk-reference .pk-sheet{gap:8px}
 .is-picking-detail-reference .pk-reference .pk-meta{padding:9px 6px}
-.is-picking-detail-reference .pk-reference .pk-switch{min-height:44px;border-radius:0;border-color:#9b9da2}
-.is-picking-detail-reference .pk-reference :is(button,.pk-bar-back){border-radius:0;border:1px solid #92949a;background:var(--pk-metal);box-shadow:var(--pk-bevel);color:#111}
+.is-picking-detail-reference .pk-reference .pk-switch{min-height:44px;border-radius:10px;border-color:#9b9da2}
+.is-picking-detail-reference .pk-reference :is(button,.pk-bar-back){border-radius:10px;border:1px solid #92949a;background:var(--pk-metal);box-shadow:none;color:#111}
 .is-picking-detail-reference .pk-reference .pk-bar-back{display:grid;place-items:center;width:32px;height:36px;font-size:24px}
 .is-picking-detail-reference .pk-reference .pk-switch button{padding:6px 4px}
 .is-picking-detail-reference .pk-reference .pk-switch button i{font-size:16px}
 .is-picking-detail-reference .pk-reference .pk-switch button.is-on,.is-picking-detail-reference .pk-reference .pk-switch button.is-on i{background:#d3dfcd;color:#23551d}
 .is-picking-detail-reference .pk-reference .pk-item{padding:10px;margin-bottom:8px;gap:8px}
-.is-picking-detail-reference .pk-reference .pk-item.is-now{border:1px solid #749168;box-shadow:inset 1px 1px #fff}
-.is-picking-detail-reference .pk-reference .pk-item-img{border-radius:0;background-color:#fff}
-.is-picking-detail-reference .pk-reference .pk-now-go{padding:8px;border:1px solid #a8b8a1;border-radius:0;background:#e1ecd9}
+.is-picking-detail-reference .pk-reference .pk-item.is-now{border:1px solid #749168;box-shadow:none}
+.is-picking-detail-reference .pk-reference .pk-item-img{border-radius:10px;background-color:#fff}
+.is-picking-detail-reference .pk-reference .pk-now-go{padding:8px;border:1px solid #a8b8a1;border-radius:10px;background:#e1ecd9}
 .is-picking-detail-reference .pk-reference .pk-now-go :is(span,b,small){color:#31532a}
-.is-picking-detail-reference .pk-reference .pk-item-step{border-radius:0;background:#e1e2e4}
+.is-picking-detail-reference .pk-reference .pk-item-step{border-radius:10px;background:#e1e2e4}
 .is-picking-detail-reference .pk-reference .pk-item-step>button{height:40px;font-size:22px}
 .is-picking-detail-reference .pk-reference .pk-item-step .pk-all{font-size:14px}
 .is-picking-detail-reference .pk-reference .pk-step-val b{font-size:20px}
 .is-picking-detail-reference .pk-reference :is(.pk-quick-quantities button,.pk-less-row button){min-height:36px;height:36px}
 .is-picking-detail-reference .pk-reference .pk-quick-quantities button[aria-pressed="true"]{border:2px solid #749168;background:#d3dfcd}
-.is-picking-detail-reference .pk-reference :is(.pk-bar-finish,.pk-all,.pk-confirm-quantity){background:linear-gradient(115deg,#4caf36,#278922);border:1px solid #296922;color:#fff;box-shadow:inset 1px 1px #8ed47b,inset -1px -1px #20651c}
-.is-picking-detail-reference .pk-reference :is(.pk-dock .mg-btn,.pk-bar-finish,.pk-confirm-quantity){min-height:38px;padding:7px 9px;border-radius:0;font-size:14px}
+.is-picking-detail-reference .pk-reference :is(.pk-bar-finish,.pk-all,.pk-confirm-quantity){background:linear-gradient(115deg,#4caf36,#278922);border:1px solid #296922;color:#fff;box-shadow:none}
+.is-picking-detail-reference .pk-reference :is(.pk-dock .mg-btn,.pk-bar-finish,.pk-confirm-quantity){min-height:38px;padding:7px 9px;border-radius:10px;font-size:14px}
 .is-picking-detail-reference .pk-reference .pk-cancel-form .mg-btn{color:#a32121}
-.is-picking-detail-reference .pk-reference :is(.pk-edit-box,.pk-clear-panel button){border-radius:0}
+.is-picking-detail-reference .pk-reference :is(.pk-edit-box,.pk-clear-panel button){border-radius:10px}
 .is-picking-detail-reference .pk-reference :is(.pk-edit-box summary,.pk-clear-panel button){padding:9px;min-height:38px;font-size:14px}
 .is-picking-detail-reference .pk-reference .pk-shortage-panel{max-width:none;margin:8px 0;padding:10px}
 .is-picking-detail-reference .pk-reference button:disabled{opacity:.5;cursor:not-allowed}
@@ -65,7 +65,7 @@ body.magacin-page.is-picking-list-reference{--pk-metal:linear-gradient(115deg,#e
 /* Tap the current picking count to enter an exact quantity. */
 .is-picking-detail-reference .pk-step-val{cursor:pointer}
 .is-picking-detail-reference .pk-step-val:focus-visible{outline:2px solid #64748b;outline-offset:3px}
-.is-picking-detail-reference .pk-step-val .pk-direct-qty{box-sizing:border-box;width:100%;min-width:65px;max-width:125px;min-height:44px;padding:5px;border:1px solid #8d959f;border-radius:0;background:#fff;color:#111;font-size:20px;text-align:center}
+.is-picking-detail-reference .pk-step-val .pk-direct-qty{box-sizing:border-box;width:100%;min-width:65px;max-width:125px;min-height:44px;padding:5px;border:1px solid #8d959f;border-radius:10px;background:#fff;color:#111;font-size:20px;text-align:center}
 .is-picking-detail-reference .pk-step-val [hidden]{display:none!important}
 @media(max-width:860px){.is-picking-detail-reference .pk-quick-quantities{display:none!important}}
 

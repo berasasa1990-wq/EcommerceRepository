@@ -1,26 +1,75 @@
-.import-check{max-width:1100px;margin:0 auto;color:#17263c}
-.import-check-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}
-.import-check h1{font-size:28px;line-height:1.25;margin:0 0 8px}
-.import-check h2{font-size:21px;margin:0 0 12px}
-.import-check p{font-size:14px;line-height:1.6;color:#64748b;margin:0 0 14px}
-.import-check-panel{padding:22px;margin-bottom:20px;border:1px solid #dce4ed;border-radius:12px;background:#fff}
-.import-check label{display:block;font-size:15px;font-weight:650;margin-bottom:10px}
-.import-check textarea{box-sizing:border-box;display:block;width:100%;max-width:100%;padding:14px;margin:0 0 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fbfdff;color:#17263c;font:13px/1.6 ui-monospace,monospace;resize:vertical;tab-size:16;white-space:pre;overflow:auto}
-.import-check textarea:focus-visible{outline:2px solid #008cb6;outline-offset:2px}
-.import-check button{padding:10px 16px;border:0;border-radius:8px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;line-height:1.4}
-.import-check .import-check-note{font-size:12px;margin:14px 0 0}
-.import-check .import-check-error{color:#b42318}
-.import-check .import-check-success{color:#187744}
-#copyMissingStatus{display:inline-block;font-size:13px;margin:8px 12px;color:#64748b}
-.import-check .import-check-menu{display:none}
-@media(max-width:1024px){.import-check .import-check-menu{display:block}}
-@media(max-width:600px){.import-check h1{font-size:23px}.import-check-panel{padding:16px}.import-check textarea{font-size:12px}.import-check p{font-size:13px}}
-.import-check-bulk-link{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border:1px solid #cbd5e1;border-radius:8px;color:#17263c;background:#fff;text-decoration:none;font-size:14px;font-weight:600;margin:4px 0}
-.import-bulk-table-wrap{overflow:auto;margin-bottom:18px}
-.import-bulk-table{width:100%;border-collapse:collapse;font-size:14px}
-.import-bulk-table th{text-align:left;padding:10px 8px;color:#64748b}
-.import-bulk-table td{padding:8px;border-top:1px solid #e2e8f0}
-.import-bulk-table td:first-child{width:70%}
-.import-bulk-table input,.import-bulk-table select{box-sizing:border-box;display:block;width:100%;min-width:140px;min-height:40px;padding:8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#17263c;font:inherit}
-.import-bulk-table input{min-width:220px}
+/* Import workspace: one blue palette shared with the warehouse menu. */
+.import-check{
+  --site-action-gradient:linear-gradient(180deg,#009fc2,#0078aa);
+  --import-blue:#0078aa;
+  --import-line:#d5e7f1;
+  box-sizing:border-box;
+  width:100%;
+  max-width:1280px;
+  min-width:0;
+  margin:0 auto;
+  color:#172f4d;
+}
+.import-check *, .import-check *::before, .import-check *::after{box-sizing:border-box}
+.import-check-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.import-check h1{font-size:clamp(23px,2.3vw,32px);line-height:1.2;letter-spacing:-.025em;margin:0 0 8px;font-weight:750}
+.import-check h2{font-size:20px;line-height:1.35;margin:0 0 12px}
+.import-check h3{font-size:14px;font-weight:700;color:var(--import-blue);margin:24px 0 10px}
+.import-check p{font-size:14px;line-height:1.65;color:#617891;margin:0 0 14px;overflow-wrap:anywhere}
+.import-check-heading p{margin:0;max-width:760px}
+.import-check a{color:var(--import-blue);text-underline-offset:3px}
+.import-check-panel{min-width:0;padding:clamp(18px,2.4vw,30px);margin-bottom:20px;border:1px solid var(--import-line);border-radius:16px;background:#fff;box-shadow:none}
+.import-check label{display:block;font-size:16px;font-weight:700;line-height:1.4;margin-bottom:8px}
+.import-check textarea{display:block;width:100%;max-width:100%;min-height:160px;max-height:420px;padding:16px;margin:16px 0;border:1px solid #c8dfeb;border-radius:10px;background:#f7fbfd;color:#172f4d;font:13px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;resize:vertical;tab-size:12;white-space:pre;overflow:auto;box-shadow:none}
+.import-check textarea::placeholder{color:#8a9db0;opacity:1}
+.import-check :is(textarea,input,select):focus-visible{outline:2px solid #009fc2;outline-offset:2px;border-color:#009fc2}
+.import-check button,.import-check .import-check-bulk-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;max-width:100%;padding:10px 18px;border:1px solid transparent;border-radius:9px;background:var(--site-action-gradient);color:#fff;font-family:inherit;font-size:14px;font-weight:600;line-height:1.4;text-align:center;text-decoration:none;cursor:pointer;box-shadow:none;text-shadow:none;vertical-align:middle;overflow-wrap:anywhere}
+.import-check button{font-family:inherit;font-size:14px;font-weight:600;line-height:1.4}
+.import-check button:hover{--site-action-gradient:linear-gradient(180deg,#008fb1,#006c99)}
+.import-check :is(button,a):focus-visible{outline:3px solid #009fc2;outline-offset:3px}
+.import-check button:disabled{opacity:.5;cursor:wait}
+.import-check .import-check-bulk-link{background:#eff9fd;border-color:#c5e4f1;color:var(--import-blue);font-family:inherit;font-size:14px;font-weight:650;line-height:1.4;margin:4px 0}
+.import-check .import-check-bulk-link:hover{background:#e0f2fa;border-color:#8dcce3}
+.import-check-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:16px}
+.import-check .import-check-note{font-size:12px;line-height:1.65;margin:16px 0 0;padding-top:14px;border-top:1px solid #e8f1f6}
+.import-check :is(.import-check-error,.import-check-success){padding:12px 16px;border:1px solid;border-radius:9px;font-size:14px}
+.import-check .import-check-error{color:#a42c24;background:#fff6f5;border-color:#f1d4d0}
+.import-check .import-check-success{color:#187744;background:#f2fbf6;border-color:#cee9db}
+.import-check .import-check-error:empty,.import-check #bulkPreviewStatus:empty{display:none}
+.import-check :is(#copyMissingStatus,#copyImportStatus,#bulkPreviewStatus){font-size:13px;color:#617891;line-height:1.5}
+.import-check #bulkPreviewStatus{margin:0 0 14px}
+.import-check .import-check-menu{display:none;flex:0 0 42px;width:42px;height:42px;padding:8px;font-size:20px}
+.import-bulk-table-wrap{max-width:100%;overflow:auto;margin:16px 0 18px;border:1px solid var(--import-line);border-radius:10px}
+.import-bulk-table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.5;background:#fff}
+.import-bulk-table th{text-align:left;padding:12px 14px;background:#eff8fc;color:#42667f;font-size:12px;font-weight:700;white-space:nowrap}
+.import-bulk-table td{padding:12px 14px;border-top:1px solid #e2edf3;vertical-align:top;overflow-wrap:anywhere}
+.import-bulk-table tbody tr:nth-child(even){background:#fbfdfe}
+.import-bulk-table th:first-child{width:58%}
+.import-bulk-table :is(input,select){display:block;width:100%;min-width:140px;min-height:42px;padding:9px 10px;border:1px solid #c8dfeb;border-radius:7px;background:#fff;color:#172f4d;font:inherit;box-shadow:none}
+.import-bulk-table input{min-width:240px}
+.import-history-list{display:grid;gap:8px}
+.import-history-list h3{margin:14px 0 4px}
+.import-history-list .import-check-bulk-link{display:flex;justify-content:space-between;gap:16px;padding:14px 16px;text-align:left;margin:0}
+.import-history-date{flex-shrink:0;font-variant-numeric:tabular-nums;font-weight:700}
+.import-history-name{flex:1;min-width:0;overflow-wrap:anywhere}
+.import-history-count{flex-shrink:0;font-size:12px;font-weight:500}
+.import-history-pagination{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:18px;margin-top:22px;font-size:13px;color:#617891}
 .import-check [hidden]{display:none!important}
+@media(max-width:1100px){.import-check .import-check-menu{display:inline-flex}}
+@media(max-width:600px){
+  .import-check-heading{align-items:flex-start;gap:10px;margin-bottom:16px}
+  .import-check h1{font-size:23px}
+  .import-check h2{font-size:18px}
+  .import-check-panel{padding:16px;border-radius:12px;margin-bottom:14px}
+  .import-check p{font-size:13px;line-height:1.6}
+  .import-check textarea{padding:12px;font-size:12px;max-height:320px;tab-size:8}
+  .import-check-actions{align-items:stretch;gap:8px}
+  .import-check-actions>:is(button,a){flex:1 1 160px;margin:0}
+  .import-check-actions>[role=status]{flex:1 1 100%}
+  .import-check-panel>button,.import-check-panel>form>button{width:100%}
+  .import-bulk-table{font-size:13px}
+  .import-bulk-table :is(th,td){padding:10px}
+  .import-history-list .import-check-bulk-link{flex-wrap:wrap;gap:6px 12px;padding:12px}
+  .import-history-name{flex-basis:calc(100% - 64px)}
+  .import-history-count{margin-left:48px}
+}

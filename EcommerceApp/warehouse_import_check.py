@@ -230,3 +230,73 @@ def prepare_bulk_descriptions(rows, pasted):
     if missing:
         raise ValueError('Nedostaje opis za: ' + '; '.join(missing))
     return [dict(row, opis=descriptions[index]) for index, row in enumerate(rows)]
+
+
+def excel_import_values(pasted):
+    """Keep quantity/invoice cells for the later bulk draft (no stock changes)."""
+    parse_excel_codes(pasted)
+    values = []
+    seen = set()
+    for row in csv.reader(io.StringIO(pasted, newline=''), delimiter='\t', strict=True):
+        if not any(cell.strip() for cell in row):
+            continue
+        code = row[0].strip().lstrip('\ufeff')
+        if normalize(code) in {'šifra', 'sifra', 'sku', 'code'} or normalize(code) in seen:
+            continue
+        seen.add(normalize(code))
+        values.append({'code': code, 'kolicina': row[1].strip(), 'fakturna': row[2].strip()})
+    return values
+
+
+def attach_import_values(rows, values):
+    from types import SimpleNamespace
+    products = [SimpleNamespace(pk=i, naziv=row['naziv'], sifra='') for i, row in enumerate(rows)]
+    result = [dict(row) for row in rows]
+    for value in values:
+        matches = match_description_product(value['code'], products)
+        if len(matches) == 1:
+            result[matches[0].pk].update({key: value[key] for key in ('kolicina', 'fakturna')})
+    return result
+
+
+def save_bulk_import_history(rows, created, skipped, user):
+    from decimal import Decimal, InvalidOperation
+    from .models import Uvoz, UvozStavka
+
+    def number(value, places):
+        raw = str(value or '').strip().replace('\u00a0', '').replace(' ', '')
+        if not raw:
+            return None
+        if ',' in raw:
+            raw = raw.replace('.', '').replace(',', '.')
+        try:
+            result = Decimal(raw)
+            if not result.is_finite() or result < 0 or result >= Decimal(10) ** (12 - places) or result != result.quantize(Decimal(10) ** -places):
+                raise InvalidOperation
+            return result
+        except InvalidOperation as exc:
+            raise ValueError(f'Neispravna količina ili fakturna vrijednost: {value}') from exc
+
+    lines = [(row, number(row.get('kolicina'), 3), number(row.get('fakturna'), 4)) for row in rows]
+    uvoz = Uvoz.objects.create(
+        naziv='Novi artikli bulk', izvor=Uvoz.Izvor.MAGACIN, kreirao=user,
+        broj_redova=len(rows), broj_kreirano=len(created), broj_azurirano=len(skipped),
+        zaliha_primljena=False, napomena='Bulk unos naziva, brenda i opisa. Količine su iz izvornog Excela; ovaj unos ne mijenja lager.',
+    )
+    for index, (row, qty, invoice) in enumerate(lines, 1):
+        UvozStavka.objects.create(uvoz=uvoz, artikal_naziv=row['naziv'], kolicina=qty,
+                                 fakturna=invoice, redoslijed=index, status=UvozStavka.Status.CREATED if row['naziv'] not in skipped else UvozStavka.Status.UPDATED)
+    return uvoz
+
+
+def import_history_tsv(rows):
+    output = io.StringIO(newline='')
+    writer = csv.writer(output, delimiter='\t', lineterminator='\n')
+    writer.writerow(['Naziv artikla', 'Količina', 'Fakturna vrijednost'])
+    for row in rows:
+        name = row.artikal_naziv
+        if name.lstrip().startswith(('=', '+', '-', '@')):
+            name = "'" + name
+        writer.writerow([name, '' if row.kolicina is None else format(row.kolicina, 'f'),
+                         '' if row.fakturna is None else format(row.fakturna, 'f')])
+    return output.getvalue()

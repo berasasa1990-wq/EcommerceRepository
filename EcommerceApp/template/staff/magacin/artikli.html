@@ -1,7 +1,7 @@
 {% extends 'staff/magacin/base.html' %}
 {% load static %}
 {% block body_class %}{{ block.super }} is-article-stock{% endblock %}
-{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/warehouse-stock-list.css' %}?v=20261015">{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/warehouse-stock-list.css' %}?v=20261015-single-article-layout">{% endblock %}
 {% block magacin_content %}
 <form class="stock-search" id="mgArticleSearchForm" role="search" method="get" action="{% url 'staff_magacin_artikli' %}">
     <div class="stock-search-heading"><label for="mgArticleSearch">Pretraga artikala</label><button type="button" id="mgNavToggle" class="stock-menu" aria-label="Meni magacina" aria-expanded="false">☰</button></div>

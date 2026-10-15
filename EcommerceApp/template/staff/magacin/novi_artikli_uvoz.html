@@ -1,9 +1,10 @@
 {% extends 'staff/magacin/base.html' %}
 {% load static %}
-{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/warehouse-import-check.css' %}?v=20261015">{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/warehouse-import-check.css' %}?v=20261015-blue-workspace">{% endblock %}
 {% block magacin_content %}
 <div class="import-check">
     <header class="import-check-heading"><div><h1>Novi artikli uvoz</h1><p>Provjeri koje šifre još nisu pronađene u nazivima artikala.</p></div><button type="button" id="mgNavToggle" class="import-check-menu" aria-label="Meni magacina" aria-expanded="false">☰</button></header>
+    <p><a class="import-check-bulk-link" href="{% url 'staff_magacin_novi_uvozi_istorija' %}">Istorija zadnjih uvoza</a></p>
     <form method="post" class="import-check-panel">
         {% csrf_token %}
         <label for="excelRows">Zalijepi tri kolone iz Excela</label>
@@ -20,7 +21,7 @@
         {% if missing_codes %}
         <label for="missingCodes">Šifre za provjeru i unos</label>
         <textarea id="missingCodes" readonly rows="10" spellcheck="false">{{ missing_codes_text }}</textarea>
-        <button type="button" class="import-check-copy" id="copyMissingCodes">Kopiraj šifre</button> <a class="import-check-bulk-link" href="{% url 'staff_magacin_artikli_bulk' %}">Dodaj artikle bulk</a><span id="copyMissingStatus" role="status"></span>
+        <div class="import-check-actions"><button type="button" class="import-check-copy" id="copyMissingCodes">Kopiraj šifre</button> <a class="import-check-bulk-link" href="{% url 'staff_magacin_artikli_bulk' %}">Dodaj artikle bulk</a><span id="copyMissingStatus" role="status"></span></div>
         {% else %}<p class="import-check-success">Sve šifre pronađene su u nazivima postojećih artikala.</p>{% endif %}
     </section>
     {% endif %}

@@ -1895,7 +1895,8 @@ def search_suggest(request):
     )
 
     has_more = len(pool) > limit
-    products = pool[:limit]
+    from .storefront_stock import storefront_products
+    products = storefront_products(pool[:limit])
 
     results = []
     for product in products:
@@ -3402,6 +3403,8 @@ def product_detail(request, slug):
         ),
         slug=slug,
     )
+    from .storefront_stock import storefront_products
+    product = storefront_products([product])[0]
     in_stock_variations = [v for v in product.varijacije.all() if v.na_stanju]
     product_available = bool(product.na_stanju or in_stock_variations)
     lcp_image_url = None
@@ -3413,7 +3416,7 @@ def product_detail(request, slug):
         lcp_image_url = request.build_absolute_uri(product.prikazna_slika.url)
 
     related_products = _related_category_products(product, request=request)
-    similar_name_products = find_similar_name_products(product, _product_queryset(request))
+    similar_name_products = storefront_products(find_similar_name_products(product, _product_queryset(request)))
     site_settings = SiteSettings.load()
     kategorija_naziv = product.kategorija.naziv if product.kategorija else ''
 
@@ -3726,7 +3729,7 @@ def add_to_cart(request, slug):
         or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     )
 
-    if not product.na_stanju and not product.varijacije.exists():
+    if not product.varijacije.exists() and stock_on_hand(product) <= 0:
         msg = 'Artikal je rasprodan.'
         if stay_on_page:
             return JsonResponse({'ok': False, 'message': msg}, status=400)
@@ -3767,10 +3770,13 @@ def add_to_cart(request, slug):
     if product.varijacije.exists():
         if variation_id:
             variation = get_object_or_404(
-                ProductVariation, pk=variation_id, artikal=product, na_stanju=True,
+                ProductVariation, pk=variation_id, artikal=product,
             )
         else:
-            in_stock = product.varijacije.filter(na_stanju=True).order_by('redoslijed', 'id')
+            from .storefront_stock import storefront_products
+            live_product = storefront_products([product])[0]
+            live_ids = [variant.pk for variant in live_product.varijacije.all() if variant.na_stanju]
+            in_stock = product.varijacije.filter(pk__in=live_ids).order_by('redoslijed', 'id')
             if is_gratis_popup_add and in_stock.exists():
                 variation = in_stock.first()
             elif is_qty_deal_popup_add and in_stock.exists():
@@ -3785,17 +3791,17 @@ def add_to_cart(request, slug):
                 return redirect('product_detail', slug=slug)
     elif variation_id:
         variation = get_object_or_404(
-            ProductVariation, pk=variation_id, artikal=product, na_stanju=True,
+            ProductVariation, pk=variation_id, artikal=product,
         )
 
     # Double-check stock on the chosen item
-    if variation and not variation.na_stanju:
+    if variation and stock_on_hand(product, variation) <= 0:
         msg = 'Varijanta je rasprodana.'
         if stay_on_page:
             return JsonResponse({'ok': False, 'message': msg}, status=400)
         messages.error(request, msg)
         return redirect('product_detail', slug=slug)
-    if not variation and not product.na_stanju:
+    if not variation and stock_on_hand(product) <= 0:
         msg = 'Artikal je rasprodan.'
         if stay_on_page:
             return JsonResponse({'ok': False, 'message': msg}, status=400)

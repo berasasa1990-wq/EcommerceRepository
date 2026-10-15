@@ -39,7 +39,7 @@
     flex-wrap: nowrap;
     align-items: center;
     gap: 12px;
-    background: linear-gradient(115deg, #101b2b, #0b1320);
+    background: #f5faff;
     color: #fff;
     border: 0;
 }
@@ -100,7 +100,7 @@
     background: #fff;
     border-radius: 16px;
     padding: 12px;
-    box-shadow: 0 4px 20px rgba(35, 56, 83, 0.06);
+    box-shadow:none;
 }
 .prenos-product-image {
     min-height: 150px;
@@ -185,7 +185,7 @@
     padding: 16px 14px 14px;
     background: #fff;
     border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(35, 56, 83, 0.06);
+    box-shadow:none;
 }
 .prenos-quantity-heading {
     display: flex;
@@ -285,7 +285,7 @@
     font-weight: 800;
     letter-spacing: 0;
     text-transform: none;
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.12);
+    box-shadow:none;
     cursor: pointer;
 }
 .pk-prenos .pk-prenos-valid svg {
@@ -309,7 +309,7 @@
     font: inherit;
     font-size: 16px;
     font-weight: 700;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    box-shadow:none;
     cursor: pointer;
 }
 .pk-prenos-cancel svg {
@@ -376,7 +376,7 @@
     .pk-prenos .pk-prenos-screen {
         padding: 18px 16px 28px;
         min-height: calc(100dvh - 70px);
-        border-radius: 0;
+        border-radius:10px;
     }
     .prenos-product-card {
         grid-template-columns: 180px minmax(0, 1fr);

@@ -8,7 +8,7 @@
 .pk-reference .pk-status-pill { background: #fff0e3; color: #ff7600; padding: 9px 12px; border-radius: 30px; font-size: 12px; white-space: nowrap; }
 .pk-reference .pk-status-pill::before { content: ''; display: inline-block; width: 8px; height: 8px; background: currentColor; border-radius: 50%; margin-right: 7px; }
 .pk-reference .pk-bar-scan { grid-column: 1; width: 30px; height: 30px; }
-.pk-reference .pk-dock { position: static; display: grid; grid-template-columns: 1fr .9fr 1.55fr; gap: 10px; margin: 0; padding: 10px 12px 12px; background: #fff; border: 0; box-shadow: none; }
+.pk-reference .pk-dock { position: static; display: grid; grid-template-columns: 1fr .9fr 1.55fr; gap: 10px; margin: 0; padding: 10px 12px 12px; background: #fff; border: 0; box-shadow:none; }
 .pk-reference .pk-dock .mg-btn, .pk-reference .pk-bar-finish { width: 100%; min-height: 46px; margin: 0; padding: 10px 8px; border: 1px solid #dce3eb; border-radius: 11px; font-size: 14px; font-weight: 700; justify-content: center; white-space: normal; }
 .pk-reference .pk-dock > .mg-btn { background: #f6f8fa; color: #070b15; }
 .pk-reference .pk-cancel-form { margin: 0; width: 100%; }
@@ -16,7 +16,7 @@
 .pk-reference .pk-bar-finish { background: #ff7900; border-color: #ff7900; color: white; }
 .pk-reference .pk-reset { display: none; }
 .pk-reference .pk-stage { max-width: 920px; padding: 10px 10px 24px; }
-.pk-reference .pk-sheet { display: flex; flex-direction: column; gap: 14px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.pk-reference .pk-sheet { display: flex; flex-direction: column; gap: 14px; padding: 0; border: 0; background: transparent; box-shadow:none; }
 .pk-reference .pk-meta { display: grid; grid-template-columns: 1.15fr .85fr 1.15fr; gap: 0; margin: 0; padding: 15px 10px; border: 1px solid #e2e8f0; border-radius: 13px; background: white; }
 .pk-reference .pk-meta-row { display: block; min-width: 0; padding: 0 9px; border: 0; }
 .pk-reference .pk-meta-row + .pk-meta-row { border-left: 1px solid #e6ebf1; }
@@ -31,8 +31,8 @@
 .pk-reference .pk-list-h { font-size: 18px; color: #080d18; margin: 0; }
 .pk-item-navigation { display: flex; gap: 8px; }
 .pk-item-navigation button { width: 38px; height: 34px; background: #f8fafc; border: 1px solid #d8e1eb; border-radius: 10px; color: #526077; font-size: 24px; }
-.pk-reference .pk-item { position: relative; display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 14px 10px; padding: 18px 14px; margin: 0 0 14px; border: 0; border-radius: 15px; box-shadow: none; background: white; }
-.pk-reference .pk-item.is-now { border: 0; box-shadow: none; }
+.pk-reference .pk-item { position: relative; display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 14px 10px; padding: 18px 14px; margin: 0 0 14px; border: 0; border-radius: 15px; box-shadow:none; background: white; }
+.pk-reference .pk-item.is-now { border: 0; box-shadow:none; }
 .pk-reference .pk-item-top { grid-column: 1; grid-row: 1; display: flex; gap: 12px; min-width: 0; margin: 0; padding: 0; align-items: flex-start; }
 .pk-reference .pk-item-n { position: absolute; top: 10px; left: 10px; font-size: 11px; color: #111827; background: none; }
 .pk-reference .pk-item-img { flex: 0 0 70px; width: 70px; height: 74px; margin: 4px 0 0; border-radius: 11px; background-color: #edf2f6; background-size: contain; background-position: center; background-repeat: no-repeat; }

@@ -1,0 +1,131 @@
+/* Shared warehouse controls and surfaces. Route styles retain layout only. */
+html body.magacin-page{
+  --site-action-gradient:linear-gradient(180deg,#009fc2,#0078aa);
+  --mg-green:#0078aa;
+  --mg-green-soft:#eff8fc;
+  --mg-green-text:#0078aa;
+  --mg-green-num:#187744;
+  --mg-accent:#0078aa;
+  --mg-accent-hover:#006c99;
+  --mg-accent-soft:#eff8fc;
+  --mg-accent-line:#c5e4f1;
+  --mg-bg:#f5faff;
+  --mg-card:#fff;
+  --mg-line:#d5e7f1;
+  --mg-muted:#617891;
+  --mg-label:#617891;
+  --mg-text:#172f4d;
+  --mg-radius:14px;
+  background:var(--mg-bg)!important;
+}
+html body.magacin-page .mg-app{background:var(--mg-bg);color:var(--mg-text)}
+html body.magacin-page .mg-main{
+  min-width:0;
+  background:var(--mg-bg);
+  color:var(--mg-text);
+  padding:24px;
+}
+html body.magacin-page .mg-main :is(h1,h2,h3,h4){color:var(--mg-text);line-height:1.3;overflow-wrap:anywhere}
+html body.magacin-page .mg-main h1{font-size:clamp(23px,2.3vw,32px);letter-spacing:-.025em}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(.mg-card,.mg-panel,.mg-orders-panel,.pn-panel,.vp-panel,.pk-panel,.pt-panel,.up-panel,.item-panel,.mg-modal-card,.mg-modal-content,.mg-modal-panel,.mg-set-card){
+  background:#fff;
+  border:1px solid var(--mg-line);
+  border-radius:14px;
+  box-shadow:none;
+  min-width:0;
+}
+html body.magacin-page .mg-main :is(.mg-toolbar,.mg-page-head,.mg-bulk-bar,.mg-mini-stat,.mg-chrome){
+  background:#fff;
+  border:1px solid var(--mg-line);
+  border-radius:12px;
+  box-shadow:none;
+  padding:14px 16px;
+  gap:12px;
+}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(input,select,textarea):not(:is([type=checkbox],[type=radio],[type=range],[type=color],[type=hidden],[type=submit],[type=button])){
+  box-sizing:border-box;
+  max-width:100%;
+  min-width:0;
+  border:1px solid #c8dfeb;
+  border-radius:9px;
+  background:#fff;
+  color:var(--mg-text);
+  box-shadow:none;
+  font:inherit;
+  padding:10px 12px;
+}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(input,select):not(:is([type=checkbox],[type=radio],[type=range],[type=color],[type=hidden])){min-height:42px}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) textarea{line-height:1.65;resize:vertical}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(input,select,textarea):focus-visible{outline:2px solid #009fc2;outline-offset:2px;border-color:#009fc2}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(input[type=checkbox],input[type=radio]){accent-color:#0078aa}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(button,.mg-btn,.pn-btn,.vp-btn,.pk-btn,.pt-btn,.up-btn,input[type=submit]){
+  --site-action-gradient:linear-gradient(180deg,#009fc2,#0078aa);
+  border:1px solid transparent;
+  border-radius:9px;
+  box-shadow:none!important;
+  text-shadow:none!important;
+  font-family:inherit;
+  font-weight:600;
+  line-height:1.4;
+  cursor:pointer;
+}
+html body.magacin-page .mg-main :is(.mg-btn,.pn-btn,.vp-btn,.pk-btn,.pt-btn,.up-btn){display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:9px 15px;text-decoration:none}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(button,.mg-btn,.pn-btn,.vp-btn,.pk-btn,.pt-btn,.up-btn):hover{--site-action-gradient:linear-gradient(180deg,#008fb1,#006c99)}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(.mg-btn-secondary,.mg-btn-light,.mg-btn-outline,.mg-btn-ghost,.mg-chrome-burger,.mg-chrome-icon){
+  --site-action-gradient:linear-gradient(#eff8fc,#eff8fc);
+  color:#0078aa!important;
+  border-color:#c5e4f1;
+}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(.mg-btn-danger,.is-danger,[data-variant=danger]){
+  --site-action-gradient:linear-gradient(#c7443b,#ad312a);
+  color:#fff!important;
+}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(button:disabled,.mg-btn.is-disabled){opacity:.5;cursor:not-allowed;filter:none}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(button,a):focus-visible{outline:3px solid #009fc2;outline-offset:3px}
+html body.magacin-page .mg-main :is(.mg-filter-tabs,.mg-mode-tabs,.mg-tabs,.up-tabs){gap:8px;flex-wrap:wrap}
+html body.magacin-page .mg-main :is(.mg-filter-tabs,.mg-mode-tabs,.mg-tabs,.up-tabs) :is(a,button){
+  --site-action-gradient:linear-gradient(#fff,#fff);
+  background:#fff;
+  color:#0078aa!important;
+  border:1px solid #c5e4f1;
+  border-radius:9px;
+  box-shadow:none;
+  padding:9px 14px;
+}
+html body.magacin-page .mg-main :is(.mg-filter-tabs,.mg-mode-tabs,.mg-tabs,.up-tabs) :is(.is-active,.is-on,[aria-selected=true]){
+  --site-action-gradient:linear-gradient(#009fc2,#0078aa);
+  background:var(--site-action-gradient);
+  color:#fff!important;
+  border-color:#0078aa;
+}
+html body.magacin-page .mg-main :is(.mg-table-wrap,.import-bulk-table-wrap){max-width:100%;overflow-x:auto;border:1px solid var(--mg-line);border-radius:10px}
+html body.magacin-page .mg-main :is(.mg-table,.pn-table,.vp-table,.pt-table,.up-table){border-collapse:collapse;width:100%;font-size:14px;background:#fff}
+html body.magacin-page .mg-main :is(.mg-table,.pn-table,.vp-table,.pt-table,.up-table) th{padding:12px;background:#eff8fc;color:#42667f;border-color:var(--mg-line);font-weight:700;box-shadow:none}
+html body.magacin-page .mg-main :is(.mg-table,.pn-table,.vp-table,.pt-table,.up-table) td{padding:11px 12px;border-color:#e2edf3;box-shadow:none;vertical-align:middle}
+html body.magacin-page .mg-main .mg-table tr:not(:is(.has-short-pick,.is-mp-lock,.is-error,.is-warning)) td{background:#fff}
+html body.magacin-page .mg-main .mg-table tr.is-clickable:hover td{background:#f0f9fd}
+html body.magacin-page :is(.mg-modal,dialog){color:#172f4d}
+html body.magacin-page dialog{border:1px solid #d5e7f1;border-radius:14px;box-shadow:none;max-width:calc(100vw - 24px)}
+html body.magacin-page :is(.mg-modal-head,.mg-modal-header){border-bottom-color:#d5e7f1;background:#eff8fc;color:#172f4d}
+html body.magacin-page .mg-main :is(.mg-page-search,.mg-chrome-search){min-width:0}
+@media(max-width:700px){
+  html body.magacin-page .mg-main{padding:14px 12px}
+  html body.magacin-page .mg-main :is(.mg-toolbar,.mg-page-head,.mg-bulk-bar,.mg-chrome){padding:12px;gap:10px;flex-wrap:wrap}
+  html body.magacin-page .mg-main :is(.mg-card,.mg-panel,.mg-orders-panel){border-radius:12px}
+  html body.magacin-page .mg-main :is(.mg-toolbar-actions,.mg-form-actions){display:flex;gap:8px;flex-wrap:wrap}
+  html body.magacin-page .mg-main :is(.mg-toolbar-actions,.mg-form-actions) .mg-btn{flex:1 1 auto}
+  html body.magacin-page .mg-main :is(.mg-table,.pn-table,.vp-table,.pt-table,.up-table){font-size:13px}
+}
+@media print{
+  html body.magacin-page,html body.magacin-page :is(.mg-app,.mg-main){background:#fff!important;color:#000}
+  html body.magacin-page .mg-main{padding:0}
+}
+
+html body.magacin-page .mg-app{
+  --mg-accent:#0078aa;
+  --mg-accent-hover:#006c99;
+  --mg-accent-soft:#eff8fc;
+  --mg-accent-line:#c5e4f1;
+}
+html body.magacin-page .mg-main :is(.mg-page-search,.mg-chrome-search) input{padding-inline-start:42px}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(.mg-btn-secondary,.mg-btn-light,.mg-btn-outline,.mg-btn-ghost,.mg-chrome-burger,.mg-chrome-icon) svg{color:#0078aa!important;stroke:currentColor}

@@ -50,3 +50,15 @@ def loyalty_bodovi(cijena):
     if value <= 0:
         return 0
     return int(value.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+
+
+@register.simple_tag
+def live_stock_products(products):
+    from EcommerceApp.storefront_stock import storefront_products
+    return storefront_products(products)
+
+
+@register.simple_tag
+def live_stock_product(product):
+    from EcommerceApp.storefront_stock import storefront_products
+    return storefront_products([product])[0]

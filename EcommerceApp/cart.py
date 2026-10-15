@@ -8,14 +8,12 @@ PDV_STOPA = Decimal('0.17')
 
 def stock_on_hand(product=None, variation=None):
     """Količina na stanju za SKU (varijacija ima prednost)."""
-    if variation is not None:
-        return max(0, int(getattr(variation, 'stanje', 0) or 0))
-    if product is not None and product.is_set:
-        from .product_sets import set_stock_totals
-        return set_stock_totals(product)['dostupno']
-    if product is not None:
-        return max(0, int(getattr(product, 'stanje', 0) or 0))
-    return 0
+    if product is None and variation is not None:
+        product = variation.artikal
+    if product is None:
+        return 0
+    from .storefront_stock import sku_quantity
+    return sku_quantity(product, variation)
 
 
 def stock_limit_message(on_hand):
@@ -196,20 +194,12 @@ class Cart:
 
     def availability(self, *, products=None, variants=None):
         """Fresh, batched SKU availability; warehouse-managed items use physical locations."""
-        from .models import WarehouseStock
-        from .magacin import is_ignored_stock_location
         if products is None:
             products = Product.objects.in_bulk({item['product_id'] for item in self.cart.values()})
         if variants is None:
             variants = ProductVariation.objects.in_bulk({item['variation_id'] for item in self.cart.values() if item.get('variation_id')})
-        tracked = set()
-        quantities = {}
-        for row in WarehouseStock.objects.filter(product_id__in=products).select_related('location'):
-            tracked.add(row.product_id)
-            if not row.location.aktivan or is_ignored_stock_location(row.location):
-                continue
-            sku = (row.product_id, row.variation_id)
-            quantities[sku] = quantities.get(sku, 0) + max(0, int(row.kolicina or 0) - max(0, int(row.rezervisano or 0)))
+        from .storefront_stock import warehouse_quantities
+        tracked, quantities = warehouse_quantities(products)
         result = {}
         for key, item in self.cart.items():
             product = products.get(item['product_id'])
@@ -223,7 +213,8 @@ class Cart:
             elif product.pk in tracked or product.magacin_sync_at:
                 result[key] = quantities.get((product.pk, variant_id or None), 0)
             else:
-                result[key] = stock_on_hand(product, variant) if product.na_stanju and (not variant or variant.na_stanju) else 0
+                target = variant or product
+                result[key] = max(0, int(target.stanje or 0)) if product.na_stanju and target.na_stanju else 0
         return result
 
     def clamp_to_stock(self):

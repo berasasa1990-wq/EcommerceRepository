@@ -8,8 +8,12 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20261015-menu-cleanup">
-<link rel="stylesheet" href="{% static 'css/staff-magacin-menu.css' %}?v=20261015-blue-menu-cleanup">
+<link rel="stylesheet" href="{% static 'css/staff-magacin.css' %}?v=20261015-single-menu">
+{% endblock %}
+
+{% block warehouse_theme_css %}
+<link rel="stylesheet" href="{% static 'css/staff-magacin-menu.css' %}?v=20261015-single-menu">
+<link rel="stylesheet" media="screen" href="{% static 'css/warehouse-workspace.css' %}?v=20261015-single-menu">
 {% endblock %}
 
 {% block flash_messages %}

@@ -1,0 +1,46 @@
+{% extends 'staff/magacin/base.html' %}
+{% load static %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/warehouse-import-check.css' %}?v=20261015-blue-workspace">{% endblock %}
+{% block magacin_content %}
+<div class="import-check">
+    <header class="import-check-heading"><h1>Istorija zadnjih uvoza</h1><button type="button" id="mgNavToggle" class="import-check-menu" aria-label="Meni magacina" aria-expanded="false">☰</button></header>
+    <p><a href="{% url 'staff_magacin_novi_artikli_uvoz' %}">‹ Novi artikli uvoz</a></p>
+    {% if selected_import %}
+    <section class="import-check-panel">
+        <h2>{{ selected_import.kreiran|date:'d.m.Y. H:i' }} · {{ selected_import.naziv }} #{{ selected_import.pk }}</h2>
+        <p>{{ import_lines|length }} artikala. Prazna polja znače da podatak nije zabilježen pri uvozu. Fakturna vrijednost je vrijednost iz kolone „Fakturna“.</p>
+        <div class="import-bulk-table-wrap"><table class="import-bulk-table"><thead><tr><th>Naziv artikla</th><th>Količina</th><th>Fakturna vrijednost</th></tr></thead><tbody>
+        {% for row in import_lines %}<tr><td>{{ row.artikal_naziv }}</td><td>{{ row.kolicina|default_if_none:'—' }}</td><td>{{ row.fakturna|default_if_none:'—' }}</td></tr>{% empty %}<tr><td colspan="3">Nema zabilježenih stavki.</td></tr>{% endfor %}
+        </tbody></table></div>
+        <label for="importExcelText">Podaci za Excel</label>
+        <textarea id="importExcelText" rows="8" readonly>{{ import_excel_text }}</textarea>
+        <div class="import-check-actions"><button type="button" id="copyImportExcel">Kopiraj za Excel</button> <span id="copyImportStatus" role="status"></span></div>
+    </section>
+    {% endif %}
+    <section class="import-check-panel">
+        <h2>Uvozi po datumu</h2>
+        <div class="import-history-list">{% for item in imports_page %}
+        {% ifchanged %}<h3>{{ item.kreiran|date:'d.m.Y.' }}</h3>{% endifchanged %}
+        <a class="import-check-bulk-link" href="{% url 'staff_magacin_novi_uvoz_istorija_detail' item.pk %}"><span class="import-history-date">{{ item.kreiran|date:'H:i' }}</span><span class="import-history-name">{{ item.naziv }} #{{ item.pk }}</span><span class="import-history-count">{{ item.broj_redova }} artikala</span></a>
+        {% empty %}<p>Još nema sačuvanih uvoza.</p>{% endfor %}</div>
+        <nav class="import-history-pagination" aria-label="Stranice istorije uvoza">
+        {% if imports_page.has_previous %}<a href="?page={{ imports_page.previous_page_number }}">‹ Prethodna</a>{% endif %}
+        <span>{{ imports_page.number }} / {{ imports_page.paginator.num_pages }}</span>
+        {% if imports_page.has_next %}<a href="?page={{ imports_page.next_page_number }}">Sljedeća ›</a>{% endif %}</nav>
+    </section>
+</div>
+{% endblock %}
+{% block magacin_js %}{{ block.super }}
+<script>
+(function () {
+    var button = document.getElementById('copyImportExcel');
+    if (!button) return;
+    button.addEventListener('click', async function () {
+        var field = document.getElementById('importExcelText');
+        var status = document.getElementById('copyImportStatus');
+        try { await navigator.clipboard.writeText(field.value); status.textContent = 'Kopirano. Zalijepi u Excel.'; }
+        catch (error) { field.focus(); field.select(); status.textContent = 'Podaci su označeni. Kopiraj ih ručno.'; }
+    });
+})();
+</script>
+{% endblock %}

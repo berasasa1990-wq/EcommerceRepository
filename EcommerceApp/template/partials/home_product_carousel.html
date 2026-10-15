@@ -1,3 +1,5 @@
+{% load ecommerce_extras %}
+{% live_stock_products products as products %}
 {% if products %}
 <div class="home-product-carousel home-product-carousel--catalog{% if carousel_no_arrows %} home-product-carousel--no-arrows{% endif %}" data-visible-desktop="{{ visible_desktop|default:5 }}" data-visible-mobile="{{ visible_mobile|default:2 }}" data-autoplay-ms="4500">
     {% if not carousel_no_arrows %}

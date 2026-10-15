@@ -898,6 +898,9 @@ def magacin_novi_artikli_uvoz(request):
     if request.method == 'POST':
         try:
             codes = parse_excel_codes(pasted)
+            if hasattr(request, 'session'):
+                from .warehouse_import_check import excel_import_values
+                request.session['warehouse_excel_values'] = excel_import_values(pasted)
             checked_count = len(codes)
             missing = missing_name_codes(
                 codes, Product.objects.values_list('naziv', flat=True).iterator(chunk_size=2000),
@@ -910,6 +913,21 @@ def magacin_novi_artikli_uvoz(request):
                     'missing_codes_text': '\n'.join(missing or []),
                     'checked_count': checked_count, 'import_check_error': error})
     return render(request, 'staff/magacin/novi_artikli_uvoz.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+def magacin_novi_uvozi_istorija(request, pk=None):
+    from .warehouse_import_check import import_history_tsv
+    imports = Uvoz.objects.filter(izvor=Uvoz.Izvor.MAGACIN).order_by('-kreiran', '-pk')
+    selected = get_object_or_404(imports, pk=pk) if pk is not None else None
+    lines = list(selected.stavke.order_by('redoslijed', 'pk')) if selected else []
+    context = _magacin_context(request, section='novi_artikli_uvoz',
+                               page_title='Istorija zadnjih uvoza', hide_top_search=True)
+    context.update({'imports_page': Paginator(imports, 10).get_page(request.GET.get('page')),
+                    'selected_import': selected, 'import_lines': lines,
+                    'import_excel_text': import_history_tsv(lines) if selected else ''})
+    return render(request, 'staff/magacin/uvozi_istorija.html', context)
 
 
 @login_required(login_url='login')
@@ -935,6 +953,8 @@ def magacin_artikli_bulk(request):
                 valid_brands = {str(brand['id']) for brand in brands}
                 if any(not row['naziv'].strip() or len(row['naziv']) > 200 or row['brand_id'] not in valid_brands for row in rows):
                     raise ValueError('Provjeri nazive i odaberi postojeći brend za svaki artikal.')
+                from .warehouse_import_check import attach_import_values
+                rows = attach_import_values(rows, request.session.get('warehouse_excel_values', []))
                 request.session['warehouse_bulk_draft'] = rows
                 request.session.pop('warehouse_bulk_ready', None)
                 return redirect('staff_magacin_opisi_bulk')
@@ -963,7 +983,10 @@ def magacin_opisi_bulk(request):
                 ready = request.session.get('warehouse_bulk_ready')
                 if not ready or request.POST.get('draft_token') != ready['token']:
                     raise ValueError('Pregled je istekao ili je već spremljen. Pripremi artikle ponovo.')
-                created, skipped = save_bulk_products(ready['rows'])
+                from .warehouse_import_check import save_bulk_import_history
+                with transaction.atomic():
+                    created, skipped = save_bulk_products(ready['rows'])
+                    save_bulk_import_history(ready['rows'], created, skipped, request.user)
                 request.session.pop('warehouse_bulk_ready', None)
                 request.session.pop('warehouse_bulk_draft', None)
                 messages.success(request, f'Dodano artikala: {len(created)}. Opisi spremljeni i za postojeće artikle: {len(skipped)}.')

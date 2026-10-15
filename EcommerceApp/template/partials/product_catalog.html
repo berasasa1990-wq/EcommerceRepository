@@ -1,3 +1,5 @@
+{% load ecommerce_extras %}
+{% live_stock_products products as products %}
 <section class="product-catalog{% if catalog_compact %} product-catalog--compact{% endif %}">
     <div class="catalog-layout catalog-layout--full">
         <div class="catalog-products">

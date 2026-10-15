@@ -1,3 +1,5 @@
+{% load ecommerce_extras %}
+{% live_stock_product product as product %}
 {# Kartica artikla na početnoj — mockup + dodaj u korpu (ikona desno) #}
 {% with card_variations=product.varijacije.all %}
 <article

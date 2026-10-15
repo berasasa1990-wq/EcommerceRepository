@@ -1,5 +1,5 @@
 /* Article list and movement history match the item-detail silver panels. */
-body.magacin-page.is-article-list{--list-metal:linear-gradient(115deg,#f0f0f1,#c6c9ce);--list-panel:linear-gradient(115deg,#fafafb,#e7e8eb);--list-edge:#9ca2ad;--list-bevel:inset 2px 2px #fff,inset -2px -2px #999da5;background:#f3f4f6!important}
+body.magacin-page.is-article-list{--list-metal:linear-gradient(115deg,#f0f0f1,#c6c9ce);--list-panel:linear-gradient(115deg,#fafafb,#e7e8eb);--list-edge:#d5e7f1;--list-bevel:inset 2px 2px #fff,inset -2px -2px #999da5;background:#f3f4f6!important}
 .magacin-page.is-article-list .mg-main{background:#f5f6f8;padding:6px 10px 14px;min-width:0;color:#131820}
 .magacin-page.is-article-list .mg-chrome{background:var(--list-metal);border:1px solid var(--list-edge);border-radius:0;box-shadow:var(--list-bevel);padding:6px 8px;gap:8px;margin-bottom:8px;min-height:0}
 .magacin-page.is-article-list :is(.mg-chrome-burger,.mg-chrome-icon){width:40px;height:40px;min-height:0;border:1px solid #929aa6;border-radius:0;background:var(--list-metal);box-shadow:var(--list-bevel);color:#111;flex-shrink:0}
@@ -47,8 +47,8 @@ body.magacin-page.is-article-list{--list-metal:linear-gradient(115deg,#f0f0f1,#c
  .magacin-page.is-article-list .mg-pager a,.magacin-page.is-article-list .mg-pager .is-current{font-size:13px;padding:4px 10px}
 }
 
-/* Shared compact silver finish used by stocktaking. */
-body.magacin-page.is-article-list{--list-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--list-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--list-edge:#9b9da2;--list-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;background:#dedfe1!important}
+/* Shared compact blue finish used by stocktaking. */
+body.magacin-page.is-article-list{--list-metal:linear-gradient(115deg,#e8e8e9,#bfc1c4);--list-panel:linear-gradient(115deg,#f1f1f2,#dddfe2);--list-edge:#d5e7f1;--list-bevel:inset 2px 2px #fff,inset -2px -2px #8f9195;background:#dedfe1!important}
 .magacin-page.is-article-list .mg-app,.magacin-page.is-article-list .mg-main{background:linear-gradient(110deg,#e5e6e8,#d8d9dc);min-height:100vh}
 .magacin-page.is-article-list .mg-main{padding:8px 12px 18px}
 .magacin-page.is-article-list .article-titlebar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 12px}

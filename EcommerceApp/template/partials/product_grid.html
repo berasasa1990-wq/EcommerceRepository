@@ -1,3 +1,5 @@
+{% load ecommerce_extras %}
+{% live_stock_products products as products %}
 {% if products %}
 <div class="product-grid{% if not use_catalog_grid %} product-grid--home{% endif %}">
     {% for product in products %}

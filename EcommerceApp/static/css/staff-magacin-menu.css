@@ -1,155 +1,56 @@
-/* Blue warehouse menu. */
+/* The sole owner of warehouse sidebar layout, colours and interaction states. */
 body.magacin-page .mg-app .mg-sidebar{
-  --menu-background:linear-gradient(#009fc2,#0078aa);
-  --menu-bevel:none;
-  background:linear-gradient(165deg,#009fc2,#0078aa 65%,#006b9e);
-  border-right:1px solid #0078aa;
-  color:#fff;
-  scrollbar-color:#53bad5 #0086b2;
-}
-body.magacin-page .mg-app .mg-side-top{
-  padding:10px 8px;
-  margin-bottom:6px;
-  gap:8px;
-  background:transparent;
-  border-bottom:1px solid #ffffff35;
-  box-shadow:none;
-}
-body.magacin-page .mg-app .mg-brand-lockup{
-  padding:6px 8px;
-  color:#fff;
-  font-size:16px;
-  font-weight:800;
-  letter-spacing:.02em;
-  gap:10px;
-}
-body.magacin-page .mg-app .mg-brand-cube{
-  width:32px;
-  height:32px;
-  border:1px solid #ffffff35;
-  border-radius:3px;
-  background:var(--menu-background);
-  box-shadow:var(--menu-bevel);
-  color:#fff;
-}
-body.magacin-page .mg-app .mg-brand-cube svg{width:18px;height:18px}
-body.magacin-page .mg-app .mg-nav{gap:4px;padding:4px 8px 12px}
-body.magacin-page .mg-app .mg-nav :is(a,.mg-nav-locked){
-  min-height:42px;
   box-sizing:border-box;
-  padding:10px 12px;
-  border:1px solid #ffffff35;
-  border-radius:10px;
-  background:var(--menu-background);
-  box-shadow:var(--menu-bevel);
+  width:236px;
+  flex:0 0 236px;
+  display:flex;
+  flex-direction:column;
+  align-self:flex-start;
+  position:sticky;
+  top:0;
+  height:100dvh;
+  overflow-y:auto;
+  background:#0087b3;
+  border:0;
   color:#fff;
-  font-size:13px;
-  font-weight:700;
-  line-height:1.25;
-}
-body.magacin-page .mg-app .mg-nav :is(a,.mg-nav-locked) svg{
-  width:20px;
-  height:20px;
-  color:#fff;
-}
-body.magacin-page .mg-app .mg-nav a:not(.mg-nav-locked)::after{
-  content:"›";
-  margin-left:auto;
-  font-size:18px;
-  font-weight:400;
-  color:#fff;
-  line-height:1;
-}
-body.magacin-page .mg-app .mg-nav a:hover:not(.is-active):not(.mg-nav-locked),
-body.magacin-page .mg-app .mg-nav a.is-active{
-  background:#ffffff26;
-  border-color:#ffffff55;
   box-shadow:none;
-  color:#fff;
-  font-weight:800;
+  scrollbar-color:#53bad5 #0087b3;
 }
-body.magacin-page .mg-app .mg-nav a.is-active svg,
-body.magacin-page .mg-app .mg-nav a:hover:not(.mg-nav-locked) svg{color:#fff}
-body.magacin-page .mg-app .mg-nav a.is-active::after,
-body.magacin-page .mg-app .mg-nav a:hover:not(.mg-nav-locked)::after{color:#fff}
-body.magacin-page .mg-app .mg-nav a.is-blink-pack{
-  animation:mg-menu-pack-blink 1.2s ease-in-out infinite;
-}
-body.magacin-page .mg-app .mg-sidebar :is(.mg-history-btn,.mg-side-close){
-  min-height:36px;
-  padding:6px 10px;
-  border:1px solid #ffffff35;
-  border-radius:10px;
-  background:var(--menu-background);
-  box-shadow:var(--menu-bevel);
-  color:#fff;
-  font-size:13px;
-  font-weight:700;
-  text-decoration:none;
-}
-body.magacin-page .mg-app .mg-sidebar :is(.mg-history-btn,.mg-side-close):hover{
-  background:#ffffff26;
-  border-color:#ffffff55;
-}
+body.magacin-page .mg-app .mg-side-top{display:flex;align-items:center;justify-content:space-between;padding:10px 8px;margin-bottom:6px;gap:8px;border-bottom:1px solid #ffffff35}
+body.magacin-page .mg-app .mg-brand-lockup{display:flex;align-items:center;gap:10px;padding:6px 8px;color:#fff;text-decoration:none;font-size:16px;font-weight:800;letter-spacing:.02em}
+body.magacin-page .mg-app .mg-brand-cube{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border:1px solid #ffffff35;border-radius:6px;background:transparent;color:#fff}
+body.magacin-page .mg-app .mg-brand-cube svg{width:18px;height:18px}
+body.magacin-page .mg-app .mg-nav{display:flex;flex-direction:column;gap:4px;padding:4px 8px 12px}
+body.magacin-page .mg-app :is(.mg-nav a,.mg-nav-locked){display:flex;align-items:center;gap:8px;min-height:42px;box-sizing:border-box;padding:10px 12px;border:1px solid #ffffff35;border-radius:10px;background:transparent;box-shadow:none;color:#fff;text-decoration:none;font-size:13px;font-weight:700;line-height:1.25;animation:none}
+body.magacin-page .mg-app .mg-nav :is(a,.mg-nav-locked) svg{width:20px;height:20px;flex-shrink:0;color:inherit}
+body.magacin-page .mg-app .mg-nav a:not(.mg-nav-locked)::after{content:"›";margin-left:auto;font-size:18px;font-weight:400;color:inherit;line-height:1}
+body.magacin-page .mg-app .mg-nav a:hover,body.magacin-page .mg-app .mg-nav a.is-active{background:#ffffff26;border-color:#ffffff55;color:#fff}
+body.magacin-page .mg-app .mg-nav a.is-active{font-weight:800}
+body.magacin-page .mg-app .mg-side-foot{margin:auto 12px 16px;padding:12px 14px;border:1px solid #ffffff35;border-radius:12px;background:transparent;box-shadow:none}
+body.magacin-page .mg-app .mg-side-label{padding:18px 18px 8px;font-size:11px;font-weight:700;letter-spacing:.12em;color:#d9f3ff}
+body.magacin-page .mg-app .mg-side-foot .mg-side-label{padding:0 2px 10px}
+body.magacin-page .mg-app .mg-sync-meta{margin:0 0 4px;font-size:12px;color:#d9f3ff}
+body.magacin-page .mg-app .mg-sync-meta strong{font-weight:500;color:#fff}
+body.magacin-page .mg-app .mg-version{color:#d9f3ff}
+body.magacin-page .mg-app .mg-sidebar :is(.mg-history-btn,.mg-side-close){display:block;min-height:36px;padding:8px 10px;border:1px solid #ffffff35;border-radius:10px;background:transparent;box-shadow:none;color:#fff;text-align:center;font-family:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer}
+body.magacin-page .mg-app .mg-sidebar .mg-history-btn{margin-top:12px}
+body.magacin-page .mg-app .mg-sidebar :is(.mg-history-btn,.mg-side-close):hover{background:#ffffff26;border-color:#ffffff55}
+body.magacin-page .mg-app .mg-sidebar .mg-side-close{display:none}
 body.magacin-page .mg-app .mg-sidebar button:disabled{opacity:.55;cursor:default}
-body.magacin-page .mg-app .mg-sidebar :is(.mg-sync-meta,.mg-version,.mg-side-label){color:#d9f3ff}
-body.magacin-page .mg-app .mg-sidebar :is(a,button):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
-@media(max-width:600px){
+body.magacin-page .mg-app .mg-sidebar :is(a,button):focus-visible{outline:3px solid #fff;outline-offset:2px}
+body.magacin-page .mg-app .mg-sidebar .mg-nav-locked{cursor:not-allowed;color:#b6dbe8;background:transparent;animation:none}
+body.magacin-page .mg-app .mg-sidebar .mg-menu-lock{width:16px;height:16px;flex:0 0 16px;margin-left:auto;color:#b6dbe8}
+body.magacin-page .mg-app .mg-side-foot>.mg-nav-locked{margin-bottom:6px}
+body.magacin-page .mg-app .mg-nav-count{border-radius:999px;padding:2px 6px;background:#fff;color:#0078aa;font-size:11px;line-height:1.3}
+.magacin-page .mg-menu-standalone{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:14px;z-index:40;width:42px;height:42px;padding:8px;border:1px solid #ffffff35;border-radius:10px;background:#0087b3;box-shadow:none;color:#fff;cursor:pointer}
+.magacin-page .mg-menu-standalone svg{width:24px;height:24px}
+.magacin-page .mg-main:has(>.mg-menu-standalone){padding-bottom:70px}
+@media(max-width:1100px){
+  body.magacin-page .mg-app .mg-sidebar{display:none;position:fixed;z-index:90;inset:0;width:100%;height:100dvh;flex-basis:auto;align-self:auto}
+  body.magacin-page .mg-app.nav-open .mg-sidebar{display:flex}
+  body.magacin-page .mg-app .mg-sidebar .mg-side-close:not([hidden]){display:block}
   body.magacin-page .mg-app .mg-nav :is(a,.mg-nav-locked){min-height:44px;font-size:13.5px}
   body.magacin-page .mg-app .mg-side-top{padding-top:calc(10px + env(safe-area-inset-top,0px))}
 }
-
-.magacin-page .mg-menu-standalone{
-  position:fixed;
-  bottom:calc(14px + env(safe-area-inset-bottom,0px));
-  left:14px;
-  z-index:40;
-  width:42px;
-  height:42px;
-  padding:8px;
-  border:1px solid #ffffff35;
-  border-radius:10px;
-  background:linear-gradient(#009fc2,#0078aa);
-  box-shadow:none;
-  color:#fff;
-  cursor:pointer;
-}
-.magacin-page .mg-menu-standalone svg{width:24px;height:24px}
-.magacin-page .mg-menu-standalone:focus-visible{outline:3px solid #386ca5;outline-offset:2px}
-.magacin-page .mg-main:has(>.mg-menu-standalone){padding-bottom:70px}
-
-body.magacin-page .mg-app .mg-sidebar .mg-nav-locked{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  cursor:not-allowed;
-  color:#b6dbe8;
-  background:#ffffff12;
-  animation:none;
-  text-decoration:none;
-}
-body.magacin-page .mg-app .mg-sidebar .mg-nav-locked:hover{
-  background:#ffffff12;
-  color:#b6dbe8;
-}
-body.magacin-page .mg-app .mg-sidebar .mg-menu-lock{
-  width:16px;
-  height:16px;
-  flex:0 0 16px;
-  margin-left:auto;
-  color:#b6dbe8;
-}
-body.magacin-page .mg-app .mg-side-foot>.mg-nav-locked{margin-bottom:6px}
-
-body.magacin-page .mg-app .mg-side-foot{
-  background:transparent;
-  border-color:#ffffff35;
-  box-shadow:none;
-}
-body.magacin-page .mg-app .mg-sync-meta strong{color:#fff}
-
-body.magacin-page .mg-app .mg-nav-count{background:#fff;color:#0078aa}
-@keyframes mg-menu-pack-blink{
-  0%,100%{background:#ffffff12}
-  50%{background:#ffffff30}
-}
+body.magacin-page.is-pick .mg-app:not(.nav-open) .mg-sidebar{display:none}
+@media print{body.magacin-page .mg-app .mg-sidebar{display:none!important}}

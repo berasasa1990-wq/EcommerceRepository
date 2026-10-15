@@ -159,7 +159,7 @@ class BulkDraftWorkflowTests(SimpleTestCase):
         ready = request.session['warehouse_bulk_ready']
         final = self.request({'action': 'create', 'draft_token': ready['token']})
         final.session = request.session
-        with patch('EcommerceApp.warehouse_import_check.save_bulk_products', return_value=([object()], [])) as save, patch.object(views_magacin.messages, 'success'):
+        with patch('EcommerceApp.warehouse_import_check.save_bulk_products', return_value=([object()], [])) as save, patch('EcommerceApp.warehouse_import_check.save_bulk_import_history') as history, patch('django.db.transaction.atomic'), patch.object(views_magacin.messages, 'success'):
             response = views_magacin.magacin_opisi_bulk(final)
             self.assertEqual(response.status_code, 302)
             save.assert_called_once_with([{'naziv': 'ABC FOX jakna', 'brand_id': '1', 'opis': 'Opis jakne.'}])
