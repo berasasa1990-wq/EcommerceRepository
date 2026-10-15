@@ -5704,6 +5704,7 @@ class OnlineGiftPush(models.Model):
 
 
 class Uvoz(models.Model):
+    kalkulacija = models.JSONField(default=dict, blank=True, verbose_name='Kalkulacija uvoza')
     """Spremljeni uvoz iz Excel uvoznice (pregled / izmjena / brisanje)."""
 
     class Izvor(models.TextChoices):
@@ -5877,6 +5878,8 @@ class UvozStavka(models.Model):
             val = Decimal(self.vpc_marza)
         except Exception:
             return None
+        if self.uvoz.kalkulacija:
+            return val.quantize(Decimal('0.01'))
         # udeo 0–2 → pretvori u %; inače tretiraj kao već unesen %
         if abs(val) <= 2:
             val = val * Decimal('100')

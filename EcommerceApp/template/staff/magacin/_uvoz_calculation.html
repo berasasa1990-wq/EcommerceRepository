@@ -1,0 +1,21 @@
+{% if uvoz %}{{ uvoz.kalkulacija|json_script:'uvozCalculationData' }}{% endif %}
+<dialog id="uvozCalculationDialog" class="uvoz-calculation-dialog" aria-labelledby="uvozCalculationTitle">
+    <form method="post" id="uvozCalculationForm" data-saved-import="{% if uvoz %}1{% else %}0{% endif %}">
+        {% csrf_token %}<input type="hidden" name="action" value="save_calculation">
+        <div class="uvoz-calculation-head"><h2 id="uvozCalculationTitle">Unos za kalkulaciju</h2><button type="button" data-calculation-close aria-label="Zatvori">×</button></div>
+        <div class="uvoz-calculation-grid">
+            <label>JCI<input name="jci" maxlength="200" autocomplete="off"></label>
+            <label>Faktura<input name="faktura" maxlength="200" autocomplete="off"></label>
+            <label>Kurs<input name="kurs" inputmode="decimal" data-calc-number required></label>
+            <label>Iznos fakture<input name="iznos_fakture" inputmode="decimal" data-calc-number required></label>
+            <label>Prevoz<input name="prevoz" inputmode="decimal" data-calc-number value="0"></label>
+            <label>Carina<input name="carina" inputmode="decimal" data-calc-number value="0"></label>
+            <label>PDV<input name="pdv" inputmode="decimal" data-calc-number value="0"></label>
+            <label>Ostali troškovi<input name="ostali_troskovi" inputmode="decimal" data-calc-number value="0"></label>
+        </div>
+        <p>Trošak bez PDV-a: <strong id="uvozCostPercent">—</strong></p>
+        <p class="mg-muted">(Carina + prevoz + ostali troškovi) ÷ iznos fakture × 100. PDV se evidentira, ali ne ulazi u ovaj trošak.</p>
+        <p id="uvozCalculationError" role="alert"></p>
+        <button type="submit" class="mg-btn mg-btn-primary">Sačuvaj kalkulaciju</button>
+    </form>
+</dialog>

@@ -61,7 +61,7 @@ def _normalize_header(value) -> str:
     return re.sub(r'\s+', ' ', _cell_str(value).casefold()).strip()
 
 
-def parse_money(value) -> Decimal | None:
+def parse_money(value, *, decimal_places=2) -> Decimal | None:
     """
     '  5.00 KM ' / '5,50' / 5.0 → Decimal
     """
@@ -69,7 +69,7 @@ def parse_money(value) -> Decimal | None:
         return None
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         try:
-            return Decimal(str(value)).quantize(Decimal('0.01'))
+            return Decimal(str(value)).quantize(Decimal(10) ** -decimal_places)
         except (InvalidOperation, ValueError):
             return None
     text = _cell_str(value)
@@ -88,7 +88,7 @@ def parse_money(value) -> Decimal | None:
     if not text or text in ('.', '-', '-.'):
         return None
     try:
-        return Decimal(text).quantize(Decimal('0.01'))
+        return Decimal(text).quantize(Decimal(10) ** -decimal_places)
     except (InvalidOperation, ValueError):
         return None
 
@@ -184,7 +184,7 @@ def _build_uvoz_row(
         'artikal': name[:200],
         'kolicina': parse_qty(kolicina) if not isinstance(kolicina, Decimal) else kolicina,
         'mpc_brutto': mpc_brutto if isinstance(mpc_brutto, Decimal) else parse_money(mpc_brutto),
-        'fakturna': fakturna if isinstance(fakturna, Decimal) else parse_money(fakturna),
+        'fakturna': fakturna if isinstance(fakturna, Decimal) else parse_money(fakturna, decimal_places=4),
         'nabavna': nabavna if isinstance(nabavna, Decimal) else parse_money(nabavna),
         'vpc_netto': vpc_netto if isinstance(vpc_netto, Decimal) else parse_money(vpc_netto),
         'vpc_marza': vpc_marza if isinstance(vpc_marza, Decimal) else _parse_marza(vpc_marza),

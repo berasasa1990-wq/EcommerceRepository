@@ -212,7 +212,7 @@
         body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
     </style>
     {% endif %}
-    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20260919-wishlist-heart">
+    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20261015-neutral-banner-dots">
     <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20261015-transparent-buttons">
     <link rel="stylesheet" href="{% static 'css/wishlist.css' %}?v=20261015-white-background">
 
@@ -353,7 +353,7 @@
     }
     </style>
     <link rel="stylesheet" href="{% static 'css/product-card-reference.css' %}?v=20261015-shorter-cart-buttons">
-    <link rel="stylesheet" href="{% static 'css/site-orange-theme.css' %}?v=20261015-neutral-product-hearts">
+    <link rel="stylesheet" href="{% static 'css/site-orange-theme.css' %}?v=20261015-neutral-banner-dots">
     {% block warehouse_theme_css %}{% endblock %}
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">

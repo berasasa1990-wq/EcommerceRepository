@@ -388,3 +388,30 @@ def new_article_history_q():
         Q(naziv='Novi artikli bulk') &
         (Q(napomena__startswith='Bulk unos naziva, brenda i opisa.') | Q(napomena=''))
     )
+
+
+def resolve_warehouse_import_codes(pasted):
+    """Resolve three Excel columns into import-sheet rows, without creating products."""
+    from .models import Product
+    parse_excel_codes(pasted)
+    values = []
+    for cells in csv.reader(io.StringIO(pasted, newline=''), delimiter='\t', strict=True):
+        if not any(cell.strip() for cell in cells):
+            continue
+        code = cells[0].strip().lstrip('\ufeff')
+        if not values and normalize(code) in {'šifra', 'sifra', 'sku', 'code'}:
+            continue
+        values.append({'code': code, 'kolicina': cells[1].strip(), 'fakturna': cells[2].strip()})
+    products = list(Product.objects.filter(obrisan_at__isnull=True).only('pk', 'naziv', 'sifra').order_by('pk'))
+    indexed = [(product, normalize(product.naziv), normalize(product.sifra or '')) for product in products]
+    rows, errors = [], []
+    for value in values:
+        key = normalize(value['code'])
+        matches = [product for product, name, code in indexed if key in name or key == code]
+        if len(matches) != 1:
+            errors.append(value['code'] + (': nije pronađen artikal' if not matches else ': pronađeno više artikala'))
+            continue
+        rows.append({'artikal': matches[0].naziv, 'kolicina': value['kolicina'], 'fakturna': value['fakturna'], 'mpc_brutto': str(matches[0].cijena)})
+    if errors:
+        raise ValueError('Provjeri šifre. ' + '; '.join(errors))
+    return rows

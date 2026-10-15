@@ -4,31 +4,33 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'css/staff-import-reference.css' %}?v=20261015-blue-workspace">
+<link rel="stylesheet" href="{% static 'css/warehouse-import-calculation.css' %}?v=20261015">
 {% endblock %}
 
 {% block magacin_content %}
 <div class="mg-toolbar">
     <div>
         <h1>Novi uvoz</h1>
-        <p class="mg-count">Kopiraj iz Excela kolone Artikal, Kolicina, Fakturna, Nabavna, Vpc netto, Mpc brutto, Vpc marza, Ukupno Fakturna — zalijepi ovdje i sačuvaj.</p>
+        <p class="mg-count">Kopiraj tri kolone: Šifra, Količina, Fakturna. Po šifri se pronalazi artikal i popunjava tabela. Možeš koristiti i postojeći unos s osam kolona.</p>
     </div>
     <a href="{% url 'staff_magacin_uvoz' %}" class="mg-btn">← Svi uvozi</a>
 </div>
 
 <form method="post" id="mgUvozForm" class="mg-uvoz-new">
-    {% csrf_token %}
+    {% csrf_token %}<input type="hidden" name="calculation_json" id="uvozCalculationJson" value="{{ calculation_text }}">
     <section class="mg-card">
         <div class="mg-form-grid">
             <div class="mg-field">
                 <label for="uvozNaziv">Naziv uvoza</label>
-                <input type="text" name="naziv" id="uvozNaziv" value="{{ draft_naziv }}" maxlength="200" placeholder="npr. Uvoz 13.08.2026" autocomplete="off">
+                <div class="mg-name-line"><input type="text" name="naziv" id="uvozNaziv" value="{{ draft_naziv }}" maxlength="200" placeholder="npr. Uvoz 13.08.2026" autocomplete="off"><button type="button" class="mg-btn mg-calc-trigger" data-calculation-open title="Unos za kalkulaciju" aria-label="Unos za kalkulaciju"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 6h8M8 10h2m4 0h2M8 14h2m4 0h2M8 18h2m4 0h2"/></svg></button></div>
             </div>
         </div>
         <div class="mg-field" style="margin-top:12px;">
             <label for="uvozPaste">Zalijepi iz Excela</label>
             <textarea name="paste_text" id="uvozPaste" class="mg-uvoz-paste" placeholder="Označi sve u Excelu, kopiraj, pa zalijepi ovdje (Ctrl+V / Cmd+V). Zaglavlje može ostati.">{{ paste_text }}</textarea>
         </div>
-        <p class="mg-muted" id="uvozPasteHint">Tabela ispod se popuni iz zalijepljenog. Možeš i ručno kucati u polja.</p>
+        <button type="button" class="mg-btn" id="uvozMatchCodes">Pronađi artikle po šiframa</button>
+        <p class="mg-muted" role="status" id="uvozPasteHint">Tabela ispod se popuni iz zalijepljenog. Možeš i ručno kucati u polja.</p>
     </section>
 
     <section class="mg-card">
@@ -46,7 +48,7 @@
                         <th class="col-num">Nabavna</th>
                         <th class="col-num">Vpc netto</th>
                         <th class="col-num">Mpc brutto</th>
-                        <th class="col-num">Vpc marza</th>
+                        <th class="col-num">Vpc marža (%)</th>
                         <th class="col-num">Ukupno Fakturna</th>
                     </tr>
                 </thead>
@@ -60,9 +62,11 @@
         </div>
     </section>
 </form>
+{% include 'staff/magacin/_uvoz_calculation.html' %}
 {% endblock %}
 
 {% block magacin_js %}
+<script src="{% static 'js/warehouse-import-calculation.js' %}?v=20261015"></script>
 <script>
 (function () {
     var COLS = ['artikal', 'kolicina', 'fakturna', 'nabavna', 'vpc_netto', 'mpc_brutto', 'vpc_marza', 'ukupno_fakturna'];
@@ -94,14 +98,25 @@
             input.type = 'text';
             input.setAttribute('data-col', key);
             input.autocomplete = 'off';
+            if (['nabavna','vpc_netto','vpc_marza','ukupno_fakturna'].includes(key)) { input.readOnly = true; input.setAttribute('aria-label', key + ' — automatski obračun'); }
             input.value = values && values[key] != null ? values[key] : '';
             if (idx === 0) input.className = 'col-artikal-input';
             td.appendChild(input);
             tr.appendChild(td);
         });
         body.appendChild(tr);
+        recalculate(tr);
         return tr;
     }
+    function recalculate(tr) {
+        if (!window.warehouseImportCalculation) return;
+        var values = {};
+        COLS.forEach(function (key) { values[key] = tr.querySelector('[data-col="' + key + '"]').value; });
+        values = window.warehouseImportCalculation.row(values);
+        ['nabavna','vpc_netto','vpc_marza','ukupno_fakturna'].forEach(function (key) { tr.querySelector('[data-col="' + key + '"]').value = values[key]; });
+    }
+    body.addEventListener('input', function (event) { var row = event.target.closest('tr'); if (row) recalculate(row); });
+    document.addEventListener('uvoz-calculation-updated', function () { Array.prototype.forEach.call(body.rows, recalculate); });
     function ensureRows(n) {
         while (body.rows.length < n) addRow();
     }
@@ -136,6 +151,42 @@
         }
         return rows;
     }
+    var matchVersion = 0;
+    var matching = false;
+    var codesReady = true;
+    async function matchCodes(text) {
+        var version = ++matchVersion;
+        matching = true; codesReady = false;
+        hint.textContent = 'Traženje artikala po šiframa…';
+        try {
+            var data = new FormData();
+            data.set('action', 'match_codes');
+            data.set('paste_text', text);
+            data.set('csrfmiddlewaretoken', form.querySelector('[name=csrfmiddlewaretoken]').value);
+            var response = await fetch(window.location.pathname, {method: 'POST', body: data, credentials: 'same-origin', headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}});
+            if (version !== matchVersion) return;
+            if (!(response.headers.get('Content-Type') || '').includes('application/json')) throw new Error('Osvježi stranicu i prijavi se ponovo ako je sesija istekla.');
+            var result = await response.json();
+            if (version !== matchVersion) return;
+            if (!response.ok || result.error) throw new Error(result.error || 'Pretraga nije uspjela.');
+            fillTable(result.rows); codesReady = true;
+        } catch (error) {
+            if (version !== matchVersion) return;
+            body.innerHTML = '';
+            ensureRows(8);
+            hint.textContent = error.message;
+        } finally {
+            if (version === matchVersion) matching = false;
+        }
+    }
+    function usePaste(text) {
+        var first = String(text).trim().split(/\r?\n/)[0] || '';
+        var cells = first.split(first.includes('\t') ? '\t' : ';');
+        if (cells.length === 3) { matchCodes(text); return; }
+        ++matchVersion; matching = false; codesReady = true;
+        fillTable(parsePaste(text));
+    }
+    document.getElementById('uvozMatchCodes').addEventListener('click', function () { matchCodes(paste.value); });
     function fillTable(rows) {
         body.innerHTML = '';
         rows.forEach(function (row) { addRow(row); });
@@ -168,25 +219,24 @@
         var last = body.querySelector('tr:last-child input');
         if (last) last.focus();
     });
+    paste.addEventListener('input', function () { ++matchVersion; matching = false; codesReady = false; hint.textContent = 'Klikni Pronađi artikle po šiframa da popuniš tabelu.'; });
     paste.addEventListener('paste', function (event) {
         var text = event.clipboardData && event.clipboardData.getData('text/plain');
         if (!text) return;
-        var rows = parsePaste(text);
-        if (!rows.length) return;
         event.preventDefault();
         paste.value = text;
-        fillTable(rows);
+        usePaste(text);
     });
     document.getElementById('uvozSheet').addEventListener('paste', function (event) {
         var text = event.clipboardData && event.clipboardData.getData('text/plain');
         if (!text || (text.indexOf('\t') < 0 && text.indexOf('\n') < 0)) return;
-        var rows = parsePaste(text);
-        if (!rows.length) return;
         event.preventDefault();
         paste.value = text;
-        fillTable(rows);
+        usePaste(text);
     });
-    form.addEventListener('submit', function () {
+    form.addEventListener('submit', function (event) {
+        if (!document.getElementById('uvozCalculationJson').value) { event.preventDefault(); hint.textContent = 'Prvo sačuvaj Unos za kalkulaciju pored naziva uvoza.'; return; }
+        if (matching || !codesReady) { event.preventDefault(); hint.textContent = 'Prvo uspješno pronađi artikle po šiframa.'; return; }
         document.getElementById('uvozRowsJson').value = JSON.stringify(collectRows());
     });
 })();

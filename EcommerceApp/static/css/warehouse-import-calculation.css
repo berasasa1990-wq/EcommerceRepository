@@ -1,0 +1,7 @@
+.mg-name-line{display:flex;align-items:center;gap:10px;min-width:0}.mg-name-line input{flex:1;min-width:0}
+.mg-calc-trigger{flex:0 0 42px;display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;padding:8px}.mg-calc-trigger svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7}
+.uvoz-calculation-dialog{width:min(600px,calc(100vw - 24px));max-height:90dvh;overflow:auto;padding:22px;background:#fff;color:#172f4d;border:1px solid #d5e7f1;border-radius:14px}
+.uvoz-calculation-dialog::backdrop{background:#11263d66}.uvoz-calculation-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.uvoz-calculation-head h2{margin:0;font-size:21px}.uvoz-calculation-head button{font-size:22px;min-width:36px}
+.uvoz-calculation-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}.uvoz-calculation-grid label{display:grid;gap:6px;font-size:14px;font-weight:600}.uvoz-calculation-grid input{width:100%}
+#uvozCalculationError{color:#b42318}.mg-uvoz-sheet input[readonly]{background:#eff8fc;color:#42667f;cursor:default}
+@media(max-width:480px){.uvoz-calculation-dialog{padding:16px}.uvoz-calculation-grid{gap:10px}.uvoz-calculation-head h2{font-size:18px}}

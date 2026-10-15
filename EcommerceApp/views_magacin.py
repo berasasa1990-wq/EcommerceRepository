@@ -6589,21 +6589,40 @@ def magacin_uvoz(request):
 def magacin_uvoz_novi(request):
     from .uvoz_import import parse_uvoz_json_rows, parse_uvoz_paste
 
+    if request.method == 'POST' and request.POST.get('action') == 'match_codes':
+        from .warehouse_import_check import resolve_warehouse_import_codes
+        try:
+            return JsonResponse({'rows': resolve_warehouse_import_codes(request.POST.get('paste_text', ''))})
+        except ValueError as exc:
+            return JsonResponse({'error': str(exc)}, status=400)
+
     draft_naziv = (request.POST.get('naziv') or '').strip()
     paste_text = request.POST.get('paste_text') or ''
+    calculation_text = request.POST.get('calculation_json') or ''
     if request.method == 'POST':
         try:
             rows = parse_uvoz_json_rows(request.POST.get('rows_json') or '')
             if not rows:
-                rows = parse_uvoz_paste(paste_text)
+                import csv, io
+                first = next(csv.reader(io.StringIO(paste_text), delimiter='\t'), [])
+                if len(first) == 3:
+                    from .warehouse_import_check import resolve_warehouse_import_codes
+                    rows = parse_uvoz_json_rows(json.dumps(resolve_warehouse_import_codes(paste_text)))
+                else:
+                    rows = parse_uvoz_paste(paste_text)
             if not rows:
                 raise MagacinError('Zalijepi redove iz Excela u tabelu ili u polje za lijepljenje.')
-            uvoz, result = create_magacin_uvoz_from_rows(
-                rows,
-                naziv=draft_naziv,
-                user=request.user,
-                apply_stock=False,
-            )
+            from .import_calculation import calculation, calculate_rows
+            if not calculation_text:
+                raise ValueError('Prvo otvori Unos za kalkulaciju i sačuvaj podatke.')
+            config = calculation(calculation_text)
+            rows = calculate_rows(rows, config)
+            with transaction.atomic():
+                uvoz, result = create_magacin_uvoz_from_rows(
+                    rows, naziv=draft_naziv, user=request.user, apply_stock=False,
+                )
+                uvoz.kalkulacija = config
+                uvoz.save(update_fields=['kalkulacija'])
             messages.success(
                 request,
                 f'Uvoz „{uvoz.naziv}” sačuvan: {result["updated"]} ažurirano, '
@@ -6625,6 +6644,7 @@ def magacin_uvoz_novi(request):
     context = _magacin_context(request, section='uvoz', page_title='Novi uvoz — Magacin')
     context.update({
         'draft_naziv': draft_naziv,
+        'calculation_text': calculation_text,
         'paste_text': paste_text,
     })
     return render(request, 'staff/magacin/uvoz_novi.html', context)
@@ -6638,6 +6658,25 @@ def magacin_uvoz_detail(request, pk):
         pk=pk,
         izvor=Uvoz.Izvor.MAGACIN,
     )
+    if request.method == 'POST' and request.POST.get('action') == 'save_calculation':
+        from .import_calculation import calculation, calculate_rows
+        try:
+            config = calculation(request.POST)
+            with transaction.atomic():
+                locked = Uvoz.objects.select_for_update().get(pk=uvoz.pk)
+                items = list(locked.stavke.select_for_update().order_by('pk'))
+                source_rows = [{key: getattr(item, key) for key in ('kolicina', 'fakturna', 'mpc_brutto')} | {'artikal': item.artikal_naziv} for item in items]
+                calculated = calculate_rows(source_rows, config)
+                for item, values in zip(items, calculated):
+                    for key in ('nabavna', 'vpc_netto', 'vpc_marza', 'ukupno_fakturna', 'mpc_brutto'):
+                        setattr(item, key, values[key])
+                    item.save(update_fields=['nabavna', 'vpc_netto', 'vpc_marza', 'ukupno_fakturna', 'mpc_brutto'])
+                locked.kalkulacija = config
+                locked.save(update_fields=['kalkulacija'])
+            messages.success(request, 'Kalkulacija je sačuvana i cijene u uvozu su preračunate.')
+        except ValueError as exc:
+            messages.error(request, str(exc))
+        return redirect('staff_magacin_uvoz_detail', pk=uvoz.pk)
     if request.method == 'POST' and request.POST.get('action') == 'delete':
         naziv = uvoz.naziv
         try:

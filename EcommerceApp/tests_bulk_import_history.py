@@ -128,3 +128,25 @@ class BulkImportHistoryTests(TestCase):
         self.assertTrue(response.context['session_input'])
         self.assertIn('OLD99\t6\t2.50', response.context['import_excel_text'])
         self.assertNotContains(response, 'Još nema sačuvanih')
+
+    def test_warehouse_import_resolves_codes_and_preserves_each_rows_values(self):
+        from .models import Product
+        from .warehouse_import_check import resolve_warehouse_import_codes
+        Product.objects.create(naziv='K0340051 KORUM mašinica', cijena=10)
+        Product.objects.create(naziv='A0430110 PRESTON torbica', cijena=10)
+        rows = resolve_warehouse_import_codes('Šifra\tKoličina\tFakturna\nA0430110\t3\t15.50\nK0340051\t7\t20,25')
+        self.assertEqual(rows, [{'artikal': 'A0430110 PRESTON torbica', 'kolicina': '3', 'fakturna': '15.50', 'mpc_brutto': '10.00'}, {'artikal': 'K0340051 KORUM mašinica', 'kolicina': '7', 'fakturna': '20,25', 'mpc_brutto': '10.00'}])
+        response = self.client.post(reverse('staff_magacin_uvoz_novi'), {'action': 'match_codes', 'paste_text': 'K0340051\t2\t9.50'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['rows'][0]['artikal'], 'K0340051 KORUM mašinica')
+        self.assertFalse(Uvoz.objects.exists())
+
+    def test_warehouse_import_rejects_unknown_and_ambiguous_codes(self):
+        from .models import Product
+        from .warehouse_import_check import resolve_warehouse_import_codes
+        Product.objects.create(naziv='ABC FOX prvi', cijena=10)
+        Product.objects.create(naziv='ABC FOX drugi', cijena=10)
+        for code in ['ABC', 'NEMA']:
+            with self.subTest(code=code), self.assertRaises(ValueError):
+                resolve_warehouse_import_codes(f'{code}\t2\t4.50')
+        self.assertEqual(Product.objects.count(), 2)

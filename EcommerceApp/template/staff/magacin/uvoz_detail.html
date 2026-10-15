@@ -4,12 +4,14 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'css/staff-import-reference.css' %}?v=20261015-blue-workspace">
+<link rel="stylesheet" href="{% static 'css/warehouse-import-calculation.css' %}?v=20261015">
 {% endblock %}
 
 {% block magacin_content %}
+{% include 'staff/magacin/_uvoz_calculation.html' %}
 <div class="mg-toolbar">
     <div>
-        <h1>{{ uvoz.naziv }}</h1>
+        <div class="mg-name-line"><h1>{{ uvoz.naziv }}</h1><button type="button" class="mg-btn mg-calc-trigger" data-calculation-open title="Unos za kalkulaciju" aria-label="Unos za kalkulaciju"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 6h8M8 10h2m4 0h2M8 14h2m4 0h2M8 18h2m4 0h2"/></svg></button></div>
         <p class="mg-count">
             {{ uvoz.kreiran|date:"d.m.Y. H:i" }}
             {% if uvoz.kreirao %} · {{ uvoz.kreirao.get_full_name|default:uvoz.kreirao.email }}{% endif %}
@@ -106,3 +108,5 @@
     </div>
 </section>
 {% endblock %}
+
+{% block magacin_js %}{{ block.super }}<script src="{% static 'js/warehouse-import-calculation.js' %}?v=20261015"></script>{% endblock %}

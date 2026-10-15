@@ -51,7 +51,7 @@
     .home-mobile-reference .carousel-btn { display: none; }
     .home-mobile-reference .carousel-dots { left: 16px; right: auto; bottom: 10px; transform: none; gap: 6px; }
     .home-mobile-reference .carousel-dots .dot { width: 7px; height: 7px; min-width: 7px; padding: 0; background: #d6d6d6; border: 0; }
-    .home-mobile-reference .carousel-dots .dot.active { background: #ff6000; }
+    .home-mobile-reference .carousel-dots .dot.active { background: #59616d; }
     .home-mobile-reference .mobile-home-categories { display: block; order: 1; margin: 0 12px 10px; }
     .mobile-home-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; gap: 8px; }
     .mobile-home-heading h2 { font-size: 21px; margin: 0; letter-spacing: -.6px; }
