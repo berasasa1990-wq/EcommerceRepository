@@ -27,3 +27,7 @@ body.is-article-stock #mgApp .stock-menu{display:none}
 .stock-pagination{display:flex;justify-content:center;align-items:center;gap:18px;padding:24px 0;color:#58769c;font-size:14px}.stock-pagination a{color:#008cb6;padding:8px;text-decoration:none}
 @media(max-width:1100px){body.is-article-stock #mgApp .stock-menu{display:block;min-width:42px;min-height:42px;padding:8px;cursor:pointer}}
 @media(max-width:600px){.stock-search{padding:16px 14px;margin-bottom:22px}.stock-search label{font-size:15px}.stock-search-fields{gap:8px}body.is-article-stock #mgApp .stock-search input[type=search]{height:44px;font-size:14px}body.is-article-stock #mgApp .stock-search button[type=submit]{min-height:44px;font-size:13px;padding:10px 12px}.stock-results-heading{margin-bottom:14px}.stock-results-heading h1{font-size:19px}.stock-results-heading p{font-size:13px}.stock-result-count{font-size:12px;padding:7px 10px}.stock-result{padding:12px 10px;gap:10px}.stock-result-image{flex-basis:52px;width:52px;height:58px}.stock-result-info>strong{font-size:14px;margin-bottom:5px}.stock-result-codes{font-size:11px;gap:3px 8px}.stock-result-quantity{flex-basis:66px;min-height:62px;padding:7px 5px}.stock-result-quantity>span{font-size:10px}.stock-result-quantity strong{font-size:22px}.stock-result-quantity small{font-size:11px}}
+.stock-pagination{flex-wrap:wrap}
+#stockLoadMore[hidden]{display:none}
+#stockLoadMore[aria-busy=true]{opacity:.65;cursor:wait}
+#stockLoadError{flex-basis:100%;text-align:center;color:#b42318}

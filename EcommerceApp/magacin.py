@@ -1371,6 +1371,27 @@ def set_uvoz_popis_qty(stavka, qty, *, user=None):
     return stavka
 
 
+
+def mark_all_uvoz_counted(uvoz, *, user=None):
+    """Count the entire delivery as received; stock is applied only on finish."""
+    with transaction.atomic():
+        locked = Uvoz.objects.select_for_update().get(pk=uvoz.pk)
+        if locked.popis_status == Uvoz.PopisStatus.ZAVRSEN:
+            raise MagacinError('Popis je već završen.')
+        rows = list(locked.stavke.select_for_update().exclude(
+            status__in=[UvozStavka.Status.SKIPPED, UvozStavka.Status.ERROR],
+        ).order_by('pk'))
+        if not rows:
+            raise MagacinError('Uvoz nema stavki za popis.')
+        for row in rows:
+            if row.kolicina is None or row.kolicina < 0:
+                raise MagacinError(f'Stavka „{row.artikal_naziv}” nema ispravnu količinu uvoza.')
+        for row in rows:
+            row.uvoz = locked
+            set_uvoz_popis_qty(row, row.kolicina, user=user)
+    return len(rows)
+
+
 def finish_uvoz_popis(uvoz, *, user=None):
     if uvoz.popis_status == Uvoz.PopisStatus.ZAVRSEN:
         raise MagacinError('Popis je već završen.')

@@ -251,7 +251,8 @@
                         <th class="num">NABAVNA</th>
                         <th class="num">VPC</th>
                         <th class="num">MPC</th>
-                        <th class="num">MARŽA</th>
+                        <th class="num">Vpc netto %</th>
+                        <th class="num">Mpc netto %</th>
                         <th>PROMJENA</th>
                     </tr>
                 </thead>
@@ -269,7 +270,8 @@
                         <td data-label="Nabavna" class="num">{% if row.nabavna %}{{ row.nabavna }} KM{% else %}—{% endif %}</td>
                         <td data-label="Vpc" class="num">{% if row.vpc %}{{ row.vpc }} KM{% else %}—{% endif %}</td>
                         <td data-label="Mpc" class="num">{% if row.mpc %}{{ row.mpc }} KM{% else %}—{% endif %}</td>
-                        <td data-label="Marža" class="num">{% if row.marza is not None %}{{ row.marza }}%{% else %}—{% endif %}</td>
+                        <td data-label="Vpc netto %" class="num">{% if row.marza is not None %}{{ row.marza }}%{% else %}—{% endif %}</td>
+                        <td data-label="Mpc netto %" class="num">{% if row.mpc_netto_pct is not None %}{{ row.mpc_netto_pct }}%{% else %}—{% endif %}</td>
                         <td data-label="Promjena">
                             {% if row.is_first %}
                             <span class="mg-muted">Prvi uvoz</span>

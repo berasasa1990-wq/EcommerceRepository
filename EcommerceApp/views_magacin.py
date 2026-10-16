@@ -855,7 +855,9 @@ def magacin_artikli(request):
     # This list shows images, identifiers and quantities only, not variants/prices.
     qs = products.prefetch_related(None) if hasattr(products, 'prefetch_related') else products
 
-    paginator = Paginator(qs, 10)
+    user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+    mobile = any(token in user_agent for token in ('mobile', 'android', 'iphone', 'ipod'))
+    paginator = Paginator(qs, 10 if mobile else 20)
     page = paginator.get_page(request.GET.get('page') or 1)
     product_ids = [item.pk for item in page.object_list]
     totals_by_product = {}
@@ -1226,7 +1228,9 @@ def magacin_artikal(request, pk):
 
     price_history, price_chart = _product_uvoz_price_history(product)
     mpc = variation.prikazna_cijena if variation else product.prikazna_cijena
-    vpc = net_price(product, variation, discounts_for([product.pk]), brand_divisors())
+    vpc = _latest_import_vpc(product)
+    if vpc is None:
+        vpc = net_price(product, variation, discounts_for([product.pk]), brand_divisors())
 
     context = _magacin_context(request, section='artikli', page_title=f'{product.naziv} — Magacin', hide_top_search=True)
     context.update({
@@ -1775,15 +1779,32 @@ def magacin_stampa_deklaracije_print(request, pk):
     })
 
 
+def _latest_import_vpc(product):
+    return (
+        UvozStavka.objects.filter(
+            Q(product=product) | Q(product__isnull=True, artikal_naziv=product.naziv),
+            vpc_netto__isnull=False,
+        )
+        .exclude(status__in=[UvozStavka.Status.SKIPPED, UvozStavka.Status.ERROR])
+        .order_by('-uvoz__kreiran', '-uvoz_id', '-pk')
+        .values_list('vpc_netto', flat=True).first()
+    )
+
+
 def _uvoz_marza_pct(stavka):
-    pct = stavka.vpc_marza_pct
-    if pct is not None:
-        return pct
     vpc = stavka.vpc_netto
-    mpc = stavka.mpc_brutto
-    if vpc and mpc and vpc > 0:
-        return ((mpc - vpc) / vpc * Decimal('100')).quantize(Decimal('0.01'))
-    return None
+    nabavna = stavka.nabavna
+    if vpc is None or nabavna is None or nabavna <= 0:
+        return None
+    return ((vpc / nabavna - Decimal('1')) * Decimal('100')).quantize(Decimal('0.01'))
+
+
+def _uvoz_mpc_netto_pct(stavka, fallback_price=None):
+    mpc = stavka.mpc_brutto if stavka.mpc_brutto is not None else fallback_price
+    nabavna = stavka.nabavna
+    if mpc is None or nabavna is None or nabavna <= 0:
+        return None
+    return ((mpc / Decimal('1.17') / nabavna - Decimal('1')) * Decimal('100')).quantize(Decimal('0.01'))
 
 
 def _fmt_km(value):
@@ -1844,7 +1865,7 @@ def _product_uvoz_price_history(product):
                 _change_row('Vpc', _fmt_km(prev['vpc']), _fmt_km(vpc), vpc, prev['vpc']),
                 _change_row('Nabavna', _fmt_km(prev['nabavna']), _fmt_km(nabavna), nabavna, prev['nabavna']),
                 _change_row(
-                    'Marža',
+                    'Vpc netto %',
                     f'{prev["marza"]}%' if prev['marza'] is not None else '—',
                     f'{marza}%' if marza is not None else '—',
                     marza,
@@ -1860,6 +1881,7 @@ def _product_uvoz_price_history(product):
             'vpc': vpc,
             'nabavna': nabavna,
             'marza': marza,
+            'mpc_netto_pct': _uvoz_mpc_netto_pct(stavka, product.cijena),
             'delta_mpc': delta_mpc,
             'delta_vpc': delta_vpc,
             'delta_nabavna': delta_nabavna,
@@ -1938,7 +1960,7 @@ def _nivelacije_diff(old, new, keys=None):
         ('vpc', 'Vpc', _fmt_km),
         ('nabavna', 'Nabavna', _fmt_km),
         ('fakturna', 'Fakturna', _fmt_km),
-        ('marza', 'Marža', _fmt_pct),
+        ('marza', 'Vpc netto %', _fmt_pct),
     ):
         if keys is not None and key not in keys:
             continue
@@ -6949,6 +6971,10 @@ def magacin_uvoz_popis(request, pk):
                     qty = _uvoz_popis_parse_qty(request.POST.get('kolicina'))
                 set_uvoz_popis_qty(stavka, qty, user=request.user)
                 current_id = stavka.pk
+            elif action == 'popisi_sve':
+                from .magacin import mark_all_uvoz_counted
+                count = mark_all_uvoz_counted(uvoz, user=request.user)
+                messages.success(request, f'Popisano {count} stavki: popisana količina jednaka je količini uvoza. Klikni Završi popis za završnu potvrdu.')
             elif action == 'select':
                 current_id = int(request.POST.get('stavka_id') or 0) or None
             elif action == 'zavrsi':

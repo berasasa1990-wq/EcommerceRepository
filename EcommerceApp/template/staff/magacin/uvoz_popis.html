@@ -32,6 +32,10 @@
             {% if payload.zavrsen %}
             <a class="mg-btn mg-btn-primary" href="{% url 'staff_magacin_uvoz_popis_stampa' uvoz.pk %}" target="_blank" rel="noopener">Štampaj manjak / višak</a>
             {% else %}
+            <form method="post" onsubmit="return confirm('Postaviti popisanu količinu svih stavki na količinu iz uvoza? Ovo zamjenjuje i ranije upisane količine popisa.');">
+                {% csrf_token %}<input type="hidden" name="action" value="popisi_sve">
+                <button type="submit" class="mg-btn">✓ Sve je stiglo — popiši sve</button>
+            </form>
             <button type="button" class="mg-btn mg-btn-primary" id="upFinish">✓ Završi popis</button>
             {% endif %}
         </div>

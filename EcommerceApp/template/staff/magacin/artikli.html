@@ -1,7 +1,7 @@
 {% extends 'staff/magacin/base.html' %}
 {% load static %}
 {% block body_class %}{{ block.super }} is-article-stock{% endblock %}
-{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/warehouse-stock-list.css' %}?v=20261015-single-article-layout">{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/warehouse-stock-list.css' %}?v=20261016-show-more">{% endblock %}
 {% block magacin_content %}
 <form class="stock-search" id="mgArticleSearchForm" role="search" method="get" action="{% url 'staff_magacin_artikli' %}">
     <div class="stock-search-heading"><label for="mgArticleSearch">Pretraga artikala</label><button type="button" id="mgNavToggle" class="stock-menu" aria-label="Meni magacina" aria-expanded="false">☰</button></div>
@@ -21,9 +21,11 @@
     {% empty %}<p class="stock-notice">Nema artikala za prikaz.</p>{% endfor %}
     </div>
 </section>
-{% if page.has_other_pages %}<nav class="stock-pagination" aria-label="Stranice artikala">
-    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}&amp;rezultati=1{% if magacin_search %}&amp;pretraga={{ magacin_search|urlencode }}{% endif %}{% if include_zero %}&amp;bez_zalihe=1{% endif %}">‹ Prethodna</a>{% endif %}
-    <span>{{ page.number }} / {{ page.paginator.num_pages }}</span>
-    {% if page.has_next %}<a href="?page={{ page.next_page_number }}&amp;rezultati=1{% if magacin_search %}&amp;pretraga={{ magacin_search|urlencode }}{% endif %}{% if include_zero %}&amp;bez_zalihe=1{% endif %}">Sljedeća ›</a>{% endif %}
-</nav>{% endif %}
+<div class="stock-pagination">
+    <span id="stockShownCount" role="status">Prikazano {{ page.end_index }} od {{ result_count }} artikala</span>
+    {% if page.has_next %}<a id="stockLoadMore" class="mg-btn" href="?page={{ page.next_page_number }}&amp;rezultati=1{% if magacin_search %}&amp;pretraga={{ magacin_search|urlencode }}{% endif %}{% if include_zero %}&amp;bez_zalihe=1{% endif %}">Prikaži više</a>{% endif %}
+    <span id="stockLoadError" role="alert"></span>
+</div>
 {% endblock %}
+
+{% block magacin_js %}{{ block.super }}<script src="{% static 'js/warehouse-stock-more.js' %}?v=20261016"></script>{% endblock %}

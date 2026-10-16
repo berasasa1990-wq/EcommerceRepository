@@ -186,9 +186,7 @@ html body #couponChoiceDialog button.coupon-choice-close{background:transparent!
 html body #couponChoiceDialog button.coupon-choice-select{background:#fff!important;color:#334155!important;border:1px solid #d1d5db!important;box-shadow:none!important}
 html body #couponChoiceDialog .coupon-choice-icon{background:#f3f4f6!important;color:#334155!important}
 
-/* Square, centered cart removal control. */
-html body button.cart-item-remove{display:inline-flex!important;align-items:center;justify-content:center;box-sizing:border-box;width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;padding:6px!important;flex:0 0 32px;aspect-ratio:1;border-radius:6px!important}
-html body button.cart-item-remove svg{display:block;width:20px!important;height:20px!important;aspect-ratio:1;flex-shrink:0}
+
 
 /* Pale orange category icon tiles. */
 html body #mobileHomeCategories .mobile-home-category-grid>a{background:#fff6ed!important;border-color:#ffe7ce!important;box-shadow:none!important}

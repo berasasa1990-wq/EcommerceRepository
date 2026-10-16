@@ -551,7 +551,7 @@ body.is-cart-page .cart-page {
  .cart-intro { font-size: 13px; color: #666973; margin: 5px 0 0; }
  .cart-layout { gap: 0; }
  .cart-items { border: 0; border-radius: 0; padding: 0; }
- .cart-item { position: relative; grid-template-columns: 76px minmax(0,1fr) 100px; grid-template-areas: 'img info controls'; align-items: center; gap: 10px; padding: 13px 0; min-height: 90px; }
+ .cart-item { position: relative; grid-template-columns: 76px minmax(0,1fr) 120px; grid-template-areas: 'img info controls'; align-items: center; gap: 10px; padding: 13px 0; min-height: 90px; }
  .cart-item-image { width: 76px; height: 76px; border-radius: 9px; background: #f5f5f7; }
  .cart-item-title { font-size: 12px; line-height: 1.25; font-weight: 700; }
  .cart-item-meta { font-size: 10px; }
@@ -559,12 +559,13 @@ body.is-cart-page .cart-page {
  .cart-item-price { position: absolute; top: 13px; right: 0; margin: 0; font-size: 13px; color: #080808; text-align: right; max-width: 100px; }
  .cart-item-price .price-original { display: block; color: #777c87; font-size: 10px; }
  .cart-item-price .price-discounted, .cart-item-price .price-deal { color: #080808; }
- .cart-item-controls { margin-top: 28px; gap: 3px; justify-content: flex-end; }
+ .cart-item-controls { margin-top: 28px; gap: 16px; justify-content: flex-end; }
  .cart-item-total { display: none; }
  .cart-item-qty { border: 0; border-radius: 8px; background: #f5f5f7; }
  .cart-qty-btn { width: 24px; height: 32px; font-size: 17px; font-weight: 400; color: #626772; background: #f5f5f7; }
  .cart-page .cart-item-qty .form-input--qty { width: 24px; height: 32px; font-size: 13px; font-weight: 400; border: 0; }
- .cart-item-remove { width: 25px; min-width: 25px; height: 34px; border: 0; padding: 0; border-radius: 0; color: #383b42; }
+ .cart-item-remove { display:inline-flex;align-items:center;justify-content:center;flex:0 0 32px;width:32px;min-width:32px;height:32px;min-height:32px;border:0;padding:8px;border-radius:6px;color:#383b42; }
+ .cart-item-remove svg { display:block;width:14px;height:14px;flex-shrink:0; }
  .cart-summary { display: flex; flex-direction: column; gap: 9px; padding: 0; border: 0; border-radius: 0; }
  .cart-shipping-mobile { order: 4; }
  .cart-shipping-mobile .cart-shipping-progress { display: flex; flex-direction: column-reverse; gap: 6px; padding: 12px; margin: 0; background: #f5f5f7; border: 0; border-radius: 10px; }
