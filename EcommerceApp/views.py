@@ -2732,6 +2732,7 @@ def home(request):
     filters_active = _filters_active(filter_params)
 
     latest_products = []
+    bestselling_products = []
     featured_products = []
     sale_products = []
     home_trust_items = []
@@ -2830,6 +2831,15 @@ def home(request):
             else:
                 catalog_subtitle = f'Nema artikala za {size_label}.'
     else:
+        bestselling_ids = list(
+            OrderItem.objects.filter(
+                narudzba__status__in=[Order.Status.POTVRDJENA, Order.Status.POSLANA, Order.Status.ZAVRSENA],
+                narudzba__izvor=Order.Izvor.WEBSHOP,
+                artikal__isnull=False,
+            ).values('artikal_id').annotate(sold=Sum('kolicina')).order_by('-sold', 'artikal_id').values_list('artikal_id', flat=True)[:12]
+        )
+        bestselling_by_id = {p.pk: p for p in _product_queryset(request).filter(pk__in=bestselling_ids)}
+        bestselling_products = [bestselling_by_id[pk] for pk in bestselling_ids if pk in bestselling_by_id]
         latest_products = _home_latest_products(request)
         featured_products = _home_featured_products(request)
         featured_desktop_extra_ids = []
@@ -2913,6 +2923,7 @@ def home(request):
         'lcp_image_url': lcp_image_url,
         'lcp_image_srcset': lcp_image_srcset,
         'lcp_image_sizes': lcp_image_sizes,
+        **({'cats_sidebar_open': False} if not filters_active else {}),
         'has_hero_slides': has_hero_slides,
         'eager_first_novo_image': eager_first_novo_image,
         'hero_slides': [_banner_to_hero_slide(b) for b in hero_banners_list],
@@ -2920,6 +2931,7 @@ def home(request):
         'featured_cards': [_banner_to_card(b) for b in featured_banners],
         'spotlight': spotlight,
         'latest_products': latest_products,
+        'bestselling_products': bestselling_products,
         'featured_products': featured_products,
         'featured_desktop_extra_ids': featured_desktop_extra_ids if not filters_active else [],
         'sale_products': sale_products,

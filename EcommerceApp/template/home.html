@@ -2,7 +2,11 @@
 {% load static %}
 {% block body_class %}{% if not filters_active %}home-mobile-reference{% else %}catalog-header-reference{% endif %}{% endblock %}
 
+{% block warehouse_theme_css %}
+{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-reference-orange.css' %}?v=20261018-gray-category-tiles">{% endif %}
+{% endblock %}
 {% block extra_css %}
+
 <style>
 .home-products--novo .product-card--home-reference { position: relative; }
 .home-products--novo .home-card-new-label {
@@ -211,11 +215,7 @@ body.home-mobile-reference main > :is(section,.featured-grid,.mobile-home-benefi
 {% endif %}
 
 {% include 'partials/home_mobile_navigation.html' %}
-{% include 'partials/home_mobile_benefits.html' %}
 
-{% if home_trust_items %}
-{% include 'partials/home_trust_bar.html' %}
-{% endif %}
 
 
 
@@ -286,95 +286,50 @@ body.home-mobile-reference main > :is(section,.featured-grid,.mobile-home-benefi
 
 {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
-{% if latest_products %}
-<section class="category-page category-page--shop home-products home-products--novo">
-    <div class="product-catalog product-catalog--compact home-product-catalog">
-        <div class="catalog-layout catalog-layout--full">
-            <div class="catalog-products">
-                {% include 'partials/home_section_header.html' with title=site_settings.naslov_novo subtitle=site_settings.podnaslov_novo edit_title='naslov_novo' edit_title_placeholder='Noviteti' edit_subtitle='podnaslov_novo' header_mod='novo' see_all_url='/?noviteti=1' %}
-                {% include 'partials/home_product_carousel.html' with products=latest_products|slice:':6' eager_first_image=eager_first_novo_image home_section_badge='novo' %}
-            </div>
-        </div>
-    </div>
-</section>
-{% endif %}
-
 {% if featured_products %}
 <section class="category-page category-page--shop home-products home-products--izdvojeno">
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
-                {% include 'partials/home_section_header.html' with title='Izdvojeno za vas' header_mod='izdvojeno' see_all_url='/?izdvojeno=1' %}
-                {% include 'partials/home_product_carousel.html' with products=featured_products home_section_badge='hit' desktop_extra_ids=featured_desktop_extra_ids %}
+                {% include 'partials/home_section_header.html' with title='Izdvojena ponuda' header_mod='izdvojeno' see_all_url='/?izdvojeno=1' %}
+                {% include 'partials/home_product_carousel.html' with products=featured_products home_section_badge='hit' desktop_extra_ids=featured_desktop_extra_ids visible_desktop=6 %}
             </div>
         </div>
     </div>
 </section>
 {% endif %}
 
-{% include 'partials/home_loyalty_banner.html' %}
+{% include 'partials/home_reference_promos.html' %}
 
-{% if sale_products %}
-<section class="category-page category-page--shop home-products home-products--akcija">
+
+{% if bestselling_products %}
+<section id="najprodavaniji" class="category-page category-page--shop home-products home-products--bestsellers">
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
-                {% include 'partials/home_section_header.html' with title=site_settings.naslov_akcija subtitle=site_settings.podnaslov_akcija edit_title='naslov_akcija' edit_title_placeholder='Akcijska ponuda' edit_subtitle='podnaslov_akcija' header_mod='akcija' see_all_url='/?akcija=1' %}
-                {% include 'partials/home_product_carousel.html' with products=sale_products home_section_badge='' %}
+                {% include 'partials/home_section_header.html' with title='Najprodavaniji proizvodi' subtitle=site_settings.podnaslov_akcija edit_title='naslov_akcija' edit_title_placeholder='Akcijska ponuda' edit_subtitle='podnaslov_akcija' header_mod='bestsellers' see_all_url='/?izdvojeno=1' %}
+                {% include 'partials/home_product_carousel.html' with products=bestselling_products home_section_badge='' visible_desktop=6 %}
             </div>
         </div>
     </div>
 </section>
 {% endif %}
 
-{% if showcase_brands %}
-<section class="home-shop-brands" aria-labelledby="homeShopBrandsTitle">
-    <div class="home-shop-brands__heading">
-        <h2 id="homeShopBrandsTitle">Kupujte po brendu</h2>
-        <a href="#brendovi">Pogledaj sve <span aria-hidden="true">›</span></a>
-    </div>
-    <div class="home-shop-brands__grid">
-        {% for brand in showcase_brands %}
-        <a href="{% url 'home' %}?brend={{ brand.slug }}#product-showcase">
-            <img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" width="160" height="70" loading="lazy" decoding="async">
-        </a>
-        {% endfor %}
-    </div>
-</section>
-{% endif %}
-
-{% include 'partials/home_sale_banner.html' with mobile_image=site_settings.akcija_banner_slika desktop_image=site_settings.akcija_banner_desktop banner_href=site_settings.akcija_banner_href %}
-{% include 'partials/home_sale_banner.html' with mobile_image=site_settings.akcija_banner_slika_2 desktop_image=site_settings.akcija_banner_desktop_2 banner_href=site_settings.akcija_banner_href_2 %}
-{% include 'partials/home_sale_banner.html' with mobile_image=site_settings.akcija_banner_slika_3 desktop_image=site_settings.akcija_banner_desktop_3 banner_href=site_settings.akcija_banner_href_3 %}
-{% include 'partials/home_sale_banner.html' with mobile_image=site_settings.akcija_banner_slika_4 desktop_image=site_settings.akcija_banner_desktop_4 banner_href=site_settings.akcija_banner_href_4 %}
-
-
-{% if home_category_showcases %}
-{% include 'partials/home_category_showcase.html' with sections=home_category_showcases %}
-{% endif %}
-
-{% if home_brand_showcases %}
-{% include 'partials/home_brand_showcase.html' with sections=home_brand_showcases %}
-{% endif %}
-
-{% if home_vlogs or site_settings.prikazi_newsletter %}
-{% include 'partials/home_vlog.html' %}
-{% endif %}
-
-{% if showcase_brands %}
-<section class="home-brand-strip-section home-brand-strip-section--mockup" id="brendovi">
-    {% if site_settings.naslov_brendovi %}
-    <div class="home-section-header home-section-header--brands">
-        <div class="home-section-header__text">
-            <h2 class="home-section-header__title"
-                data-site-edit="naslov_brendovi"
-                data-site-edit-placeholder="Naši brendovi">{{ site_settings.naslov_brendovi }}</h2>
+{% if latest_products %}
+<section class="category-page category-page--shop home-products home-products--novo">
+    <div class="product-catalog product-catalog--compact home-product-catalog">
+        <div class="catalog-layout catalog-layout--full">
+            <div class="catalog-products">
+                {% include 'partials/home_section_header.html' with title='Novo u ponudi' subtitle=site_settings.podnaslov_novo edit_title='naslov_novo' edit_title_placeholder='Noviteti' edit_subtitle='podnaslov_novo' header_mod='novo' see_all_url='/?noviteti=1' %}
+                {% include 'partials/home_product_carousel.html' with products=latest_products|slice:':6' eager_first_image=eager_first_novo_image home_section_badge='novo' visible_desktop=6 %}
+            </div>
         </div>
     </div>
-    {% endif %}
-    {% include 'partials/home_brand_carousel.html' with brands=showcase_brands %}
 </section>
 {% endif %}
+
+{% include 'partials/home_reference_offer.html' %}
+{% include 'partials/home_reference_bottom.html' %}
 
 {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}
 {% endif %}

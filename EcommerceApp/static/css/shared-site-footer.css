@@ -1,0 +1,5 @@
+/* One footer layout for all storefront routes. */
+html body footer.footer--mockup{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important;box-sizing:border-box}
+@media(min-width:1025px){
+ html body footer.footer--mockup .footer-main{width:100%!important;max-width:1600px!important;margin-inline:auto!important;padding-left:24px!important;padding-right:24px!important;box-sizing:border-box}
+}

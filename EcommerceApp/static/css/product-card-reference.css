@@ -76,3 +76,19 @@ html body .product-card.product-card--catalog.product-card--reference-design.pro
  html body.home-mobile-reference .home-product-carousel__track,
  html body .product-catalog .product-grid--catalog{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:18px!important}
 }
+
+/* Place the product image directly above its name. */
+html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image img{object-position:center bottom!important;padding-bottom:0!important}
+html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-card__body{padding-top:4px!important}
+
+/* Shorter cards by reducing the upper image area. */
+html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image{height:165px!important;min-height:165px!important}
+html body.home-mobile-reference .home-products .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design{padding-top:10px!important}
+@media(max-width:600px){
+ html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image{height:125px!important;min-height:125px!important}
+}
+
+/* Keep the badge inside the card with clear space above the image. */
+html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design>.product-card-corner-badge{display:inline-block!important;top:10px!important;left:14px!important;transform:none!important;margin:0!important;border-radius:5px!important;z-index:4}
+html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image{box-sizing:border-box;padding-top:28px!important}
+html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-card__media-link{height:100%;min-height:0}

@@ -136,11 +136,8 @@ def _cached_popup_akcije():
 
 
 def _cats_sidebar_open(request):
-    """Kategorije su uvijek otvorene na sajtu (ne može se sklopiti)."""
-    path = getattr(request, 'path', '') or ''
-    if path.startswith('/nalog/magacin/') or path.startswith('/staff/'):
-        return False
-    return True
+    """The shared header opens categories only on request."""
+    return False
 
 
 def nav_categories(request):

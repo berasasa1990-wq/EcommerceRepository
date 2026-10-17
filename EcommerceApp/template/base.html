@@ -352,11 +352,12 @@
         .desktop-trust-bar nav a.site-wholesale-link { animation:none; }
     }
     </style>
-    <link rel="stylesheet" href="{% static 'css/product-card-reference.css' %}?v=20261015-shorter-cart-buttons">
+    <link rel="stylesheet" href="{% static 'css/product-card-reference.css' %}?v=20261018-badge-inside-clear-image">
     <link rel="stylesheet" href="{% static 'css/site-orange-theme.css' %}?v=20261017-storefront-header-colors">
     {% block warehouse_theme_css %}{% endblock %}
+    <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261018-1">
 </head>
-<body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
+<body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="shared-site-header {% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
     <div class="site-chrome-backdrop" aria-hidden="true"></div>
 
@@ -543,6 +544,7 @@
                 {% endfor %}
             </nav>
             <nav class="header-row header-row--categories" aria-label="Kategorije">
+                <a class="ref-home-nav" href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' and not filters_active %} aria-current="page"{% endif %}>Početna</a>
                 <div class="cats-dropdown{% if cats_sidebar_open %} is-open cats-dropdown--locked{% endif %}" id="catsDropdown">
                     <button type="button" class="cats-dropdown__btn" id="catsDropdownBtn" aria-expanded="{% if cats_sidebar_open %}true{% else %}false{% endif %}" aria-controls="catsDropdownPanel"{% if cats_sidebar_open %} aria-disabled="true"{% endif %}>
                         <span class="cats-dropdown__burger" aria-hidden="true">
@@ -598,6 +600,7 @@
                         </ul>
                     </div>
                 </div>
+                <div class="ref-desktop-nav"><a href="{% url 'home' %}?akcija=1">Akcije</a><a href="{% url 'home' %}?noviteti=1">Novo</a><a href="{% url 'home' %}#najprodavaniji">Najprodavanije</a><a href="{% url 'vlog_list' %}">Blog</a><a href="{% url 'about_us' %}">O nama</a><a href="{% url 'home' %}#footerContact">Kontakt</a></div>
                 <div class="mobile-nav-panel" id="mobileNavPanel">
                     <div class="mobile-nav-panel__header">
                         <button type="button" class="mobile-nav-panel__back" id="mobileNavClose" aria-label="Zatvori meni kategorija">
