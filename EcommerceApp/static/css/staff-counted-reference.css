@@ -1,4 +1,4 @@
-body.magacin-page.is-counted-reference{--ct-metal:#f5faff;--ct-panel:#f5faff;--ct-bevel:none;background:#dedfe1!important}
+body.magacin-page.is-counted-reference{--ct-metal:#f5faff;--ct-panel:#f5faff;--ct-bevel:none;background:#f5faff!important}
 .magacin-page.is-counted-reference .mg-app,.magacin-page.is-counted-reference .mg-main{background:#f5faff;min-height:100vh}
 .magacin-page.is-counted-reference .mg-main{padding:4px 10px 70px;min-width:0;color:#111}
 .magacin-page.is-counted-reference .pp-page{width:100%;max-width:none;padding:0}
@@ -7,7 +7,7 @@ body.magacin-page.is-counted-reference{--ct-metal:#f5faff;--ct-panel:#f5faff;--c
 .magacin-page.is-counted-reference .mg-count{font-size:13px;color:#505b6c;margin:5px 0 0}
 .magacin-page.is-counted-reference .pp-actions{gap:7px;flex-wrap:wrap}
 .magacin-page.is-counted-reference .mg-main .mg-btn,.magacin-page.is-counted-reference .mg-modal .mg-btn,.magacin-page.is-counted-reference .vp-scan-btn{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:10px;background:var(--ct-metal);box-shadow:none;color:#111;font-size:14px;font-weight:750}
-.magacin-page.is-counted-reference .mg-main .mg-btn-primary,.magacin-page.is-counted-reference .mg-modal .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:none;color:#fff}
+.magacin-page.is-counted-reference .mg-main .mg-btn-primary,.magacin-page.is-counted-reference .mg-modal .mg-btn-primary{background:var(--staff-action-gradient);border-color:#0094cd;box-shadow:none;color:#fff}
 .magacin-page.is-counted-reference .mg-main .mg-btn-danger{color:#b52525}
 .magacin-page.is-counted-reference .mg-card,.magacin-page.is-counted-reference .pp-dock{padding:10px;border:1px solid #9b9da2;border-radius:10px;background:var(--ct-panel);box-shadow:none}
 .magacin-page.is-counted-reference .pp-list{padding:0;margin:10px 0}

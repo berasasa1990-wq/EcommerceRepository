@@ -67,7 +67,7 @@
 .mobile-favorites p { color: #777; font-size: 13px; }
 .mobile-favorites a { display: block; padding: 12px 0; color: #111; border-bottom: 1px solid #eee; }
 @media (max-width: 1024px) {
-    body { padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important; }
+    body:not(.magacin-page) { padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important; }
     body .mobile-home-dock {
         position: fixed; inset: auto 0 0; display: grid; visibility: visible; opacity: 1; transform: none; grid-template-columns: repeat(5, minmax(0, 1fr));
         width: 100%; margin: 0; box-sizing: border-box; z-index: 1003;
@@ -78,11 +78,12 @@
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 5px; min-width: 0; min-height: 44px; padding: 0; border: 0; background: transparent;
         box-shadow: none;
-        color: #f17800; font: inherit; font-size: 11px; text-decoration: none;
+        color: #000; font: inherit; font-size: 11px; text-decoration: none;
     }
+    .mobile-home-dock > :is(a, button) > span:first-of-type { color: #000; }
     .mobile-home-dock svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; }
-    .mobile-home-dock [aria-current] { color: #ff6000; }
-    .mobile-home-dock [aria-current] svg { stroke: #ff6000; }
+    .mobile-home-dock [aria-current] { color: #000; }
+    .mobile-home-dock [aria-current] svg { stroke: #000; }
     .mobile-home-dock > a:first-child[aria-current] svg { fill: none; }
     .home-mobile-reference .product-card--home-reference .home-card-heart { pointer-events: auto; border: 0; padding: 6px; background: transparent; cursor: pointer; }
     .mobile-home-dock .mobile-dock-favorites { position: relative; }
@@ -93,7 +94,7 @@
         color: #fff; font-size: 10px; font-weight: 700; line-height: 1;
     }
     .mobile-home-dock .mobile-dock-favorites-count[hidden] { display: none; }
-    .mobile-home-dock .wishlist-btn--has-items svg { fill: #ff6500; stroke: #ff6500; }
+    .mobile-home-dock .wishlist-btn--has-items svg { fill: none; stroke: #000; }
 }
 
 /* Confirmation starts only after the server accepts the cart addition. */

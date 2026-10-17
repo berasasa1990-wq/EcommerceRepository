@@ -166,7 +166,7 @@
     <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'css/style.min.css' %}?v=20260915-render-header-v2" as="style">
-    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20260919-wishlist-badge">
+    <link rel="stylesheet" href="{% static 'css/style.min.css' %}?v=20261017-flat-admin">
     <link rel="stylesheet" href="{% static 'css/header-base.min.css' %}?v=20260919-wishlist-mobile">
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
@@ -213,7 +213,7 @@
     </style>
     {% endif %}
     <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20261015-neutral-banner-dots">
-    <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20261015-transparent-buttons">
+    <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20261017-warehouse-no-dock">
     <link rel="stylesheet" href="{% static 'css/wishlist.css' %}?v=20261015-white-background">
 
     <style>.desktop-trust-bar,.header-category-select,.header-register{display:none!important}</style>
@@ -353,7 +353,7 @@
     }
     </style>
     <link rel="stylesheet" href="{% static 'css/product-card-reference.css' %}?v=20261015-shorter-cart-buttons">
-    <link rel="stylesheet" href="{% static 'css/site-orange-theme.css' %}?v=20261016-cart-remove-spacing">
+    <link rel="stylesheet" href="{% static 'css/site-orange-theme.css' %}?v=20261017-storefront-header-colors">
     {% block warehouse_theme_css %}{% endblock %}
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="{% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
@@ -776,7 +776,7 @@
     {% include 'partials/qty_deal_offer_modal.html' %}
     {% include 'partials/social_proof_toast.html' %}
 
-    {% include 'partials/mobile_dock.html' %}
+    {% block mobile_dock %}{% include 'partials/mobile_dock.html' %}{% endblock %}
     {% include 'partials/footer.html' %}
     {% include 'partials/contact_float.html' %}
     {% if site_settings.javno_online_posjetioci %}

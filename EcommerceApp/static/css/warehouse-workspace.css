@@ -1,11 +1,11 @@
 /* Shared warehouse controls and surfaces. Route styles retain layout only. */
 html body.magacin-page{
-  --site-action-gradient:linear-gradient(180deg,#009fc2,#0078aa);
-  --mg-green:#0078aa;
+  --site-action-gradient:var(--staff-action-gradient);
+  --mg-green:#0094CD;
   --mg-green-soft:#eff8fc;
-  --mg-green-text:#0078aa;
+  --mg-green-text:#0094CD;
   --mg-green-num:#187744;
-  --mg-accent:#0078aa;
+  --mg-accent:#0094CD;
   --mg-accent-hover:#006c99;
   --mg-accent-soft:#eff8fc;
   --mg-accent-line:#c5e4f1;
@@ -57,23 +57,23 @@ html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(input,select,textarea)
 html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(input,select):not(:is([type=checkbox],[type=radio],[type=range],[type=color],[type=hidden])){min-height:42px}
 html body.magacin-page :is(.mg-main,.mg-modal,dialog) textarea{line-height:1.65;resize:vertical}
 html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(input,select,textarea):focus-visible{outline:2px solid #009fc2;outline-offset:2px;border-color:#009fc2}
-html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(input[type=checkbox],input[type=radio]){accent-color:#0078aa}
-html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(button,.mg-btn,.pn-btn,.vp-btn,.pk-btn,.pt-btn,.up-btn,input[type=submit]){
-  --site-action-gradient:linear-gradient(180deg,#009fc2,#0078aa);
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(input[type=checkbox],input[type=radio]){accent-color:#0094CD}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(button,.mg-btn,.pn-btn,.vp-btn,.pk-btn,.pt-btn,.up-btn,input[type=submit]):not([data-pk-minus],[data-pk-plus],.pk-confirm-quantity,[data-magacin-menu]){
+  --site-action-gradient:var(--staff-action-gradient);
   border:1px solid transparent;
   border-radius:9px;
-  box-shadow:none!important;
-  text-shadow:none!important;
+  box-shadow:none;
+  text-shadow:none;
   font-family:inherit;
   font-weight:600;
   line-height:1.4;
   cursor:pointer;
 }
 html body.magacin-page .mg-main :is(.mg-btn,.pn-btn,.vp-btn,.pk-btn,.pt-btn,.up-btn){display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:9px 15px;text-decoration:none}
-html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(button,.mg-btn,.pn-btn,.vp-btn,.pk-btn,.pt-btn,.up-btn):hover{--site-action-gradient:linear-gradient(180deg,#008fb1,#006c99)}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(button,.mg-btn,.pn-btn,.vp-btn,.pk-btn,.pt-btn,.up-btn):not([data-pk-minus],[data-pk-plus],.pk-confirm-quantity,[data-magacin-menu]):hover{--site-action-gradient:var(--staff-action-gradient)}
 html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(.mg-btn-secondary,.mg-btn-light,.mg-btn-outline,.mg-btn-ghost,.mg-chrome-burger,.mg-chrome-icon){
-  --site-action-gradient:linear-gradient(#eff8fc,#eff8fc);
-  color:#0078aa!important;
+  --site-action-gradient:#f5faff;
+  color:#0094CD!important;
   border-color:#c5e4f1;
 }
 html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(.mg-btn-danger,.is-danger,[data-variant=danger]){
@@ -86,17 +86,17 @@ html body.magacin-page .mg-main :is(.mg-filter-tabs,.mg-mode-tabs,.mg-tabs,.up-t
 html body.magacin-page .mg-main :is(.mg-filter-tabs,.mg-mode-tabs,.mg-tabs,.up-tabs) :is(a,button){
   --site-action-gradient:linear-gradient(#fff,#fff);
   background:#fff;
-  color:#0078aa!important;
+  color:#0094CD!important;
   border:1px solid #c5e4f1;
   border-radius:9px;
   box-shadow:none;
   padding:9px 14px;
 }
 html body.magacin-page .mg-main :is(.mg-filter-tabs,.mg-mode-tabs,.mg-tabs,.up-tabs) :is(.is-active,.is-on,[aria-selected=true]){
-  --site-action-gradient:linear-gradient(#009fc2,#0078aa);
+  --site-action-gradient:var(--staff-action-gradient);
   background:var(--site-action-gradient);
   color:#fff!important;
-  border-color:#0078aa;
+  border-color:#0094CD;
 }
 html body.magacin-page .mg-main :is(.mg-table-wrap,.import-bulk-table-wrap){max-width:100%;overflow-x:auto;border:1px solid var(--mg-line);border-radius:10px}
 html body.magacin-page .mg-main :is(.mg-table,.pn-table,.vp-table,.pt-table,.up-table){border-collapse:collapse;width:100%;font-size:14px;background:#fff}
@@ -122,10 +122,10 @@ html body.magacin-page .mg-main :is(.mg-page-search,.mg-chrome-search){min-width
 }
 
 html body.magacin-page .mg-app{
-  --mg-accent:#0078aa;
+  --mg-accent:#0094CD;
   --mg-accent-hover:#006c99;
   --mg-accent-soft:#eff8fc;
   --mg-accent-line:#c5e4f1;
 }
 html body.magacin-page .mg-main :is(.mg-page-search,.mg-chrome-search) input{padding-inline-start:42px}
-html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(.mg-btn-secondary,.mg-btn-light,.mg-btn-outline,.mg-btn-ghost,.mg-chrome-burger,.mg-chrome-icon) svg{color:#0078aa!important;stroke:currentColor}
+html body.magacin-page :is(.mg-main,.mg-modal,dialog) :is(.mg-btn-secondary,.mg-btn-light,.mg-btn-outline,.mg-btn-ghost,.mg-chrome-burger,.mg-chrome-icon) svg{color:#0094CD!important;stroke:currentColor}

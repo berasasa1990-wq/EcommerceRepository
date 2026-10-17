@@ -1,6 +1,6 @@
 /* Import workspace: one blue palette shared with the warehouse menu. */
 .import-check{
-  --site-action-gradient:linear-gradient(180deg,#009fc2,#0078aa);
+  --site-action-gradient:var(--staff-action-gradient);
   --import-blue:#0078aa;
   --import-line:#d5e7f1;
   box-sizing:border-box;
@@ -25,7 +25,7 @@
 .import-check :is(textarea,input,select):focus-visible{outline:2px solid #009fc2;outline-offset:2px;border-color:#009fc2}
 .import-check button,.import-check .import-check-bulk-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;max-width:100%;padding:10px 18px;border:1px solid transparent;border-radius:9px;background:var(--site-action-gradient);color:#fff;font-family:inherit;font-size:14px;font-weight:600;line-height:1.4;text-align:center;text-decoration:none;cursor:pointer;box-shadow:none;text-shadow:none;vertical-align:middle;overflow-wrap:anywhere}
 .import-check button{font-family:inherit;font-size:14px;font-weight:600;line-height:1.4}
-.import-check button:hover{--site-action-gradient:linear-gradient(180deg,#008fb1,#006c99)}
+.import-check button:hover{--site-action-gradient:var(--staff-action-gradient)}
 .import-check :is(button,a):focus-visible{outline:3px solid #009fc2;outline-offset:3px}
 .import-check button:disabled{opacity:.5;cursor:wait}
 .import-check .import-check-bulk-link{background:#eff9fd;border-color:#c5e4f1;color:var(--import-blue);font-family:inherit;font-size:14px;font-weight:650;line-height:1.4;margin:4px 0}

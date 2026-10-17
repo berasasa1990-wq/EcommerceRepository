@@ -31,13 +31,13 @@ body.magacin-page.is-spares{--sp-metal:#f5faff;--sp-edge:#d5e7f1;--sp-bevel:none
 .is-spares .spares-qty{text-align:center}
 .is-spares .spares-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #bac1cc;border-top:0;padding:12px;background:#f7f8fa;flex-wrap:wrap}
 .is-spares .mg-pager{margin:0;display:flex;gap:7px}
-.is-spares .mg-pager .is-current{background:linear-gradient(#7191b9,#3a5f8c);border-color:#344d72;color:#fff;box-shadow:none}
+.is-spares .mg-pager .is-current{background:var(--staff-action-gradient);border-color:#344d72;color:#fff;box-shadow:none}
 .is-spares .spares-range{font-size:14px;color:#445169;margin-left:auto}
 .is-spares .spares-page :is(a,button,input):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
 @media(max-width:600px){.is-spares .mg-main{padding:8px}.is-spares .mg-toolbar h1{font-size:24px;padding:10px 12px}.is-spares .mg-toolbar .mg-btn{min-width:85px;padding:0 10px}.is-spares .spares-notice{flex-wrap:wrap;gap:8px;font-size:13px}.is-spares .spares-notice p{flex-basis:80%}.is-spares .spares-notice>span{margin-left:auto}.is-spares .mg-pager a,.is-spares .mg-pager .is-current{padding:0 10px;font-size:13px}}
 
 /* Match the compact stocktaking workspace, including its surrounding chrome. */
-body.magacin-page.is-spares{--sp-metal:#f5faff;--sp-panel:#f5faff;--sp-edge:#d5e7f1;--sp-bevel:none;background:#dedfe1!important;color:#111}
+body.magacin-page.is-spares{--sp-metal:#f5faff;--sp-panel:#f5faff;--sp-edge:#d5e7f1;--sp-bevel:none;background:#f5faff!important;color:#111}
 .magacin-page.is-spares .mg-app,.magacin-page.is-spares .mg-main{background:#f5faff;min-height:100vh}
 .magacin-page.is-spares .mg-main{padding:8px 12px 18px}
 .magacin-page.is-spares .mg-chrome{background:var(--sp-metal);border:1px solid var(--sp-edge);border-radius:10px;box-shadow:none;padding:6px 8px;gap:8px;margin-bottom:10px;min-height:0}
@@ -54,7 +54,7 @@ body.magacin-page.is-spares{--sp-metal:#f5faff;--sp-panel:#f5faff;--sp-edge:#d5e
 .magacin-page.is-spares .mg-toolbar .mg-page-search{padding:5px;gap:8px;background:#e3e4e6;border-color:#b0b2b7}
 .magacin-page.is-spares .mg-toolbar .mg-page-search input{height:40px;background:#f5faff;border-color:#8e9097;box-shadow:none}
 .magacin-page.is-spares .spares-page .mg-btn,.magacin-page.is-spares .mg-pager a,.magacin-page.is-spares .mg-pager .is-current{min-height:36px;border-radius:10px;border-color:#92949a;font-size:16px;font-weight:750;padding:0 14px}
-.magacin-page.is-spares .mg-toolbar .mg-btn{min-height:40px;min-width:100px;background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:none;color:#fff}
+.magacin-page.is-spares .mg-toolbar .mg-btn{min-height:40px;min-width:100px;background:var(--staff-action-gradient);border-color:#0094cd;box-shadow:none;color:#fff}
 .magacin-page.is-spares .spares-page .mg-btn:hover{filter:brightness(1.08)}
 .magacin-page.is-spares .spares-notice{background:var(--sp-panel);border-color:var(--sp-edge);box-shadow:none;padding:8px 12px;margin-bottom:8px;color:#41444a}
 .magacin-page.is-spares .spares-page .mg-card{background:var(--sp-panel);border-color:var(--sp-edge);box-shadow:none;padding:6px}

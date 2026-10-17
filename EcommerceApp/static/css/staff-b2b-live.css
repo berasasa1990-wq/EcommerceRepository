@@ -18,15 +18,15 @@
     border: 1px solid #e7e7e7;
     border-radius: 12px;
     background: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    box-shadow:none;
 }
 
 .b2b-live-summary__dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.16);
+    background: #0094cd;
+    box-shadow:none;
 }
 
 .b2b-live-summary strong {
@@ -54,7 +54,7 @@
     border: 1px solid #e7e7e7;
     border-radius: 14px;
     background: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    box-shadow:none;
 }
 
 .b2b-live-card__company {
@@ -91,8 +91,8 @@
 }
 
 .b2b-live-pill--live {
-    background: #ecfdf3;
-    color: #166534;
+    background: #effaff;
+    color: #006a96;
 }
 
 .b2b-live-amounts {

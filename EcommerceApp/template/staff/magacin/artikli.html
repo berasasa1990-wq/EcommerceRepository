@@ -1,16 +1,16 @@
 {% extends 'staff/magacin/base.html' %}
 {% load static %}
 {% block body_class %}{{ block.super }} is-article-stock{% endblock %}
-{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/warehouse-stock-list.css' %}?v=20261016-show-more">{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/warehouse-stock-list.css' %}?v=20261017-warehouse-blue">{% endblock %}
 {% block magacin_content %}
 <form class="stock-search" id="mgArticleSearchForm" role="search" method="get" action="{% url 'staff_magacin_artikli' %}">
-    <div class="stock-search-heading"><label for="mgArticleSearch">Pretraga artikala</label><button type="button" id="mgNavToggle" class="stock-menu" aria-label="Meni magacina" aria-expanded="false">☰</button></div>
+    <div class="stock-search-heading"><label for="mgArticleSearch">Pretraga artikala</label></div>
     <div class="stock-search-fields"><input type="search" id="mgArticleSearch" name="pretraga" value="{{ magacin_search }}" placeholder="Naziv, šifra ili barkod artikla" autocomplete="off" enterkeyhint="search"><button type="submit">Pretraži</button></div>
     {% if include_zero %}<input type="hidden" name="bez_zalihe" value="1">{% endif %}
 </form>
 {% if magacin_notice %}<p class="stock-notice" role="status">{{ magacin_notice }}</p>{% endif %}
-<section aria-labelledby="stockResultsTitle">
-    <header class="stock-results-heading"><div><h1 id="stockResultsTitle">Rezultati pretrage</h1><p>{% if searched %}Rezultati za „{{ magacin_search }}“{% else %}Najnoviji artikli{% endif %}</p></div><span class="stock-result-count">{{ result_count }} artikala</span></header>
+{% if searched %}
+<section aria-label="Artikli">
     <div class="stock-results">
     {% for row in page %}
         <a class="stock-result" href="{% url 'staff_magacin_artikal' row.product.pk %}{% if magacin_search %}?pretraga={{ magacin_search|urlencode }}{% endif %}">
@@ -21,11 +21,15 @@
     {% empty %}<p class="stock-notice">Nema artikala za prikaz.</p>{% endfor %}
     </div>
 </section>
-<div class="stock-pagination">
-    <span id="stockShownCount" role="status">Prikazano {{ page.end_index }} od {{ result_count }} artikala</span>
-    {% if page.has_next %}<a id="stockLoadMore" class="mg-btn" href="?page={{ page.next_page_number }}&amp;rezultati=1{% if magacin_search %}&amp;pretraga={{ magacin_search|urlencode }}{% endif %}{% if include_zero %}&amp;bez_zalihe=1{% endif %}">Prikaži više</a>{% endif %}
-    <span id="stockLoadError" role="alert"></span>
-</div>
+<nav class="stock-pagination" aria-label="Stranice rezultata">
+    <span>Prikazano {{ page.start_index }}–{{ page.end_index }} od {{ result_count }} artikala</span>
+    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}&amp;pretraga={{ magacin_search|urlencode }}{% if include_zero %}&amp;bez_zalihe=1{% endif %}" rel="prev">Prethodna</a>{% endif %}
+    {% for number in page_links %}
+        {% if number == page.number %}<span aria-current="page"><strong>{{ number }}</strong></span>
+        {% elif number == page.paginator.ELLIPSIS %}<span>{{ number }}</span>
+        {% else %}<a href="?page={{ number }}&amp;pretraga={{ magacin_search|urlencode }}{% if include_zero %}&amp;bez_zalihe=1{% endif %}">{{ number }}</a>{% endif %}
+    {% endfor %}
+    {% if page.has_next %}<a href="?page={{ page.next_page_number }}&amp;pretraga={{ magacin_search|urlencode }}{% if include_zero %}&amp;bez_zalihe=1{% endif %}" rel="next">Sljedeća</a>{% endif %}
+</nav>
+{% endif %}
 {% endblock %}
-
-{% block magacin_js %}{{ block.super }}<script src="{% static 'js/warehouse-stock-more.js' %}?v=20261016"></script>{% endblock %}

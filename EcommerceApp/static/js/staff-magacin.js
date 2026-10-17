@@ -1,29 +1,30 @@
 (function () {
     var app = document.getElementById('mgApp');
-    var navBtn = document.getElementById('mgNavToggle');
+    var navButtons = document.querySelectorAll('#mgNavToggle, [data-magacin-menu]');
+    var navBtn = navButtons[0];
     var navClose = document.getElementById('mgNavClose');
     var navBackdrop = document.getElementById('mgNavBackdrop');
     function setMagacinNav(open) {
         if (!app) return;
         app.classList.toggle('nav-open', !!open);
         if (navBackdrop) navBackdrop.hidden = !open;
-        if (navBtn) navBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        navButtons.forEach(function (button) { button.setAttribute('aria-expanded', open ? 'true' : 'false'); });
         if (navClose) navClose.hidden = !open;
         document.body.classList.toggle('mg-nav-lock', !!open);
     }
     if (navBtn && app) {
         navBtn.setAttribute('aria-expanded', 'false');
-        navBtn.addEventListener('click', function () {
-            setMagacinNav(!app.classList.contains('nav-open'));
+        navButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                setMagacinNav(!app.classList.contains('nav-open'));
+            });
         });
-        app.querySelectorAll('.mg-nav a').forEach(function (link) {
-            link.addEventListener('click', function () { setMagacinNav(false); });
+        // Keep the opaque menu visible until navigation replaces this document.
+        // Closing it on click exposed the previous page while the next one loaded.
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) setMagacinNav(false);
         });
-        var isPhone = window.matchMedia('(max-width: 860px)').matches;
-        var fromMagacin = (document.referrer || '').indexOf('/nalog/magacin/') !== -1;
-        if (isPhone && !fromMagacin && !document.body.classList.contains('is-pick')) {
-            setMagacinNav(true);
-        }
+
     }
     if (navBackdrop) {
         navBackdrop.addEventListener('click', function () { setMagacinNav(false); });

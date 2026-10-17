@@ -1,5 +1,5 @@
 /* Visual treatment for warehouse stocktaking only; existing controls are retained. */
-body.magacin-page.is-popis-test{--pp-metal:#f5faff;--pp-panel:#f5faff;--pp-edge:#d5e7f1;--pp-bevel:none;background:#dedfe1!important;color:#111}
+body.magacin-page.is-popis-test{--pp-metal:#f5faff;--pp-panel:#f5faff;--pp-edge:#d5e7f1;--pp-bevel:none;background:#f5faff!important;color:#111}
 .magacin-page.is-popis-test .mg-app,.magacin-page.is-popis-test .mg-main{background:#f5faff;min-height:100vh}
 .magacin-page.is-popis-test .mg-main{padding:10px 20px 30px}
 .magacin-page.is-popis-test .pt-page{width:100%;max-width:none;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif;color:#101010}
@@ -24,7 +24,7 @@ body.magacin-page.is-popis-test{--pp-metal:#f5faff;--pp-panel:#f5faff;--pp-edge:
 .magacin-page.is-popis-test .pp-loc-search input{flex:1;min-width:0;width:auto;height:50px;border:1px solid #8e9097;border-radius:10px;background:#f5faff;box-shadow:none;padding:0 14px 0 52px;font-size:21px!important}
 .magacin-page.is-popis-test .pp-loc-search .mg-search-icon{left:25px;top:50%;transform:translateY(-50%);width:26px;height:26px;color:#080808}
 .magacin-page.is-popis-test .pt-page .mg-btn{border:1px solid #92949a;border-radius:10px;background:var(--pp-metal);box-shadow:none;color:#111;min-height:44px;padding:0 22px;font-size:18px;font-weight:750;justify-content:center}
-.magacin-page.is-popis-test .pt-page .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:none;color:#fff}
+.magacin-page.is-popis-test .pt-page .mg-btn-primary{background:var(--staff-action-gradient);border-color:#0094cd;box-shadow:none;color:#fff}
 .magacin-page.is-popis-test .pp-loc-search .mg-btn{min-width:150px;min-height:50px;font-size:22px}
 .magacin-page.is-popis-test .pt-page .mg-btn:hover{filter:brightness(1.08)}
 .magacin-page.is-popis-test .pt-page .mg-btn-danger{color:#a52323}

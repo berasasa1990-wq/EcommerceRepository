@@ -276,7 +276,7 @@
     width: 100%;
     min-height: 56px;
     padding: 12px 8px;
-    background: linear-gradient(#339b00, #238500);
+    background: var(--staff-action-gradient);
     border: 1px solid #267b06;
     border-radius: 13px;
     color: #fff;

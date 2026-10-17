@@ -1,5 +1,5 @@
 /* Warehouse location screen, matching compact blue stocktaking panels. */
-body.magacin-page.is-locations-reference{--loc-metal:#f5faff;--loc-panel:#f5faff;--loc-edge:#d5e7f1;--loc-bevel:none;background:#dedfe1!important}
+body.magacin-page.is-locations-reference{--loc-metal:#f5faff;--loc-panel:#f5faff;--loc-edge:#d5e7f1;--loc-bevel:none;background:#f5faff!important}
 .magacin-page.is-locations-reference .mg-app,.magacin-page.is-locations-reference .mg-main{background:#f5faff;min-height:100vh}
 .magacin-page.is-locations-reference .mg-main{padding:4px 10px 70px;min-width:0;color:#111}
 .magacin-page.is-locations-reference .mg-toolbar{padding:8px 12px;margin:0 0 8px;border:1px solid var(--loc-edge);background:var(--loc-metal);box-shadow:none;gap:10px}
@@ -10,7 +10,7 @@ body.magacin-page.is-locations-reference{--loc-metal:#f5faff;--loc-panel:#f5faff
 .magacin-page.is-locations-reference .mg-h{margin:0 0 8px;padding:7px 10px;border:1px solid var(--loc-edge);background:var(--loc-metal);box-shadow:none;font-size:18px;letter-spacing:0;text-transform:none;color:#111}
 .magacin-page.is-locations-reference .mg-card-head{gap:8px;flex-wrap:wrap}
 .magacin-page.is-locations-reference .mg-main .mg-btn,.magacin-page.is-locations-reference .mg-modal .mg-btn{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:10px;background:var(--loc-metal);box-shadow:none;color:#111;font-size:14px;font-weight:750;text-decoration:none}
-.magacin-page.is-locations-reference .mg-main .mg-btn-primary,.magacin-page.is-locations-reference .mg-modal .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:none;color:#fff}
+.magacin-page.is-locations-reference .mg-main .mg-btn-primary,.magacin-page.is-locations-reference .mg-modal .mg-btn-primary{background:var(--staff-action-gradient);border-color:#0094cd;box-shadow:none;color:#fff}
 .magacin-page.is-locations-reference .mg-modal .mg-btn-danger{color:#b52525}
 .magacin-page.is-locations-reference .mg-main .mg-btn:hover{filter:brightness(1.08)}
 .magacin-page.is-locations-reference .mg-page-search{display:flex;align-items:stretch;gap:8px;padding:5px;border:1px solid var(--loc-edge);background:var(--loc-panel);max-width:none}

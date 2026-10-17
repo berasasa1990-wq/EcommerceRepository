@@ -1,7 +1,7 @@
 {% extends 'staff/magacin/base.html' %}
 {% load static %}
 
-{% block body_class %}{{ block.super }} is-orders-reference is-invoice-view{% endblock %}
+{% block body_class %}staff-blue-page {{ block.super }} is-orders-reference is-invoice-view{% endblock %}
 
 {% block extra_css %}
 {{ block.super }}
@@ -23,7 +23,7 @@ body.magacin-page.is-invoice-view .mg-main{flex:1;width:auto;max-width:none;marg
 body.magacin-page.is-invoice-view .invoice-back-row{margin:0 0 8px}
 body.magacin-page.is-invoice-view .invoice-menu-toggle{display:none}
 @media(max-width:860px){body.magacin-page.is-invoice-view .invoice-menu-toggle{display:inline-flex}}
-body.magacin-page.is-invoice-view .invoice-back-row a{display:inline-flex;align-items:center;padding:8px 14px;border:1px solid #92949a;background:linear-gradient(115deg,#e8e8e9,#bfc1c4);box-shadow:inset 2px 2px #fff,inset -2px -2px #8f9195;color:#111;text-decoration:none;font-weight:700}
+body.magacin-page.is-invoice-view .invoice-back-row a{display:inline-flex;align-items:center;padding:8px 14px;border:1px solid #92949a;background:linear-gradient(115deg,#e8e8e9,#bfc1c4);box-shadow:none;color:#111;text-decoration:none;font-weight:700}
 body.magacin-page.is-invoice-view .mg-order-invoice-card{width:100%;max-width:none;padding:0;margin:0;border:0;border-radius:0;box-sizing:border-box}
 body.magacin-page.is-invoice-view .staff-order-invoice{width:100%;max-width:none;margin:0;padding:16px;box-sizing:border-box;border-radius:0}
 body.magacin-page.is-invoice-view .staff-order-invoice .doc{width:100%;max-width:none;margin:0}

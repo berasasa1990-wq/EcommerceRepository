@@ -2,8 +2,8 @@
 {% load static %}
 {% block body_class %}{{ block.super }} is-picking-list-reference is-picking-detail-reference{% endblock %}
 {% block extra_css %}{{ block.super }}
-<link rel="stylesheet" href="{% static 'css/picking-reference.css' %}?v=20261015-blue-workspace">
-<link rel="stylesheet" href="{% static 'css/staff-picking-list-reference.css' %}?v=20261015-blue-workspace">
+<link rel="stylesheet" href="{% static 'css/picking-reference.css' %}?v=20261017-pick-clean">
+<link rel="stylesheet" href="{% static 'css/staff-picking-list-reference.css' %}?v=20261017-pick-mobile">
 {% endblock %}
 
 {% block magacin_content %}
@@ -21,28 +21,13 @@
     <p class="pk-alert">{{ packing_error }}</p>
     {% endif %}
 
-    <footer class="pk-dock">
-        {% if edit_form_url %}
-        <a class="mg-btn" href="{{ edit_form_url }}">Izmijeni narudžbu</a>
-        {% endif %}
-        <a class="mg-btn" data-picking-list="1" href="{% url 'staff_magacin_pakuj' %}">‹ Nazad</a>
-        <a class="mg-btn" data-picking-list="1" href="{% url 'staff_magacin_pakuj' %}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12h4"/><path d="M10 4v16h8a2 2 0 0 0 2-2V8z"/><path d="M10 9h4"/></svg>
-            Pauziraj
-        </a>
-        <form method="post" class="pk-cancel-form" id="pkCancelForm">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="otkazi">
-            <button type="submit" class="mg-btn mg-btn-danger">{% if is_prenos_mp %}Poništi prenos{% else %}Poništi{% endif %}</button>
-        </form>
-        <button type="button" class="pk-bar-finish" id="pkValidDoneBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            Završi picking
-        </button>
-    </footer>
 
+
+    <header class="pick-page-heading"><a href="{% url 'staff_magacin_pakuj' %}" aria-label="Nazad">←</a><div><h1>Odvajanje robe</h1><p>Narudžba #{{ order.broj }}</p></div></header>
     <section class="pk-stage" data-pk-panel="pick">
         <div id="pkCard" class="pk-sheet">
+            <details class="pick-overview"><summary>Pregled odvajanja</summary>
+
             <article class="pk-meta" id="pkCustomer">
                 <div class="pk-meta-row">
                     <span>
@@ -79,10 +64,11 @@
                 <button type="button" data-pk-view="todo">Za pokupiti <i id="pkTodoN">0</i></button>
             </nav>
 
+            </details>
             <div id="pkViewNow">
                 <div class="pk-heading-row"><h2 class="pk-list-h" id="pkOpenHead">Stavke za pakovanje</h2><div class="pk-item-navigation"><button type="button" id="pkPreviousItem" aria-label="Prethodni artikal">‹</button><button type="button" id="pkNextItem" aria-label="Sljedeći artikal">›</button></div></div>
                 <div id="pkItemList" class="pk-items"></div>
-                <button type="button" class="pk-confirm-quantity" id="pkConfirmQuantity"><span aria-hidden="true">✓</span> Potvrdi količinu i nastavi</button>
+                <button type="button" class="pk-confirm-quantity" id="pkConfirmQuantity">Potvrdi količinu</button>
                 <p class="pk-open-empty" id="pkOpenEmpty" hidden>Sve stavke su odvojene.</p>
             </div>
             <div id="pkViewTodo" hidden>

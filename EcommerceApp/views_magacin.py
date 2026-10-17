@@ -827,37 +827,17 @@ def magacin_artikli(request):
         'magacin_notice': request.session.pop('magacin_page_notice', '') or '',
     })
 
-    # Non-exact searches already fall back to all stock states. Search once,
-    # then preserve the original filter/redirect behavior without loading all rows.
-    if searched:
-        products, exact = search_products(query, limit=None, include_zero=True)
-    else:
-        from .magacin import magacin_products_qs
-        products = magacin_products_qs().order_by('-kreiran', '-pk')
-        exact = None
+    if not searched:
+        return render(request, 'staff/magacin/artikli.html', context)
+
+    products, exact = search_products(query, limit=None, include_zero=True)
     if not exact and not include_zero:
-        has_products = True if not searched else (products.exists() if hasattr(products, 'exists') else bool(products))
-        if has_products:
-            include_zero = True
-            context['include_zero'] = True
-    unique = exact
-    if searched and unique is None and request.GET.get('rezultati') != '1':
-        # Only inspect two rows to decide whether to open a unique result.
-        candidates = list(products[:2])
-        if len(candidates) == 1:
-            unique = candidates[0]
-    if unique is not None and request.GET.get('rezultati') != '1':
-        url = reverse('staff_magacin_artikal', args=[unique.pk])
-        params = {'pretraga': query}
-        if include_zero:
-            params['bez_zalihe'] = '1'
-        return redirect(f'{url}?{urlencode(params)}')
+        include_zero = products.exists() if hasattr(products, 'exists') else bool(products)
+    context['include_zero'] = include_zero
     # This list shows images, identifiers and quantities only, not variants/prices.
     qs = products.prefetch_related(None) if hasattr(products, 'prefetch_related') else products
 
-    user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
-    mobile = any(token in user_agent for token in ('mobile', 'android', 'iphone', 'ipod'))
-    paginator = Paginator(qs, 10 if mobile else 20)
+    paginator = Paginator(qs, 10)
     page = paginator.get_page(request.GET.get('page') or 1)
     product_ids = [item.pk for item in page.object_list]
     totals_by_product = {}
@@ -889,6 +869,7 @@ def magacin_artikli(request):
     context.update({
         'page': page,
         'result_count': paginator.count,
+        'page_links': paginator.get_elided_page_range(page.number, on_each_side=2, on_ends=1),
     })
     return render(request, 'staff/magacin/artikli.html', context)
 

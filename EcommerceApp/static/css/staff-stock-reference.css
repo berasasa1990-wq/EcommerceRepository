@@ -1,5 +1,5 @@
 /* Compact blue stock overview. */
-body.magacin-page.is-stock-reference{--stock-metal:#f5faff;--stock-panel:#f5faff;--stock-edge:#d5e7f1;--stock-bevel:none;background:#dedfe1!important}
+body.magacin-page.is-stock-reference{--stock-metal:#f5faff;--stock-panel:#f5faff;--stock-edge:#d5e7f1;--stock-bevel:none;background:#f5faff!important}
 .magacin-page.is-stock-reference .mg-app,.magacin-page.is-stock-reference .mg-main{background:#f5faff;min-height:100vh}
 .magacin-page.is-stock-reference .mg-main{padding:4px 10px 70px;min-width:0;color:#111}
 .magacin-page.is-stock-reference .mg-toolbar{padding:8px 12px;margin:0 0 8px;border:1px solid var(--stock-edge);background:var(--stock-metal);box-shadow:none;gap:10px;flex-wrap:wrap}
@@ -8,7 +8,7 @@ body.magacin-page.is-stock-reference{--stock-metal:#f5faff;--stock-panel:#f5faff
 .magacin-page.is-stock-reference .mg-page-search input[type=search]{flex:1;width:auto;min-width:0;height:40px;border:1px solid #8e9097;border-radius:10px;background:#f5faff;padding-left:38px;font-size:16px}
 .magacin-page.is-stock-reference .mg-search-icon{left:16px;color:#111}
 .magacin-page.is-stock-reference .mg-main .mg-btn,.magacin-page.is-stock-reference .mg-pager a,.magacin-page.is-stock-reference .mg-pager .is-current{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:10px;background:var(--stock-metal);box-shadow:none;color:#111;font-size:14px;font-weight:750;text-decoration:none}
-.magacin-page.is-stock-reference .mg-main .mg-btn-primary,.magacin-page.is-stock-reference .mg-page-search .mg-btn{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:none;color:#fff}
+.magacin-page.is-stock-reference .mg-main .mg-btn-primary,.magacin-page.is-stock-reference .mg-page-search .mg-btn{background:var(--staff-action-gradient);border-color:#0094cd;box-shadow:none;color:#fff}
 .magacin-page.is-stock-reference .mg-main>.mg-toolbar+form{padding:8px 10px;margin-bottom:8px!important;border:1px solid var(--stock-edge);background:var(--stock-panel);box-shadow:none;align-items:center}
 .magacin-page.is-stock-reference .mg-main select[name=lokacija]{min-height:36px;border:1px solid #969faa!important;border-radius:0!important;background:var(--stock-metal);box-shadow:none;color:#222b39;padding:6px 10px!important;max-width:100%}
 .magacin-page.is-stock-reference input[type=checkbox]{accent-color:#25821b}
@@ -19,6 +19,6 @@ body.magacin-page.is-stock-reference{--stock-metal:#f5faff;--stock-panel:#f5faff
 .magacin-page.is-stock-reference .mg-table tr.is-clickable:hover td{background:#e2e8ef}
 .magacin-page.is-stock-reference .mg-table .num-ok{color:#167315;font-weight:750}
 .magacin-page.is-stock-reference .mg-pager{gap:7px;margin-top:10px;flex-wrap:wrap}
-.magacin-page.is-stock-reference .mg-pager .is-current{background:linear-gradient(#7191b9,#3a5f8c);color:#fff;border-color:#344d72;box-shadow:none}
+.magacin-page.is-stock-reference .mg-pager .is-current{background:var(--staff-action-gradient);color:#fff;border-color:#344d72;box-shadow:none}
 .magacin-page.is-stock-reference :is(a,button,input,select):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
 @media(max-width:600px){.magacin-page.is-stock-reference .mg-main{padding:4px 6px 70px}.magacin-page.is-stock-reference .mg-toolbar h1{font-size:20px}.magacin-page.is-stock-reference .mg-page-search{flex-basis:100%!important;min-width:0}.magacin-page.is-stock-reference .mg-table{min-width:580px}}

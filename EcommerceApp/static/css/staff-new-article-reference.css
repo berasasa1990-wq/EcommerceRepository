@@ -1,5 +1,5 @@
 /* New article: compact blue warehouse form. */
-body.magacin-page.is-new-article{--new-metal:#f5faff;--new-panel:#f5faff;--new-edge:#d5e7f1;--new-bevel:none;background:#dedfe1!important}
+body.magacin-page.is-new-article{--new-metal:#f5faff;--new-panel:#f5faff;--new-edge:#d5e7f1;--new-bevel:none;background:#f5faff!important}
 .is-new-article .mg-main{min-width:0;padding:8px 12px 18px;background:#f5faff}
 .is-new-article .mg-chrome{display:none}
 .is-new-article .bu-wrap{width:100%;min-width:0;margin:0;padding:0}

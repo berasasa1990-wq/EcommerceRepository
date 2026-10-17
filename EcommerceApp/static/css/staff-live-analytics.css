@@ -1,14 +1,14 @@
 /* Uživo analitika — redizajn: live kartice + offline + drawer */
 
 .staff-live-analytics-page {
-    --live-green: #5BB805;
-    --live-green-dark: #3d8a00;
-    --live-ink: #0f172a;
+    --live-green: #0094cd;
+    --live-green-dark: #006a96;
+    --live-ink: #006a96;
     --live-muted: #64748b;
-    --live-border: #e2e8f0;
-    --live-soft: #f8fafc;
+    --live-border: #effaff;
+    --live-soft: #effaff;
     --live-card: #ffffff;
-    --live-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
+    --live-shadow:none;
     max-width: 1380px;
     width: 100%;
     margin: 0 auto;
@@ -73,9 +73,9 @@
     gap: 8px;
     padding: 8px 14px;
     border-radius: 999px;
-    background: #ecfdf3;
-    border: 1px solid #bbf7d0;
-    color: #166534;
+    background: #effaff;
+    border: 1px solid #95deef;
+    color: #006a96;
     font-size: 13px;
     font-weight: 700;
 }
@@ -84,15 +84,15 @@
     width: 9px;
     height: 9px;
     border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+    background: #0094cd;
+    box-shadow:none;
     animation: la-pulse 1.6s ease infinite;
 }
 
 @keyframes la-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
-    70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    0% { box-shadow:none; }
+    70% { box-shadow:none; }
+    100% { box-shadow:none; }
 }
 
 /* —— KPI strip —— */
@@ -112,7 +112,7 @@
     border-radius: 16px;
     background: var(--live-card);
     padding: 14px 16px;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    box-shadow:none;
 }
 
 button.la-kpi {
@@ -121,14 +121,14 @@ button.la-kpi {
 }
 
 button.la-kpi:hover {
-    border-color: #93c5fd;
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.1);
+    border-color: #95deef;
+    box-shadow:none;
     transform: translateY(-1px);
 }
 
 .la-kpi--live {
     border-color: rgba(91, 184, 5, 0.35);
-    background: linear-gradient(160deg, #f3fce8 0%, #fff 70%);
+    background: linear-gradient(160deg, #effaff 0%, #fff 70%);
 }
 
 .la-kpi-value {
@@ -185,15 +185,15 @@ button.la-kpi:hover {
     height: 28px;
     padding: 0 9px;
     border-radius: 999px;
-    background: #ecfdf3;
-    color: #166534;
+    background: #effaff;
+    color: #006a96;
     font-size: 13px;
     font-weight: 800;
 }
 
 .la-count-pill--muted {
-    background: #f1f5f9;
-    color: #475569;
+    background: #effaff;
+    color: #0094cd;
 }
 
 .la-section-hint {
@@ -220,7 +220,7 @@ button.la-kpi:hover {
     background: var(--live-card);
     padding: 18px 18px 16px;
     cursor: pointer;
-    box-shadow: var(--live-shadow);
+    box-shadow:none;
     transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
     position: relative;
     overflow: hidden;
@@ -241,11 +241,11 @@ button.la-kpi:hover {
     margin: 0 0 14px;
     padding: 12px 14px;
     border-radius: 12px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: #effaff;
+    border: 1px solid #effaff;
     font-size: 13px;
     line-height: 1.45;
-    color: #334155;
+    color: #006a96;
     max-height: 320px;
     min-height: 140px;
     overflow-y: auto;
@@ -262,12 +262,12 @@ button.la-kpi:hover {
 }
 
 .la-card-activity-line strong {
-    color: #0f172a;
+    color: #006a96;
     font-weight: 800;
 }
 
 .la-card-activity-line--intent {
-    color: #166534;
+    color: #006a96;
     font-weight: 600;
 }
 
@@ -275,13 +275,13 @@ button.la-kpi:hover {
     display: flex;
     align-items: flex-start;
     gap: 6px;
-    color: #0f172a;
+    color: #006a96;
     font-weight: 600;
 }
 
 .la-card-activity-line--now strong {
     flex-shrink: 0;
-    color: #166534;
+    color: #006a96;
 }
 
 /* Brzi % na artikal koji kupac sada gleda */
@@ -293,8 +293,8 @@ button.la-kpi:hover {
     margin: 8px 0 6px;
     padding: 8px 10px;
     border-radius: 10px;
-    background: #ecfdf5;
-    border: 1px solid #bbf7d0;
+    background: #effaff;
+    border: 1px solid #95deef;
 }
 
 .la-card-now-offer-label {
@@ -303,7 +303,7 @@ button.la-kpi:hover {
     gap: 6px;
     font-size: 11px;
     font-weight: 800;
-    color: #166534;
+    color: #006a96;
     text-transform: uppercase;
     letter-spacing: 0.03em;
 }
@@ -311,24 +311,24 @@ button.la-kpi:hover {
 .la-card-now-pct {
     width: 56px;
     padding: 6px 8px;
-    border: 1.5px solid #86efac;
+    border: 1.5px solid #95deef;
     border-radius: 8px;
     font-size: 14px;
     font-weight: 800;
-    color: #0f172a;
+    color: #006a96;
     background: #fff;
     text-align: center;
 }
 
 .la-card-now-pct:focus {
     outline: none;
-    border-color: #5BB805;
-    box-shadow: 0 0 0 3px rgba(91, 184, 5, 0.18);
+    border-color: #0094cd;
+    box-shadow:none;
 }
 
 .la-card-act--now-offer {
-    background: linear-gradient(180deg, #6fd00f, #5BB805) !important;
-    border-color: #3f8f00 !important;
+    background: var(--staff-action-gradient) !important;
+    border-color: #006a96 !important;
     color: #fff !important;
     font-size: 12px;
     padding: 7px 12px;
@@ -340,14 +340,14 @@ button.la-kpi:hover {
 }
 
 .la-card-now-offer--taken {
-    background: #f0fdf4;
-    border-color: #86efac;
+    background: #effaff;
+    border-color: #95deef;
 }
 
 .la-card-now-taken {
     font-size: 12px;
     font-weight: 800;
-    color: #166534;
+    color: #006a96;
 }
 
 /* Bulk ponuda na sve pregledane */
@@ -359,21 +359,21 @@ button.la-kpi:hover {
     margin: 8px 0 6px;
     padding: 8px 10px;
     border-radius: 10px;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
+    background: #effaff;
+    border: 1px solid #95deef;
 }
 
 .la-card-bulk-offer .la-card-now-offer-label {
-    color: #1e40af;
+    color: #0094cd;
 }
 
 .la-card-bulk-offer .la-card-now-pct {
-    border-color: #93c5fd;
+    border-color: #95deef;
 }
 
 .la-card-act--bulk-offer {
-    background: linear-gradient(180deg, #3b82f6, #2563eb) !important;
-    border-color: #1d4ed8 !important;
+    background: var(--staff-action-gradient) !important;
+    border-color: #0094cd !important;
     color: #fff !important;
     font-size: 12px;
     padding: 7px 12px;
@@ -386,7 +386,7 @@ button.la-kpi:hover {
 
 .la-card-city-pin {
     font-weight: 800;
-    color: #0f172a;
+    color: #006a96;
 }
 
 .la-bulk-offer-block .la-card-bulk-offer {
@@ -404,23 +404,23 @@ button.la-kpi:hover {
     color: #b91c1c;
 }
 .la-chip--ai-warm {
-    background: #fff7ed;
-    border-color: #fed7aa;
-    color: #c2410c;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 .la-chip--ai-mild {
-    background: #fefce8;
-    border-color: #fde68a;
-    color: #a16207;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 .la-chip--ai-cold {
-    background: #f1f5f9;
-    border-color: #e2e8f0;
-    color: #475569;
+    background: #effaff;
+    border-color: #effaff;
+    color: #0094cd;
 }
 .la-card-activity-line--ai {
-    color: #1e3a8a;
-    background: #eff6ff;
+    color: #0094cd;
+    background: #effaff;
     border-radius: 8px;
     padding: 6px 8px;
     margin-top: 4px;
@@ -439,23 +439,23 @@ button.la-kpi:hover {
     margin-top: 6px;
     padding: 8px 10px;
     border-radius: 10px;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
+    background: #effaff;
+    border: 1px solid #95deef;
 }
 .la-ai-level--hot { color: #b91c1c; }
-.la-ai-level--warm { color: #c2410c; }
-.la-ai-level--mild { color: #a16207; }
+.la-ai-level--warm { color: #0094cd; }
+.la-ai-level--mild { color: #0094cd; }
 .la-ai-level--cold { color: #64748b; }
 .la-ai-reasons {
     margin-top: 4px;
     font-size: 12px;
-    color: #475569;
+    color: #0094cd;
     line-height: 1.35;
 }
 
 .la-now-live {
     display: inline;
-    color: #0f172a;
+    color: #006a96;
     font-weight: 700;
     word-break: break-word;
 }
@@ -468,8 +468,8 @@ button.la-kpi:hover {
     margin-right: 6px;
     margin-bottom: 1px;
     border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45);
+    background: #0094cd;
+    box-shadow:none;
     animation: la-pulse 1.6s ease infinite;
     vertical-align: middle;
 }
@@ -477,16 +477,16 @@ button.la-kpi:hover {
 .la-insight-label--now {
     font-size: 15px;
     font-weight: 800;
-    color: #0f172a;
+    color: #006a96;
     margin-bottom: 4px;
 }
 
 .la-card-activity-line--hot {
-    color: #c2410c;
+    color: #0094cd;
 }
 
 .la-card-activity-line--muted {
-    color: #94a3b8;
+    color: #95deef;
     font-style: italic;
 }
 
@@ -507,7 +507,7 @@ button.la-kpi:hover {
     padding: 6px 10px;
     border-radius: 8px;
     background: #fff;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #effaff;
     font-size: 12px;
     font-weight: 600;
 }
@@ -532,8 +532,8 @@ button.la-kpi:hover {
 
 .la-card-outcome--accepted em,
 .la-card-outcome--osvojio em {
-    background: #dcfce7;
-    color: #166534;
+    background: #effaff;
+    color: #006a96;
 }
 
 .la-card-outcome--left em,
@@ -545,16 +545,16 @@ button.la-kpi:hover {
 
 .la-card-outcome--lost em,
 .la-card-outcome--izgubio em {
-    background: #f1f5f9;
-    color: #475569;
+    background: #effaff;
+    color: #0094cd;
 }
 
 .la-card-outcome--wait em,
 .la-card-outcome--active em,
 .la-card-outcome--pending em,
 .la-card-outcome--ceka em {
-    background: #fef3c7;
-    color: #b45309;
+    background: #effaff;
+    color: #0094cd;
 }
 
 .la-card-actions {
@@ -571,7 +571,7 @@ button.la-kpi:hover {
     border: 1px solid var(--live-border);
     border-radius: 10px;
     background: #fff;
-    color: #0f172a;
+    color: #006a96;
     font-size: 12px;
     font-weight: 800;
     padding: 7px 10px;
@@ -581,37 +581,37 @@ button.la-kpi:hover {
 }
 
 .la-card-act:hover {
-    border-color: #86efac;
-    background: #f0fdf4;
+    border-color: #95deef;
+    background: #effaff;
 }
 
 .la-card-act--offer {
-    background: linear-gradient(180deg, #6fd00f, #5BB805);
-    border-color: #3f8f00;
+    background: var(--staff-action-gradient);
+    border-color: #006a96;
     color: #fff;
 }
 
 .la-card-act--offer:hover {
     filter: brightness(1.05);
-    background: linear-gradient(180deg, #6fd00f, #5BB805);
+    background: var(--staff-action-gradient);
     color: #fff;
 }
 
 .la-card-act--gift {
-    background: #fff7ed;
-    border-color: #fed7aa;
-    color: #c2410c;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 
 .la-card-act--reg {
-    background: #eff6ff;
-    border-color: #bfdbfe;
-    color: #1d4ed8;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 
 .la-card-act--more {
     margin-left: auto;
-    background: #f8fafc;
+    background: #effaff;
     color: #64748b;
 }
 
@@ -626,9 +626,9 @@ button.la-kpi:hover {
 }
 
 .la-card:hover {
-    border-color: #86efac;
+    border-color: #95deef;
     transform: translateY(-2px);
-    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.1);
+    box-shadow:none;
 }
 
 .la-card:focus-visible {
@@ -659,7 +659,7 @@ button.la-kpi:hover {
 .la-card-name.la-name--reg,
 .la-drawer-name.la-name--reg,
 .la-offline-name.la-name--reg {
-    color: #1d4ed8;
+    color: #0094cd;
 }
 
 /* Kupovao ranije — zlatno / amber */
@@ -667,7 +667,7 @@ button.la-kpi:hover {
 .la-card-name.la-name--buyer,
 .la-drawer-name.la-name--buyer,
 .la-offline-name.la-name--buyer {
-    color: #b45309;
+    color: #0094cd;
     text-decoration: underline;
     text-decoration-color: rgba(180, 83, 9, 0.35);
     text-underline-offset: 3px;
@@ -678,8 +678,8 @@ button.la-kpi:hover {
 .la-card-name.la-name--buyer.la-name--reg,
 .la-drawer-name.la-name--buyer.la-name--reg,
 .la-offline-name.la-name--buyer.la-name--reg {
-    color: #9a3412;
-    background: linear-gradient(90deg, #fef3c7, transparent);
+    color: #0094cd;
+    background: linear-gradient(90deg, #effaff, transparent);
     border-radius: 6px;
     padding: 0 4px;
 }
@@ -705,13 +705,13 @@ button.la-kpi:hover {
 }
 
 .la-name-badge--reg {
-    background: #dbeafe;
-    color: #1d4ed8;
+    background: #effaff;
+    color: #0094cd;
 }
 
 .la-name-badge--buyer {
-    background: #fef3c7;
-    color: #b45309;
+    background: #effaff;
+    color: #0094cd;
 }
 
 .la-card-city {
@@ -727,8 +727,8 @@ button.la-kpi:hover {
     gap: 5px;
     padding: 4px 9px;
     border-radius: 999px;
-    background: #dcfce7;
-    color: #166534;
+    background: #effaff;
+    color: #006a96;
     font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
@@ -739,7 +739,7 @@ button.la-kpi:hover {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #22c55e;
+    background: #0094cd;
     display: block;
 }
 
@@ -760,25 +760,25 @@ button.la-kpi:hover {
     border: 1px solid var(--live-border);
     font-size: 11.5px;
     font-weight: 600;
-    color: #334155;
+    color: #006a96;
 }
 
 .la-chip--cart {
-    background: #fff7ed;
-    border-color: #fed7aa;
-    color: #c2410c;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 
 .la-chip--reg {
-    background: #eff6ff;
-    border-color: #bfdbfe;
-    color: #1d4ed8;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 
 .la-chip--buy {
-    background: #fef3c7;
-    border-color: #fde68a;
-    color: #b45309;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 
 .la-card-footer {
@@ -833,8 +833,8 @@ button.la-kpi:hover {
     padding: 14px 16px;
     font-weight: 700;
     font-size: 14px;
-    color: #475569;
-    background: #f8fafc;
+    color: #0094cd;
+    background: #effaff;
     user-select: none;
 }
 
@@ -890,7 +890,7 @@ button.la-kpi:hover {
 }
 
 .la-offline-row:hover {
-    background: #f8fafc;
+    background: #effaff;
 }
 
 .la-offline-name {
@@ -907,7 +907,7 @@ button.la-kpi:hover {
 
 .la-offline-meta {
     font-size: 12px;
-    color: #475569;
+    color: #0094cd;
 }
 
 .la-offline-ago {
@@ -1007,8 +1007,8 @@ button.la-kpi:hover {
     align-items: flex-start;
     padding: 12px 14px;
     border-radius: 12px;
-    background: #fff7ed;
-    border: 1px solid #fed7aa;
+    background: #effaff;
+    border: 1px solid #95deef;
     margin-bottom: 12px;
 }
 
@@ -1025,13 +1025,13 @@ button.la-kpi:hover {
     margin-top: 3px;
     width: 17px;
     height: 17px;
-    accent-color: #ea580c;
+    accent-color: #0094cd;
 }
 
 .la-gift-auto strong {
     display: block;
     font-size: 13px;
-    color: #9a3412;
+    color: #0094cd;
 }
 
 .la-gift-auto small {
@@ -1053,13 +1053,13 @@ button.la-kpi:hover {
     gap: 8px;
     padding: 10px 12px;
     border-radius: 12px;
-    border: 1px solid #ffedd5;
+    border: 1px solid #effaff;
     background: #fff;
     font-size: 12.5px;
 }
 
 .la-gift-winner strong {
-    color: #c2410c;
+    color: #0094cd;
 }
 
 .la-traffic-filters {
@@ -1140,7 +1140,7 @@ button.la-kpi:hover {
     width: min(960px, 96vw);
     height: 100%;
     background: #fff;
-    box-shadow: -12px 0 40px rgba(15, 23, 42, 0.18);
+    box-shadow:none;
     display: flex;
     flex-direction: column;
     animation: la-drawer-in 0.22s ease;
@@ -1154,7 +1154,7 @@ button.la-kpi:hover {
 .la-drawer-head {
     padding: 20px 20px 16px;
     border-bottom: 1px solid var(--live-border);
-    background: linear-gradient(180deg, #f3fce8 0%, #fff 100%);
+    background: linear-gradient(180deg, #effaff 0%, #fff 100%);
     position: relative;
 }
 
@@ -1176,10 +1176,10 @@ button.la-kpi:hover {
     gap: 5px;
     height: 36px;
     padding: 0 12px;
-    border: 1px solid #bbf7d0;
+    border: 1px solid #95deef;
     border-radius: 10px;
-    background: #ecfdf3;
-    color: #166534;
+    background: #effaff;
+    color: #006a96;
     font-size: 12px;
     font-weight: 800;
     cursor: pointer;
@@ -1187,7 +1187,7 @@ button.la-kpi:hover {
 }
 
 .la-drawer-refresh:hover {
-    background: #dcfce7;
+    background: #effaff;
 }
 
 .la-drawer-refresh:disabled {
@@ -1213,7 +1213,7 @@ button.la-kpi:hover {
     font-size: 22px;
     line-height: 1;
     cursor: pointer;
-    color: #334155;
+    color: #006a96;
 }
 
 .la-drawer-close:hover {
@@ -1231,7 +1231,7 @@ button.la-kpi:hover {
     letter-spacing: 0.05em;
 }
 
-.la-drawer-status--online { color: #166534; }
+.la-drawer-status--online { color: #006a96; }
 .la-drawer-status--offline { color: #64748b; }
 
 .la-drawer-name {
@@ -1271,8 +1271,8 @@ button.la-kpi:hover {
 }
 
 .la-drawer-col--left {
-    background: #f8fafc;
-    border-right: 1px solid var(--live-border, #e2e8f0);
+    background: #effaff;
+    border-right: 1px solid var(--live-border, #effaff);
 }
 
 .la-drawer-col--right {
@@ -1289,7 +1289,7 @@ button.la-kpi:hover {
 }
 
 .la-drawer-col--left {
-    background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 40%);
+    background: linear-gradient(180deg, #effaff 0%, #effaff 40%);
 }
 
 .la-list--compact li {
@@ -1408,31 +1408,31 @@ button.la-kpi:hover {
 }
 
 .la-action-btn--primary {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
-    color: #166534;
+    background: #effaff;
+    border-color: #95deef;
+    color: #006a96;
 }
 
 .la-action-btn--primary:hover {
-    background: #dcfce7;
-    border-color: #86efac;
-    color: #14532d;
+    background: #effaff;
+    border-color: #95deef;
+    color: #006a96;
 }
 
 .la-action-btn--gift {
-    background: #fff7ed;
-    border-color: #fed7aa;
-    color: #c2410c;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 
 .la-action-btn--gift:hover {
-    background: #ffedd5;
+    background: #effaff;
 }
 
 .la-action-btn--secondary {
-    background: #eff6ff;
-    border-color: #bfdbfe;
-    color: #1d4ed8;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 
 .la-muted {
@@ -1492,18 +1492,18 @@ button.la-kpi:hover {
 }
 
 .la-offer-banner--ok {
-    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-    border-color: #86efac;
-    color: #14532d;
+    background: var(--staff-action-gradient);
+    border-color: #95deef;
+    color: #006a96;
 }
 
 .la-offer-banner--ok .la-offer-banner-icon {
-    background: #22c55e;
+    background: #0094cd;
     color: #fff;
 }
 
 .la-offer-banner--ok .la-offer-banner-status {
-    color: #166534;
+    color: #006a96;
 }
 
 .la-offer-banner--no {
@@ -1523,31 +1523,31 @@ button.la-kpi:hover {
 
 .la-offer-banner--active,
 .la-offer-banner--wait {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border-color: #fcd34d;
-    color: #78350f;
+    background: var(--staff-action-gradient);
+    border-color: #0094cd;
+    color: #006a96;
 }
 
 .la-offer-banner--active .la-offer-banner-icon,
 .la-offer-banner--wait .la-offer-banner-icon {
-    background: #f59e0b;
+    background: #0094cd;
     color: #fff;
 }
 
 .la-offer-banner--active .la-offer-banner-status,
 .la-offer-banner--wait .la-offer-banner-status {
-    color: #b45309;
+    color: #0094cd;
 }
 
 /* Zeleni check (pulsira) / crveni X — ishod ponude */
 @keyframes la-check-pulse {
     0%, 100% {
         transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+        box-shadow:none;
     }
     50% {
         transform: scale(1.08);
-        box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+        box-shadow:none;
     }
 }
 
@@ -1564,7 +1564,7 @@ button.la-kpi:hover {
 }
 
 .la-outcome-icon--ok {
-    background: #22c55e;
+    background: #0094cd;
     color: #fff;
     animation: la-check-pulse 1.4s ease-in-out infinite;
 }
@@ -1575,7 +1575,7 @@ button.la-kpi:hover {
 }
 
 .la-outcome-icon--wait {
-    background: #f59e0b;
+    background: #0094cd;
     color: #fff;
     font-size: 11px;
 }
@@ -1603,9 +1603,9 @@ button.la-kpi:hover {
 }
 
 .la-done-row--lost {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-    color: #475569;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 
 .la-done-kind {
@@ -1620,7 +1620,7 @@ button.la-kpi:hover {
 .la-done-when {
     font-size: 10px;
     font-weight: 600;
-    color: #94a3b8;
+    color: #95deef;
     margin-left: 4px;
 }
 
@@ -1638,9 +1638,9 @@ button.la-kpi:hover {
 }
 
 .la-done-row--ok {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
-    color: #14532d;
+    background: #effaff;
+    border-color: #95deef;
+    color: #006a96;
 }
 
 .la-done-row--no {
@@ -1650,9 +1650,9 @@ button.la-kpi:hover {
 }
 
 .la-done-row--wait {
-    background: #fffbeb;
-    border-color: #fde68a;
-    color: #78350f;
+    background: #effaff;
+    border-color: #95deef;
+    color: #006a96;
 }
 
 .la-done-ico {
@@ -1669,7 +1669,7 @@ button.la-kpi:hover {
 }
 
 .la-done-row--ok .la-done-ico {
-    background: #22c55e;
+    background: #0094cd;
     color: #fff;
 }
 
@@ -1679,7 +1679,7 @@ button.la-kpi:hover {
 }
 
 .la-done-row--wait .la-done-ico {
-    background: #f59e0b;
+    background: #0094cd;
     color: #fff;
     font-size: 7px;
 }
@@ -1709,14 +1709,14 @@ button.la-kpi:hover {
 
 /* Klik na korpu — pregled stavki */
 .la-chip--return {
-    background: #eef2ff;
-    border-color: #c7d2fe;
-    color: #3730a3;
+    background: #effaff;
+    border-color: #effaff;
+    color: #0094cd;
     font-weight: 800;
 }
 
 .la-insight-meta--return {
-    color: #3730a3;
+    color: #0094cd;
     font-weight: 700;
     margin-bottom: 6px;
 }
@@ -1726,29 +1726,29 @@ button.la-kpi:hover {
     -webkit-appearance: none;
     font: inherit;
     cursor: pointer;
-    border: 1px solid #86efac;
-    background: #ecfdf5;
+    border: 1px solid #95deef;
+    background: #effaff;
 }
 
 .la-chip--clickable:hover {
-    background: #d1fae5;
-    border-color: #4ade80;
+    background: #effaff;
+    border-color: #0094cd;
 }
 
 .la-stat-box--cart-click {
     cursor: pointer;
-    border-color: #bbf7d0;
-    background: #f0fdf4;
+    border-color: #95deef;
+    background: #effaff;
 }
 
 .la-stat-box--cart-click:hover {
-    background: #dcfce7;
+    background: #effaff;
 }
 
 .la-stat-hint {
     font-size: 10px;
     font-weight: 700;
-    color: #15803d;
+    color: #006a96;
     text-transform: lowercase;
 }
 
@@ -1762,7 +1762,7 @@ button.la-kpi:hover {
 .la-cart-preview-total {
     font-size: 12px;
     font-weight: 800;
-    color: #166534;
+    color: #006a96;
     text-transform: none;
     letter-spacing: 0;
 }
@@ -1783,7 +1783,7 @@ button.la-kpi:hover {
     align-items: center;
     padding: 8px;
     border-radius: 10px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #effaff;
     background: #fff;
 }
 
@@ -1792,7 +1792,7 @@ button.la-kpi:hover {
     height: 40px;
     border-radius: 8px;
     overflow: hidden;
-    background: #f1f5f9;
+    background: #effaff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1818,7 +1818,7 @@ button.la-kpi:hover {
 .la-cart-preview-name {
     font-size: 13px;
     font-weight: 700;
-    color: #0f172a;
+    color: #006a96;
     line-height: 1.3;
 }
 
@@ -1828,7 +1828,7 @@ button.la-kpi:hover {
 }
 
 .la-cart-preview-name a:hover {
-    color: #15803d;
+    color: #006a96;
     text-decoration: underline;
 }
 
@@ -1845,7 +1845,7 @@ button.la-kpi:hover {
 }
 
 .la-outcome-note--ok {
-    color: #15803d;
+    color: #006a96;
 }
 
 .la-outcome-note--no {
@@ -1853,7 +1853,7 @@ button.la-kpi:hover {
 }
 
 .la-product-name--accepted {
-    color: #166534;
+    color: #006a96;
     font-weight: 800;
 }
 
@@ -1863,7 +1863,7 @@ button.la-kpi:hover {
 }
 
 .la-product-name--active {
-    color: #b45309;
+    color: #0094cd;
     font-weight: 800;
 }
 
@@ -1880,7 +1880,7 @@ button.la-kpi:hover {
 }
 
 .la-offer-tag--ok {
-    background: #166534;
+    background: #006a96;
     color: #fff;
 }
 
@@ -1890,13 +1890,13 @@ button.la-kpi:hover {
 }
 
 .la-offer-tag--wait {
-    background: #b45309;
+    background: #0094cd;
     color: #fff;
 }
 
 .la-list-item--offer-ok {
-    background: #f0fdf4 !important;
-    border-left: 3px solid #22c55e;
+    background: #effaff !important;
+    border-left: 3px solid #0094cd;
 }
 
 .la-list-item--offer-no {
@@ -1905,8 +1905,8 @@ button.la-kpi:hover {
 }
 
 .la-list-item--offer-wait {
-    background: #fffbeb !important;
-    border-left: 3px solid #f59e0b;
+    background: #effaff !important;
+    border-left: 3px solid #0094cd;
 }
 
 .la-product-line {
@@ -1915,9 +1915,9 @@ button.la-kpi:hover {
 }
 
 .la-chip--offer-ok {
-    background: #dcfce7;
-    border-color: #86efac;
-    color: #166534;
+    background: #effaff;
+    border-color: #95deef;
+    color: #006a96;
 }
 
 .la-chip--offer-no {
@@ -1927,21 +1927,21 @@ button.la-kpi:hover {
 }
 
 .la-chip--offer-wait {
-    background: #fef3c7;
-    border-color: #fde68a;
-    color: #b45309;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 
 .la-chip--gift {
-    background: #fff7ed;
-    border-color: #fed7aa;
-    color: #c2410c;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 
 .la-chip--reg-sent {
-    background: #eff6ff;
-    border-color: #bfdbfe;
-    color: #1d4ed8;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 
 .la-staff-actions-stack {
@@ -1997,9 +1997,9 @@ button.la-kpi:hover {
 }
 
 .la-action-note--ok {
-    background: #dcfce7;
-    color: #166534;
-    border: 1px solid #86efac;
+    background: #effaff;
+    color: #006a96;
+    border: 1px solid #95deef;
 }
 
 /* Preporuke za ručno slanje (psihologija gledanja) */
@@ -2007,41 +2007,41 @@ button.la-kpi:hover {
     border-radius: 12px;
     padding: 12px 14px;
     border: 1px solid #e5e7eb;
-    background: #f9fafb;
+    background: #effaff;
 }
 
 .la-insight--hot {
     border-color: #fca5a5;
-    background: linear-gradient(135deg, #fef2f2 0%, #fff7ed 100%);
+    background: linear-gradient(135deg, #fef2f2 0%, #effaff 100%);
 }
 
 .la-insight--warm {
-    border-color: #fcd34d;
-    background: #fffbeb;
+    border-color: #0094cd;
+    background: #effaff;
 }
 
 .la-insight--explore {
-    border-color: #93c5fd;
-    background: #eff6ff;
+    border-color: #95deef;
+    background: #effaff;
 }
 
 .la-insight--browse,
 .la-insight--cold {
     border-color: #e5e7eb;
-    background: #f9fafb;
+    background: #effaff;
 }
 
 .la-insight-label {
     font-weight: 800;
     font-size: 14px;
-    color: #111827;
+    color: #006a96;
     margin-bottom: 4px;
 }
 
 .la-insight-tip {
     font-size: 13px;
     line-height: 1.45;
-    color: #374151;
+    color: #006a96;
     margin-bottom: 6px;
 }
 
@@ -2086,8 +2086,8 @@ button.la-kpi:hover {
 }
 
 .la-rec-item--warm {
-    border-color: #fde68a;
-    background: #fffbeb;
+    border-color: #95deef;
+    background: #effaff;
 }
 
 .la-rec-main {
@@ -2115,13 +2115,13 @@ button.la-kpi:hover {
 .la-rec-name {
     font-weight: 700;
     font-size: 13px;
-    color: #111827;
+    color: #006a96;
     line-height: 1.3;
 }
 
 .la-rec-reason {
     font-size: 12px;
-    color: #166534;
+    color: #006a96;
     font-weight: 600;
     margin-top: 2px;
 }
@@ -2143,11 +2143,11 @@ button.la-kpi:hover {
 }
 
 .la-card--offer-ok {
-    border-color: #86efac;
+    border-color: #95deef;
 }
 
 .la-card--offer-ok::before {
-    background: #22c55e;
+    background: #0094cd;
 }
 
 .la-card--offer-no {
@@ -2196,15 +2196,13 @@ button.la-kpi:hover {
     background: #fff;
     border-radius: 18px;
     padding: 24px 22px 20px;
-    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+    box-shadow:none;
 }
 
 .staff-live-offer-modal-card--send {
     padding: 0 0 20px;
     border: 1px solid rgba(91, 184, 5, 0.25);
-    box-shadow:
-        0 24px 60px rgba(15, 23, 42, 0.28),
-        0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+    box-shadow:none;
     overflow: hidden;
 }
 
@@ -2212,7 +2210,7 @@ button.la-kpi:hover {
     margin: 0 0 8px;
     padding: 26px 22px 18px;
     background:
-        linear-gradient(145deg, #ecfdf3 0%, #dbeafe 45%, #f0fdf4 100%);
+        linear-gradient(145deg, #effaff 0%, #effaff 45%, #effaff 100%);
     border-bottom: 1px solid rgba(91, 184, 5, 0.18);
     position: relative;
 }
@@ -2237,11 +2235,11 @@ button.la-kpi:hover {
     height: 36px;
     margin-bottom: 10px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #5BB805, #3d8a00);
+    background: var(--staff-action-gradient);
     color: #fff;
     font-size: 16px;
     font-weight: 800;
-    box-shadow: 0 6px 16px rgba(91, 184, 5, 0.35);
+    box-shadow:none;
 }
 
 .staff-live-offer-modal-card--send h2 {
@@ -2249,15 +2247,15 @@ button.la-kpi:hover {
     font-size: 22px;
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: #14532d;
+    color: #006a96;
 }
 
 .staff-live-offer-modal-card--send .staff-live-offer-modal-subtitle {
-    color: #3f6212;
+    color: #006a96;
 }
 
 .staff-live-offer-modal-card--send .staff-live-offer-hint {
-    color: #4d7c0f;
+    color: #006a96;
     margin-bottom: 0;
 }
 
@@ -2266,24 +2264,24 @@ button.la-kpi:hover {
 }
 
 .staff-live-offer-modal-card--send .staff-live-offer-label {
-    color: #166534;
+    color: #006a96;
 }
 
 .staff-live-offer-modal-card--send .staff-live-offer-search input[type="search"],
 .staff-live-offer-modal-card--send .staff-live-offer-discount {
-    border-color: #bbf7d0;
-    background: #f7fef9;
+    border-color: #95deef;
+    background: #effaff;
 }
 
 .staff-live-offer-modal-card--send .staff-live-offer-search input[type="search"]:focus,
 .staff-live-offer-modal-card--send .staff-live-offer-discount:focus {
     outline: 2px solid rgba(91, 184, 5, 0.35);
-    border-color: #5BB805;
+    border-color: #0094cd;
 }
 
 .staff-live-offer-modal-card--send .staff-live-offer-free-ship {
-    background: linear-gradient(135deg, #f0fdf4, #eff6ff);
-    border-color: #bbf7d0;
+    background: linear-gradient(135deg, #effaff, #effaff);
+    border-color: #95deef;
 }
 
 .staff-live-offer-modal-close {
@@ -2294,7 +2292,7 @@ button.la-kpi:hover {
     height: 36px;
     border: 0;
     border-radius: 10px;
-    background: #f1f5f9;
+    background: #effaff;
     font-size: 22px;
     cursor: pointer;
     line-height: 1;
@@ -2326,7 +2324,7 @@ button.la-kpi:hover {
 .staff-live-offer-label {
     font-size: 13px;
     font-weight: 700;
-    color: #334155;
+    color: #006a96;
 }
 
 .staff-live-offer-optional {
@@ -2358,7 +2356,7 @@ button.la-kpi:hover {
     border: 1px solid var(--live-border);
     border-radius: 12px;
     background: #fff;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    box-shadow:none;
 }
 
 .staff-live-offer-result {
@@ -2375,7 +2373,7 @@ button.la-kpi:hover {
 }
 
 .staff-live-offer-result:hover {
-    background: #f5fff0;
+    background: #effaff;
 }
 
 .staff-live-offer-result span:first-child {
@@ -2399,7 +2397,7 @@ button.la-kpi:hover {
     margin: 6px 0 0;
     font-size: 13px;
     font-weight: 600;
-    color: #1a7f4b;
+    color: #006a96;
 }
 
 .staff-live-offer-discount {
@@ -2417,7 +2415,7 @@ button.la-kpi:hover {
     align-items: flex-start;
     padding: 12px;
     border-radius: 12px;
-    background: #f8fafc;
+    background: #effaff;
     border: 1px solid var(--live-border);
     cursor: pointer;
 }
@@ -2458,30 +2456,30 @@ button.la-kpi:hover {
 
 .staff-live-offer-modal-actions .btn-secondary,
 .staff-live-offer-modal-card--send .btn-secondary {
-    background: #f1f5f9 !important;
-    color: #0f172a !important;
-    border: 1.5px solid #cbd5e1 !important;
+    background: #effaff !important;
+    color: #006a96 !important;
+    border: 1.5px solid #95deef !important;
 }
 
 .staff-live-offer-modal-actions .btn-secondary:hover,
 .staff-live-offer-modal-card--send .btn-secondary:hover {
-    background: #e2e8f0 !important;
-    color: #0f172a !important;
+    background: #effaff !important;
+    color: #006a96 !important;
 }
 
 .staff-live-offer-submit,
 .staff-live-offer-modal-actions .btn-primary,
 .staff-live-offer-modal-card--send .btn-primary {
-    background: #3d8a00 !important;
-    border: 1.5px solid #3d8a00 !important;
+    background: #006a96 !important;
+    border: 1.5px solid #006a96 !important;
     color: #ffffff !important;
 }
 
 .staff-live-offer-submit:hover,
 .staff-live-offer-modal-actions .btn-primary:hover,
 .staff-live-offer-modal-card--send .btn-primary:hover {
-    background: #2f6b00 !important;
-    border-color: #2f6b00 !important;
+    background: #006a96 !important;
+    border-color: #006a96 !important;
     color: #ffffff !important;
 }
 
@@ -2490,7 +2488,7 @@ button.la-kpi:hover {
 .staff-live-offer-modal-card--send .staff-live-offer-label,
 .staff-live-offer-modal-card--send .staff-live-offer-free-ship strong,
 .staff-live-offer-modal-card--send .staff-live-offer-selected {
-    color: #0f172a !important;
+    color: #006a96 !important;
 }
 
 .staff-live-offer-modal-card--send .staff-live-offer-free-ship small,
@@ -2499,7 +2497,7 @@ button.la-kpi:hover {
 }
 
 .staff-live-offer-modal-card--send .staff-live-offer-modal-subtitle strong {
-    color: #14532d !important;
+    color: #006a96 !important;
 }
 
 .staff-live-city-modal-card,
@@ -2589,7 +2587,7 @@ button.la-kpi:hover {
 .staff-live-analytics-table th {
     position: sticky;
     top: 0;
-    background: #f8fafc;
+    background: #effaff;
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -2607,15 +2605,15 @@ button.la-kpi:hover {
     display: inline-block;
     padding: 3px 8px;
     border-radius: 999px;
-    background: #f1f5f9;
+    background: #effaff;
     font-size: 11px;
     font-weight: 700;
     color: #64748b;
 }
 
 .staff-live-badge--online {
-    background: #dcfce7;
-    color: #166534;
+    background: #effaff;
+    color: #006a96;
 }
 
 .staff-live-account-badge {
@@ -2627,13 +2625,13 @@ button.la-kpi:hover {
 }
 
 .staff-live-account-badge--active {
-    background: #dcfce7;
-    color: #166534;
+    background: #effaff;
+    color: #006a96;
 }
 
 .staff-live-account-badge--inactive {
-    background: #fef3c7;
-    color: #b45309;
+    background: #effaff;
+    color: #0094cd;
 }
 
 .staff-live-activate-btn,
@@ -2651,15 +2649,15 @@ button.la-kpi:hover {
 }
 
 .staff-live-offer-btn {
-    background: #eff6ff;
-    border-color: #bfdbfe;
-    color: #1d4ed8;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
 }
 
 .staff-live-activate-btn {
-    background: #fff7ed;
-    border-color: #fed7aa;
-    color: #c2410c;
+    background: #effaff;
+    border-color: #95deef;
+    color: #0094cd;
     margin-left: 6px;
 }
 
@@ -2671,7 +2669,7 @@ button.la-kpi:hover {
     z-index: 2000;
     padding: 12px 18px;
     border-radius: 12px;
-    background: #0f172a;
+    background: #006a96;
     color: #fff;
     font-size: 14px;
     font-weight: 600;
@@ -2733,7 +2731,7 @@ body.popup-open {
 
     .la-drawer-col--left {
         border-right: 0;
-        border-bottom: 1px solid var(--live-border, #e2e8f0);
+        border-bottom: 1px solid var(--live-border, #effaff);
         max-height: 42vh;
         overflow: auto;
     }
@@ -2756,17 +2754,17 @@ body.popup-open {
 /* —— Ribolovački savjetnik na live kartici —— */
 .la-card-activity-line--advisor {
     background: linear-gradient(90deg, rgba(15, 118, 110, 0.1), transparent);
-    border-left: 3px solid #0d9488;
+    border-left: 3px solid #006a96;
     padding-left: 10px !important;
     margin-top: 6px;
 }
 .la-advisor-ok {
-    color: #15803d;
+    color: #006a96;
     font-style: normal;
     font-weight: 800;
 }
 .la-advisor-wait {
-    color: #b45309;
+    color: #0094cd;
     font-style: normal;
     font-weight: 700;
 }
@@ -2775,8 +2773,8 @@ body.popup-open {
     margin: 6px 0 4px;
     padding: 8px 10px;
     border-radius: 10px;
-    background: #f0fdfa;
-    border: 1px solid #99f6e4;
+    background: #effaff;
+    border: 1px solid #95deef;
     max-height: 140px;
     overflow-y: auto;
 }
@@ -2787,18 +2785,18 @@ body.popup-open {
     font-size: 12px;
     line-height: 1.35;
     padding: 3px 0;
-    border-bottom: 1px dashed #ccfbf1;
+    border-bottom: 1px dashed #effaff;
 }
 .la-advisor-answers li:last-child {
     border-bottom: 0;
 }
 .la-advisor-answers li span {
-    color: #0f766e;
+    color: #006a96;
     font-weight: 600;
     min-width: 5.5em;
 }
 .la-advisor-answers li strong {
-    color: #134e4a;
+    color: #006a96;
     font-weight: 800;
 }
 .la-advisor-kits {
@@ -2808,16 +2806,16 @@ body.popup-open {
     margin-top: 6px;
 }
 .la-chip--kit {
-    background: #ecfdf5 !important;
-    color: #065f46 !important;
-    border: 1px solid #6ee7b7 !important;
+    background: #effaff !important;
+    color: #006a96 !important;
+    border: 1px solid #95deef !important;
     font-weight: 800;
 }
 
 /* Grad — jači naglasak */
 .la-card-city-pin {
     font-weight: 800;
-    color: #0f172a;
+    color: #006a96;
 }
 .la-card-city {
     font-size: 13px;

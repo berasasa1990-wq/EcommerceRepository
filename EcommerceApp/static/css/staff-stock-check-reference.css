@@ -1,6 +1,6 @@
 /* Stock verification screen; print output and status semantics are unchanged. */
 @media screen{
-body.magacin-page.is-stock-check-reference{--pl-metal:#f5faff;--pl-panel:#f5faff;--pl-edge:#d5e7f1;--pl-bevel:none;background:#dedfe1!important}
+body.magacin-page.is-stock-check-reference{--pl-metal:#f5faff;--pl-panel:#f5faff;--pl-edge:#d5e7f1;--pl-bevel:none;background:#f5faff!important}
 .magacin-page.is-stock-check-reference .mg-app,.magacin-page.is-stock-check-reference .mg-main{background:#f5faff;min-height:100vh}
 .magacin-page.is-stock-check-reference .mg-main{padding:4px 10px 70px;min-width:0;color:#111}
 .magacin-page.is-stock-check-reference .pl-page{max-width:none;padding:0}
@@ -15,8 +15,8 @@ body.magacin-page.is-stock-check-reference{--pl-metal:#f5faff;--pl-panel:#f5faff
 .magacin-page.is-stock-check-reference .mg-card{padding:10px;min-width:0;border:1px solid var(--pl-edge);border-radius:10px;background:var(--pl-panel);box-shadow:none;margin-bottom:10px}
 .magacin-page.is-stock-check-reference .mg-h{font-size:18px;color:#111;letter-spacing:0;margin:0 0 8px}
 .magacin-page.is-stock-check-reference .pl-page .mg-btn,.magacin-page.is-stock-check-reference .pp-mode-tabs a,.magacin-page.is-stock-check-reference .pl-filters a{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:10px;background:var(--pl-metal);box-shadow:none;color:#111;font-size:14px;font-weight:750;text-decoration:none}
-.magacin-page.is-stock-check-reference .pl-page .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:none;color:#fff}
-.magacin-page.is-stock-check-reference .pp-mode-tabs a.is-on,.magacin-page.is-stock-check-reference .pl-filters a.is-on{background:linear-gradient(115deg,#e1f0dc,#bed5b4);border-color:#749168;color:#23551d}
+.magacin-page.is-stock-check-reference .pl-page .mg-btn-primary{background:var(--staff-action-gradient);border-color:#0094cd;box-shadow:none;color:#fff}
+.magacin-page.is-stock-check-reference .pp-mode-tabs a.is-on,.magacin-page.is-stock-check-reference .pl-filters a.is-on{background:#f5faff;border-color:#95deef;color:#0078aa}
 .magacin-page.is-stock-check-reference .pp-mode-tabs,.magacin-page.is-stock-check-reference .pl-filters{gap:7px;margin-bottom:10px;flex-wrap:wrap}
 .magacin-page.is-stock-check-reference .pl-page button:disabled{opacity:.5;cursor:default}
 .magacin-page.is-stock-check-reference .mg-field label{font-size:13px;color:#414c5e}

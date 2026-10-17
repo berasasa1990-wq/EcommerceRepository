@@ -3,7 +3,7 @@
 {% block body_class %}{{ block.super }} is-manual-reference{% endblock %}
 {% block extra_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'css/staff-manual-order-reference.css' %}?v=20261015-blue-workspace">
+<link rel="stylesheet" href="{% static 'css/staff-manual-order-reference.css' %}?v=20261017-warehouse-blue">
 {% endblock %}
 
 {% block magacin_content %}
@@ -41,7 +41,6 @@
                 <span>Ime i prezime / Naziv firme</span>
                 <span class="mg-cust-search-row">
                     <span class="mg-icon-field">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         <input id="mgCustomerSearch" type="search" placeholder="Unesi ime, prezime ili naziv firme..." autocomplete="off" value="{{ form.ime_prezime|default:'' }}">
                     </span>
                     <button type="button" class="mg-btn" id="mgCustomerAdd" hidden>
@@ -94,8 +93,7 @@
                 </button>
             </div>
             <div class="mg-icon-field">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
-                <input type="search" id="mgOrderSearch" placeholder="Pretraži ili skeniraj artikal (naziv, šifra, barkod)..." autocomplete="off">
+                        <input type="search" id="mgOrderSearch" placeholder="Pretraži ili skeniraj artikal (naziv, šifra, barkod)..." autocomplete="off">
             </div>
             <button type="button" class="mg-btn" id="mgSpareBtn">Slanje rezervnog dijela</button>
             <button type="button" class="mg-btn" id="mgOrderBulk">Bulk</button>

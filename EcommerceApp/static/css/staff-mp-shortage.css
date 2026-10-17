@@ -1,5 +1,5 @@
 /* Compact silver warehouse shortage screen. */
-body.magacin-page.is-mp-shortage{--mp-metal:#f5faff;--mp-panel:#f5faff;--mp-edge:#9b9da2;--mp-bevel:none;background:#dedfe1!important}
+body.magacin-page.is-mp-shortage{--mp-metal:#f5faff;--mp-panel:#f5faff;--mp-edge:#9b9da2;--mp-bevel:none;background:#f5faff!important}
 .magacin-page.is-mp-shortage .mg-app,.magacin-page.is-mp-shortage .mg-main{background:#f5faff;min-height:100vh}
 .magacin-page.is-mp-shortage .mg-main{padding:8px 12px 18px;min-width:0}
 .magacin-page.is-mp-shortage .mg-chrome{padding:6px 8px;gap:8px;margin-bottom:10px;min-height:0;background:var(--mp-metal);border:1px solid var(--mp-edge);border-radius:10px;box-shadow:none}
@@ -15,7 +15,7 @@ body.magacin-page.is-mp-shortage{--mp-metal:#f5faff;--mp-panel:#f5faff;--mp-edge
 .magacin-page.is-mp-shortage .pp-loc-search input{width:auto;flex:1;min-width:0;height:40px;border:1px solid #8e9097;border-radius:10px;background:#f5faff;padding-left:38px;font-size:16px}
 .magacin-page.is-mp-shortage .pp-loc-search .mg-search-icon{left:16px;color:#111}
 .magacin-page.is-mp-shortage .mg-fali-page .mg-btn,.magacin-page.is-mp-shortage .mg-pager a,.magacin-page.is-mp-shortage .mg-pager .is-current{min-height:36px;padding:6px 14px;border:1px solid #92949a;border-radius:10px;background:var(--mp-metal);box-shadow:none;font-size:14px;font-weight:750;color:#111;text-decoration:none}
-.magacin-page.is-mp-shortage .mg-fali-page .mg-btn-primary{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:none;color:#fff}
+.magacin-page.is-mp-shortage .mg-fali-page .mg-btn-primary{background:var(--staff-action-gradient);border-color:#0094cd;box-shadow:none;color:#fff}
 .magacin-page.is-mp-shortage .mg-fali-page .mg-btn:hover{filter:brightness(1.08)}
 .magacin-page.is-mp-shortage .mg-fali-list{gap:8px}
 .magacin-page.is-mp-shortage .mg-fali-card{padding:10px 12px;border:1px solid var(--mp-edge);border-radius:10px;background:var(--mp-panel);box-shadow:none;gap:12px}
@@ -31,7 +31,7 @@ body.magacin-page.is-mp-shortage{--mp-metal:#f5faff;--mp-panel:#f5faff;--mp-edge
 .magacin-page.is-mp-shortage .mg-fali-pending{border-radius:10px;color:#365c27;font-size:14px}
 .magacin-page.is-mp-shortage .mg-fali-empty{padding:12px;background:var(--mp-panel);border:1px solid var(--mp-edge);border-radius:10px;color:#505b6c}
 .magacin-page.is-mp-shortage .mg-pager{gap:7px;margin-top:10px}
-.magacin-page.is-mp-shortage .mg-pager .is-current{background:linear-gradient(#7191b9,#3a5f8c);color:#fff;border-color:#344d72;box-shadow:none}
+.magacin-page.is-mp-shortage .mg-pager .is-current{background:var(--staff-action-gradient);color:#fff;border-color:#344d72;box-shadow:none}
 .magacin-page.is-mp-shortage :is(a,button,input,select):focus-visible{outline:3px solid #386ca5;outline-offset:2px}
 @media(max-width:600px){.magacin-page.is-mp-shortage .mg-main{padding:6px}.magacin-page.is-mp-shortage .mg-chrome{gap:5px}.magacin-page.is-mp-shortage .mg-page-head h1{font-size:20px}.magacin-page.is-mp-shortage .mg-fali-card{padding:8px}.magacin-page.is-mp-shortage .mg-fali-prenos{width:100%;min-width:0}.magacin-page.is-mp-shortage .mg-fali-prenos select{max-width:100%}}
 

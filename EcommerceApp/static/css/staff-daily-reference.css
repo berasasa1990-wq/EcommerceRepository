@@ -1,5 +1,5 @@
 /* Daily retail stock deduction: shared compact blue presentation. */
-body.magacin-page.is-daily-reference{--daily-metal:#f5faff;--daily-panel:#f5faff;--daily-edge:#d5e7f1;--daily-bevel:none;background:#dedfe1!important}
+body.magacin-page.is-daily-reference{--daily-metal:#f5faff;--daily-panel:#f5faff;--daily-edge:#d5e7f1;--daily-bevel:none;background:#f5faff!important}
 .magacin-page.is-daily-reference .mg-app,.magacin-page.is-daily-reference .mg-main{background:#f5faff;min-height:100vh}
 .magacin-page.is-daily-reference .mg-main{padding:4px 10px 70px;min-width:0;color:#111}
 .magacin-page.is-daily-reference .mg-toolbar{padding:8px 12px;margin:0 0 8px;border:1px solid var(--daily-edge);background:var(--daily-metal);box-shadow:none}
@@ -8,7 +8,7 @@ body.magacin-page.is-daily-reference{--daily-metal:#f5faff;--daily-panel:#f5faff
 .magacin-page.is-daily-reference .mg-card{padding:10px;margin-bottom:10px;min-width:0;border:1px solid var(--daily-edge);border-radius:10px;background:var(--daily-panel);box-shadow:none;overflow-x:auto}
 .magacin-page.is-daily-reference .mg-h{margin:0 0 8px;padding:7px 10px;border:1px solid var(--daily-edge);background:var(--daily-metal);box-shadow:none;font-size:18px;letter-spacing:0;text-transform:none;color:#111}
 .magacin-page.is-daily-reference .mg-main .mg-btn,.magacin-page.is-daily-reference .mg-mp-daily-back{min-height:36px;padding:6px 12px;border:1px solid #92949a;border-radius:10px;background:var(--daily-metal);box-shadow:none;color:#111;font-size:14px;font-weight:750;text-decoration:none}
-.magacin-page.is-daily-reference .mg-main .mg-btn-primary,.magacin-page.is-daily-reference #mpDailyUploadBtn{background:linear-gradient(120deg,#4caf36,#278922);border-color:#296922;box-shadow:none;color:#fff}
+.magacin-page.is-daily-reference .mg-main .mg-btn-primary,.magacin-page.is-daily-reference #mpDailyUploadBtn{background:var(--staff-action-gradient);border-color:#0094cd;box-shadow:none;color:#fff}
 .magacin-page.is-daily-reference .mg-main .mg-btn-danger{color:#b52525}
 .magacin-page.is-daily-reference .mg-main .mg-btn:hover{filter:brightness(1.08)}
 .magacin-page.is-daily-reference .mg-main button:disabled{opacity:.55;cursor:default}

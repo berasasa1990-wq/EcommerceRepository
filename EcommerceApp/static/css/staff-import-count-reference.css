@@ -8,7 +8,7 @@
 .is-import-count-reference :is(.up-progress,.up-card,.up-stat,.up-table-wrap){border:1px solid #9b9da2;border-radius:10px;background:var(--im-panel);box-shadow:none}
 .is-import-count-reference .up-progress{padding:8px 10px;margin-bottom:8px}
 .is-import-count-reference .up-progress-bar{height:10px;border:1px solid #92949a;border-radius:10px;background:#c5c8cc}
-.is-import-count-reference .up-progress-bar i{background:linear-gradient(#a3b2bf,#64798a);border-radius:10px}
+.is-import-count-reference .up-progress-bar i{background:var(--staff-action-gradient);border-radius:10px}
 .is-import-count-reference .up-progress-pct{margin-top:4px;color:#465164;font-size:12px}
 .is-import-count-reference .up-scan{border:1px solid #92949a;border-radius:10px;background:#fff;padding:4px;gap:8px;margin-bottom:8px}
 .is-import-count-reference .up-scan-ico{background:var(--im-metal);border-radius:10px;color:#111;width:40px;height:40px;flex-shrink:0}

@@ -8879,11 +8879,11 @@ body.mobile-nav-open {
 }
 
 .staff-page-hero {
-    background: #0a0a0a;
+    background:var(--staff-action-gradient,#0a0a0a);
     color: #fff;
     margin: 0 0 28px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    box-shadow:none;
 }
 
 .staff-page-hero__inner {
@@ -8975,7 +8975,7 @@ body.mobile-nav-open {
     color: var(--black);
     transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
     background: var(--white);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    box-shadow:none;
     position: relative;
     overflow: hidden;
 }
@@ -8994,7 +8994,7 @@ body.mobile-nav-open {
 
 .admin-btn:hover {
     border-color: color-mix(in srgb, var(--btn-cart, #5BB805) 45%, var(--gray-200));
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+    box-shadow:none;
     transform: translateY(-2px);
 }
 
@@ -9129,7 +9129,7 @@ body.mobile-nav-open {
 }
 .admin-btn--locked:hover {
     border-color: var(--gray-200);
-    box-shadow: none;
+    box-shadow:none;
     transform: none;
 }
 
