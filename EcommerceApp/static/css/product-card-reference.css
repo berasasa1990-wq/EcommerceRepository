@@ -92,3 +92,22 @@ html body.home-mobile-reference .home-products .product-card.product-card--catal
 html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design>.product-card-corner-badge{display:inline-block!important;top:10px!important;left:14px!important;transform:none!important;margin:0!important;border-radius:5px!important;z-index:4}
 html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image{box-sizing:border-box;padding-top:28px!important}
 html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-card__media-link{height:100%;min-height:0}
+
+/* One product-card layout for home, sale, new arrivals, search and brands. */
+html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design{padding:10px 24px 20px!important;height:auto!important;min-height:0!important;border-radius:22px!important}
+html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-card__body{padding-top:24px!important}
+html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image{height:165px!important;min-height:165px!important;aspect-ratio:auto!important}
+@media(min-width:1025px){
+ html body .product-catalog .product-grid.product-grid--catalog{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:18px!important;align-items:stretch}
+}
+@media(max-width:600px){
+ html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design{padding:16px 18px!important;border-radius:20px!important}
+ html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image{height:125px!important;min-height:125px!important}
+}
+
+/* Use identical artwork dimensions, regardless of the listing container width. */
+html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image :is(picture,img){display:block!important;width:100%!important;height:100%!important;max-width:165px!important;max-height:137px!important;margin-inline:auto!important;position:static!important;transform:none!important}
+html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image img{object-fit:contain!important;object-position:center bottom!important;box-sizing:border-box!important;padding:0!important}
+@media(max-width:600px){
+ html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image :is(picture,img){max-width:125px!important;max-height:97px!important}
+}
