@@ -407,7 +407,7 @@ def _filter_size_scope_qs(filter_params, base_qs=None, *, request=None):
     if filter_params.get('izdvojeno'):
         qs = _featured_catalog_qs(qs, request)
     if filter_params.get('noviteti'):
-        qs = qs.filter(na_stanju=True, stanje__gt=0)
+        qs = qs.filter(pk__in=_latest_import_product_ids(), na_stanju=True, stanje__gt=0)
     if filter_params.get('brend'):
         brand = Brand.objects.filter(slug=filter_params['brend']).first()
         if brand:
@@ -1954,7 +1954,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     if params.get('izdvojeno'):
         products_qs = _featured_catalog_qs(products_qs, request)
     if params.get('noviteti'):
-        products_qs = products_qs.filter(na_stanju=True, stanje__gt=0)
+        products_qs = products_qs.filter(pk__in=_latest_import_product_ids(), na_stanju=True, stanje__gt=0)
     if params.get('brend'):
         brand = Brand.objects.filter(slug=params['brend']).first()
         products_qs = products_qs.filter(brend_id=brand.pk) if brand else products_qs.none()
@@ -2023,7 +2023,8 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
         products = [product for product in products if _product_is_on_sale(product)]
 
     if params['noviteti']:
-        products = [product for product in products if product.na_stanju and product.stanje > 0]
+        latest_ids = set(_latest_import_product_ids())
+        products = [product for product in products if product.pk in latest_ids and product.na_stanju and product.stanje > 0]
 
     if params['velicina']:
         size_label = params['velicina']
@@ -2379,20 +2380,27 @@ def _fill_home_section_products(products, request=None):
     return items
 
 
+def _latest_import_product_ids():
+    from .models import UvozStavka
+
+    rows = UvozStavka.objects.filter(
+        product__isnull=False,
+        status__in=[UvozStavka.Status.CREATED, UvozStavka.Status.UPDATED],
+    )
+    latest = rows.order_by('-uvoz__kreiran', '-uvoz_id').values_list('uvoz_id', flat=True).first()
+    if latest is None:
+        return []
+    return list(dict.fromkeys(rows.filter(uvoz_id=latest).order_by('redoslijed', 'pk').values_list('product_id', flat=True)))
+
+
 def _home_latest_products(request=None):
-    # Svako otvaranje bira novi uzorak; ne keširaj slučajni izbor.
     return _home_latest_products_uncached(request)
 
 
 def _home_latest_products_uncached(request=None):
-    candidates = Product.objects.filter(aktivan=True, na_stanju=True, stanje__gt=0)
-    if not _staff_edit_mode_enabled(request):
-        candidates = candidates.filter(sakriven_do_stanja=False)
-    # IDs do not need product-card joins, variation counts or prefetches.
-    recent_ids = list(candidates.order_by('-kreiran', '-pk').values_list('pk', flat=True)[:50])
-    selected_ids = random.sample(recent_ids, min(HOME_SECTION_PRODUCT_LIMIT, len(recent_ids)))
-    products = {product.pk: product for product in _home_product_queryset(request).filter(pk__in=selected_ids)}
-    return [products[pk] for pk in selected_ids if pk in products]
+    product_ids = _latest_import_product_ids()
+    products = {p.pk: p for p in _home_product_queryset(request).filter(pk__in=product_ids)}
+    return [products[pk] for pk in product_ids if pk in products][:HOME_SECTION_PRODUCT_LIMIT]
 
 
 def _featured_catalog_qs(products_qs, request=None):
