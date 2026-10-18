@@ -1175,3 +1175,51 @@
 /* Compact product-page heading. */
 html body.product-mobile-reference .product-detail-title-row h1{font-size:22px!important;line-height:1.25}
 @media(max-width:767px){html body.product-mobile-reference .product-detail-title-row h1{font-size:16px!important}}
+
+/* Shorter desktop gallery ending at the delivery block. */
+@media(min-width:1025px){
+ html body.product-mobile-reference #mainProductImageWrap{height:var(--desktop-gallery-height,420px)!important;min-height:0!important;aspect-ratio:auto!important;box-sizing:border-box}
+ html body.product-mobile-reference #mainProductImageWrap #mainProductImage{height:100%!important;max-height:100%!important;width:100%!important;object-fit:contain!important}
+}
+
+/* Details below the gallery, three related products alongside. */
+body.product-mobile-reference .pd-bottom-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;margin-top:28px;align-items:start}
+html body.product-mobile-reference .pd-bottom-layout .pd-reference-details{display:block!important;margin:0}
+html body.product-mobile-reference .pd-bottom-layout .pd-reference-details img{max-width:100%;height:auto}
+body.product-mobile-reference .pd-bottom-details,body.product-mobile-reference .pd-bottom-related{min-width:0}
+body.product-mobile-reference .pd-bottom-related h2{font-size:22px;margin:0 0 16px}
+html body.product-mobile-reference .pd-bottom-related .pd-related-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0;width:100%}
+@media(max-width:1024px){
+ body.product-mobile-reference .pd-bottom-layout{grid-template-columns:1fr;gap:24px}
+}
+@media(max-width:600px){
+ html body.product-mobile-reference .pd-bottom-related .pd-related-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* Align both lower-section top rules and heading baselines. */
+@media(min-width:1025px){
+ html body.product-mobile-reference .pd-bottom-layout>:is(.pd-bottom-details,.pd-bottom-related){margin-top:0;padding-top:0;align-self:start}
+ html body.product-mobile-reference .pd-bottom-layout .pd-reference-details>details:first-child{margin-top:0;border-top:1px solid #eceef1}
+ html body.product-mobile-reference .pd-bottom-layout .pd-reference-details>details:first-child>summary,
+ html body.product-mobile-reference .pd-bottom-layout .pd-bottom-related>h2{box-sizing:border-box;font-size:16px;line-height:22px;padding:16px 0;margin:0;font-weight:600}
+ html body.product-mobile-reference .pd-bottom-layout .pd-bottom-related>h2{border-top:1px solid #eceef1}
+}
+
+/* Clear description typography and orange feature bullets. */
+html body.product-mobile-reference .pd-reference-details .pd-description-formatted{padding:12px 0 20px;color:#444;font-size:14px;line-height:1.75;overflow-wrap:anywhere}
+html body.product-mobile-reference .pd-description-formatted p{margin:0 0 16px;line-height:1.75}
+html body.product-mobile-reference .pd-description-formatted :is(ul,ol){padding:0;margin:8px 0 20px;list-style:none}
+html body.product-mobile-reference .pd-description-formatted :is(li,.pd-description-feature){position:relative;padding-left:20px;margin:0 0 10px;line-height:1.6;color:#333}
+html body.product-mobile-reference .pd-description-formatted :is(li,.pd-description-feature)::before{content:"";position:absolute;left:0;top:.55em;width:7px;height:7px;border-radius:50%;background:#ff5a00}
+html body.product-mobile-reference .pd-description-formatted :is(h2,h3,h4){margin:20px 0 12px;color:#222;font-size:16px;line-height:1.4}
+html body.product-mobile-reference .pd-description-formatted li p{margin:0}
+
+/* Give thumbnails their own column, outside the main image. */
+html body.product-mobile-reference .product-gallery{display:grid!important;grid-template-columns:76px minmax(0,1fr)!important;column-gap:20px!important;position:relative;min-width:0}
+html body.product-mobile-reference .product-gallery .product-gallery-main{grid-column:2!important;grid-row:1;min-width:0;max-width:100%;box-sizing:border-box}
+html body.product-mobile-reference .product-gallery .pd-gallery-bar{grid-column:1!important;grid-row:1;position:relative!important;inset:auto!important;transform:none!important;translate:none!important;width:100%!important;min-width:0;max-width:100%;margin:0!important;box-sizing:border-box;overflow-x:hidden}
+html body.product-mobile-reference .pd-gallery-bar .product-thumbnails{width:100%!important;max-width:100%!important;min-width:0;box-sizing:border-box}
+@media(max-width:767px){
+ html body.product-mobile-reference .product-gallery{grid-template-columns:52px minmax(0,1fr)!important;column-gap:14px!important}
+ html body.product-mobile-reference .product-gallery .pd-gallery-bar{height:100%!important;min-height:0;overflow-y:auto}
+}

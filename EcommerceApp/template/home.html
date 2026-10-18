@@ -6,6 +6,7 @@
 {% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-reference-orange.css' %}?v=20261018-gray-category-tiles">{% endif %}
 {% endblock %}
 {% block extra_css %}
+{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-fishing-hero.css' %}?v=20261018-below-header">{% endif %}
 
 <style>
 .home-products--novo .product-card--home-reference { position: relative; }
@@ -123,96 +124,11 @@ body.home-mobile-reference main > :is(section,.featured-grid,.mobile-home-benefi
 </style>
 {% endblock %}
 
-{% block lcp_preload %}
-{% if lcp_image_url %}
-{% with slide=hero_slides.0 %}
-{% if slide.has_mobile_image and not slide.has_video %}
-<link rel="preload" as="image" href="{{ slide.image_mobile }}"{% if slide.image_mobile_srcset %} imagesrcset="{{ slide.image_mobile_srcset }}"{% endif %} imagesizes="100vw" media="(max-width: 768px)" fetchpriority="high">
-{% endif %}
-<link rel="preload" as="image" href="{{ lcp_image_url }}"{% if lcp_image_srcset %} imagesrcset="{{ lcp_image_srcset }}"{% endif %}{% if lcp_image_sizes %} imagesizes="{{ lcp_image_sizes }}"{% endif %}{% if slide.has_mobile_image and not slide.has_video %} media="not all and (max-width: 768px)"{% endif %} fetchpriority="high">
-{% endwith %}
-{% endif %}
-{% endblock %}
+{% block lcp_preload %}{% endblock %}
 
 {% block content %}
 {% if not filters_active %}
-<h1 style="max-width:1200px;margin:18px auto 12px;padding:0 16px;font-size:20px;line-height:1.3;">{{ seo_h1 }}</h1>
-{% if hero_slides %}
-<section class="hero-carousel" id="heroCarousel">
-    <div class="carousel-track">
-        {% for slide in hero_slides %}
-        <div class="carousel-slide {% if forloop.first %}active{% endif %}{% if slide.title or slide.subtitle or slide.actions %} carousel-slide--has-content{% endif %}" data-index="{{ forloop.counter0 }}">
-            <div class="slide-image">
-                {% if slide.url %}
-                <a href="{{ slide.url }}" class="slide-image-link" aria-label="{{ slide.title|default:'Banner' }}">
-                {% endif %}
-                {% if slide.has_video %}
-                <video class="slide-image-img slide-image-video" src="{{ slide.video }}" autoplay muted loop playsinline preload="metadata"{% if slide.image %} poster="{{ slide.image }}"{% endif %} width="{{ slide.image_width }}" height="{{ slide.image_height }}"></video>
-                {% elif slide.has_mobile_image %}
-                <picture>
-                    <source
-                        media="(max-width: 768px)"
-                        srcset="{% if slide.image_mobile_srcset %}{{ slide.image_mobile_srcset }}{% else %}{{ slide.image_mobile }}{% endif %}"
-                        sizes="100vw"
-                    >
-                    <img
-                        src="{{ slide.image }}"
-                        {% if slide.image_srcset %}srcset="{{ slide.image_srcset }}"{% endif %}
-                        alt="{{ slide.title|default:'Banner' }}"
-                        class="slide-image-img"
-                        width="{{ slide.image_width }}"
-                        height="{{ slide.image_height }}"
-                        sizes="100vw"
-                        {% if forloop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
-                        decoding="async"
-                    >
-                </picture>
-                {% else %}
-                <img src="{{ slide.image }}"{% if slide.image_srcset %} srcset="{{ slide.image_srcset }}"{% endif %} alt="{{ slide.title|default:'Banner' }}" class="slide-image-img" width="{{ slide.image_width }}" height="{{ slide.image_height }}" sizes="100vw"{% if forloop.first %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
-                {% endif %}
-                {% if slide.url %}
-                </a>
-                {% endif %}
-            </div>
-            {% if slide.title or slide.subtitle or slide.actions %}
-            <div class="slide-content">
-                {% if slide.title %}<h2>{{ slide.title }}</h2>{% endif %}
-                {% if slide.subtitle %}
-                <p class="slide-subtitle">{{ slide.subtitle }}</p>
-                {% endif %}
-                {% if slide.actions %}
-                <div class="slide-actions">
-                    {% for action in slide.actions %}
-                    <a href="{{ action.url|default:'#' }}" class="btn btn-banner"{% if slide.url and action.url == slide.url %} tabindex="-1"{% endif %}>
-                        {{ action.label }}
-                    </a>
-                    {% endfor %}
-                </div>
-                {% endif %}
-            </div>
-            {% endif %}
-        </div>
-        {% endfor %}
-    </div>
-    <button class="carousel-btn carousel-prev" id="carouselPrev" aria-label="Previous slide">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6"/>
-        </svg>
-    </button>
-    <button class="carousel-btn carousel-next" id="carouselNext" aria-label="Next slide">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="9 18 15 12 9 6"/>
-        </svg>
-    </button>
-    <div class="carousel-dots" id="carouselDots">
-        {% for slide in hero_slides %}
-        <button class="dot {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}" aria-label="Go to slide {{ forloop.counter }}">
-            <span class="dot-inner" aria-hidden="true"></span>
-        </button>
-        {% endfor %}
-    </div>
-</section>
-{% endif %}
+{% include 'partials/home_fishing_hero.html' %}
 
 {% include 'partials/home_mobile_navigation.html' %}
 

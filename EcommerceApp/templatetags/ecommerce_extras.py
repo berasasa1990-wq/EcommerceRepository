@@ -62,3 +62,23 @@ def live_stock_products(products):
 def live_stock_product(product):
     from EcommerceApp.storefront_stock import storefront_products
     return storefront_products([product])[0]
+
+
+@register.filter
+def description_blocks(value):
+    """Group short plain-text description lines into readable feature lists."""
+    import re
+    blocks = []
+    for raw in str(value or '').splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        explicit_bullet = bool(re.match(r'^(?:[•●▪✓]|[-*]\s)', line))
+        text = re.sub(r'^(?:[•●▪✓]\s*|[-*]\s+)', '', line)
+        feature = explicit_bullet or len(text) <= 120
+        kind = 'features' if feature else 'paragraph'
+        if feature and blocks and blocks[-1]['kind'] == kind:
+            blocks[-1]['lines'].append(text)
+        else:
+            blocks.append({'kind': kind, 'lines': [text]})
+    return blocks

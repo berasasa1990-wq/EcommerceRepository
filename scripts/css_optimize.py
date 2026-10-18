@@ -51,3 +51,58 @@ def deduplicate_rules(css):
             seen.add(block)
         kept.append(block)
     return ''.join(reversed(kept))
+
+
+def _selectors(prelude):
+    """Split selector lists without splitting :is(), :not(), or attributes."""
+    start = depth = 0
+    quote = None
+    escaped = False
+    for index, char in enumerate(prelude):
+        if escaped:
+            escaped = False
+            continue
+        if char == '\\':
+            escaped = True
+            continue
+        if quote:
+            if char == quote:
+                quote = None
+        elif char in ('"', "'"):
+            quote = char
+        elif char in '([':
+            depth += 1
+        elif char in ')]':
+            depth -= 1
+        elif char == ',' and depth == 0:
+            yield prelude[start:index]
+            start = index + 1
+    yield prelude[start:]
+
+
+def public_styles(css):
+    """Exclude explicitly private/account scopes; never infer unused UI classes.
+
+    Signed-in users and the set builder keep the complete stylesheets.
+    Generic rules and rules with complex negation stay intact.
+    """
+    import re
+    private = re.compile(r'\.(?:staff-[\w-]+|account-(?!btn\b)[\w-]+|am-[\w-]+|setb-[\w-]+|cart-exit[\w-]*|cart-abandon[\w-]*)(?![\w-])')
+    result = []
+    for block in _blocks(css):
+        opening = block.find('{')
+        if opening < 0:
+            result.append(block)
+            continue
+        prelude, content = block[:opening], block[opening + 1:-1]
+        if prelude.startswith(('@media ', '@media(', '@supports ', '@supports(', '@container ')):
+            content = public_styles(content)
+            if content:
+                result.append(prelude + '{' + content + '}')
+        elif prelude.startswith('@'):
+            result.append(block)
+        else:
+            selectors = [s for s in _selectors(prelude) if ':not(' in s or ':is(' in s or ':where(' in s or ':has(' in s or not private.search(s)]
+            if selectors:
+                result.append(','.join(selectors) + '{' + content + '}')
+    return ''.join(result)

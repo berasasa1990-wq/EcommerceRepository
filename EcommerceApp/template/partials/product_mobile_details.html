@@ -1,5 +1,6 @@
+{% load ecommerce_extras %}
 <div class="pd-reference-details">
-    {% if product.opis %}<details><summary>Opis proizvoda</summary><div>{% if '<' in product.opis and '>' in product.opis %}{{ product.opis|safe }}{% else %}{{ product.opis|linebreaks }}{% endif %}</div></details>{% endif %}
+    {% if product.opis %}<details><summary>Opis proizvoda</summary><div class="pd-description-formatted">{% if '<' in product.opis and '>' in product.opis %}{{ product.opis|safe }}{% else %}{% for block in product.opis|description_blocks %}{% if block.kind == 'features' %}<ul class="pd-feature-list">{% for line in block.lines %}<li>{{ line }}</li>{% endfor %}</ul>{% else %}{% for line in block.lines %}<p>{{ line }}</p>{% endfor %}{% endif %}{% endfor %}{% endif %}</div></details>{% endif %}
     <details><summary>Specifikacije</summary><dl><dt>Šifra</dt><dd>{{ product.sifra }}</dd>{% if product.brend %}<dt>Brend</dt><dd>{{ product.brend.naziv }}</dd>{% endif %}{% if product.kategorija %}<dt>Kategorija</dt><dd>{{ product.kategorija.naziv }}</dd>{% endif %}</dl></details>
     {% if site_settings.politika_dostava or site_settings.politika_povrat %}<details><summary>Dostava i povrat</summary>{% if site_settings.politika_dostava %}<p>{{ site_settings.politika_dostava }}</p>{% endif %}{% if site_settings.politika_povrat %}<p>{{ site_settings.politika_povrat }}</p>{% endif %}</details>{% endif %}
 </div>

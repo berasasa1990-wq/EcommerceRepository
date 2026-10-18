@@ -657,3 +657,8 @@ body.is-cart-page .cart-page {
 /* Compact cart item names. */
 .cart-item-title{font-size:13px}
 @media(max-width:767px){.cart-item-title{font-size:11px}}
+
+/* Hide available-stock labels in the phone cart; retain sold-out notices. */
+@media(max-width:767px){
+ .cart-item-stock[data-sold-out="false"]{display:none!important}
+}

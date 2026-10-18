@@ -1,5 +1,5 @@
 import unittest
-from css_optimize import deduplicate_rules
+from css_optimize import deduplicate_rules, public_styles
 
 
 class CssOptimizationTests(unittest.TestCase):
@@ -17,6 +17,26 @@ class CssOptimizationTests(unittest.TestCase):
     def test_idempotent(self):
         css = '.x{color:red}.x{color:red}'
         self.assertEqual(deduplicate_rules(deduplicate_rules(css)), deduplicate_rules(css))
+
+
+class PublicCssTests(unittest.TestCase):
+    def test_keeps_shared_selectors_in_mixed_rules(self):
+        self.assertEqual(public_styles('.staff-page,.product-card{color:red}'), '.product-card{color:red}')
+
+    def test_preserves_header_account_button_and_product_rules(self):
+        css = '.account-btn{color:red}.product-detail{display:grid}.cart-item{color:green}'
+        self.assertEqual(public_styles(css), css)
+
+    def test_nested_media_preserves_storefront_rules(self):
+        self.assertEqual(public_styles('@media(max-width:600px){.staff-page{color:red}.product-card{color:blue}}'), '@media(max-width:600px){.product-card{color:blue}}')
+
+    def test_preserves_negation_and_shared_functional_selectors(self):
+        css = 'button:not(.staff-page){color:red}:is(.staff-page,.product-card){color:blue}'
+        self.assertEqual(public_styles(css), css)
+
+    def test_preserves_fonts_keyframes_and_quoted_commas(self):
+        css = '@font-face{font-family:x;src:url(x)}@keyframes pulse{to{opacity:1}}[title="a,b"]{color:red}'
+        self.assertEqual(public_styles(css), css)
 
 
 if __name__ == '__main__':
