@@ -14,6 +14,7 @@
 
     let open = false;
     let timer = null;
+    let inFlight = false;
 
     function setOpen(next) {
         open = !!next;
@@ -58,6 +59,8 @@
     }
 
     async function poll() {
+        if (document.hidden || inFlight) return;
+        inFlight = true;
         try {
             const res = await fetch(pollUrl, {
                 method: 'GET',
@@ -82,6 +85,8 @@
             render(data);
         } catch (e) {
             // tiho — ne spamaj greške posjetiocu
+        } finally {
+            inFlight = false;
         }
     }
 
@@ -96,6 +101,10 @@
     document.addEventListener('click', function (e) {
         if (!open || !root) return;
         if (!root.contains(e.target)) setOpen(false);
+    });
+
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) poll();
     });
 
     // prvi poll odmah, pa svakih 20 s

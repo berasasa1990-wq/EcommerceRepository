@@ -519,7 +519,6 @@ BACKGROUND_PATH_PREFIXES = (
     '/korpa/kupon',
     '/korpa/ukloni',
     '/api/',
-    '/nalog/uzivo-obavijesti',
     '/nalog/uzivo-analitika/podaci',
 )
 

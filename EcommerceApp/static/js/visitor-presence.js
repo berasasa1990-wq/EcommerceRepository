@@ -14,9 +14,11 @@
     const heartbeatMs = 25000;
     let leftSent = false;
     let heartbeatTimer = null;
+    let heartbeatInFlight = false;
 
     function sendHeartbeat() {
-        if (leftSent) return;
+        if (leftSent || document.hidden || heartbeatInFlight) return;
+        heartbeatInFlight = true;
         const params = new URLSearchParams();
         // session_key iz data-attr ILI cookie sesija (server i bez body-ja rješava)
         if (sessionKey) params.set('session_key', sessionKey);
@@ -40,7 +42,7 @@
             keepalive: true,
         }).catch(function () {
             /* tiho */
-        });
+        }).finally(function () { heartbeatInFlight = false; });
     }
 
     function sendLeave() {
@@ -71,6 +73,7 @@
             beaconOk = false;
         }
 
+        if (beaconOk) return;
         try {
             fetch(leaveUrl, {
                 method: 'POST',
@@ -81,30 +84,8 @@
                 credentials: 'same-origin',
                 body: body.toString(),
                 keepalive: true,
-            }).catch(function () {
-                /* tiho */
-            });
-        } catch (err) {
-            /* tiho */
-        }
-
-        if (!beaconOk) {
-            try {
-                const sep = leaveUrl.indexOf('?') >= 0 ? '&' : '?';
-                const url =
-                    leaveUrl +
-                    sep +
-                    'session_key=' +
-                    encodeURIComponent(sessionKey || '') +
-                    '&left=1&leave_at=' +
-                    encodeURIComponent(leaveAt);
-                if (navigator.sendBeacon) {
-                    navigator.sendBeacon(url);
-                }
-            } catch (err) {
-                /* tiho */
-            }
-        }
+            }).catch(function () { /* tiho */ });
+        } catch (err) { /* tiho */ }
     }
 
     function startHeartbeat() {
@@ -122,7 +103,6 @@
         if (event.persisted) {
             leftSent = false;
             startHeartbeat();
-            sendHeartbeat();
         }
     });
 

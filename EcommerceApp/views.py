@@ -2399,8 +2399,14 @@ def _home_latest_products(request=None):
 
 def _home_latest_products_uncached(request=None):
     product_ids = _latest_import_product_ids()
-    products = {p.pk: p for p in _home_product_queryset(request).filter(pk__in=product_ids)}
-    return [products[pk] for pk in product_ids if pk in products][:HOME_SECTION_PRODUCT_LIMIT]
+    if not product_ids:
+        return []
+    # First find eligible IDs without constructing/prefetching every imported
+    # product. Preserve the original import order and visibility rules.
+    eligible_ids = set(_home_product_queryset(request).filter(pk__in=product_ids).values_list('pk', flat=True))
+    selected_ids = [pk for pk in product_ids if pk in eligible_ids][:HOME_SECTION_PRODUCT_LIMIT]
+    products = {p.pk: p for p in _home_product_queryset(request).filter(pk__in=selected_ids)}
+    return [products[pk] for pk in selected_ids if pk in products]
 
 
 def _featured_catalog_qs(products_qs, request=None):
@@ -7847,25 +7853,6 @@ def staff_live_analytics_data(request):
     response = JsonResponse(slim)
     response['Cache-Control'] = 'private, max-age=2'
     return response
-
-
-@login_required(login_url='login')
-@user_passes_test(_superuser_required)
-@require_GET
-def staff_site_events_poll(request):
-    """Polling endpoint — live toast obavijesti za superusere na sajtu."""
-    from .staff_alerts import get_staff_events_since
-
-    since = request.GET.get('since') or request.GET.get('after') or '0'
-    data = get_staff_events_since(since)
-    return JsonResponse({
-        'ok': True,
-        'events': data['events'],
-        'latest_id': data['latest_id'],
-        'online_sessions': data.get('online_sessions') or [],
-        'visitor_states': data.get('visitor_states') or {},
-        'new_orders_count': int(data.get('new_orders_count') or 0),
-    })
 
 
 def _active_cart_groups(queryset):

@@ -6,7 +6,6 @@ from django.db.models import Prefetch
 from django.templatetags.static import static
 
 from .cart import Cart
-from .cart_exit_popup import get_cart_abandon_exit_context, get_cart_exit_popup_context
 from .cart_recovery import get_active_cart_recovery_alert
 from .social_proof import build_social_proof_context
 from .category_visibility import filter_categories_with_products, get_category_ids_with_products
@@ -240,10 +239,8 @@ def nav_categories(request):
     gift_label = None
     social_proof = None
 
-    cart_abandon_exit = get_cart_abandon_exit_context(request, cart)
-    cart_exit_popup = (
-        None if cart_abandon_exit else get_cart_exit_popup_context(request, cart)
-    )
+    # Exit popups were removed from base.html; do not resolve products or
+    # modify the session for UI that is no longer rendered.
     active_upsell = get_active_upsell_offer(request)
     cart_recovery = get_active_cart_recovery_alert(request, cart)
     gift_label = active_reward_label(request)

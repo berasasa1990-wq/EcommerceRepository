@@ -834,8 +834,10 @@ def magacin_artikli(request):
     if not exact and not include_zero:
         include_zero = products.exists() if hasattr(products, 'exists') else bool(products)
     context['include_zero'] = include_zero
-    # This list shows images, identifiers and quantities only, not variants/prices.
-    qs = products.prefetch_related(None) if hasattr(products, 'prefetch_related') else products
+    # Only the current page needs the small variation image fallback, not full variants/prices.
+    qs = products.prefetch_related(None).prefetch_related(
+        Prefetch('varijacije', queryset=ProductVariation.objects.only('id', 'artikal_id', 'slika')),
+    ) if hasattr(products, 'prefetch_related') else products
 
     paginator = Paginator(qs, 10)
     page = paginator.get_page(request.GET.get('page') or 1)

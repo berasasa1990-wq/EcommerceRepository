@@ -574,15 +574,18 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/"/g, '&quot;');
     }
 
+    let searchGeneration = 0;
+
     async function fetchSearchSuggestions(query) {
         if (!searchSuggestions) return;
 
         searchFetchController?.abort();
+        const generation = ++searchGeneration;
         searchFetchController = new AbortController();
 
         // Ne flashaj “Pretraga…” odmah — prikaži tek ako odgovor kasni
         const loadingTimer = window.setTimeout(() => {
-            if (searchInput?.value.trim() !== query) return;
+            if (generation !== searchGeneration || searchInput?.value.trim() !== query) return;
             searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-loading">Pretraga…</div>';
             searchSuggestions.hidden = false;
             setSuggestionsExpanded(true);
@@ -597,21 +600,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (!response.ok) throw new Error('Search failed');
             const data = await response.json();
-            if (searchInput?.value.trim() !== query) return;
+            if (generation !== searchGeneration || searchInput?.value.trim() !== query) return;
             window.clearTimeout(loadingTimer);
             renderSearchSuggestions(data.results || [], data.query || query, Boolean(data.has_more));
         } catch (error) {
             window.clearTimeout(loadingTimer);
-            if (error.name === 'AbortError') return;
+            if (error.name === 'AbortError' || generation !== searchGeneration) return;
             searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-empty">Pretraga trenutno nije dostupna.</div>';
             searchSuggestions.hidden = false;
             setSearchSuggestActive(true);
             positionSearchSuggestions();
+        } finally {
+            window.clearTimeout(loadingTimer);
         }
     }
 
     function queueSearchSuggestions() {
         clearTimeout(searchDebounceTimer);
+        searchGeneration++;
+        searchFetchController?.abort();
         const value = searchInput?.value.trim() || '';
         if (!value) {
             clearSearchSuggestions();
@@ -637,6 +644,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function closeSearchOverlay() {
+        searchGeneration++;
+        clearTimeout(searchDebounceTimer);
         header?.classList.remove('header-search-open');
         clearSearchSuggestions();
         searchFetchController?.abort();
@@ -671,8 +680,16 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput?.addEventListener('input', queueSearchSuggestions);
     searchInput?.addEventListener('keyup', queueSearchSuggestions);
     searchInput?.addEventListener('search', queueSearchSuggestions);
-    window.addEventListener('resize', positionSearchSuggestions, { passive: true });
-    window.addEventListener('scroll', positionSearchSuggestions, { passive: true });
+    let searchPositionFrame = null;
+    function scheduleSearchPosition() {
+        if (!searchSuggestions || searchSuggestions.hidden || searchPositionFrame !== null) return;
+        searchPositionFrame = requestAnimationFrame(() => {
+            searchPositionFrame = null;
+            positionSearchSuggestions();
+        });
+    }
+    window.addEventListener('resize', scheduleSearchPosition, { passive: true });
+    window.addEventListener('scroll', scheduleSearchPosition, { passive: true });
 
     const urlParams = new URLSearchParams(window.location.search);
     const activeSearchQuery = urlParams.get('q')?.trim();

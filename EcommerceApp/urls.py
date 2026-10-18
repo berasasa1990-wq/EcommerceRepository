@@ -402,7 +402,6 @@ urlpatterns = [
     path('nalog/greb-greb/', views.staff_scratch_analytics, name='staff_scratch_analytics'),
     path('nalog/uzivo-analitika/', views.staff_live_analytics, name='staff_live_analytics'),
     path('nalog/uzivo-analitika/podaci/', views.staff_live_analytics_data, name='staff_live_analytics_data'),
-    path('nalog/uzivo-obavijesti/', views.staff_site_events_poll, name='staff_site_events_poll'),
     path('nalog/pretraga-artikala/', views.staff_product_search, name='staff_product_search'),
 
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),

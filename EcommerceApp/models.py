@@ -1331,10 +1331,35 @@ class Category(models.Model):
         return level
 
     def get_descendant_ids(self):
-        ids = [self.pk]
-        for child in self.podkategorije.all():
-            if child.aktivan:
-                ids.extend(child.get_descendant_ids())
+        # Respect deliberately prefetched/filtered child collections.
+        if 'podkategorije' in getattr(self, '_prefetched_objects_cache', {}):
+            ids = [self.pk]
+            for child in self.podkategorije.all():
+                if child.aktivan:
+                    ids.extend(child.get_descendant_ids())
+            return ids
+
+        # Fetch each depth in one query instead of one query per category.
+        children = {}
+        frontier = [self.pk]
+        seen = {self.pk}
+        while frontier:
+            rows = list(type(self).objects.using(self._state.db).filter(
+                roditelj_id__in=frontier, aktivan=True,
+            ).values_list('pk', 'roditelj_id'))
+            frontier = []
+            for child_id, parent_id in rows:
+                if child_id in seen:
+                    continue
+                seen.add(child_id)
+                children.setdefault(parent_id, []).append(child_id)
+                frontier.append(child_id)
+        ids = []
+        pending = [self.pk]
+        while pending:
+            category_id = pending.pop()
+            ids.append(category_id)
+            pending.extend(reversed(children.get(category_id, [])))
         return ids
 
     def __str__(self):

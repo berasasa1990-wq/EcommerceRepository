@@ -2194,7 +2194,7 @@ class ProductAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.annotate(varijacije_broj=Count('varijacije', distinct=True))
+        return qs.select_related('brend', 'kategorija', 'kategorija__roditelj').annotate(varijacije_broj=Count('varijacije', distinct=True))
 
     def get_search_results(self, request, queryset, search_term):
         """

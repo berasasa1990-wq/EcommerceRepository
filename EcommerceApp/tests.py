@@ -1441,49 +1441,17 @@ class StaffLiveAlertTests(TestCase):
         self.assertEqual(StaffSiteEvent.objects.filter(tip='cart').count(), 0)
         self.assertEqual(StaffSiteEvent.objects.filter(tip='register').count(), 0)
 
-    def test_purchase_poll_includes_order_popup_fields(self):
-        from django.contrib.auth.models import User
+    def test_live_poll_route_removed(self):
+        from django.urls import resolve, Resolver404
+        with self.assertRaises(Resolver404):
+            resolve('/nalog/uzivo-obavijesti/')
 
-        from .models import Order, StaffSiteEvent
-        from .staff_alerts import get_staff_events_since, notify_purchase
-
-        User.objects.create_superuser('boss', 'boss@example.com', 'pass')
-        order = Order.objects.create(
-            ime_prezime='Marko Marković',
-            email='marko@example.com',
-            telefon='061234567',
-            adresa='Ulica 1',
-            grad='Sarajevo',
-            ukupno=Decimal('159.00'),
-        )
-        seed = StaffSiteEvent.objects.create(
-            tip=StaffSiteEvent.Tip.ONLINE,
-            naslov='seed',
-            poruka='',
-        )
-        notify_purchase(
-            ime=order.ime_prezime,
-            email=order.email,
-            grad=order.grad,
-            order_number=order.broj,
-            total=str(order.ukupno),
-            shipping='Brza dostava',
-        )
-        data = get_staff_events_since(seed.id)
-        self.assertTrue(data['events'])
-        event = data['events'][-1]
-        self.assertEqual(event['tip'], 'purchase')
-        self.assertEqual(event['order_number'], order.broj)
-        self.assertEqual(event['order_total'], '159.00')
-        self.assertEqual(event['ime'], 'Marko Marković')
-        self.assertTrue(event['order_date'])
-        self.assertIn(' u ', event['order_date'])
-        self.assertTrue(event['shipping'])
-        self.assertEqual(
-            event['order_url'],
-            f'/nalog/provjera-narudzbi/{order.broj}/',
-        )
-        self.assertGreaterEqual(data['new_orders_count'], 1)
+    def test_layout_no_longer_loads_polling_assets(self):
+        from pathlib import Path
+        source = (Path(__file__).parent / 'template' / 'base.html').read_text()
+        self.assertNotIn('staffAlertsRoot', source)
+        self.assertNotIn('staff-alerts.js', source)
+        self.assertNotIn('staff-alerts.css', source)
 
 
 class CatalogNameSearchTests(TestCase):
