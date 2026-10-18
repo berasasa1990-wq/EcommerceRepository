@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 """Minifikacija statičkih CSS/JS fajlova prije collectstatic deploya."""
 from pathlib import Path
+import gzip
+
+try:
+    import brotli
+except ImportError:
+    brotli = None
 
 import rcssmin
 import rjsmin
+
+from css_optimize import deduplicate_rules
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / 'EcommerceApp' / 'static'
@@ -26,7 +34,14 @@ def build_style_min():
         parts.append(style.read_text(encoding='utf-8'))
     if not parts:
         return
-    dest.write_text(rcssmin.cssmin('\n'.join(parts)), encoding='utf-8')
+    minified = rcssmin.cssmin('\n'.join(parts))
+    optimized = deduplicate_rules(minified)
+    dest.write_text(optimized, encoding='utf-8')
+    data = optimized.encode('utf-8')
+    dest.with_suffix('.css.gz').write_bytes(gzip.compress(data, compresslevel=9, mtime=0))
+    if brotli is not None:
+        dest.with_suffix('.css.br').write_bytes(brotli.compress(data, quality=11))
+    print(f'CSS duplicate removal: {len(minified):,} -> {len(optimized):,} characters')
     print('fonts.css + style.css -> style.min.css')
 
 

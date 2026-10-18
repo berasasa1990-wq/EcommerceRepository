@@ -126,3 +126,16 @@ html body .product-catalog article.product-card.product-card--catalog.product-ca
 @media(max-width:600px){
  html body .product-catalog article.product-card.product-card--catalog.product-card--reference-design.product-card--unified.product-card--unified{padding:16px 18px!important;border-radius:20px!important}
 }
+
+/* Wider aligned card content and cart action on phones. */
+@media(max-width:767px){
+ html body .product-catalog article.product-card.product-card--catalog.product-card--reference-design.product-card--unified.product-card--unified{padding-left:10px!important;padding-right:10px!important}
+ html body .product-catalog article.product-card.product-card--catalog.product-card--reference-design.product-card--unified.product-card--unified :is(.product-card__top,.product-card__body,.product-card__footer,.product-card__cart-row){width:100%!important;max-width:100%!important;margin-inline:0!important;padding-inline:0!important;box-sizing:border-box}
+}
+
+/* Smaller product names across storefront listings. */
+html body .product-catalog article.product-card.product-card--catalog.product-card--reference-design.product-card--unified.product-card--unified .product-card__title{font-size:13px!important;line-height:18px!important;min-height:36px!important}
+html body .pd-similar-card h3{font-size:12px;line-height:1.35}
+@media(max-width:767px){
+ html body .product-catalog article.product-card.product-card--catalog.product-card--reference-design.product-card--unified.product-card--unified .product-card__title{font-size:12px!important;line-height:17px!important;min-height:34px!important}
+}

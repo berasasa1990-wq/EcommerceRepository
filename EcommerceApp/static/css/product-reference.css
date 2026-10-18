@@ -1171,3 +1171,7 @@
 @media(max-width:767px){
  html body.product-mobile-reference .product-detail .product-stock-label__qty{display:none!important}
 }
+
+/* Compact product-page heading. */
+html body.product-mobile-reference .product-detail-title-row h1{font-size:22px!important;line-height:1.25}
+@media(max-width:767px){html body.product-mobile-reference .product-detail-title-row h1{font-size:16px!important}}

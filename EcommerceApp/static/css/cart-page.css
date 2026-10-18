@@ -650,3 +650,10 @@ body.is-cart-page .cart-page {
     .cart-page .cart-item-price { margin: 0; font-size: 16px; }
     .cart-page .cart-item-total { align-self: center; }
 }
+
+/* Keep cart product names within two lines. */
+.cart-item-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+
+/* Compact cart item names. */
+.cart-item-title{font-size:13px}
+@media(max-width:767px){.cart-item-title{font-size:11px}}

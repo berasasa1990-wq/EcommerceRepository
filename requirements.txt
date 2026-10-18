@@ -11,6 +11,6 @@ requests>=2.32
 dj-database-url>=2.2
 psycopg2-binary>=2.9
 gunicorn>=23.0
-whitenoise>=6.8
+whitenoise[brotli]>=6.8
 rcssmin>=1.1.0
 rjsmin>=1.2.0
