@@ -1223,3 +1223,20 @@ html body.product-mobile-reference .pd-gallery-bar .product-thumbnails{width:100
  html body.product-mobile-reference .product-gallery{grid-template-columns:52px minmax(0,1fr)!important;column-gap:14px!important}
  html body.product-mobile-reference .product-gallery .pd-gallery-bar{height:100%!important;min-height:0;overflow-y:auto}
 }
+
+/* Four visible phone thumbnails with vertical navigation. */
+@media (max-width:767px){
+ html body.product-mobile-reference .product-gallery .pd-gallery-bar{height:auto!important;overflow:hidden;align-self:start;scrollbar-gutter:auto;display:flex;flex-direction:column;align-items:center}
+ html body.product-mobile-reference .pd-gallery-bar .product-thumbnails{position:relative!important;inset:auto!important;flex:none;max-height:220px!important;height:auto!important;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;scroll-snap-type:y mandatory;padding:2px;gap:8px}
+ html body.product-mobile-reference .pd-gallery-bar .product-thumbnails::-webkit-scrollbar{display:none}
+ html body.product-mobile-reference .product-gallery .product-thumbnail{flex:0 0 48px!important;width:48px!important;height:48px!important;scroll-snap-align:start}
+ html body.product-mobile-reference .pd-thumbnail-scroll-controls:not([hidden]){display:flex;order:3;gap:4px;width:100%;margin-top:4px}
+ html body.product-mobile-reference .pd-thumbnail-scroll-controls button{flex:1;width:auto;min-width:0;height:24px;padding:0;border:0;background:transparent;color:#555;font-size:18px;line-height:24px;cursor:pointer;touch-action:manipulation}
+ html body.product-mobile-reference .pd-thumbnail-scroll-controls button:disabled{opacity:.35;cursor:default}
+}
+
+@media(max-width:767px){
+ html body.product-mobile-reference .pd-gallery-bar .product-thumbnails{order:2}
+ html body.product-mobile-reference .pd-thumbnail-scroll-up{order:1}
+ html body.product-mobile-reference .pd-thumbnail-scroll-down{order:3}
+}

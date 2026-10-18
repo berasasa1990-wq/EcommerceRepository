@@ -8,6 +8,7 @@
         search.innerHTML = document.querySelector('.header-search-icon')?.innerHTML || '⌕';
         actions.prepend(search);
     }
+    const gallery = document.getElementById('mainProductImageWrap');
     const thumbs = document.getElementById('productThumbnails');
     if (thumbs) {
         const controls = document.createElement('div');
@@ -16,8 +17,10 @@
         const up = document.createElement('button');
         const down = document.createElement('button');
         up.type = down.type = 'button';
-        up.textContent = '↑';
-        down.textContent = '↓';
+        up.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 10 5-5 5 5"/></svg>';
+        down.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 6 5 5 5-5"/></svg>';
+        up.className = 'pd-thumbnail-scroll-up';
+        down.className = 'pd-thumbnail-scroll-down';
         up.setAttribute('aria-label', 'Prethodne dodatne slike');
         down.setAttribute('aria-label', 'Sljedeće dodatne slike');
         up.setAttribute('aria-controls', thumbs.id);
@@ -29,8 +32,12 @@
             up.disabled = thumbs.scrollTop <= 1;
             down.disabled = thumbs.scrollTop + thumbs.clientHeight >= thumbs.scrollHeight - 1;
         };
-        up.addEventListener('click', () => thumbs.scrollBy({ top: -86, behavior: 'smooth' }));
-        down.addEventListener('click', () => thumbs.scrollBy({ top: 86, behavior: 'smooth' }));
+        const scrollStep = () => {
+            const items = thumbs.querySelectorAll('.product-thumbnail');
+            return items.length > 1 ? items[1].offsetTop - items[0].offsetTop : 56;
+        };
+        up.addEventListener('click', () => thumbs.scrollBy({ top: -scrollStep(), behavior: 'smooth' }));
+        down.addEventListener('click', () => thumbs.scrollBy({ top: scrollStep(), behavior: 'smooth' }));
         thumbs.addEventListener('scroll', updateScrollControls, { passive: true });
         new ResizeObserver(updateScrollControls).observe(thumbs);
         updateScrollControls();

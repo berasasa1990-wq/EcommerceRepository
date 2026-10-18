@@ -1,0 +1,2 @@
+Use case: background-extraction. Edit target: the supplied product photo of a dark olive and black hooded fishing jacket. Remove only the white background and produce a clean cutout on a genuinely transparent background with alpha. Preserve the exact jacket, colors, texture, folds, hood, zipper, sleeves, silhouette, camera view and framing. No added objects, no text, no new shadow, no redesign. Asset for placement on a dark green website hero banner.
+Built-in image_gen; transparent_background=true.

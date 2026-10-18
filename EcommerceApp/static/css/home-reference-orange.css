@@ -21,6 +21,7 @@ body.home-mobile-reference .home-product-carousel__btn{display:none!important}
 .ref-special{position:relative;isolation:isolate;overflow:hidden;display:flex;justify-content:space-between;align-items:center;padding:34px 48px;min-height:250px;border-radius:13px;color:#fff;background:linear-gradient(115deg,#25160e,#8f360c 58%,#ff7d22);margin:22px 0}
 .ref-special:before{content:"";position:absolute;inset:-100% -20%;z-index:-1;background:linear-gradient(150deg,transparent 47%,#ffc18c 47.2%,#f96c15 47.7%,#8b310b 57%,#ffab63 57.3%,transparent 65%);transform:rotate(-5deg)}
 .ref-special h2{font-size:44px;margin:4px 0;line-height:1.1;color:#fff}
+.ref-special>div:first-child{padding-inline-start:12px}
 .ref-special p{font-size:19px;margin:8px 0 20px}
 .ref-special-seal{width:116px;height:116px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #ffd4b3;border-radius:50%;background:#ff7a16;font-size:13px;margin-left:20px}
 .ref-special-seal strong{font-size:24px}
