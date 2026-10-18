@@ -1,6 +1,6 @@
 {% load ecommerce_extras %}
 <article
-    class="product-card product-card--catalog product-card--reference-design{% if home_reference_card %} product-card--home-reference{% endif %}{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if product.katalog_na_akciji %} product-card--on-sale{% endif %}"
+    class="product-card product-card--catalog product-card--reference-design product-card--unified{% if home_reference_card %} product-card--home-reference{% endif %}{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if product.katalog_na_akciji %} product-card--on-sale{% endif %}"
     data-product-card
     data-product-id="{{ product.pk }}"
     {% if product.slika %}data-image-key="{{ product.slika.name }}"{% endif %}
@@ -74,7 +74,7 @@
     {% endif %}
 
     <div class="product-card__footer{% if product.pakovanje_uz_cijenu_kartica %} product-card__footer--pack{% endif %}">
-        <p class="reference-card-stock{% if not product.na_stanju %} is-out{% endif %}">{% if product.na_stanju %}<span>Na stanju</span> <span class="reference-card-stock-qty">{{ product.stanje }} kom</span>{% else %}Nije na stanju{% endif %}</p>
+        <p class="reference-card-stock{% if not product.na_stanju %} is-out{% endif %}">{% if product.na_stanju %}<span>Na stanju</span>{% else %}Nije na stanju{% endif %}</p>
         <div class="product-card__price-row">
             <div class="product-card__price-block">
                 {% if card_variations|length > 1 %}

@@ -212,7 +212,7 @@
         body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
     </style>
     {% endif %}
-    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20261015-neutral-banner-dots">
+    <link rel="stylesheet" href="{% static 'css/home-mobile-reference.css' %}?v=20261018-larger-category-icons">
     <link rel="stylesheet" href="{% static 'css/mobile-dock.css' %}?v=20261017-warehouse-no-dock">
     <link rel="stylesheet" href="{% static 'css/wishlist.css' %}?v=20261015-white-background">
 
@@ -352,10 +352,10 @@
         .desktop-trust-bar nav a.site-wholesale-link { animation:none; }
     }
     </style>
-    <link rel="stylesheet" href="{% static 'css/product-card-reference.css' %}?v=20261018-identical-product-images">
+    <link rel="stylesheet" href="{% static 'css/product-card-reference.css' %}?v=20261018-same-cards-all-listings">
     <link rel="stylesheet" href="{% static 'css/site-orange-theme.css' %}?v=20261017-storefront-header-colors">
     {% block warehouse_theme_css %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261018-1">
+    <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261018-larger-site-logo">
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="shared-site-header {% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}

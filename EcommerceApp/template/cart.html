@@ -81,13 +81,9 @@
                         {% endif %}
                         {% if item.sifra %}<p class="cart-item-meta">Šifra: {{ item.sifra }}</p>{% endif %}
                         <p class="cart-item-stock" data-stock-label data-sold-out="{{ item.sold_out|yesno:'true,false' }}" role="status"{% if item.sold_out %} style="color:#b91c1c"{% endif %}>{% if item.sold_out %}Rasprodat — uklonite iz korpe{% else %}<span aria-hidden="true">✓</span> Na stanju{% endif %}</p>
-                        {% if item.pakovanje_label %}
+                        {% if item.pakovanje_cijena_hint %}
                         <p class="cart-item-pack product-pack-line">
-                            <span class="product-pack-badge product-pack-badge--card">
-                                <span class="product-pack-badge-icon" aria-hidden="true">📦</span>
-                                <span class="product-pack-badge-text">{{ item.pakovanje_label }}</span>
-                            </span>
-                            <span class="product-pack-hint">{{ item.pakovanje_cijena_hint }}</span>
+                            <span class="product-pack-hint">{% if item.pakovanje_komada > 1 %}Pakovanje od {{ item.pakovanje_komada }}kom{% else %}{{ item.pakovanje_cijena_hint }}{% endif %}</span>
                         </p>
                         {% endif %}
                         <p class="cart-item-price">

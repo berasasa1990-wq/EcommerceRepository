@@ -1154,3 +1154,20 @@
     .pd-thumbnail-scroll-controls button { flex: 1; height: 26px; padding: 0; border: 1px solid #e1e5eb; border-radius: 5px; background: #fff; color: #333; cursor: pointer; }
     .pd-thumbnail-scroll-controls button:disabled { opacity: .35; cursor: default; }
 }
+
+/* Hide the product wishlist action on phones. */
+@media(max-width:767px){
+ html body.product-mobile-reference .product-detail .pd-reference-heart{display:none!important}
+}
+
+/* Phone purchase controls show only the add-to-cart action. */
+@media(max-width:767px){
+ html body.product-mobile-reference .product-detail .product-detail-purchase .product-qty-selector{display:none!important}
+ html body.product-mobile-reference .product-detail .product-detail-purchase{grid-template-columns:minmax(0,1fr)!important}
+ html body.product-mobile-reference .product-detail .product-detail-purchase__cta{grid-column:1!important;flex:1 1 100%;width:100%!important}
+}
+
+/* Availability on phones does not expose the stock count. */
+@media(max-width:767px){
+ html body.product-mobile-reference .product-detail .product-stock-label__qty{display:none!important}
+}

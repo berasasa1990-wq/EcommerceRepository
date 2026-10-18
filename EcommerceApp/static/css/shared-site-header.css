@@ -49,3 +49,9 @@ html body.shared-site-header #header .header-row--categories{padding-left:220px!
 html body.shared-site-header #header .ref-desktop-nav{gap:14px!important}
 html body.shared-site-header #header .ref-desktop-nav a{font-size:13px!important}
 }
+
+/* Larger main shop logo across storefront pages. */
+html body #header .logo-brand .logo-image{width:100%!important;max-width:210px!important;max-height:64px!important;height:auto!important;object-fit:contain;object-position:left center}
+@media(min-width:1025px){
+ html body #header .logo-brand .logo-image{max-width:240px!important;max-height:100px!important}
+}

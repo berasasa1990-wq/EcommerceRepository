@@ -85,7 +85,7 @@ html body .product-card.product-card--catalog.product-card--reference-design.pro
 html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image{height:165px!important;min-height:165px!important}
 html body.home-mobile-reference .home-products .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design{padding-top:10px!important}
 @media(max-width:600px){
- html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image{height:125px!important;min-height:125px!important}
+ html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image{height:165px!important;min-height:165px!important}
 }
 
 /* Keep the badge inside the card with clear space above the image. */
@@ -102,12 +102,27 @@ html body .product-catalog .product-card.product-card--catalog.product-card--ref
 }
 @media(max-width:600px){
  html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design{padding:16px 18px!important;border-radius:20px!important}
- html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image{height:125px!important;min-height:125px!important}
+ html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image{height:165px!important;min-height:165px!important}
 }
 
 /* Use identical artwork dimensions, regardless of the listing container width. */
 html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image :is(picture,img){display:block!important;width:100%!important;height:100%!important;max-width:165px!important;max-height:137px!important;margin-inline:auto!important;position:static!important;transform:none!important}
 html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image img{object-fit:contain!important;object-position:center bottom!important;box-sizing:border-box!important;padding:0!important}
 @media(max-width:600px){
- html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image :is(picture,img){max-width:125px!important;max-height:97px!important}
+ html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image :is(picture,img){max-width:100%!important;max-height:137px!important}
+}
+
+/* Bring stock availability closer to the price without changing other footer gaps. */
+html body .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .reference-card-stock{margin-top:8px!important;margin-bottom:-5px!important}
+
+/* A single card frame for every storefront listing, including the home carousels. */
+html body .product-catalog article.product-card.product-card--catalog.product-card--reference-design.product-card--unified.product-card--unified{box-sizing:border-box!important;padding:14px!important;border:1px solid #efdfd2!important;border-radius:10px!important;background:#fff!important;height:100%!important;min-height:0!important;box-shadow:none!important}
+html body .product-catalog article.product-card.product-card--catalog.product-card--reference-design.product-card--unified.product-card--unified .product-card__body{padding:24px 0 0!important}
+html body .product-catalog article.product-card.product-card--catalog.product-card--reference-design.product-card--unified.product-card--unified .product-card__footer{padding:0!important;margin-top:auto!important;gap:8px!important}
+@media(min-width:1025px){
+ html body .category-page:not(.home-products){width:100%!important;max-width:none!important;box-sizing:border-box}
+ html body .category-page:not(.home-products) .product-catalog,html body .category-page:not(.home-products) :is(.catalog-layout,.catalog-products){width:100%!important;max-width:none!important;min-width:0}
+}
+@media(max-width:600px){
+ html body .product-catalog article.product-card.product-card--catalog.product-card--reference-design.product-card--unified.product-card--unified{padding:16px 18px!important;border-radius:20px!important}
 }

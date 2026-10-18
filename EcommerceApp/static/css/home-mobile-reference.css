@@ -755,3 +755,9 @@ body.category-hide-search .product-catalog .catalog-products .product-card--cata
         font-size: 11px !important;
     }
 }
+
+/* Larger category artwork. */
+html body #homeCategoryTrack :is(.mobile-home-category-icon,.cat-ico,.cat-ico svg){width:60px!important;height:60px!important;object-fit:contain;flex-shrink:0}
+@media(min-width:1025px){
+ html body #homeCategoryTrack :is(.mobile-home-category-icon,.cat-ico,.cat-ico svg){width:100px!important;height:95px!important}
+}
