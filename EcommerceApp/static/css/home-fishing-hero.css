@@ -7,8 +7,8 @@
 .fishing-hero .fishing-hero__title>span{color:#ff7900;background:linear-gradient(#ffad00,#ff5900);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .fishing-hero__description{max-width:660px;margin:0 0 28px;font-size:clamp(16px,1.3vw,26px);line-height:1.55;color:#f0f0f0}
 .fishing-hero__actions{position:relative;z-index:4;display:flex}
-.fishing-hero__primary{display:inline-flex;align-items:center;justify-content:center;gap:42px;min-height:64px;padding:12px 34px;box-sizing:border-box;border-radius:13px;background:linear-gradient(#ff9900,#ff5100);box-shadow:0 8px 20px #0004;color:#fff!important;text-decoration:none;font-size:clamp(18px,1.5vw,30px);font-weight:750;transition:filter .15s}
-.fishing-hero__primary svg{width:30px;height:30px;flex-shrink:0}
+.fishing-hero__primary{display:inline-flex;align-items:center;justify-content:center;gap:20px;min-height:48px;padding:10px 22px;box-sizing:border-box;border-radius:10px;background:linear-gradient(#ff9900,#ff5100);box-shadow:0 8px 20px #0004;color:#fff!important;text-decoration:none;font-size:clamp(16px,1.1vw,20px);font-weight:750;transition:filter .15s}
+.fishing-hero__primary svg{width:22px;height:22px;flex-shrink:0}
 .fishing-hero__primary:hover{filter:brightness(1.12)}
 .fishing-hero__primary:focus-visible,.fishing-hero__link:focus-visible{outline:3px solid #ffbc86;outline-offset:-4px}
 .fishing-hero__visual{position:relative;min-width:0;background:transparent;pointer-events:none}
@@ -18,14 +18,14 @@
 html body.home-mobile-reference main{padding-top:0!important;margin-top:0!important}
 html body.home-mobile-reference main>.fishing-hero-slider{order:-1;margin-top:0!important}
 @media(max-width:767px){
- .fishing-hero{grid-template-columns:1fr;min-height:0;margin-bottom:20px;border-radius:13px;background:linear-gradient(180deg,#111213 0%,#131313 50%,#665447 64%,#b9aaa0 78%,#e8e2dd 90%,#fff 100%)}
+ .fishing-hero{grid-template-columns:1fr;min-height:0;margin-bottom:20px;border-radius:10px;background:linear-gradient(180deg,#111213 0%,#131313 50%,#665447 64%,#b9aaa0 78%,#e8e2dd 90%,#fff 100%)}
  .fishing-hero__content{padding:32px 22px 36px}
  .fishing-hero__eyebrow{font-size:10px;letter-spacing:1.5px;gap:12px;margin-bottom:23px}
  .fishing-hero__eyebrow::before{height:25px;width:3px}
  .fishing-hero .fishing-hero__title{font-size:clamp(28px,7.3vw,54px);letter-spacing:-1.2px;line-height:1.08}
  .fishing-hero__description{font-size:15px;line-height:1.6;margin-bottom:24px;max-width:90%}
- .fishing-hero__primary{font-size:18px;min-height:54px;padding:12px 24px;gap:28px;border-radius:10px}
- .fishing-hero__primary svg{width:25px;height:25px}
+ .fishing-hero__primary{font-size:16px;min-height:44px;padding:10px 18px;gap:16px;border-radius:9px}
+ .fishing-hero__primary svg{width:20px;height:20px}
  .fishing-hero__visual{padding:22px 22px 22px}
  .fishing-hero__visual::before{top:0;bottom:auto;left:12%;right:12%;width:auto;height:2px;background:linear-gradient(90deg,transparent,#ffae5570 22%,#ff8700 50%,#ffae5570 78%,transparent)}
  .fishing-hero__image{position:static;width:100%;height:auto;max-height:400px;padding:0;object-fit:contain}
