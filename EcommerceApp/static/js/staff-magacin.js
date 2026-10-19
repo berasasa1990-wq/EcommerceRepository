@@ -3647,8 +3647,10 @@ function initArticleScanner() {
     var pickView = 'now';
 
     function syncValidateGate() {
-        if (els.validDone) els.validDone.hidden = false;
-        if (els.form) els.form.hidden = true;
+        var complete = queue.length > 0 && doneCount() === queue.length && !editingKey;
+        if (els.validDone) els.validDone.hidden = !complete;
+        if (els.form) els.form.hidden = !complete;
+        if (els.valid) els.valid.disabled = !complete;
     }
 
     function persist() {

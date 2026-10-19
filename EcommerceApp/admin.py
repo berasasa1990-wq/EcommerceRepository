@@ -424,6 +424,13 @@ class SiteSettingsAdminForm(forms.ModelForm):
     URL-ovi se čiste, predugački SEO se skraćuje s jasnom porukom.
     """
 
+    def clean_hero_slika(self):
+        upload = self.cleaned_data.get('hero_slika')
+        if upload and hasattr(upload, 'content_type'):
+            from .utils.images import prepare_hero_cutout
+            return prepare_hero_cutout(upload)
+        return upload
+
     class Meta:
         model = SiteSettings
         fields = '__all__'
@@ -763,6 +770,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         )
 
     fieldsets = (
+        ('Banner-Hero', {
+            'fields': ('hero_oznaka', 'hero_naslov', 'hero_podnaslov', 'hero_opis', 'hero_slika', 'hero_link'),
+            'description': 'Pisani banner ispod headera. Promijeni oba reda naslova, opis i sliku artikla, pa sačuvaj.',
+        }),
         ('Boja', {
             'fields': ('boja_menija',),
             'description': 'Odaberi Bijela ili Crna, pa sačuvaj. Promjena važi za meni kategorija i pogodnosti ispod banera na računaru i mobitelu.',

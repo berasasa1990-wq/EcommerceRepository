@@ -2192,3 +2192,42 @@ def process_category_icon(upload):
         raise ValueError('Ikonica se ne može smanjiti na 15 KB.')
     finally:
         upload.seek(0)
+
+
+def prepare_hero_cutout(upload):
+    """Preserve transparency or remove edge-connected near-white background."""
+    from pathlib import Path
+    from django.core.exceptions import ValidationError
+    from PIL import ImageChops, ImageDraw, ImageFilter
+
+    upload.seek(0)
+    with Image.open(upload) as source:
+        image = ImageOps.exif_transpose(source).convert('RGBA')
+    alpha = image.getchannel('A')
+    if alpha.getextrema()[0] == 255:
+        # A padded mask connects all exterior edges without erasing white
+        # details enclosed inside the product.
+        r, g, b, _ = image.split()
+        white = ImageChops.multiply(
+            ImageChops.multiply(r.point(lambda v: 255 if v >= 240 else 0),
+                                g.point(lambda v: 255 if v >= 240 else 0)),
+            b.point(lambda v: 255 if v >= 240 else 0),
+        )
+        mask = Image.new('RGB', (image.width + 2, image.height + 2), 'white')
+        mask.paste(white.convert('RGB'), (1, 1))
+        ImageDraw.floodfill(mask, (0, 0), (255, 0, 0), thresh=0)
+        background = mask.getchannel('G').point(lambda v: 255 - v)
+        # Only the red flood-filled area has green=0 and red=255.
+        background = ImageChops.multiply(background, mask.getchannel('R'))
+        background = background.crop((1, 1, image.width + 1, image.height + 1))
+        if background.getbbox() is None:
+            raise ValidationError('Slika ima pozadinu koju nije moguće automatski ukloniti. Učitaj PNG s prozirnom pozadinom ili sliku artikla na bijeloj podlozi.')
+        image.putalpha(ImageChops.subtract(alpha, background))
+    # Remove the outer matte fringe left by white-background antialiasing.
+    # Work on alpha only so fabric colours and interior white details stay intact.
+    image.putalpha(image.getchannel('A').filter(ImageFilter.MinFilter(3)))
+    if image.getchannel('A').getbbox() is None:
+        raise ValidationError('Slika nema vidljiv artikal. Učitaj sliku artikla bez pozadine.')
+    output = BytesIO()
+    image.save(output, format='PNG')
+    return ContentFile(output.getvalue(), name=Path(upload.name).stem + '.png')

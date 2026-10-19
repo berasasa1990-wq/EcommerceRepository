@@ -16,6 +16,7 @@ from .models import (
     Popup,
     Product,
     SiteSettings,
+    HeroBanner,
     Tag,
 )
 
@@ -1047,3 +1048,32 @@ class OrderComplaintForm(forms.Form):
             'max_length': 'Opis može imati najviše 5000 znakova.',
         },
     )
+
+
+class HeroBannerSettingsForm(forms.ModelForm):
+    def clean_hero_slika(self):
+        upload = self.cleaned_data.get('hero_slika')
+        if upload and hasattr(upload, 'content_type'):
+            from .utils.images import prepare_hero_cutout
+            return prepare_hero_cutout(upload)
+        return upload
+
+    class Meta:
+        model = SiteSettings
+        fields = ('hero_oznaka', 'hero_naslov', 'hero_podnaslov', 'hero_opis', 'hero_slika', 'hero_link')
+        widgets = {'hero_opis': forms.Textarea(attrs={'rows': 4})}
+
+
+class AdditionalHeroBannerForm(forms.ModelForm):
+    clean_hero_slika = HeroBannerSettingsForm.clean_hero_slika
+
+    class Meta:
+        model = HeroBanner
+        fields = ('hero_opis', 'hero_slika', 'hero_link', 'redoslijed', 'aktivan')
+        widgets = {'hero_opis': forms.Textarea(attrs={'rows': 3})}
+
+
+HeroBannerFormSet = forms.inlineformset_factory(
+    SiteSettings, HeroBanner, form=AdditionalHeroBannerForm,
+    extra=0, can_delete=True, max_num=20, validate_max=True,
+)

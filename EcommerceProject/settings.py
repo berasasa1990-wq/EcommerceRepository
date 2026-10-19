@@ -580,6 +580,12 @@ ORDER_NOTIFICATION_EMAIL = _env(
     'narudzbe@opremazaribolov.ba',
 ).strip().lower()
 EMAIL_TIMEOUT = int(_env('EMAIL_TIMEOUT', '30'))
+
+# Read-only Gmail inbox for the administrator's company payments page.
+COMPANY_MAIL_USER = _env('COMPANY_MAIL_USER', 'carpologijabh@gmail.com').strip()
+COMPANY_MAIL_APP_PASSWORD = _env('COMPANY_MAIL_APP_PASSWORD').replace(' ', '')
+COMPANY_MAIL_FOLDER = _env('COMPANY_MAIL_FOLDER', 'INBOX')
+
 SITE_URL = _env('SITE_URL', 'https://carpologijabh.ba').rstrip('/')
 # SEO URL-ovi ostaju na glavnom domenu i kada SITE_URL okruženja pokazuje na Render.
 SEO_CANONICAL_URL = 'https://carpologijabh.ba'
@@ -635,7 +641,7 @@ OLX_DEFAULT_CATEGORY_ID = int(_env('OLX_DEFAULT_CATEGORY_ID', '1260'))
 TURNSTILE_SITE_KEY = _env('TURNSTILE_SITE_KEY', '')
 TURNSTILE_SECRET_KEY = _env('TURNSTILE_SECRET_KEY', '')
 
-# IP adrese koje se NE broje u live analytics / pregled sajta (vlasnik, ured, …).
+# IP adrese koje se NE broje u statistici posjetilaca (vlasnik, ured, …).
 # Zarezom odvojeno, npr. LIVE_VISITOR_EXCLUDE_IPS=1.2.3.4,5.6.7.8
 # Kad se staff/superuser uloguje, njegov IP se automatski pamti (cache) i isključuje.
 _exclude_ips_raw = _env('LIVE_VISITOR_EXCLUDE_IPS', '127.0.0.1,::1')

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block page_title %}<title>Settings — Banner-Hero</title>{% endblock %}
+{% block body_class %}staff-blue-page staff-shell-page catalog-header-reference hero-settings-page{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/hero-settings.css' %}?v=20261019-multiple">{% endblock %}
+{% block content %}
+<section class="hero-settings">
+    <header class="hero-settings__header">
+        <div><a href="{% url 'staff_admin_panel' %}">← Admin panel</a><h1>Settings</h1><p>Banner-Hero · isti dizajn, više slika i opisa.</p></div>
+        <a href="{% url 'home' %}" class="hero-settings__view" target="_blank" rel="noopener">Pogledaj početnu ↗</a>
+    </header>
+    <form method="post" enctype="multipart/form-data" id="heroSettingsForm">
+        {% csrf_token %}{{ form.non_field_errors }}{{ formset.management_form }}{{ formset.non_form_errors }}
+        <div class="hero-settings__layout">
+            <aside class="hero-settings__common">
+                <h2>Zajednički tekst</h2><p>Ovi naslovi prikazuju se na svim bannerima.</p>
+                {% include 'staff/partials/hero_settings_field.html' with field=form.hero_oznaka %}
+                {% include 'staff/partials/hero_settings_field.html' with field=form.hero_naslov %}
+                {% include 'staff/partials/hero_settings_field.html' with field=form.hero_podnaslov %}
+            </aside>
+            <div class="hero-settings__banners">
+                <section class="hero-settings__card">
+                    <header><div><span class="hero-settings__badge">Glavni banner</span><h2>Slika i opis</h2></div></header>
+                    <div class="hero-settings__card-grid"><div>
+                        {% include 'staff/partials/hero_settings_field.html' with field=form.hero_opis %}
+                        {% include 'staff/partials/hero_settings_field.html' with field=form.hero_slika %}
+                        {% include 'staff/partials/hero_settings_field.html' with field=form.hero_link %}
+                    </div><div class="hero-settings__preview">
+                        {% if form.instance.hero_slika %}<img src="{{ form.instance.hero_slika.url }}" alt="Slika glavnog bannera">{% else %}<span>Bez slike artikla</span>{% endif %}
+                    </div></div>
+                </section>
+                <div id="heroBannerForms">
+                    {% for banner_form in formset %}{% include 'staff/partials/hero_settings_banner.html' with banner_form=banner_form %}{% endfor %}
+                </div>
+                <button type="button" class="hero-settings__add" id="addHeroBanner">+ Dodaj banner</button>
+                <p class="hero-settings__hint">Aktivni banneri automatski se smjenjuju svake 3 sekunde. Glavni je prvi, ostali prate zadani redoslijed. Najviše 20 dodatnih bannera.</p>
+            </div>
+        </div>
+        <footer class="hero-settings__save"><span>Sačuvaj sve izmjene zajedno.</span><button type="submit">Sačuvaj izmjene</button></footer>
+    </form>
+    <template id="heroBannerEmpty">{% include 'staff/partials/hero_settings_banner.html' with banner_form=formset.empty_form %}</template>
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'js/hero-settings.js' %}?v=20261019-multiple" defer></script>{% endblock %}

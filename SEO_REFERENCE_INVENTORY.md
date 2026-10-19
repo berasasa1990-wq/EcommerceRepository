@@ -113,7 +113,6 @@ A = preostali javni tekst/default; B = media host; C = migracija/kompatibilnost;
 | `EcommerceApp/template/staff/admin_panel.html:7` | D | Interna staff/admin stranica; nije indeksabilna. |
 | `EcommerceApp/template/staff/b2b_live.html:7` | D | Interna staff/admin stranica; nije indeksabilna. |
 | `EcommerceApp/template/staff/gift_voucher_print.html:190` | D | Interna staff/admin stranica; nije indeksabilna. |
-| `EcommerceApp/template/staff/live_analytics.html:6` | D | Interna staff/admin stranica; nije indeksabilna. |
 | `EcommerceApp/template/staff/loyalty_system.html:7` | D | Interna staff/admin stranica; nije indeksabilna. |
 | `EcommerceApp/template/staff/magacin/base.html:7` | D | Interna staff/admin stranica; nije indeksabilna. |
 | `EcommerceApp/template/staff/magacin/brzi_unos_aktivacija.html:1525` | D | Interna staff/admin stranica; nije indeksabilna. |

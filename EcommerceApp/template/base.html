@@ -171,9 +171,9 @@
     <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     {% if user.is_authenticated or request.resolver_match.url_name == 'set_builder' %}
-    <link rel="stylesheet" href="{% static 'css/storefront-core.min.css' %}?v=20261018-bundled">
+    <link rel="stylesheet" href="{% static 'css/storefront-core.min.css' %}?v=20261019-remove-live-center">
     {% else %}
-    <link rel="stylesheet" href="{% static 'css/storefront-core-public.min.css' %}?v=20261018-public">
+    <link rel="stylesheet" href="{% static 'css/storefront-core-public.min.css' %}?v=20261019-remove-live-center">
     {% endif %}
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
@@ -358,9 +358,9 @@
     }
     </style>
     {% if user.is_authenticated or request.resolver_match.url_name == 'set_builder' %}
-    <link rel="stylesheet" href="{% static 'css/storefront-theme.min.css' %}?v=20261018-bundled">
+    <link rel="stylesheet" href="{% static 'css/storefront-theme.min.css' %}?v=20261019-multiple-hero">
     {% else %}
-    <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261018-public">
+    <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261019-multiple-hero">
     {% endif %}
     {% block warehouse_theme_css %}{% endblock %}
     <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261018-larger-site-logo">
@@ -825,7 +825,7 @@
     {% endif %}
     {% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
     {% include 'partials/staff_site_editor.html' %}
-    <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20260929bulkTags">
+    <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20261019-red-missing-details">
     <script src="{% static 'js/staff-site-edit.js' %}?v=20260929bulkTags" defer></script>
     {% endif %}
     <div class="setb-gate" id="setBuilderGate" hidden

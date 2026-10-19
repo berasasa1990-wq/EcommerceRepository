@@ -2946,6 +2946,7 @@ def home(request):
         'spotlight': spotlight,
         'latest_products': latest_products,
         'bestselling_products': bestselling_products,
+        'hero_banners': [site_settings, *site_settings.hero_banners.filter(aktivan=True)] if not filters_active else [],
         'featured_products': featured_products,
         'featured_desktop_extra_ids': featured_desktop_extra_ids if not filters_active else [],
         'sale_products': sale_products,
@@ -6772,6 +6773,44 @@ def staff_admin_panel(request):
 
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
+@require_GET
+def staff_company_debts(request):
+    return render(request, 'staff/company_debts.html', _base_context())
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_hero_settings(request):
+    from .forms import HeroBannerSettingsForm, HeroBannerFormSet
+    from django.contrib import messages
+
+    site = SiteSettings.load()
+    form = HeroBannerSettingsForm(
+        request.POST if request.method == 'POST' else None,
+        request.FILES if request.method == 'POST' else None,
+        instance=site,
+    )
+    formset = HeroBannerFormSet(
+        request.POST if request.method == 'POST' else None,
+        request.FILES if request.method == 'POST' else None,
+        instance=site, prefix='banners',
+    )
+    form_valid = form.is_valid() if request.method == 'POST' else False
+    banners_valid = formset.is_valid() if request.method == 'POST' else False
+    if form_valid and banners_valid:
+        with transaction.atomic():
+            banner = form.save(commit=False)
+            banner.save(update_fields=list(form.Meta.fields))
+            formset.save()
+        messages.success(request, 'Banner-Hero je sačuvan.')
+        return redirect('staff_hero_settings')
+    return render(request, 'staff/hero_settings.html', {
+        **_base_context(), 'form': form, 'formset': formset,
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
 def staff_b2b_live(request):
     from .views_b2b import live_b2b_sessions
 
@@ -7203,252 +7242,6 @@ def staff_activate_user(request):
     return redirect('staff_loyalty_system')
 
 
-def _live_analytics_context(request):
-    """
-    Lagani live context — samo online kupci, šta rade, odakle dolaze.
-    Bez gift/registered/traffic/AI/korpa mapa (CPU).
-    """
-    from django.core.cache import cache
-    from django.utils import timezone as dj_tz
-
-    from .live_visitors import get_live_visitor_snapshot_lite
-
-    # Kratki cache 3s — poll svakih 5s ne udara DB dva puta u istom trenutku
-    cache_key = 'staff_live_snapshot_lite_v1'
-    snapshot = cache.get(cache_key)
-    if snapshot is None:
-        snapshot = get_live_visitor_snapshot_lite()
-        cache.set(cache_key, snapshot, 3)
-
-    generated_at = snapshot.get('generated_at') or dj_tz.now()
-    if hasattr(generated_at, 'astimezone'):
-        generated_at = dj_tz.localtime(generated_at)
-    online_visitors = snapshot.get('online_visitors') or []
-    session_keys = [
-        row.get('session_key') for row in online_visitors
-        if row.get('session_key')
-    ]
-    live_rows = list(
-        LiveVisitor.objects.filter(session_key__in=session_keys).values(
-            'session_key', 'trenutno_gleda', 'pregledane_kategorije',
-        )
-    ) if session_keys else []
-    cart_sessions = set(
-        ActiveCartItem.objects.filter(session_key__in=session_keys)
-        .values_list('session_key', flat=True).distinct()
-    ) if session_keys else set()
-    checkout_count = sum(
-        1 for row in online_visitors
-        if (row.get('path') or '').rstrip('/').endswith('/narudzba')
-        or (row.get('path') or '').rstrip('/').endswith('/checkout')
-    )
-    product_counts = {}
-    category_counts = {}
-    for row in live_rows:
-        looking = (row.get('trenutno_gleda') or '').strip()
-        if looking.startswith('Artikal: '):
-            name = looking[9:].strip()
-            if name:
-                product_counts[name] = product_counts.get(name, 0) + 1
-        elif looking.startswith('Kategorija: '):
-            name = looking[11:].strip()
-            if name:
-                category_counts[name] = category_counts.get(name, 0) + 1
-        for category in (row.get('pregledane_kategorije') or [])[:1]:
-            if isinstance(category, str) and category.strip():
-                name = category.strip()
-                category_counts[name] = category_counts.get(name, 0) + 1
-    live_products = [
-        {'name': name, 'count': count}
-        for name, count in sorted(product_counts.items(), key=lambda item: (-item[1], item[0]))[:5]
-    ]
-    live_categories = [
-        {'name': name, 'count': count}
-        for name, count in sorted(category_counts.items(), key=lambda item: (-item[1], item[0]))[:5]
-    ]
-    device_breakdown = cache.get('live_center_device_breakdown_v1')
-    if device_breakdown is None:
-        raw_device_counts = {
-            row['uredjaj']: int(row['visit_count'] or 0)
-            for row in (
-                LiveVisitor.objects.exclude(user__is_staff=True)
-                .exclude(user__is_superuser=True)
-                .filter(uredjaj__in=('mobile', 'desktop'))
-                .values('uredjaj')
-                .annotate(visit_count=Count('id'))
-            )
-        }
-        known_device_count = sum(raw_device_counts.values())
-        device_breakdown = [
-            {
-                'key': key,
-                'label': 'Telefon' if key == 'mobile' else 'Desktop',
-                'count': raw_device_counts.get(key, 0),
-                'percent': round((raw_device_counts.get(key, 0) * 100 / known_device_count), 1) if known_device_count else 0,
-            }
-            for key in ('mobile', 'desktop')
-        ]
-        cache.set('live_center_device_breakdown_v1', device_breakdown, 60)
-    # LiveVisitor red ostaje sačuvan nakon izlaska, pa first_seen daje
-    # stvarni dnevni broj zabilježenih ulazaka u ovoj kalendarskoj sedmici.
-    today = dj_tz.localdate()
-    week_start = today - timedelta(days=today.weekday())
-    week_end = week_start + timedelta(days=7)
-    weekday_labels = ('Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub', 'Ned')
-    daily_rows = (
-        LiveVisitor.objects.filter(first_seen__date__gte=week_start, first_seen__date__lt=week_end)
-        .exclude(user__is_staff=True)
-        .exclude(user__is_superuser=True)
-        .annotate(day=TruncDate('first_seen', tzinfo=dj_tz.get_current_timezone()))
-        .values('day')
-        .annotate(
-            identified=Count('visitor_token', distinct=True, filter=~Q(visitor_token='')),
-            anonymous=Count('session_key', filter=Q(visitor_token='')),
-        )
-    )
-    daily_counts = {
-        row['day']: int(row['identified'] or 0) + int(row['anonymous'] or 0)
-        for row in daily_rows if row.get('day')
-    }
-    weekly_online = []
-    for offset, label in enumerate(weekday_labels):
-        day = week_start + timedelta(days=offset)
-        weekly_online.append({
-            'label': label,
-            'date_label': day.strftime('%d.%m.'),
-            'count': daily_counts.get(day, 0),
-        })
-    weekly_max = max([item['count'] for item in weekly_online] or [0])
-    for item in weekly_online:
-        item['height'] = 8 if not weekly_max else max(8, round(item['count'] * 100 / weekly_max))
-    traffic_sources = cache.get('live_center_traffic_sources_v1')
-    if traffic_sources is None:
-        from .live_visitors import SOURCE_DISPLAY_ORDER, normalize_traffic_source, traffic_source_label
-
-        source_rows = (
-            LiveVisitor.objects.exclude(user__is_staff=True)
-            .exclude(user__is_superuser=True)
-            .values('izvor_dolaska')
-            .annotate(count=Count('id'))
-        )
-        traffic_counts = {}
-        for row in source_rows:
-            key = normalize_traffic_source(row['izvor_dolaska'])
-            traffic_counts[key] = traffic_counts.get(key, 0) + int(row['count'] or 0)
-        traffic_total = sum(traffic_counts.values())
-        traffic_sources = [
-            {
-                'key': key,
-                'label': traffic_source_label(key),
-                'count': traffic_counts.get(key, 0),
-                'percent': round((traffic_counts.get(key, 0) * 100 / traffic_total), 1) if traffic_total else 0,
-            }
-            for key in SOURCE_DISPLAY_ORDER
-            if traffic_counts.get(key, 0)
-        ]
-        traffic_sources.sort(key=lambda item: (-item['count'], item['label']))
-        cache.set('live_center_traffic_sources_v1', traffic_sources, 60)
-    city_sources = cache.get('live_center_city_sources_v1')
-    if city_sources is None:
-        city_sources = [
-            {'name': row['grad'], 'count': int(row['visit_count'] or 0)}
-            for row in (
-                LiveVisitor.objects.exclude(user__is_staff=True)
-                .exclude(user__is_superuser=True)
-                .exclude(grad='')
-                .values('grad')
-                .annotate(visit_count=Count('id'))
-                .order_by('-visit_count', 'grad')[:8]
-            )
-        ]
-        cache.set('live_center_city_sources_v1', city_sources, 60)
-    search_lists = cache.get('live_center_search_lists_v1')
-    if search_lists is None:
-        def _search_rows(queryset):
-            return [
-                {'name': row['normalized'], 'count': int(row['search_count'] or 0)}
-                for row in (
-                    queryset.annotate(normalized=Lower('query'))
-                    .values('normalized')
-                    .annotate(search_count=Count('id'))
-                    .order_by('-search_count', 'normalized')[:8]
-                )
-                if row.get('normalized')
-            ]
-
-        search_lists = {
-            'without_results': _search_rows(SiteSearchEvent.objects.filter(results_count=0)),
-            'with_results': _search_rows(SiteSearchEvent.objects.filter(results_count__gt=0)),
-        }
-        cache.set('live_center_search_lists_v1', search_lists, 30)
-    top_products = cache.get('live_center_top_products_v1')
-    if top_products is None:
-        product_rows = (
-            OrderItem.objects.filter(
-                narudzba__izvor=Order.Izvor.WEBSHOP,
-                narudzba__b2b_submission__isnull=True,
-            )
-            .exclude(narudzba__ime_prezime='Prenos u MP')
-            .exclude(narudzba__status=Order.Status.OTKAZANA)
-            .values('artikal_id', 'naziv')
-            .annotate(order_count=Count('narudzba_id', distinct=True))
-            .order_by('-order_count', 'naziv')[:10]
-        )
-        top_products = [
-            {'name': row['naziv'], 'order_count': int(row['order_count'] or 0)}
-            for row in product_rows
-        ]
-        cache.set('live_center_top_products_v1', top_products, 30)
-    b2b_online_users = []
-    try:
-        from .views_b2b import live_b2b_sessions
-        b2b_rows = live_b2b_sessions()
-        b2b_online_count = len(b2b_rows)
-        b2b_online_users = [
-            {
-                'username': row['account'].username,
-                'company': row['account'].company,
-                'cart_total': str(row['netto']),
-                'cart_count': row['count'],
-            }
-            for row in b2b_rows
-        ]
-    except Exception:
-        logger.exception('B2B live snapshot nije dostupan.')
-        b2b_online_count = 0
-    return {
-        'online_count': snapshot.get('online_count') or len(online_visitors),
-        'online_visitors': online_visitors,
-        'sources': snapshot.get('sources') or [],
-        'cart_count': len(cart_sessions),
-        'top_products': top_products,
-        'checkout_count': checkout_count,
-        'device_breakdown': device_breakdown,
-        'b2b_online_count': b2b_online_count,
-        'b2b_online_users': b2b_online_users,
-        'live_products': live_products,
-        'live_categories': live_categories,
-        'traffic_sources': traffic_sources,
-        'city_sources': city_sources,
-        'search_without_results': search_lists['without_results'],
-        'search_with_results': search_lists['with_results'],
-        'weekly_online': weekly_online,
-        'online_minutes': snapshot.get('online_minutes') or 1,
-        'generated_at': generated_at,
-        'generated_at_label': generated_at.strftime('%H:%M:%S'),
-    }
-
-
-@login_required(login_url='login')
-@user_passes_test(_superuser_required)
-def staff_live_analytics(request):
-    context = {
-        **_base_context(),
-        **_live_analytics_context(request),
-    }
-    return render(request, 'staff/live_analytics.html', context)
-
-
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_scratch_analytics(request):
@@ -7815,44 +7608,6 @@ def live_visitor_leave(request):
         return JsonResponse({'ok': True, 'left': False})
     left = mark_live_visitor_left(request, body_session_key=body_key)
     return JsonResponse({'ok': True, 'left': left})
-
-
-@login_required(login_url='login')
-@user_passes_test(_superuser_required)
-@require_GET
-def staff_live_analytics_data(request):
-    """JSON poll — lagani payload (online lista + izvori)."""
-    from django.utils import timezone
-
-    payload = _live_analytics_context(request)
-    generated = payload.get('generated_at')
-    if generated and hasattr(generated, 'isoformat'):
-        payload['generated_at'] = timezone.localtime(generated).isoformat()
-    # Samo potrebna polja klijentu
-    slim = {
-        'online_count': payload.get('online_count') or 0,
-        'online_visitors': payload.get('online_visitors') or [],
-        'sources': payload.get('sources') or [],
-        'cart_count': payload.get('cart_count') or 0,
-        'top_products': payload.get('top_products') or [],
-        'checkout_count': payload.get('checkout_count') or 0,
-        'device_breakdown': payload.get('device_breakdown') or [],
-        'b2b_online_count': payload.get('b2b_online_count') or 0,
-        'b2b_online_users': payload.get('b2b_online_users') or [],
-        'live_products': payload.get('live_products') or [],
-        'live_categories': payload.get('live_categories') or [],
-        'traffic_sources': payload.get('traffic_sources') or [],
-        'city_sources': payload.get('city_sources') or [],
-        'search_without_results': payload.get('search_without_results') or [],
-        'search_with_results': payload.get('search_with_results') or [],
-        'weekly_online': payload.get('weekly_online') or [],
-        'online_minutes': payload.get('online_minutes') or 1,
-        'generated_at': payload.get('generated_at'),
-        'generated_at_label': payload.get('generated_at_label') or '',
-    }
-    response = JsonResponse(slim)
-    response['Cache-Control'] = 'private, max-age=2'
-    return response
 
 
 def _active_cart_groups(queryset):

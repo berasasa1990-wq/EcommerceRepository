@@ -166,6 +166,8 @@ urlpatterns = [
 
 
     path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
+    path('nalog/admin/settings/', views.staff_hero_settings, name='staff_hero_settings'),
+    path('nalog/admin/dugovanja-firmi/', views.staff_company_debts, name='staff_company_debts'),
     path('nalog/b2b-live/', views.staff_b2b_live, name='staff_b2b_live'),
     path('nalog/edit-mode/', views.staff_toggle_edit_mode, name='staff_toggle_edit_mode'),
     path('nalog/site-edit/', views.staff_site_edit_save, name='staff_site_edit_save'),
@@ -400,8 +402,6 @@ urlpatterns = [
         name='staff_magacin_backup_download_current',
     ),
     path('nalog/greb-greb/', views.staff_scratch_analytics, name='staff_scratch_analytics'),
-    path('nalog/uzivo-analitika/', views.staff_live_analytics, name='staff_live_analytics'),
-    path('nalog/uzivo-analitika/podaci/', views.staff_live_analytics_data, name='staff_live_analytics_data'),
     path('nalog/pretraga-artikala/', views.staff_product_search, name='staff_product_search'),
 
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),

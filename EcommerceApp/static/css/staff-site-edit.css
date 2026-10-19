@@ -517,3 +517,21 @@ body.staff-bulk-open {
     }
     body.staff-bulk-open { padding-right: 0; padding-bottom: min(68vh, 560px); }
 }
+
+/* Missing product details sit below the name in Edit mode. */
+body.staff-edit-mode-on .staff-missing {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 10px 0 6px;
+    padding: 0;
+    color: #dc2626 !important;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: left;
+}
+body.staff-edit-mode-on .staff-missing > span {
+    display: block;
+    color: #dc2626 !important;
+}

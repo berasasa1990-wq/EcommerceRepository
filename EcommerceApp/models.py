@@ -60,6 +60,28 @@ class SiteSettings(models.Model):
         verbose_name='Logo sajta',
         help_text='Prikazuje se u headeru (crna pozadina). Originalna slika se ne ofarbava — samo max ~640×128. Preporuka: PNG, transparentna pozadina, bijela/zelena grafika.',
     )
+    hero_oznaka = models.CharField(
+        max_length=160, default='Suncobrani za ribolov', verbose_name='Natpis iznad naslova',
+    )
+    hero_naslov = models.CharField(
+        max_length=160, default='Tvoj mir je na vodi.', verbose_name='Naslov — prvi red',
+    )
+    hero_podnaslov = models.CharField(
+        max_length=160, default='Tvoja oprema je ovdje.', verbose_name='Naslov — drugi red',
+    )
+    hero_opis = models.TextField(
+        default='Kvalitetni suncobrani za udoban i bezbrižan ribolov u svim uslovima.',
+        verbose_name='Tekst ispod naslova',
+    )
+    hero_slika = models.ImageField(
+        upload_to='site/hero/', blank=True, verbose_name='Slika artikla',
+        help_text='PNG ili WebP s prozirnom pozadinom daje najbolji izgled. Bez učitane slike banner se prikazuje bez artikla.',
+    )
+    hero_link = models.URLField(
+        max_length=500, default='https://carpologijabh.ba/kategorija/Jakne/',
+        verbose_name='Link bannera',
+        help_text='Unesi puni link (https://…). Klik na banner i dugme „Istraži ponudu” otvara ovaj link.',
+    )
     sretni_greb_greb_poklon = models.ForeignKey(
         'Product',
         on_delete=models.SET_NULL,
@@ -809,8 +831,8 @@ class SiteSettings(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Podešavanja'
-        verbose_name_plural = 'Podešavanja'
+        verbose_name = 'Settings'
+        verbose_name_plural = 'Settings'
 
     def save(self, *args, **kwargs):
         self.pk = 1
@@ -7264,3 +7286,21 @@ class CardPayment(models.Model):
     transaction_id = models.CharField(max_length=64, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class HeroBanner(models.Model):
+    settings = models.ForeignKey(SiteSettings, on_delete=models.CASCADE, related_name='hero_banners')
+    hero_opis = models.TextField(verbose_name='Opis bannera')
+    hero_slika = models.ImageField(upload_to='site/hero/', blank=True, verbose_name='Slika artikla')
+    hero_link = models.URLField(max_length=500, blank=True, verbose_name='Link bannera',
+                                help_text='Prazno = link glavnog bannera.')
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    aktivan = models.BooleanField(default=True, verbose_name='Prikaži banner')
+
+    class Meta:
+        ordering = ('redoslijed', 'pk')
+        verbose_name = 'Hero banner'
+        verbose_name_plural = 'Hero banneri'
+
+    def __str__(self):
+        return self.hero_opis[:70]

@@ -61,13 +61,3 @@ class RetiredFeaturesTests(TestCase):
         self.assertNotContains(response, 'value="ai_prodaja"')
         self.assertNotContains(response, 'name="browse_interest_popup_aktivan"')
         self.assertNotIn(Akcija.Tip.AI_PRODAJA, Akcija.ACTIVE_TIPS)
-
-    def test_live_visitor_pages_remain_available_without_ai_and_gift_queries(self):
-        self.client.force_login(self.owner)
-        for name in ['staff_live_analytics', 'staff_live_analytics_data']:
-            with CaptureQueriesContext(connection) as queries:
-                response = self.client.get(reverse(name))
-            self.assertEqual(response.status_code, 200)
-            sql = '\n'.join(query['sql'].lower() for query in queries)
-            self.assertNotIn('ecommerceapp_onlinegift', sql)
-            self.assertNotIn('ecommerceapp_cityvisittotal', sql)

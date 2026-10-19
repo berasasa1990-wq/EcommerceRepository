@@ -1,0 +1,15 @@
+<section class="hero-settings__card" data-hero-banner-form{% if banner_form.DELETE.value %} hidden{% endif %}>
+    {% for hidden in banner_form.hidden_fields %}{{ hidden }}{{ hidden.errors }}{% endfor %}
+    {{ banner_form.non_field_errors }}
+    <header><h2>Dodatni banner</h2><button type="button" class="hero-settings__remove" data-remove-banner>Ukloni</button></header>
+    <div class="hero-settings__card-grid"><div>
+        {% include 'staff/partials/hero_settings_field.html' with field=banner_form.hero_opis %}
+        {% include 'staff/partials/hero_settings_field.html' with field=banner_form.hero_slika %}
+        {% include 'staff/partials/hero_settings_field.html' with field=banner_form.hero_link %}
+        <div class="hero-settings__options">
+            {% include 'staff/partials/hero_settings_field.html' with field=banner_form.redoslijed %}
+            {% include 'staff/partials/hero_settings_field.html' with field=banner_form.aktivan %}
+        </div>
+    </div><div class="hero-settings__preview">{% if banner_form.instance.hero_slika %}<img src="{{ banner_form.instance.hero_slika.url }}" alt="Slika dodatnog bannera">{% else %}<span>Učitaj sliku artikla</span>{% endif %}</div></div>
+    <div hidden>{{ banner_form.DELETE }}</div>
+</section>
