@@ -260,6 +260,8 @@ def order_paid_by_card(order):
 
 
 def order_waived_shipping(order):
+    if getattr(order, 'exchange_for_id', None):
+        return True
     if order_paid_by_card(order):
         return True
     for row in (getattr(order, 'popust_detalji', None) or []):

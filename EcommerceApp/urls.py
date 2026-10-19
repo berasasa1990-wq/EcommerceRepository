@@ -260,6 +260,7 @@ urlpatterns = [
     path('nalog/magacin/fali-na-sajtu/', views_magacin.magacin_fali_na_sajtu, name='staff_magacin_fali_na_sajtu'),
     path('nalog/magacin/narudzbe/', views_magacin.magacin_narudzbe, name='staff_magacin_narudzbe'),
     path('nalog/magacin/narudzbe/nova/', views_magacin.magacin_narudzba_nova, name='staff_magacin_narudzba_nova'),
+    path('nalog/magacin/narudzbe/<str:broj>/zamjena/', views_magacin.magacin_order_exchange, name='staff_magacin_order_exchange'),
     path(
         'nalog/magacin/narudzbe/nova/bulk/',
         views_magacin.magacin_narudzba_bulk,

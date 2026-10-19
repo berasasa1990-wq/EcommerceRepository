@@ -285,7 +285,7 @@ def _shipment_amounts(order) -> tuple[float, bool, float]:
     if medjuzbir < 0:
         medjuzbir = Decimal('0.00')
     declared = ukupno if ukupno > 0 else medjuzbir
-    pouzece = order_is_pouzece(order) and ukupno > 0
+    pouzece = order_is_pouzece(order) and ukupno > 0 and not getattr(order, 'exchange_for_id', None)
     otkup = ukupno if pouzece else Decimal('0.00')
     return _money(declared), pouzece, _money(otkup)
 
@@ -399,6 +399,14 @@ def build_shipment_payload(order) -> dict:
     # B2B always requires the return receipt, whether it is cash or bank payment.
     if is_b2b:
         payload['povratnica'] = True
+    if getattr(order, 'exchange_for_id', None):
+        field = getattr(settings, 'XEXPRESS_EXCHANGE_FIELD', '').strip()
+        if not field or field in payload:
+            raise XExpressError('Zamjena nije poslana: potrebno je potvrditi XExpress API polje za preuzimanje zamjenskog paketa (XEXPRESS_EXCHANGE_FIELD).')
+        payload[field] = True
+        payload['otkupnina'] = False
+        payload['iznosOtkupnine'] = 0.0
+        payload['napomenaInterna'] = f'Zamjena za #{order.exchange_for.broj}. Preuzimanje zamjenskog paketa. Bez otkupa.'
     return payload
 
 

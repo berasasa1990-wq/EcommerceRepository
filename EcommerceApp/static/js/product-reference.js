@@ -93,32 +93,6 @@
     }
 })();
 
-/* Align the desktop gallery bottom with the delivery information. */
-(() => {
-    const image = document.getElementById('mainProductImageWrap');
-    const delivery = document.querySelector('.pd-desktop-trust li');
-    const info = document.getElementById('productDetailInfo');
-    if (!image || !delivery || !info) return;
-    const desktop = matchMedia('(min-width:1025px)');
-    let frame;
-    const update = () => {
-        cancelAnimationFrame(frame);
-        frame = requestAnimationFrame(() => {
-            if (!desktop.matches) {
-                image.style.removeProperty('--desktop-gallery-height');
-                return;
-            }
-            const height = Math.round(delivery.getBoundingClientRect().bottom - image.getBoundingClientRect().top);
-            if (height >= 180) image.style.setProperty('--desktop-gallery-height', height + 'px');
-        });
-    };
-    new ResizeObserver(update).observe(info);
-    desktop.addEventListener('change', update);
-    window.addEventListener('resize', update, {passive:true});
-    document.fonts?.ready.then(update);
-    update();
-})();
-
 /* Existing rich-text descriptions keep their markup and gain feature styling. */
 document.querySelectorAll('.pd-description-formatted p').forEach(paragraph => {
     const text = paragraph.textContent.trim();

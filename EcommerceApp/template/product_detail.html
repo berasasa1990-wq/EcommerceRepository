@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="{% static 'css/product-inline-qty.v20260912.css' %}">
 <link rel="stylesheet" href="{% static 'css/product-inline-bundle.v20260912.css' %}">
 <link rel="stylesheet" href="{% static 'css/product-detail-mobile.css' %}?v=20260915-smaller-title-price">
-<link rel="stylesheet" href="{% static 'css/product-reference.css' %}?v=20261018-mobile-arrows-below-fix">
+<link rel="stylesheet" href="{% static 'css/product-reference.css' %}?v=20261019-square-desktop">
 {% if staff_product_tools %}
 <link rel="stylesheet" href="{% static 'css/staff-image-fit.css' %}?v=20260829imgFit">
 {% endif %}
@@ -538,24 +538,16 @@
             </div>
             {% endif %}
 
-                <ul class="pd-desktop-trust">
-                    <li>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                        <div><strong>Brza dostava</strong><span>Isporuka u roku 24h.</span></div>
-                    </li>
-                    <li>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z"/></svg>
-                        <div><strong>Sigurna kupovina</strong><span>Povrat novca u roku 14 dana.</span></div>
-                    </li>
-                    <li>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-                        <div><strong>Stručna podrška</strong><span>Tu smo za sva vaša pitanja.</span></div>
-                    </li>
-                    <li>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
-                        <div><strong>Provjereni proizvodi</strong><span>Samo kvalitetne brendove.</span></div>
-                    </li>
-                </ul>
+        {% if related_products %}
+        <aside class="pd-bottom-related pd-purchase-related" aria-label="Povezani proizvodi">
+            <h2>Povezani proizvodi</h2>
+            <div class="product-catalog pd-related-grid">
+                {% for item in related_products|slice:':3' %}
+                {% include 'partials/product_catalog_card.html' with product=item home_reference_card=True hide_variations=True %}
+                {% endfor %}
+            </div>
+        </aside>
+        {% endif %}
 
             {% include 'partials/product_qty_deal.html' %}
             {% include 'partials/product_bundle_set.html' %}
@@ -608,16 +600,7 @@
 
     <div class="pd-bottom-layout">
         <div class="pd-bottom-details">{% include 'partials/product_mobile_details.html' %}</div>
-        {% if related_products %}
-        <aside class="pd-bottom-related" aria-label="Povezani proizvodi">
-            <h2>Povezani proizvodi</h2>
-            <div class="product-catalog pd-related-grid">
-                {% for item in related_products|slice:':5' %}
-                {% include 'partials/product_catalog_card.html' with product=item home_reference_card=True hide_variations=True %}
-                {% endfor %}
-            </div>
-        </aside>
-        {% endif %}
+
     </div>
     <div class="product-detail-content">
         {% if product.opis %}
@@ -699,7 +682,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-reference.js' %}?v=20261018-mobile-arrows-below-fix" defer></script>
+<script src="{% static 'js/product-reference.js' %}?v=20261019-square-desktop" defer></script>
 <script src="{% static 'js/product-detail.min.js' %}?v=20260915-feature-cleanup" defer></script>
 <script src="{% static 'js/product-detail-mobile.js' %}?v=20260915-desktop-arrows" defer></script>
 {% if staff_product_tools %}

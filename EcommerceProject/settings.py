@@ -625,6 +625,8 @@ XEXPRESS_REZERVACIJA = _env('XEXPRESS_REZERVACIJA', 'true').lower() in ('1', 'tr
 # OpenAPI: 0=gotovina, 1=banka, 9=po računu. Nalog 3425 ne dozvoljava 1 (žiralno).
 XEXPRESS_NACIN_PLACANJA = int(_env('XEXPRESS_NACIN_PLACANJA', '0') or 0)
 XEXPRESS_OBVEZNIK_PLACANJA = int(_env('XEXPRESS_OBVEZNIK_PLACANJA', '1') or 1)
+# Exact boolean field from the courier's API schema; do not guess an ignored key.
+XEXPRESS_EXCHANGE_FIELD = _env('XEXPRESS_EXCHANGE_FIELD', '').strip()
 
 # Catalog Sync API — daj partneru ovaj ključ da vuče artikle/kategorije/brendove (read-only)
 # Header: X-Api-Key: ...  ili  Authorization: Bearer ...

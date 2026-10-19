@@ -4,6 +4,7 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'css/staff-orders-reference.css' %}?v=20261017-warehouse-blue">
+<link rel="stylesheet" href="{% static 'css/order-actions-dialog.css' %}?v=20261019">
 {% endblock %}
 
 {% block magacin_content %}
@@ -230,18 +231,9 @@
                         <a class="mg-order-print" href="{% url 'staff_magacin_narudzbe_stampa_kolicine' %}?b={{ order.broj }}" target="_blank" rel="noopener" title="Štampaj količine za fakturu" aria-label="Štampaj količine za fakturu">Količine</a>
                         {% endif %}
                         {% endif %}
-                        <details class="order-row-menu">
-                            <summary class="mg-row-more" aria-label="Opcije narudžbe">⋮</summary>
-                            <div class="order-row-menu-panel">
-                                {% if order.can_edit_from_list %}
-                                <a href="{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}">Izmijeni narudžbu</a>
-                                {% endif %}
-                                {% if order.lager_status == 'rezervisano' %}
-                                <button type="submit" form="cancelOrder{{ order.pk }}">Otkaži narudžbu</button>
-                                {% endif %}
-                                <a href="{% url 'staff_order_detail' order.broj %}">Prikaži fakturu</a>
-                            </div>
-                        </details>
+                        <button type="button" class="mg-order-actions-trigger" data-order-dialog="orderActions{{ order.pk }}" aria-label="Opcije narudžbe {{ order.broj }}" aria-haspopup="dialog">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M7 8h10M7 12h10M7 16h10"/><circle cx="10" cy="8" r="1.5" fill="currentColor"/><circle cx="15" cy="12" r="1.5" fill="currentColor"/></svg>
+                        </button>
                     </td>
                 </tr>
                 {% empty %}
@@ -296,6 +288,7 @@
     <input type="hidden" name="lozinka" value="">
 </form>
 {% for order in orders %}
+{% include 'staff/magacin/partials/order_actions_dialog.html' %}
 {% if order.pick_claimed_name %}
 <form id="releasePick{{ order.pk }}" method="post" action="{% url 'staff_magacin_pakuj_oslobodi' order.broj %}" hidden>
     {% csrf_token %}
@@ -310,3 +303,5 @@
 {% endif %}
 {% endfor %}
 {% endblock %}
+
+{% block magacin_js %}{{ block.super }}<script src="{% static 'js/order-actions-dialog.js' %}?v=20261019-validated" defer></script>{% endblock %}

@@ -3100,6 +3100,67 @@ def _order_text_search_q(query):
 
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
+@require_POST
+def magacin_order_exchange(request, broj):
+    """Create a separate, reserved replacement; never reuse dispatch/payment data."""
+    try:
+        with transaction.atomic():
+            source = get_object_or_404(Order.objects.select_for_update(), broj=broj)
+            if (source.lager_status != Order.LagerStatus.VALIDIRANO
+                    and source.status != Order.Status.ZAVRSENA):
+                raise MagacinError('Zamjena je dostupna samo za validatovane narudžbe.')
+            existing = source.exchange_orders.exclude(status=Order.Status.OTKAZANA).first()
+            if existing:
+                messages.info(request, f'Zamjena #{existing.broj} je već kreirana.')
+                return redirect('staff_order_detail', broj=existing.broj)
+            items = list(source.stavke.filter(set_parent__isnull=True, ledger_missing_line__isnull=True)
+                         .select_related('artikal', 'varijacija'))
+            if not items:
+                raise MagacinError('Narudžba nema artikala za zamjenu.')
+            selected_ids = request.POST.getlist('item_id')
+            available = {str(item.pk): item for item in items}
+            if not selected_ids or len(selected_ids) != len(set(selected_ids)) or any(key not in available for key in selected_ids):
+                raise MagacinError('Izaberi artikle iz ove narudžbe za zamjenu.')
+            selected = []
+            for key in selected_ids:
+                item = available[key]
+                try:
+                    qty = int(request.POST.get(f'quantity_{key}', ''))
+                except (TypeError, ValueError):
+                    raise MagacinError('Unesi ispravnu količinu za zamjenu.')
+                if qty < 1 or qty > item.kolicina_faktura:
+                    raise MagacinError(f'Količina za {item.naziv} mora biti između 1 i {item.kolicina_faktura}.')
+                selected.append((item, qty))
+            fields = ('korisnik_id', 'ime_prezime', 'email', 'telefon', 'adresa', 'grad', 'postanski_broj')
+            amount = sum((item.cijena * qty for item, qty in selected), Decimal('0.00'))
+            order = Order.objects.create(**{field: getattr(source, field) for field in fields},
+                exchange_for=source, izvor=Order.Izvor.MAGACIN, status=Order.Status.NOVA,
+                medjuzbir=amount, dostava=0, popust=amount, ukupno=0,
+                popust_detalji=[{'opis': 'Zamjena bez otkupa', 'iznos': str(amount)}],
+                napomena=f'Zamjena za narudžbu #{source.broj}. Preuzimanje zamjenskog paketa. Bez otkupa.')
+            for item, qty in selected:
+                if not item.artikal_id:
+                    raise MagacinError(f'Artikal „{item.naziv}“ više ne postoji u katalogu.')
+                replacement_item = OrderItem.objects.create(narudzba=order, artikal=item.artikal, varijacija=item.varijacija,
+                    naziv=item.naziv, product_naziv=item.product_naziv, varijacija_naziv=item.varijacija_naziv,
+                    sifra=item.sifra, cijena=item.cijena, bazna_cijena=item.bazna_cijena,
+                    kolicina=qty, rezervni_dio=item.rezervni_dio, is_set_parent=item.is_set_parent)
+                leftover = reserve_for_order(order, item.artikal, qty, variation=item.varijacija,
+                    user=request.user, napomena=f'Zamjena za #{source.broj}', set_item=replacement_item)
+                if leftover:
+                    raise MagacinError(f'Nema dovoljno zalihe za zamjenu: {item.naziv}.')
+            order.lager_status = Order.LagerStatus.REZERVISANO
+            order.save(update_fields=['lager_status'])
+        invalidate_magacin_nav_counts()
+        messages.success(request, f'Kreirana je zamjena #{order.broj}, bez otkupa.')
+        return redirect('staff_order_detail', broj=order.broj)
+    except MagacinError as exc:
+        messages.error(request, str(exc))
+        return redirect('staff_magacin_narudzbe')
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
 def magacin_narudzbe(request):
     izvor = (request.GET.get('izvor') or 'sve').strip()
     show_validated = (request.GET.get('validirane') or '') == '1'

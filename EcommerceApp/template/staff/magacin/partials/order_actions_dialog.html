@@ -1,0 +1,23 @@
+<dialog class="order-actions-dialog" id="orderActions{{ order.pk }}" aria-labelledby="orderActionsTitle{{ order.pk }}">
+    <header><div><h2 id="orderActionsTitle{{ order.pk }}">Narudžba #{{ order.broj }}</h2><p>{{ order.display_customer_name }}</p></div><button type="button" data-order-close aria-label="Zatvori">×</button></header>
+    <div data-order-options class="order-actions-dialog__options">
+        {% if order.can_edit_from_list %}<a href="{% url 'staff_magacin_narudzba_nova' %}?broj={{ order.broj }}">Izmijeni narudžbu <span aria-hidden="true">→</span></a>{% endif %}
+        {% if order.lager_status == 'validirano' or order.status == 'zavrsena' %}<button type="button" data-order-exchange>Zamjena <span aria-hidden="true">→</span></button>{% endif %}
+        {% if order.lager_status == 'rezervisano' %}<button type="submit" class="order-actions-dialog__cancel" form="cancelOrder{{ order.pk }}">Otkaži narudžbu <span aria-hidden="true">→</span></button>{% endif %}
+        <a href="{% url 'staff_order_detail' order.broj %}">Prikaži fakturu <span aria-hidden="true">→</span></a>
+    </div>
+    <form method="post" action="{% url 'staff_magacin_order_exchange' order.broj %}" data-order-exchange-form hidden>
+        {% csrf_token %}
+        <h3>Izaberi artikle za zamjenu</h3><p>Označi artikle i količine. Nova narudžba zadržava podatke kupca i nema otkup.</p>
+        <div class="order-actions-dialog__items">
+        {% for item in order.stavke.all %}{% if not item.set_parent_id and not item.ledger_missing_line_id and item.kolicina_faktura > 0 %}
+        <div class="order-actions-dialog__item">
+            <label><input type="checkbox" name="item_id" value="{{ item.pk }}"><span><strong>{{ item.product_naziv|default:item.naziv }}</strong>{% if item.varijacija_naziv %}<small>{{ item.varijacija_naziv }}</small>{% endif %}<small>Šifra: {{ item.sifra|default:'—' }} · Naručeno: {{ item.kolicina_faktura }} kom</small></span></label>
+            <label class="order-actions-dialog__quantity">Količina<input type="number" name="quantity_{{ item.pk }}" value="1" min="1" max="{{ item.kolicina_faktura }}" step="1" inputmode="numeric" required disabled></label>
+        </div>
+        {% endif %}{% endfor %}
+        </div>
+        <p class="order-actions-dialog__error" role="alert" hidden>Izaberi barem jedan artikal za zamjenu.</p>
+        <footer><button type="button" data-order-back>Nazad</button><button type="submit" class="order-actions-dialog__confirm">Potvrdi i kreiraj zamjenu</button></footer>
+    </form>
+</dialog>

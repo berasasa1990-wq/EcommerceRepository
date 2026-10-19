@@ -4370,6 +4370,13 @@ def sync_webshop_charges_to_picked(order):
 
 def recalculate_order_totals(order):
     items = _fresh_order_items(order)
+    if getattr(order, 'exchange_for_id', None):
+        amount = sum((Decimal(str(item.cijena or 0)) * int(item.kolicina or 0)
+                      for item in items if not item.set_parent_id), Decimal('0.00'))
+        order.medjuzbir = order.popust = amount
+        order.dostava = order.ukupno = Decimal('0.00')
+        order.save(update_fields=['medjuzbir', 'popust', 'dostava', 'ukupno'])
+        return order
     medjuzbir = sum(
         (Decimal(str(item.cijena or 0)) * int(item.kolicina or 0) for item in items),
         Decimal('0.00'),

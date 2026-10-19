@@ -364,7 +364,7 @@
     {% endif %}
     {% block warehouse_theme_css %}{% endblock %}
     <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261019-category-counts">
-    <link rel="stylesheet" href="{% static 'css/product-grid-desktop.css' %}?v=20261019-five-columns" media="(min-width: 1025px)">
+    <link rel="stylesheet" href="{% static 'css/product-grid-desktop.css' %}?v=20261019-related-three" media="(min-width: 1025px)">
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="shared-site-header {% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}

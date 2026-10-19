@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="bs">
 <head>
@@ -909,6 +910,8 @@
             line-height: 1.45;
         }
     </style>
+    <link rel="stylesheet" href="{% static 'css/staff-order-preview.css' %}?v=20261019-totals-vat">
+    <link rel="stylesheet" href="{% static 'css/staff-order-print.css' %}?v=20261019-preview">
 </head>
 <body
     data-requires-mp-check="{% if requires_mp_check %}1{% else %}0{% endif %}"

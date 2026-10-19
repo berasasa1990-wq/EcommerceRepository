@@ -5993,6 +5993,7 @@ def staff_order_detail(request, broj):
             f"{reverse('staff_magacin_narudzba_nova')}?broj={order.broj}" if can_edit else ''
         ),
     }
+    _attach_order_preview_images(context)
     return render(request, 'staff/order_detail.html', context)
 
 
@@ -6041,6 +6042,16 @@ def staff_order_xexpress(request, broj):
     return redirect('staff_order_detail', broj=broj)
 
 
+def _attach_order_preview_images(context):
+    images = dict(Product.objects.filter(
+        sifra__in=[item['sifra'] for item in context['stavke'] if item['sifra']],
+    ).exclude(slika='').values_list('sifra', 'slika'))
+    from django.core.files.storage import default_storage
+    for item in context['stavke']:
+        image = images.get(item['sifra'])
+        item['preview_image'] = default_storage.url(image) if image else ''
+
+
 def _order_print_job(order):
     packing_lines, packing_error = _build_order_packing_lines(order)
     packing_missing = [
@@ -6048,6 +6059,7 @@ def _order_print_job(order):
         if line.get('check_mp') or not line.get('picks')
     ]
     job = get_order_email_context(order)
+    _attach_order_preview_images(job)
     job.update({
         'packing_lines': packing_lines,
         'packing_error': packing_error,

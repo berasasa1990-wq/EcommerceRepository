@@ -10,4 +10,12 @@
  }
  /* Related cards need the full page width to fit five readable columns. */
  html body.product-mobile-reference main .pd-bottom-layout{grid-template-columns:minmax(0,1fr)}
+ html body.product-mobile-reference main .pd-purchase-related .pd-related-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  overflow-x:auto;
+  padding-bottom:12px;
+  scroll-snap-type:x proximity;
+ }
+ html body.product-mobile-reference main .pd-purchase-related .product-card{scroll-snap-align:start}
 }
+.pd-purchase-related{margin-top:24px;min-width:0;max-width:100%}

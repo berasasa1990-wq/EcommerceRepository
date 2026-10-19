@@ -4387,6 +4387,8 @@ class UserProfile(models.Model):
 
 
 class Order(models.Model):
+    exchange_for = models.ForeignKey('self', null=True, blank=True, on_delete=models.PROTECT,
+                                     related_name='exchange_orders', verbose_name='Zamjena za narudžbu')
     class Status(models.TextChoices):
         CEKA_PLACANJE = 'ceka_placanje', 'Čeka kartično plaćanje'
         NOVA = 'nova', 'Nova'

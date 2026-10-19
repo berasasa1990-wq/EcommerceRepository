@@ -1176,9 +1176,9 @@
 html body.product-mobile-reference .product-detail-title-row h1{font-size:22px!important;line-height:1.25}
 @media(max-width:767px){html body.product-mobile-reference .product-detail-title-row h1{font-size:16px!important}}
 
-/* Shorter desktop gallery ending at the delivery block. */
+/* Square desktop product image frame. */
 @media(min-width:1025px){
- html body.product-mobile-reference #mainProductImageWrap{height:var(--desktop-gallery-height,420px)!important;min-height:0!important;aspect-ratio:auto!important;box-sizing:border-box}
+ html body.product-mobile-reference #mainProductImageWrap{height:auto!important;min-height:0!important;aspect-ratio:1 / 1!important;align-self:start;box-sizing:border-box}
  html body.product-mobile-reference #mainProductImageWrap #mainProductImage{height:100%!important;max-height:100%!important;width:100%!important;object-fit:contain!important}
 }
 
