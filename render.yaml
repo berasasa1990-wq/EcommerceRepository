@@ -17,7 +17,7 @@ services:
       # Jednom ručno: python manage.py createsuperuser
     # Starter 0.5 CPU / 512 MB: 1 worker. max-requests 80 + pollovi = restart svakih ~2 min (CPU spike).
     healthCheckPath: /healthz
-    startCommand: gunicorn EcommerceProject.wsgi:application --workers 1 --threads 4 --timeout 60 --graceful-timeout 20 --max-requests 400 --max-requests-jitter 50
+    startCommand: bash scripts/start_web.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.12  # ili 3.11, 3.13
@@ -51,6 +51,12 @@ services:
         sync: false  # Proton SMTP token
       - key: EMAIL_HOST_USER
         sync: false  # narudzbe@opremazaribolov.ba
+      - key: COMPANY_MAIL_USER
+        value: carpologijabh@gmail.com
+      - key: COMPANY_MAIL_APP_PASSWORD
+        sync: false
+      - key: COMPANY_MAIL_FOLDER
+        value: INBOX
       - key: DEFAULT_FROM_EMAIL
         sync: false  # narudzbe@opremazaribolov.ba
       - key: ORDER_NOTIFICATION_EMAIL

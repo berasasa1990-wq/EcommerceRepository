@@ -3648,6 +3648,7 @@ function initArticleScanner() {
 
     function syncValidateGate() {
         var complete = queue.length > 0 && doneCount() === queue.length && !editingKey;
+        root.classList.toggle('is-pick-complete', complete);
         if (els.validDone) els.validDone.hidden = !complete;
         if (els.form) els.form.hidden = !complete;
         if (els.valid) els.valid.disabled = !complete;

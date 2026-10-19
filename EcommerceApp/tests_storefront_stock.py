@@ -43,15 +43,32 @@ class StorefrontWarehouseStockTests(TestCase):
         self.assertEqual(stock_on_hand(self.product, variant), 0)
         self.assertEqual(stock_on_hand(self.product, other), 4)
 
-    def test_multiple_cards_use_two_queries(self):
-        with self.assertNumQueries(2):
-            storefront_products([self.product])
+    def test_multiple_cards_use_four_queries_including_prices(self):
+        other = Product.objects.create(naziv='Another card', cijena=20)
+        with self.assertNumQueries(4):
+            cards = storefront_products([self.product, other])
+            self.assertEqual([p.katalog_prikazna_cijena for p in cards], [10, 20])
+
+    def test_cached_card_uses_current_price_without_mutating_cache(self):
+        from decimal import Decimal
+        Product.objects.filter(pk=self.product.pk).update(cijena=Decimal('33.90'))
+        card = storefront_products([self.product])[0]
+        self.assertEqual(card.katalog_prikazna_cijena, Decimal('33.90'))
+        self.assertEqual(self.product.cijena, 10)
+        Product.objects.filter(pk=self.product.pk).update(akcijska_cijena=Decimal('29.90'))
+        self.assertEqual(storefront_products([self.product])[0].katalog_prikazna_cijena, Decimal('29.90'))
+        Product.objects.filter(pk=self.product.pk).update(akcijska_cijena=None)
+        self.assertEqual(storefront_products([self.product])[0].katalog_prikazna_cijena, Decimal('33.90'))
 
     def test_template_card_displays_live_stock_from_cached_product(self):
         from django.template.loader import render_to_string
         stock = WarehouseStock.objects.create(product=self.product, location=self.location, kolicina=7)
+        Product.objects.filter(pk=self.product.pk).update(cijena='33.90')
         html = render_to_string('partials/home_catalog_grid.html', {'products': [self.product]})
-        self.assertIn('7 kom', html)
+        self.assertIn('data-in-stock="1"', html)
+        self.assertIn('Na stanju · 7 kom', html)
+        self.assertIn('data-default-price="33.90"', html)
+        self.assertIn('class="price-current">33.90', html)
         stock.kolicina = 0
         stock.save()
         html = render_to_string('partials/home_catalog_grid.html', {'products': [self.product]})

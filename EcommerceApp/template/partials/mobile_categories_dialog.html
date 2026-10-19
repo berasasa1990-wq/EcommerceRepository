@@ -7,12 +7,12 @@
     <div class="mobile-categories-dialog__scroll">
         {% for cat in nav_categories %}
         <details class="mobile-category-entry" data-category-entry>
-            <summary>{% if cat.ikonica_pocetna %}<img src="{{ cat.ikonica_pocetna.url }}" alt="" width="32" height="32">{% else %}{% include 'partials/nav_category_icon.html' with naziv=cat.naziv slug=cat.slug %}{% endif %}<span>{{ cat.naziv }}</span></summary>
+            <summary>{% if cat.ikonica_pocetna %}<img src="{{ cat.ikonica_pocetna.url }}" alt="" width="32" height="32">{% else %}{% include 'partials/nav_category_icon.html' with naziv=cat.naziv slug=cat.slug %}{% endif %}<span>{{ cat.naziv }} <span class="category-available-count">({{ cat.available_product_count }})</span></span></summary>
             <div class="mobile-category-entry__children">
                 <a class="mobile-category-entry__all" href="{{ cat.get_absolute_url }}?all=1"><span aria-hidden="true">→</span> Sve iz kategorije {{ cat.naziv }}</a>
                 {% for sub in cat.podkategorije.all %}
-                <a href="{{ sub.get_absolute_url }}">{{ sub.naziv }}</a>
-                {% for child in sub.podkategorije.all %}<a class="mobile-category-entry__nested" href="{{ child.get_absolute_url }}">{{ child.naziv }}</a>{% endfor %}
+                <a href="{{ sub.get_absolute_url }}">{{ sub.naziv }} <span class="category-available-count">({{ sub.available_product_count }})</span></a>
+                {% for child in sub.podkategorije.all %}<a class="mobile-category-entry__nested" href="{{ child.get_absolute_url }}">{{ child.naziv }} <span class="category-available-count">({{ child.available_product_count }})</span></a>{% endfor %}
                 {% endfor %}
             </div>
         </details>

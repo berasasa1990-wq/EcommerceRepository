@@ -74,7 +74,7 @@
     {% endif %}
 
     <div class="product-card__footer{% if product.pakovanje_uz_cijenu_kartica %} product-card__footer--pack{% endif %}">
-        <p class="reference-card-stock{% if not product.na_stanju %} is-out{% endif %}">{% if product.na_stanju %}<span>Na stanju</span>{% else %}Nije na stanju{% endif %}</p>
+        <p class="reference-card-stock{% if not product.na_stanju %} is-out{% endif %}">{% if product.na_stanju %}<span>Na stanju · {{ product.stanje }} kom</span>{% else %}Nije na stanju{% endif %}</p>
         <div class="product-card__price-row">
             <div class="product-card__price-block">
                 {% if card_variations|length > 1 %}

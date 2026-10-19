@@ -1,0 +1,13 @@
+/* Five product cards per row outside the home page. */
+@media (min-width:1025px){
+ html body:not(.home-mobile-reference) main .product-grid,
+ html body:not(.home-mobile-reference) main .product-catalog .product-grid--catalog,
+ html body:not(.home-mobile-reference) main .product-catalog .catalog-layout:not(.catalog-layout--full) .product-grid--catalog,
+ html body.product-mobile-reference main .pd-bottom-related .pd-related-grid{
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:16px;
+ }
+ /* Related cards need the full page width to fit five readable columns. */
+ html body.product-mobile-reference main .pd-bottom-layout{grid-template-columns:minmax(0,1fr)}
+}

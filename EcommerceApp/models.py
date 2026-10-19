@@ -7304,3 +7304,26 @@ class HeroBanner(models.Model):
 
     def __str__(self):
         return self.hero_opis[:70]
+
+
+class CompanyPayment(models.Model):
+    source_key = models.CharField(max_length=64, unique=True)
+    source_subject = models.CharField(max_length=998, blank=True)
+    source_uid = models.CharField(max_length=32, blank=True)
+    source_verified = models.BooleanField(default=False, db_index=True)
+    date = models.DateTimeField(null=True, blank=True)
+    payer = models.CharField(max_length=160, db_index=True)
+    amount = models.DecimalField(max_digits=16, decimal_places=2)
+    currency = models.CharField(max_length=3, blank=True)
+    filter_matches = models.JSONField(default=dict, blank=True)
+    imported_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-date', '-pk')
+        verbose_name = 'Uplata firme'
+        verbose_name_plural = 'Uplate firmi'
+
+
+class CompanyStatementImportState(models.Model):
+    key = models.CharField(max_length=64, primary_key=True)
+    last_uid = models.PositiveBigIntegerField(default=0)

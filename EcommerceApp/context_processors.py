@@ -2,14 +2,14 @@ import re
 from urllib.parse import quote
 
 from django.conf import settings
-from django.db.models import Prefetch
+from django.db.models import Count, Prefetch
 from django.templatetags.static import static
 
 from .cart import Cart
 from .cart_recovery import get_active_cart_recovery_alert
 from .social_proof import build_social_proof_context
 from .category_visibility import filter_categories_with_products, get_category_ids_with_products
-from .models import Akcija, Category, SiteSettings
+from .models import Akcija, Category, Product, SiteSettings
 from .online_gift import active_reward_label
 from .upsell import get_active_upsell_offer
 from .utils.seo import absolute_url
@@ -107,6 +107,30 @@ def _is_light_request_path(path: str) -> bool:
     return False
 
 
+def _attach_available_category_counts(categories):
+    """Count available articles once per category, including its descendants."""
+    parent_map = dict(Category.objects.values_list('pk', 'roditelj_id'))
+    counts = {}
+    rows = Product.objects.filter(
+        aktivan=True, sakriven_do_stanja=False, na_stanju=True,
+        stanje__gt=0, kategorija_id__isnull=False,
+    ).values('kategorija_id').annotate(total=Count('pk'))
+    for row in rows:
+        current, visited = row['kategorija_id'], set()
+        while current and current not in visited:
+            visited.add(current)
+            counts[current] = counts.get(current, 0) + row['total']
+            current = parent_map.get(current)
+
+    # The menu prefetches three levels; avoid loading relations beyond them.
+    for category in categories:
+        category.available_product_count = counts.get(category.pk, 0)
+        for sub in category.podkategorije.all():
+            sub.available_product_count = counts.get(sub.pk, 0)
+            for child in sub.podkategorije.all():
+                child.available_product_count = counts.get(child.pk, 0)
+
+
 def _cached_popup_akcije():
     """Lista aktivnih popup akcija — cache 30s (filter po useru ostaje u Pythonu)."""
     from django.core.cache import cache
@@ -180,6 +204,7 @@ def nav_categories(request):
         }
 
     categories = _build_nav_categories()
+    _attach_available_category_counts(categories)
 
     cart = Cart(request)
 

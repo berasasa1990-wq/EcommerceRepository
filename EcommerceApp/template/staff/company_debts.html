@@ -1,24 +1,35 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block page_title %}<title>Dugovanja Firmi — Admin panel</title>{% endblock %}
 {% block body_class %}staff-blue-page staff-shell-page catalog-header-reference company-debts-page{% endblock %}
-{% block extra_css %}
-<style>
-body.company-debts-page{background:#f2f7fb;color:#243746}body.company-debts-page main{width:100%!important;max-width:none!important;margin:0!important;padding:0!important}.company-debts{width:100%;padding:28px 40px 48px;box-sizing:border-box}.company-debts__heading{margin-bottom:24px}.company-debts a{color:#006a96}.company-debts h1{font-size:30px;margin:16px 0 8px}.company-debts__heading p{color:#617484;margin:0;line-height:1.5}.company-debts__status{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:18px 22px;border:1px solid #d5e4ee;border-radius:12px;background:#fff;margin-bottom:22px}.company-debts__status span{padding:6px 10px;border-radius:20px;background:#fff4df;color:#835500;font-size:13px;font-weight:650}.company-debts__status p{margin:0;color:#617484}.company-debts__empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px;padding:36px 22px;border:1px solid #d5e4ee;border-radius:14px;background:#fff;text-align:center}.company-debts__empty svg{width:48px;height:48px;color:#0094cd;margin-bottom:16px}.company-debts__empty h2{font-size:21px;margin:0 0 10px}.company-debts__empty p{color:#617484;max-width:540px;line-height:1.6;margin:0}@media(max-width:767px){.company-debts{padding:20px 16px 32px}.company-debts h1{font-size:26px}.company-debts__status{padding:16px}}
-</style>
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/company-debts.css' %}?v=20261019-company-totals">{% endblock %}
 {% block content %}
 <section class="company-debts">
     <header class="company-debts__heading">
-        <a href="{% url 'staff_admin_panel' %}">← Nazad na admin panel</a>
-        <h1>Dugovanja Firmi</h1>
-        <p>Računi, poruke dobavljača i pregled obaveza prema firmama.</p>
+        <div><a href="{% url 'staff_admin_panel' %}">← Admin panel</a><h1>Dugovanja Firmi</h1><p>Pregled primljenih uplata na račun Carpologije.</p></div>
     </header>
-    <div class="company-debts__status"><strong>carpologijabh@gmail.com</strong><span>Email nije povezan</span><p>Automatsko preuzimanje poruka još nije uključeno.</p></div>
-    <div class="company-debts__empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
-        <h2>Još nema učitanih poruka</h2>
-        <p>Nakon povezivanja emaila, ovdje će biti prikazane poruke i prilozi dobavljača.</p>
-    </div>
+    <div class="company-debts__list-heading"><h2>Uplate po uplatiteljima</h2><span>{{ payments|length }} uplata · najnovije prvo</span></div>
+    {% if payment_groups %}
+    <div class="company-debts__table-wrap" id="companyPaymentGroups"><table class="company-debts__table">
+        <thead><tr><th>Uplatilac / naziv firme</th><th>Broj uplata</th><th>Ukupno uplata</th></tr></thead>
+        <tbody>{% for group in payment_groups %}<tr>
+            <td>{{ group.company }}</td><td>{{ group.payments|length }}</td>
+            <td><button type="button" class="company-debts__total" data-payments-dialog="companyPayments{{ forloop.counter }}" aria-haspopup="dialog" aria-controls="companyPayments{{ forloop.counter }}">{{ group.total|floatformat:2 }} {{ group.currency }} <span aria-hidden="true">↗</span></button></td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+    {% for group in payment_groups %}
+    <dialog class="company-debts__dialog" id="companyPayments{{ forloop.counter }}" aria-labelledby="companyPaymentsTitle{{ forloop.counter }}">
+        <header><div><h2 id="companyPaymentsTitle{{ forloop.counter }}">{{ group.company }}</h2><p>Sve uplate · najnovije prvo</p></div><form method="dialog"><button type="submit" aria-label="Zatvori pregled uplata">×</button></form></header>
+        <div class="company-debts__dialog-body"><table class="company-debts__table">
+            <thead><tr><th>Izvod primljen</th><th>Uplata</th></tr></thead>
+            <tbody>{% for payment in group.payments %}<tr><td>{{ payment.date|date:'d.m.Y.'|default:'—' }}</td><td>{{ payment.amount|floatformat:2 }} {{ payment.currency }}</td></tr>{% endfor %}</tbody>
+            <tfoot><tr><th>Ukupno</th><td><strong>{{ group.total|floatformat:2 }} {{ group.currency }}</strong></td></tr></tfoot>
+        </table></div>
+    </dialog>
+    {% endfor %}
+    {% else %}<div class="company-debts__empty"><h2>Nema pronađenih uplata</h2><p>Nema sačuvanih uplata.</p></div>{% endif %}
 </section>
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/company-payments.js' %}?v=20261019-totals" defer></script>{% endblock %}

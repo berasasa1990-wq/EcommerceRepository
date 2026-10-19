@@ -21,6 +21,15 @@ class EcommerceappConfig(AppConfig):
 
     def ready(self):
         connection_created.connect(_configure_sqlite)
+
+        # Development autoreloader has a single serving child. Production uses
+        # a separate worker process from scripts/start_web.sh.
+        import os
+        import sys
+        if 'runserver' in sys.argv and (os.environ.get('RUN_MAIN') == 'true' or '--noreload' in sys.argv):
+            import threading
+            from .company_payments_worker import run_worker
+            threading.Thread(target=run_worker, name='company-payments', daemon=True).start()
         from django.contrib.auth.signals import user_logged_in
         from django.utils import timezone
         from .models import UserProfile

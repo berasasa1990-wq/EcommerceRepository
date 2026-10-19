@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% block body_class %}catalog-header-reference order-success-view{% endblock %}
 {% block extra_css %}{% if order.card_payment %}<link rel="stylesheet" href="{% static 'css/monri-payment.css' %}?v=20261005">{% endif %}{% endblock %}
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}

@@ -612,7 +612,7 @@
         <aside class="pd-bottom-related" aria-label="Povezani proizvodi">
             <h2>Povezani proizvodi</h2>
             <div class="product-catalog pd-related-grid">
-                {% for item in related_products|slice:':3' %}
+                {% for item in related_products|slice:':5' %}
                 {% include 'partials/product_catalog_card.html' with product=item home_reference_card=True hide_variations=True %}
                 {% endfor %}
             </div>

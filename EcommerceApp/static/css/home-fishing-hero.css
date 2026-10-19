@@ -12,6 +12,7 @@
 .fishing-hero__primary:hover{filter:brightness(1.12)}
 .fishing-hero__primary:focus-visible,.fishing-hero__link:focus-visible{outline:3px solid #ffbc86;outline-offset:-4px}
 .fishing-hero__visual{position:relative;min-width:0;background:transparent;pointer-events:none}
+.fishing-hero__visual::before{content:"";position:absolute;z-index:1;left:0;top:14%;bottom:14%;width:2px;border-radius:999px;background:linear-gradient(180deg,transparent,#ffae5570 22%,#ff8700 50%,#ffae5570 78%,transparent);box-shadow:0 0 16px #ff870025;pointer-events:none}
 .fishing-hero__image{position:absolute;inset:0;display:block;width:100%;height:100%;padding:24px;box-sizing:border-box;object-fit:contain}
 .fishing-hero__link{position:absolute;inset:0;z-index:3;border-radius:inherit}
 html body.home-mobile-reference main{padding-top:0!important;margin-top:0!important}
@@ -25,7 +26,8 @@ html body.home-mobile-reference main>.fishing-hero-slider{order:-1;margin-top:0!
  .fishing-hero__description{font-size:15px;line-height:1.6;margin-bottom:24px;max-width:90%}
  .fishing-hero__primary{font-size:18px;min-height:54px;padding:12px 24px;gap:28px;border-radius:10px}
  .fishing-hero__primary svg{width:25px;height:25px}
- .fishing-hero__visual{padding:0 22px 22px}
+ .fishing-hero__visual{padding:22px 22px 22px}
+ .fishing-hero__visual::before{top:0;bottom:auto;left:12%;right:12%;width:auto;height:2px;background:linear-gradient(90deg,transparent,#ffae5570 22%,#ff8700 50%,#ffae5570 78%,transparent)}
  .fishing-hero__image{position:static;width:100%;height:auto;max-height:400px;padding:0;object-fit:contain}
 }
 

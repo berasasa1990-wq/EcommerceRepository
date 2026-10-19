@@ -13,10 +13,10 @@
     <link rel="icon" type="image/png" sizes="128x128" href="{% static 'img/carpologija-favicon.png' %}">
     <link rel="apple-touch-icon" sizes="128x128" href="{% static 'img/carpologija-favicon.png' %}">
     {% if scratch_game_immediate %}
-    <link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.2.7-product-choice">
+    <link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.2.9-no-white-frame">
     {% else %}
-    <link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.2.7-product-choice" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.2.7-product-choice"></noscript>
+    <link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.2.9-no-white-frame" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.2.9-no-white-frame"></noscript>
     {% endif %}
     <link rel="preconnect" href="https://media.opremazaribolov.ba">
     <meta name="csrf-token" content="{{ csrf_token }}">
@@ -363,7 +363,8 @@
     <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261019-multiple-hero">
     {% endif %}
     {% block warehouse_theme_css %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261018-larger-site-logo">
+    <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261019-category-counts">
+    <link rel="stylesheet" href="{% static 'css/product-grid-desktop.css' %}?v=20261019-five-columns" media="(min-width: 1025px)">
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="shared-site-header {% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
@@ -572,8 +573,12 @@
                             {% for nav_cat in nav_categories %}
                             <li class="cats-dropdown__item{% if nav_cat.podkategorije.all %} cats-dropdown__item--has-sub{% endif %}{% if category %}{% if nav_cat.pk == category.pk or category.roditelj_id == nav_cat.pk or category.roditelj and category.roditelj.roditelj_id == nav_cat.pk %} is-open is-current{% endif %}{% endif %}">
                                 <a href="{{ nav_cat.get_absolute_url }}" class="cats-dropdown__link"{% if nav_cat.podkategorije.all %} data-cats-toggle="1" aria-expanded="{% if category %}{% if nav_cat.pk == category.pk or category.roditelj_id == nav_cat.pk or category.roditelj and category.roditelj.roditelj_id == nav_cat.pk %}true{% else %}false{% endif %}{% else %}false{% endif %}"{% endif %}>
+                                    {% if nav_cat.ikonica_pocetna %}
+                                    <img class="cats-dropdown__category-image" src="{{ nav_cat.ikonica_pocetna.url }}" alt="" width="28" height="28" loading="lazy" decoding="async">
+                                    {% else %}
                                     {% include 'partials/nav_category_icon.html' with naziv=nav_cat.naziv slug=nav_cat.slug %}
-                                    <span class="cats-dropdown__name">{{ nav_cat.naziv }}</span>
+                                    {% endif %}
+                                    <span class="cats-dropdown__name">{{ nav_cat.naziv }} <span class="category-available-count">({{ nav_cat.available_product_count }})</span></span>
                                     {% if nav_cat.podkategorije.all %}
                                     <span class="cats-dropdown__chevron" aria-hidden="true">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -590,7 +595,7 @@
                                     </li>
                                     {% for sub in nav_cat.podkategorije.all %}
                                     <li>
-                                        <a href="{{ sub.get_absolute_url }}"{% if category and category.pk == sub.pk %} class="is-current"{% endif %}>{{ sub.naziv }}</a>
+                                        <a href="{{ sub.get_absolute_url }}"{% if category and category.pk == sub.pk %} class="is-current"{% endif %}>{{ sub.naziv }} <span class="category-available-count">({{ sub.available_product_count }})</span></a>
                                     </li>
                                     {% endfor %}
                                 </ul>
@@ -858,7 +863,7 @@
         <button type="button" id="scratchContinue" class="scratch-game__continue" hidden>NASTAVI KUPOVINU</button>
       </div>
     </section>
-    <script src="{% static 'js/scratch-game.js' %}?v=1.2.7-product-choice" defer></script>
+    <script src="{% static 'js/scratch-game.js' %}?v=1.2.9-no-white-frame" defer></script>
     <script>
       if ('serviceWorker' in navigator && window.isSecureContext) {
         window.addEventListener('load', function () {

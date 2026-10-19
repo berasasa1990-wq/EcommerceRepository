@@ -93,3 +93,20 @@
 .pk-reference .pk-shortage-panel { max-width: 900px; margin: 0 auto 20px; padding: 16px; border: 1px solid #e1e7ef; border-radius: 12px; background: #fff; }
 .pk-shortage-panel h2 { font-size: 17px; margin: 0 0 10px; }
 .pk-shortage-panel li, .pk-shortage-panel p { font-size: 14px; line-height: 1.5; color: #64748b; }
+
+/* Completion stays in the document flow, clear of the warehouse navigation. */
+.is-picking-detail-reference .pk-reference .pk-bar-valid{position:static;inset:auto;display:flex;align-items:center;justify-content:space-between;gap:24px;width:100%;max-width:none;box-sizing:border-box;margin:20px 0;padding:24px;border:1px solid #b9e4d2;border-radius:16px;background:#fff;box-shadow:0 6px 24px #173e3020}
+.pk-complete-summary{display:flex;align-items:center;gap:16px;min-width:0}
+.pk-complete-check{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;border-radius:50%;background:#e8f7ee;color:#16804d;font-size:27px;font-weight:750}
+.pk-complete-summary h2{margin:0 0 6px;color:#172f4d;font-size:22px;line-height:1.25}
+.pk-complete-summary p{margin:0;color:#617891;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.is-picking-detail-reference .pk-reference .pk-bar-valid .pk-valid{position:static;flex:0 0 auto;min-width:180px;min-height:54px;margin:0;padding:14px 32px;border:0;border-radius:12px;background:var(--staff-action-gradient,linear-gradient(110deg,#0094cd,#007cae));color:#fff;font-size:18px;font-weight:750;cursor:pointer}
+.is-picking-detail-reference .pk-reference.is-pick-complete #pkViewNow>.pk-heading-row,.is-picking-detail-reference .pk-reference.is-pick-complete #pkOpenEmpty{display:none}
+.is-picking-detail-reference .pk-reference.is-pick-complete .pk-bar-prog{margin:0;padding:14px 18px;border-radius:12px;background:#e8f7ee;color:#16804d;text-align:center;font-weight:700}
+@media(max-width:600px){
+ .is-picking-detail-reference .pk-reference .pk-bar-valid{flex-direction:column;align-items:stretch;gap:20px;padding:20px 16px;margin:16px 0}
+ .pk-complete-summary{align-items:flex-start;gap:12px}
+ .pk-complete-summary h2{font-size:19px}
+ .pk-complete-check{flex-basis:40px;width:40px;height:40px;font-size:23px}
+ .is-picking-detail-reference .pk-reference .pk-bar-valid .pk-valid{width:100%;min-width:0;min-height:56px}
+}

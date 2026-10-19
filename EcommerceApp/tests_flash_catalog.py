@@ -11,6 +11,16 @@ from .cart import Cart
 
 
 class FlashCatalogPriceTests(TestCase):
+    def test_cached_storefront_offer_is_refreshed(self):
+        from .storefront_stock import storefront_products
+        cached = _prefetch_product_cards(Product.objects.filter(pk=self.product.pk)).get()
+        self.assertEqual(cached.prikazna_cijena, Decimal('80'))
+        Akcija.objects.filter(pk=self.offer.pk).update(aktivan=False)
+        self.assertEqual(storefront_products([cached])[0].prikazna_cijena, Decimal('100'))
+        self.assertEqual(cached.prikazna_cijena, Decimal('80'))
+        Akcija.objects.filter(pk=self.offer.pk).update(aktivan=True, popust_postotak=30)
+        self.assertEqual(storefront_products([cached])[0].prikazna_cijena, Decimal('70'))
+
     def setUp(self):
         self.product = Product.objects.create(naziv='Odabrani', cijena=100, aktivan=True, na_stanju=True, stanje=20)
         self.other = Product.objects.create(naziv='Drugi', cijena=80, aktivan=True, na_stanju=True, stanje=20)

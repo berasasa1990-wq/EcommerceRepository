@@ -51,6 +51,8 @@ html body.shared-site-header #header .ref-desktop-nav a{font-size:13px!important
 }
 
 /* Larger main shop logo across storefront pages. */
+.category-available-count{font-size:.85em;font-weight:500;opacity:.65;white-space:nowrap}
+.cats-dropdown__link>.cats-dropdown__category-image{display:block;width:28px;height:28px;flex:0 0 28px;object-fit:contain}
 html body #header .logo-brand .logo-image{width:100%!important;max-width:210px!important;max-height:64px!important;height:auto!important;object-fit:contain;object-position:left center}
 @media(min-width:1025px){
  html body #header .logo-brand .logo-image{max-width:240px!important;max-height:100px!important}

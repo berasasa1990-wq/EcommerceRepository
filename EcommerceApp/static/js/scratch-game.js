@@ -18,9 +18,9 @@
 
   function drawFoil(context, width, height) {
     const foil = context.createLinearGradient(0, 0, width, height);
-    foil.addColorStop(0, '#ffffff'); foil.addColorStop(.18, '#faf9f5');
-    foil.addColorStop(.36, '#f2efe7'); foil.addColorStop(.57, '#faf8f2');
-    foil.addColorStop(.76, '#ffffff'); foil.addColorStop(1, '#f5f2eb');
+    foil.addColorStop(0, '#151719'); foil.addColorStop(.18, '#25282b');
+    foil.addColorStop(.36, '#333639'); foil.addColorStop(.57, '#25282b');
+    foil.addColorStop(.76, '#1c1e20'); foil.addColorStop(1, '#151719');
     context.globalCompositeOperation = 'source-over';
     context.fillStyle = foil;
     context.fillRect(0, 0, width, height);
@@ -30,7 +30,7 @@
       context.fillRect(Math.random() * width, Math.random() * height, 1 + Math.random() * 3, 1);
     }
     context.globalAlpha = 1;
-    context.fillStyle = '#8f7439';
+    context.fillStyle = '#ff9500';
     context.font = '900 22px sans-serif';
     context.textAlign = 'center';
     context.fillText('GREBI OVDJE', width / 2, height / 2 + 8);

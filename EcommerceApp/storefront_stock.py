@@ -1,6 +1,6 @@
 """Live warehouse availability shared by storefront rendering and cart limits."""
 from copy import copy
-from .models import WarehouseStock, ProductVariation
+from .models import AkcijaFlashLine, Product, WarehouseStock, ProductVariation
 
 
 def warehouse_quantities(products):
@@ -29,13 +29,21 @@ def sku_quantity(product, variation=None):
 def storefront_products(products):
     """Return fresh presentation copies, never overwrite persisted catalog fields.
 
-    Cached home-page product objects are deliberately not trusted for quantities.
-    Stocks and variants are read in batches, regardless of the number of cards.
+    Cached home-page objects are not trusted for quantities or prices.
+    Current prices, offers, stocks and variants are read in batches.
     """
     products = list(products)
     if not products:
         return []
     ids = [product.pk for product in products]
+    prices = {
+        row['pk']: row for row in Product.objects.filter(pk__in=ids).values(
+            'pk', 'cijena', 'akcijska_cijena', 'akcija_do',
+        )
+    }
+    offers = {}
+    for line in AkcijaFlashLine.objects.filter(product_id__in=ids, akcija__aktivan=True).select_related('akcija'):
+        offers.setdefault(line.product_id, []).append(line)
     tracked, quantities = warehouse_quantities(ids)
     variants = {}
     for variant in ProductVariation.objects.filter(artikal_id__in=ids).order_by('redoslijed', 'id'):
@@ -44,6 +52,10 @@ def storefront_products(products):
     for original in products:
         product = copy(original)
         product._prefetched_objects_cache = dict(getattr(original, '_prefetched_objects_cache', {}))
+        for field, value in prices.get(product.pk, {}).items():
+            if field != 'pk':
+                setattr(product, field, value)
+        product._prefetched_objects_cache['akcija_flash_lines'] = offers.get(product.pk, [])
         own_variants = variants.get(product.pk, [])
         managed = product.pk in tracked or bool(product.magacin_sync_at)
         if product.is_set:

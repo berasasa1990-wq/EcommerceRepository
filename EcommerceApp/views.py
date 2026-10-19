@@ -6775,7 +6775,32 @@ def staff_admin_panel(request):
 @user_passes_test(_superuser_required)
 @require_GET
 def staff_company_debts(request):
-    return render(request, 'staff/company_debts.html', _base_context())
+    from .models import CompanyPayment
+    from .company_payment_filters import display_payer_name
+
+    payments = CompanyPayment.objects.filter(amount__gt=0, source_verified=True, currency__in=('BAM', 'EUR', 'USD')).exclude(source_subject__icontains='cms')
+    from decimal import Decimal
+    grouped = {}
+    visible_payments = []
+    for payment in payments.order_by(F('date').desc(nulls_last=True), '-pk'):
+        company = display_payer_name(payment.payer)
+        if company is None:
+            continue
+        visible_payments.append(payment)
+        key = (company, payment.currency)
+        if key not in grouped:
+            grouped[key] = {'company': company, 'currency': payment.currency,
+                            'total': Decimal('0.00'), 'payments': []}
+        grouped[key]['total'] += payment.amount
+        grouped[key]['payments'].append(payment)
+    payment_groups = sorted(grouped.values(), key=lambda group: (group['company'].casefold(), group['currency']))
+    context = {
+        **_base_context(),
+        'payments': visible_payments, 'payment_groups': payment_groups,
+    }
+    response = render(request, 'staff/company_debts.html', context)
+    response['Cache-Control'] = 'private, no-store'
+    return response
 
 
 @login_required(login_url='login')
