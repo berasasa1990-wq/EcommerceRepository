@@ -120,3 +120,17 @@ body.home-mobile-reference .seo-text-block__toggle{color:#e04f00}
 
 /* Light gray category tiles on desktop and mobile. */
 html body.home-mobile-reference #homeCategoryTrack>a{background:#f3f3f3!important;border:1px solid #e7e7e7!important}
+/* Consistent breathing room at both edges of the home page. */
+html body.home-mobile-reference main,
+html body.home-mobile-reference.cats-sidebar-open main {
+    box-sizing: border-box;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+}
+@media (min-width: 1025px) {
+    html body.home-mobile-reference main,
+    html body.home-mobile-reference.cats-sidebar-open main {
+        padding-left: clamp(28px, 2.5vw, 64px) !important;
+        padding-right: clamp(28px, 2.5vw, 64px) !important;
+    }
+}

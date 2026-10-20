@@ -1,0 +1,33 @@
+{% load static l10n %}
+<dialog class="post-offer" id="postOrderOffer" aria-labelledby="postOfferTitle" data-expires="{{ post_order_offer.expires_ms|unlocalize }}" data-base-total="{{ order.ukupno|unlocalize }}" data-url="{% url 'post_order_add' order.broj %}">
+    <button type="button" class="post-offer__close" data-offer-close aria-label="Zatvori">×</button>
+    <header class="post-offer__header"><span class="post-offer__check" aria-hidden="true">✓</span><h2 id="postOfferTitle">Vaša narudžba je uspješno zaprimljena!</h2><p>Broj narudžbe: <strong>#{{ order.broj }}</strong></p></header>
+    <div class="post-offer__banner"><div><h3>Specijalna ponuda samo za vas!</h3><p><strong>Dodajte još artikala po posebnim cijenama, bez dodatne dostave!</strong></p><p>Ova ponuda važi samo uz vašu upravo kreiranu narudžbu.</p></div><div class="post-offer__timer">Ponuda važi još:<strong data-offer-timer>15:00</strong><small>minuta : sekundi</small></div></div>
+    <div class="post-offer__grid">
+    {% for row in post_order_offer.rows %}
+        <article class="post-offer__product" data-offer-product data-price="{{ row.price|unlocalize }}">
+            <div class="post-offer__media">{% if row.product.prikazna_slika %}<img src="{{ row.product.prikazna_slika.url }}" alt="{{ row.product.naziv }}" width="240" height="190">{% else %}<span>Slika nije dostupna</span>{% endif %}</div>
+            {% if row.percent %}<b class="post-offer__badge">−{{ row.percent|floatformat:"-2" }}%</b>{% endif %}
+            <h3><a href="{{ row.product.get_absolute_url }}">{{ row.product.naziv }}</a></h3>
+            {% if row.variations %}<label class="post-offer__variation">Odaberite varijaciju<select {% if row.added %}disabled{% endif %} data-offer-variation>{% for v in row.variations %}<option value="{{ v.id }}" data-regular="{{ v.regular }}" data-price="{{ v.price }}">{{ v.name }}</option>{% endfor %}</select></label>{% endif %}
+            <div class="post-offer__prices"><div class="post-offer__old-price" {% if not row.percent %}hidden{% endif %}><small>Stara cijena</small><del data-offer-regular>{{ row.regular|floatformat:2 }} KM</del></div><div class="post-offer__new-price"><small>Nova cijena</small><strong data-offer-price>{{ row.price|floatformat:2 }} KM</strong></div></div>
+            <button type="button" class="post-offer__add" data-offer-add="{{ row.line.pk }}"{% if row.added %} data-added="1"{% endif %} {% if row.added %}disabled{% endif %}>{% if row.added %}✓ Dodano u narudžbu{% else %}+ Dodaj u narudžbu{% endif %}</button>
+            <p class="post-offer__feedback" role="status" aria-live="polite"></p>
+        </article>
+    {% endfor %}
+    </div>
+    <div class="post-offer__total" aria-live="polite">
+        <p>Iznos narudžbe <strong data-offer-base>{{ order.ukupno|floatformat:2 }} KM</strong></p>
+        <div class="post-offer__selected" data-offer-selected hidden><p>+ Dodatni artikli</p><ul data-offer-selected-items></ul></div>
+        <p class="post-offer__grand-total">Novi ukupni iznos <strong data-offer-total>{{ order.ukupno|floatformat:2 }} KM</strong></p>
+        <small>Bez dodatnog troška dostave</small>
+    </div>
+    <div class="post-offer__actions">
+        <button type="button" data-offer-finish class="post-offer__finish" disabled>Potvrdi dodavanje u istu narudžbu</button>
+        <p data-offer-confirm-status role="status" aria-live="polite"></p>
+        <button class="post-offer__skip" type="button" data-offer-close>Ne želim dodavati</button>
+    </div>
+    <p class="post-offer__expired" role="status" hidden>Ponuda je istekla. Vaša narudžba ostaje potvrđena.</p>
+    <form hidden>{% csrf_token %}</form>
+</dialog>
+<script src="{% static 'js/post-order-offer.js' %}?v=20261020-selected-label" defer></script>

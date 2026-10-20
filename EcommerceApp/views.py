@@ -120,100 +120,14 @@ self.addEventListener('activate', event => event.waitUntil(self.clients.claim())
     return response
 
 
-@require_GET
-def scratch_status(request):
-    from .online_gift import scratch_status as get_scratch_status
-    return JsonResponse({'eligible': get_scratch_status(request)})
 
 
-@require_POST
-def scratch_claim(request):
-    from .online_gift import scratch_claim as create_scratch_claim
-    claim, created = create_scratch_claim(request)
-    if claim is None:
-        return JsonResponse({'ok': False, 'detail': 'Greb-Greb trenutno nije aktivan.'}, status=403)
-    reward = request.session.get('online_gift_reward') or {}
-    product_id = reward.get('product_id')
-    product = Product.objects.filter(pk=product_id, aktivan=True, na_stanju=True).first() if product_id else None
-    product_image = ''
-    if product and product.prikazna_slika:
-        product_image = product.prikazna_slika.url
-    product_price = Decimal('0.00')
-    product_regular_price = Decimal('0.00')
-    if product:
-        percent = Decimal(str(reward.get('percent') or 0))
-        # Greb-Greb popust se uvijek računa od redovne cijene, bez obzira na
-        # eventualnu tekuću akciju artikla.
-        product_regular_price = Decimal(str(product.bazna_cijena))
-        product_price = (product_regular_price * (Decimal('1') - percent / Decimal('100'))).quantize(Decimal('0.01'))
-    return JsonResponse({'ok': True, 'claim_id': claim.pk, 'created': created, 'won': claim.won,
-        'label': reward.get('label') or 'Više sreće sljedeći put',
-        'minimum': reward.get('minimum') or '0',
-        'saved_to_account': bool(request.user.is_authenticated and claim.user_id == request.user.pk),
-        'product_offer': reward.get('scratch_kind') == 'product_discount' and bool(product),
-        'product_name': product.naziv if product else '',
-        'product_image': product_image,
-        'product_pack': product.pakovanje_label if product and product.je_pakovanje else '',
-        'product_discount': reward.get('percent') or '0',
-        'reward_percent': reward.get('percent') or '0',
-        'coupon_code': reward.get('coupon_code') or '',
-        'product_price': str(product_price),
-        'product_regular_price': str(product_regular_price)})
 
 
-@require_POST
-def scratch_event(request):
-    from .online_gift import SCRATCH_CAMPAIGN_NAME
-    event = request.POST.get('event')
-    if event not in ('shown', 'revealed'):
-        return JsonResponse({'ok': False}, status=400)
-    try:
-        claim_id = int(request.POST.get('claim_id', ''))
-    except (TypeError, ValueError):
-        return JsonResponse({'ok': False}, status=400)
-    session_key = request.session.session_key
-    if not session_key:
-        return JsonResponse({'ok': False}, status=404)
-    claims = OnlineGiftClaim.objects.filter(
-        pk=claim_id, session_key=session_key, campaign__naziv=SCRATCH_CAMPAIGN_NAME,
-        scratch_tracking_enabled=True,
-    )
-    if not claims.exists():
-        return JsonResponse({'ok': False}, status=404)
-    now = timezone.now()
-    claims.filter(scratch_shown_at__isnull=True).update(scratch_shown_at=now)
-    if event == 'revealed':
-        claims.filter(scratch_revealed_at__isnull=True).update(scratch_revealed_at=now)
-    return JsonResponse({'ok': True})
 
 
-@require_POST
-def scratch_add_product(request):
-    from .online_gift import add_scratch_discount_product
-    product, error = add_scratch_discount_product(request)
-    if error:
-        return JsonResponse({'ok': False, 'detail': error}, status=400)
-    return JsonResponse({'ok': True, 'product_name': product.naziv})
 
 
-@require_POST
-def scratch_add_product_to_order(request):
-    from .online_gift import add_scratch_discount_product_to_order
-    from .magacin import MagacinError
-    try:
-        product, order, error = add_scratch_discount_product_to_order(request)
-    except MagacinError as exc:
-        return JsonResponse({'ok': False, 'detail': str(exc)}, status=400)
-    except Exception:
-        logger.exception('Greb-Greb dodavanje nije uspjelo: claim=%s', request.session.get('sretni_greb_greb_claim'))
-        return JsonResponse({'ok': False, 'detail': 'Dodavanje nije uspjelo na serveru. Pokušajte ponovo; ako se ponovi, kontaktirajte prodavnicu.'}, status=500)
-    if error:
-        return JsonResponse({'ok': False, 'detail': error}, status=400)
-    try:
-        sync_narudzba(order)
-    except Exception:
-        logger.exception('Sync Greb-Greb artikla za narudžbu #%s nije uspio', order.broj)
-    return JsonResponse({'ok': True, 'product_name': product.naziv, 'order_number': order.broj})
 from .forms import (
     CheckoutForm,
     CouponForm,
@@ -4935,12 +4849,10 @@ def checkout(request):
                 })
             if summary.get('prize_popust'):
                 popust_detalji.append({
-                    'opis': 'Sretni Greb-Greb / online nagrada',
+                    'opis': 'Online nagrada',
                     'iznos': str(summary['prize_popust']),
                 })
-            scratch_reward = summary.get('scratch_reward') or {}
-            if scratch_reward.get('active') and scratch_reward.get('kind') == 'gift':
-                popust_detalji.append({'opis': 'Sretni Greb-Greb: poklon uz narudžbu', 'iznos': None})
+
 
             from .magacin import reserve_web_order_stock, MagacinError
             is_card = form.cleaned_data['payment_method'] == 'card'
@@ -5073,21 +4985,6 @@ def checkout(request):
                         )
                     # Poklon je stvarna stavka narudžbe po cijeni 0 KM, zbog
                     # čega ide kroz istu rezervaciju lagera kao ostali artikli.
-                    gift_product = scratch_reward.get('gift_product')
-                    if scratch_reward.get('active') and scratch_reward.get('kind') == 'gift' and gift_product:
-                        gift_base_price = gift_product.prikazna_cijena or gift_product.cijena
-                        build_item(
-                            narudzba=order,
-                            artikal=gift_product,
-                            naziv=f'{gift_product.naziv} — Sretni Greb-Greb poklon',
-                            product_naziv=gift_product.naziv,
-                            sifra=gift_product.sifra or '',
-                            cijena=Decimal('0.00'),
-                            bazna_cijena=gift_base_price,
-                            popust_opis='Sretni Greb-Greb — poklon uz narudžbu',
-                            popust_iznos=gift_base_price,
-                            kolicina=1,
-                        )
                     if is_card:
                         from .monri import create_checkout_payment
                         from .online_gift import get_session_reward
@@ -5096,7 +4993,7 @@ def checkout(request):
                             'session_key': request.session.session_key,
                             'cart': dict(request.session.get('cart', {})),
                             'reward': reward,
-                            'consume_reward': not reward.get('scratch_kind') or bool(scratch_reward.get('active')),
+                            'consume_reward': bool(reward),
                             'meta': {key: request.META.get(key, '') for key in ('REMOTE_ADDR', 'HTTP_USER_AGENT', 'HTTP_X_FORWARDED_FOR')},
                             'cookies': {key: request.COOKIES.get(key, '') for key in ('_fbp', '_fbc')},
                         })
@@ -5112,18 +5009,15 @@ def checkout(request):
             try:
                 from .online_gift import get_session_reward, mark_reward_consumed
                 reward = get_session_reward(request) or {}
-                # Greb-Greb se troši samo kada je uslov za baš tu nagradu
-                # stvarno ispunjen. Narudžba ispod praga ne smije je poništiti.
-                if not reward.get('scratch_kind') or scratch_reward.get('active'):
-                    mark_reward_consumed(request, order=order)
+                mark_reward_consumed(request, order=order)
             except Exception:
                 pass
             cart.clear()
             try:
-                from .online_gift import grant_scratch_chance
-                grant_scratch_chance(request, order)
+                from .post_order_offer import grant_offer
+                grant_offer(request, order)
             except Exception:
-                logger.exception('Nije dodijeljena Greb-Greb prilika za narudžbu #%s', order.broj)
+                logger.exception('Nije pripremljena ponuda poslije narudžbe #%s', order.broj)
             if request.user.is_authenticated:
                 from .live_visitor_offer import consume_registration_reward
                 consume_registration_reward(request.user)
@@ -5236,9 +5130,11 @@ def checkout(request):
     return render(request, 'checkout.html', context)
 
 
+@never_cache
 def order_success(request, broj):
+    from .post_order_offer import offer_context
     order = get_object_or_404(
-        Order.objects.prefetch_related('stavke'),
+        Order.objects.prefetch_related('stavke__artikal__varijacije', 'stavke__varijacija'),
         broj=broj,
     )
     payment = getattr(order, 'card_payment', None)
@@ -5269,8 +5165,7 @@ def order_success(request, broj):
     context = {
         **_base_context(),
         'order': order,
-        'scratch_game_immediate': True,
-        'scratch_game_return_url': reverse('home'),
+        'post_order_offer': offer_context(request, order),
         **page_seo_context('order_success', defaults={
             'seo_title': 'Narudžba primljena — Carpologija BH',
             'seo_description': '',
@@ -5687,14 +5582,6 @@ def account(request):
         (request.user.get_full_name() or request.user.first_name or '').strip()
         or cardholder_name
     )
-    from .online_gift import SCRATCH_CAMPAIGN_NAME, scratch_label_for_claim
-    account_scratch_reward = OnlineGiftClaim.objects.filter(
-        user=request.user,
-        campaign__naziv=SCRATCH_CAMPAIGN_NAME,
-        won=True,
-        reward_consumed=False,
-    ).order_by('-kreirano').first()
-
     context = {
         **_base_context(),
         'profile_form': profile_form,
@@ -5702,9 +5589,6 @@ def account(request):
         'loyalty': loyalty,
         'cardholder_name': cardholder_name,
         'welcome_name': welcome_name,
-        'account_scratch_reward': account_scratch_reward,
-        'account_scratch_reward_label': scratch_label_for_claim(account_scratch_reward) if account_scratch_reward else '',
-        'account_scratch_reward_expires': None,
         'account_stock_notices': request.user.stock_notifies.filter(notified_at__isnull=True).select_related('product'),
         'account_initial_section': account_initial_section,
         'complaint_order': complaint_order,
@@ -5723,18 +5607,23 @@ def account(request):
 @login_required(login_url='login')
 def account_order_detail(request, broj):
     order = get_object_or_404(
-        Order.objects.prefetch_related('stavke'),
+        Order.objects.prefetch_related('stavke__artikal__varijacije', 'stavke__varijacija'),
         broj=broj,
         korisnik=request.user,
     )
     payment = getattr(order, 'card_payment', None)
     if payment and payment.status != 'paid':
         return redirect('monri_return', token=payment.token)
+    items = pripremi_stavke_za_racun(order)
+    source_items = [item for item in order.stavke.all() if not item.ledger_missing_line_id and item.kolicina_faktura > 0]
+    for item, source in zip(items, source_items):
+        item['image'] = (source.varijacija.slika if source.varijacija_id and source.varijacija.slika
+                         else source.artikal.prikazna_slika if source.artikal_id else None)
     context = {
         **_base_context(),
         'order': order,
         'summary': sazetak_iz_narudzbe(order),
-        'stavke': pripremi_stavke_za_racun(order),
+        'stavke': items,
         'pricing': order.pdv_pregled,
     }
     return render(request, 'account/order_detail.html', context)
@@ -7279,25 +7168,6 @@ def staff_activate_user(request):
     return redirect('staff_loyalty_system')
 
 
-@login_required(login_url='login')
-@user_passes_test(_superuser_required)
-def staff_scratch_analytics(request):
-    from .online_gift import SCRATCH_CAMPAIGN_NAME, scratch_label_for_claim
-    claims = OnlineGiftClaim.objects.filter(campaign__naziv=SCRATCH_CAMPAIGN_NAME).select_related(
-        'user', 'scratch_trigger_order', 'order', 'campaign', 'product',
-    ).order_by('-kreirano', '-pk')
-    page = Paginator(claims, 50).get_page(request.GET.get('page'))
-    for claim in page:
-        trigger = claim.scratch_trigger_order
-        claim.customer_name = (trigger.ime_prezime if trigger else '') or (
-            claim.user.get_full_name() or claim.user.get_username() if claim.user else 'Gost'
-        )
-        claim.customer_email = (trigger.email if trigger else '') or (claim.user.email if claim.user else '')
-        claim.display_reward = claim.scratch_reward_label or scratch_label_for_claim(claim)
-    return render(request, 'staff/scratch_analytics.html', {
-        **_base_context(), 'page': page,
-        'accepted_count': claims.filter(reward_consumed=True, order__isnull=False).count(),
-    })
 
 
 @login_required(login_url='login')
@@ -7779,17 +7649,8 @@ def staff_orders_validation(request):
         status__in=[Order.Status.ZAVRSENA, Order.Status.OTKAZANA],
     ).exclude(lager_status__in=[Order.LagerStatus.VALIDIRANO, Order.LagerStatus.OTKAZANO])
     pending_summary = orders.aggregate(count=Count('pk'), total=Sum('ukupno'))
-    from .online_gift import SCRATCH_CAMPAIGN_NAME, scratch_label_for_claim
-    from .models import ScratchPrize
-    scratch_claims = OnlineGiftClaim.objects.filter(
-        Q(scratch_tracking_enabled=True) | Q(campaign__naziv=SCRATCH_CAMPAIGN_NAME),
-    )
-    orders = orders.annotate(has_scratch=Exists(scratch_claims.filter(
-        Q(scratch_trigger_order_id=OuterRef('pk')) | Q(order_id=OuterRef('pk')),
-    )))
     query = (request.GET.get('q') or '').strip()
     source = request.GET.get('source', '')
-    scratch = request.GET.get('scratch', '')
     dates = {}
     for key, lookup in [('date_from', 'kreirana__date__gte'), ('date_to', 'kreirana__date__lte')]:
         raw = request.GET.get(key, '')
@@ -7805,47 +7666,12 @@ def staff_orders_validation(request):
         messages.error(request, 'Datum od mora biti prije datuma do.')
     if source in Order.Izvor.values:
         orders = orders.filter(izvor=source)
-    if scratch == 'yes':
-        orders = orders.filter(has_scratch=True)
-    elif scratch == 'no':
-        orders = orders.filter(has_scratch=False)
     if query:
         orders = orders.filter(Q(ime_prezime__icontains=query) | Q(telefon__icontains=query)
                                | Q(email__icontains=query) | Q(broj__icontains=query))
     sort = 'oldest' if request.GET.get('sort') == 'oldest' else 'newest'
     orders = orders.order_by('kreirana' if sort == 'oldest' else '-kreirana', '-pk')
     page = Paginator(orders, 50).get_page(request.GET.get('page'))
-    # Include the reward offered after this order as well as rewards used on it.
-    page_orders = list(page.object_list)
-    order_ids = [order.pk for order in page_orders]
-    rewards_by_order = {order_id: [] for order_id in order_ids}
-    claims = scratch_claims.filter(
-        Q(scratch_trigger_order_id__in=order_ids) | Q(order_id__in=order_ids),
-    ).select_related('product', 'campaign').order_by('-kreirano', '-pk')
-    claims = list(claims)
-    prizes = {
-        (prize.campaign_id, prize.code): prize
-        for prize in ScratchPrize.objects.filter(
-            campaign_id__in={claim.campaign_id for claim in claims},
-            code__in={claim.scratch_prize_code for claim in claims},
-        ).select_related('product')
-    }
-    for claim in claims:
-        prize = prizes.get((claim.campaign_id, claim.scratch_prize_code))
-        claim.display_product = claim.product or (prize.product if prize else None)
-        claim.display_discount = claim.discount_percent
-        claim.display_reward = claim.scratch_reward_label or scratch_label_for_claim(claim)
-        for order_id in {claim.scratch_trigger_order_id, claim.order_id}:
-            if order_id in rewards_by_order:
-                rewards_by_order[order_id].append(claim)
-    for order in page_orders:
-        order.scratch_details = rewards_by_order[order.pk]
-        order.scratch_count = len(order.scratch_details)
-        order.scratch_used = any(
-            claim.reward_consumed and claim.order_id == order.pk
-            for claim in order.scratch_details
-        )
-    page.object_list = page_orders
     params = request.GET.copy()
     params.pop('page', None)
     page_query = params.urlencode()
@@ -7853,7 +7679,7 @@ def staff_orders_validation(request):
     return render(request, 'staff/orders_validation.html', {
         **_base_context(), **dates, 'orders': page, 'pending_count': pending_summary['count'],
         'pending_total': pending_summary['total'] or Decimal('0.00'),
-        'search_query': query, 'source': source, 'scratch': scratch, 'sort': sort,
+        'search_query': query, 'source': source, 'sort': sort,
         'source_choices': [(Order.Izvor.WEBSHOP, 'Web shop')], 'page_query': page_query,
         'sort_query': params.urlencode(),
     })
@@ -8787,7 +8613,12 @@ def staff_loyalty_system(request):
                 return redirect(dest)
             existing_card = pronadji_loyalty_karticu_po_telefonu(phone)
             if existing_card:
-                card = existing_card
+                error = 'Telefon je već registrovan'
+                dest = loyalty_desk_url(request.path, extra={'novi': '1', 'tel': phone})
+                if wants_json:
+                    return _open_json({'ok': False, 'error': error}, 409)
+                messages.error(request, error)
+                return redirect(dest)
             else:
                 try:
                     card, user = izdaj_loyalty_karticu(ime, prezime, phone, strani=strani)
@@ -8898,11 +8729,7 @@ def staff_loyalty_system(request):
 
         if cards:
             only = cards[0]
-            qn = q.replace(' ', '').casefold()
-            if len(cards) == 1 and qn in {
-                (only.kod or '').casefold(),
-                (only.barkod or '').casefold(),
-            }:
+            if len(cards) == 1 and request.method == 'GET':
                 return redirect(loyalty_member_url(only.kod))
             selected_card = None
         if False:
@@ -9212,13 +9039,11 @@ def staff_loyalty_system(request):
             except Exception:
                 pending_otp = None
 
-    desk_stats = loyalty_desk_stats()
+    desk_stats = {}
     if searched:
         table_source = cards
     else:
-        table_source = list(
-            LoyaltyCard.objects.select_related('user', 'user__profil').order_by('-azurirana')
-        )
+        table_source = []
     paginator = Paginator(table_source, 10)
     try:
         table_page = paginator.get_page(request.GET.get('page') or 1)
@@ -9273,10 +9098,7 @@ def staff_loyalty_system(request):
         desk_tab = 'novi'
     if desk_tab not in {'pretraga', 'novi'}:
         desk_tab = 'pretraga'
-    desk_ledger = loyalty_desk_purchase_ledger(
-        year=request.GET.get('godina'),
-        page=request.GET.get('ep') or 1,
-    )
+    desk_ledger = {}
     raw_phone = ''
     if desk_tab == 'novi':
         raw_phone = request.GET.get('tel') or request.session.get('loyalty_new_phone') or ''
@@ -9540,6 +9362,7 @@ def staff_loyalty_member(request, kod):
                 staff_user=request.user,
                 placanje=placanje,
             )
+            request.session['loyalty_purchase_viber'] = {'card_id': selected_card.pk, 'purchase_id': purchase.pk}
             clear_pending_purchase_otp(request)
             nacin = 'kartično' if placanje == 'kartica' else 'gotovinski'
             messages.success(request, f'Kupovina od {purchase.iznos} KM evidentirana ({nacin}).')
@@ -9563,6 +9386,7 @@ def staff_loyalty_member(request, kod):
                     verifikacija=LoyaltyPurchase.Verifikacija.ADMIN,
                     staff_user=request.user,
                 )
+                request.session['loyalty_purchase_viber'] = {'card_id': selected_card.pk, 'purchase_id': purchase.pk}
                 clear_pending_purchase_otp(request)
                 messages.warning(request, f'Kupovina od {purchase.iznos} KM evidentirana BEZ koda (admin).')
             except ValueError as exc:
@@ -9590,6 +9414,7 @@ def staff_loyalty_member(request, kod):
                 verifikacija=LoyaltyPurchase.Verifikacija.OTP,
                 staff_user=request.user,
             )
+            request.session['loyalty_purchase_viber'] = {'card_id': selected_card.pk, 'purchase_id': purchase.pk}
             clear_pending_purchase_otp(request)
             messages.success(request, f'Kupovina od {purchase.iznos} KM evidentirana (potvrđeno kodom).')
         except ValueError as exc:
@@ -9611,6 +9436,7 @@ def staff_loyalty_member(request, kod):
                 verifikacija=LoyaltyPurchase.Verifikacija.ADMIN,
                 staff_user=request.user,
             )
+            request.session['loyalty_purchase_viber'] = {'card_id': selected_card.pk, 'purchase_id': purchase.pk}
             clear_pending_purchase_otp(request)
             messages.warning(request, f'Kupovina od {purchase.iznos} KM evidentirana BEZ koda (admin).')
         except (ValueError, InvalidOperation, TypeError) as exc:
@@ -9729,11 +9555,20 @@ def staff_loyalty_member(request, kod):
         city = ' '.join(x for x in (profil.postanski_broj, profil.grad) if x)
         if city:
             addr_bits.append(city)
+    purchase_viber = None
+    pending_viber = request.session.get('loyalty_purchase_viber') or {}
+    if pending_viber.get('card_id') == selected_card.pk:
+        request.session.pop('loyalty_purchase_viber', None)
+        receipt_purchase = LoyaltyPurchase.objects.filter(pk=pending_viber.get('purchase_id'), kartica=selected_card).first()
+        if receipt_purchase:
+            from .loyalty import loyalty_purchase_viber_message
+            purchase_viber = loyalty_purchase_viber_message(selected_card, receipt_purchase)
     context = {
         **_base_context(),
         'search_query': '',
         'loyalty_search_query': selected_card.kod,
         'selected_card': selected_card,
+        'purchase_viber': purchase_viber,
         'merge_query': merge_query,
         'merge_candidates': merge_candidates,
         'loyalty': loyalty_ctx,

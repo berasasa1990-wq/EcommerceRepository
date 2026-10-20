@@ -215,6 +215,9 @@ class AkcijaAdminForm(forms.ModelForm):
             self.fields['gratis_artikal'].help_text = 'Možeš promijeniti bez brisanja akcije. + Ponuda: artikal koji se nudi u popupu nakon dodavanja triggera (s % iz polja 2, ili bez %). Mora biti na stanju da se popup prikaže.'
             if tip == Akcija.Tip.PONUDA:
                 self.fields['gratis_artikal'].label = '3. Artikal u ponudi (sa ili bez %)'
+        if tip == Akcija.Tip.POSLIJE_NARUDZBE and 'popust_postotak' in self.fields:
+            self.fields['popust_postotak'].label = 'Popust na dodatne artikle (%)'
+            self.fields['popust_postotak'].help_text = 'Samo za narudžbe pouzećem. Artikle dodajte u tabelu ispod; svaka stavka može imati svoj popust.'
         if tip == Akcija.Tip.AKCIJSKA:
             if 'popust_postotak' in self.fields:
                 self.fields['popust_postotak'].label = 'Popust (%) na ponudu'
@@ -303,7 +306,7 @@ class AkcijaAdminForm(forms.ModelForm):
         if not tip:
             return cleaned
         if tip not in Akcija.ACTIVE_TIPS:
-            self.add_error('tip', 'Dozvoljeni tipovi: Pop-up bundle, Kupi više, + Ponuda, Akcijska ponuda.')
+            self.add_error('tip', 'Dozvoljeni tipovi: Pop-up bundle, Kupi više, + Ponuda, Akcijska ponuda, Poslije narudžbe.')
             return cleaned
         if tip == Akcija.Tip.BUNDLE:
             trigger = cleaned.get('bundle_trigger') or Akcija.BundleTrigger.DELAY

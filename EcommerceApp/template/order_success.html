@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block body_class %}catalog-header-reference order-success-view{% endblock %}
-{% block extra_css %}{% if order.card_payment %}<link rel="stylesheet" href="{% static 'css/monri-payment.css' %}?v=20261005">{% endif %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/post-order-offer.css' %}?v=20261020-controls-no-movement">{% if order.card_payment %}<link rel="stylesheet" href="{% static 'css/monri-payment.css' %}?v=20261005">{% endif %}{% endblock %}
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block page_title %}<title>{{ seo_title|default:"Narudžba primljena — Carpologija BH" }}</title>{% endblock %}
 
 {% block content %}
-{# Potvrda narudžbe je namjerno uklonjena: nakon kupovine otvara se samo Greb-Greb. #}
+
 <section class="order-success-page"{% if track_purchase and meta_pixel_id and meta_purchase_event_id %} data-meta-purchase data-event-id="{{ meta_purchase_event_id }}" data-order-id="{{ order.broj }}" data-value="{{ order.ukupno }}" data-num-items="{{ meta_purchase_num_items }}" data-content-ids="{{ meta_purchase_content_ids }}" data-contents="{{ meta_purchase_contents }}"{% endif %}>
 {% if order.card_payment and order.placeno_karticom %}
     <div class="monri-page"><div class="monri-card">
@@ -18,8 +18,38 @@
         <p>Način plaćanja: <strong>KARTICOM</strong></p>
         <a class="monri-button" href="{% url 'home' %}">Nastavi kupovinu</a>
     </div></div>
+{% else %}
+    <div class="order-confirmation">
+        <header class="order-confirmation__header">
+            <span class="post-offer__check" aria-hidden="true">✓</span>
+            <p class="order-confirmation__eyebrow">Hvala na kupovini</p>
+            <h1>Vaša narudžba je uspješno zaprimljena!</h1>
+            <p>Broj narudžbe: <strong>#{{ order.broj }}</strong></p>
+        </header>
+        <div class="order-confirmation__section-title"><h2>Naručeni artikli</h2><span>Plaćanje pouzećem</span></div>
+        <ul class="order-confirmation__items" data-order-items>
+            {% for item in order.stavke.all %}{% if not item.set_parent_id %}
+            <li class="order-confirmation__item">
+                <div class="order-confirmation__image">
+                    {% if item.varijacija.slika %}<img src="{{ item.varijacija.slika.url }}" alt="{{ item.puni_naziv }}" width="80" height="80" loading="lazy">
+                    {% elif item.artikal.prikazna_slika %}<img src="{{ item.artikal.prikazna_slika.url }}" alt="{{ item.puni_naziv }}" width="80" height="80" loading="lazy">
+                    {% else %}<span aria-label="Slika nije dostupna">◇</span>{% endif %}
+                </div>
+                <div class="order-confirmation__copy"><h3>{{ item.puni_naziv }}</h3><p>Količina: <strong>{{ item.kolicina }}</strong> <span>· {{ item.cijena|floatformat:2 }} KM / kom</span></p>{% if item.sifra %}<small>Šifra: {{ item.sifra }}</small>{% endif %}</div>
+                <strong class="order-confirmation__price">{{ item.ukupno|floatformat:2 }} KM</strong>
+            </li>
+            {% endif %}{% endfor %}
+        </ul>
+        <div class="order-confirmation__summary">
+            <p><span>Dostava</span><strong>{{ order.dostava|floatformat:2 }} KM</strong></p>
+            <p class="order-confirmation__total"><span>Ukupno za plaćanje</span><strong data-order-total>{{ order.ukupno|floatformat:2 }} KM</strong></p>
+        </div>
+        <p class="order-confirmation__note">Vaša narudžba je primljena i čeka obradu. Sačuvajte broj narudžbe za praćenje.</p>
+        <a class="post-offer__finish" href="{% url 'home' %}">Nastavi kupovinu <span aria-hidden="true">→</span></a>
+    </div>
 {% endif %}
 </section>
+{% if post_order_offer %}{% include 'partials/post_order_offer.html' %}{% endif %}
 {% endblock %}
 
 {% block extra_js %}

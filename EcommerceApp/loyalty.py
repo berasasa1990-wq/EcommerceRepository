@@ -1629,12 +1629,6 @@ def validiraj_kupon(kod, user=None, *, subtotal=None):
     if not coupon:
         return None, 'Broj kartice / kupon nije pronađen ili nije aktivan.'
 
-    if coupon.scratch_claim_id:
-        if coupon.scratch_claim.reward_consumed:
-            return None, 'Ovaj Greb-Greb kod je već iskorišten.'
-        if subtotal is not None and Decimal(str(subtotal)) < coupon.minimum:
-            return None, f'Za ovaj kod korpa mora imati najmanje {coupon.minimum:.2f} KM.'
-
     # Loyalty kartica: broj kartice u korpi = popust, bez obavezne prijave
     if coupon.automatski or coupon.loyalty_kartica_id:
         # Ažuriraj postotak prema trenutnom nivou kartice
@@ -2310,3 +2304,28 @@ def loyalty_sync_pair_details(pair):
         'combined_spend': manual_total + sum((order.ukupno for order in unique_orders.values()), Decimal('0')),
         'purchase_count': len(store_purchases) + len(web_purchases) + len(unique_orders),
     }
+
+
+def loyalty_purchase_viber_message(card, purchase):
+    """Compose a receipt using the member's updated loyalty balance."""
+    context = loyalty_kontekst(card)
+    tier = context['tier']
+    next_tier = context['next_tier']
+    name = card.user.get_full_name().strip() or card.kod
+    lines = [
+        f'Poštovani/a {name},',
+        f'Evidentirana je Vaša kupovina u iznosu od {format_ba_money(purchase.iznos)} KM.',
+        f'Ime i prezime: {name}',
+        f'Broj loyalty kartice: {card.kod}',
+        f'Trenutno bodova: {format_ba_int(int(card.ukupna_potrosnja or 0))}',
+        f'Trenutni nivo: {tier["label"]} — {format_ba_pct(tier["postotak"])}% popusta.',
+    ]
+    if next_tier:
+        remaining = context['preostalo_do_sljedeceg']
+        lines.append(f'Do nivoa {next_tier["label"]} ({format_ba_pct(next_tier["postotak"])}% popusta) preostalo je {format_ba_money(remaining)} bodova / KM kupovine.')
+    else:
+        lines.append('Dostigli ste najviši loyalty nivo i maksimalni popust.')
+    lines.append('Hvala na kupovini! Carpologija BH')
+    message = '\n'.join(lines)
+    return {'message': message, 'phone': context.get('telefon') or '',
+            'url': viber_chat_url(context.get('telefon') or '', message)}

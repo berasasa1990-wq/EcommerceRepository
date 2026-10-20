@@ -158,9 +158,10 @@ body.loy-full main{padding-top:28px!important;max-width:none}
 }
 </style>
 <link rel="stylesheet" href="{% static 'css/staff-loyalty.css' %}?v=20261017-blue-admin">
+<link rel="stylesheet" href="{% static 'css/loyalty-site-theme.css' %}?v=20261020-viber-copy-open">
 {% endblock %}
 
-{% block body_class %}staff-blue-page staff-shell-page loy-full{% endblock %}
+{% block body_class %}loyalty-site-page staff-shell-page loy-full{% endblock %}
 
 {% block content %}
 <section class="lm">
@@ -500,6 +501,50 @@ body.loy-full main{padding-top:28px!important;max-width:none}
 {% endblock %}
 
 {% block extra_js %}
+{% if purchase_viber %}
+<dialog id="purchaseViberDialog" class="loyalty-purchase-viber" aria-labelledby="purchaseViberTitle">
+    <header><span class="purchase-viber-success">✓ Kupovina je evidentirana</span><h2 id="purchaseViberTitle">Pošaljite potvrdu članu</h2><p>Telefon: <strong>{{ purchase_viber.phone|default:"Nije unesen" }}</strong></p></header>
+    <textarea class="purchase-viber-message" readonly aria-label="Poruka članu">{{ purchase_viber.message }}</textarea>
+    <p class="purchase-viber-help" data-viber-copy-status role="status">Ako Viber otvori prazno polje, zalijepite kopiranu poruku (Ctrl+V ili Zalijepi na telefonu).</p>
+    <div class="purchase-viber-actions">{% if purchase_viber.url %}<a href="{{ purchase_viber.url }}" class="purchase-viber-send" data-viber-copy-open>Kopiraj poruku i otvori Viber</a>{% else %}<p>Dodajte telefon člana za slanje putem Vibera.</p>{% endif %}<button type="button" data-purchase-viber-close>Kasnije</button></div>
+</dialog>
+<script>
+(function () {
+    const dialog = document.getElementById('purchaseViberDialog');
+    const draft = dialog.querySelector('.purchase-viber-message');
+    const copyStatus = dialog.querySelector('[data-viber-copy-status]');
+    const openViber = dialog.querySelector('[data-viber-copy-open]');
+    let copying = false;
+    openViber?.addEventListener('click', async event => {
+        event.preventDefault();
+        if (copying) return;
+        copying = true;
+        let copied = false;
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(draft.value);
+                copied = true;
+            }
+        } catch (_) {}
+        if (!copied) {
+            draft.focus();
+            draft.select();
+            draft.setSelectionRange(0, draft.value.length);
+            try { copied = document.execCommand('copy'); } catch (_) {}
+        }
+        copying = false;
+        if (!copied) {
+            copyStatus.textContent = 'Kopiranje nije dozvoljeno. Označena je cijela poruka — kopirajte je, pa ponovo otvorite Viber.';
+            return;
+        }
+        copyStatus.textContent = 'Poruka je kopirana. U Viberu pritisnite Ctrl+V ili Zalijepi, zatim Pošalji.';
+        window.location.assign(openViber.getAttribute('href'));
+    });
+    dialog.querySelector('[data-purchase-viber-close]').addEventListener('click', () => dialog.close());
+    dialog.showModal();
+})();
+</script>
+{% endif %}
 <script>
 (function () {
     var buyModal = document.getElementById('lmBuyModal');

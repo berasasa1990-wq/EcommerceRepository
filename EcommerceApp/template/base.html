@@ -12,12 +12,6 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/carpologija-favicon-32.png' %}">
     <link rel="icon" type="image/png" sizes="128x128" href="{% static 'img/carpologija-favicon.png' %}">
     <link rel="apple-touch-icon" sizes="128x128" href="{% static 'img/carpologija-favicon.png' %}">
-    {% if scratch_game_immediate %}
-    <link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.2.9-no-white-frame">
-    {% else %}
-    <link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.2.9-no-white-frame" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="{% static 'css/scratch-game.css' %}?v=1.2.9-no-white-frame"></noscript>
-    {% endif %}
     <link rel="preconnect" href="https://media.opremazaribolov.ba">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <script>
@@ -179,9 +173,9 @@
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
     <style id="site-orange">:root{--ozr-orange:#FF5A00;--ozr-orange-hover:#E04F00;--btn-cart:#FF5A00;--btn-cart-hover:#E04F00;--btn-banner:#FF5A00;--btn-banner-hover:#E04F00;}.header{border-bottom:2px solid var(--ozr-orange,#FF5A00);}.home-products--akcija,.home-brand-strip-section--mockup{border-top:2px solid var(--ozr-orange,#FF5A00)!important;}</style>
-    <link rel="stylesheet" href="{% static 'css/navigation.min.css' %}?v=20260915-render-header-v2">
+    <link rel="stylesheet" href="{% static 'css/navigation.min.css' %}?v=20261020-search-gap-restored">
     {% block extra_css %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/storefront-extras.min.css' %}?v=20260915-render-header-v2">
+    <link rel="stylesheet" href="{% static 'css/storefront-extras.min.css' %}?v=20261020-search-gap-restored">
     {% if user.is_superuser %}
     <style>
         body #header .logo-brand:has(.logo-admin-panel) {
@@ -358,13 +352,14 @@
     }
     </style>
     {% if user.is_authenticated or request.resolver_match.url_name == 'set_builder' %}
-    <link rel="stylesheet" href="{% static 'css/storefront-theme.min.css' %}?v=20261019-multiple-hero">
+    <link rel="stylesheet" href="{% static 'css/storefront-theme.min.css' %}?v=20261020-catalog-closer-cards">
     {% else %}
-    <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261019-multiple-hero">
+    <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261020-catalog-closer-cards">
     {% endif %}
     {% block warehouse_theme_css %}{% endblock %}
     <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261019-category-counts">
     <link rel="stylesheet" href="{% static 'css/product-grid-desktop.css' %}?v=20261019-related-three" media="(min-width: 1025px)">
+    <link rel="stylesheet" href="{% static 'css/site-page-spacing.css' %}?v=20261020-equal-side-gutters">
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="shared-site-header {% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
@@ -809,7 +804,7 @@
     {% endif %}
     {% block structured_data %}{% endblock %}
     <script src="{% static 'js/csrf-session.js' %}?v=20261001" data-cookie-name="{{ csrf_cookie_name }}" defer></script>
-    <script src="{% static 'js/main.min.js' %}?v=20261018-search-race-guard" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20261019-desktop-inline" defer></script>
     <script src="{% static 'js/desktop-reference.js' %}?v=20260914-dropdowns" defer></script>
     <script src="{% static 'js/stock-notify.js' %}?v=20260916-notify-no-autofocus" defer></script>
     {% if site_settings.javno_online_posjetioci %}
@@ -854,16 +849,6 @@
     </div>
     <script src="{% static 'js/set-builder-gate.js' %}?v=20260903beta" defer></script>
     {% include 'partials/permanent_input_history.html' %}
-    <section class="scratch-game{% if scratch_game_immediate %} scratch-game--immediate scratch-game--loading{% endif %}" id="scratchGame" data-csrf-refresh-url="{% url 'auth_csrf_token' %}" data-status-url="{% url 'scratch_status' %}" data-event-url="{% url 'scratch_event' %}" data-claim-url="{% url 'scratch_claim' %}" data-add-to-order-url="{% url 'scratch_add_product_to_order' %}"{% if scratch_game_immediate %} data-immediate="1"{% endif %}{% if scratch_game_return_url %} data-after-close-url="{{ scratch_game_return_url }}"{% endif %}{% if not scratch_game_immediate %} hidden{% endif %} aria-modal="true" role="dialog" aria-labelledby="scratchGameTitle">
-      <div class="scratch-game__panel"><button class="scratch-game__close" type="button" aria-label="Zatvori">×</button>
-        <h2 id="scratchGameTitle">GREB-GREB</h2>
-        <p id="scratchGameSubtitle" class="scratch-game__subtitle">Ogrebite i otkrijte svoju nagradu</p>
-        <div class="scratch-game__card"><div id="scratchProductReveal" class="scratch-reveal-product" hidden><p class="scratch-reveal-win">ČESTITAMO!</p><small id="scratchRevealPack" class="scratch-reveal-pack" hidden></small><div class="scratch-reveal-media"><img id="scratchRevealImage" alt=""></div><b id="scratchRevealDiscount"></b><div class="scratch-reveal-prices"><del id="scratchRevealRegularPrice"></del><strong id="scratchRevealPrice"></strong></div><span id="scratchRevealName"></span></div><strong id="scratchGameReward">Nagrada je skrivena</strong><canvas id="scratchGameCanvas" aria-label="Grebi ovdje za otkrivanje nagrade"></canvas></div>
-        <p id="scratchGameResult" class="scratch-game__result" hidden></p><div id="scratchProductChoice" hidden><p>Želite li ovaj artikal dodati u upravo kreiranu narudžbu?</p><button type="button" id="scratchAddToOrder">Dodaj u narudžbu</button><button type="button" id="scratchSkipProduct">Ne želim</button></div>
-        <button type="button" id="scratchContinue" class="scratch-game__continue" hidden>NASTAVI KUPOVINU</button>
-      </div>
-    </section>
-    <script src="{% static 'js/scratch-game.js' %}?v=1.2.9-no-white-frame" defer></script>
     <script>
       if ('serviceWorker' in navigator && window.isSecureContext) {
         window.addEventListener('load', function () {

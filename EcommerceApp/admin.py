@@ -1295,6 +1295,8 @@ class AkcijaBundleLineForm(forms.ModelForm):
 
 
 class AkcijaFlashLineForm(forms.ModelForm):
+    popust_postotak = FlexibleDecimalField(required=False, min_value=0, max_value=100, max_digits=5, decimal_places=2, label='Popust %')
+
     class Meta:
         model = AkcijaFlashLine
         fields = '__all__'
@@ -1318,7 +1320,7 @@ class AkcijaFlashLineInline(admin.TabularInline):
     fields = ('product', 'popust_postotak', 'redoslijed')
     ordering = ('redoslijed', 'id')
     verbose_name = 'Artikal u ponudi'
-    verbose_name_plural = 'AKCIJSKA PONUDA — do 4 artikla na stanju'
+    verbose_name_plural = 'ARTIKLI U PONUDI — do 4 artikla na stanju'
     classes = ('akcija-inline-flash-lines',)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
@@ -1339,9 +1341,9 @@ class AkcijaFlashLineInline(admin.TabularInline):
                 return
             parent = getattr(self, 'instance', None)
             tip = getattr(parent, 'tip', None) if parent is not None else None
-            if tip != 'akcijska' and request is not None:
+            if tip not in ('akcijska', 'poslije_narudzbe') and request is not None:
                 tip = request.POST.get('tip') or tip
-            if tip != 'akcijska':
+            if tip not in ('akcijska', 'poslije_narudzbe'):
                 return
             count = 0
             for form in self.forms:
@@ -1351,6 +1353,8 @@ class AkcijaFlashLineInline(admin.TabularInline):
                     continue
                 if form.cleaned_data.get('product'):
                     count += 1
+                    if tip == 'poslije_narudzbe' and form.cleaned_data.get('popust_postotak') is None:
+                        form.add_error('popust_postotak', 'Unesite % sniženja za ovaj artikal.')
             if count < 1:
                 raise forms.ValidationError('Odaberi barem jedan artikal za sniženje.')
             if count > 4:
@@ -1583,7 +1587,7 @@ class AkcijaAdmin(admin.ModelAdmin):
     inlines = [AkcijaBundleLineInline]
 
     class Media:
-        js = ('admin/js/akcija_admin.v20260911.js',)
+        js = ('admin/js/akcija_admin.v20260911.js?v=20261020-line-discounts',)
         css = {'all': ('admin/css/akcija-admin.v20260910.css',)}
 
     # --- Fieldseti: svako polje SAMO JEDNOM (admin.E012) ---
@@ -1697,6 +1701,8 @@ class AkcijaAdmin(admin.ModelAdmin):
             return self._FS_BASE + self._FS_ARTIKLI
         if tip == Akcija.Tip.BUNDLE:
             return self._FS_BASE + self._FS_ARTIKLI + self._FS_BUNDLE_EXTRA + self._FS_PRIKAZ
+        if tip == Akcija.Tip.POSLIJE_NARUDZBE:
+            return self._FS_BASE
         if tip == Akcija.Tip.AKCIJSKA:
             return self._FS_BASE + (('Popust na odabrane artikle', {'fields': ('popust_postotak',)}), ('Trajanje sniženja', {'fields': ('pocetak', 'trajanje_sati'), 'description': 'Sniženje važi od početka do isteka unesenog broja sati.'}))
         if tip == Akcija.Tip.QTY_DEAL:
@@ -1712,7 +1718,7 @@ class AkcijaAdmin(admin.ModelAdmin):
             return [bundle, flash]
         if tip == Akcija.Tip.BUNDLE:
             return [bundle]
-        if tip == Akcija.Tip.AKCIJSKA:
+        if tip in (Akcija.Tip.AKCIJSKA, Akcija.Tip.POSLIJE_NARUDZBE):
             return [flash]
         return []
 
@@ -1728,6 +1734,7 @@ class AkcijaAdmin(admin.ModelAdmin):
                 (Akcija.Tip.QTY_DEAL, Akcija.Tip.QTY_DEAL.label),
                 (Akcija.Tip.PONUDA, Akcija.Tip.PONUDA.label),
                 (Akcija.Tip.AKCIJSKA, Akcija.Tip.AKCIJSKA.label),
+                (Akcija.Tip.POSLIJE_NARUDZBE, Akcija.Tip.POSLIJE_NARUDZBE.label),
             ]
         return super().formfield_for_choice_field(db_field, request, **kwargs)
 
@@ -3764,25 +3771,8 @@ class B2BSettingsAdmin(admin.ModelAdmin):
 
 
 from .models import B2BSubmission
-from .models import ScratchPrize
 
 
-@admin.register(ScratchPrize)
-class ScratchPrizeAdmin(admin.ModelAdmin):
-    list_display = ('label', 'kind', 'weight', 'minimum', 'discount_percent', 'product', 'active')
-    list_editable = ('weight', 'minimum', 'discount_percent', 'product', 'active')
-    list_filter = ('kind', 'active')
-    search_fields = ('label', 'code', 'product__naziv')
-    autocomplete_fields = ('product',)
-    fields = ('campaign', 'code', 'label', 'kind', 'weight', 'minimum', 'discount_percent', 'product', 'active', 'sort_order')
-
-
-    def formfield_for_dbfield(self, db_field, request, **kwargs):
-        if db_field.name == 'discount_percent':
-            kwargs['help_text'] = ('Za nagradu „Artikal + popust” procenat se uvijek računa od regularne '
-                                   'cijene odabranog artikla, čak i kada je već snižen. '
-                                   'Primjer: regularna cijena 100 KM i popust 20% daju 80 KM.')
-        return super().formfield_for_dbfield(db_field, request, **kwargs)
 
 
 @admin.register(B2BSubmission)

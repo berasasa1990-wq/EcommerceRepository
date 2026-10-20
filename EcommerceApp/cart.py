@@ -499,7 +499,6 @@ class Cart:
             reward_discount_km,
             reward_discount_percent,
             reward_free_shipping,
-            scratch_cart_reward,
         )
 
         # Ručno primijenjeni kupon ima prioritet; inače legacy reg. % kupon.
@@ -512,7 +511,6 @@ class Cart:
             or has_free_shipping_reward(self.request, user)
         )
 
-        scratch_reward = scratch_cart_reward(self.request, self.ukupno)
         summary = izracunaj_sazetak(
             self.ukupno,
             user=user,
@@ -520,11 +518,10 @@ class Cart:
             cart_items=list(self),
             recovery_discount_percent=self.get_recovery_discount_percent(),
             free_shipping_reward=free_shipping_reward,
-            prize_discount_percent=reward_discount_percent(self.request) + scratch_reward['percent'],
+            prize_discount_percent=reward_discount_percent(self.request),
             prize_discount_km=reward_discount_km(self.request),
-            prize_free_shipping=reward_free_shipping(self.request) or scratch_reward['free_shipping'],
+            prize_free_shipping=reward_free_shipping(self.request),
         )
-        summary['scratch_reward'] = scratch_reward
         return summary
 
     def get_product_and_variation(self, item):

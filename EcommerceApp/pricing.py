@@ -99,7 +99,7 @@ def izracunaj_sazetak(
     if prize_free_shipping:
         dostava = Decimal('0.00')
         if 'Nagradni točak: besplatna dostava' not in pogodnosti:
-            pogodnosti.append('Greb-Greb nagrada: besplatna dostava')
+            pogodnosti.append('Online nagrada: besplatna dostava')
 
     if ima_novu_pogodnost:
         if postavke.novi_korisnik_besplatna_dostava:
@@ -152,14 +152,14 @@ def izracunaj_sazetak(
                 if prize_percent == int(prize_percent)
                 else prize_percent
             )
-            pogodnosti.append(f'Greb-Greb nagrada: {pct_display}% na narudžbu')
+            pogodnosti.append(f'Online nagrada: {pct_display}% na narudžbu')
     if prize_discount_km:
         prize_km = _kvantiziraj(prize_discount_km)
         if prize_km > 0:
             iznos = min(prize_km, medjuzbir)
             prize_popust = _kvantiziraj(prize_popust + iznos)
             popust += iznos
-            pogodnosti.append(f'Greb-Greb nagrada: -{iznos} KM')
+            pogodnosti.append(f'Online nagrada: -{iznos} KM')
 
     kupon_popust = Decimal('0.00')
     if kupon:
@@ -169,9 +169,6 @@ def izracunaj_sazetak(
             kupon_popust = min(ukupno_sa_pdvom, kupon.iznos or Decimal('0.00'))
             popust += kupon_popust
             pogodnosti.append(f'Kupon {kupon_popust} KM ({kupon.kod})')
-        elif kupon.scratch_claim_id:
-            kupon_popust = sum((_scratch_coupon_line_discount(item, kupon.postotak)
-                                for item in (cart_items or [])), Decimal('0.00'))
         elif kupon.automatski:
             loyalty_osnovica = _loyalty_osnovica_iz_korpe(cart_items)
             kupon_popust = _postotni_popust(loyalty_osnovica, kupon.postotak)
@@ -450,11 +447,6 @@ def pripremi_stavke_za_racun(order):
         })
     return stavke
 
-def _scratch_coupon_line_discount(item, percent):
-    total = Decimal(str(item['ukupno_stavka']))
-    regular = Decimal(str(item.get('bazna_cijena_decimal') or item.get('bazna_cijena') or item['cijena_decimal']))
-    target = _kvantiziraj(regular * (Decimal('1') - percent / Decimal('100')))
-    return max(Decimal('0.00'), total - target * int(item['quantity']))
 
 
 def annotate_cart_coupon_prices(items, coupon):
@@ -467,8 +459,7 @@ def annotate_cart_coupon_prices(items, coupon):
     for item in items:
         total = Decimal(str(item['ukupno_stavka']))
         base = _loyalty_osnovica_iz_korpe([item]) if coupon.automatski else total
-        raw = (_scratch_coupon_line_discount(item, coupon.postotak) if coupon.scratch_claim_id
-               else min(total, base * coupon.postotak / Decimal('100')))
+        raw = min(total, base * coupon.postotak / Decimal('100'))
         if raw > 0:
             rows.append((item, total, raw, raw.quantize(Decimal('.01'), rounding=ROUND_DOWN)))
     target = _kvantiziraj(sum((row[2] for row in rows), Decimal('0')))

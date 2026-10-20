@@ -82,15 +82,6 @@ class SiteSettings(models.Model):
         verbose_name='Link bannera',
         help_text='Unesi puni link (https://…). Klik na banner i dugme „Istraži ponudu” otvara ovaj link.',
     )
-    sretni_greb_greb_poklon = models.ForeignKey(
-        'Product',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='sretni_greb_greb_settings',
-        verbose_name='Sretni Greb-Greb — poklon',
-        help_text='Artikal koji se automatski dodaje bez naplate kada kupac osvoji poklon i ispuni prag od 150 KM.',
-    )
     loyalty_banner_slika = models.ImageField(
         upload_to='site/loyalty/', blank=True,
         verbose_name='Loyalty banner — mobilna slika',
@@ -2094,6 +2085,7 @@ class Akcija(models.Model):
         PONUDA = 'ponuda', '+ Ponuda'
         AI_PRODAJA = 'ai_prodaja', 'AI prodaja / AI dwell'
         AKCIJSKA = 'akcijska', 'Akcijska ponuda'
+        POSLIJE_NARUDZBE = 'poslije_narudzbe', 'Poslije narudžbe'
         # Zastarjeli (zadržani zbog postojećih redova; više se ne nude)
         SLIKA = 'slika', 'Pop-up + slika (zastarjelo)'
         TIMER = 'timer', 'Akcija + tajmer (zastarjelo)'
@@ -2103,7 +2095,7 @@ class Akcija(models.Model):
         GRATIS = 'gratis', '+ Gratis (zastarjelo)'
 
     # Tipovi u listi Akcije (admin)
-    ACTIVE_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL, Tip.PONUDA, Tip.AKCIJSKA)
+    ACTIVE_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL, Tip.PONUDA, Tip.AKCIJSKA, Tip.POSLIJE_NARUDZBE)
     # Site-wide popup queue. Bundle više nije popup — prikaz ispod artikla.
     # Kupi više (qty_deal) iskače tek kad kupac doda artikal u korpu.
     POPUP_TIPS = ()
@@ -4334,8 +4326,6 @@ class Coupon(models.Model):
         verbose_name='Automatski (loyalty)',
         help_text='Kreiran i ažuriran iz loyalty kartice.',
     )
-    scratch_claim = models.OneToOneField('OnlineGiftClaim', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='coupon')
     minimum = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     kreiran = models.DateTimeField(auto_now_add=True)
 
@@ -5424,7 +5414,7 @@ class CartRecoveryAlert(models.Model):
 class OnlineGiftCampaign(models.Model):
     """
     Online nagrada za posjetioce koji su trenutno na sajtu.
-    Jednostavan otkrij-nagradu popup (bez točka / greb-greba).
+    Jednostavan otkrij-nagradu popup .
     """
 
     class Audience(models.TextChoices):
@@ -5566,44 +5556,6 @@ class OnlineGiftCampaign(models.Model):
         return True
 
 
-class ScratchPrize(models.Model):
-    """Podesiva nagrada Sretni Greb-Greb igre."""
-
-    class Kind(models.TextChoices):
-        PERCENT = 'percent', 'Popust u procentima'
-        SHIPPING = 'shipping', 'Besplatna dostava'
-        PRODUCT = 'product', 'Besplatan artikal'
-        PRODUCT_DISCOUNT = 'product_discount', 'Artikal + popust'
-        NONE = 'none', 'Bez nagrade'
-
-    campaign = models.ForeignKey(OnlineGiftCampaign, on_delete=models.CASCADE, related_name='scratch_prizes')
-    code = models.SlugField(max_length=24)
-    label = models.CharField(max_length=120, verbose_name='Tekst nagrade')
-    kind = models.CharField(max_length=20, choices=Kind.choices)
-    weight = models.PositiveSmallIntegerField(default=1, verbose_name='Šansa / težina')
-    minimum = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name='Minimalna korpa (KM)')
-    discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), verbose_name='Popust (%)')
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, related_name='scratch_prizes', verbose_name='Besplatan artikal')
-    active = models.BooleanField(default=True, verbose_name='Aktivna')
-    sort_order = models.PositiveSmallIntegerField(default=0)
-
-    class Meta:
-        verbose_name = 'Sretni Greb-Greb nagrada'
-        verbose_name_plural = 'Sretni Greb-Greb nagrade'
-        ordering = ['sort_order', 'pk']
-        constraints = [models.UniqueConstraint(fields=['campaign', 'code'], name='scratch_prize_unique_campaign_code')]
-
-    def clean(self):
-        from django.core.exceptions import ValidationError
-        if self.kind == self.Kind.PERCENT and self.discount_percent <= 0:
-            raise ValidationError({'discount_percent': 'Unesite popust veći od 0.'})
-        if self.kind in (self.Kind.PRODUCT, self.Kind.PRODUCT_DISCOUNT) and not self.product_id:
-            raise ValidationError({'product': 'Odaberite artikal koji kupac dobija besplatno.'})
-        if self.kind == self.Kind.PRODUCT_DISCOUNT and self.discount_percent <= 0:
-            raise ValidationError({'discount_percent': 'Unesite popust veći od 0.'})
-
-    def __str__(self):
-        return self.label
 
 
 class OnlineGiftClaim(models.Model):
@@ -5636,19 +5588,6 @@ class OnlineGiftClaim(models.Model):
     discount_km = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     reward_claimed = models.BooleanField(default=False)
     reward_consumed = models.BooleanField(default=False)
-    # Popunjava se samo za Sretni Greb-Greb. Kombinacija je zaključana u bazi
-    # kako dva istovremena zahtjeva ne bi mogla dodijeliti dvije nagrade.
-    scratch_tracking_enabled = models.BooleanField(default=False)
-    scratch_shown_at = models.DateTimeField(null=True, blank=True)
-    scratch_revealed_at = models.DateTimeField(null=True, blank=True)
-    scratch_reward_label = models.CharField(max_length=500, blank=True)
-    scratch_week_start = models.DateField(null=True, blank=True, db_index=True)
-    scratch_eligibility_key = models.CharField(max_length=80, blank=True)
-    scratch_prize_code = models.CharField(max_length=24, blank=True)
-    scratch_trigger_order = models.ForeignKey(
-        'Order', on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='scratch_reward_claims',
-    )
     order = models.ForeignKey(
         'Order',
         on_delete=models.SET_NULL,
@@ -5669,13 +5608,6 @@ class OnlineGiftClaim(models.Model):
             models.Index(fields=['session_key', 'campaign']),
             models.Index(fields=['user', 'campaign']),
             models.Index(fields=['won', '-kreirano']),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                fields=['campaign', 'scratch_trigger_order'],
-                condition=models.Q(scratch_trigger_order__isnull=False),
-                name='online_gift_one_scratch_claim_per_order',
-            ),
         ]
 
     def __str__(self):

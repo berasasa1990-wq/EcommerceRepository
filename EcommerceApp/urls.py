@@ -1,3 +1,4 @@
+from . import post_order_offer
 from . import views_monri
 from . import views_partner_stock
 from django.urls import path
@@ -25,11 +26,6 @@ urlpatterns = [
     path('placanje/monri/<uuid:token>/odustajanje/', views_monri.cancel, name='monri_cancel'),
     path('manifest.webmanifest', views.pwa_manifest, name='pwa_manifest'),
     path('service-worker.js', views.pwa_service_worker, name='pwa_service_worker'),
-    path('nagrade/greb-greb/dogadjaj/', views.scratch_event, name='scratch_event'),
-    path('nagrade/greb-greb/status/', views.scratch_status, name='scratch_status'),
-    path('nagrade/greb-greb/otkrij/', views.scratch_claim, name='scratch_claim'),
-    path('nagrade/greb-greb/dodaj-artikal/', views.scratch_add_product, name='scratch_add_product'),
-    path('nagrade/greb-greb/dodaj-na-narudzbu/', views.scratch_add_product_to_order, name='scratch_add_product_to_order'),
     path('lozinka/reset/', never_cache(auth_views.PasswordResetView.as_view(
         template_name='auth/password_reset_form.html',
         email_template_name='auth/password_reset_email.txt',
@@ -136,6 +132,7 @@ urlpatterns = [
     path('uzivo/javno/', views.public_online_visitors, name='public_online_visitors'),
     path('uzivo/skoro-korpa/', views.almost_cart_track, name='almost_cart_track'),
     path('narudzba/', views.checkout, name='checkout'),
+    path('narudzba/ponuda/<str:broj>/dodaj/', post_order_offer.add_product, name='post_order_add'),
     path('narudzba/uspjeh/<str:broj>/', views.order_success, name='order_success'),
     path('prijava/', views.login_view, name='login'),
     path('prijava/csrf/', views.auth_csrf_token, name='auth_csrf_token'),
@@ -402,7 +399,6 @@ urlpatterns = [
         views_magacin.magacin_backup_download_current,
         name='staff_magacin_backup_download_current',
     ),
-    path('nalog/greb-greb/', views.staff_scratch_analytics, name='staff_scratch_analytics'),
     path('nalog/pretraga-artikala/', views.staff_product_search, name='staff_product_search'),
 
     path('nalog/loyalty/', views.staff_loyalty_system, name='staff_loyalty_system'),

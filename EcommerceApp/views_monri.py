@@ -62,7 +62,7 @@ def finish_paid_order(order):
 
     def session_updates():
         from importlib import import_module
-        from .online_gift import grant_scratch_chance, get_session_reward, clear_session_reward
+        from .online_gift import get_session_reward, clear_session_reward
         from .live_visitor_offer import clear_free_shipping_reward
         from .cart import Cart
         session_key = context.get('session_key')
@@ -75,7 +75,6 @@ def finish_paid_order(order):
         if dict(session.get('cart', {})) == context.get('cart'):
             Cart(request).clear()
             clear_free_shipping_reward(request, browser.user)
-        grant_scratch_chance(request, order)
         session.save()
 
     steps = (

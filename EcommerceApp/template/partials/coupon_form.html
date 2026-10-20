@@ -55,12 +55,12 @@
     {% endif %}
     {% if coupon_next and coupon_next != 'cart' %}
     <details class="coupon-code-entry">
-        <summary>Greb-Greb ili drugi kod za popust</summary>
+        <summary>Kod za popust</summary>
         <form method="post" action="{% url 'apply_coupon' %}" class="coupon-form">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ coupon_next|default:'cart' }}">
             <label for="rewardCouponCode">Kod za popust</label>
-            <input id="rewardCouponCode" name="kod" maxlength="20" required autocomplete="off" placeholder="GREB-…">
+            <input id="rewardCouponCode" name="kod" maxlength="20" required autocomplete="off" placeholder="Unesite kod">
             <button type="submit" class="btn btn-coupon">Primijeni kod</button>
         </form>
     </details>

@@ -139,3 +139,9 @@ html body .pd-similar-card h3{font-size:12px;line-height:1.35}
 @media(max-width:767px){
  html body .product-catalog article.product-card.product-card--catalog.product-card--reference-design.product-card--unified.product-card--unified .product-card__title{font-size:12px!important;line-height:17px!important;min-height:34px!important}
 }
+/* Bring neighboring catalog cards closer together on desktop. */
+@media (min-width: 1025px) {
+    html body .product-catalog .product-grid.product-grid--catalog {
+        column-gap: 8px !important;
+    }
+}

@@ -92,7 +92,7 @@ fulfillment liste tada vide normalnu plaćenu web narudžbu; nema posebnog
 Monri magacina, skidanja lagera ili automatskog slanja kuriru.
 
 `finish_paid_order` koristi postojeće helper funkcije za kupca, nagrade,
-čišćenje iste korpe/sesije, Greb-Greb, staff obavijest, email queue,
+čišćenje iste korpe/sesije, staff obavijest, email queue,
 loyalty, server purchase tracking te cache navigacije. Purchase event
 ima stabilan ID `purchase-<broj>`. Svaki korak ima payment row lock i trajni
 marker. Ako korak padne, safe log bilježi samo ID i naziv koraka, callback

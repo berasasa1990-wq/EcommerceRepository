@@ -673,13 +673,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Focus / klik u pretragu — zatvori otvorenu kategoriju (ne ostaje "zaglavljena")
-    searchInput?.addEventListener('focus', forceCloseMegaMenu);
+    searchInput?.addEventListener('focus', () => {
+        forceCloseMegaMenu();
+        if (window.innerWidth > 1024 && searchInput.value.trim()) queueSearchSuggestions();
+    });
     searchInput?.addEventListener('pointerdown', forceCloseMegaMenu);
     headerSearch?.addEventListener('mouseenter', forceCloseMegaMenu);
 
     searchInput?.addEventListener('input', queueSearchSuggestions);
-    searchInput?.addEventListener('keyup', queueSearchSuggestions);
     searchInput?.addEventListener('search', queueSearchSuggestions);
+    document.addEventListener('click', (event) => {
+        if (!headerSearch?.contains(event.target)) closeSearchOverlay();
+    });
     let searchPositionFrame = null;
     function scheduleSearchPosition() {
         if (!searchSuggestions || searchSuggestions.hidden || searchPositionFrame !== null) return;

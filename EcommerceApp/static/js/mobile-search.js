@@ -8,7 +8,7 @@
     function restore(){closing=true;setTimeout(()=>{closing=false;},150);if(dock?.parentElement===dialog)marker.after(dock);document.documentElement.classList.remove('mobile-search-open');controller?.abort();clearTimeout(timer);generation++;}
     function close(){closing=true;dialog.close();restore();}
     window.openMobileSearch=()=>{
-        if(dialog.open)return;
+        if(dialog.open || matchMedia('(min-width: 1025px)').matches)return;
         dock=matchMedia('(max-width: 1024px)').matches?document.querySelector('.mobile-home-dock'):null;
         if(dock){marker=document.createComment('search dock');dock.before(marker);dialog.append(dock);}
         dialog.showModal();document.documentElement.classList.add('mobile-search-open');input.focus();
@@ -19,8 +19,7 @@
     dialog.querySelector('[data-search-clear]').addEventListener('click',()=>{input.value='';input.dispatchEvent(new Event('input'));input.focus();});
     const headerInput = document.getElementById('searchInput');
     function openHeaderSearch() {
-        if (dialog.open) return;
-        if (matchMedia('(min-width: 1025px)').matches) input.value = headerInput.value;
+        if (dialog.open || matchMedia('(min-width: 1025px)').matches) return;
         window.openMobileSearch();
     }
     headerInput?.addEventListener('focus', () => {

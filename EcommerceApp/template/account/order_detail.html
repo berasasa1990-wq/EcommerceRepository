@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/account-mobile.css' %}?v=20260915-account-tracking">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/account-mobile.css' %}?v=20260915-account-tracking"><link rel="stylesheet" href="{% static 'css/post-order-offer.css' %}?v=20261020-account-items">{% endblock %}
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
@@ -9,7 +9,7 @@
 {% block title %}Narudžba #{{ order.broj }} — Carpologija BH{% endblock %}
 
 {% block content %}
-<section class="account-order-page">
+<section class="account-order-page account-order-receipt">
     <div class="account-order-header">
         <div>
             <a href="{% url 'account' %}" class="account-back-link">← Nazad na nalog</a>
@@ -25,13 +25,14 @@
     {% include 'partials/account_order_tracking.html' %}
 
     <div class="account-order-grid">
-        <div class="account-order-panel">
-            <h2>Stavke</h2>
-            <ul class="account-order-items">
+        <div class="account-order-panel order-confirmation">
+            <div class="order-confirmation__section-title"><h2>Naručeni artikli</h2><span>{{ order.web_placanje_label }}</span></div>
+            <ul class="order-confirmation__items">
                 {% for item in stavke %}
-                <li class="account-order-item">
-                    <div>
-                        <strong>{{ item.product_naziv|default:item.naziv }}</strong>
+                <li class="order-confirmation__item">
+                    <div class="order-confirmation__image">{% if item.image %}<img src="{{ item.image.url }}" alt="{{ item.product_naziv|default:item.naziv }}" width="80" height="80" loading="lazy">{% else %}<span aria-label="Slika nije dostupna">◇</span>{% endif %}</div>
+                    <div class="order-confirmation__copy">
+                        <h3>{{ item.product_naziv|default:item.naziv }}</h3>
                         {% if item.varijacija_naziv %}
                         <p class="account-order-item-variation">Varijacija: {{ item.varijacija_naziv }}</p>
                         {% endif %}
@@ -51,7 +52,7 @@
                             {% endif %}
                         </p>
                     </div>
-                    <span>{{ item.ukupno }} KM</span>
+                    <strong class="order-confirmation__price">{{ item.ukupno|floatformat:2 }} KM</strong>
                 </li>
                 {% endfor %}
             </ul>

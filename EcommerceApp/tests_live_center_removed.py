@@ -30,7 +30,7 @@ class LiveCenterRemovalTests(SimpleTestCase):
         self.assertNotIn('Live centar', html)
         self.assertNotIn('uzivo-analitika', html)
         for name in ['staff_hero_settings', 'staff_magacin', 'staff_orders_validation',
-                     'staff_scratch_analytics', 'staff_loyalty_system']:
+                     'staff_loyalty_system']:
             self.assertIn(reverse(name), html)
 
     def test_shared_visitor_and_cart_endpoints_still_resolve(self):
