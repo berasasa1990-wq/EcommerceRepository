@@ -229,7 +229,7 @@ def _invalidate_storefront_product_caches():
     invalidate_category_product_cache()
     for key in (
         'home_latest_products_v4',
-        'home_featured_products_v4',
+        'home_featured_products_v5',
         'home_sale_products_v4',
         'home_brand_show_v5',
         'showcase_brands_v2',
@@ -1953,6 +1953,8 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
             products,
             descending=(sort == 'opadajuca'),
         )
+    elif not search_q and (allowed_category_ids is not None or params.get('kategorija') or params.get('brend')):
+        products = sorted(products, key=lambda product: (product.kreiran, product.pk), reverse=True)
     elif search_q and len(search_q) >= 2 and len(products) > SEARCH_FINE_RANK_TOP:
         head = _sort_products_by_lager_priority(
             products[:SEARCH_FINE_RANK_TOP],
@@ -2324,54 +2326,25 @@ def _home_latest_products_uncached(request=None):
 
 
 def _featured_catalog_qs(products_qs, request=None):
-    base_qs = _home_product_queryset(request)
-    marked = base_qs.filter(je_hit=True)
-    if marked.exists():
-        return products_qs.filter(pk__in=marked.values('pk'))
-    selected_ids = HomeFeaturedProduct.objects.filter(aktivan=True).values('artikal_id')
-    return products_qs.filter(pk__in=base_qs.filter(pk__in=selected_ids).values('pk'))
+    marked = _home_product_queryset(request).filter(je_hit=True)
+    return products_qs.filter(pk__in=marked.values('pk'))
 
 
 def _home_featured_products(request=None):
-    """
-    Izdvojeni na početnoj:
-    1) Artikli označeni „HIT / Izdvojeno” (je_hit)
-    2) Fallback: ručni HomeFeaturedProduct
-    Među njima: redukovanje lagera ima prednost.
-    """
+    """Izdvojena ponuda sadrži samo artikle označene HIT ponudom."""
     return _home_cache_get(
-        'home_featured_products_v4',
+        'home_featured_products_v5',
         lambda: _home_featured_products_uncached(request),
     )
 
 
 def _home_featured_products_uncached(request=None):
-    base_qs = _home_product_queryset(request)
-    marked = list(
+    return list(
         _order_qs_by_lager_priority(
-            base_qs.filter(je_hit=True),
+            _home_product_queryset(request).filter(je_hit=True),
             '-kreiran', '-id',
         )[:HOME_SECTION_PRODUCT_LIMIT],
     )
-    if marked:
-        return marked
-
-    entries_qs = HomeFeaturedProduct.objects.filter(
-        aktivan=True,
-        artikal__aktivan=True,
-        artikal__na_stanju=True,
-        artikal__stanje__gt=0,
-    )
-    if not _staff_edit_mode_enabled(request):
-        entries_qs = entries_qs.filter(artikal__sakriven_do_stanja=False)
-    entries = entries_qs.select_related(
-        'artikal', 'artikal__kategorija', 'artikal__brend',
-    ).prefetch_related(
-        Prefetch('artikal__varijacije', queryset=_in_stock_variations_qs()),
-    ).order_by(
-        '-artikal__prioritet_lagera', 'redoslijed', '-id',
-    )[:HOME_SECTION_PRODUCT_LIMIT]
-    return [entry.artikal for entry in entries]
 
 
 def _home_sale_products(request=None):

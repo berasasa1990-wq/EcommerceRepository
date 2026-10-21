@@ -9342,28 +9342,37 @@ def magacin_cijene_bulk(request):
 def magacin_cijene_bulk_save(request):
     from .models import BulkPriceBatch
     try:
-        rows = json.loads(request.body).get('items')
-        if not isinstance(rows, list) or not 1 <= len(rows) <= 200:
-            raise ValueError('Dodaj od 1 do 200 artikala.')
-        validated = []
-        total = 0
-        for row in rows:
-            product, variation = _etiketa_resolve_token(row.get('token'))
-            if product is None:
-                raise ValueError('Artikal više nije dostupan.')
-            barcode = str(row.get('barcode') or '').strip()
-            expected = (product.barkod or '').strip()
-            if barcode and barcode != expected:
-                raise ValueError('Skenirani barkod ne odgovara odabranom artiklu.')
-            quantity = row.get('quantity')
-            if isinstance(quantity, bool) or not isinstance(quantity, int) or not 1 <= quantity <= 280:
-                raise ValueError('Količina mora biti cijeli broj od 1 do 280.')
-            total += quantity
-            if total > 2800:
-                raise ValueError('Najviše 2800 etiketa po listi.')
-            validated.append({'token': str(row['token']), 'barcode': barcode, 'quantity': quantity})
-        batch = BulkPriceBatch.objects.create(created_by=request.user, items=validated)
-        return JsonResponse({'id': batch.pk})
+        with transaction.atomic():
+            rows = json.loads(request.body).get('items')
+            if not isinstance(rows, list) or not 1 <= len(rows) <= 200:
+                raise ValueError('Dodaj od 1 do 200 artikala.')
+            validated = []
+            total = 0
+            for row in rows:
+                product, variation = _etiketa_resolve_token(row.get('token'))
+                if product is None:
+                    raise ValueError('Artikal više nije dostupan.')
+                product = Product.objects.select_for_update().get(pk=product.pk)
+                barcode = str(row.get('barcode') or '').strip()
+                if len(barcode) > BARKOD_MAX_LENGTH:
+                    raise ValueError('Barkod je predugačak.')
+                expected = (product.barkod or '').strip()
+                if barcode and expected and barcode != expected:
+                    raise ValueError('Skenirani barkod ne odgovara odabranom artiklu.')
+                quantity = row.get('quantity')
+                if isinstance(quantity, bool) or not isinstance(quantity, int) or not 1 <= quantity <= 280:
+                    raise ValueError('Količina mora biti cijeli broj od 1 do 280.')
+                total += quantity
+                if total > 2800:
+                    raise ValueError('Najviše 2800 etiketa po listi.')
+                if barcode and not expected:
+                    product.barkod = barcode
+                    product.save(update_fields=['barkod'])
+                validated.append({'token': str(row['token']), 'barcode': barcode, 'quantity': quantity})
+            batch = BulkPriceBatch.objects.create(created_by=request.user, items=validated)
+            return JsonResponse({'id': batch.pk})
+    except DuplicateBarcode as exc:
+        return JsonResponse({'error': exc.message_dict['barkod'][0]}, status=400)
     except (ValueError, TypeError, AttributeError):
         return JsonResponse({'error': 'Provjeri artikle, njihove barkodove i količine (1–280; ukupno najviše 2800).'}, status=400)
 

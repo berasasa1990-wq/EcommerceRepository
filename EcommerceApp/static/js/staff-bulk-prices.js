@@ -49,6 +49,7 @@
                             picked = {token: String(product.id) + (variation ? ':' + variation.id : ''), name: name, expectedBarcode: (product.barkod || '').trim()};
                             document.getElementById('bulkPicked').textContent = name;
                             entry.hidden = false; barcode.value = ''; quantity.value = '';
+                            document.getElementById('bulkBarcodeField').hidden = !!picked.expectedBarcode;
                             results.replaceChildren(); status.textContent = ''; quantity.focus();
                         };
                         results.append(button);
@@ -62,7 +63,7 @@
     entry.addEventListener('submit', event => {
         event.preventDefault();
         if (!picked || busy || !entry.reportValidity()) return;
-        if (barcode.value.trim() && barcode.value.trim() !== picked.expectedBarcode) {
+        if (picked.expectedBarcode && barcode.value.trim() && barcode.value.trim() !== picked.expectedBarcode) {
             status.textContent = 'Skenirani barkod ne odgovara odabranom artiklu.';
             barcode.focus(); return;
         }

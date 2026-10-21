@@ -12,7 +12,7 @@
     <label class="catalog-desktop-filter__field">
         <span>Sortiranje</span>
         <select name="sort">
-            <option value=""{% if not filter_params.sort %} selected{% endif %}>Preporučeno</option>
+            <option value=""{% if not filter_params.sort %} selected{% endif %}>{% if category or filter_params.brend or filter_params.kategorija %}Najnovije prvo{% else %}Preporučeno{% endif %}</option>
             <option value="rastuca"{% if filter_params.sort == 'rastuca' %} selected{% endif %}>Od najjeftinijeg</option>
             <option value="opadajuca"{% if filter_params.sort == 'opadajuca' %} selected{% endif %}>Od najskupljeg</option>
         </select>

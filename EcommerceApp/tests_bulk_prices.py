@@ -29,7 +29,7 @@ class BulkPricesTests(TestCase):
                                 json.dumps({'items': self.rows if rows is None else rows}), content_type='application/json')
 
     def test_shared_notification_and_print_quantities(self):
-        self.assertContains(self.client.get(reverse('staff_magacin_cijene_bulk')), 'Skeniraj kamerom')
+        self.assertContains(self.client.get(reverse('staff_magacin_cijene_bulk')), 'Skeniraj barkod')
         response = self.save_batch()
         self.assertEqual(response.status_code, 200)
         batch = BulkPriceBatch.objects.get(pk=response.json()['id'])
@@ -67,6 +67,21 @@ class BulkPricesTests(TestCase):
         self.assertEqual(response.status_code, 200)
         printed = self.client.post(reverse('staff_magacin_cijene_bulk_print', args=[response.json()['id']]), {'papir': 'zebra'})
         self.assertEqual(printed.context['items'][0]['barkod'], 'BULK-123')
+
+    def test_missing_barcode_can_be_assigned_and_duplicate_is_rejected(self):
+        self.product.barkod = ''
+        self.product.save(update_fields=['barkod'])
+        row = dict(self.rows[0], barcode=self.other.barkod)
+        self.assertEqual(self.save_batch([row]).status_code, 400)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.barkod, '')
+        row['barcode'] = '3871234567892'
+        self.assertEqual(self.save_batch([row, dict(self.rows[1], quantity=0)]).status_code, 400)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.barkod, '')
+        self.assertEqual(self.save_batch([row]).status_code, 200)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.barkod, row['barcode'])
 
     def test_authentication_and_post_required(self):
         self.assertEqual(self.client.get(reverse('staff_magacin_cijene_bulk_save')).status_code, 405)

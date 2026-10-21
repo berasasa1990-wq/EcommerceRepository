@@ -1,6 +1,6 @@
 {% extends 'staff/magacin/base.html' %}
 {% load static %}
-{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/staff-price-print.css' %}"><link rel="stylesheet" href="{% static 'css/staff-bulk-prices.css' %}?v=20261021-2">{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/staff-price-print.css' %}"><link rel="stylesheet" href="{% static 'css/staff-bulk-prices.css' %}?v=20261021-3">{% endblock %}
 {% block magacin_content %}
 <section class="mg-card sc-card" id="bulkPrices" data-lookup="{{ lookup_url }}" data-save="{% url 'staff_magacin_cijene_bulk_save' %}">
 <h1>Cijene Bulk</h1>
@@ -15,11 +15,11 @@
 <label class="sc-label" for="bulkQuantity">Količina etiketa</label>
 <input id="bulkQuantity" type="number" min="1" max="280" step="1" inputmode="numeric" required placeholder="Unesi količinu">
 </div>
-<div class="bulk-field">
+<div class="bulk-field" id="bulkBarcodeField" hidden>
 <label class="sc-label" for="bulkBarcode">Barkod <span class="bulk-optional">(opcionalno)</span></label>
 <div class="bulk-barcode-row">
 <input id="bulkBarcode" autocomplete="off" placeholder="Skeniraj barkod">
-<button type="button" class="mg-btn" data-mg-scan-target="bulkBarcode" data-mg-scan-title="Skeniraj barkod artikla">Skeniraj kamerom</button>
+<button type="button" class="mg-btn" data-mg-scan-target="bulkBarcode" data-mg-scan-title="Skeniraj barkod artikla">Skeniraj barkod</button>
 </div>
 </div>
 <button class="mg-btn mg-btn-primary bulk-add" type="submit">Dalje — dodaj artikal</button>
@@ -30,4 +30,4 @@
 <button id="bulkSave" type="button" class="mg-btn mg-btn-primary" disabled>Sačuvaj</button>
 </section>
 {% endblock %}
-{% block magacin_js %}<script src="{% static 'js/staff-bulk-prices.js' %}?v=20261021-2"></script>{% endblock %}
+{% block magacin_js %}<script src="{% static 'js/staff-bulk-prices.js' %}?v=20261021-3"></script>{% endblock %}
