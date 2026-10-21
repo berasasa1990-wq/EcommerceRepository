@@ -14,7 +14,7 @@
 >
     {# Badge: −% na akciji, inače NOVO #}
     {% if product.katalog_akcija_postotak %}
-    <span class="hm-badge hm-badge--sale is-pulse" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%</span>
+    <span class="hm-badge hm-badge--sale is-pulse" aria-label="Popust {{ product.katalog_akcija_postotak }}%">-{{ product.katalog_akcija_postotak }}%{% include "partials/product_sale_remaining.html" %}</span>
     {% elif product.katalog_na_akciji %}
     <span class="hm-badge hm-badge--sale is-pulse" aria-label="Akcija">Akcija</span>
     {% elif home_section_badge == 'hit' %}

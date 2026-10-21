@@ -7261,3 +7261,10 @@ class CompanyPayment(models.Model):
 class CompanyStatementImportState(models.Model):
     key = models.CharField(max_length=64, primary_key=True)
     last_uid = models.PositiveBigIntegerField(default=0)
+
+
+class BulkPriceBatch(models.Model):
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    items = models.JSONField(default=list)
+    opened_at = models.DateTimeField(null=True, blank=True)

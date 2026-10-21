@@ -1,0 +1,2 @@
+body .product-sale-remaining{display:block;color:#d52228!important;font-size:12px;font-weight:700;line-height:1.35;text-transform:none;letter-spacing:normal;margin-top:4px;white-space:nowrap}
+body :is(.product-card-corner-badge--sale,.hm-badge--sale,.product-discount-badge)>.product-sale-remaining{position:absolute;top:100%;left:0;margin-top:5px;padding:3px 6px;border-radius:4px;background:#fff;box-shadow:0 1px 4px #00000012;font-size:11px}

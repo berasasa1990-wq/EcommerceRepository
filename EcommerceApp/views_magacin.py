@@ -1462,6 +1462,8 @@ def _stampa_cijena_context(request, *, mode='izbor'):
         page_title='Štampaj cijenu — Magacin',
         hide_top_search=True,
     )
+    from .models import BulkPriceBatch
+    context['bulk_batches'] = BulkPriceBatch.objects.select_related('created_by').order_by('-created_at')[:50]
     context.update({
         'mode': mode,
         'lookup_url': reverse('staff_magacin_artikli_lookup'),
@@ -9324,3 +9326,68 @@ def magacin_dupli_barkod_obrisi(request, pk):
     params = {'q': (request.POST.get('q') or '')[:200],
               'page': (request.POST.get('page') or '1')[:10]}
     return redirect(reverse('staff_magacin_dupli_barkodovi') + '?' + urlencode(params))
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+@require_GET
+def magacin_cijene_bulk(request):
+    context = _stampa_cijena_context(request)
+    return render(request, 'staff/magacin/cijene_bulk.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+@require_POST
+def magacin_cijene_bulk_save(request):
+    from .models import BulkPriceBatch
+    try:
+        rows = json.loads(request.body).get('items')
+        if not isinstance(rows, list) or not 1 <= len(rows) <= 200:
+            raise ValueError('Dodaj od 1 do 200 artikala.')
+        validated = []
+        total = 0
+        for row in rows:
+            product, variation = _etiketa_resolve_token(row.get('token'))
+            if product is None:
+                raise ValueError('Artikal više nije dostupan.')
+            barcode = str(row.get('barcode') or '').strip()
+            expected = (product.barkod or '').strip()
+            if barcode and barcode != expected:
+                raise ValueError('Skenirani barkod ne odgovara odabranom artiklu.')
+            quantity = row.get('quantity')
+            if isinstance(quantity, bool) or not isinstance(quantity, int) or not 1 <= quantity <= 280:
+                raise ValueError('Količina mora biti cijeli broj od 1 do 280.')
+            total += quantity
+            if total > 2800:
+                raise ValueError('Najviše 2800 etiketa po listi.')
+            validated.append({'token': str(row['token']), 'barcode': barcode, 'quantity': quantity})
+        batch = BulkPriceBatch.objects.create(created_by=request.user, items=validated)
+        return JsonResponse({'id': batch.pk})
+    except (ValueError, TypeError, AttributeError):
+        return JsonResponse({'error': 'Provjeri artikle, njihove barkodove i količine (1–280; ukupno najviše 2800).'}, status=400)
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
+@require_POST
+def magacin_cijene_bulk_print(request, pk):
+    from .models import BulkPriceBatch
+    batch = get_object_or_404(BulkPriceBatch, pk=pk)
+    if request.POST.get('papir') not in ('a4', 'zebra'):
+        return JsonResponse({'error': 'Izaberi A4 ili Zebra.'}, status=400)
+    items = []
+    for row in batch.items:
+        product, variation = _etiketa_resolve_token(row['token'])
+        if product is None:
+            messages.error(request, 'Artikal sa spremljene liste više nije dostupan. Lista nije odštampana.')
+            return redirect('staff_magacin_stampa_cijena')
+        payload = _artikal_etiketa_payload(product, variation, request=request)
+        if row.get('barcode'):
+            payload['barkod'] = row['barcode']
+            payload['barcode_src'] = _etiketa_barcode_data_uri(row['barcode'])
+        items.extend([payload] * row['quantity'])
+    response = _render_etiketa_print(request, items, papir=request.POST['papir'])
+    batch.opened_at = timezone.now()
+    batch.save(update_fields=['opened_at'])
+    return response

@@ -71,3 +71,9 @@ body.magacin-page.is-pick .mg-app:not(.nav-open) .mg-sidebar{display:none}
  body.magacin-page .mg-app .mg-sidebar .mg-side-close{background:#fff;color:#0094CD;border-color:#d5e7f1}
  body.magacin-page .mg-app .mg-nav-count{background:#effaff;color:#0094CD}
 }
+
+@media(min-width:1101px){body.magacin-page .mg-app .mg-nav .mg-bulk-mobile{display:none}}
+
+@media(max-width:1100px){
+ body.magacin-page .mg-app .mg-nav a.mg-bulk-mobile[data-mobile-warehouse-link]{display:flex}
+}

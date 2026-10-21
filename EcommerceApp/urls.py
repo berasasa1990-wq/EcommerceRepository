@@ -1,3 +1,4 @@
+from .views_bulk_actions import bulk_actions
 from . import post_order_offer
 from . import views_monri
 from . import views_partner_stock
@@ -162,6 +163,7 @@ urlpatterns = [
     ),
 
 
+    path('nalog/admin/bulk-akcije/', bulk_actions, name='staff_bulk_actions'),
     path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
     path('nalog/admin/settings/', views.staff_hero_settings, name='staff_hero_settings'),
     path('nalog/admin/dugovanja-firmi/', views.staff_company_debts, name='staff_company_debts'),
@@ -190,6 +192,9 @@ urlpatterns = [
         name='staff_magacin_brzi_unos_aktivacija',
     ),
     path('nalog/magacin/artikli/lookup/', views_magacin.magacin_artikli_lookup, name='staff_magacin_artikli_lookup'),
+    path('nalog/magacin/cijene-bulk/', views_magacin.magacin_cijene_bulk, name='staff_magacin_cijene_bulk'),
+    path('nalog/magacin/cijene-bulk/save/', views_magacin.magacin_cijene_bulk_save, name='staff_magacin_cijene_bulk_save'),
+    path('nalog/magacin/cijene-bulk/<int:pk>/print/', views_magacin.magacin_cijene_bulk_print, name='staff_magacin_cijene_bulk_print'),
     path('nalog/magacin/stampa-cijena/', views_magacin.magacin_stampa_cijena, name='staff_magacin_stampa_cijena'),
     path('nalog/magacin/stampa-cijena/ista/', views_magacin.magacin_stampa_cijena_ista, name='staff_magacin_stampa_cijena_ista'),
     path(

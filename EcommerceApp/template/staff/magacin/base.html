@@ -14,8 +14,8 @@
 {% endblock %}
 
 {% block warehouse_theme_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin-menu.css' %}?v=20261017-white-desktop-menu">
-<link rel="stylesheet" media="screen" href="{% static 'css/warehouse-workspace.css' %}?v=20261017-white-desktop-menu">
+<link rel="stylesheet" href="{% static 'css/staff-magacin-menu.css' %}?v=20261021-bulk-mobile-menu">
+<link rel="stylesheet" media="screen" href="{% static 'css/warehouse-workspace.css' %}?v=20261021-bulk-mobile-menu">
 {% endblock %}
 
 {% block flash_messages %}
@@ -70,6 +70,11 @@
             </a>
             {% endif %}
             {% if request.user|warehouse_can:"staff_magacin_stampa_cijena" %}
+            <a href="{% url 'staff_magacin_cijene_bulk' %}" data-mobile-warehouse-link class="mg-bulk-mobile{% if request.resolver_match.url_name == 'staff_magacin_cijene_bulk' %} is-active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h9l7 7-9 9-7-7V4z"/><circle cx="8" cy="8" r="1"/><path d="M10 12l4 4M12 10l4 4"/></svg>
+                Cijene Bulk
+            </a>
+
             <a href="{% url 'staff_magacin_stampa_cijena' %}" class="{% if magacin_section == 'stampa_cijena' %}is-active{% endif %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
                 Štampaj cijenu

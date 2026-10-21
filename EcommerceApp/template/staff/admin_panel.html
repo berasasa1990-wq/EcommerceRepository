@@ -26,6 +26,7 @@ body .staff-admin-page .admin-btn-text :is(h2,h3,p,span,strong), body .staff-adm
 body .staff-admin-page .admin-live-new { position: absolute; top: 12px; right: 13px; padding: 4px 8px; border-radius: 999px; background: #fff; color: #0094cd !important; font-size: 10px; font-weight: 900; letter-spacing: .08em; line-height: 1; }
 body .staff-admin-page .admin-btn:focus-visible { outline: 3px solid #0094cd; outline-offset: 3px; }
 @media (max-width: 820px) {
+    body .staff-admin-page .admin-bulk-actions { display: none; }
     body .staff-admin-page .staff-page-hero__inner { padding-left: 16px !important; padding-right: 16px !important; }
     body .staff-admin-page .admin-buttons { padding: 0 16px 32px !important; }
 }
@@ -64,6 +65,11 @@ body .staff-admin-page .admin-btn:focus-visible { outline: 3px solid #0094cd; ou
         </a>
 
         {% if user.is_superuser %}
+        <a href="{% url 'staff_bulk_actions' %}" class="admin-btn admin-bulk-actions">
+            <div class="admin-btn-icon" aria-hidden="true">%</div>
+            <div class="admin-btn-text"><strong>Bulk Akcije</strong><span>Odaberi artikle i postavi sniženje s datumom završetka</span></div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
+        </a>
         <a href="{% url 'staff_company_debts' %}" class="admin-btn">
             <div class="admin-btn-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>

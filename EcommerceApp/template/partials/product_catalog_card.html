@@ -13,7 +13,7 @@
     {% if product.na_stanju %}data-in-stock="1"{% endif %}
 >
     {% if product.katalog_akcija_postotak %}
-    <span class="product-card-corner-badge product-card-corner-badge--sale">-{{ product.katalog_akcija_postotak }}%</span>
+    <span class="product-card-corner-badge product-card-corner-badge--sale">-{{ product.katalog_akcija_postotak }}%{% include "partials/product_sale_remaining.html" %}</span>
     {% elif product.katalog_na_akciji %}
     <span class="product-card-corner-badge product-card-corner-badge--sale">Akcija</span>
     {% elif product.je_novitet or home_section_badge == 'novo' %}

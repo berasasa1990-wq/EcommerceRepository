@@ -1,0 +1,21 @@
+{% extends 'base.html' %}{% load static %}
+{% block page_title %}<title>Bulk Akcije</title>{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/staff-bulk-actions.css' %}?v=1">{% endblock %}
+{% block content %}
+<section class="ba-page" id="bulkActions">
+<a href="{% url 'staff_admin_panel' %}">← Admin panel</a>
+<h1>Bulk Akcije</h1><p>Prikazani su samo artikli na stanju. Pretraži katalog i označi artikle kojima želiš postaviti akciju.</p>
+<div class="ba-toolbar"><input id="baSearch" type="search" placeholder="Naziv, šifra ili barkod — npr. Eva" aria-label="Pretraga artikala"><button id="baSelect" type="button">Označi prikazane</button><button id="baClear" type="button">Poništi odabir</button></div>
+<div class="ba-selection"><span id="baCount">Odabrano: 0</span><button id="baOpen" type="button" disabled>Postavi</button></div>
+<p id="baStatus" role="status" aria-live="polite"></p>
+<div id="baCatalog" class="ba-catalog"></div>
+<div class="ba-pagination"><button id="baPrev" type="button">← Prethodna</button><span id="baPage"></span><button id="baNext" type="button">Sljedeća →</button></div>
+<dialog id="baDialog"><form id="baForm">{% csrf_token %}
+<h2>Postavi akciju</h2><p id="baSummary"></p>
+<label for="baPercent">Sniženje (%)</label><input id="baPercent" name="percent" type="number" min="0.01" max="99.99" step="0.01" required placeholder="npr. 20">
+<label for="baEnd">Akcija traje do (uključujući taj datum)</label><input id="baEnd" name="end_date" type="date" min="{{ today }}" required>
+<p>Odabrani artikli dobijaju isti procenat sniženja. Postojeće akcije artikala i njihovih varijacija bit će zamijenjene.</p>
+<p id="baError" role="alert"></p><div class="ba-dialog-actions"><button id="baCancel" type="button">Odustani</button><button id="baApply" type="submit">Postavi akciju</button></div>
+</form></dialog>
+</section><script src="{% static 'js/staff-bulk-actions.js' %}?v=1" defer></script>
+{% endblock %}

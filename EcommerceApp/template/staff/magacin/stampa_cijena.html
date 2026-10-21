@@ -3,7 +3,7 @@
 {% block body_class %}{{ block.super }} is-price-print{% endblock %}
 {% block extra_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'css/staff-price-print.css' %}?v=20261015-blue-workspace">
+<link rel="stylesheet" href="{% static 'css/staff-price-print.css' %}?v=20261021-bulk-notifications">
 {% endblock %}
 
 {% block magacin_content %}
@@ -27,6 +27,33 @@
     </div>
 
     {% if mode == 'izbor' %}
+    <section class="mg-card" id="bulkNotifications" aria-labelledby="bulkNotificationsTitle">
+        <div class="bn-heading">
+            <div><h2 id="bulkNotificationsTitle">Cijene Bulk</h2><p>Liste spremljene na telefonu, spremne za štampu.</p></div>
+            <span class="bn-heading-label">Obavještenja</span>
+        </div>
+        <div class="bn-list">
+        {% for batch in bulk_batches %}
+        <details class="bn-item">
+            <summary>
+                <span class="bn-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7z"/></svg></span>
+                <span class="bn-info"><strong>Lista #{{ batch.pk }}</strong><span>{{ batch.created_by }}</span><time datetime="{{ batch.created_at|date:'c' }}">{{ batch.created_at|date:"d.m.Y. · H:i" }}</time></span>
+                <span class="bn-status{% if not batch.opened_at %} bn-status-new{% endif %}">{% if batch.opened_at %}Štampa otvorena{% else %}Novo{% endif %}</span>
+                <span class="bn-expand" aria-hidden="true">⌄</span>
+            </summary>
+            <form class="bn-print" method="post" action="{% url 'staff_magacin_cijene_bulk_print' batch.pk %}" target="_blank" rel="noopener">
+                {% csrf_token %}
+                <div class="bn-print-label"><strong>Izaberi format štampe</strong><span>Štampa se otvara u novoj kartici.</span></div>
+                <div class="bn-actions">
+                    <button class="mg-btn bn-paper" name="papir" value="a4"><strong>A4</strong><span>28 etiketa po listu</span></button>
+                    <button class="mg-btn bn-paper" name="papir" value="zebra"><strong>Zebra</strong><span>Termalne etikete</span></button>
+                </div>
+            </form>
+        </details>
+        {% empty %}<p class="bn-empty">Nema spremljenih lista. Dodaj artikle kroz Cijene Bulk na telefonu.</p>{% endfor %}
+        </div>
+    </section>
+    <script>setTimeout(function(){if(!document.querySelector('#bulkNotifications details[open]')) location.reload();},30000);</script>
     <div class="sc-modes">
         <a class="sc-mode" href="{% url 'staff_magacin_stampa_cijena_ista' %}">
             <strong>Ista cijena</strong>
