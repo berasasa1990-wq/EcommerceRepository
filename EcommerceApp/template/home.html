@@ -3,7 +3,7 @@
 {% block body_class %}{% if not filters_active %}home-mobile-reference{% else %}catalog-header-reference{% endif %}{% endblock %}
 
 {% block warehouse_theme_css %}
-{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-reference-orange.css' %}?v=20261020-home-side-spacing">{% endif %}
+{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-reference-orange.css' %}?v=20261022-chairs-link">{% endif %}
 {% endblock %}
 {% block extra_css %}
 {% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-fishing-hero.css' %}?v=20261019-hero-small-button">{% endif %}
@@ -248,6 +248,7 @@ body.home-mobile-reference main > :is(section,.featured-grid,.mobile-home-benefi
 {% endif %}
 
 {% include 'partials/home_reference_offer.html' %}
+
 {% include 'partials/home_reference_bottom.html' %}
 
 {% include 'partials/seo_text_block.html' with text=seo_tekst_ispod placement='below' %}

@@ -1,1 +1,16 @@
-<section class="ref-special"><div><span>POSEBNE PONUDE</span><h2>SAMO ZA VAS</h2><p>Istražite najnovije akcije i uštedite.</p><a href="{% url 'home' %}?akcija=1">Istraži akcije <span aria-hidden="true">→</span></a></div><div class="ref-special-seal">POSEBNE<strong>CIJENE</strong></div></section>
+{% load static %}
+<section class="chair-banner" aria-labelledby="chair-banner-title">
+    <div class="chair-banner__copy">
+        <span class="chair-banner__eyebrow">STIGLE NA STANJE</span>
+        <h2 id="chair-banner-title">Veliki izbor <span>ribolovačkih stolica</span></h2>
+        <p>Udobnost za svaki ribolov. Pronađite svoj omiljeni model.</p>
+        <a href="https://carpologijabh.ba/kategorija/stolice/">Pogledaj stolice <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="chair-banner__chairs" aria-label="Izbor ribolovačkih stolica">
+        <img src="{% static 'images/chair-3149.avif' %}" alt="Ribolovačka stolica – model 1" width="400" height="400" loading="lazy" decoding="async">
+        <img src="{% static 'images/chair-3150.avif' %}" alt="Ribolovačka stolica – model 2" width="400" height="400" loading="lazy" decoding="async">
+        <img src="{% static 'images/chair-3151.avif' %}" alt="Ribolovačka stolica – model 3" width="400" height="400" loading="lazy" decoding="async">
+        <img src="{% static 'images/chair-3152.avif' %}" alt="Ribolovačka stolica – model 4" width="400" height="400" loading="lazy" decoding="async">
+        <img src="{% static 'images/chair-3153.avif' %}" alt="Ribolovačka stolica – model 5" width="400" height="400" loading="lazy" decoding="async">
+    </div>
+</section>
