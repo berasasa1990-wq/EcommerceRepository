@@ -146,6 +146,7 @@ from .models import (
     HomeBrandShowcase,
     HomeCategoryShowcase,
     HomeFeaturedProduct,
+    HomeProductSection,
     HomeNovoProduct,
     HomePromoCard,
     HomeTrustItem,
@@ -2641,6 +2642,7 @@ def home(request):
     home_category_showcases = []
     home_brand_showcases = []
     home_vlogs = []
+    custom_home_sections = []
     page_obj = None
     search_products = []
     catalog_title = None
@@ -2741,6 +2743,10 @@ def home(request):
         )
         bestselling_by_id = {p.pk: p for p in _product_queryset(request).filter(pk__in=bestselling_ids)}
         bestselling_products = [bestselling_by_id[pk] for pk in bestselling_ids if pk in bestselling_by_id]
+        from django.db.models import Prefetch
+        custom_home_sections = list(HomeProductSection.objects.filter(aktivan=True).prefetch_related(
+            Prefetch('artikli', queryset=_product_queryset(request).order_by('naziv', 'pk'), to_attr='visible_products')
+        ))
         latest_products = _home_latest_products(request)
         featured_products = _home_featured_products(request)
         featured_desktop_extra_ids = []
@@ -2834,6 +2840,7 @@ def home(request):
         'latest_products': latest_products,
         'bestselling_products': bestselling_products,
         'hero_banners': [site_settings, *site_settings.hero_banners.filter(aktivan=True)] if not filters_active else [],
+        'custom_home_sections': custom_home_sections,
         'featured_products': featured_products,
         'featured_desktop_extra_ids': featured_desktop_extra_ids if not filters_active else [],
         'sale_products': sale_products,
@@ -2964,7 +2971,7 @@ def vlog_detail(request, slug):
         'vlog_image': vlog_image,
         'image_width': vlog_image['width'],
         'image_height': vlog_image['height'],
-        'seo_title': f'{vlog.naslov} | Vlog — Carpologija BH',
+        'seo_title': f'{vlog.naslov} | Blog — Carpologija BH',
         'seo_description': seo_description,
         'canonical_url': settings.SEO_CANONICAL_URL + vlog.get_absolute_url(),
         'og_image': request.build_absolute_uri(vlog_image['src']),
@@ -9662,3 +9669,71 @@ def staff_loyalty_card_barcode(request, card_id):
     response['Content-Disposition'] = f'inline; filename="loyalty-barcode-{code}.png"'
     response['Cache-Control'] = 'private, max-age=120'
     return response
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_home_sections(request):
+    from .forms import HomeProductSectionForm
+
+    if request.GET.get('search') == '1':
+        query = (request.GET.get('q') or '').strip()
+        products = Product.objects.filter(aktivan=True).filter(
+            Q(naziv__icontains=query) | Q(sifra__icontains=query)
+        ).order_by('naziv', 'pk')[:30] if query else []
+        return JsonResponse({'products': [
+            {'id': p.pk, 'label': f'{p.naziv} ({p.sifra})'} for p in products
+        ]})
+    section_id = request.POST.get('section_id') if request.method == 'POST' else request.GET.get('edit')
+    section = get_object_or_404(HomeProductSection, pk=section_id) if section_id else None
+    if request.method == 'POST' and request.POST.get('action') == 'delete':
+        section = get_object_or_404(HomeProductSection, pk=request.POST.get('section_id'))
+        section.delete()
+        messages.success(request, 'Sekcija je obrisana.')
+        return redirect('staff_home_sections')
+    form = HomeProductSectionForm(request.POST if request.method == 'POST' else None, instance=section)
+    if request.method == 'POST' and form.is_valid():
+        with transaction.atomic():
+            form.save()
+        messages.success(request, 'Sekcija početne stranice je sačuvana.')
+        return redirect('staff_home_sections')
+    return render(request, 'staff/home_sections.html', {
+        **_base_context(), 'form': form, 'editing_section': section,
+        'section_forms': [(item, HomeProductSectionForm(instance=item, auto_id=f'id_section_{item.pk}_%s'))
+                          for item in HomeProductSection.objects.prefetch_related('artikli') if not section or item.pk != section.pk],
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def staff_home_page(request):
+    return render(request, 'staff/home_page.html', {
+        **_base_context(),
+        'section_count': HomeProductSection.objects.count(),
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+def staff_blog(request):
+    from django.core.cache import cache
+    from .forms import StaffBlogForm
+
+    post_id = request.POST.get('post_id') if request.method == 'POST' else request.GET.get('edit')
+    post = get_object_or_404(HomeVlog, pk=post_id) if post_id else None
+    form = StaffBlogForm(
+        request.POST if request.method == 'POST' else None,
+        request.FILES if request.method == 'POST' else None,
+        instance=post,
+    )
+    if request.method == 'POST' and form.is_valid():
+        with transaction.atomic():
+            form.save()
+            transaction.on_commit(lambda: cache.delete(f'home_vlogs_v2:{HOME_VLOG_LIMIT}'))
+        messages.success(request, 'Članak je sačuvan.')
+        return redirect('staff_blog')
+    return render(request, 'staff/blog.html', {
+        **_base_context(), 'form': form, 'editing_post': post,
+        'posts': HomeVlog.objects.order_by('redoslijed', '-id'),
+    })

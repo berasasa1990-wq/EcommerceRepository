@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block page_title %}<title>Početna stranica</title>{% endblock %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff-home-sections.css' %}?v=20261022-revert-4">
+{% endblock %}
+{% block content %}
+<section class="home-editor">
+    <header class="home-editor__header">
+        <a href="{% url 'staff_admin_panel' %}">← Admin panel</a>
+        <h1>Početna stranica</h1>
+        <p>Odaberi sadržaj početne stranice koji želiš urediti.</p>
+    </header>
+    <div class="home-editor__sections">
+        <article class="home-editor__section">
+            <h2>Sekcije</h2>
+            <p>Kreiraj novu sekciju ili uredi naziv i artikle u već kreiranim sekcijama.</p>
+            <p>Kreiranih sekcija: {{ section_count }}</p>
+            <a class="editor-link" href="{% url 'staff_home_sections' %}">Otvori sekcije →</a>
+        </article>
+        <article class="home-editor__section">
+            <h2>Najnovije sa bloga</h2>
+            <p>Tri članka iznad newslettera. Slika: <strong>800 × 500 px</strong>, za veću oštrinu 1600 × 1000 px. Motiv postavi u sredinu slike.</p>
+            <a class="editor-link" href="{% url 'staff_blog' %}">Uredi blog i slike →</a>
+        </article>
+    </div>
+</section>
+{% endblock %}

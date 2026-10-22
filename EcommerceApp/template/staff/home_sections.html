@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block page_title %}<title>Početna stranica</title>{% endblock %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff-home-sections.css' %}?v=20261022-revert-4">
+{% endblock %}
+{% block content %}
+<section class="home-editor">
+<header class="home-editor__header">
+<a href="{% url 'staff_home_page' %}">← Početna stranica</a>
+<h1>Sekcije</h1>
+<p>Kreiraj sekcije artikala koje će se pojaviti ispod bannera stolica. Manji redoslijed prikazuje se prvi. Prazne i isključene sekcije se ne prikazuju.</p>
+</header>
+<details class="home-editor__fold" {% if form.is_bound or editing_section %}open{% endif %}>
+<summary>{% if editing_section %}Uredi: {{ editing_section.naziv|lower|capfirst }}{% else %}+ Nova sekcija{% endif %}</summary>
+<div class="home-editor__fold-body">
+{% include 'staff/partials/home_section_form.html' with section_id=editing_section.pk %}
+</div></details>
+<details class="home-editor__fold">
+<summary>Kreirane sekcije</summary>
+<div class="home-editor__fold-body">
+<div class="home-editor__sections">
+{% for section, section_form in section_forms %}
+<details class="home-editor__fold">
+<summary><span>{{ section.naziv|lower|capfirst }}</span><small>{{ section.artikli.count }} artikala · {% if section.aktivan %}Uključena{% else %}Isključena{% endif %}</small></summary>
+<div class="home-editor__fold-body">
+{% include 'staff/partials/home_section_form.html' with form=section_form section_id=section.pk %}
+<form method="post" class="delete-section">{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="section_id" value="{{ section.pk }}"><button type="submit">Obriši sekciju</button></form>
+</div></details>
+{% empty %}<p>Još nema kreiranih sekcija.</p>{% endfor %}
+</div>
+</div>
+</details>
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'js/staff-home-sections.js' %}?v=20261022-revert-4" defer></script>{% endblock %}

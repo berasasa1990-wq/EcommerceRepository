@@ -4,43 +4,6 @@
 <link rel="stylesheet" href="{% static 'css/shared-site-footer.css' %}?v=20261018-1">
 <footer class="footer footer--mockup">
     <div class="footer-main">
-        <div class="footer-subscribe">
-            <div>
-                <h3 class="footer-subscribe-title">Pridruži se preko 20 000 sabskrajbera</h3>
-                <p class="footer-subscribe-sub">I budi informisan o svim novim dešavanjima</p>
-            </div>
-            <form class="footer-subscribe-form" id="footerNewsletterForm" action="{% url 'newsletter_subscribe' %}" method="post" novalidate>
-                {% csrf_token %}
-                <label class="visually-hidden" for="footerNewsletterEmail">E-mail</label>
-                <input type="email" id="footerNewsletterEmail" name="email" required autocomplete="email" placeholder="E-mail adresa">
-                <button type="submit" class="footer-subscribe-btn">Pretplati se</button>
-            </form>
-            <p class="footer-subscribe-msg" id="footerNewsletterMsg" hidden role="status"></p>
-        </div>
-
-        <div class="footer-features" aria-label="Prednosti kupovine">
-            <div class="footer-feature">
-                <strong>Dostava u roku 24h</strong>
-                <span>24/7 podrška</span>
-            </div>
-            <div class="footer-feature">
-                <strong>Zaštita kupca</strong>
-                <span>Bezbjedna pri kupovina</span>
-            </div>
-            <div class="footer-feature">
-                <strong>24/7 Podrška</strong>
-                <span>Podrška</span>
-            </div>
-            <div class="footer-feature">
-                <strong>Online Plaċanje</strong>
-                <span>Brzo i sigurno plaċanje</span>
-            </div>
-            <div class="footer-feature">
-                <strong>Dnevni dilovi</strong>
-                <span>Popusti i setovi</span>
-            </div>
-        </div>
-
         <div class="footer-grid footer-grid--mockup">
             <div class="footer-column footer-column--brand">
                 <a href="https://www.carpologijabh.ba/" class="footer-brand-title" target="_blank" rel="noopener noreferrer">Carpologija BH</a>

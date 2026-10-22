@@ -1,0 +1,17 @@
+<form method="post" class="section-form">
+{% csrf_token %}<input type="hidden" name="section_id" value="{{ section_id|default:'' }}">{{ form.non_field_errors }}
+<div class="home-editor__fields"><div class="home-editor__name">{{ form.naziv.label_tag }}{{ form.naziv }}{{ form.naziv.errors }}<small>Na primjer: Izdvojeni artikli</small></div>
+<div>{{ form.redoslijed.label_tag }}{{ form.redoslijed }}{{ form.redoslijed.errors }}<small>Manji broj prikazuje se prvi.</small></div></div>
+<p class="home-editor__toggle"><label>{{ form.aktivan }} Prikaži na početnoj</label>{{ form.aktivan.errors }}</p>
+<div class="home-editor__picker"><div><h3>Odabrani artikli <span id="selected-count-{{ section_id|default:'new' }}" data-role="selected-count" class="home-editor__count">0</span></h3>
+<p class="home-editor__hint">Ukloni kvačicu da izbaciš artikal iz sekcije.</p>
+<div id="selected-products-{{ section_id|default:'new' }}" data-role="selected-products">{{ form.artikli }}</div>{{ form.artikli.errors }}</div><div>
+<label for="product-search-{{ section_id|default:'new' }}">Dodaj artikle — pretraži naziv ili šifru</label>
+<input type="search" id="product-search-{{ section_id|default:'new' }}" data-role="product-search" placeholder="Unesi naziv ili šifru" autocomplete="off">
+<p id="search-status-{{ section_id|default:'new' }}" data-role="search-status" role="status" aria-live="polite"></p>
+<div id="product-results-{{ section_id|default:'new' }}" data-role="product-results"></div></div></div>
+<div class="home-editor__actions">
+<button type="submit">Sačuvaj sekciju</button>
+<button type="button" class="section-close">Zatvori</button>
+</div>
+</form>

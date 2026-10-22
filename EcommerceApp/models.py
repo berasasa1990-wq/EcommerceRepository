@@ -1871,6 +1871,21 @@ class HomePromoCard(models.Model):
         return self.naslov
 
 
+class HomeProductSection(models.Model):
+    naziv = models.CharField(max_length=200, verbose_name='Naziv sekcije')
+    redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
+    aktivan = models.BooleanField(default=True, verbose_name='Prikaži na početnoj')
+    artikli = models.ManyToManyField('Product', blank=True, related_name='home_sections')
+
+    class Meta:
+        ordering = ['redoslijed', 'pk']
+        verbose_name = 'Sekcija početne stranice'
+        verbose_name_plural = 'Sekcije početne stranice'
+
+    def __str__(self):
+        return self.naziv
+
+
 class HomeFeaturedProduct(models.Model):
     postavke = models.ForeignKey(
         SiteSettings,

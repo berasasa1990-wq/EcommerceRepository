@@ -1039,20 +1039,20 @@ def magacin_artikal(request, pk):
                     row['location'].pk for row in mp_stocked
                 }
                 if mode == 'mp':
+                    qty = _parse_qty(request.POST.get('kolicina') or '1')
                     loc_id = int(request.POST.get('location_id') or 0)
+                    available_rows = [row for row in stocked_rows if row['dostupno'] >= qty]
                     location = next(
-                        (row['location'] for row in stocked_rows if row['location'].pk == loc_id),
-                        None,
+                        (row['location'] for row in available_rows if row['location'].pk == loc_id),
+                        available_rows[0]['location'] if available_rows else None,
                     )
-                    if location is None and stocked_rows:
-                        location = stocked_rows[0]['location']
                     if location is None:
-                        raise MagacinError('Nema zalihe za prenos u MP.')
+                        raise MagacinError('Nema dovoljno slobodne količine na magacinskoj lokaciji za prenos u MP.')
                     order = create_prenos_mp_pick(
                         product=product,
                         variation=variation,
                         location=location,
-                        qty=_parse_qty(request.POST.get('kolicina') or '1'),
+                        qty=qty,
                         user=request.user,
                     )
                     stavki = order.stavke.count()

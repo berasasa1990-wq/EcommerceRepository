@@ -1940,9 +1940,9 @@ class HomeVlogAdmin(admin.ModelAdmin):
                 'slika', 'pregled_slike_velika', 'sadrzaj',
             ),
             'description': (
-                'Prikaz na početnoj (sekcija Vlog/Blog). '
+                'Prikaz na početnoj: Najnovije sa bloga, iznad newslettera. '
                 'Prva 3 aktivna po redoslijedu. '
-                'Slika: 800×500 px (8:5), JPG/PNG. Za oštrinu 1600×1000. '
+                'Slika: 800×500 px (8:5), JPG/PNG. Za oštrinu 1600×1000. Motiv stavite u sredinu jer kartica izrezuje sliku po sredini. '
                 'Naslov sekcije: Podešavanja → „naslov_blog”.'
             ),
         }),

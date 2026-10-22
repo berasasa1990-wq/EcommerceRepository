@@ -71,6 +71,33 @@ class AuthReliabilityTests(TestCase):
         self.assertFalse(LoginForm(self.payload).is_valid())
         self.assertFalse(LoginForm(dict(self.payload, lozinka='incorrect')).is_valid())
 
+    def test_home_banner_registration_grants_one_single_use_ten_percent_coupon(self):
+        from decimal import Decimal
+        from .live_visitor_offer import (
+            REGISTRATION_COUPON_NAME, _create_registration_reward_coupon,
+            consume_registration_reward,
+        )
+        from .models import Coupon
+        from .pricing import izracunaj_sazetak
+
+        response = self.client.get(reverse('register') + '?loyalty_popup=1')
+        self.assertContains(response, 'name="loyalty_popup" value="1"')
+        with patch('EcommerceApp.views.sync_korisnik'):
+            response = self.client.post(reverse('register'), dict(self.payload, loyalty_popup='1'))
+        self.assertEqual(response.status_code, 302)
+        user = User.objects.get(username=self.payload['email'])
+        coupons = Coupon.objects.filter(vlasnik=user, naziv=REGISTRATION_COUPON_NAME)
+        self.assertEqual(coupons.count(), 1)
+        coupon = coupons.get()
+        self.assertEqual(coupon.postotak, Decimal('10'))
+        self.assertEqual(_create_registration_reward_coupon(user, Decimal('10')).pk, coupon.pk)
+        self.assertEqual(coupons.count(), 1)
+        summary = izracunaj_sazetak(Decimal('100'), user=user, coupon_code=coupon.kod)
+        self.assertTrue(summary['kupon_primijenjen'])
+        consume_registration_reward(user)
+        coupon.refresh_from_db()
+        self.assertFalse(coupon.aktivan)
+
     def test_registration_preserves_password_and_waits_for_verification(self):
         response = self.client.post(reverse('register'), self.payload)
         self.assertEqual(response.status_code, 302)

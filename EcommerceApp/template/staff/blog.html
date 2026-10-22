@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block page_title %}<title>Blog — Admin</title>{% endblock %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block body_class %}home-editor-page{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff-home-sections.css' %}?v=20261022-blog">
+<style>
+body.home-editor-page main>.home-editor{width:calc(100% - 32px)!important;max-width:1000px!important;margin:24px auto!important;padding:0 0 30px!important}
+.blog-form textarea,.blog-form input[type=date]{width:100%;box-sizing:border-box;border:1px solid #b9d0dc;border-radius:8px;padding:10px;font:inherit;color:#18374a;background:#fff}
+.blog-form textarea{resize:vertical;line-height:1.6}.blog-form input[type=file]{max-width:100%;font:inherit}.blog-form .helptext{display:block;font-size:12px;color:#617986;margin:6px 0 12px}.blog-preview{width:160px;height:100px;object-fit:cover;border-radius:8px;margin:0 0 12px}.blog-row{display:flex;align-items:center;gap:14px;padding:12px;border:1px solid #d5e5ed;border-radius:9px;margin-bottom:10px}.blog-row img{width:80px;height:60px;object-fit:cover;border-radius:5px}.blog-row>div{flex:1;min-width:0}.blog-row h3{margin:0 0 5px}.blog-row p{margin:0;font-size:12px;color:#617986}.blog-row h3{overflow-wrap:anywhere}.blog-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:600px){.blog-fields{grid-template-columns:1fr}.blog-row{flex-wrap:wrap}}
+</style>
+{% endblock %}
+{% block content %}
+<section class="home-editor">
+<header class="home-editor__header"><a href="{% url 'staff_admin_panel' %}">← Admin panel</a><h1>Blog</h1><p>Kreiraj i uredi članke za blog i početnu stranicu. Slike: 800 × 500 px ili 1600 × 1000 px.</p></header>
+<details class="home-editor__fold" {% if editing_post or form.is_bound %}open{% endif %}>
+<summary>{% if editing_post %}Uredi: {{ editing_post.naslov }}{% else %}+ Novi članak{% endif %}</summary>
+<div class="home-editor__fold-body">
+<form method="post" enctype="multipart/form-data" class="blog-form">
+{% csrf_token %}<input type="hidden" name="post_id" value="{{ editing_post.pk|default:'' }}">
+{{ form.non_field_errors }}
+{% if editing_post.slika %}<img class="blog-preview" src="{{ editing_post.slika.url }}" alt="Trenutna slika članka">{% endif %}
+{% for field in form %}<div style="margin-bottom:14px">{{ field.label_tag }}{{ field }}{{ field.errors }}{% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}</div>{% endfor %}
+<div class="home-editor__actions"><button type="submit">Sačuvaj članak</button><a class="editor-link" href="{% url 'staff_blog' %}">Zatvori</a></div>
+</form></div></details>
+<h2>Kreirani članci</h2>
+{% for post in posts %}
+<div class="blog-row">
+{% if post.slika %}<img src="{{ post.slika.url }}" alt="" loading="lazy">{% endif %}
+<div><h3>{{ post.naslov }}</h3><p>{% if post.aktivan %}Objavljen{% else %}Skriven{% endif %} · Redoslijed: {{ post.redoslijed }}{% if post.display_date %} · {{ post.display_date|date:'d.m.Y.' }}{% endif %}</p></div>
+<a class="editor-link" href="?edit={{ post.pk }}">Uredi</a><a href="{{ post.get_absolute_url }}">Pogledaj</a>
+</div>
+{% empty %}<p>Još nema članaka. Klikni „Novi članak” za dodavanje.</p>{% endfor %}
+</section>
+{% endblock %}

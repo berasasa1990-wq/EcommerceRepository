@@ -3,12 +3,22 @@
 {% block body_class %}{% if not filters_active %}home-mobile-reference{% else %}catalog-header-reference{% endif %}{% endblock %}
 
 {% block warehouse_theme_css %}
-{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-reference-orange.css' %}?v=20261022-chairs-link">{% endif %}
+{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-reference-orange.css' %}?v=20261022-blog-edge-fill-2">{% endif %}
 {% endblock %}
 {% block extra_css %}
 {% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-fishing-hero.css' %}?v=20261019-hero-small-button">{% endif %}
 
 <style>
+body.home-mobile-reference main > .home-registration-banner { order: 3; display: flex; align-items: center; gap: 14px; width: 100%; min-height: 78px; box-sizing: border-box; padding: 20px 18px; margin: 12px 0; border: 1px solid #f3dac5; border-radius: 10px; background: #fff6ed; color: #263342; }
+.home-registration-banner__gift { width: 28px; height: 28px; flex: 0 0 28px; color: #ed650b; }
+.home-registration-banner p { flex: 1; margin: 0; font-size: 14px; line-height: 1.5; }
+.home-registration-banner strong { color: #c65308; }
+.home-registration-banner a { flex-shrink: 0; display: inline-flex; align-items: center; gap: 12px; padding: 8px 16px; border-radius: 7px; background: #ee650e; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; }
+.home-registration-banner a:focus-visible { outline: 3px solid #a94605; outline-offset: 3px; }
+@media (max-width: 600px) { body.home-mobile-reference main > .home-registration-banner { gap: 10px; padding: 18px 12px; flex-wrap: wrap; } .home-registration-banner p { font-size: 13px; flex-basis: calc(100% - 42px); } .home-registration-banner a { margin-left: 38px; } }
+
+html body.home-mobile-reference main > .home-products--custom { order: 10; }
+body.home-mobile-reference .home-products--custom .home-section-header__title { text-transform: none; overflow-wrap: anywhere; }
 .home-products--novo .product-card--home-reference { position: relative; }
 .home-products--novo .home-card-new-label {
     position: absolute; top: 9px; left: 10px; z-index: 5;
@@ -133,6 +143,7 @@ body.home-mobile-reference main > :is(section,.featured-grid,.mobile-home-benefi
 {% if not filters_active %}
 {% include 'partials/home_fishing_hero.html' %}
 
+
 {% include 'partials/home_mobile_navigation.html' %}
 
 
@@ -234,6 +245,8 @@ body.home-mobile-reference main > :is(section,.featured-grid,.mobile-home-benefi
 </section>
 {% endif %}
 
+{% include 'partials/home_registration_banner.html' %}
+
 {% if latest_products %}
 <section class="category-page category-page--shop home-products home-products--novo">
     <div class="product-catalog product-catalog--compact home-product-catalog">
@@ -248,6 +261,18 @@ body.home-mobile-reference main > :is(section,.featured-grid,.mobile-home-benefi
 {% endif %}
 
 {% include 'partials/home_reference_offer.html' %}
+{% for section in custom_home_sections %}
+{% if section.visible_products %}
+<section class="category-page category-page--shop home-products home-products--bestsellers home-products--custom">
+    <div class="product-catalog product-catalog--compact home-product-catalog">
+        <div class="catalog-layout catalog-layout--full"><div class="catalog-products">
+            {% include 'partials/home_section_header.html' with title=section.naziv|lower|capfirst header_mod='izdvojeno' see_all_url='' %}
+            {% include 'partials/home_product_carousel.html' with products=section.visible_products visible_desktop=6 home_section_badge='' %}
+        </div></div>
+    </div>
+</section>
+{% endif %}
+{% endfor %}
 
 {% include 'partials/home_reference_bottom.html' %}
 

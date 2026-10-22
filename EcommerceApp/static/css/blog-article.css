@@ -1,0 +1,58 @@
+body.blog-article-page{background:#fff;color:#192431}
+html body.blog-article-page main{width:calc(100% - 40px)!important;max-width:1200px!important;margin:0 auto!important;padding:28px 0 48px!important}
+body.blog-article-page .vlog-article{padding:0;background:#fff}
+body.blog-article-page .vlog-article-inner{width:100%;max-width:1000px;margin:auto;padding:0;box-sizing:border-box}
+body.blog-article-page .vlog-breadcrumb{margin-bottom:28px;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+body.blog-article-page .vlog-breadcrumb a{color:#397347}
+body.blog-article-page .vlog-article-header{max-width:800px;margin:0 auto 26px;text-align:left}
+.blog-article-kicker{color:#397347;font-size:12px;font-weight:700;letter-spacing:.04em;margin:0 0 12px}
+body.blog-article-page .vlog-article-title{font-size:clamp(28px,4vw,46px);line-height:1.17;letter-spacing:-.025em;text-transform:none;overflow-wrap:anywhere;color:#192431;margin:0 0 16px}
+.blog-article-date{display:block;color:#78828b;font-size:13px;margin-bottom:16px}
+.blog-article-intro{font-size:18px;line-height:1.65;color:#56636e;margin:0;overflow-wrap:anywhere}
+body.blog-article-page .vlog-article-media{display:block;max-width:none;width:100%;aspect-ratio:auto;padding:0;border:0;border-radius:14px;overflow:hidden;margin:0 0 32px;background:#fff}
+body.blog-article-page .vlog-article-image{display:block;width:100%!important;height:auto!important;max-height:none;max-width:100%;object-fit:cover;margin:0}
+body.blog-article-page .vlog-article-body{max-width:780px;margin:0 auto;font-size:17px;line-height:1.85;color:#34424c;overflow-wrap:anywhere;padding:0}
+body.blog-article-page .vlog-article-text{white-space:normal}
+body.blog-article-page .vlog-article-body :is(h2,h3,h4){line-height:1.3;text-transform:none;letter-spacing:normal;margin:30px 0 12px;color:#192431}
+body.blog-article-page .vlog-article-body p{margin:0 0 20px}
+body.blog-article-page .vlog-article-body :is(ul,ol){padding-left:24px;margin:16px 0 24px}
+body.blog-article-page .vlog-article-body a{color:#397347}
+body.blog-article-page .vlog-article-body img{max-width:100%!important;height:auto!important;border-radius:9px}
+body.blog-article-page .vlog-article-body :is(iframe,video){max-width:100%}
+body.blog-article-page .vlog-article-body blockquote{margin:24px 0;padding:16px 20px;border-left:3px solid #397347;background:#f4f8f4}
+.blog-article-bottom{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;max-width:780px;margin:32px auto 0;padding-top:20px;border-top:1px solid #e3e8e4}
+.blog-article-bottom a{font-size:14px;color:#397347;text-decoration:none;font-weight:600}
+body.blog-article-page .vlog-related{margin:44px auto 0;padding:28px 0 0;border-top:1px solid #e3e8e4;max-width:1000px;background:#fff}
+body.blog-article-page .vlog-related-inner{max-width:none;padding:0}
+body.blog-article-page .vlog-related-title{font-size:24px;text-transform:none;margin:0 0 18px}
+body.blog-article-page .vlog-related-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+body.blog-article-page .vlog-related-card{display:block;overflow:hidden;border:1px solid #e2e8e3;border-radius:10px;text-decoration:none;color:#192431;min-width:0}
+body.blog-article-page .vlog-related-image-wrap{display:block;aspect-ratio:8/5;overflow:hidden}
+body.blog-article-page .vlog-related-image-wrap img{display:block;width:100%;height:100%!important;object-fit:cover}
+body.blog-article-page .vlog-related-card-title{display:block;padding:14px;font-size:15px;line-height:1.4;overflow-wrap:anywhere}
+@media(max-width:650px){html body.blog-article-page main{width:calc(100% - 28px)!important;padding-top:18px!important}body.blog-article-page .vlog-breadcrumb{margin-bottom:20px}body.blog-article-page .vlog-article-media{border-radius:9px;margin-bottom:22px}.blog-article-intro{font-size:16px}body.blog-article-page .vlog-article-body{font-size:16px;line-height:1.8}body.blog-article-page .vlog-related-grid{grid-template-columns:1fr}}
+
+/* Compact article with the photograph beside the text. */
+html body.blog-article-page main{max-width:1120px!important;padding-top:20px!important}
+body.blog-article-page .vlog-article-inner{max-width:1040px;display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,38%);column-gap:32px;align-items:start}
+body.blog-article-page .vlog-breadcrumb{grid-column:1/-1;margin-bottom:22px;font-size:12px}
+body.blog-article-page .vlog-article-header{grid-column:1;grid-row:2;max-width:none;width:100%;margin:0 0 18px}
+body.blog-article-page .vlog-article-title{font-size:clamp(24px,2.6vw,32px);line-height:1.22;margin-bottom:12px}
+.blog-article-kicker{font-size:11px;margin-bottom:9px}
+.blog-article-date{font-size:12px;margin-bottom:12px}
+.blog-article-intro{font-size:15px;line-height:1.65}
+body.blog-article-page .vlog-article-media{grid-column:2;grid-row:2/4;align-self:start;margin:0;width:100%;max-width:none;border-radius:10px}
+body.blog-article-page .vlog-article-image{width:100%!important;height:auto!important;max-height:360px;object-fit:cover}
+body.blog-article-page .vlog-article-body{grid-column:1;grid-row:3;max-width:none;font-size:15px;line-height:1.8;width:100%;margin:0}
+body.blog-article-page .vlog-article-body :is(h2,h3,h4){margin:22px 0 10px}
+body.blog-article-page .vlog-article-body p{margin-bottom:16px}
+.blog-article-bottom{grid-column:1/-1;width:100%;max-width:none;margin-top:24px;padding-top:16px}
+body.blog-article-page .vlog-related{max-width:1040px;margin-top:30px;padding-top:22px}
+body.blog-article-page .vlog-related-title{font-size:21px}
+@media(max-width:700px){body.blog-article-page .vlog-article-inner{display:flex;flex-direction:column;gap:0}body.blog-article-page .vlog-article-header{order:1}body.blog-article-page .vlog-breadcrumb{order:0}body.blog-article-page .vlog-article-media{order:2;margin-bottom:22px;max-width:440px;align-self:center}body.blog-article-page .vlog-article-body{order:3}.blog-article-bottom{order:4}body.blog-article-page .vlog-article-title{font-size:26px}body.blog-article-page .vlog-article-image{max-height:300px}}
+
+/* Align the article with the full page content width. */
+html body.blog-article-page main{width:calc(100% - 48px)!important;max-width:none!important;margin:0 auto!important;padding-top:20px!important}
+body.blog-article-page .vlog-article-inner{max-width:none;width:100%;margin:0;grid-template-columns:minmax(0,1fr) minmax(280px,36%);column-gap:36px}
+body.blog-article-page .vlog-related{width:100%;max-width:none;margin-left:0;margin-right:0}
+@media(max-width:700px){html body.blog-article-page main{width:calc(100% - 28px)!important}.blog-article-page .vlog-article-inner{grid-template-columns:minmax(0,1fr)}}

@@ -1,4 +1,7 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block body_class %}blog-article-page catalog-header-reference{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/blog-article.css' %}?v=20261022-page-width">{% endblock %}
 
 {% block lcp_preload %}
 {% if lcp_image_url %}
@@ -28,7 +31,10 @@
         </nav>
 
         <header class="vlog-article-header">
+            <p class="blog-article-kicker">Savjeti i priče iz svijeta ribolova</p>
             <h1 class="vlog-article-title">{{ vlog.naslov }}</h1>
+            {% if vlog.display_date %}<time class="blog-article-date" datetime="{{ vlog.display_date|date:'Y-m-d' }}">{{ vlog.display_date|date:'d.m.Y.' }}</time>{% endif %}
+            {% if vlog.kratki_opis %}<p class="blog-article-intro">{{ vlog.kratki_opis }}</p>{% endif %}
         </header>
 
         {% if vlog.slika %}
@@ -39,7 +45,7 @@
                  class="vlog-article-image"
                  width="{{ image_width }}"
                  height="{{ image_height }}"
-                 sizes="(max-width: 768px) 100vw, 360px"
+                 sizes="(max-width: 700px) 100vw, 400px"
                  loading="eager"
                  fetchpriority="high"
                  decoding="async">
@@ -55,13 +61,14 @@
             {% endif %}
         </div>
         {% endif %}
+        <div class="blog-article-bottom"><a href="{% url 'vlog_list' %}">← Svi članci</a><a href="{% url 'home' %}">Početna stranica →</a></div>
     </div>
 </article>
 
 {% if other_vlogs %}
 <section class="vlog-related">
     <div class="vlog-related-inner">
-        <h2 class="vlog-related-title">Još vlogova</h2>
+        <h2 class="vlog-related-title">Još sa bloga</h2>
         <div class="vlog-related-grid">
             {% for item in other_vlogs %}
             <a href="{% url 'vlog_detail' item.slug %}" class="vlog-related-card">

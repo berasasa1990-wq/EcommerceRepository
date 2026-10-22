@@ -1,0 +1,7 @@
+.vlog-list-page .vlog-list-header{margin-bottom:28px}
+.vlog-list-page .vlog-list-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px 28px;align-items:start}
+.vlog-list-page .home-vlog-card{display:block;min-width:0;margin:0;padding:0;border-radius:10px;overflow:hidden;background:#fff}
+.vlog-list-page .home-vlog-card-image-wrap{width:100%;aspect-ratio:8/5;margin:0;overflow:hidden;border-radius:10px}
+.vlog-list-page .home-vlog-card-image{display:block;width:100%;height:100%!important;object-fit:cover}
+@media(max-width:900px){.vlog-list-page .vlog-list-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}}
+@media(max-width:550px){.vlog-list-page .vlog-list-grid{grid-template-columns:minmax(0,1fr);gap:22px}}

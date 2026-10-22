@@ -1080,3 +1080,40 @@ HeroBannerFormSet = forms.inlineformset_factory(
     SiteSettings, HeroBanner, form=AdditionalHeroBannerForm,
     extra=0, can_delete=True, max_num=20, validate_max=True,
 )
+
+
+class HomeProductSectionForm(forms.ModelForm):
+    def clean_naziv(self):
+        return self.cleaned_data['naziv'].strip().capitalize()
+
+    class Meta:
+        from .models import HomeProductSection
+        model = HomeProductSection
+        fields = ('naziv', 'redoslijed', 'aktivan', 'artikli')
+        widgets = {'artikli': forms.CheckboxSelectMultiple()}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import Product
+        ids = self.fields['artikli'].widget.value_from_datadict(self.data, self.files, 'artikli') if self.is_bound else (
+            self.instance.artikli.values_list('pk', flat=True) if self.instance.pk else []
+        )
+        ids = [int(value) for value in (ids or []) if str(value).isdigit()]
+        self.fields['artikli'].queryset = Product.objects.filter(pk__in=ids).order_by('naziv', 'pk')
+
+
+class StaffBlogForm(forms.ModelForm):
+    class Meta:
+        from .models import HomeVlog
+        model = HomeVlog
+        fields = ('naslov', 'slika', 'kratki_opis', 'sadrzaj', 'objavljeno', 'redoslijed', 'aktivan')
+        labels = {'sadrzaj': 'Sadržaj članka', 'slika': 'Slika članka'}
+        help_texts = {
+            'slika': '800 × 500 px ili 1600 × 1000 px. Motiv postavi u sredinu slike.',
+            'naslov': 'Naslov članka i kartice na početnoj stranici.',
+        }
+        widgets = {
+            'kratki_opis': forms.Textarea(attrs={'rows': 2}),
+            'sadrzaj': forms.Textarea(attrs={'rows': 12}),
+            'objavljeno': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+        }

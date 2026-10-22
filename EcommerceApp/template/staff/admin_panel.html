@@ -65,6 +65,16 @@ body .staff-admin-page .admin-btn:focus-visible { outline: 3px solid #0094cd; ou
         </a>
 
         {% if user.is_superuser %}
+        <a href="{% url 'staff_blog' %}" class="admin-btn">
+            <div class="admin-btn-icon" aria-hidden="true">✎</div>
+            <div class="admin-btn-text"><strong>Blog</strong><span>Kreiranje članaka, upload slika i uređivanje sadržaja</span></div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
+        </a>
+        <a href="{% url 'staff_home_page' %}" class="admin-btn">
+            <div class="admin-btn-icon" aria-hidden="true">⌂</div>
+            <div class="admin-btn-text"><strong>Početna stranica</strong><span>Nazivi sekcija i odabir artikala ispod bannera stolica</span></div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
+        </a>
         <a href="{% url 'staff_bulk_actions' %}" class="admin-btn admin-bulk-actions">
             <div class="admin-btn-icon" aria-hidden="true">%</div>
             <div class="admin-btn-text"><strong>Bulk Akcije</strong><span>Odaberi artikle i postavi sniženje s datumom završetka</span></div>

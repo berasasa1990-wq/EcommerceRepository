@@ -31,6 +31,7 @@
 
         <form method="post" class="auth-form" data-csrf-refresh-url="{% url 'auth_csrf_token' %}">
             {% csrf_token %}
+            {% if request.GET.loyalty_popup == '1' or request.POST.loyalty_popup == '1' %}<input type="hidden" name="loyalty_popup" value="1">{% endif %}
 
             {% if form.non_field_errors %}
             <div class="form-errors">

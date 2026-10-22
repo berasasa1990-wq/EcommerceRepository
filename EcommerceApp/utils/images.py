@@ -3,7 +3,7 @@ from io import BytesIO
 
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import UploadedFile
-from PIL import Image, ImageOps, features
+from PIL import Image, ImageOps, ImageChops, features
 
 logger = logging.getLogger(__name__)
 
@@ -930,17 +930,28 @@ def _encode_banner_avif(
     )
 
 
+def _trim_vlog_white_border(image):
+    """Remove empty white canvas around blog photos before making variants."""
+    rgb = _image_to_rgb(ImageOps.exif_transpose(image))
+    difference = ImageChops.difference(rgb, Image.new('RGB', rgb.size, 'white'))
+    mask = difference.convert('L').point(lambda value: 255 if value > 18 else 0)
+    bounds = mask.getbbox()
+    return rgb.crop(bounds) if bounds else rgb
+
+
 def process_vlog_image(image_field):
     """Vlog slike: 800×500 (8:5), AVIF + responsive 400/640/800w."""
     img = Image.open(image_field)
     filename = image_field.name if hasattr(image_field, 'name') else 'vlog.jpg'
-    rgb = _image_to_rgb(img)
+    rgb = _trim_vlog_white_border(img)
     return _processed_image_result(
         rgb,
         filename,
         widths=VLOG_RESPONSIVE_WIDTHS,
         max_bytes_map=VLOG_VARIANT_MAX_BYTES,
         main_max_dimension=VLOG_MAX_DIMENSION,
+        fit_banner=True,
+        banner_settings={'max_width': VLOG_MAX_DIMENSION, 'crop': False},
     )
 
 

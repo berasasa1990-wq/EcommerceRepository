@@ -2,6 +2,7 @@ from .views_bulk_actions import bulk_actions
 from . import post_order_offer
 from . import views_monri
 from . import views_partner_stock
+from django.views.generic.base import RedirectView
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from django.urls import reverse_lazy
@@ -100,8 +101,10 @@ urlpatterns = [
     path('izjava-o-privatnosti/', views.privacy_statement, name='privacy_statement'),
     path('uslovi-kupovine/', views.purchase_terms, name='purchase_terms'),
     path('brendovi/', views.brands_list, name='brands_list'),
-    path('vlog/', views.vlog_list, name='vlog_list'),
-    path('vlog/<slug:slug>/', views.vlog_detail, name='vlog_detail'),
+    path('blog/', views.vlog_list, name='vlog_list'),
+    path('vlog/', RedirectView.as_view(pattern_name='vlog_list', permanent=True)),
+    path('blog/<slug:slug>/', views.vlog_detail, name='vlog_detail'),
+    path('vlog/<slug:slug>/', RedirectView.as_view(pattern_name='vlog_detail', permanent=True)),
     path('kategorija/<slug:slug>/', views.category_detail, name='category'),
     path('artikal/<slug:slug>/', views.product_detail, name='product_detail'),
     path('artikal/<slug:slug>/brza-izmjena/', views.staff_product_quick_edit, name='staff_product_quick_edit'),
@@ -165,6 +168,9 @@ urlpatterns = [
 
     path('nalog/admin/bulk-akcije/', bulk_actions, name='staff_bulk_actions'),
     path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
+    path('nalog/admin/pocetna-stranica/', views.staff_home_page, name='staff_home_page'),
+    path('nalog/admin/pocetna-stranica/sekcije/', views.staff_home_sections, name='staff_home_sections'),
+    path('nalog/admin/blog/', views.staff_blog, name='staff_blog'),
     path('nalog/admin/settings/', views.staff_hero_settings, name='staff_hero_settings'),
     path('nalog/admin/dugovanja-firmi/', views.staff_company_debts, name='staff_company_debts'),
     path('nalog/b2b-live/', views.staff_b2b_live, name='staff_b2b_live'),
