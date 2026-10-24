@@ -6726,7 +6726,7 @@ def staff_b2b_live(request):
     })
 
 
-GIFT_VOUCHER_AMOUNTS = (50, 100, 200, 300, 500)
+GIFT_VOUCHER_AMOUNTS = (50, 100, 150, 200, 300, 500)
 
 
 @login_required(login_url='login')
@@ -6754,7 +6754,7 @@ def staff_gift_voucher_print(request):
     except (TypeError, ValueError):
         iznos = 0
     if not ime or not prezime or iznos not in GIFT_VOUCHER_AMOUNTS:
-        messages.error(request, 'Unesi ime, prezime i iznos poklona (50, 100, 200, 300 ili 500 KM).')
+        messages.error(request, 'Unesi ime, prezime i iznos poklona (50, 100, 150, 200, 300 ili 500 KM).')
         return redirect('staff_gift_voucher')
     created = timezone.localtime(timezone.now())
     context = {
