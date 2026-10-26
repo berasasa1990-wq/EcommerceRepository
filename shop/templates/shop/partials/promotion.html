@@ -1,0 +1,14 @@
+{% if product.has_article_plus %}
+<div class="product-promotion product-promotion--plus"><svg class="product-promotion-icon" viewBox="0 0 40 48" aria-hidden="true" focusable="false"><path d="M20 3h10l7 8v14L19 44a4 4 0 0 1-6 0L3 34a4 4 0 0 1 0-6L20 3Z" fill="currentColor" stroke="none"/><circle cx="29" cy="12" r="2" fill="white" stroke="none"/><path d="m12 31 14-12" stroke="white" stroke-width="2.6" stroke-linecap="round"/><circle cx="15" cy="21" r="3" fill="none" stroke="white" stroke-width="2.4"/><circle cx="24" cy="30" r="3" fill="none" stroke="white" stroke-width="2.4"/></svg><p class="product-promotion-copy"><strong>Ponuda +</strong> Uz kupovinu ovog artikla ostvarujete {{ product.plus_percent|floatformat:"-2" }}% popusta na <button type="button" class="promotion-product-trigger" data-plus-preview-open aria-haspopup="dialog" aria-controls="productPlusPreview">{{ product.plus_product.name }}</button>. Popust vrijedi za jedan drugi artikal po kupljenom prvom artiklu.</p></div>
+<dialog id="productPlusPreview" class="article-plus-offer" aria-labelledby="productPlusPreviewTitle">
+  <h2 id="productPlusPreviewTitle">AKCIJA −{{ product.plus_percent|floatformat:"-2" }}%</h2>
+  <p class="article-plus-offer-message">Uz kupovinu artikla {{ product.name }} ostvarujete popust na ovaj artikal:</p>
+  <div class="article-plus-offer-product">{% if product.plus_product.image %}<img src="{{ product.plus_product.image.url }}" alt="{{ product.plus_product.name }}" loading="lazy">{% endif %}<span>{{ product.plus_product.name }}</span></div>
+  <p class="article-plus-offer-prices"><s>{{ product.plus_product.price|floatformat:2 }} KM</s><strong>{{ plus_preview_price|floatformat:2 }} KM</strong></p>
+  <p class="article-plus-offer-message">Popust vrijedi za jedan dodatni artikal po kupljenom prvom artiklu.{% if product.plus_product.is_out_of_stock %} Dodatni artikal trenutno nije na stanju.{% endif %}</p>
+  <button type="button" class="article-plus-offer-close" data-plus-preview-close>Zatvori</button>
+</dialog>
+{% endif %}
+{% if product.has_quantity_sale %}
+<p class="product-promotion"><strong>Količinsko sniženje</strong> Uz kupovinu više komada ovog artikla ostvarujete količinski popust. Kupujte više komada po nižim cijenama.</p>
+{% endif %}

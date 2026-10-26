@@ -1,0 +1,21 @@
+{% load tz %}
+<header class="loyalty-popup-header">
+  <span class="eyebrow">LOYALTY KARTICA</span>
+  <h2 id="loyaltyPurchasesTitle">Pregled kupovina</h2>
+  <p>{{ card.customer.get_full_name|default:card.customer.email }} <span>·</span> Kartica {{ card.number }}</p>
+</header>
+<div class="loyalty-popup-total"><div><span>Ukupna potrošnja</span><strong>{{ spent|floatformat:2 }} <small>KM</small></strong></div><span class="loyalty-popup-total-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18M7 15h4"/></svg></span></div>
+<p class="loyalty-popup-hint">Potrošnja uključuje nove, poslate i završene narudžbe, bez dostave. Otkazane narudžbe se ne računaju.</p>
+<div class="loyalty-popup-section"><h3>Kupovine</h3><span>{{ purchases|length }} narudžbi</span></div>
+<div class="loyalty-popup-orders">
+{% for order in purchases %}
+<details class="loyalty-purchase"><summary>
+  <span class="loyalty-purchase-reference"><strong>Narudžba #{{ order.pk }}</strong><small>{{ order.created_at|localtime|date:"d.m.Y. H:i" }}</small></span>
+  <span class="loyalty-purchase-status loyalty-purchase-status--{{ order.status }}">{{ order.get_status_display }}</span>
+  <strong class="loyalty-purchase-total">{{ order.total|floatformat:2 }} KM</strong><span class="loyalty-purchase-chevron" aria-hidden="true">⌄</span>
+</summary><div class="loyalty-purchase-items">
+{% for item in order.items.all %}<p><span>{{ item.product.name }}</span><strong>{{ item.quantity }} × {{ item.unit_price|floatformat:2 }} KM</strong></p>{% empty %}<p>Nema stavki.</p>{% endfor %}
+<p class="loyalty-purchase-delivery"><span>Dostava</span><strong>{{ order.delivery_price|floatformat:2 }} KM</strong></p>
+</div></details>
+{% empty %}<p class="loyalty-popup-empty">Ova kartica još nema kupovina.</p>{% endfor %}
+</div>

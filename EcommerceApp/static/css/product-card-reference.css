@@ -145,3 +145,42 @@ html body .pd-similar-card h3{font-size:12px;line-height:1.35}
         column-gap: 8px !important;
     }
 }
+
+/* Product hover feedback, only on devices with a precise pointer. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    html body article.product-card.product-card--catalog.product-card--catalog.product-card--catalog.product-card--catalog {
+        transition: transform 180ms ease-out, box-shadow 180ms ease-out !important;
+    }
+    html body article.product-card.product-card--catalog.product-card--catalog.product-card--catalog.product-card--catalog:hover {
+        transform: translateY(-3px) !important;
+        box-shadow: 0 6px 16px rgba(23, 38, 60, 0.12) !important;
+    }
+    html body article.product-card.product-card--catalog.product-card--catalog.product-card--catalog.product-card--catalog .product-card__media .product-image img {
+        transition: transform 220ms ease-out !important;
+    }
+    html body article.product-card.product-card--catalog.product-card--catalog.product-card--catalog.product-card--catalog:hover .product-card__media .product-image img {
+        transform: scale(1.035) !important;
+    }
+}
+
+/* Match product hover feedback on category tiles and subcategories. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    html body #homeCategoryTrack > a,
+    html body a.subcategory-card {
+        transition: transform 180ms ease-out, box-shadow 180ms ease-out, border-color 180ms ease-out !important;
+    }
+    html body #homeCategoryTrack > a:hover,
+    html body a.subcategory-card:hover {
+        transform: translateY(-3px) !important;
+        box-shadow: 0 6px 16px rgba(23, 38, 60, 0.12) !important;
+        border-color: #ff9b65 !important;
+    }
+    html body #homeCategoryTrack > a > :is(img, svg, .cat-ico),
+    html body a.subcategory-card img {
+        transition: transform 220ms ease-out !important;
+    }
+    html body #homeCategoryTrack > a:hover > :is(img, svg, .cat-ico),
+    html body a.subcategory-card:hover img {
+        transform: scale(1.035) !important;
+    }
+}

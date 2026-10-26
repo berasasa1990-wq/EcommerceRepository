@@ -1,0 +1,10 @@
+<nav class="mobile-menu-bar" aria-label="Donja navigacija">
+  <button type="button" id="mobileMenuOpen" aria-label="Kategorije" aria-haspopup="dialog" aria-controls="mobileMenu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg><span>Kategorije</span></button>
+  <button type="button" id="mobileSearchOpen" aria-label="Pretraga"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/></svg><span>Pretraga</span></button>
+  <button type="button" aria-label="Korpa" data-cart-open="{% url 'cart' %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 3h3l4 13h11l3-10H5"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg><span>Korpa</span></button>
+  <button type="button" aria-label="Nalog" data-account-open="{% url 'account' %}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6.5" r="4"/><path d="M4 22v-2.5a8 8 0 0 1 16 0V22z"/></svg><span>Nalog</span></button>
+</nav>
+<dialog id="mobileMenu" class="mobile-menu" aria-labelledby="mobileMenuTitle">
+  <div class="mobile-menu-heading"><h2 id="mobileMenuTitle">Kategorije</h2><button type="button" id="mobileMenuClose" aria-label="Zatvori meni">Zatvori</button></div>
+  <section class="mobile-menu-categories" aria-label="Sve kategorije"><div>{% for cat in categories %}<a href="{{ cat.get_absolute_url }}">{{ cat.name }}</a>{% empty %}<p>Trenutno nema kategorija.</p>{% endfor %}</div></section>
+</dialog>

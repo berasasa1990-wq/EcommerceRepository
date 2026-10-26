@@ -1,0 +1,15 @@
+{% load tz %}
+{% if customer_only %}<header class="loyalty-popup-header"><h2 id="orderPreviewTitle">Podaci kupca</h2></header>{% else %}
+<header class="loyalty-popup-header"><span class="eyebrow">PREGLED NARUDŽBE</span><h2 id="orderPreviewTitle">Narudžba #{{ order.pk }}</h2><p>{{ order.created_at|localtime|date:"d.m.Y. H:i" }} · <span class="loyalty-purchase-status loyalty-purchase-status--{{ order.status }}">{{ order.get_status_display }}</span></p></header>{% endif %}
+<div class="order-preview-customer"><section><h3>Kupac</h3><strong>{{ order.customer_name|default:'—' }}</strong>{% if order.email %}<a href="mailto:{{ order.email }}">{{ order.email }}</a>{% endif %}{% if order.phone %}<a href="tel:{{ order.phone }}">{{ order.phone }}</a>{% endif %}</section><section><h3>Adresa dostave</h3><address>{{ order.address|default:'—' }}<br>{{ order.postal_code }} {{ order.city }}</address></section></div>
+{% if order.note %}<div class="order-preview-note"><h3>Napomena kupca</h3><p>{{ order.note|linebreaksbr }}</p></div>{% endif %}
+{% if not customer_only %}
+<div class="order-preview-note"><h3>Plaćanje</h3><p>Gotovinski</p></div>
+<div class="loyalty-popup-section"><h3>Artikli</h3><span>{{ items|length }} stavki</span></div>
+<div class="order-preview-items">{% for item in items %}<article class="order-preview-item">
+  <div class="order-preview-image">{% if item.product.image %}<img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" width="80" height="80" loading="lazy">{% else %}<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" role="img" aria-label="Nema slike"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m3 17 6-6 4 4 3-3 5 5"/><circle cx="16" cy="8" r="1"/></svg>{% endif %}</div>
+  <div class="order-preview-item-copy"><h4>{{ item.product.name }}</h4>{% if item.promotion %}<span class="order-preview-promotion"><span class="order-preview-promotion-label">Akcija</span> <span class="order-preview-promotion-description">{{ item.promotion }}</span></span>{% endif %}<p>{{ item.quantity }} × {{ item.unit_price|floatformat:2 }} KM</p></div><strong>{{ item.line_total|floatformat:2 }} KM</strong>
+</article>{% empty %}<p class="loyalty-popup-empty">Narudžba nema stavki.</p>{% endfor %}</div>
+<div class="order-preview-summary"><p><span>Ukupan iznos<small class="order-preview-vat">PDV je uključen u cijenu</small></span><strong>{{ subtotal|floatformat:2 }} KM</strong></p>{% if order.loyalty_discount %}<p class="order-preview-discount"><span>Loyalty popust i bodovi</span><strong>−{{ order.loyalty_discount|floatformat:2 }} KM</strong></p>{% endif %}<p><span>Dostava</span><strong>{% if order.delivery_price == 0 %}Besplatna dostava{% else %}{{ order.delivery_price|floatformat:2 }} KM{% endif %}</strong></p><div class="order-preview-grand-total"><span>Ukupno za plaćanje</span><strong>{{ order.total|floatformat:2 }} KM</strong></div></div>
+
+{% endif %}

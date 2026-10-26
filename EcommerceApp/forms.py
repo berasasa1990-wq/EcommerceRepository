@@ -16,7 +16,6 @@ from .models import (
     Popup,
     Product,
     SiteSettings,
-    HeroBanner,
     Tag,
 )
 
@@ -1053,33 +1052,63 @@ class OrderComplaintForm(forms.Form):
     )
 
 
+class SiteSEOSettingsForm(forms.ModelForm):
+    class Meta:
+        model = SiteSettings
+        fields = (
+            'seo_title', 'meta_description', 'og_image',
+            'seo_organizacija_naziv', 'seo_email', 'seo_grad', 'seo_drzava',
+            'seo_facebook_url', 'seo_instagram_url', 'google_site_verification',
+            'seo_title_suffix',
+        )
+        widgets = {'meta_description': forms.Textarea(attrs={'rows': 3})}
+
+
+class PageSEOSettingsForm(forms.ModelForm):
+    class Meta:
+        from .models import PageSEO
+        model = PageSEO
+        fields = ('seo_title', 'meta_description', 'h1_naslov', 'seo_tekst_iznad', 'seo_tekst_ispod')
+        widgets = {
+            'meta_description': forms.Textarea(attrs={'rows': 3}),
+            'seo_tekst_iznad': forms.Textarea(attrs={'rows': 5}),
+            'seo_tekst_ispod': forms.Textarea(attrs={'rows': 5}),
+        }
+
+
 class HeroBannerSettingsForm(forms.ModelForm):
-    def clean_hero_slika(self):
-        upload = self.cleaned_data.get('hero_slika')
+    def _clean_banner_image(self, field_name):
+        upload = self.cleaned_data.get(field_name)
         if upload and hasattr(upload, 'content_type'):
-            from .utils.images import prepare_hero_cutout
-            return prepare_hero_cutout(upload)
+            from .utils.images import prepare_homepage_banner
+            return prepare_homepage_banner(upload)
         return upload
+
+    def clean_hero_slika(self):
+        return self._clean_banner_image('hero_slika')
+
+    def clean_bestsellers_banner_slika(self):
+        return self._clean_banner_image('bestsellers_banner_slika')
 
     class Meta:
         model = SiteSettings
-        fields = ('hero_oznaka', 'hero_naslov', 'hero_podnaslov', 'hero_opis', 'hero_slika', 'hero_link')
-        widgets = {'hero_opis': forms.Textarea(attrs={'rows': 4})}
+        fields = ('hero_slika', 'hero_link', 'bestsellers_banner_slika', 'bestsellers_banner_link')
+        labels = {
+            'hero_slika': 'Slika početnog bannera', 'hero_link': 'Link bannera (opcionalno)',
+            'bestsellers_banner_slika': 'Slika bannera ispod najprodavanijih proizvoda',
+            'bestsellers_banner_link': 'Link bannera (opcionalno)',
+        }
+        help_texts = {
+            'hero_link': 'Klik na sliku otvara ovaj link. Prazno = banner bez linka.',
+            'bestsellers_banner_link': 'Klik na sliku otvara ovaj link. Prazno = banner bez linka.',
+        }
 
-
-class AdditionalHeroBannerForm(forms.ModelForm):
-    clean_hero_slika = HeroBannerSettingsForm.clean_hero_slika
-
-    class Meta:
-        model = HeroBanner
-        fields = ('hero_opis', 'hero_slika', 'hero_link', 'redoslijed', 'aktivan')
-        widgets = {'hero_opis': forms.Textarea(attrs={'rows': 3})}
-
-
-HeroBannerFormSet = forms.inlineformset_factory(
-    SiteSettings, HeroBanner, form=AdditionalHeroBannerForm,
-    extra=0, can_delete=True, max_num=20, validate_max=True,
-)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['hero_link'].required = False
+        for name in ('hero_slika', 'bestsellers_banner_slika'):
+            self.fields[name].help_text = '1600 × 600 px, najviše 80 KB nakon obrade. JPG, PNG, WebP ili AVIF. Drugi omjeri se centralno izrezuju; tekst i grafiku pripremi unutar slike.'
+            self.fields[name].widget.attrs['accept'] = 'image/jpeg,image/png,image/webp,image/avif'
 
 
 class HomeProductSectionForm(forms.ModelForm):

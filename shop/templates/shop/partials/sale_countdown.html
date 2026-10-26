@@ -1,0 +1,1 @@
+{% if product.sale_ends_at %}<span class="sale-countdown" data-sale-countdown="{{ product.sale_ends_at|date:'c' }}" role="timer" aria-label="Preostalo vrijeme akcije"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span><small>Akcija ističe za</small><strong data-countdown-value>…</strong></span></span>{% endif %}

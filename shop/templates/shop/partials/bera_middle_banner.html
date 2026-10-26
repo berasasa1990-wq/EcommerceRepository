@@ -1,0 +1,5 @@
+{% if middle_banner and middle_banner.image %}
+<section class="bera-middle-banner" aria-label="{{ middle_banner.title }}">
+  {% if middle_banner.url %}<a href="{{ middle_banner.url }}">{% endif %}<img src="{{ middle_banner.image.url }}" alt="{{ middle_banner.title }}" width="1600" height="600" loading="lazy">{% if middle_banner.url %}</a>{% endif %}
+</section>
+{% endif %}

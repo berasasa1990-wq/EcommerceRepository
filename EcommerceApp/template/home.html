@@ -3,10 +3,10 @@
 {% block body_class %}{% if not filters_active %}home-mobile-reference{% else %}catalog-header-reference{% endif %}{% endblock %}
 
 {% block warehouse_theme_css %}
-{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-reference-orange.css' %}?v=20261022-blog-edge-fill-2">{% endif %}
+{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-reference-orange.css' %}?v=20261026-upload-bestsellers-banner">{% endif %}
 {% endblock %}
 {% block extra_css %}
-{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-fishing-hero.css' %}?v=20261019-hero-small-button">{% endif %}
+{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-uploaded-banner.css' %}?v=20261026-two-upload-banners">{% endif %}
 
 <style>
 body.home-mobile-reference main > .home-registration-banner { order: 3; display: flex; align-items: center; gap: 14px; width: 100%; min-height: 78px; box-sizing: border-box; padding: 20px 18px; margin: 12px 0; border: 1px solid #f3dac5; border-radius: 10px; background: #fff6ed; color: #263342; }
@@ -95,9 +95,6 @@ body.home-mobile-reference .home-products--novo .product-card--home-reference > 
 .home-trust-bar .home-trust-bar__item {
     border-color: #e5e5e5;
 }
-.hero-carousel {
-    border-bottom: 2px solid var(--ozr-orange, #FF5A00) !important;
-}
 .home-products--akcija,
 .home-brand-strip-section--mockup {
     border-top: 2px solid var(--ozr-orange, #FF5A00) !important;
@@ -141,7 +138,7 @@ body.home-mobile-reference main > :is(section,.featured-grid,.mobile-home-benefi
 
 {% block content %}
 {% if not filters_active %}
-{% include 'partials/home_fishing_hero.html' %}
+{% include 'partials/home_uploaded_banner.html' %}
 
 
 {% include 'partials/home_mobile_navigation.html' %}
@@ -244,6 +241,7 @@ body.home-mobile-reference main > :is(section,.featured-grid,.mobile-home-benefi
     </div>
 </section>
 {% endif %}
+{% include 'partials/home_bestsellers_banner.html' %}
 
 {% include 'partials/home_registration_banner.html' %}
 
@@ -260,7 +258,6 @@ body.home-mobile-reference main > :is(section,.featured-grid,.mobile-home-benefi
 </section>
 {% endif %}
 
-{% include 'partials/home_reference_offer.html' %}
 {% for section in custom_home_sections %}
 {% if section.visible_products %}
 <section class="category-page category-page--shop home-products home-products--bestsellers home-products--custom">
@@ -281,5 +278,5 @@ body.home-mobile-reference main > :is(section,.featured-grid,.mobile-home-benefi
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/hero-slider.js' %}?v=20261019-hero-no-controls" defer></script>
+
 {% endblock %}

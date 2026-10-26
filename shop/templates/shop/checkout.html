@@ -1,0 +1,25 @@
+{% load static %}
+<!doctype html><html lang="bs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">{% include 'shop/partials/seo_head.html' %}<link rel="stylesheet" href="{% static 'css/home.css' %}?v={{ storefront_version }}"><link rel="stylesheet" href="{% static 'css/bera-home.css' %}?v={{ storefront_version }}"><script src="{% static 'home.js' %}?v={{ storefront_version }}" defer></script></head>
+<body class="bera-home home-mobile-reference bera-storefront-header">
+{% include 'shop/partials/header.html' %}
+<main class="cart-page checkout-page">
+<nav class="product-breadcrumb" aria-label="Putanja"><a href="{% url 'home' %}">Početna</a><span>/</span><a href="{% url 'cart' %}">Korpa</a><span>/</span><span aria-current="page">Checkout</span></nav>
+{% if completed_order %}
+<section class="cart-empty"><h1>Hvala na narudžbi!</h1><p>Vaša narudžba #{{ completed_order.pk }} je zaprimljena.</p><p>Ukupno s dostavom: <strong>{{ completed_order.total|floatformat:2 }} KM</strong></p><p>Kontaktirat ćemo vas radi potvrde dostave. Plaćanje nije izvršeno online.</p><a class="purchase" href="{% url 'home' %}">Nastavi kupovinu</a></section>
+{% if google_review_url %}
+<section class="checkout-review" aria-labelledby="checkoutReviewTitle">
+  <div class="checkout-review-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/></svg></div>
+  <div><span class="account-eyebrow">VAŠE MIŠLJENJE NAM ZNAČI</span><h2 id="checkoutReviewTitle">Podijelite svoje iskustvo.</h2><p>Kako vam je prošla kupovina? Ostavite iskrenu Google recenziju i pomozite nam da unaprijedimo uslugu.</p><a class="purchase" href="{{ google_review_url }}" target="_blank" rel="noopener noreferrer">Ostavi Google recenziju <span aria-hidden="true">↗</span></a><small>Recenzija je dobrovoljna. Link se otvara u novom prozoru.</small></div>
+</section>
+{% endif %}
+{% else %}
+<div class="section-heading"><h1>Završetak narudžbe</h1><a href="{% url 'cart' %}">← Nazad u korpu</a></div>
+<form method="post" class="cart-layout checkout-form">{% csrf_token %}
+<section class="checkout-fields"><h2>Podaci za dostavu</h2>{{ form.non_field_errors }}<div class="checkout-field-grid">{% for field in form %}<div class="checkout-field{% if field.name == 'note' or field.name == 'address' %} checkout-field-wide{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{{ field.errors }}</div>{% endfor %}</div></section>
+<aside class="cart-summary"><h2>Vaša narudžba</h2><p class="cart-summary-subtotal"><span>Ukupan iznos<small class="cart-summary-vat">PDV je uključen u cijenu</small></span><strong>{{ cart_total|floatformat:2 }} KM</strong></p>{% if loyalty_discount %}<p><span>Loyalty ({{ loyalty_percent|floatformat:2 }}%)</span><strong>−{{ loyalty_discount|floatformat:2 }} KM</strong></p>{% endif %}<p class="checkout-points-discount" id="checkout-points-discount"{% if not points_discount %} hidden{% endif %}><span>Popust bodovima (<span data-points-used>{{ points_used }}</span>)</span><strong data-points-discount>−{{ points_discount|floatformat:2 }} KM</strong></p><p><span>Dostava</span><strong data-checkout-delivery>{% if delivery_price == 0 %}Besplatna dostava{% else %}{{ delivery_price|floatformat:2 }} KM{% endif %}</strong></p><div class="cart-summary-total"><span>Ukupno za plaćanje</span><strong data-checkout-total aria-live="polite">{{ grand_total|floatformat:2 }} KM</strong></div><p class="cart-note">Dostava je uključena u ukupan iznos. Način plaćanja dogovaramo prilikom potvrde narudžbe.</p>{% if loyalty_enabled and loyalty_rules.points_enabled and request.user.is_authenticated %}<div class="checkout-points" data-points-preview-url="{% url 'checkout' %}"><div class="checkout-points-heading"><label for="loyalty-points">Iskoristi bodove</label><span class="checkout-points-balance">Imate <strong>{{ points_balance }}</strong> bodova</span></div><input id="loyalty-points" name="loyalty_points" type="number" min="0" max="{{ points_allowed }}" value="{{ points_used }}" inputmode="numeric" aria-describedby="checkout-points-help"{% if not points_balance %} disabled{% endif %}><button type="button" class="checkout-points-max" data-points-max{% if not points_allowed %} disabled{% endif %}>Iskoristi max bodova <span>(<span data-points-max-count>{{ points_allowed }}</span>)</span></button><p id="checkout-points-help">{% if not points_balance %}Bodove dobijate kada narudžba bude poslata.{% endif %}</p><p class="checkout-points-feedback" role="status" aria-live="polite" hidden></p></div>{% endif %}<button class="purchase" type="submit">Potvrdi narudžbu</button></aside>
+</form>{% endif %}
+</main>
+{% include 'shop/partials/bera_footer.html' %}{% include 'shop/partials/mobile_menu.html' %}
+<dialog id="notice"><p></p><button type="button">Zatvori</button></dialog>
+<script src="{% static 'checkout-points.js' %}?v=2" defer></script>
+</body></html>

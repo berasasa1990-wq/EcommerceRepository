@@ -1,0 +1,16 @@
+{% for offer in bundle_sets %}
+<section class="product-bundle" aria-labelledby="bundle-heading-{{ offer.bundle.pk }}">
+  <div class="product-bundle-heading"><h2 id="bundle-heading-{{ offer.bundle.pk }}">SET AKCIJA -{{ offer.bundle.bundle_percent|floatformat:"-2" }}%</h2><p>Kupite sve artikle zajedno i ostvarite popust na cijeli set.</p></div>
+  <div class="product-bundle-row" tabindex="0" role="region" aria-label="Artikli u bundle setu">
+    {% for item in offer.items %}
+    {% if not forloop.first %}<span class="product-bundle-plus" aria-hidden="true">+</span>{% endif %}
+    <a class="product-bundle-item" href="{{ item.product.get_absolute_url }}">
+      <div class="product-bundle-photo">{% if item.product.image %}<img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" width="180" height="160" loading="lazy">{% else %}<span>Slika nije dodana.</span>{% endif %}</div>
+      <h3>{{ item.product.name }}</h3><span class="product-bundle-quantity">1 kom · Cijena u setu</span>
+      <div class="product-bundle-price"><s aria-label="Stara cijena">{{ item.product.price|floatformat:2 }} KM</s><strong aria-label="Nova cijena">{{ item.price|floatformat:2 }} KM</strong></div>
+    </a>
+    {% endfor %}
+  </div>
+  <div class="product-bundle-total"><span>Ukupno za set</span><s aria-label="Stara cijena seta">{{ offer.old_total|floatformat:2 }} KM</s><strong aria-label="Nova cijena seta">{{ offer.new_total|floatformat:2 }} KM</strong><button type="button" class="purchase product-bundle-add" data-cart-add="{% url 'cart_add_bundle' offer.bundle.pk %}">DODAJ SET U KORPU</button></div>
+</section>
+{% endfor %}

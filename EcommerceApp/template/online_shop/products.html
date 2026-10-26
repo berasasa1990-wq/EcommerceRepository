@@ -1,0 +1,27 @@
+{% load ecommerce_extras %}
+{% live_stock_products products as products %}
+<div class="home-product-carousel__track online-shop-product-grid">
+{% for product in products|slice:':6' %}
+{% live_stock_product product as product %}
+<article class="product-card--home-reference" data-product-card data-product-id="{{ product.pk }}" data-product-slug="{{ product.slug }}" data-default-name="{{ product.naziv }}" data-default-price="{{ product.katalog_prikazna_cijena }}" {% if product.na_stanju %}data-in-stock="1"{% endif %}>
+  <div class="product-card-toolbar">
+    {% if product.katalog_akcija_postotak %}<span class="product-badge">-{{ product.katalog_akcija_postotak }}%</span>{% elif product.katalog_na_akciji %}<span class="product-badge">Akcija</span>{% elif home_section_badge %}<span class="product-badge">{{ home_section_badge }}</span>{% endif %}
+    <button type="button" class="product-heart home-card-heart" data-favorite-id="{{ product.pk }}" aria-label="Dodaj na listu želja: {{ product.naziv }}" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="m12 21-8.8-8.5a5.6 5.6 0 0 1 7.9-7.9l.9.9.9-.9a5.6 5.6 0 0 1 7.9 7.9z"/></svg></button>
+  </div>
+  <a class="product-image" href="{{ product.get_absolute_url }}" aria-label="{{ product.naziv }}">{% include 'partials/product_image.html' with product=product image_loading='lazy' image_sizes='(max-width: 600px) 50vw, 16vw' %}</a>
+  <div class="card-copy">
+    <h3><a href="{{ product.get_absolute_url }}" data-product-name>{{ product.naziv }}</a></h3>
+    <p class="stock{% if product.na_stanju %} stock--available{% endif %}">{% if product.na_stanju %}Na stanju · {{ product.stanje }} kom{% else %}Nije na stanju{% endif %}</p>
+    <div class="product-prices"><strong class="price">{{ product.katalog_prikazna_cijena }} KM</strong>{% if product.katalog_na_akciji %}<s>{{ product.katalog_bazna_cijena }} KM</s>{% endif %}</div>
+    {% if site_settings.besplatna_dostava_od and product.katalog_prikazna_cijena >= site_settings.besplatna_dostava_od %}<span class="free-delivery">Besplatna dostava</span>{% endif %}
+    <div class="product-brand-row">{% if product.brend %}<span class="product-brand">{% if product.brend.slika %}<img src="{{ product.brend.slika.url }}" alt="{{ product.brend.naziv }}" loading="lazy" width="85" height="24">{% else %}{{ product.brend.naziv }}{% endif %}</span>{% endif %}{% include 'partials/product_sale_remaining.html' %}</div>
+    {% with card_variations=product.varijacije.all %}
+    {% if card_variations|length > 1 %}<div class="catalog-variation-data" hidden>{% for var in card_variations %}<span data-catalog-variation data-variation-id="{{ var.pk }}" data-variation-name="{{ var.naziv }}"></span>{% endfor %}</div>{% endif %}
+    {% if product.na_stanju %}
+    <button type="button" class="purchase product-card-add-btn" data-catalog-add data-product-slug="{{ product.slug }}" data-product-id="{{ product.pk }}" data-product-name="{{ product.naziv }}" data-almost-cart {% if card_variations|length > 1 %}data-pick-variation="1"{% elif card_variations|length == 1 %}{% for var in card_variations %}data-variation-id="{{ var.pk }}"{% endfor %}{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M1 2h3l4 14h12l3-10H5"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg>Dodaj u korpu</button>
+    {% else %}{% include 'partials/stock_notify_button.html' with product=product notify_label='Obavijesti pri dolasku' %}{% endif %}
+    {% endwith %}
+  </div>
+</article>
+{% endfor %}
+</div>

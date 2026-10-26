@@ -1,0 +1,20 @@
+{% load static %}
+<!doctype html>
+<html lang="bs">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Prijava | Kontrolni panel</title><link rel="stylesheet" href="{% static 'css/panel.css' %}"></head>
+<body>
+  <header class="panel-header"><span class="panel-brand">Kontrolni panel</span><a class="home-link" href="{% url 'home' %}">Pogledaj trgovinu</a></header>
+  <main class="panel-login">
+    <section class="panel-content">
+      <p class="eyebrow">VAŠA TRGOVINA</p><h1>Prijava u panel</h1>
+      <form method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {% for field in form %}<div class="form-field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <button class="home-link save-button" type="submit">Prijavi se</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

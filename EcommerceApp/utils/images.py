@@ -2205,40 +2205,63 @@ def process_category_icon(upload):
         upload.seek(0)
 
 
-def prepare_hero_cutout(upload):
-    """Preserve transparency or remove edge-connected near-white background."""
+
+HOMEPAGE_BANNER_SIZE = (1600, 600)
+HOMEPAGE_BANNER_MAX_BYTES = 80_000
+
+
+def prepare_homepage_banner(upload):
+    """Keep a 1600×600 banner sharp while enforcing an 80,000-byte ceiling."""
     from pathlib import Path
     from django.core.exceptions import ValidationError
-    from PIL import ImageChops, ImageDraw, ImageFilter
+    from PIL import UnidentifiedImageError
 
     upload.seek(0)
-    with Image.open(upload) as source:
-        image = ImageOps.exif_transpose(source).convert('RGBA')
-    alpha = image.getchannel('A')
-    if alpha.getextrema()[0] == 255:
-        # A padded mask connects all exterior edges without erasing white
-        # details enclosed inside the product.
-        r, g, b, _ = image.split()
-        white = ImageChops.multiply(
-            ImageChops.multiply(r.point(lambda v: 255 if v >= 240 else 0),
-                                g.point(lambda v: 255 if v >= 240 else 0)),
-            b.point(lambda v: 255 if v >= 240 else 0),
-        )
-        mask = Image.new('RGB', (image.width + 2, image.height + 2), 'white')
-        mask.paste(white.convert('RGB'), (1, 1))
-        ImageDraw.floodfill(mask, (0, 0), (255, 0, 0), thresh=0)
-        background = mask.getchannel('G').point(lambda v: 255 - v)
-        # Only the red flood-filled area has green=0 and red=255.
-        background = ImageChops.multiply(background, mask.getchannel('R'))
-        background = background.crop((1, 1, image.width + 1, image.height + 1))
-        if background.getbbox() is None:
-            raise ValidationError('Slika ima pozadinu koju nije moguće automatski ukloniti. Učitaj PNG s prozirnom pozadinom ili sliku artikla na bijeloj podlozi.')
-        image.putalpha(ImageChops.subtract(alpha, background))
-    # Remove the outer matte fringe left by white-background antialiasing.
-    # Work on alpha only so fabric colours and interior white details stay intact.
-    image.putalpha(image.getchannel('A').filter(ImageFilter.MinFilter(3)))
-    if image.getchannel('A').getbbox() is None:
-        raise ValidationError('Slika nema vidljiv artikal. Učitaj sliku artikla bez pozadine.')
-    output = BytesIO()
-    image.save(output, format='PNG')
-    return ContentFile(output.getvalue(), name=Path(upload.name).stem + '.png')
+    try:
+        with Image.open(upload) as source:
+            if getattr(source, 'is_animated', False):
+                raise ValidationError('Učitaj jednu statičnu sliku bannera, bez animacije.')
+            image = ImageOps.exif_transpose(source)
+            # Optimized uploads can pass through a form and model without a second lossy encode.
+            if source.format in ('WEBP', 'AVIF') and image.size == HOMEPAGE_BANNER_SIZE:
+                source.load()
+                upload.seek(0)
+                original = upload.read()
+                if len(original) <= HOMEPAGE_BANNER_MAX_BYTES:
+                    extension = source.format.lower()
+                    return ContentFile(original, name=Path(upload.name).stem + '.' + extension)
+            image = ImageOps.fit(_image_to_rgb(image), HOMEPAGE_BANNER_SIZE, method=Image.Resampling.LANCZOS)
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as exc:
+        raise ValidationError('Slika se ne može pročitati. Učitaj ispravan JPG, PNG, WebP ili AVIF.') from exc
+    finally:
+        upload.seek(0)
+
+    def webp(quality=None):
+        buffer = BytesIO()
+        if quality is None:
+            image.save(buffer, format='WEBP', lossless=True, method=6)
+        else:
+            image.save(buffer, format='WEBP', quality=quality, method=6)
+        return buffer.getvalue()
+
+    stem = Path(upload.name).stem
+    lossless = webp()
+    if len(lossless) <= HOMEPAGE_BANNER_MAX_BYTES:
+        return ContentFile(lossless, name=stem + '.webp')
+    for extension, encode in (('webp', webp), ('avif', _encode_avif_safe)):
+        # Do not sacrifice resolution or fall back to a severely degraded image.
+        low, high = 50, 95
+        best = None
+        while low <= high:
+            quality = (low + high) // 2
+            data = encode(quality) if extension == 'webp' else encode(image, quality)
+            if data is None:
+                break
+            if len(data) <= HOMEPAGE_BANNER_MAX_BYTES:
+                best = data
+                low = quality + 1
+            else:
+                high = quality - 1
+        if best is not None:
+            return ContentFile(best, name=stem + '.' + extension)
+    raise ValidationError('Ova slika ne staje u 80 KB uz očuvan kvalitet na 1600 × 600 px. Učitaj jednostavniju sliku ili smanji šum i sitne detalje.')

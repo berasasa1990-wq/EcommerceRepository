@@ -1,0 +1,375 @@
+{% load static tz panel_tags %}
+{% new_orders_count as pending_orders_count %}
+<!doctype html>
+<html lang="bs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if selected %}{{ selected.title }} | {% endif %}Panel Sajta | BERA</title>
+  <link rel="stylesheet" href="{% static 'css/panel.css' %}?v={% panel_css_version %}">
+</head>
+<body>
+  <header class="panel-header">
+    <a class="panel-brand" href="{% url 'panel' %}">{% if site_settings.logo %}<img src="{{ site_settings.logo.url }}" alt="Logo trgovine" width="58" height="58">{% endif %}<span>Kontrolni panel</span></a>
+    <div class="panel-header-actions"><a class="home-link" href="{% url 'home' %}">Pogledaj trgovinu</a><form action="{% url 'panel_logout' %}" method="post">{% csrf_token %}<button class="home-link" type="submit">Odjava</button></form></div>
+  </header>
+  <main class="panel-main">
+    <div class="panel-intro"><p class="eyebrow">VAŠA TRGOVINA</p><h1>{% if selected %}{{ selected.title }}{% else %}Panel Sajta{% endif %}</h1><p>{% if selected %}{{ selected.description }}{% else %}Sve za vašu ponudu i izgled trgovine na jednom mjestu.{% endif %}</p></div>
+    <nav class="panel-settings panel-settings--compact" aria-label="Podešavanje trgovine">
+      {% for item in sections %}{% if item.slug != 'loyalty' or loyalty_enabled %}
+      <a class="panel-card{% if selected.slug == item.slug %} is-active{% endif %}" href="{% url 'panel_section' item.slug %}"{% if selected.slug == item.slug %} aria-current="page"{% endif %}>
+        <span class="panel-card-copy"><h2>{{ item.title }}{% if item.slug == 'narudzbe' %} <span class="panel-order-badge" aria-label="{{ pending_orders_count }} novih neposlatih narudžbi">{{ pending_orders_count }}</span>{% endif %}</h2><span>{{ item.description }}</span></span>
+      </a>
+      {% endif %}{% endfor %}
+    </nav>
+    {% for message in messages %}<p class="panel-feedback" role="status">{{ message }}</p>{% endfor %}
+    {% if orders_section %}
+    <section class="panel-content">
+      <div class="content-heading"><h2>Narudžbe</h2><nav class="panel-order-filters" aria-label="Filter narudžbi">
+        <a href="?status=nove"{% if order_filter == 'nove' %} class="is-active" aria-current="page"{% endif %}>Nove</a>
+        <a href="?status=poslate"{% if order_filter == 'poslate' %} class="is-active" aria-current="page"{% endif %}>Poslate</a>
+        <a href="?status=sve"{% if order_filter == 'sve' %} class="is-active" aria-current="page"{% endif %}>Sve</a>
+      </nav><span>{{ orders|length }} prikazano · {{ pending_orders_count }} novih</span></div>
+      <div class="panel-users-scroll"><table class="panel-users">
+        <thead><tr><th>Broj / datum</th><th>Kupac</th><th>Plaćanje</th><th>Artikli</th><th>Ukupno</th><th>Status</th><th>Akcija</th></tr></thead>
+        <tbody>{% for order in orders %}<tr>
+          <td>#{{ order.pk }}<br>{{ order.created_at|localtime|date:"d.m.Y. H:i" }}</td>
+          <td><div class="panel-order-customer">{{ order.customer_name|default:'—' }} <button type="button" class="panel-card-info" data-order-preview="{{ order.pk }}" data-customer-only="true" title="Podaci kupca" aria-label="Podaci kupca za narudžbu #{{ order.pk }}" aria-haspopup="dialog"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v2"/></svg></button></div></td>
+          <td>Gotovinski</td>
+          <td>{% for item in order.items.all %}{{ item.quantity }} × {{ item.product.name }}{% if not forloop.last %}<br>{% endif %}{% empty %}Nema stavki.{% endfor %}</td>
+          <td>{{ order.total|floatformat:2 }} KM</td>
+          <td>{{ order.get_status_display }}</td>
+          <td><div class="panel-order-actions"><button type="button" class="panel-pack-button" data-order-preview="{{ order.pk }}" title="Pregled narudžbe" aria-label="Pregled narudžbe #{{ order.pk }}" aria-haspopup="dialog"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>{% if order.status == 'placed' %}
+            <form method="post" onsubmit="return confirm('Želite li da označite narudžbu da je zapakovana?');">{% csrf_token %}<input type="hidden" name="order_id" value="{{ order.pk }}"><input type="hidden" name="action" value="pack"><button type="submit" class="panel-pack-button" title="Označi kao zapakovano" aria-label="Označi narudžbu #{{ order.pk }} kao zapakovanu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5v8l-9 5-9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8M7.5 5.5l9 5V15"/></svg></button></form>
+          {% endif %}</div></td>
+        </tr>{% empty %}<tr><td colspan="7">Trenutno nema narudžbi.</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </section>
+    {% elif modules_section %}
+    <section class="panel-content">
+      <h2>Moduli</h2>
+      <p class="module-intro">Proširite mogućnosti svoje trgovine. Za aktivaciju unesite kod koji ste dobili od BERA podrške.</p>
+      <div class="panel-module-grid">
+        <article class="panel-module-card"><div class="panel-module-top"><span class="panel-module-symbol">%</span><span class="panel-module-status is-active">FREE</span></div><h3>Regularna akcija</h3><p>Standardno sniženje cijene artikla. Uvijek dostupno, bez aktivacije.</p><span class="panel-module-ready">✓ Besplatno uključeno</span></article>
+        {% for module in bera_modules %}
+        <article class="panel-module-card">
+          <div class="panel-module-top"><span class="panel-module-symbol" aria-hidden="true">◇</span><span class="panel-module-status{% if module.enabled %} is-active{% endif %}">{% if not module.implemented %}U pripremi{% elif module.enabled %}AKTIVAN{% else %}NEAKTIVAN{% endif %}</span></div>
+          <h3>{{ module.name }}</h3><p>{{ module.description }}</p>
+          {% if module.expired %}<span class="module-expiry-badge" role="status">Licenca je istekla</span>{% elif module.expiry_days %}<span class="module-expiry-badge" role="status">{{ module.expiry_days }} {% if module.expiry_days == 1 %}dan{% else %}dana{% endif %} do isteka licence</span>{% endif %}
+          {% if module.expires_at %}<p class="module-expiry-date">Licenca vrijedi do {{ module.expires_at|date:"d.m.Y. H:i" }}</p>{% endif %}
+          {% if module.implemented %}{% if module.enabled %}<span class="panel-module-ready">✓ Modul je spreman za korištenje</span>{% else %}<button type="button" class="module-activate-button" data-module-activate="{{ module.code }}" data-module-name="{{ module.name }}">Aktivacija</button>{% endif %}{% else %}<span class="panel-module-ready">Uskoro dostupno</span>{% endif %}
+        </article>
+        {% endfor %}
+      </div>
+      <dialog id="moduleActivationDialog" class="module-activation-dialog" aria-labelledby="moduleActivationTitle">
+        <form method="post" action="{% url 'bera_module_code_activate' %}">
+          {% csrf_token %}<input type="hidden" name="module" id="activationModule">
+          <div class="module-dialog-heading"><span class="eyebrow">BERA MODULI</span><button type="button" class="module-dialog-close" data-activation-close aria-label="Zatvori">×</button></div>
+          <h2 id="moduleActivationTitle">Aktivacija modula</h2><p id="activationModuleName"></p>
+          <label for="moduleActivationCode">Kod za aktivaciju</label>
+          <input id="moduleActivationCode" name="activation_code" maxlength="128" placeholder="BERA-…" required autocomplete="off" spellcheck="false">
+          <p class="module-dialog-hint">Unesite kod koji ste dobili od BERA podrške.</p>
+          <button type="submit" class="module-activate-button">Aktiviraj modul</button>
+        </form>
+      </dialog>
+    </section>
+    {% elif backup_section %}{% localtime off %}
+    <section class="panel-content">
+      <div class="content-heading"><h2>Backup baze podataka</h2><span>{{ backups.paginator.count }} kopija</span></div>
+      <p>Čuvaju se kopije iz posljednja 3 dana. Starije kopije automatski se brišu.</p>
+      <div class="panel-users-scroll"><table class="panel-users">
+        <thead><tr><th>Datum i vrijeme</th><th>Veličina</th><th>Vrsta</th><th>Akcija</th></tr></thead>
+        <tbody>{% for backup in backups %}<tr>
+          <td>{{ backup.created|date:"d.m.Y. H:i:s" }}</td><td>{{ backup.size|filesizeformat }}</td>
+          <td>{% if backup.safety %}Prije vraćanja{% else %}Automatski backup{% endif %}</td>
+          <td><form method="post" action="{% url 'panel_backup_restore' %}" onsubmit="return confirm('Vratiti bazu na {{ backup.created|date:"d.m.Y. H:i:s" }}? Svi noviji podaci bit će zamijenjeni. Trenutno stanje će biti sačuvano.');">{% csrf_token %}<input type="hidden" name="backup" value="{{ backup.name }}"><button class="home-link" type="submit">Restore</button></form></td>
+        </tr>{% empty %}<tr><td colspan="4">Prvi backup će se napraviti automatski nakon pokretanja servera.</td></tr>{% endfor %}</tbody>
+      </table></div>
+      {% if backups.has_other_pages %}<nav class="panel-order-filters" aria-label="Stranice backup kopija">
+        {% if backups.has_previous %}<a href="?page={{ backups.previous_page_number }}">Prethodna</a>{% endif %}
+        <span aria-current="page">Stranica {{ backups.number }} od {{ backups.paginator.num_pages }}</span>
+        {% if backups.has_next %}<a href="?page={{ backups.next_page_number }}">Sljedeća</a>{% endif %}
+      </nav>{% endif %}
+    </section>
+    {% endlocaltime %}{% elif loyalty_formset %}
+    <nav class="panel-order-filters loyalty-panel-tabs" aria-label="Loyalty opcije">
+      <a href="{% url 'panel_section' 'loyalty' %}"{% if loyalty_tab == 'search' %} class="is-active" aria-current="page"{% endif %}>Pretraga kartice</a>
+      <a href="?tab=settings"{% if loyalty_tab == 'settings' %} class="is-active" aria-current="page"{% endif %}>Podešavanje loyalty-a</a>
+    </nav>
+    {% if loyalty_tab == 'search' %}
+    <section class="panel-content loyalty-card-search">
+      <form method="get" action="{% url 'panel_section' 'loyalty' %}" role="search">
+        <label for="loyaltyCardSearch">Pretraga kartica kupaca</label>
+        <div class="loyalty-card-search-controls"><input type="search" id="loyaltyCardSearch" name="q" value="{{ card_search }}" maxlength="150" placeholder="Ime kupca, broj kartice ili telefon…"><button type="submit" class="home-link save-button">Pretraži</button>{% if card_search %}<a class="home-link" href="{% url 'panel_section' 'loyalty' %}">Prikaži sve</a>{% endif %}</div>
+      </form>
+    </section>
+    <section class="panel-content"><div class="content-heading"><h2>Kartice kupaca</h2><span>{{ loyalty_cards|length }} kartica</span></div><div class="panel-users-scroll"><table class="panel-users"><thead><tr><th>Kupac</th><th>Kartica</th><th>Datum izdavanja</th><th>Info</th></tr></thead><tbody>{% for card in loyalty_cards %}<tr><td>{% if card.customer.get_full_name %}{{ card.customer.get_full_name }}<br><small>{{ card.customer.email }}</small>{% else %}{{ card.customer.email }}{% endif %}</td><td>{{ card.number }}</td><td>{{ card.created_at|date:"d.m.Y." }}</td><td><button type="button" class="panel-card-info" data-card-purchases="{{ card.pk }}" title="Pregled kupovina" aria-label="Kupovine kartice {{ card.number }}" aria-haspopup="dialog"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v2"/></svg></button></td></tr>{% empty %}<tr><td colspan="4">{% if card_search %}Nema kartica za unesenu pretragu.{% else %}Nema kartica.{% endif %}</td></tr>{% endfor %}</tbody></table></div></section>
+    {% else %}
+    <section class="panel-content loyalty-feature-settings"><h2>Podešavanje loyalty-a</h2>
+      <form method="post">{% csrf_token %}<input type="hidden" name="settings_section" value="features">{{ loyalty_features_form.non_field_errors }}
+        {% for field in loyalty_features_form %}<label class="loyalty-feature-switch"><span><strong>{{ field.label }}</strong><small>{% if field.name == 'tiers_enabled' %}Popusti prema ukupnoj potrošnji kupca.{% else %}Skupljanje i korištenje bodova pri kupovini.{% endif %}</small></span>{{ field }}{{ field.errors }}</label>{% endfor %}
+        <button type="submit" class="home-link save-button">Spremi opcije</button>
+      </form>
+    </section>
+    <section class="panel-content loyalty-settings loyalty-collapsible"><details{% if loyalty_formset.is_bound %} open{% endif %}><summary>Loyalty popusti</summary><div class="loyalty-settings-body"><p class="loyalty-hint">Ukupna potrošnja iz naručenih i završenih narudžbi, bez dostave. Otkazane narudžbe se ne računaju. Od uključuje iznos, do ga ne uključuje. Prazno „do” znači bez gornje granice.</p>
+    <form method="post">{% csrf_token %}{{ loyalty_formset.management_form }}{{ loyalty_formset.non_form_errors }}
+      <div id="loyaltyRows">{% for tier_form in loyalty_formset %}<div class="loyalty-tier">{{ tier_form.as_p }}</div>{% endfor %}</div>
+      <template id="loyaltyEmpty"><div class="loyalty-tier">{{ loyalty_formset.empty_form.as_p }}</div></template>
+      <div class="form-actions"><button class="home-link" type="button" id="addLoyaltyTier">Dodaj raspon</button><button class="home-link save-button" type="submit">Spremi loyalty</button></div>
+    </form></div></details></section>
+    <section class="panel-content loyalty-collapsible"><details{% if loyalty_points_form.is_bound %} open{% endif %}><summary>Bodovi</summary><div class="loyalty-settings-body">
+      <p class="loyalty-hint">Odredite koliko bodova kupac dobija za iznos kupovine i koliko bodova vrijedi određeni popust. Obračun je bez dostave, nakon popusta.</p>
+      <form method="post" class="loyalty-points-settings-form">{% csrf_token %}<input type="hidden" name="settings_section" value="points">{{ loyalty_points_form.non_field_errors }}
+        <fieldset><legend>Dodjela bodova pri kupovini</legend><div class="loyalty-points-pair"><div class="form-field">{{ loyalty_points_form.award_spend.label_tag }}{{ loyalty_points_form.award_spend }}{{ loyalty_points_form.award_spend.errors }}</div><span aria-hidden="true">→</span><div class="form-field">{{ loyalty_points_form.points_per_km.label_tag }}{{ loyalty_points_form.points_per_km }}{{ loyalty_points_form.points_per_km.errors }}</div></div></fieldset>
+        <fieldset><legend>Popust za iskorištene bodove</legend><div class="loyalty-points-pair"><div class="form-field">{{ loyalty_points_form.redemption_points.label_tag }}{{ loyalty_points_form.redemption_points }}{{ loyalty_points_form.redemption_points.errors }}</div><span aria-hidden="true">→</span><div class="form-field">{{ loyalty_points_form.point_value.label_tag }}{{ loyalty_points_form.point_value }}{{ loyalty_points_form.point_value.errors }}</div></div></fieldset>
+        <div class="form-field loyalty-points-limit">{{ loyalty_points_form.max_discount_percent.label_tag }}{{ loyalty_points_form.max_discount_percent }}{{ loyalty_points_form.max_discount_percent.errors }}</div>
+        <p class="loyalty-hint">Bodovi se dodjeljuju kada narudžba bude poslata. Nepuni bodovi zaokružuju se naniže.</p>
+        <button type="submit" class="home-link save-button">Spremi bodove</button>
+      </form>
+    </div></details></section>
+    {% endif %}
+    {% elif edit_form %}
+    <section class="panel-content edit-panel{% if delivery_settings %} delivery-settings{% endif %}">
+      <{% if delivery_settings %}details class="settings-disclosure"{% if edit_form.errors %} open{% endif %}{% else %}div{% endif %}>
+      {% if delivery_settings %}<summary>Dostava</summary>{% else %}<h2>{% if editing %}Uredi{% else %}Dodaj{% endif %}: {{ selected.title }}</h2>{% endif %}
+      {% if chatbot_section %}<div class="chatbot-panel-status"><strong>{% if chatbot_guided %}Vođeni odabir artikala — povezan s katalogom{% elif chatbot_connected %}AI povezivanje je podešeno{% else %}AI još nije povezan{% endif %}</strong><p>Chatbot se pojavljuje samo na početnoj, prema vremenu ispod. Vođeni odabir ne zahtijeva API ključ: uredite pitanja, ponuđene budžete i poruke rezultata. Sve kategorije sajta prikazuju se automatski. Za slobodni AI razgovor isključite vođeni odabir i unesite OpenAI API ključ. Povezivanje koristi javni katalog i unesene informacije o trgovini, bez pristupa privatnim narudžbama.</p><p>Ključ ostavite prazan ako ga ne mijenjate. API potrošnju ograničavaju dnevni limit i limit poruka po posjetiocu.</p></div>{% endif %}
+      <form method="post" enctype="multipart/form-data" class="panel-edit-form">
+        {% csrf_token %}
+        {{ edit_form.non_field_errors }}
+        {% for field in edit_form %}{% if field.is_hidden %}{{ field }}{% else %}<div class="form-field{% if field.name == 'bundle_products' %} bundle-products-field{% endif %}{% if field.field.widget.input_type == 'checkbox' %} form-field--checkbox{% endif %}">{{ field.label_tag }}{% if field.name == 'bundle_products' %}<div class="bundle-picker-toolbar"><input type="search" id="bundleProductSearch" placeholder="Pretraži artikle…" aria-label="Pretraži artikle za set"><span id="bundleSelectedCount" aria-live="polite"></span></div>{% endif %}{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</div>{% endif %}{% endfor %}
+        <div class="form-actions"><button class="home-link save-button" type="submit">Spremi izmjene</button><a class="home-link" href="{% url 'panel_section' selected.slug %}">Odustani</a></div>
+      </form>
+      </{% if delivery_settings %}details{% else %}div{% endif %}>
+    </section>
+    {% if description_form %}
+    <section class="panel-content edit-panel meta-description-settings" id="meta-description">
+      <h2>Meta opis sajta</h2>
+      <p class="loyalty-hint">Kratak opis koji pretraživači mogu prikazati ispod naslova stranice. Unesite oko 150–160 znakova. Koristi se na početnoj i stranicama bez vlastitog SEO opisa.</p>
+      <form method="post">{% csrf_token %}<input type="hidden" name="settings_section" value="meta_description">{{ description_form.non_field_errors }}
+        <div class="form-field">{{ description_form.description.label_tag }}{{ description_form.description }}{{ description_form.description.errors }}</div>
+        <div class="form-actions"><button class="home-link save-button" type="submit">Spremi meta opis</button></div>
+      </form>
+    </section>
+    {% endif %}
+    {% if seo_form %}
+    <section class="panel-content edit-panel seo-settings-panel">
+      <details class="settings-disclosure"{% if seo_form.errors %} open{% endif %}><summary>SEO sajta i društvene mreže</summary>
+      <p class="seo-settings-intro">Uredite prikaz sajta na pretraživačima i pri dijeljenju linkova. Artikli i kategorije imaju i vlastita SEO polja u svojim obrascima.</p>
+      <div class="seo-tools"><a class="home-link" href="{% url 'seo_sitemap' %}" target="_blank" rel="noopener">Otvori sitemap.xml ↗</a><a class="home-link" href="{% url 'seo_robots' %}" target="_blank" rel="noopener">Otvori robots.txt ↗</a></div>
+      <div class="seo-search-preview" aria-label="Primjer izgleda u pretrazi"><small>PRIMJER PRIKAZA U PRETRAZI</small><span id="seoPreviewDomain"></span><strong id="seoPreviewTitle"></strong><p id="seoPreviewDescription"></p></div>
+      <form method="post" enctype="multipart/form-data" class="panel-edit-form">{% csrf_token %}<input type="hidden" name="settings_section" value="seo">{{ seo_form.non_field_errors }}
+      {% for field in seo_form %}<div class="form-field{% if field.field.widget.input_type == 'checkbox' %} form-field--checkbox{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</div>{% endfor %}
+      <div class="form-actions"><button class="home-link save-button" type="submit">Spremi SEO postavke</button></div></form>
+      <p class="seo-settings-intro">Promjene vrijede odmah. Pretraživači odlučuju kada će ponovo posjetiti sajt i kako će prikazati rezultate. Privatne stranice automatski imaju noindex.</p>
+      </details>
+    </section>
+    {% endif %}
+    {% if featured_form %}
+    <section class="panel-content edit-panel delivery-settings featured-settings">
+      <details class="settings-disclosure"{% if featured_form.errors %} open{% endif %}>
+        <summary>Izdvojeni artikli</summary>
+        <form method="post" class="panel-edit-form">
+          {% csrf_token %}<input type="hidden" name="settings_section" value="featured">
+          {{ featured_form.non_field_errors }}
+          <div class="form-field featured-products-field">
+            <p>{{ featured_form.products.help_text }}</p>
+            {{ featured_form.products.errors }}
+            <label for="featuredProductSearch">Pretraži artikle</label>
+            <input id="featuredProductSearch" type="search" placeholder="Unesi naziv artikla…" autocomplete="off" aria-controls="featuredProductList">
+            <p id="featuredSearchStatus" role="status" aria-live="polite" hidden></p>
+            <div id="featuredProductList" class="featured-products-list">{% for checkbox in featured_form.products %}<label class="featured-product-option">{{ checkbox.tag }}<span>{{ checkbox.choice_label }}</span></label>{% empty %}<p>Trenutno nema aktivnih artikala. Dodajte ih kroz sekciju Artikli.</p>{% endfor %}</div>
+          </div>
+          <div class="form-actions"><button class="home-link save-button" type="submit">Spremi izdvojene artikle</button></div>
+        </form>
+      </details>
+    </section>
+    {% endif %}
+    {% elif selected %}
+    {% if logo_form %}
+    <section class="panel-content logo-upload">
+      <h2>Logo trgovine</h2>
+      <p>Slika se prikazuje u gornjem lijevom uglu trgovine. Bez učitane slike logo se ne prikazuje.</p>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ logo_form.as_p }}
+        <p>PNG, JPG, WebP, GIF ili AVIF. Automatsko spremanje u AVIF do 15 KB.</p>
+        <button class="home-link" type="submit">Spremi logo</button>
+      </form>
+    </section>
+    {% endif %}
+    <section class="panel-content" aria-label="Pregled: {{ selected.title }}">
+      {% if selected.slug == 'banneri' %}<p>Glavni banner ispod headera: odaberite poziciju <strong>Glavni banner</strong> i učitajte sliku <strong>1600 × 600 px</strong> (AVIF do 80 KB). Slika se prikazuje preko cijele širine, bez rezanja. Veliki banner na početnoj, umjesto najprodavanijih proizvoda: odaberite poziciju <strong>Veliki banner — ispod ponuda</strong> i učitajte sliku preporučene dimenzije <strong>1600 × 600 px</strong>.</p>{% if hero_editor %}<p><a class="home-link" href="{% url 'panel_edit' 'banneri' hero_editor.pk %}">Uredi glavni banner — upload slike</a></p>{% endif %}{% endif %}
+      <div class="content-heading"><h2>Pregled</h2>{% if can_add %}<a class="home-link" href="{% url 'panel_add' selected.slug %}">Dodaj</a>{% endif %}<span>{{ rows|length }} stavki</span></div>
+      {% if selected.slug == 'korisnici' %}
+      <div class="panel-users-scroll"><table class="panel-users"><thead><tr><th>Korisničko ime</th><th>Ime i prezime</th><th>E-mail</th><th>Registracija</th><th>Status</th><th>Uloga</th></tr></thead><tbody>
+      {% for user in rows %}<tr><td>{{ user.username }}</td><td>{{ user.get_full_name|default:'—' }}</td><td>{{ user.email|default:'—' }}</td><td>{{ user.date_joined|date:"d.m.Y. H:i" }}</td><td>{% if user.is_active %}Aktivan{% else %}Neaktivan{% endif %}</td><td>{% if user.is_superuser %}Administrator{% elif user.is_staff %}Osoblje{% else %}Kupac{% endif %}</td></tr>{% empty %}<tr><td colspan="6">Trenutno nema registrovanih korisnika.</td></tr>{% endfor %}
+      </tbody></table></div>
+      {% else %}
+      <ul class="panel-list">
+        {% for row in rows %}<li>{% if row.image_url %}<img class="row-image" src="{{ row.image_url }}" alt="" loading="lazy">{% elif row.image %}<img class="row-image{% if selected.slug == 'banneri' %} row-image--banner{% endif %}" src="{% static row.image %}" alt="" loading="lazy">{% endif %}<span>{{ row.name }}</span>{% if row.detail %}<strong{% if row.original_price %} class="panel-sale-price"{% endif %}>{% if row.original_price %}<s aria-label="Redovna cijena">{{ row.original_price }}</s><span>Snižena: {{ row.detail }}</span>{% else %}{{ row.detail }}{% endif %}</strong>{% endif %}{% if row.id %}<a class="home-link" href="{% url 'panel_edit' selected.slug row.id %}" aria-label="Uredi: {{ row.name }}">Uredi</a>{% endif %}{% if selected.slug == 'banneri' and row.id %}<form method="post" action="{% url 'panel_banner_delete' row.id %}">{% csrf_token %}<button class="home-link" type="submit">Ukloni banner</button></form>{% endif %}</li>{% empty %}<li>Trenutno nema stavki.</li>{% endfor %}
+      </ul>
+      {% endif %}
+    </section>
+    <a class="back-link" href="{% url 'panel' %}">Sva podešavanja</a>
+    {% endif %}
+  </main>
+<script>
+const saleType = document.querySelector('#id_sale_type');
+if (saleType) {
+  const updateSaleFields = () => {
+    const plus = saleType.value === 'article_plus';
+    const regular = saleType.value === 'regular';
+    const quantity = saleType.value === 'quantity';
+    const bundle = saleType.value === 'bundle';
+    ['product', 'plus_product', 'plus_percent', 'discount_percent', 'price', 'quantity_percent_2', 'quantity_percent_3', 'quantity_percent_over_3', 'bundle_products', 'bundle_percent'].forEach(name => {
+      const field = document.querySelector('#id_' + name);
+      const visible = name === 'product' ? (regular || plus || quantity) :
+        name.startsWith('bundle_') ? bundle :
+        name.startsWith('quantity_percent_') ? quantity :
+        (['plus_product', 'plus_percent'].includes(name) ? plus : regular);
+      field.closest('.form-field').hidden = !visible;
+      if (!(name === 'product' && field.dataset.locked === 'true')) field.disabled = !visible;
+      field.querySelectorAll('input, select').forEach(input => { input.disabled = !visible; });
+      field.required = visible && ['product', 'plus_product', 'plus_percent', 'quantity_percent_2', 'quantity_percent_3', 'quantity_percent_over_3', 'bundle_percent'].includes(name);
+    });
+    document.querySelector('#id_original_price').disabled = true;
+    document.querySelector('.panel-edit-form button[type="submit"]').disabled = !regular && !plus && !quantity && !bundle;
+    let notice = document.querySelector('#saleTypeNotice');
+    if (!notice) {
+      notice = document.createElement('p');
+      notice.id = 'saleTypeNotice';
+      notice.setAttribute('role', 'status');
+      saleType.closest('.form-field').append(notice);
+    }
+    notice.hidden = regular || plus || quantity || bundle;
+    notice.textContent = 'Postavke za ovu vrstu akcije još nisu definisane.';
+    const firstProduct = document.querySelector('#id_product');
+    [...firstProduct.options].forEach(option => {
+      option.hidden = plus && option.dataset.regular === '0';
+      option.disabled = option.hidden;
+    });
+    if (!firstProduct.disabled && firstProduct.selectedOptions[0]?.disabled) firstProduct.value = '';
+    document.querySelector('label[for="id_product"]').textContent = plus ? 'Prvi artikal (regularna cijena):' : 'Artikal:';
+  };
+  const productField = document.querySelector('#id_product');
+  productField.dataset.locked = String(productField.disabled);
+  const percentField = document.querySelector('#id_discount_percent');
+  const priceField = document.querySelector('#id_price');
+  percentField.addEventListener('input', () => { if (percentField.value) priceField.value = ''; });
+  priceField.addEventListener('input', () => { if (priceField.value) percentField.value = ''; });
+  productField.addEventListener('change', () => { percentField.value = ''; priceField.value = ''; updateSaleFields(); });
+  saleType.addEventListener('change', updateSaleFields);
+  updateSaleFields();
+  const bundleList = document.querySelector('#id_bundle_products');
+  const bundleSearch = document.querySelector('#bundleProductSearch');
+  const updateBundleCount = () => {
+    document.querySelector('#bundleSelectedCount').textContent = `Odabrano: ${bundleList.querySelectorAll('input:checked').length}`;
+  };
+  bundleList.addEventListener('change', updateBundleCount);
+  bundleSearch.addEventListener('input', () => {
+    const query = bundleSearch.value.toLocaleLowerCase('bs').trim();
+    bundleList.querySelectorAll('label').forEach(label => {
+      label.closest('#id_bundle_products > div').hidden = !label.textContent.toLocaleLowerCase('bs').includes(query);
+    });
+  });
+  updateBundleCount();
+}
+
+document.querySelector('#addLoyaltyTier')?.addEventListener('click', () => {
+  const total = document.querySelector('#id_form-TOTAL_FORMS');
+  const template = document.querySelector('#loyaltyEmpty');
+  document.querySelector('#loyaltyRows').insertAdjacentHTML('beforeend', template.innerHTML.replace(/__prefix__/g, total.value));
+  total.value = Number(total.value) + 1;
+});
+
+const featuredSearch = document.querySelector('#featuredProductSearch');
+if (featuredSearch) {
+  const options = [...document.querySelectorAll('.featured-product-option')];
+  const status = document.querySelector('#featuredSearchStatus');
+  const normalize = value => value.toLocaleLowerCase('bs').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'dj').trim();
+  featuredSearch.addEventListener('input', () => {
+    const query = normalize(featuredSearch.value);
+    let visible = 0;
+    options.forEach(option => {
+      option.hidden = !normalize(option.textContent).includes(query);
+      if (!option.hidden) visible++;
+    });
+    status.hidden = !query;
+    status.textContent = visible ? `Pronađeno artikala: ${visible}` : 'Nema artikala za ovu pretragu.';
+  });
+  featuredSearch.addEventListener('keydown', event => {
+    if (event.key === 'Enter') event.preventDefault();
+  });
+}
+const activationDialog = document.querySelector('#moduleActivationDialog');
+if (activationDialog) {
+  document.querySelectorAll('[data-module-activate]').forEach(button => {
+    button.addEventListener('click', () => {
+      document.querySelector('#activationModule').value = button.dataset.moduleActivate;
+      document.querySelector('#activationModuleName').textContent = button.dataset.moduleName;
+      document.querySelector('#moduleActivationCode').value = '';
+      activationDialog.showModal();
+      document.querySelector('#moduleActivationCode').focus();
+    });
+  });
+  activationDialog.querySelector('[data-activation-close]').addEventListener('click', () => activationDialog.close());
+}
+const seoTitle = document.querySelector('#id_home_title');
+if (seoTitle) {
+  const seoName = document.querySelector('#id_site_name');
+  const seoDescription = document.querySelector('#id_description');
+  const seoDomain = document.querySelector('#id_canonical_domain');
+  const updateSeoPreview = () => {
+    document.querySelector('#seoPreviewTitle').textContent = seoTitle.value || `${seoName.value || 'BERA'} | Online trgovina`;
+    document.querySelector('#seoPreviewDescription').textContent = seoDescription.value || 'Ovdje će se prikazati opis vaše trgovine.';
+    document.querySelector('#seoPreviewDomain').textContent = seoDomain.value || window.location.origin;
+  };
+  [seoTitle, seoName, seoDescription, seoDomain].forEach(field => field.addEventListener('input', updateSeoPreview));
+  [seoTitle, seoDescription].forEach(field => {
+    const counter = document.createElement('small');
+    const update = () => { counter.textContent = `${field.value.length} / ${field.maxLength} znakova`; };
+    field.after(counter);
+    field.addEventListener('input', update);
+    update();
+  });
+  updateSeoPreview();
+}
+</script>
+{% if loyalty_formset %}
+<dialog id="loyaltyPurchasesDialog" class="loyalty-purchases-dialog" aria-labelledby="loyaltyPurchasesTitle">
+  <form method="dialog" class="loyalty-dialog-close"><button class="home-link" aria-label="Zatvori pregled kupovina">Zatvori ×</button></form>
+  <div id="loyaltyPurchasesContent" aria-live="polite"><h2 id="loyaltyPurchasesTitle">Kupovine kartice</h2></div>
+</dialog>
+<script>
+const purchasesDialog = document.querySelector('#loyaltyPurchasesDialog');
+const purchasesContent = document.querySelector('#loyaltyPurchasesContent');
+let purchasesRequest;
+document.querySelectorAll('[data-card-purchases]').forEach(button => {
+  button.addEventListener('click', async () => {
+    if (purchasesRequest) purchasesRequest.abort();
+    purchasesRequest = new AbortController();
+    purchasesContent.innerHTML = '<h2 id="loyaltyPurchasesTitle">Kupovine kartice</h2><p>Učitavanje…</p>';
+    purchasesDialog.showModal();
+    const url = new URL(window.location.href);
+    url.searchParams.set('card', button.dataset.cardPurchases);
+    try {
+      const response = await fetch(url, { signal: purchasesRequest.signal });
+      if (!response.ok || response.redirected) throw new Error('Nije moguće učitati kupovine.');
+      purchasesContent.innerHTML = await response.text();
+    } catch (error) {
+      if (error.name !== 'AbortError') purchasesContent.innerHTML = '<h2 id="loyaltyPurchasesTitle">Kupovine kartice</h2><p>Nije moguće učitati kupovine. Pokušajte ponovo.</p>';
+    }
+  });
+});
+purchasesDialog.addEventListener('close', () => { if (purchasesRequest) purchasesRequest.abort(); });
+</script>
+{% endif %}
+{% if orders_section %}
+<dialog id="orderPreviewDialog" class="loyalty-purchases-dialog order-preview-dialog" aria-labelledby="orderPreviewTitle">
+  <form method="dialog" class="loyalty-dialog-close"><button class="home-link" aria-label="Zatvori pregled">Zatvori ×</button></form>
+  <div id="orderPreviewContent" aria-live="polite"><h2 id="orderPreviewTitle">Pregled narudžbe</h2></div>
+</dialog>
+<script src="{% static 'panel-orders.js' %}?v=2" defer></script>
+{% endif %}
+</body>
+</html>

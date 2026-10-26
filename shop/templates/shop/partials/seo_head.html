@@ -1,0 +1,10 @@
+{% load seo_tags %}{% seo_metadata as seo %}<title>{{ seo.title }}</title>
+{% if seo.description %}<meta name="description" content="{{ seo.description }}">{% endif %}
+<meta name="robots" content="{{ seo.robots }}">
+{% if seo.canonical %}<link rel="canonical" href="{{ seo.canonical }}">{% endif %}
+<meta property="og:site_name" content="{{ seo.config.site_name }}"><meta property="og:type" content="{{ seo.type }}"><meta property="og:title" content="{{ seo.og_title }}"><meta property="og:url" content="{{ seo.url }}"><meta property="og:locale" content="bs_BA">
+{% if seo.og_description %}<meta property="og:description" content="{{ seo.og_description }}">{% endif %}{% if seo.image %}<meta property="og:image" content="{{ seo.image }}"><meta property="og:image:alt" content="{{ seo.title }}">{% endif %}
+<meta name="twitter:card" content="{% if seo.image %}summary_large_image{% else %}summary{% endif %}"><meta name="twitter:title" content="{{ seo.og_title }}">{% if seo.og_description %}<meta name="twitter:description" content="{{ seo.og_description }}">{% endif %}{% if seo.image %}<meta name="twitter:image" content="{{ seo.image }}">{% endif %}{% if seo.config.twitter_handle %}<meta name="twitter:site" content="{{ seo.config.twitter_handle }}">{% endif %}
+{% if seo.config.google_verification %}<meta name="google-site-verification" content="{{ seo.config.google_verification }}">{% endif %}{% if seo.config.bing_verification %}<meta name="msvalidate.01" content="{{ seo.config.bing_verification }}">{% endif %}
+{% if seo.config.favicon %}<link rel="icon" href="{{ seo.config.favicon.url }}">{% endif %}
+{% if seo.schema_json %}<script type="application/ld+json">{{ seo.schema_json|safe }}</script>{% endif %}

@@ -1,0 +1,211 @@
+{
+  "categories": [
+    {
+      "name": "Varalice",
+      "slug": "varalice",
+      "image": "reference/categories/icons/category-ef91c646bae743168991ab0ac43a3076.avif"
+    },
+    {
+      "name": "Stapovi",
+      "slug": "stapovi",
+      "image": "reference/categories/icons/category-fdc1c7e510e6429fbe80752c0292cb52.avif"
+    },
+    {
+      "name": "Masinice",
+      "slug": "masinice",
+      "image": ""
+    },
+    {
+      "name": "Feeder oprema",
+      "slug": "feeder-oprema",
+      "image": ""
+    },
+    {
+      "name": "Torbe i futrole",
+      "slug": "torbe-i-futrole",
+      "image": "reference/categories/icons/category-2de0aaeb8ee54bdd9b6fddc3ed7b6361.avif"
+    },
+    {
+      "name": "Kutije",
+      "slug": "kutije",
+      "image": ""
+    },
+    {
+      "name": "Laptopi",
+      "slug": "laptop",
+      "image": "reference/categories/icons/category-1deccd6444ba46cabe5f92816f759f6e.avif"
+    },
+    {
+      "name": "Racunari",
+      "slug": "racunari",
+      "image": "reference/categories/icons/category-d2ab539765284edabc1eb672acafb54a.avif"
+    },
+    {
+      "name": "Mobilni telefoni",
+      "slug": "mobilni-telefoni",
+      "image": "reference/categories/icons/category-4b6232444de74a16921840dd70f47fb4.avif"
+    },
+    {
+      "name": "Slusalice",
+      "slug": "slusalice",
+      "image": "reference/categories/icons/category-fa4f94c07a8a4c3d961106985f771825.avif"
+    },
+    {
+      "name": "AirTag",
+      "slug": "airtag",
+      "image": "reference/categories/icons/category-f3fc64a87dbd45a8a2496463aeb5eede.avif"
+    },
+    {
+      "name": "Maske za telefon",
+      "slug": "maske-za-telefon",
+      "image": "reference/categories/icons/category-b746ed491c2a42e9899520ef768fd9dd.avif"
+    },
+    {
+      "name": "Smart Watch",
+      "slug": "smart-watch",
+      "image": "reference/categories/icons/category-ec0cd312348a46ec8c2b046b2e174850.avif"
+    },
+    {
+      "name": "TV",
+      "slug": "tv",
+      "image": "reference/categories/icons/category-3ac04718e2e043d4b56184e2acbc0c5c.avif"
+    },
+    {
+      "name": "Televizori",
+      "slug": "televizori",
+      "image": "reference/categories/icons/category-03fe1c46f6a14b9faa8a8b3e59892e5b.avif"
+    },
+    {
+      "name": "Externi Disk",
+      "slug": "externi-disk",
+      "image": "reference/categories/icons/category-d66e10787e394283bd1318f2fc035182.avif"
+    }
+  ],
+  "products": [
+    {
+      "name": "Apple Airpods 3 MagSafe Charging Case slušalice",
+      "slug": "apple-airpods-3-magsafe-charging-case-slusalice",
+      "image": "reference/products/webshop-product-apple-airpods-3-magsafe-charging-case-slusalice-5739e641438.avif",
+      "price": 499,
+      "category": 11
+    },
+    {
+      "name": "Apple AirTag",
+      "slug": "apple-airtag",
+      "image": "reference/products/webshop-product-apple-airtag-5739efb0233.avif",
+      "price": 99.99,
+      "category": 12
+    },
+    {
+      "name": "Iphone 17 Pro Max Case",
+      "slug": "iphone-17-pro-max-case",
+      "image": "reference/products/webshop-product-iphone-17-pro-max-case-5739f9d8d6f.avif",
+      "price": 39.99,
+      "category": 13
+    },
+    {
+      "name": "Apple Watch Ultra 3 49mm",
+      "slug": "apple-watch-ultra-3-49mm",
+      "image": "reference/products/webshop-product-apple-watch-ultra-3-49mm-573a0047d23.avif",
+      "price": 899.99,
+      "category": 14
+    },
+    {
+      "name": "Apple TV 4K",
+      "slug": "apple-tv-4k",
+      "image": "reference/products/webshop-product-apple-tv-4k-573a06f5fc0.avif",
+      "price": 599,
+      "category": 15
+    },
+    {
+      "name": "Samsung Externi Disk",
+      "slug": "samsung-externi-disk",
+      "image": "reference/products/webshop-product-samsung-externi-disk-573a1dd75e2.avif",
+      "price": 89.99,
+      "category": 17
+    },
+    {
+      "name": "Laptop Apple MacBook Air 13.6 2025 Sky Blue",
+      "slug": "laptop-apple-macbook-air-136-2025-sky-blue",
+      "image": "reference/products/webshop-product-laptop-apple-macbook-air-136-2025-sky-blue-57370738b8f.avif",
+      "price": 1104.15,
+      "category": 8
+    },
+    {
+      "name": "MacBook Air 13.6in M5/10C/16GB/512GB/Silver/CRO",
+      "slug": "macbook-air-136in-m510c16gb512gbsilvercro",
+      "image": "reference/products/webshop-product-macbook-air-136in-m510c16gb512gbsilvercro-573710f70ca.avif",
+      "price": 2699.1,
+      "category": 9
+    },
+    {
+      "name": "Apple iMac M4 (2024) 24\" 24GB 512GB Blue (MD2T4FN/A) - Mac computer - LDLC",
+      "slug": "apple-imac-m4-2024-24-24gb-512gb-blue-md2t4fna-mac-computer-ldlc",
+      "image": "reference/products/webshop-product-apple-imac-m4-2024-24-24gb-512gb-blue-md2t4fna-mac-com-57371b7e632.avif",
+      "price": 7199.1,
+      "category": 9
+    },
+    {
+      "name": "Apple iMac 24\" 4.5K Apple 10C M4 16GB 256GB SSD 10CGPU GbE 4xTB4 (MWV63LL/A)",
+      "slug": "apple-imac-24-45k-apple-10c-m4-16gb-256gb-ssd-10cgpu-gbe-4xtb4-mwv63lla",
+      "image": "reference/products/webshop-product-apple-imac-24-45k-apple-10c-m4-16gb-256gb-ssd-10cgpu-g-5737221de9c.avif",
+      "price": 5999,
+      "category": 9
+    },
+    {
+      "name": "Apple iMac 24\" 4.5K Apple 10C M4 16GB 256GB SSD 10CGPU GbE 4xT22 (MWV63LL/A)",
+      "slug": "apple-imac-24-45k-apple-10c-m4-16gb-256gb-ssd-10cgpu-gbe-4xt22-mwv63lla",
+      "image": "reference/products/webshop-product-apple-imac-24-45k-apple-10c-m4-16gb-256gb-ssd-10cgpu-g-573723f979d.avif",
+      "price": 999,
+      "category": 9
+    },
+    {
+      "name": "iPhone 18 Pro Max 256GB Silver",
+      "slug": "iphone-18-pro-max-256gb-silver-istylemk",
+      "image": "reference/products/webshop-product-iphone-18-pro-max-256gb-silver-istylemk-57372963d9c.avif",
+      "price": 1799.1,
+      "category": 10
+    },
+    {
+      "name": "SAMSUNG LED 55″ UE55AU7172UXXH Smart 4K",
+      "slug": "samsung-led-55-ue55au7172uxxh-smart-4k",
+      "image": "reference/products/webshop-product-samsung-led-55-ue55au7172uxxh-smart-4k-573a143e5b4.avif",
+      "price": 1990,
+      "category": 16
+    },
+    {
+      "name": "Fox Soft Steel Fleck Camo Mono 18lb – 0.35mm – 1000m – CML201",
+      "slug": "fox-soft-steel-fleck-camo-mono-18lb-035mm-1000m-cml201",
+      "image": "reference/products/webshop-product-fox-soft-steel-fleck-camo-mono-18lb-035mm-1000m-cml201-5750767a10d.avif",
+      "price": 50,
+      "category": 13
+    }
+  ],
+  "banner": "reference/banners/a.webp",
+  "collections": {
+    "featured": [
+      "apple-imac-m4-2024-24-24gb-512gb-blue-md2t4fna-mac-computer-ldlc",
+      "apple-imac-24-45k-apple-10c-m4-16gb-256gb-ssd-10cgpu-gbe-4xt22-mwv63lla",
+      "macbook-air-136in-m510c16gb512gbsilvercro",
+      "iphone-18-pro-max-256gb-silver-istylemk",
+      "macbook-air-136in-m510c16gb512gbsilvercro",
+      "fox-soft-steel-fleck-camo-mono-18lb-035mm-1000m-cml201"
+    ],
+    "bestselling": [
+      "iphone-18-pro-max-256gb-silver-istylemk",
+      "apple-tv-4k",
+      "iphone-17-pro-max-case",
+      "fox-soft-steel-fleck-camo-mono-18lb-035mm-1000m-cml201",
+      "macbook-air-136in-m510c16gb512gbsilvercro",
+      "apple-airpods-3-magsafe-charging-case-slusalice"
+    ],
+    "new": [
+      "iphone-18-pro-max-256gb-silver-istylemk",
+      "apple-imac-24-45k-apple-10c-m4-16gb-256gb-ssd-10cgpu-gbe-4xt22-mwv63lla",
+      "apple-imac-24-45k-apple-10c-m4-16gb-256gb-ssd-10cgpu-gbe-4xtb4-mwv63lla",
+      "apple-imac-m4-2024-24-24gb-512gb-blue-md2t4fna-mac-computer-ldlc",
+      "macbook-air-136in-m510c16gb512gbsilvercro",
+      "laptop-apple-macbook-air-136-2025-sky-blue"
+    ]
+  }
+}

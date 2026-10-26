@@ -1,0 +1,59 @@
+Napravi početnu stranicu online trgovine prema izgledu postojeće stranice iz ovog projekta. Koristi priloženi screenshot kao vizuelnu referencu. Želim isti raspored, stil, proporcije i razmake, uz naziv, sadržaj i artikle nove trgovine.
+
+DIZAJN
+- Bijela pozadina, tamnoplavi tekst i svijetloplavi obrubi.
+- Glavne boje: plava #0095D2 i tirkizna #19C9D7.
+- Dugmad koriste plavo-tirkizni gradijent, bijeli tekst, zaobljene rubove i blagu sjenu.
+- Font Arial ili sličan jednostavan sans-serif.
+- Uredan, prozračan izgled, prilagođen računaru i mobitelu.
+
+HEADER
+- Logo lijevo.
+- Široka pretraga proizvoda u sredini.
+- Desno ikonice: Moj nalog, Lista želja i Korpa, s brojačima.
+- Navigacija: Početna, Sve kategorije, Akcije, Novo, Najprodavanije, Brendovi, O nama i Kontakt.
+- Sve stavke navigacije imaju jednaku veličinu teksta, 14 px.
+- „Sve kategorije“ otvara padajući meni.
+- „Brendovi“ otvara popup s logotipima i nazivima svih brendova. Svaki vodi na artikle tog brenda.
+- Aktivna navigacijska stavka ima gradijent i zaobljene rubove.
+
+SADRŽAJ POČETNE
+- Veliki promotivni slider ispod headera.
+- Mreža kategorija sa slikama i nazivima.
+- Red pogodnosti trgovine.
+- Sekcije proizvoda: Izdvojeno, Akcije, Novo i Najprodavanije.
+- Široki promotivni banner između sekcija.
+- Horizontalni prikaz popularnih brendova sa strelicama.
+- Newsletter blok i kratak opis trgovine.
+
+KARTICE PROIZVODA
+- Bijela kartica s tankim svijetloplavim obrubom i zaobljenim rubovima.
+- Velika fotografija proizvoda s object-fit: contain.
+- Oznaka popusta ili vrste akcije gore lijevo, srce za listu želja gore desno.
+- Naziv proizvoda, zeleni status dostupnosti i istaknuta tamnoplava cijena.
+- Stara cijena manja i precrtana.
+- Oznaka besplatne dostave kada je primjenjivo.
+- Logo brenda iznad dugmeta, lijevo; tajmer završetka akcije desno.
+- Široko dugme „Dodaj u korpu“ s ikonicom korpe i gradijentom.
+- Kartice imaju ujednačenu visinu i poravnata dugmad.
+
+FOOTER
+- Tamnoplava pozadina.
+- Kolone: logo i kontakt, informacije, korisnička podrška, korisnički račun i načini plaćanja.
+- Društvene mreže i autorska prava pri dnu.
+
+PONAŠANJE
+- Pretraga, kategorije, linkovi brendova, korpa i lista želja trebaju raditi.
+- Popup se zatvara dugmetom, tipkom Escape ili klikom izvan prozora.
+- Na mobitelu prilagodi header i prikaži proizvode u dvije kolone.
+- Sačuvaj proporcije fotografija i logotipa.
+- Ne dodaj izmišljene recenzije, podatke ili pogodnosti trgovine.
+
+Podaci nove trgovine:
+Naziv: [NAZIV]
+Djelatnost: [ŠTA PRODAJE]
+Valuta: [VALUTA]
+Kategorije: [KATEGORIJE]
+Kontakt: [KONTAKT]
+
+Izradi kompletnu stranicu prema referenci, uključujući funkcionalnost i responsive CSS.

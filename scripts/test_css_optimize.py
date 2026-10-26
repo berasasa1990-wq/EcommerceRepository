@@ -1,5 +1,19 @@
 import unittest
-from css_optimize import deduplicate_rules, public_styles
+from css_optimize import deduplicate_rules, public_styles, remove_unused_components
+
+
+class UnusedComponentTests(unittest.TestCase):
+    def test_removes_only_retired_alternatives_and_empty_media(self):
+        css = '.fish-advisor,.product-card{color:red}@media(max-width:600px){.staff-dash{display:grid}}'
+        self.assertEqual(remove_unused_components(css, ''), '.product-card{color:red}')
+
+    def test_restores_styles_when_component_returns_in_dynamic_source(self):
+        css = '.fish-advisor__panel{display:flex}'
+        self.assertEqual(remove_unused_components(css, "element.className = 'fish-advisor' + suffix"), css)
+
+    def test_keeps_functional_selectors_states_and_keyframes(self):
+        css = 'button:not(.fish-advisor){color:red}:is(.staff-dash,.card){color:blue}.is-open{display:block}@keyframes pulse{to{opacity:1}}'
+        self.assertEqual(remove_unused_components(css, ''), css)
 
 
 class CssOptimizationTests(unittest.TestCase):

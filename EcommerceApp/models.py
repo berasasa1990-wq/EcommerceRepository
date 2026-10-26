@@ -82,6 +82,14 @@ class SiteSettings(models.Model):
         verbose_name='Link bannera',
         help_text='Unesi puni link (https://…). Klik na banner i dugme „Istraži ponudu” otvara ovaj link.',
     )
+    bestsellers_banner_slika = models.ImageField(
+        upload_to='site/bestsellers/', blank=True,
+        verbose_name='Banner ispod najprodavanijih proizvoda',
+        help_text='1600 × 600 px, najviše 80 KB nakon automatske optimizacije.',
+    )
+    bestsellers_banner_link = models.URLField(
+        max_length=500, blank=True, verbose_name='Link bannera ispod najprodavanijih proizvoda',
+    )
     loyalty_banner_slika = models.ImageField(
         upload_to='site/loyalty/', blank=True,
         verbose_name='Loyalty banner — mobilna slika',
@@ -835,6 +843,12 @@ class SiteSettings(models.Model):
             process_site_logo,
         )
 
+        for field_name in ('hero_slika', 'bestsellers_banner_slika'):
+            image = getattr(self, field_name)
+            if image and not image._committed:
+                from .utils.images import prepare_homepage_banner
+                processed = prepare_homepage_banner(image)
+                image.save(processed.name, processed, save=False)
         if self.logo:
             apply_image_processing(self, 'logo', post_process=process_site_logo)
         if self.logo_glavni_sajt:

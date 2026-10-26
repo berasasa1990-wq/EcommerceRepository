@@ -1,0 +1,43 @@
+{% load brand_logos %}
+{% load static product_text %}
+<!doctype html>
+<html lang="bs">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">{% include 'shop/partials/seo_head.html' %}<link rel="stylesheet" href="{% static 'css/home.css' %}?v={{ storefront_version }}"><link rel="stylesheet" href="{% static 'css/bera-home.css' %}?v={{ storefront_version }}"><script src="{% static 'home.js' %}?v={{ storefront_version }}" defer></script></head>
+<body class="bera-home home-mobile-reference bera-storefront-header">
+{% include 'shop/partials/header.html' %}
+<main class="product-detail-page">
+  <nav class="product-breadcrumb" aria-label="Putanja"><a href="{% url 'home' %}">Početna</a><span>/</span>{% if product.category %}<a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a><span>/</span>{% endif %}<span aria-current="page">{{ product.name }}</span></nav>
+  <article class="product-detail">
+    <div class="product-detail-gallery">
+      <div class="product-card-toolbar">{% if product.has_article_plus %}<span class="product-badge">Ponuda +</span>{% elif product.has_bundle_sale %}<span class="product-badge">Bundle set</span>{% elif product.has_quantity_sale %}<span class="product-badge">Količinsko sniženje</span>{% elif product.original_price > product.price %}<span class="product-badge">-{{ product.discount_percent }}%</span>{% endif %}<button type="button" class="product-heart" aria-label="Dodaj na listu želja: {{ product.name }}" aria-pressed="false" data-wishlist-id="{{ product.pk }}" data-product-name="{{ product.name }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 21-8.8-8.5a5.6 5.6 0 0 1 7.9-7.9l.9.9.9-.9a5.6 5.6 0 0 1 7.9 7.9z"/></svg></button></div>
+      <div class="product-detail-photo">{% if product.image %}<img src="{{ product.image.url }}" alt="{{ product.name }}" width="640" height="540" fetchpriority="high"><button type="button" class="product-zoom-open" data-product-zoom aria-label="Povećaj sliku proizvoda" title="Povećaj sliku" aria-haspopup="dialog" aria-controls="productZoomDialog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 6 6M10 7v6M7 10h6"/></svg></button>{% else %}<p>Slika nije dodana.</p>{% endif %}</div>
+    </div>
+    <div class="product-detail-info">
+      {% if product.category %}<a class="product-detail-category" href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a>{% endif %}
+      <h1>{{ product.name }}</h1>
+      <p class="stock{% if not product.is_out_of_stock %} stock--available{% endif %}">{% if product.is_out_of_stock %}Nije na stanju{% else %}Na stanju{% if product.stock %} {{ product.stock }} kom{% endif %}{% endif %}</p>
+      <div class="product-detail-price"><strong>{{ product.price|floatformat:2 }} KM</strong>{% if product.original_price > product.price %}<s>{{ product.original_price|floatformat:2 }} KM</s>{% endif %}</div>
+      {% include 'shop/partials/promotion.html' %}
+      {% include 'shop/partials/free_delivery.html' %}
+      <div class="product-brand-row">{% if product.brand %}<div class="product-brand">{% if product.brand.logo %}{% brand_logo product.brand %}{% else %}{{ product.brand.name }}{% endif %}</div>{% endif %}{% include 'shop/partials/sale_countdown.html' %}</div>
+      <button type="button" class="purchase btn-add-cart" {% if product.is_out_of_stock %}disabled{% else %}data-cart-add="{% url 'cart_update' product.pk %}"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 2h3l4 14h12l3-10H5"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg>Dodaj u korpu</button>
+      <dl class="product-detail-specs"><div><dt>Šifra artikla</dt><dd>{{ product.pk }}</dd></div>{% if product.brand %}<div><dt>Brend</dt><dd>{{ product.brand.name }}</dd></div>{% endif %}{% if product.category %}<div><dt>Kategorija</dt><dd>{{ product.category.name }}</dd></div>{% endif %}</dl>{% if product.description %}<a class="product-description-row" href="#product-description"><span>Opis</span><span aria-hidden="true">↓</span></a>{% endif %}
+    </div>
+  </article>
+  {% include 'shop/partials/bundle_sets.html' %}
+  {% if related_products %}<section class="home-products product-detail-related"><div class="section-heading"><h2>Povezani proizvodi</h2><a href="{{ product.category.get_absolute_url }}">{{ product.category.name }} →</a></div>{% include 'shop/partials/products.html' with products=related_products %}</section>{% endif %}
+  {% if product.description %}
+  <section id="product-description" class="product-detail-description product-detail-description--full" aria-labelledby="product-description-heading">
+    <h2 id="product-description-heading">Opis artikla</h2>
+    <div class="product-description-text">{{ product.description|product_description }}</div>
+  </section>
+  {% endif %}
+</main>
+{% if product.image %}<dialog id="productZoomDialog" class="product-zoom-dialog" aria-label="Uvećana slika: {{ product.name }}">
+  <form method="dialog"><button type="submit" class="product-zoom-close" aria-label="Zatvori uvećanu sliku">Zatvori ×</button></form>
+  <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+</dialog>{% endif %}
+{% include 'shop/partials/bera_footer.html' %}
+{% include 'shop/partials/mobile_menu.html' %}
+<dialog id="notice"><p></p><button type="button">Zatvori</button></dialog>
+</body></html>

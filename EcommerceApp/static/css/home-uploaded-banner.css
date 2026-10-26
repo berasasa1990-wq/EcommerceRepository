@@ -1,0 +1,5 @@
+html body main>.home-uploaded-banner,html body .online-shop-home-content>.home-uploaded-banner{display:block;order:0;position:relative;width:100%!important;max-width:1600px!important;margin:0 auto 24px!important;padding:0!important;border:0!important;overflow:hidden;border-radius:12px;background:transparent;box-sizing:border-box}
+.home-uploaded-banner>a{display:block}
+html body .home-uploaded-banner img{display:block;width:100%;height:auto;aspect-ratio:8/3;object-fit:contain;margin:0;padding:0;border:0}
+@media(max-width:700px){html body main>.home-uploaded-banner,html body .online-shop-home-content>.home-uploaded-banner{margin-bottom:16px!important;border-radius:8px}}
+html body.home-mobile-reference main>.home-uploaded-banner--bestsellers{order:10}

@@ -1,0 +1,4 @@
+# Install in the application user's crontab after replacing paths.
+# EnvironmentFile equivalent: /etc/bera-license.env (mode 0600, app user owned).
+# Use the SAME database and environment as the web process. No browser dependency.
+*/5 * * * * /bin/sh -c 'set -a; . /etc/bera-license.env; set +a; cd /srv/OnlineShopProject && exec venv/bin/python manage.py sync_bera_license' >> /var/log/bera-license-sync.log 2>&1

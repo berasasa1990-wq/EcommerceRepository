@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block body_class %}online-shop-home{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/home-uploaded-banner.css' %}?v=20261026-two-upload-banners">{% endblock %}
+{% block content %}
+<div class="online-shop-home-content">
+{% include 'partials/home_uploaded_banner.html' %}
+<section id="mobileHomeCategories" aria-label="Kategorije"><div class="mobile-home-category-grid">{% for cat in nav_categories %}<a href="{{ cat.get_absolute_url }}">{% if cat.ikonica_pocetna %}<img class="mobile-home-category-icon" src="{{ cat.ikonica_pocetna.url }}" alt="" width="76" height="70">{% else %}{% include 'partials/nav_category_icon.html' with naziv=cat.naziv slug=cat.slug %}{% endif %}<span>{{ cat.naziv }}</span></a>{% endfor %}</div></section>
+{% if home_trust_items %}<section class="mobile-home-benefits" aria-label="Pogodnosti trgovine">{% for item in home_trust_items %}<div class="mobile-home-benefits__item"><div><strong>{{ item.naslov }}</strong><span>{{ item.podnaslov }}</span></div></div>{% endfor %}</section>{% endif %}
+<section class="home-products" id="izdvojeno"><div class="section-heading"><h2>Izdvojena ponuda</h2><a href="{% url 'home' %}?izdvojeno=1">Pogledaj sve →</a></div>{% include 'online_shop/products.html' with products=featured_products home_section_badge='HIT' %}</section>
+<div class="bera-offer-banners"><a class="bera-offer-banner bera-offer-banner--dark" href="{% url 'home' %}?noviteti=1"><div class="bera-offer-banner__copy"><span>NAJNOVIJE U PONUDI</span><h2>OTKRIJTE NOVITETE</h2><p>Pronađite nešto za sebe.</p><span class="bera-offer-banner__button">Pogledaj ponudu →</span></div></a><a class="bera-offer-banner bera-offer-banner--light" href="{% url 'home' %}?akcija=1"><div class="bera-offer-banner__copy"><span>POSEBNA PONUDA</span><h2>VIŠE ZA VAŠ NOVAC</h2><p>Istražite artikle na akciji.</p><span class="bera-offer-banner__button">Pogledaj ponudu →</span></div></a></div>
+{% if site_settings.akcija_banner_desktop %}<section class="bera-middle-banner"><a href="{{ site_settings.akcija_banner_href|default:'/?akcija=1' }}"><img src="{{ site_settings.akcija_banner_desktop.url }}" alt="Posebne ponude" loading="lazy"></a></section>{% endif %}
+<section class="home-products" id="novo"><div class="section-heading"><h2>Novo u ponudi</h2><a href="{% url 'home' %}?noviteti=1">Pogledaj sve →</a></div>{% include 'online_shop/products.html' with products=latest_products home_section_badge='Novo' %}</section>
+{% if sale_products %}<section class="home-products" id="akcijska-ponuda"><div class="section-heading"><h2>Akcijska ponuda</h2><a href="{% url 'home' %}?akcija=1">Pogledaj sve →</a></div>{% include 'online_shop/products.html' with products=sale_products %}</section>{% endif %}
+{% if bestselling_products %}<section class="home-products"><div class="section-heading"><h2>Najprodavaniji proizvodi</h2></div>{% include 'online_shop/products.html' with products=bestselling_products %}</section>{% endif %}
+{% include 'partials/home_bestsellers_banner.html' %}
+{% for section in custom_home_sections %}<section class="home-products"><div class="section-heading"><h2>{{ section.naziv }}</h2></div>{% include 'online_shop/products.html' with products=section.visible_products %}</section>{% endfor %}
+<div class="bera-home-bottom">
+<a class="bera-wide-promo" href="{% url 'home' %}?akcija=1"><div class="bera-wide-promo__copy"><span>POSEBNE PONUDE</span><h2>SAMO ZA VAS</h2><p>Istražite najnovije akcije i uštedite.</p><span class="bera-offer-banner__button">Istraži akcije →</span></div><div class="bera-wide-promo__waves" aria-hidden="true"></div></a>
+<section class="bera-popular-brands"><h2>Popularni brendovi</h2><div class="bera-popular-brands__carousel"><button type="button" data-brand-direction="-1" aria-label="Prethodni brendovi">‹</button><div class="bera-popular-brands__row">{% for brand in online_shop_brands %}<a href="{% url 'home' %}?brend={{ brand.slug }}">{% if brand.slika %}<img src="{{ brand.slika.url }}" alt="{{ brand.naziv }}" loading="lazy" width="110" height="36">{% else %}{{ brand.naziv }}{% endif %}</a>{% endfor %}</div><button type="button" data-brand-direction="1" aria-label="Sljedeći brendovi">›</button></div></section>
+<section class="bera-newsletter"><div><h2>PRIJAVITE SE NA NEWSLETTER</h2><p>Budite prvi koji će saznati za nove proizvode, akcije i posebne ponude.</p></div><form id="onlineShopNewsletter" action="{% url 'newsletter_subscribe' %}" method="post">{% csrf_token %}<label class="visually-hidden" for="onlineShopEmail">E-mail adresa</label><input id="onlineShopEmail" name="email" type="email" required placeholder="Unesite svoju email adresu..."><button type="submit">Prijavi se →</button></form><p data-newsletter-status role="status"></p></section>
+</div>
+</div>
+{% endblock %}

@@ -6687,31 +6687,43 @@ def staff_company_debts(request):
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_hero_settings(request):
-    from .forms import HeroBannerSettingsForm, HeroBannerFormSet
+    from .forms import HeroBannerSettingsForm, SiteSEOSettingsForm, PageSEOSettingsForm
+    from .models import PageSEO
     from django.contrib import messages
 
     site = SiteSettings.load()
+    action = request.POST.get('action', 'banners') if request.method == 'POST' else ''
+    page_key = request.POST.get('page_key', 'home') if action == 'page_seo' else request.GET.get('page_key', 'home')
+    if page_key not in dict(PageSEO.PageKey.choices):
+        raise Http404('Nepoznata SEO stranica.')
+    page = PageSEO.objects.filter(page_key=page_key).first() or PageSEO(page_key=page_key)
     form = HeroBannerSettingsForm(
-        request.POST if request.method == 'POST' else None,
-        request.FILES if request.method == 'POST' else None,
+        request.POST if action == 'banners' else None,
+        request.FILES if action == 'banners' else None,
         instance=site,
     )
-    formset = HeroBannerFormSet(
-        request.POST if request.method == 'POST' else None,
-        request.FILES if request.method == 'POST' else None,
-        instance=site, prefix='banners',
+    seo_form = SiteSEOSettingsForm(
+        request.POST if action == 'site_seo' else None,
+        request.FILES if action == 'site_seo' else None, instance=site,
     )
-    form_valid = form.is_valid() if request.method == 'POST' else False
-    banners_valid = formset.is_valid() if request.method == 'POST' else False
-    if form_valid and banners_valid:
-        with transaction.atomic():
-            banner = form.save(commit=False)
-            banner.save(update_fields=list(form.Meta.fields))
-            formset.save()
-        messages.success(request, 'Banner-Hero je sačuvan.')
+    page_seo_form = PageSEOSettingsForm(request.POST if action == 'page_seo' else None, instance=page)
+    if action == 'site_seo' and seo_form.is_valid():
+        seo_form.save(commit=False).save(update_fields=list(seo_form.Meta.fields))
+        messages.success(request, 'Opće SEO postavke su sačuvane.')
+        return redirect('staff_hero_settings')
+    if action == 'page_seo' and page_seo_form.is_valid():
+        page_seo_form.save()
+        messages.success(request, 'SEO podaci stranice su sačuvani.')
+        return redirect(reverse('staff_hero_settings') + '?page_key=' + page_key + '#page-seo')
+    if action == 'banners' and form.is_valid():
+        banner = form.save(commit=False)
+        banner.save(update_fields=list(form.Meta.fields))
+        messages.success(request, 'Banneri su sačuvani (1600 × 600 px, najviše 80 KB po slici).')
         return redirect('staff_hero_settings')
     return render(request, 'staff/hero_settings.html', {
-        **_base_context(), 'form': form, 'formset': formset,
+        **_base_context(), 'form': form, 'seo_form': seo_form,
+        'page_seo_form': page_seo_form, 'seo_page_choices': PageSEO.PageKey.choices,
+        'selected_page_key': page_key,
     })
 
 

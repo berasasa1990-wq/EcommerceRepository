@@ -1,0 +1,40 @@
+{% load static %}
+<!doctype html><html lang="bs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">{% include 'shop/partials/seo_head.html' %}<link rel="stylesheet" href="{% static 'css/home.css' %}?v={{ storefront_version }}"><link rel="stylesheet" href="{% static 'css/bera-home.css' %}?v={{ storefront_version }}"><script src="{% static 'home.js' %}?v={{ storefront_version }}" defer></script></head>
+<body class="bera-home home-mobile-reference bera-storefront-header">
+{% include 'shop/partials/header.html' %}
+<main class="cart-page">
+<nav class="product-breadcrumb" aria-label="Putanja"><a href="{% url 'home' %}">Početna</a><span>/</span><span aria-current="page">Korpa</span></nav>
+<div class="section-heading"><h1>Vaša korpa <span>({{ cart_count }})</span></h1><a href="{% url 'home' %}">Nastavi kupovinu →</a></div>
+{% if cart_items %}<div class="cart-layout"><section class="cart-items" aria-label="Artikli u korpi">
+{% for item in cart_items %}<article class="cart-item">
+<a class="cart-item-image" href="{{ item.product.get_absolute_url }}">{% if item.product.image %}<img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">{% endif %}</a>
+<div class="cart-item-copy"><h2><a href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a></h2>{% if item.bundle_applied %}<span class="cart-applied-offer">Bundle set · −{{ item.bundle_percent|floatformat:"-2" }}%</span>{% for price, count in item.price_groups %}<p class="cart-discount-price"><span>{{ count }} kom</span>{% if price < item.product.price %}<s>{{ item.product.price|floatformat:2 }} KM</s>{% endif %}<strong>{{ price|floatformat:2 }} KM / kom</strong></p>{% endfor %}{% elif item.plus_discounts %}
+<span class="cart-applied-offer">Ponuda +</span>
+{% for discount in item.plus_discounts %}<p class="cart-discount-price"><span>−{{ discount.percent|floatformat:"-2" }}% · {{ discount.quantity }} kom</span> <s>{{ item.product.price|floatformat:2 }} KM</s> <strong>{{ discount.price|floatformat:2 }} KM / kom</strong></p>{% endfor %}
+{% if item.regular_quantity %}<p>{{ item.regular_quantity }} kom · {{ item.quantity_price|floatformat:2 }} KM / kom</p>{% endif %}
+{% elif item.quantity_percent %}<span class="cart-applied-offer">Količinsko sniženje · −{{ item.quantity_percent|floatformat:"-2" }}%</span><p class="cart-discount-price"><s>{{ item.product.price|floatformat:2 }} KM</s> <strong>{{ item.quantity_price|floatformat:2 }} KM / kom</strong></p>{% else %}<p>{{ item.product.price|floatformat:2 }} KM / kom</p>{% endif %}
+<form method="post" action="{% url 'cart_update' item.product.pk %}" class="cart-quantity">{% csrf_token %}<label for="quantity-{{ item.product.pk }}">Količina</label><input id="quantity-{{ item.product.pk }}" type="number" name="quantity" value="{{ item.quantity }}" min="1" max="{% if item.product.stock and item.product.stock < 99 %}{{ item.product.stock }}{% else %}99{% endif %}" required><button type="submit">Ažuriraj</button></form></div>
+<div class="cart-item-total"><strong>{{ item.subtotal|floatformat:2 }} KM</strong><form method="post" action="{% url 'cart_update' item.product.pk %}">{% csrf_token %}<input type="hidden" name="quantity" value="0"><button type="submit" aria-label="Ukloni {{ item.product.name }}">Ukloni</button></form></div>
+</article>
+{% if item.quantity_offers %}
+<aside class="cart-quantity-offers" aria-label="Količinsko sniženje za {{ item.product.name }}">
+  <div class="cart-quantity-heading"><span class="cart-quantity-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m3 7 9-4 9 4-9 4-9-4Zm0 5 9 4 9-4M3 17l9 4 9-4"/></svg></span><div class="cart-quantity-heading-copy"><strong>Količinsko sniženje</strong><span>{{ item.product.name }}</span></div><button type="button" class="cart-quantity-close" data-close-quantity-offer aria-label="Zatvori količinsku ponudu za {{ item.product.name }}">×</button></div>
+  <div class="cart-quantity-offers-list">{% for offer in item.quantity_offers %}
+    <form method="post" action="{% url 'cart_update' item.product.pk %}"{% if offer.selected %} class="is-selected"{% endif %}>
+      {% csrf_token %}<input type="hidden" name="quantity" value="{{ offer.quantity }}">
+      <div class="cart-quantity-card-top"><span>{{ offer.label }}</span><strong class="cart-quantity-discount">−{{ offer.percent|floatformat:"-2" }}%</strong></div>
+      <div class="cart-quantity-card-price"><strong>{{ offer.price|floatformat:2 }} KM</strong><span>/ kom</span></div>
+      <span class="cart-quantity-card-total">Ukupno {{ offer.total|floatformat:2 }} KM</span>
+      <button type="submit"{% if offer.selected %} disabled{% endif %}>{% if offer.selected %}✓ Odabrano{% else %}Odaberi {{ offer.quantity }} kom{% endif %}</button>
+    </form>
+  {% endfor %}</div>
+</aside>
+{% endif %}
+{% if item.plus_offer %}<aside class="cart-plus-offer product-promotion"><strong>−{{ item.plus_offer.percent }}%</strong><p>Uz {{ item.product.name }} dodajte <a href="{{ item.plus_offer.url }}">{{ item.plus_offer.name }}</a> za <strong>{{ item.plus_offer.price }} KM</strong> <s>{{ item.plus_offer.regular_price }} KM</s>.</p><form method="post" action="{{ item.plus_offer.add_url }}">{% csrf_token %}<input type="hidden" name="action" value="add"><input type="hidden" name="quantity" value="1"><button type="submit">Dodaj uz {{ item.plus_offer.percent }}% popusta</button></form></aside>{% endif %}
+{% endfor %}</section>
+<aside class="cart-summary"><h2>Pregled korpe</h2>{% if loyalty_enabled and loyalty_rules.tiers_enabled %}<div class="cart-loyalty">{% if request.user.is_authenticated %}<span>Loyalty kartica · {{ loyalty_available_percent|floatformat:2 }}%</span><form method="post" action="{% url 'cart_loyalty' %}">{% csrf_token %}{% if loyalty_applied %}<input type="hidden" name="action" value="remove"><p>Kartica je primijenjena.</p><button type="submit">Ukloni karticu</button>{% else %}<input type="hidden" name="action" value="apply"><button type="submit">Primijeni loyalty karticu</button>{% endif %}</form>{% else %}<a href="{% url 'customer_login' %}">Prijavi se za korištenje loyalty kartice →</a>{% endif %}</div>{% endif %}<p><span>Broj artikala</span><strong>{{ cart_count }}</strong></p><p class="cart-summary-subtotal"><span>Ukupan iznos<small class="cart-summary-vat">PDV je uključen u cijenu</small></span><strong>{{ cart_total|floatformat:2 }} KM</strong></p>{% if loyalty_discount %}<p><span>Loyalty ({{ loyalty_percent|floatformat:2 }}%)</span><strong>−{{ loyalty_discount|floatformat:2 }} KM</strong></p>{% endif %}<p><span>Dostava</span><strong>{% if delivery_price == 0 %}Besplatna dostava{% else %}{{ delivery_price|floatformat:2 }} KM{% endif %}</strong></p><div class="cart-summary-total"><span>Ukupno za plaćanje</span><strong>{{ grand_total|floatformat:2 }} KM</strong></div><p class="cart-note">Dostava je uključena u ukupan iznos.</p><a class="purchase" href="{% url 'checkout' %}">Nastavi na checkout →</a></aside></div>
+{% else %}<section class="cart-empty"><h2>Vaša korpa je prazna</h2><p>Pronađite svoj sljedeći artikal u našoj ponudi.</p><a class="purchase" href="{% url 'home' %}">Pogledaj ponudu</a></section>{% endif %}
+</main>
+{% include 'shop/partials/bera_footer.html' %}{% include 'shop/partials/mobile_menu.html' %}
+<dialog id="notice"><p></p><button type="button">Zatvori</button></dialog><p class="cart-toast" role="status" hidden></p>
+</body></html>

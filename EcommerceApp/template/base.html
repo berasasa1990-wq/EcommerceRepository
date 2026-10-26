@@ -165,9 +165,9 @@
     <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     {% if user.is_authenticated or request.resolver_match.url_name == 'set_builder' %}
-    <link rel="stylesheet" href="{% static 'css/storefront-core.min.css' %}?v=20261019-remove-live-center">
+    <link rel="stylesheet" href="{% static 'css/storefront-core.min.css' %}?v=20261026-unused-css">
     {% else %}
-    <link rel="stylesheet" href="{% static 'css/storefront-core-public.min.css' %}?v=20261019-remove-live-center">
+    <link rel="stylesheet" href="{% static 'css/storefront-core-public.min.css' %}?v=20261026-unused-css">
     {% endif %}
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
@@ -213,7 +213,7 @@
         body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
     </style>
     {% endif %}
-    <link rel="stylesheet" href="{% static 'css/mobile-chrome.min.css' %}?v=20261018-bundled">
+    <link rel="stylesheet" href="{% static 'css/mobile-chrome.min.css' %}?v=20261026-smaller-category-icons">
 
     <style>.desktop-trust-bar,.header-category-select,.header-register{display:none!important}</style>
     <link rel="stylesheet" href="{% static 'css/header-reference.css' %}?v=20260919-wishlist-popover" media="(min-width: 1025px)">
@@ -352,9 +352,9 @@
     }
     </style>
     {% if user.is_authenticated or request.resolver_match.url_name == 'set_builder' %}
-    <link rel="stylesheet" href="{% static 'css/storefront-theme.min.css' %}?v=20261020-catalog-closer-cards">
+    <link rel="stylesheet" href="{% static 'css/storefront-theme.min.css' %}?v=20261026-category-hover">
     {% else %}
-    <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261020-catalog-closer-cards">
+    <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261026-category-hover">
     {% endif %}
     {% block warehouse_theme_css %}{% endblock %}
     <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261022-category-flyout">

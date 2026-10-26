@@ -1,0 +1,25 @@
+{% load static %}
+<!doctype html><html lang="bs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">{% include 'shop/partials/seo_head.html' %}<link rel="stylesheet" href="{% static 'css/home.css' %}?v={{ storefront_version }}"><link rel="stylesheet" href="{% static 'css/bera-home.css' %}?v={{ storefront_version }}"><script src="{% static 'home.js' %}?v={{ storefront_version }}" defer></script></head>
+<body class="bera-home home-mobile-reference bera-storefront-header">
+{% include 'shop/partials/header.html' %}
+<main>
+{% if not search_query and not selected_brand and not selected_category and not sale_only and not new_only and not bestselling_only %}
+{% include 'shop/partials/bera_default_hero.html' %}
+<section id="mobileHomeCategories" aria-label="Kategorije"><div class="mobile-home-category-grid">{% for cat in categories %}<a href="{{ cat.get_absolute_url }}">{% if cat.image %}<img class="mobile-home-category-icon" src="{{ cat.image.url }}" alt="" width="74" height="70">{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 9h18M9 9v12"/></svg>{% endif %}<span>{{ cat.name }}</span></a>{% endfor %}</div></section>
+{% include 'shop/partials/home_mobile_benefits.html' %}
+{% endif %}
+<div id="proizvodi">
+{% if selected_brand or search_query or category_filter or sale_only or new_only or bestselling_only %}<section class="home-products"><h1>{% if search_query %}Rezultati za „{{ search_query }}”{% elif bestselling_only %}Najprodavaniji proizvodi{% elif new_only %}Noviteti{% elif sale_only %}Akcijska ponuda{% elif selected_brand %}{{ selected_brand.name }}{% else %}{{ selected_category.name }}{% endif %}</h1>{% if selected_category %}{% include 'shop/partials/products.html' with hide_purchase=False %}{% else %}{% include 'shop/partials/products.html' with hide_purchase=True %}{% endif %}{% if not products %}<p>{% if search_query %}Nema proizvoda za ovu pretragu.{% elif bestselling_only %}Trenutno nema naručenih artikala.{% elif new_only %}Trenutno nema noviteta.{% elif sale_only %}Trenutno nema sniženih artikala.{% elif selected_brand %}Trenutno nema artikala ovog brenda.{% else %}Trenutno nema artikala u ovoj kategoriji.{% endif %}</p>{% endif %}</section>
+{% else %}
+{% if featured_products %}<section class="home-products" id="izdvojeno"><div class="section-heading"><h2>Izdvojena ponuda</h2><a href="{% url 'bestsellers' %}">Pogledaj sve →</a></div>{% include 'shop/partials/products.html' with products=featured_products %}</section>{% endif %}
+<div id="ponude">{% include 'shop/partials/bera_offer_banners.html' %}</div>
+{% include 'shop/partials/bera_middle_banner.html' %}
+<section class="home-products" id="novo"><div class="section-heading"><h2>Novo u ponudi</h2></div>{% include 'shop/partials/products.html' with products=new_products %}{% if not new_products %}<p>Trenutno nema unesenih artikala.</p>{% endif %}</section>
+{% if sale_products %}<section class="home-products" id="akcijska-ponuda"><div class="section-heading"><h2>Akcijska ponuda</h2></div>{% include 'shop/partials/products.html' with products=sale_products %}</section>{% endif %}
+{% include 'shop/partials/bera_home_bottom.html' %}
+{% endif %}</div></main>
+{% include 'shop/partials/bera_footer.html' %}
+{% include 'shop/partials/mobile_menu.html' %}
+{% if not search_query and not selected_brand and not selected_category and not sale_only and not new_only and not bestselling_only %}{% include 'shop/partials/chatbot_widget.html' %}{% endif %}
+<dialog id="notice"><p></p><button type="button">Zatvori</button></dialog>
+</body></html>

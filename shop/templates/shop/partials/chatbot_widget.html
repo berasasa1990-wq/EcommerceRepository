@@ -1,0 +1,15 @@
+{% load static %}{% if chatbot_settings.enabled %}
+<link rel="stylesheet" href="{% static 'css/chatbot.css' %}?v={{ chatbot_version }}">
+<div class="bera-chatbot" data-chatbot data-endpoint="{% url 'chatbot_message' %}" data-delay="{{ chatbot_settings.delay_seconds }}" data-auto-open="{{ chatbot_settings.auto_open|yesno:'true,false' }}" data-guided="{{ chatbot_settings.guided_enabled|yesno:'true,false' }}">
+  <section id="beraChatPanel" class="bera-chat-panel" role="region" aria-labelledby="beraChatTitle" hidden>
+    <header class="bera-chat-header"><span class="bera-chat-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4V5Z"/><path d="M8 9h8M8 12h5"/></svg></span><div><h2 id="beraChatTitle">{{ chatbot_settings.name }}</h2><span>{% if chatbot_settings.guided_enabled %}Vodič za kupovinu{% else %}AI asistent za kupovinu{% endif %}</span></div><button type="button" data-chat-close aria-label="Zatvori razgovor">×</button></header>
+    <div class="bera-chat-messages" role="log" aria-live="polite" aria-relevant="additions" aria-label="Poruke razgovora"><div class="bera-chat-message bera-chat-message--assistant">{{ chatbot_settings.welcome_message }}</div></div>
+    <div class="bera-chat-suggestions">{% if not chatbot_settings.guided_enabled %}{% for question in chatbot_settings.suggestions %}<button type="button" data-chat-question>{{ question }}</button>{% endfor %}{% endif %}</div>
+    <p class="bera-chat-status" role="status" hidden></p>
+    <form class="bera-chat-form">{% csrf_token %}<label class="visually-hidden" for="beraChatInput">Vaša poruka</label><textarea id="beraChatInput" rows="1" maxlength="1000" placeholder="Napišite poruku…" required></textarea><button type="submit" aria-label="Pošalji poruku"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 9-18 9 3-9-3-9Zm3 9h15"/></svg></button></form>
+    <div class="bera-chat-footer"><button type="button" data-chat-reset>Novi razgovor</button>{% if chatbot_settings.support_email %}<a href="mailto:{{ chatbot_settings.support_email }}">Kontakt podrške ↗</a>{% endif %}<small>Ne šaljite lozinke ni podatke kartice.</small></div>
+  </section>
+  <button type="button" class="bera-chat-launcher" aria-expanded="false" aria-controls="beraChatPanel" aria-label="Otvori razgovor s asistentom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4V4Z"/><path d="M8 8h8M8 12h5"/></svg><span>Trebate pomoć?</span></button>
+</div>
+<script src="{% static 'chatbot.js' %}?v={{ chatbot_version }}" defer></script>
+{% endif %}

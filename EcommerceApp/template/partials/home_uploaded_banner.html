@@ -1,0 +1,7 @@
+{% if site_settings.hero_slika %}
+<section class="home-uploaded-banner" aria-label="Promotivna ponuda">
+    {% if site_settings.hero_link %}<a href="{{ site_settings.hero_link }}" aria-label="Pogledaj promotivnu ponudu">{% endif %}
+    <img src="{{ site_settings.hero_slika.url }}" alt="Promotivna ponuda" width="1600" height="600" fetchpriority="high" loading="eager" decoding="async">
+    {% if site_settings.hero_link %}</a>{% endif %}
+</section>
+{% endif %}

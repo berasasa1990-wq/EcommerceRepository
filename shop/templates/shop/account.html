@@ -1,0 +1,27 @@
+{% load static %}
+<!doctype html><html lang="bs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">{% include 'shop/partials/seo_head.html' %}<link rel="stylesheet" href="{% static 'css/home.css' %}?v={{ storefront_version }}"><link rel="stylesheet" href="{% static 'css/bera-home.css' %}?v={{ storefront_version }}"><script src="{% static 'home.js' %}?v={{ storefront_version }}" defer></script></head>
+<body class="bera-home home-mobile-reference bera-storefront-header">
+{% include 'shop/partials/header.html' %}
+<main class="account-page">
+<nav class="product-breadcrumb" aria-label="Putanja"><a href="{% url 'home' %}">Početna</a><span>/</span><span aria-current="page">Moj nalog</span></nav>
+{% if mode == 'profile' %}{% include 'shop/partials/account_profile.html' %}{% else %}<div class="account-layout">
+<aside class="account-intro"><span class="account-eyebrow">VAŠ KUTAK ZA KUPOVINU</span><h1>{% if mode == 'profile' %}Moj nalog{% elif mode == 'register' %}Kreiraj nalog{% else %}Dobro došli nazad{% endif %}</h1><p>{% if mode == 'profile' %}Pozdrav, {{ request.user.first_name|default:request.user.email }}. Ovdje možete pregledati narudžbe i urediti lične podatke.{% else %}Prijavite se ili kreirajte nalog za sljedeću kupovinu.{% endif %}</p><a href="{% url 'home' %}">Istraži ponudu →</a></aside>
+<section class="account-card">
+{% if loyalty_card %}<div class="loyalty-card"><span>BERA LOYALTY</span><a href="{% url 'loyalty' %}">Moji bodovi i pogodnosti →</a><strong>{{ request.user.get_full_name|default:request.user.email }}</strong><code>{{ loyalty_card.number }}</code><p>Vaš popust: <b>{{ loyalty_rate|floatformat:2 }}%</b> · Ukupna potrošnja: {{ loyalty_spent|floatformat:2 }} KM</p></div>{% endif %}
+{% if mode != 'profile' %}<nav class="account-tabs" aria-label="Pristup nalogu"><a href="{% url 'customer_login' %}"{% if mode == 'login' %} aria-current="page"{% endif %}>Prijava</a><a href="{% url 'customer_register' %}"{% if mode == 'register' %} aria-current="page"{% endif %}>Registracija</a></nav>{% else %}<nav class="account-tabs" aria-label="Moj nalog"><a href="{% url 'account' %}"{% if account_section == 'orders' %} aria-current="page"{% endif %}>Narudžbe</a><a href="{% url 'account' %}?tab=podaci"{% if account_section == 'data' %} aria-current="page"{% endif %}>Podaci</a></nav>{% endif %}
+{% for message in messages %}<p class="account-feedback" role="status">{{ message }}</p>{% endfor %}
+{% if mode == 'profile' and account_section == 'orders' %}
+<h2>Moje narudžbe</h2>
+<div class="account-orders">{% for order in orders %}<details class="account-order"><summary><span><strong>Narudžba #{{ order.pk }}</strong><small>{{ order.created_at|date:"d.m.Y." }} · {{ order.get_status_display }}</small></span><strong>{{ order.total|floatformat:2 }} KM</strong></summary><div class="account-order-items">{% for item in order.items.all %}<p><a href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a><span>{{ item.quantity }} × {{ item.unit_price|floatformat:2 }} KM</span></p>{% endfor %}<p><span>Dostava</span><strong>{% if order.delivery_price == 0 %}Besplatna dostava{% else %}{{ order.delivery_price|floatformat:2 }} KM{% endif %}</strong></p><p><span>Ukupno</span><strong>{{ order.total|floatformat:2 }} KM</strong></p></div></details>{% empty %}<p class="account-no-orders">Još nemate narudžbi. Vaše kupovine obavljene dok ste prijavljeni prikazat će se ovdje.</p>{% endfor %}</div>
+{% else %}
+{% if mode == 'profile' %}<h2>Lični podaci</h2>{% endif %}
+<form method="post" class="account-form" data-auth-csrf-url="{% url 'customer_csrf_token' %}">{% csrf_token %}{{ form.non_field_errors }}
+{% for field in form %}<div class="account-field"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% if field.help_text %}<div class="account-help" id="{{ field.auto_id }}_helptext">{{ field.help_text|safe }}</div>{% endif %}{{ field.errors }}</div>{% endfor %}
+<button class="purchase" type="submit">{% if mode == 'profile' %}Spremi podatke{% elif mode == 'register' %}Kreiraj nalog{% else %}Prijavi se{% endif %}</button></form>
+{% endif %}
+{% if mode == 'profile' %}<div class="account-footer"><a href="{% url 'cart' %}">Moja korpa →</a><form method="post" action="{% url 'customer_logout' %}">{% csrf_token %}<button type="submit">Odjavi se</button></form></div>{% endif %}
+</section></div>{% endif %}</main>
+{% include 'shop/partials/bera_footer.html' %}{% include 'shop/partials/mobile_menu.html' %}
+<dialog id="notice"><p></p><button type="button">Zatvori</button></dialog>
+<script src="{% static 'account-auth.js' %}?v=1" defer></script>
+</body></html>

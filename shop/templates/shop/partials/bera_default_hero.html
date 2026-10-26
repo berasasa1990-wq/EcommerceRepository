@@ -1,0 +1,23 @@
+{% for hero_banner in hero_banners %}
+{% if hero_banner.image %}
+<section class="bera-uploaded-hero" aria-label="{{ hero_banner.title }}">
+  {% if hero_banner.url %}<a href="{{ hero_banner.url }}">{% endif %}<img src="{{ hero_banner.image.url }}" alt="{{ hero_banner.title }}" width="1600" height="600"{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}>{% if hero_banner.url %}</a>{% endif %}
+</section>
+{% else %}
+<section class="bera-hero bera-hero--custom" aria-labelledby="customHeroTitle{{ hero_banner.pk }}">
+  <div class="bera-hero-inner{% if hero_banner.image or hero_banner.secondary_image %} bera-hero-inner--art{% endif %}">
+    <div class="bera-hero-copy">
+      {% if hero_banner.eyebrow %}<p class="bera-hero-eyebrow">{{ hero_banner.eyebrow }}</p>{% endif %}
+      <h1 id="customHeroTitle{{ hero_banner.pk }}">{{ hero_banner.title|linebreaksbr }}</h1>
+      {% if hero_banner.subtitle %}<div class="bera-hero-subtitle">{{ hero_banner.subtitle|linebreaksbr }}</div>{% endif %}
+      {% if hero_banner.button_text %}<a class="bera-hero-cta" href="{{ hero_banner.url|default:'#proizvodi' }}">{{ hero_banner.button_text }} <span aria-hidden="true">→</span></a>{% endif %}
+      {% if hero_banner.feature_items %}<div class="bera-hero-features">{% for item in hero_banner.feature_items %}<span>{{ item }}</span>{% endfor %}</div>{% endif %}
+    </div>
+    {% if hero_banner.image or hero_banner.secondary_image %}<div class="bera-hero-art">
+      {% if hero_banner.image %}<img src="{{ hero_banner.image.url }}" alt="{{ hero_banner.title }}" fetchpriority="high">{% endif %}
+      {% if hero_banner.secondary_image %}<img src="{{ hero_banner.secondary_image.url }}" alt="" >{% endif %}
+    </div>{% endif %}
+  </div>
+</section>
+{% endif %}
+{% endfor %}

@@ -11,10 +11,22 @@ except ImportError:
 import rcssmin
 import rjsmin
 
-from css_optimize import deduplicate_rules, public_styles
+from css_optimize import deduplicate_rules, public_styles, remove_unused_components
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / 'EcommerceApp' / 'static'
+
+
+def application_sources():
+    return '\n'.join(
+        path.read_text(encoding='utf-8', errors='ignore')
+        for path in (ROOT / 'EcommerceApp').rglob('*')
+        if path.is_file() and path.suffix in {'.html', '.js', '.py'}
+        and 'migrations' not in path.parts
+        and not path.name.startswith(('test_', 'tests'))
+    )
+
+
 PAIRS = [
     (STATIC / 'js' / 'main.js', STATIC / 'js' / 'main.min.js'),
     (STATIC / 'js' / 'product-detail.js', STATIC / 'js' / 'product-detail.min.js'),
@@ -35,7 +47,7 @@ def build_style_min():
     if not parts:
         return
     minified = rcssmin.cssmin('\n'.join(parts))
-    optimized = deduplicate_rules(minified)
+    optimized = remove_unused_components(deduplicate_rules(minified), application_sources())
     dest.write_text(optimized, encoding='utf-8')
     data = optimized.encode('utf-8')
     dest.with_suffix('.css.gz').write_bytes(gzip.compress(data, compresslevel=9, mtime=0))
@@ -56,7 +68,7 @@ CSS_BUNDLES = {
 
 def write_css_bundle(output, sources):
     content = '\n'.join((STATIC / 'css' / name).read_text(encoding='utf-8') for name in sources)
-    data = rcssmin.cssmin(content).encode('utf-8')
+    data = remove_unused_components(rcssmin.cssmin(content), application_sources()).encode('utf-8')
     dest = STATIC / 'css' / output
     dest.write_bytes(data)
     dest.with_suffix('.css.gz').write_bytes(gzip.compress(data, compresslevel=9, mtime=0))

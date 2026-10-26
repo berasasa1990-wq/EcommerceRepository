@@ -1,0 +1,1 @@
+<div class="product-delivery-slot">{% if site_settings %}{% if site_settings.delivery_price == 0 %}<p class="product-free-delivery">Besplatna dostava</p>{% elif site_settings.free_delivery_threshold != None and product.price >= site_settings.free_delivery_threshold %}<p class="product-free-delivery">Besplatna dostava</p>{% endif %}{% endif %}</div>

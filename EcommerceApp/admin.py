@@ -427,8 +427,15 @@ class SiteSettingsAdminForm(forms.ModelForm):
     def clean_hero_slika(self):
         upload = self.cleaned_data.get('hero_slika')
         if upload and hasattr(upload, 'content_type'):
-            from .utils.images import prepare_hero_cutout
-            return prepare_hero_cutout(upload)
+            from .utils.images import prepare_homepage_banner
+            return prepare_homepage_banner(upload)
+        return upload
+
+    def clean_bestsellers_banner_slika(self):
+        upload = self.cleaned_data.get('bestsellers_banner_slika')
+        if upload and hasattr(upload, 'content_type'):
+            from .utils.images import prepare_homepage_banner
+            return prepare_homepage_banner(upload)
         return upload
 
     class Meta:
@@ -770,9 +777,13 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         )
 
     fieldsets = (
-        ('Banner-Hero', {
-            'fields': ('hero_oznaka', 'hero_naslov', 'hero_podnaslov', 'hero_opis', 'hero_slika', 'hero_link'),
-            'description': 'Pisani banner ispod headera. Promijeni oba reda naslova, opis i sliku artikla, pa sačuvaj.',
+        ('Početni banner', {
+            'fields': ('hero_slika', 'hero_link'),
+            'description': 'Cijela slika bannera: 1600 × 600 px, najviše 80 KB nakon automatske optimizacije.',
+        }),
+        ('Banner ispod najprodavanijih proizvoda', {
+            'fields': ('bestsellers_banner_slika', 'bestsellers_banner_link'),
+            'description': '1600 × 600 px, najviše 80 KB nakon automatske optimizacije. Bez slike se ne prikazuje.',
         }),
         ('Boja', {
             'fields': ('boja_menija',),

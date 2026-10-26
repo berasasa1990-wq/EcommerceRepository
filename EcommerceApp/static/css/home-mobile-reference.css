@@ -756,8 +756,8 @@ body.category-hide-search .product-catalog .catalog-products .product-card--cata
     }
 }
 
-/* Larger category artwork. */
-html body #homeCategoryTrack :is(.mobile-home-category-icon,.cat-ico,.cat-ico svg){width:60px!important;height:60px!important;object-fit:contain;flex-shrink:0}
+/* Compact category artwork with unchanged card spacing. */
+html body #homeCategoryTrack :is(.mobile-home-category-icon,.cat-ico,.cat-ico svg){width:50px!important;height:50px!important;object-fit:contain;flex-shrink:0}
 @media(min-width:1025px){
- html body #homeCategoryTrack :is(.mobile-home-category-icon,.cat-ico,.cat-ico svg){width:100px!important;height:95px!important}
+ html body #homeCategoryTrack :is(.mobile-home-category-icon,.cat-ico,.cat-ico svg){width:85px!important;height:80px!important}
 }

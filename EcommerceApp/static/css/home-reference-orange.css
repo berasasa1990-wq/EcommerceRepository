@@ -18,32 +18,7 @@ body.home-mobile-reference .home-product-carousel__btn{display:none!important}
 .ref-promo p{margin:0 0 12px;font-size:17px}
 .ref-promo a,.ref-special a{display:inline-flex;align-items:center;gap:24px;padding:10px 24px;border-radius:30px;background:linear-gradient(#ff9800,#ff5000);color:#fff;text-decoration:none;font-size:15px;font-weight:700}
 .ref-promo a span,.ref-special a span{font-size:24px;line-height:1}
-/* Compact stock announcement with real product images and HTML copy. */
-.chair-banner{display:grid;grid-template-columns:minmax(250px,1fr) minmax(0,2fr);align-items:center;gap:24px;overflow:hidden;margin:22px 0;padding:22px 28px;border:1px solid #f5d8bd;border-radius:14px;background:linear-gradient(110deg,#fff0df,#fffaf5 52%,#fff);color:#262018}
-.chair-banner__eyebrow{display:inline-block;color:#c64a00;font-size:11px;font-weight:800;letter-spacing:2px}
-.chair-banner h2{margin:7px 0 9px;color:#262018;font-size:clamp(23px,2.3vw,34px);font-weight:800;line-height:1.1;letter-spacing:-.5px}
-.chair-banner h2 span{display:block;color:#e65b00}
-.chair-banner p{margin:0 0 14px;color:#6c5544;font-size:13px;line-height:1.45}
-.chair-banner a{display:inline-flex;align-items:center;gap:20px;padding:10px 19px;border-radius:25px;background:linear-gradient(110deg,#ff6400,#ff8a13);color:#fff;text-decoration:none;font-size:13px;font-weight:750}
-.chair-banner{position:relative;isolation:isolate}
-.chair-banner a:after{content:"";position:absolute;inset:0;z-index:5;cursor:pointer}
-.chair-banner:focus-within{outline:2px solid #e65b00;outline-offset:3px}
-.chair-banner a span{font-size:23px;line-height:1}
-.chair-banner__chairs{position:relative;isolation:isolate;min-width:0;height:210px;background:radial-gradient(ellipse at 50% 90%,#bc713c26,transparent 65%)}
-.chair-banner__chairs:before{content:"";position:absolute;inset:8% 12% 12%;border-radius:50%;background:radial-gradient(ellipse,#ffe1ba 0%,#fff0df80 55%,transparent 72%);z-index:-1}
-.chair-banner__chairs:after{content:"";position:absolute;left:8%;right:8%;bottom:3%;height:14px;border-radius:50%;background:#7d512626;filter:blur(9px);z-index:-1}
-.chair-banner__chairs img{position:absolute;bottom:6%;display:block;width:29%;height:86%;object-fit:contain;mix-blend-mode:multiply;transform-origin:50% 90%;filter:drop-shadow(0 5px 3px #49371e20)}
-.chair-banner__chairs img:nth-child(1){left:0;transform:rotate(-9deg) scale(.84);z-index:1}
-.chair-banner__chairs img:nth-child(2){left:17%;transform:rotate(-5deg) scale(.94);z-index:2}
-.chair-banner__chairs img:nth-child(3){left:35.5%;bottom:8%;height:96%;z-index:3}
-.chair-banner__chairs img:nth-child(4){right:17%;transform:rotate(5deg) scale(.94);z-index:2}
-.chair-banner__chairs img:nth-child(5){right:0;transform:rotate(9deg) scale(.84);z-index:1}
-@media(max-width:750px){
- .chair-banner{grid-template-columns:1fr;gap:15px;padding:18px}
- .chair-banner h2{font-size:26px}
- .chair-banner h2 span{display:inline}
- .chair-banner__chairs{height:clamp(145px,32vw,210px)}
-}
+
 .ref-bottom{margin:24px 0}.ref-brands h2{font-size:23px;margin:0 0 10px}.ref-brands{scroll-margin-top:160px;background:#fff}
 .ref-brands-track{display:flex;align-items:center;gap:65px;padding:18px 50px;min-height:66px;overflow:auto;border:0;border-radius:0;background:#fff}
 .ref-brands-track a{flex:0 0 120px}.ref-brands-track img{display:block;width:120px;height:34px;object-fit:contain}
