@@ -164,7 +164,7 @@ def save_pick(order, lines):
         item_id = int(raw.get('item_id') or 0)
         got = int(raw.get('got') or 0)
         key = str(raw.get('key') or '')
-        if item_id not in items or not key or got < 0 or got > items[item_id].kolicina:
+        if item_id not in items or not key or got < 0:
             raise MagacinError('Neispravna B2B picking stavka ili količina.')
         loc = str(raw.get('loc') or '').strip()
         location = _location_for_pick_label(loc)
@@ -205,7 +205,7 @@ def finish_pick(order, user=None):
             raise MagacinError('Picking lokacija nije dostupna.')
         picked[item.pk] += qty
         deductions[(item.artikal_id, item.varijacija_id, location.pk)] += qty
-    if any(item.pk not in picked or picked[item.pk] > item.kolicina for item in items):
+    if any(item.pk not in picked for item in items):
         raise MagacinError('Potvrdite pokupljenu količinu za svaki artikal.')
     # Release this order's reservations first, in the same transaction; other orders retain theirs.
     for hold in locked.magacin_holds.select_for_update().filter(status=OrderStockHold.Status.REZERVISANO).order_by('product_id', 'location_id', 'pk'):

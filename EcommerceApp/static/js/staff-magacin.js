@@ -3750,7 +3750,6 @@ function initArticleScanner() {
         var picked = 0;
         Object.keys(byItem).forEach(function (id) {
             var row = byItem[id];
-            row.picked = Math.min(row.picked, row.ordered || row.picked);
             ordered += row.ordered || 0;
             picked += row.picked;
         });
@@ -3793,7 +3792,7 @@ function initArticleScanner() {
                 : '') +
             '<div class="pk-item-step">' +
                 '<button type="button" data-pk-minus aria-label="Manje">−</button>' +
-                '<div class="pk-step-val" role="button" tabindex="0" aria-label="Unesi pokupljenu količinu"><b>' + st.got + ' / ' + item.need + '</b><small>kom</small><input class="pk-direct-qty" type="number" inputmode="numeric" min="0" max="' + item.need + '" step="1" aria-label="Pokupljena količina" hidden></div>' +
+                '<div class="pk-step-val" role="button" tabindex="0" aria-label="Unesi pokupljenu količinu"><b>' + st.got + ' / ' + item.need + '</b><small>kom</small><input class="pk-direct-qty" type="number" inputmode="numeric" min="0" step="1" aria-label="Pokupljena količina" hidden></div>' +
                 '<button type="button" data-pk-plus aria-label="Više">+</button>' +
                 (st.done
                     ? '<span class="pk-odvojeno-tag">Odvojeno</span>'
@@ -3811,12 +3810,12 @@ function initArticleScanner() {
             (st.done
                 ? ''
                 : '<div class="pk-quick-quantities">' + [0, 1, 2, 5, 10].map(function (qty) {
-                    return '<button type="button" data-pk-quick="' + qty + '" aria-pressed="' + (st.got === qty) + '"' + (qty > item.need ? ' disabled' : '') + '>' + qty + '</button>';
+                    return '<button type="button" data-pk-quick="' + qty + '" aria-pressed="' + (st.got === qty) + '">' + qty + '</button>';
                   }).join('') + '</div>') +
             '';
         function setDraft(qty) {
             current = idx;
-            draftQuantities[item.key] = Math.max(0, Math.min(item.need, qty));
+            draftQuantities[item.key] = Math.max(0, qty);
             render();
         }
         var quantityDisplay = art.querySelector('.pk-step-val');
@@ -3836,8 +3835,8 @@ function initArticleScanner() {
             if (!enteringQuantity) return;
             var raw = directQuantity.value.trim();
             var qty = Number(raw);
-            if (!raw || !Number.isInteger(qty) || qty < 0 || qty > item.need) {
-                showMsg('Unesi cijeli broj od 0 do ' + item.need + '.');
+            if (!raw || !Number.isInteger(qty) || qty < 0) {
+                showMsg('Unesi cijeli broj 0 ili veći.');
                 return;
             }
             enteringQuantity = false;
@@ -3919,7 +3918,7 @@ function initArticleScanner() {
                 els.openEmpty.textContent = 'Poručeno: ' + summary.ordered
                     + '. Pokupljeno: ' + summary.picked
                     + '. Nedostaje: ' + summary.missing
-                    + '. Nema više robe na lokacijama — završi picking sa pokupljenom količinom.';
+                    + '. Završi picking sa pokupljenom količinom.';
             } else {
                 els.openEmpty.hidden = !(remaining === 0 && doneN > 0 && !editingKey);
                 els.openEmpty.textContent = 'Sve stavke su odvojene.';
@@ -4051,50 +4050,8 @@ function initArticleScanner() {
         var empty = document.getElementById('pkShortageEmpty');
         if (empty) empty.hidden = list.children.length > 0;
     }
-    var shortPending = false;
     function confirmShortQuantity(item, got) {
-        if (got >= item.need || isPrenosMp) { setGot(item, got, true); return; }
-        var confirmText = 'Pokupljeno ' + got + '/' + item.need + ' na lokaciji ' + item.loc
-            + '. Potvrditi i poslati zahtjev za čišćenje u Lokacije? Preostala količina tražit će se na drugim lokacijama. Zaliha se sada ne čisti.';
-        if (!window.confirm(confirmText)) return;
-        function postZeroPick() {
-            if (shortPending) return;
-            shortPending = true;
-            window.clearTimeout(saveTimer);
-            root.inert = true;
-            var body = new URLSearchParams();
-            var csrf = root.querySelector('[name=csrfmiddlewaretoken]');
-            body.set('action', 'pick_short');
-            body.set('item_id', item.item_id);
-            body.set('loc', item.loc);
-            body.set('got', got);
-            if (csrf) body.set('csrfmiddlewaretoken', csrf.value);
-            Promise.resolve(saveServer()).then(function () {
-                return fetch(window.location.pathname, { method: 'POST', body: body,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
-            }).then(function (response) {
-                return response.json().catch(function () {
-                    throw Error('Server nije vratio ispravan odgovor. Osvježi picking i provjeri količinu prije ponovne potvrde.');
-                });
-            }).then(function (data) {
-                if (data.terminal && data.redirect) {
-                    leavingPicking = true;
-                    window.location.assign(data.redirect);
-                    return;
-                }
-                if (!data.ok) throw Error(data.error || 'Količina nije potvrđena.');
-                try { window.localStorage.removeItem(storageKey); } catch (err) {}
-                try {
-                    window.sessionStorage.removeItem(storageKey + '-next');
-                    if (data.next_pick_key) window.sessionStorage.setItem(storageKey + '-next', data.next_pick_key);
-                } catch (err) {}
-                leavingPicking = true;
-                window.location.reload();
-            }).catch(function (error) {
-                window.alert(error.message || 'Količina nije potvrđena. Pokušaj ponovo.');
-            }).finally(function () { shortPending = false; root.inert = false; });
-        }
-        postZeroPick();
+        setGot(item, got, true);
     }
 
     function dropMissing(item) {
@@ -4103,7 +4060,7 @@ function initArticleScanner() {
 
     function setGot(item, got, forceDone) {
         delete draftQuantities[item.key];
-        var next = Math.max(0, Math.min(item.need, got));
+        var next = Math.max(0, got);
         var exact = next >= item.need && item.need > 0;
         var missing = forceDone && next === 0 && item.need > 0;
         var done = exact || !!(forceDone && next > 0) || missing;
@@ -4308,11 +4265,11 @@ function initArticleScanner() {
                 : 'Želiš li završiti picking #' + broj + '?';
             if (!isPrenosMp) {
                 var summary = pickQtySummary();
-                if (summary.missing > 0) {
+                if (summary.picked !== summary.ordered) {
                     msg = 'Poručeno: ' + summary.ordered
                         + '\nPokupljeno: ' + summary.picked
-                        + '\nNedostaje: ' + summary.missing
-                        + '\n\nNepokupljeni artikli neće biti uključeni u račun. Završiti narudžbu #' + broj + ' sa manjom količinom?';
+                        + '\nKoličina za fakturu: ' + summary.picked
+                        + '\n\nNepokupljeni artikli neće biti uključeni u račun. Završiti narudžbu #' + broj + ' sa pokupljenom količinom?';
                 }
             }
             if (!window.confirm(msg)) {

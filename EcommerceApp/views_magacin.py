@@ -5447,7 +5447,6 @@ def _order_pick_bundle(order):
     lines, error = _build_order_packing_lines(order)
     groups = _packing_location_groups(lines)
     queue = _pick_queue(groups)
-    queue = _reallocate_short_pick_queue(order, lines, queue)
     events = order.pick_short_events or []
     for event in events:
         queue = [row for row in queue if not (
@@ -5697,18 +5696,8 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
     restore_unfinished_web_stock(order, user=user)
     if hasattr(order, 'b2b_submission'):
         from .b2b_orders import save_pick
-        queue, _, _ = _order_pick_bundle(order)
-        limits = {(row['item_id'], row['loc']): int(row['need']) for row in queue}
-        state = save_pick(order, lines)
-        from .location_cleaning import record_shortages
-        shortage_state = {
-            key: dict(row, need=limits.get((row['item_id'], row['loc']), row['need']))
-            for key, row in state.items() if isinstance(row, dict)
-        }
-        order.pick_state = shortage_state
-        order.save(update_fields=['pick_state'])
-        record_shortages(order, shortage_state, user=user)
-        return shortage_state
+        state = save_pick(order, [dict(row, done=True) if finalize else row for row in (lines or [])])
+        return state
     state = dict(order.pick_state or {})
     locked_picks = {e['picked_key']: e for e in (order.pick_short_events or []) if e.get('got')}
     lines = [row for row in (lines or []) if str(row.get('key') or '') not in locked_picks]
@@ -5732,7 +5721,6 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
         done = finalize or bool(raw.get('done'))
         available_for_order = remaining_by_item.get(item_id, 0)
         need = min(need, available_for_order, location_limits.get((item_id, _pick_line_loc(raw)), available_for_order))
-        got = min(got, need)
         remaining_by_item[item_id] = max(0, available_for_order - got)
         key = str(raw.get('key') or '')
         if not key:
@@ -5768,9 +5756,6 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
 
     order.pick_state = state
     order.save(update_fields=['pick_state'])
-
-    from .location_cleaning import record_shortages
-    record_shortages(order, state, user=user)
 
     def _drop_zero(item, loc, qty):
         if is_prenos_mp_order(order):
@@ -5808,9 +5793,9 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
     if finalize:
         for item in items.values():
             if item.pk in picked_by_item:
-                qty = max(0, min(int(item.kolicina), int(picked_by_item.get(item.pk, 0))))
+                qty = max(0, int(picked_by_item.get(item.pk, 0)))
             elif item.kolicina_pokupljeno is not None:
-                qty = max(0, min(int(item.kolicina), int(item.kolicina_pokupljeno or 0)))
+                qty = max(0, int(item.kolicina_pokupljeno or 0))
             else:
                 continue
             if qty <= 0:
@@ -5820,7 +5805,7 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
                 continue
             item.kolicina_pokupljeno = qty
             fields = ['kolicina_pokupljeno']
-            if qty < int(item.kolicina):
+            if qty != int(item.kolicina):
                 item.kolicina = qty
                 fields.append('kolicina')
             item.save(update_fields=fields)
@@ -5831,7 +5816,7 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
             item = items.get(item_id)
             if not item:
                 continue
-            qty = max(0, min(int(item.kolicina), int(qty)))
+            qty = max(0, int(qty))
             item.kolicina_pokupljeno = qty
             item.save(update_fields=['kolicina_pokupljeno'])
     from .product_sets import sync_set_picked
@@ -6293,7 +6278,7 @@ def magacin_pakuj_detail(request, broj):
                               and row.get('loc') != (request.POST.get('loc') or '').strip()), None)
             return JsonResponse({'ok': True, 'queue': queue, 'state': order.pick_state,
                                  'next_pick_key': next_pick['key'] if next_pick else None,
-                                 'message': f'Potvrđeno {got} kom. Zahtjev za čišćenje poslan je u Lokacije. Zaliha nije očišćena.'})
+                                 'message': f'Potvrđeno {got} kom. Količina za fakturu prati picking.'})
         if action == 'pick_ocisti':
             password = request.POST.get('lozinka') or ''
             password_ok = hmac.compare_digest(password.encode(), b'Admin') if prenos_mp else _packing_reprint_password_ok(password)

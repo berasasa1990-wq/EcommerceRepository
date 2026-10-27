@@ -29,3 +29,23 @@ test('3/4 picked with a zero shortage allows finishing and submits actual quanti
     assert.equal(context.pickQtySummary().picked, 2);
     assert.equal(context.pickPayload()[0].got, 2);
 });
+
+test('picked quantity can exceed ordered quantity in summary and payload', () => {
+    const item = { key: 'a', item_id: 1, need: 15, ordered: 15 };
+    const context = { queue: [item], draftQuantities: { a: 18 }, itemState: () => ({ got: 12 }) };
+    vm.createContext(context);
+    for (const name of ['pickedQuantity', 'pickQtySummary', 'pickPayload']) vm.runInContext(functionSource(name), context);
+    assert.equal(context.pickQtySummary().picked, 18);
+    assert.equal(context.pickPayload()[0].got, 18);
+    assert.equal(context.pickQtySummary().missing, 0);
+});
+
+test('confirming zero, less, or more records quantity directly without a cleaning request', () => {
+    const calls = [];
+    const context = { setGot: (...args) => calls.push(args) };
+    vm.createContext(context);
+    vm.runInContext(functionSource('confirmShortQuantity'), context);
+    const item = { key: 'a', need: 15 };
+    for (const qty of [0, 12, 18]) context.confirmShortQuantity(item, qty);
+    assert.deepEqual(calls.map(call => call.slice(1)), [[0, true], [12, true], [18, true]]);
+});

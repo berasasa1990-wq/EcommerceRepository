@@ -345,6 +345,23 @@ class B2BTests(TestCase):
         self.assertEqual((stock.kolicina, stock.rezervisano), (11, 3))
         self.assertEqual(order.ukupno, Decimal('117.00'))
 
+    def test_more_picked_sets_invoice_quantity_without_cleaning(self):
+        from .magacin import validate_order_stock
+        from .views_magacin import apply_order_pick
+        from .models import LocationCleaningRequest
+        from .pricing import pripremi_stavke_za_racun
+        submission, _ = self.checkout_order()
+        order = submission.order
+        item = order.stavke.get()
+        apply_order_pick(order, [{'key': 'x', 'item_id': item.pk, 'loc': self.location.sifra,
+                                 'got': 4, 'done': False}], finalize=True)
+        validate_order_stock(order)
+        item.refresh_from_db()
+        self.assertEqual(item.kolicina_faktura, 4)
+        self.assertEqual(pripremi_stavke_za_racun(order)[0]['kolicina'], 4)
+        self.assertEqual(WarehouseStock.objects.get(product=self.product, location=self.location).kolicina, 8)
+        self.assertFalse(LocationCleaningRequest.objects.filter(order=order).exists())
+
     def test_checkout_requires_payment_and_current_stock(self):
         from .models import B2BSubmission
         self.login()

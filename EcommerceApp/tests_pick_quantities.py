@@ -74,10 +74,12 @@ class PickQuantityTests(TestCase):
             [(row['loc'], row['need'], bool(row.get('is_mp'))) for row in queue],
             [('A-04', 1, False), ('Z-01', 1, False), ('Maloprodaja', 1, True)],
         )
-    def test_posted_location_stock_cannot_exceed_order_quantity(self):
+    def test_picked_quantity_can_exceed_order_quantity(self):
         apply_order_pick(self.order, [dict(self.line, got=10, need=10, done=True)], finalize=True, user=self.user)
         validate_order_stock(self.order, user=self.user)
-        self.assertEqual(self.stock(), 7)
+        self.assertEqual(self.stock(), 0)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.kolicina_faktura, 10)
 
     def _make_order(self, name, product, qty, phone):
         created = self.client.post(reverse('staff_magacin_narudzba_nova'), {
@@ -102,52 +104,29 @@ class PickQuantityTests(TestCase):
             [('A-01', 2, False), ('B-04', 2, False), ('Maloprodaja', 1, True)],
         )
 
-    def test_shortages_require_review_and_keep_actual_invoice_quantity(self):
+    def test_less_or_more_uses_actual_invoice_and_print_quantity_without_cleaning(self):
+        import json
         from .models import LocationCleaningRequest, WarehouseMovement
-        for got in (0, 1):
-            for clear in (False, True):
-                with self.subTest(got=got, clear=clear):
-                    product = Product.objects.create(naziv=f'Provjera {got} {clear}', cijena=10, magacin_sync_at=timezone.now())
-                    apply_movement(product=product, location=self.location, tip='prijem', kolicina=2)
-                    order = self._make_order(product.naziv, product, 2, '061555001')
-                    item = order.stavke.get()
-                    line = _order_pick_bundle(order)[0][0]
-                    url = reverse('staff_magacin_pakuj_detail', args=[order.broj])
-                    payload = {'action': 'pick_short', 'item_id': item.pk, 'loc': line['loc'],
-                               'got': got, 'clear_location': '1', 'lozinka': 'admin'}
-                    for _ in range(2):
-                        response = self.client.post(url, payload, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-                        self.assertEqual(response.status_code, 200, response.content)
-                    self.assertEqual(WarehouseStock.objects.get(product=product, location=self.location).kolicina, 2)
-                    entry = LocationCleaningRequest.objects.get(order=order)
-                    self.assertEqual((entry.picked, entry.needed), (got, 2))
-                    self.assertEqual(entry.reason, 'Artikal nije pronađen' if not got else 'Pronađeno manje nego što treba')
-                    page = self.client.get(reverse('staff_magacin_lokacije'))
-                    self.assertContains(page, entry.reason)
-                    self.assertContains(page, product.naziv)
-                    order.refresh_from_db()
-                    apply_order_pick(order, [dict(line, got=got, done=True)], finalize=True, user=self.user)
-                    if got:
-                        validate_order_stock(order, user=self.user)
-                        item.refresh_from_db()
-                        self.assertEqual(item.kolicina_faktura, 1)
-                        printed = self.client.get(reverse('staff_magacin_narudzbe_stampa_kolicine'), {'b': order.broj})
-                        self.assertEqual(printed.context['print_jobs'][0]['stavke'][0]['kolicina'], 1)
-                        self.assertNotContains(printed, '<strong>MP</strong>')
-                    else:
-                        order.refresh_from_db()
-                        self.assertEqual(order.status, Order.Status.OTKAZANA)
-                    self.assertEqual(WarehouseStock.objects.get(product=product, location=self.location).kolicina, 2-got)
-                    action = 'cleaning_clear' if clear else 'cleaning_keep'
-                    for _ in range(2):
-                        response = self.client.post(reverse('staff_magacin_lokacije'), {'action': action, 'cleaning_id': entry.pk})
-                        self.assertEqual(response.status_code, 302)
-                    self.assertEqual(WarehouseStock.objects.get(product=product, location=self.location).kolicina, 0 if clear else 2-got)
-                    entry.refresh_from_db()
-                    self.assertEqual(entry.decision, 'clear' if clear else 'keep')
-                    self.assertEqual(entry.resolved_by, self.user)
-                    self.assertEqual(WarehouseMovement.objects.filter(product=product, tip='korekcija').count(), int(clear))
-                    self.assertEqual(self.stock(), 10)
+        from .pricing import pripremi_stavke_za_racun
+        for got in (1, 2, 5):
+            with self.subTest(got=got):
+                product = Product.objects.create(naziv=f'Faktura {got}', cijena=10, magacin_sync_at=timezone.now())
+                apply_movement(product=product, location=self.location, tip='prijem', kolicina=10)
+                order = self._make_order(product.naziv, product, 3, '061555001')
+                line = _order_pick_bundle(order)[0][0]
+                response = self.client.post(reverse('staff_magacin_pakuj_detail', args=[order.broj]), {
+                    'action': 'validiraj', 'pick_json': json.dumps([dict(line, got=got, done=False)])})
+                self.assertEqual(response.status_code, 302)
+                order.refresh_from_db()
+                self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+                self.assertEqual(order.stavke.get().kolicina_faktura, got)
+                self.assertEqual(pripremi_stavke_za_racun(order)[0]['kolicina'], got)
+                self.assertEqual(order.medjuzbir, Decimal(10 * got))
+                printed = self.client.get(reverse('staff_magacin_narudzbe_stampa_kolicine'), {'b': order.broj})
+                self.assertEqual(printed.context['print_jobs'][0]['stavke'][0]['kolicina'], got)
+                self.assertFalse(LocationCleaningRequest.objects.filter(order=order).exists())
+                self.assertFalse(WarehouseMovement.objects.filter(product=product, tip='korekcija').exists())
+                self.assertEqual(WarehouseStock.objects.get(product=product, location=self.location).kolicina, 10-got)
 
     def test_zero_line_removed_from_print_without_clearing_stock(self):
         from .models import LocationCleaningRequest
@@ -158,7 +137,7 @@ class PickQuantityTests(TestCase):
         apply_order_pick(self.order, [dict(row, got=0 if row['item_id'] == self.item.pk else row['need'], done=True) for row in queue], finalize=True, user=self.user)
         validate_order_stock(self.order, user=self.user)
         self.assertFalse(self.order.stavke.filter(pk=self.item.pk).exists())
-        self.assertTrue(LocationCleaningRequest.objects.filter(order=self.order, product=self.product).exists())
+        self.assertFalse(LocationCleaningRequest.objects.filter(order=self.order, product=self.product).exists())
         printed = self.client.get(reverse('staff_magacin_narudzbe_stampa_kolicine'), {'b': self.order.broj})
         self.assertNotContains(printed, self.product.naziv)
         self.assertContains(printed, other.naziv)
@@ -182,7 +161,10 @@ class PickQuantityTests(TestCase):
         from .models import LocationCleaningRequest
         from .magacin import MagacinError
         confirm_short_pick(self.order, item_id=self.item.pk, loc=self.line['loc'], got=1, user=self.user)
-        entry = LocationCleaningRequest.objects.get(order=self.order)
+        self.assertFalse(LocationCleaningRequest.objects.filter(order=self.order).exists())
+        entry = LocationCleaningRequest.objects.create(order=self.order, order_number=self.order.broj,
+            item_id_snapshot=self.item.pk, product=self.product, location=self.location,
+            name=self.product.naziv, needed=3, picked=1)
         with self.assertRaises(MagacinError):
             resolve_request(entry.pk, clear=True, user=self.user)
         self.assertEqual(self.stock(), 10)
@@ -212,69 +194,15 @@ class PickQuantityTests(TestCase):
         self.assertEqual(WarehouseStock.objects.get(product=self.product, variation=variant, location=elsewhere).kolicina, 2)
         self.assertEqual(WarehouseStock.objects.get(product=self.product, variation=None, location=self.location).kolicina, 10)
 
-    def test_short_pick_routes_remainder_across_shelves_without_cleaning(self):
+    def test_short_pick_does_not_require_another_location_or_request_cleaning(self):
         from .models import LocationCleaningRequest
-        for got in (0, 1):
-            with self.subTest(got=got):
-                product = Product.objects.create(naziv=f'Preusmjerenje {got}', cijena=10, magacin_sync_at=timezone.now())
-                locations = [WarehouseLocation.objects.create(sifra=f'R{got}-{i}', naziv=f'Polica {i}') for i in range(3)]
-                for location, qty in zip(locations, (4, 1, 2)):
-                    apply_movement(product=product, location=location, tip='prijem', kolicina=qty)
-                order = self._make_order(product.naziv, product, 4, '061555004')
-                item = order.stavke.get()
-                confirm_short_pick(order, item_id=item.pk, loc=locations[0].sifra, got=got, user=self.user)
-                queue = _order_pick_bundle(order)[0]
-                pending = [row for row in queue if not order.pick_state.get(row['key'], {}).get('done')]
-                self.assertEqual([(row['loc'], row['need']) for row in pending],
-                                 [(locations[1].sifra, 1), (locations[2].sifra, 2)])
-                entry = LocationCleaningRequest.objects.get(order=order)
-                self.assertEqual((entry.location_id, entry.picked, entry.needed, entry.decision),
-                                 (locations[0].pk, got, 4, ''))
-                self.assertEqual(WarehouseStock.objects.get(product=product, location=locations[0]).kolicina, 4)
-                # Reload and retry must not add requests or repeat the empty shelf.
-                confirm_short_pick(order, item_id=item.pk, loc=locations[0].sifra, got=got, user=self.user)
-                self.assertEqual(LocationCleaningRequest.objects.filter(order=order).count(), 1)
-                apply_order_pick(order, [dict(row, got=row['need'], done=True) for row in pending], finalize=True, user=self.user)
-                validate_order_stock(order, user=self.user)
-                item.refresh_from_db()
-                self.assertEqual(item.kolicina_faktura, got + 3)
-                self.assertEqual(WarehouseStock.objects.get(product=product, location=locations[0]).kolicina, 4-got)
-                for location in locations[1:]:
-                    self.assertEqual(WarehouseStock.objects.get(product=product, location=location).kolicina, 0)
-
-    def test_repeated_shortages_continue_and_exclude_other_orders_reservations(self):
-        from .models import LocationCleaningRequest
-        b = WarehouseLocation.objects.create(sifra='PICK-B', naziv='B')
-        c = WarehouseLocation.objects.create(sifra='PICK-C', naziv='C')
-        apply_movement(product=self.product, location=b, tip='prijem', kolicina=2)
-        apply_movement(product=self.product, location=c, tip='prijem', kolicina=2)
-        other = self._make_order('Druga rezervacija', self.product, 9, '061555005')
-        # First order holds 3 on A; second holds the remaining 7 on A and 2 on B.
-        confirm_short_pick(self.order, item_id=self.item.pk, loc=self.location.sifra, got=1, user=self.user)
+        other = WarehouseLocation.objects.create(sifra='PICK-B', naziv='Druga polica')
+        apply_movement(product=self.product, location=other, tip='prijem', kolicina=5)
+        confirm_short_pick(self.order, item_id=self.item.pk, loc=self.line['loc'], got=1, user=self.user)
         queue = _order_pick_bundle(self.order)[0]
-        pending = [row for row in queue if not self.order.pick_state.get(row['key'], {}).get('done')]
-        self.assertEqual([(row['loc'], row['need']) for row in pending], [('PICK-C', 2)])
-        confirm_short_pick(self.order, item_id=self.item.pk, loc='PICK-C', got=1, user=self.user)
-        self.item.refresh_from_db()
-        self.assertEqual(self.item.kolicina_pokupljeno, 2)
-        self.assertEqual(LocationCleaningRequest.objects.filter(order=self.order).count(), 2)
-        self.assertTrue(all(self.order.pick_state.get(row['key'], {}).get('done') for row in _order_pick_bundle(self.order)[0]))
-        self.assertEqual(WarehouseStock.objects.get(product=self.product, location=c).kolicina, 2)
-
-    def test_shortage_does_not_route_to_another_variant_or_parent_stock(self):
-        from .models import ProductVariation, OrderItem
-        product = Product.objects.create(naziv='Boje', cijena=10, magacin_sync_at=timezone.now())
-        red = ProductVariation.objects.create(artikal=product, naziv='Crvena')
-        blue = ProductVariation.objects.create(artikal=product, naziv='Plava')
-        b = WarehouseLocation.objects.create(sifra='VAR-B', naziv='Druga polica')
-        c = WarehouseLocation.objects.create(sifra='VAR-C', naziv='Treća polica')
-        apply_movement(product=product, variation=red, location=self.location, tip='prijem', kolicina=4)
-        apply_movement(product=product, variation=blue, location=b, tip='prijem', kolicina=10)
-        apply_movement(product=product, location=b, tip='prijem', kolicina=10)
-        apply_movement(product=product, variation=red, location=c, tip='prijem', kolicina=1)
-        order = Order.objects.create(ime_prezime='Tačna varijacija', ukupno=40)
-        item = OrderItem.objects.create(narudzba=order, artikal=product, varijacija=red,
-                                       naziv='Crvena', cijena=10, kolicina=4)
-        confirm_short_pick(order, item_id=item.pk, loc=self.location.sifra, got=0, user=self.user)
-        pending = [row for row in _order_pick_bundle(order)[0] if not order.pick_state.get(row['key'], {}).get('done')]
-        self.assertEqual([(row['loc'], row['need']) for row in pending], [('VAR-C', 1)])
+        self.assertTrue(all(self.order.pick_state.get(row['key'], {}).get('done') for row in queue))
+        self.assertFalse(LocationCleaningRequest.objects.filter(order=self.order).exists())
+        apply_order_pick(self.order, [dict(row, got=1, done=True) for row in queue], finalize=True, user=self.user)
+        validate_order_stock(self.order, user=self.user)
+        self.assertEqual(self.stock(), 9)
+        self.assertEqual(WarehouseStock.objects.get(product=self.product, location=other).kolicina, 5)
