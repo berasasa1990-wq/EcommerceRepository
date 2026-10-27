@@ -3650,8 +3650,9 @@ function initArticleScanner() {
         var complete = queue.length > 0 && doneCount() === queue.length && !editingKey;
         root.classList.toggle('is-pick-complete', complete);
         if (els.validDone) els.validDone.hidden = !complete;
-        if (els.form) els.form.hidden = !complete;
-        if (els.valid) els.valid.disabled = !complete;
+        // Finishing explicitly confirms shortages, including an untouched zero.
+        if (els.form) els.form.hidden = queue.length === 0;
+        if (els.valid) els.valid.disabled = queue.length === 0;
     }
 
     function persist() {
@@ -3729,6 +3730,10 @@ function initArticleScanner() {
             .replace(/"/g, '&quot;');
     }
 
+    function pickedQuantity(item) {
+        return Object.prototype.hasOwnProperty.call(draftQuantities, item.key)
+            ? draftQuantities[item.key] : (itemState(item).got || 0);
+    }
     function pickQtySummary() {
         var byItem = {};
         queue.forEach(function (item) {
@@ -3739,7 +3744,7 @@ function initArticleScanner() {
             if (item.ordered && item.ordered > byItem[id].ordered) {
                 byItem[id].ordered = item.ordered;
             }
-            byItem[id].picked += itemState(item).got || 0;
+            byItem[id].picked += pickedQuantity(item);
         });
         var ordered = 0;
         var picked = 0;
@@ -4001,7 +4006,7 @@ function initArticleScanner() {
                 key: item.key,
                 item_id: item.item_id,
                 loc: item.loc || '',
-                got: st.got,
+                got: pickedQuantity(item),
                 need: item.need,
                 done: !!st.done,
             };
@@ -4245,11 +4250,6 @@ function initArticleScanner() {
     }
 
     function clickValidate() {
-        if (queue.some(function (item) { return !itemState(item).done; })) {
-            setPickView('now');
-            showMsg('Prvo potvrdi količinu za svaki artikal. Manjak se automatski provjerava na drugim lokacijama.');
-            return;
-        }
         if (els.valid) els.valid.click();
     }
     if (els.validDone) els.validDone.addEventListener('click', clickValidate);
@@ -4312,7 +4312,7 @@ function initArticleScanner() {
                     msg = 'Poručeno: ' + summary.ordered
                         + '\nPokupljeno: ' + summary.picked
                         + '\nNedostaje: ' + summary.missing
-                        + '\n\nZavršiti narudžbu #' + broj + ' sa manjom količinom?';
+                        + '\n\nNepokupljeni artikli neće biti uključeni u račun. Završiti narudžbu #' + broj + ' sa manjom količinom?';
                 }
             }
             if (!window.confirm(msg)) {
