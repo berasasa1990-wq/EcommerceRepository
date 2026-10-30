@@ -24,7 +24,7 @@ from .b2b_pricing import (
     account_brand_rabats, rabat_percent_for_product,
 )
 from .magacin import ignored_location_q
-from .models import B2BAccount, B2BSettings, Brand, Category, Product, WarehouseLocation, WarehouseStock
+from .models import B2BAccount, B2BSettings, Brand, Category, Product, Uvoz, UvozStavka, WarehouseLocation, WarehouseStock
 
 
 class B2BLoginForm(forms.Form):
@@ -150,7 +150,8 @@ def catalog(request):
             per_page = '50'
         locations = list(WarehouseLocation.objects.filter(aktivan=True).exclude(ignored_location_q()))
         # Paginate actual displayed SKU rows, so sold-out variations cannot precede
-        # available articles on a later page. Availability always outranks user sorting.
+        # available articles on a later page. Newest sorting promotes the latest
+        # received import before applying availability and the remaining ordering.
         divisors = brand_divisors()
         price_divisor = Case(*[When(brend_id=pk, then=Value(float(value))) for pk, value in divisors.items()],
                              default=Value(1.38), output_field=FloatField())
@@ -163,7 +164,17 @@ def catalog(request):
         catalog_rows = catalog_rows.annotate(b2b_available=Exists(stocks))
         if in_stock:
             catalog_rows = catalog_rows.filter(b2b_available=True)
-        catalog_rows = catalog_rows.order_by('-b2b_available', *ordering[sort]).values(
+        priority = []
+        if sort == 'newest':
+            import_lines = UvozStavka.objects.filter(product__isnull=False).exclude(
+                status__in=[UvozStavka.Status.ERROR, UvozStavka.Status.SKIPPED])
+            latest_import = Uvoz.objects.filter(
+                zaliha_primljena=True, pk__in=import_lines.values('uvoz_id'),
+            ).order_by('-kreiran', '-pk').values('pk')[:1]
+            catalog_rows = catalog_rows.annotate(b2b_latest_import=Exists(
+                import_lines.filter(uvoz_id__in=latest_import, product_id=OuterRef('pk'))))
+            priority.append('-b2b_latest_import')
+        catalog_rows = catalog_rows.order_by(*priority, '-b2b_available', *ordering[sort]).values(
             'pk', 'b2b_variant_id', 'b2b_price', 'b2b_available')
         page = Paginator(catalog_rows, int(per_page)).get_page(request.GET.get('page'))
         page_rows = list(page.object_list)

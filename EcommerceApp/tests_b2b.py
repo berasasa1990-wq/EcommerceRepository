@@ -5,7 +5,7 @@ from django.core.cache import cache
 from django.test import Client, TestCase, override_settings
 
 from .admin import B2BAccountForm
-from .models import B2BAccount, B2BAccountBrandRabat, Brand, Category, Product, ProductVariation, WarehouseLocation, WarehouseStock
+from .models import B2BAccount, B2BAccountBrandRabat, Brand, Category, Product, ProductVariation, Uvoz, UvozStavka, WarehouseLocation, WarehouseStock
 from .views_b2b import netto
 
 
@@ -50,6 +50,29 @@ class B2BTests(TestCase):
         self.assertEqual((quantity['quantity'], quantity['available']), (12, 9))
         self.assertNotContains(self.client.get('/veleprodaja', {'q': 'nepostojece'}), self.product.naziv)
         self.assertEqual(netto(Decimal('10')), Decimal('6.19'))
+
+    def test_latest_import_precedes_other_products_across_pages(self):
+        others = [Product.objects.create(naziv=f'Other {i}', cijena=10) for i in range(26)]
+        for product in others:
+            WarehouseStock.objects.create(product=product, location=self.location, kolicina=2)
+        old = Uvoz.objects.create(naziv='Old')
+        UvozStavka.objects.create(uvoz=old, product=others[-1], status='updated')
+        latest = Uvoz.objects.create(naziv='Latest')
+        UvozStavka.objects.create(uvoz=latest, product=self.product, status='updated')
+        UvozStavka.objects.create(uvoz=latest, product=self.product, status='updated')
+        Uvoz.objects.create(naziv='Draft', zaliha_primljena=False)
+        self.login()
+        first = self.client.get('/veleprodaja', {'limit': '25'})
+        second = self.client.get('/veleprodaja', {'limit': '25', 'page': 2})
+        self.assertEqual(first.context['rows'][0]['product'], self.product)
+        ids = [row['product'].pk for response in (first, second) for row in response.context['rows']]
+        self.assertEqual(len(ids), 27)
+        self.assertEqual(len(set(ids)), 27)
+        # A subsequent import of an existing article automatically takes priority.
+        newer = Uvoz.objects.create(naziv='Newer')
+        UvozStavka.objects.create(uvoz=newer, product=others[0], status='updated')
+        response = self.client.get('/veleprodaja')
+        self.assertEqual(response.context['rows'][0]['product'], others[0])
 
     def test_variations_use_own_price_and_stock(self):
         variation = ProductVariation.objects.create(artikal=self.product, naziv='3.6 m', sifra='VAR-B2B', cijena=Decimal('322.92'))
