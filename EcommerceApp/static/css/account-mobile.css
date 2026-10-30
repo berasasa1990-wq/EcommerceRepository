@@ -7,7 +7,7 @@
     color: #111;
     line-height: 1.5;
 }
-.account-loyalty-link-notice a { color: #c94300; font-weight: 700; }
+.account-loyalty-link-notice a { color: #007fb5; font-weight: 700; }
 .account-loyalty-sync {
     margin: 0 0 18px;
     padding: 16px 18px;
@@ -30,7 +30,7 @@
 .am-loyalty-sync p { margin: 0 0 8px; font-size: 11px; color: #d7d8dc; }
 .am-loyalty-sync button {
     width: 100%; min-height: 40px; border: 0; border-radius: 8px;
-    background: #ff6500; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
+    background: #0095d2; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
 }
 .account-mobile-overview, .account-mobile-back { display: none; }
 @media(max-width:767px) {
@@ -52,10 +52,10 @@
  .am-loyalty { padding:14px; border-radius:10px; background:linear-gradient(115deg,#080808,#252525); color:#fff; }
  .am-loyalty > small { font-size:9px; letter-spacing:2px; color:#b9bbc1; }
  .am-loyalty h2 { font-size:24px; margin:3px 0 8px; color:white; }
- .am-loyalty h2 span, .am-loyalty a { color:#ff7900; }
+ .am-loyalty h2 span, .am-loyalty a { color:#0095d2; }
  .am-loyalty p { margin:0 0 7px; font-size:11px; }
  .am-progress { height:7px; background:#494949; border-radius:9px; overflow:hidden; }
- .am-progress span { display:block; height:100%; background:#ff7900; border-radius:9px; }
+ .am-progress span { display:block; height:100%; background:#0095d2; border-radius:9px; }
  .am-loyalty footer { display:flex; justify-content:space-between; gap:8px; font-size:10px; margin-top:8px; }
  .am-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:8px 0; }
  .am-stats a { display:flex; align-items:center; gap:9px; padding:10px 8px; border-radius:9px; background:#f5f5f7; color:#111; }
@@ -76,7 +76,7 @@
 .account-tracking h2 { margin: 0 0 12px; font-size: 20px; }
 .account-tracking p, .account-tracking li { font-size: 14px; line-height: 1.6; }
 .account-tracking ul { padding-left: 20px; }
-.account-tracking a { color: #c94600; font-weight: 600; }
+.account-tracking a { color: #007fb5; font-weight: 600; }
 
 .account-complaint-select { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 20px 0; }
 .account-complaint-select label { width: 100%; font-weight: 600; }

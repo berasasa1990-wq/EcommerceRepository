@@ -40,7 +40,7 @@
     object-fit: contain;
 }
 .footer-payment-security__logos a:focus-visible {
-    outline: 2px solid #ff6500;
+    outline: 2px solid #0095d2;
     outline-offset: 5px;
 }
 @media (max-width: 600px) {

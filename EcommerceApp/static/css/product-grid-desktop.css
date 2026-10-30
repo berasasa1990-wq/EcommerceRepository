@@ -8,14 +8,14 @@
   grid-template-columns:repeat(5,minmax(0,1fr))!important;
   gap:16px;
  }
- /* Related cards need the full page width to fit five readable columns. */
+ /* Related products fit four equal columns within their aligned section. */
  html body.product-mobile-reference main .pd-bottom-layout{grid-template-columns:minmax(0,1fr)}
  html body.product-mobile-reference main .pd-purchase-related .pd-related-grid{
-  grid-template-columns:repeat(3,minmax(0,1fr))!important;
-  overflow-x:auto;
-  padding-bottom:12px;
-  scroll-snap-type:x proximity;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:16px;
+  overflow-x:visible;
+  padding-bottom:0;
  }
- html body.product-mobile-reference main .pd-purchase-related .product-card{scroll-snap-align:start}
+ html body.product-mobile-reference main .pd-purchase-related .product-card{min-width:0;width:100%;max-width:100%}
 }
 .pd-purchase-related{margin-top:24px;min-width:0;max-width:100%}

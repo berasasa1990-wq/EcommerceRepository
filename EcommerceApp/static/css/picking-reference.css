@@ -52,7 +52,7 @@
 .pk-reference .pk-step-val small { font-size: 11px; color: #7b8799; }
 .pk-quick-quantities { grid-column: 1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .pk-quick-quantities button { min-width: 0; height: 44px; border: 1px solid #dce4ed; border-radius: 10px; background: #fff; color: #080d18; font-size: 14px; font-weight: 700; }
-.pk-quick-quantities button[aria-pressed="true"] { border: 2px solid #0094CD; background: #fff3e8; }
+.pk-quick-quantities button[aria-pressed="true"] { border: 2px solid #0094CD; background: #edf7fd; }
 .pk-quick-quantities button:disabled { color: #adb6c2; background: #f8fafc; }
 .pk-reference .pk-less-row { grid-column: 2; display: flex; flex-wrap: wrap; gap: 5px; margin: 0; }
 .pk-reference .pk-less-row input { width: 100%; min-width: 0; height: 36px; font-size: 16px; }

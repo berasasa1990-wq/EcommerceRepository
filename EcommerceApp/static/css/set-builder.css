@@ -1,6 +1,6 @@
 /* Kreiraj svoj set — jedan korak na ekranu */
 .setb {
-    --setb-orange: #FF5A00;
+    --setb-orange: #0095d2;
     --setb-orange-soft: #fff4ee;
     --setb-line: #ececec;
     --setb-ink: #171717;
@@ -320,7 +320,7 @@
 
 .setb-next:hover,
 .setb-find:hover {
-    background: #E04F00;
+    background: #007fb5;
 }
 
 .setb-find:disabled {

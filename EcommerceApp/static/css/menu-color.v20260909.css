@@ -36,13 +36,13 @@ body[data-menu-color="black"] .mega-menu-panel a:hover,
 body[data-menu-color="black"] .mega-menu-panel a:focus-visible,
 body[data-menu-color="black"] .mobile-nav-panel a:not(.nav-link-akcija):hover,
 body[data-menu-color="black"] .mobile-nav-panel a:not(.nav-link-akcija):focus-visible {
-    color: #ff7900 !important;
+    color: #0095d2 !important;
     background-color: #202326 !important;
 }
 body[data-menu-color="black"] .cats-dropdown__link--sale,
 body[data-menu-color="black"] .cats-dropdown__link--sale .cat-ico,
 body[data-menu-color="black"] .cats-dropdown__link--sale .cats-dropdown__name {
-    color: #ff7900 !important;
+    color: #0095d2 !important;
 }
 body[data-menu-color="black"] .home-trust-bar {
     background: linear-gradient(120deg, #0a0b0c, #141618) !important;
@@ -52,7 +52,7 @@ body[data-menu-color="black"] .home-trust-bar {
 body[data-menu-color="black"] .home-trust-bar .home-trust-bar__title { color: #f5f5f5 !important; }
 body[data-menu-color="black"] .home-trust-bar .home-trust-bar__sub { color: #c8c8c8 !important; }
 body[data-menu-color="black"] .home-trust-bar .home-trust-bar__item { border-color: #343638 !important; }
-body[data-menu-color="black"] .home-trust-bar .home-trust-bar__icon { color: #ff7900 !important; }
+body[data-menu-color="black"] .home-trust-bar .home-trust-bar__icon { color: #0095d2 !important; }
 
 /* Narandžasti razdjelnici pripadaju samo crnoj varijanti. */
 body[data-menu-color="white"] .header,

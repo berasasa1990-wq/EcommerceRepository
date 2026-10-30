@@ -47,3 +47,10 @@
  html body.shared-site-header #header .header-row--categories,html body.shared-site-header #header .ref-desktop-nav{gap:18px!important}
  html body.shared-site-header #header :is(.ref-home-nav,.ref-desktop-nav a,.cats-dropdown__btn){font-size:14px}
 }
+
+/* Shared count badges use the same orange accent on every page. */
+html body.shared-site-header #header .nav-actions .cart-badge,
+html body.shared-site-header #header .nav-actions .wishlist-badge {
+    background: #ff5a00 !important;
+    color: #fff !important;
+}

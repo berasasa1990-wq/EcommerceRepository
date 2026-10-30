@@ -1,42 +1,42 @@
 /* Reference storefront composition, with the shop's orange accent. */
-body.home-mobile-reference{--home-ink:#162334;--home-muted:#68717c;--home-soft:#fff6ef;--home-line:#f0dfd2;background:#fff;color:var(--home-ink)}
+body.home-mobile-reference{--home-ink:#162334;--home-muted:#68717c;--home-soft:#edf7fd;--home-line:#cce8f5;background:#fff;color:var(--home-ink)}
 body.home-mobile-reference main{max-width:none;width:100%;margin:0;padding:0 18px}
 body.home-mobile-reference .home-products{width:100%;max-width:none;margin:24px 0!important;padding:0!important;border:0!important;background:#fff!important}
 body.home-mobile-reference .home-product-catalog,body.home-mobile-reference .home-products :is(.catalog-layout,.catalog-products){max-width:none!important;width:100%;padding:0!important;margin:0!important}
 body.home-mobile-reference .home-section-header{display:flex;align-items:center;justify-content:space-between;margin:0 0 14px;padding:0}
 body.home-mobile-reference .home-section-header__title{color:var(--home-ink);font-size:25px;line-height:1.2;font-weight:750;margin:0}
 body.home-mobile-reference .home-section-header__subtitle{display:none}
-body.home-mobile-reference .home-section-header__see-all{color:#ff5a00;font-size:16px;font-weight:600;text-decoration:none;text-transform:none;letter-spacing:normal}
+body.home-mobile-reference .home-section-header__see-all{color:#0095d2;font-size:16px;font-weight:600;text-decoration:none;text-transform:none;letter-spacing:normal}
 body.home-mobile-reference .home-product-carousel{max-width:none!important;padding:0!important}
 body.home-mobile-reference .home-product-carousel__btn{display:none!important}
 .ref-promos{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:20px 0 28px}
-.ref-promo{position:relative;overflow:hidden;isolation:isolate;min-height:200px;padding:30px 34px;border-radius:13px;background:#fff5ed;color:#152334}
+.ref-promo{position:relative;overflow:hidden;isolation:isolate;min-height:200px;padding:30px 34px;border-radius:13px;background:#edf7fd;color:#152334}
 .ref-promo--dark{background:linear-gradient(125deg,#21140e,#6e2d0b);color:#fff}
-.ref-promo--dark:after{content:"";position:absolute;inset:-40% -20%;background:linear-gradient(150deg,transparent 56%,#ffb16c 56.2%,#ff5a0060 56.5%,transparent 58%);z-index:-1}
+.ref-promo--dark:after{content:"";position:absolute;inset:-40% -20%;background:linear-gradient(150deg,transparent 56%,#cce8f5 56.2%,#0095d260 56.5%,transparent 58%);z-index:-1}
 .ref-promo>span,.ref-special>div>span{font-size:12px;font-weight:700;letter-spacing:3px}
 .ref-promo h2{margin:6px 0 2px;font-size:34px;line-height:1.15;letter-spacing:-.5px}
 .ref-promo p{margin:0 0 12px;font-size:17px}
-.ref-promo a,.ref-special a{display:inline-flex;align-items:center;gap:24px;padding:10px 24px;border-radius:30px;background:linear-gradient(#ff9800,#ff5000);color:#fff;text-decoration:none;font-size:15px;font-weight:700}
+.ref-promo a,.ref-special a{display:inline-flex;align-items:center;gap:24px;padding:10px 24px;border-radius:30px;background:linear-gradient(#0095d2,#0095d2);color:#fff;text-decoration:none;font-size:15px;font-weight:700}
 .ref-promo a span,.ref-special a span{font-size:24px;line-height:1}
 
 .ref-bottom{margin:24px 0}.ref-brands h2{font-size:23px;margin:0 0 10px}.ref-brands{scroll-margin-top:160px;background:#fff}
 .ref-brands-track{display:flex;align-items:center;gap:65px;padding:18px 50px;min-height:66px;overflow:auto;border:0;border-radius:0;background:#fff}
 .ref-brands-track a{flex:0 0 120px}.ref-brands-track img{display:block;width:120px;height:34px;object-fit:contain}
 .ref-bottom-benefits{border:1px solid var(--home-line);border-radius:13px;margin:12px 0;background:#fffaf6}
-.ref-newsletter{display:grid;grid-template-columns:1fr 1.1fr 120px;align-items:center;gap:35px;padding:30px 36px;border-radius:13px;background:linear-gradient(110deg,#ffe4cd,#fff6ef);min-height:150px}
+.ref-newsletter{display:grid;grid-template-columns:1fr 1.1fr 120px;align-items:center;gap:35px;padding:30px 36px;border-radius:13px;background:linear-gradient(110deg,#ffe4cd,#edf7fd);min-height:150px}
 .ref-newsletter h2{margin:0 0 10px;font-size:23px}.ref-newsletter p{margin:0;color:#7b6656;font-size:14px}
 .ref-newsletter form{display:flex;position:relative;min-width:0;background:#fffaf6;border-radius:16px;padding:3px}
 .ref-newsletter input{min-width:0;flex:1;width:100%;border:0;background:transparent;padding:12px 16px;font-size:13px}
 .ref-newsletter button{border:0;border-radius:30px;padding:12px 26px;color:#fff;background:var(--storefront-action-gradient);white-space:nowrap;font-weight:700;cursor:pointer}
 .ref-newsletter form [role=status]{position:absolute;top:100%;left:10px;font-size:12px}.ref-envelope{width:120px;height:90px}
 body.home-mobile-reference .seo-text-block--below{max-width:1200px;margin:30px auto;padding:0 15px;color:#5b626c;font-size:18px}
-body.home-mobile-reference .seo-text-block__toggle{color:#e04f00}
+body.home-mobile-reference .seo-text-block__toggle{color:#007fb5}
 @media(min-width:1025px){
  body.home-mobile-reference .promo-bar{display:none!important}
  body.home-mobile-reference #header .header-shell{max-width:1660px}
  body.home-mobile-reference #header .header-row--primary{grid-template-columns:310px minmax(300px,1fr) auto!important;min-height:78px!important;padding-bottom:0!important}
  body.home-mobile-reference #header .logo-image{max-width:150px;max-height:92px}
- body.home-mobile-reference #header .header-search-form{background:#fff5ed!important;box-shadow:none!important;border-color:#f0dfd2!important}
+ body.home-mobile-reference #header .header-search-form{background:#edf7fd!important;box-shadow:none!important;border-color:#cce8f5!important}
  body.home-mobile-reference #header .header-search-submit{background:transparent!important;color:#222!important}
  body.home-mobile-reference #header .header-row--categories{padding-left:340px;min-height:50px;background:#fff!important}
  body.home-mobile-reference #header .nav-menu{justify-content:flex-start;gap:10px}
@@ -49,8 +49,8 @@ body.home-mobile-reference .seo-text-block__toggle{color:#e04f00}
  body.home-mobile-reference .home-trust-bar{display:none}
  body.home-mobile-reference>.mobile-home-benefits{display:none}
  body.home-mobile-reference main>.mobile-home-benefits{max-width:1500px;margin:22px auto;display:grid!important;grid-template-columns:repeat(4,1fr);gap:18px}
- body.home-mobile-reference .mobile-home-benefits__item{display:flex;align-items:center;gap:20px;border:1px solid #f3dfce;border-radius:18px;padding:24px;background:#fff5ed;color:#222}
- body.home-mobile-reference .mobile-home-benefits__item svg{width:36px;height:36px;flex-shrink:0;color:#ff5a00}
+ body.home-mobile-reference .mobile-home-benefits__item{display:flex;align-items:center;gap:20px;border:1px solid #f3dfce;border-radius:18px;padding:24px;background:#edf7fd;color:#222}
+ body.home-mobile-reference .mobile-home-benefits__item svg{width:36px;height:36px;flex-shrink:0;color:#0095d2}
  body.home-mobile-reference .mobile-home-benefits__item strong{display:block;font-size:18px}.mobile-home-benefits__item span{display:block;font-size:14px;color:#786e66}
  body.home-mobile-reference .ref-bottom-benefits .mobile-home-benefits{display:grid!important;grid-template-columns:repeat(4,1fr);gap:0;margin:0;padding:20px 30px}
  body.home-mobile-reference .ref-bottom-benefits .mobile-home-benefits__item{border:0;border-radius:0;border-right:1px solid #eddbc9;padding:0 30px;background:none}
@@ -61,7 +61,7 @@ body.home-mobile-reference .seo-text-block__toggle{color:#e04f00}
  body.home-mobile-reference main{padding:0 12px}.ref-promos{gap:12px}.ref-promo{padding:20px;min-height:180px}.ref-promo h2{font-size:24px}.ref-promo p{font-size:14px}
  .ref-special{padding:20px;min-height:0;gap:16px;flex-wrap:wrap}.ref-special h2{font-size:30px}.ref-special p{font-size:14px}
  .ref-newsletter{grid-template-columns:1fr;gap:18px;padding:24px}.ref-envelope{display:none}.ref-newsletter h2{font-size:20px}
- .ref-bottom-benefits .mobile-home-benefits{display:grid;grid-template-columns:repeat(2,1fr);gap:15px;padding:20px}.ref-bottom-benefits .mobile-home-benefits__item{display:flex;gap:10px}.ref-bottom-benefits svg{width:30px;height:30px;color:#ff5a00}
+ .ref-bottom-benefits .mobile-home-benefits{display:grid;grid-template-columns:repeat(2,1fr);gap:15px;padding:20px}.ref-bottom-benefits .mobile-home-benefits__item{display:flex;gap:10px}.ref-bottom-benefits svg{width:30px;height:30px;color:#0095d2}
  .ref-brands-track{gap:28px;padding:16px 20px}
 }
 @media(max-width:550px){.ref-promos{grid-template-columns:1fr}.ref-promo{min-height:170px}.ref-special-seal{width:78px;height:78px;flex-shrink:0;font-size:10px}.ref-special-seal strong{font-size:18px}.ref-newsletter form{flex-wrap:wrap}.ref-newsletter input{flex-basis:100%}.ref-newsletter button{width:100%}.ref-bottom-benefits .mobile-home-benefits{grid-template-columns:1fr 1fr}.ref-bottom-benefits strong{font-size:12px}.ref-bottom-benefits span{font-size:11px}body.home-mobile-reference .home-section-header__title{font-size:21px}}
@@ -85,7 +85,7 @@ body.home-mobile-reference .seo-text-block__toggle{color:#e04f00}
  html body.home-mobile-reference #header .nav-actions .desktop-sale-link{display:none!important}
  html body.home-mobile-reference #header .header-shell{width:100%;max-width:1700px;margin:0 auto;padding:0 28px!important}
  html body.home-mobile-reference #header .header-row--primary{display:grid!important;grid-template-columns:310px minmax(240px,1fr) auto!important;gap:28px!important;padding:16px 0 0!important;min-height:80px!important}
- html body.home-mobile-reference #header .header-search-form{border:1px solid #f0dfd2!important;background:#fff6ef!important;height:48px!important;min-height:48px!important}
+ html body.home-mobile-reference #header .header-search-form{border:1px solid #cce8f5!important;background:#edf7fd!important;height:48px!important;min-height:48px!important}
  html body.home-mobile-reference #header .header-search-form input{height:46px!important;background:transparent!important;color:#222!important}
  html body.home-mobile-reference #header .header-category-select{display:none!important}
  html body.home-mobile-reference #header .header-search-form .header-search-submit{background:transparent!important;color:#222!important;min-height:46px!important;height:46px!important}

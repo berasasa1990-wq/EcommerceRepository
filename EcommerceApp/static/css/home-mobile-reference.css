@@ -29,7 +29,7 @@
         fill: #000;
     }
     :is(.home-mobile-reference, .catalog-header-reference) .header .nav-action-label { display: none; }
-    :is(.home-mobile-reference, .catalog-header-reference) .header .cart-badge { background: #ff6000; color: #fff; border: 0; }
+    :is(.home-mobile-reference, .catalog-header-reference) .header .cart-badge { background: #0095d2; color: #fff; border: 0; }
     :is(.home-mobile-reference, .catalog-header-reference) .header .staff-edit-toggle { color: #111; }
     body:is(.home-mobile-reference, .catalog-header-reference) .header .header-search { grid-area: search; display: block !important; position: relative !important; inset: auto; width: 100%; margin: 0; padding: 0; opacity: 1; visibility: visible; transform: none; }
     :is(.home-mobile-reference, .catalog-header-reference) .header .header-search-form { min-height: 36px; border: 1px solid #e0e1e6 !important; border-radius: 13px !important; background: #f2f2f4 !important; }
@@ -55,7 +55,7 @@
     .home-mobile-reference .mobile-home-categories { display: block; order: 1; margin: 0 12px 10px; }
     .mobile-home-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; gap: 8px; }
     .mobile-home-heading h2 { font-size: 21px; margin: 0; letter-spacing: -.6px; }
-    .mobile-home-heading button { color: #ff6000; border: 0; background: none; font-size: 12px; padding: 8px 0; }
+    .mobile-home-heading button { color: #0095d2; border: 0; background: none; font-size: 12px; padding: 8px 0; }
     .mobile-home-heading button span { margin-left: 5px; }
     .mobile-home-category-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
     .mobile-home-category-grid > a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; background: #f4f4f6; border-radius: 10px; padding: 8px 3px; min-height: 75px; color: #111; text-decoration: none; font-size: 12px; text-align: center; overflow-wrap: anywhere; }
@@ -76,7 +76,7 @@
     .home-mobile-reference .home-section-header__title { font-size: 21px; line-height: 1.2; color: #0b0b0b; letter-spacing: -.6px; text-transform: none; }
     .home-mobile-reference .home-section-header--izdvojeno .home-section-header__title { font-size: 16px; font-weight: 700; letter-spacing: -.3px; }
     .home-mobile-reference .home-section-header--izdvojeno .home-section-header__title::before { display: none; }
-    .home-mobile-reference .home-section-header__see-all { color: #ff6000; font-size: 12px; }
+    .home-mobile-reference .home-section-header__see-all { color: #0095d2; font-size: 12px; }
     .home-mobile-reference .home-product-carousel { padding: 0; }
     .home-mobile-reference .home-product-carousel__btn { display: none; }
     .home-mobile-reference .home-product-carousel__track { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; transform: none !important; width: 100% !important; }
@@ -392,7 +392,7 @@
         height: 17px;
         padding: 0 4px;
         border-radius: 50%;
-        background: #ff6000;
+        background: #0095d2;
         color: #fff;
         font-size: 10px;
         line-height: 17px;
@@ -599,7 +599,7 @@
     .home-mobile-reference .product-card--home-reference .home-card-sale-percent ,
     .product-catalog .product-card--home-reference .home-card-sale-percent{
         display: inline-block; order: 2; padding: 3px 4px; border-radius: 20px;
-        background: #ff6500; color: #fff; font-size: 8px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+        background: #0095d2; color: #fff; font-size: 8px; font-weight: 600; line-height: 1.2; white-space: nowrap;
     }
 }
 
@@ -659,7 +659,7 @@
     .home-mobile-reference main > .home-shop-brands { display: block; order: 6; margin: 0 12px 18px; }
     .home-shop-brands__heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
     .home-shop-brands__heading h2 { margin: 0; font-size: clamp(16px, 4.4vw, 22px); line-height: 1.2; font-weight: 750; letter-spacing: -.5px; color: #090909; }
-    .home-shop-brands__heading > a { display: inline-flex; align-items: center; gap: 6px; color: #ff6500; font-size: 12px; white-space: nowrap; }
+    .home-shop-brands__heading > a { display: inline-flex; align-items: center; gap: 6px; color: #0095d2; font-size: 12px; white-space: nowrap; }
     .home-shop-brands__heading > a span { font-size: 21px; line-height: 1; }
     .home-shop-brands__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
     .home-shop-brands__grid > a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-width: 0; padding: 12px 6px 8px; border: 1px solid #e6e8ed; border-radius: 8px; background: #fff; }

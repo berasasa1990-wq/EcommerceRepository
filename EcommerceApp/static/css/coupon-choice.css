@@ -37,7 +37,7 @@
 }
 .coupon-choice-kicker {
     margin: 0 0 6px;
-    color: #d94c00;
+    color: #007fb5;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: .12em;
@@ -64,12 +64,12 @@
     padding: 10px 14px;
     border: 0;
     border-radius: 8px;
-    background: #f05a18;
+    background: #0095d2;
     color: #fff;
     font-weight: 700;
     cursor: pointer;
 }
-.coupon-choice-select:hover, .coupon-choice-select:focus-visible { background: #c9450e; }
+.coupon-choice-select:hover, .coupon-choice-select:focus-visible { background: #007fb5; }
 @media (max-width: 480px) {
     .coupon-choice-card { flex-wrap: wrap; }
     .coupon-choice-select { width: 100%; }

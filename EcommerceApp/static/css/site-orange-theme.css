@@ -1,6 +1,8 @@
 /* Orange gradient applies only to buttons; other elements retain their own theme. */
+html body :is(button,input[type="submit"],input[type="button"],input[type="reset"],a[class*="btn"],[role="button"]),
+html body :is(button,input[type="submit"],input[type="button"],input[type="reset"],a[class*="btn"],[role="button"]):is(:hover,:focus,:focus-visible,:active){box-shadow:none!important;text-shadow:none!important}
 :root{--storefront-action-gradient:linear-gradient(180deg,#ff9800 0%,#ff5000 100%);--site-action-gradient:var(--storefront-action-gradient)}
-body.staff-blue-page{--staff-action-gradient:linear-gradient(180deg,#00C6DF 0%,#0094CD 100%);--site-action-gradient:var(--staff-action-gradient);--btn-cart:#0094CD;--btn-cart-hover:#0084BA;--staff-accent:#0094CD;--staff-accent-soft:#effaff;}
+body.staff-blue-page{--staff-action-gradient:var(--storefront-action-gradient);--site-action-gradient:var(--staff-action-gradient);--btn-cart:#0094CD;--btn-cart-hover:#0084BA;--staff-accent:#0094CD;--staff-accent-soft:#effaff;}
 html body :is(button,input[type="submit"],input[type="button"],input[type="reset"],a[class*="btn"],[role="button"]):not(:is(.carousel-btn,.home-product-carousel__btn,.scroll-top-btn,[class*="gallery-arrow"],.pd-flash__nav,.staff-admin-page .admin-btn,.mg-mobile-heading button,.pk-step-val,.pk-item-step>[data-pk-minus],.pk-item-step>[data-pk-plus],.pk-item-navigation button,[id="pkPreviousItem"],[id="pkNextItem"],[class*="arrow-btn"],.nav-action-link,.account-btn,.cart-btn,.wishlist-btn,.reference-header-heart,.product-thumbnail,.cart-qty-btn,.quantity-stepper button,[data-category-scroll],.mobile-search-dialog *,.mobile-home-dock *,[data-stock-notify],.pd-reference-heart,.home-card-heart,.product-qty-btn,.seo-text-block__toggle,.btn-coupon--full,.coupon-choice-modal *,.mg-sidebar *,.wishlist-item__remove,.wishlist-sheet__close,.vo-reward-trigger,.vo-reward-close,.hero-settings *,#header *,.carousel-dots *,.slider-dots *)){background:var(--site-action-gradient)!important;color:#fff!important;box-shadow:none!important;text-shadow:none!important;filter:none!important}
 html body :is(button,input[type="submit"],input[type="button"],input[type="reset"],a[class*="btn"],[role="button"]):not(:is(.carousel-btn,.home-product-carousel__btn,.scroll-top-btn,[class*="gallery-arrow"],.pd-flash__nav,.staff-admin-page .admin-btn,.mg-mobile-heading button,.pk-step-val,.pk-item-step>[data-pk-minus],.pk-item-step>[data-pk-plus],.pk-item-navigation button,[id="pkPreviousItem"],[id="pkNextItem"],[class*="arrow-btn"],.nav-action-link,.account-btn,.cart-btn,.wishlist-btn,.reference-header-heart,.product-thumbnail,.cart-qty-btn,.quantity-stepper button,[data-category-scroll],.mobile-search-dialog *,.mobile-home-dock *,[data-stock-notify],.pd-reference-heart,.home-card-heart,.product-qty-btn,.seo-text-block__toggle,.btn-coupon--full,.coupon-choice-modal *,.mg-sidebar *,.wishlist-item__remove,.wishlist-sheet__close,.vo-reward-trigger,.vo-reward-close,.hero-settings *,#header *,.carousel-dots *,.slider-dots *)) svg{color:#fff!important;stroke:currentColor}.am-loyalty-sync button:not(.mg-side-close):not(.mobile-home-dock *):not(.wishlist-item__remove):not(.wishlist-sheet__close):not(:is(.home-card-heart,.pd-reference-heart,[data-favorite-id])):not(.reference-header-heart):not(#header *):not(:is(.carousel-btn,.home-product-carousel__btn,[data-category-scroll],.carousel-dots button,.slider-dots button)){background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.is-auth-page .auth-form .btn-primary{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.is-auth-page .auth-form .btn-primary:hover{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.global-search button:not(.mg-side-close):not(.mobile-home-dock *):not(.wishlist-item__remove):not(.wishlist-sheet__close):not(:is(.home-card-heart,.pd-reference-heart,[data-favorite-id])):not(.reference-header-heart):not(#header *):not(:is(.carousel-btn,.home-product-carousel__btn,[data-category-scroll],.carousel-dots button,.slider-dots button)){background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.slider-controls>button:not(.mg-side-close):not(.mobile-home-dock *):not(.wishlist-item__remove):not(.wishlist-sheet__close):not(:is(.home-card-heart,.pd-reference-heart,[data-favorite-id])):not(.reference-header-heart):not(#header *):not(:is(.carousel-btn,.home-product-carousel__btn,[data-category-scroll],.carousel-dots button,.slider-dots button)){background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.slider-dots button:not(.mg-side-close):not(.mobile-home-dock *):not(.wishlist-item__remove):not(.wishlist-sheet__close):not(:is(.home-card-heart,.pd-reference-heart,[data-favorite-id])):not(.reference-header-heart):not(#header *):not(:is(.carousel-btn,.home-product-carousel__btn,[data-category-scroll],.carousel-dots button,.slider-dots button)){background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.b2b-new-button{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.b2b-sale-button{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.checkout-button{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.cart-page .btn-coupon,
 .cart-page .btn-coupon--full{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.cart-page .btn-coupon:hover,
@@ -74,9 +76,9 @@ body.magacin-page.is-orders-reference .mg-orders-page .mg-bulk-bar .mg-btn-pill:
 .footer-subscribe-btn{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.home-newsletter__btn:hover:not(:disabled),
 .footer-subscribe-btn:hover{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.cats-dropdown__btn{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.cats-dropdown__btn:hover,
 .cats-dropdown.is-open .cats-dropdown__btn{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.category-page--shop .product-card-add-btn{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.category-page--shop .product-card-add-btn:hover:not(:disabled){background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.category-page--shop .product-card-add-btn:disabled,
-.category-page--shop .product-card-add-btn--sold{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-quick-btn{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-quick-btn:hover{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-quick-btn--primary{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-quick-btn--primary:hover{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-btn-orange{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-btn-orange:hover{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-copy-btn{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}/* Promotional links retain the orange button gradient. */
+.category-page--shop .product-card-add-btn--sold{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-quick-btn{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-quick-btn:hover{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-quick-btn--primary{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-quick-btn--primary:hover{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-btn-blue{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-btn-blue:hover{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}.acc-copy-btn{background:var(--site-action-gradient)!important;box-shadow:none!important;text-shadow:none!important;}/* Promotional links retain the blue button gradient. */
 html body :is(.desktop-sale-link,.mobile-categories-extra--sale){background:var(--storefront-action-gradient)!important;color:#fff!important;border-color:transparent!important;box-shadow:none!important}
-/* White search field; only the submit icon button is orange. */
+/* White search field; only the submit icon button is blue. */
 html body #header form#searchForm,
 html body .mobile-search-form{background:#fff!important;border:1px solid #d1d5db!important;color:#17263c!important;box-shadow:none!important}
 html body #header form#searchForm :is(input,.search-combobox),
@@ -118,39 +120,39 @@ html body .product-detail .pd-thumbnail-scroll-controls button:not(.mg-side-clos
 html body #header form#searchForm button.header-search-submit svg,
 html body #header form#searchForm button.header-search-submit svg *{color:#fff!important;stroke:#fff!important;fill:none!important}
 
-/* Stock notification buttons use orange text and a fine border on white. */
-html body button[data-stock-notify]{background:#fff!important;color:#f17800!important;border:1px solid #f17800!important;box-shadow:none!important}
-html body button[data-stock-notify] [data-stock-notify-label]{color:#f17800!important;background:transparent!important}
+/* Stock notification buttons use blue text and a fine border on white. */
+html body button[data-stock-notify]{background:#fff!important;color:#ff5a00!important;border:1px solid #ff5a00!important;box-shadow:none!important}
+html body button[data-stock-notify] [data-stock-notify-label]{color:#ff5a00!important;background:transparent!important}
 
-html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design button[data-stock-notify]{background:#fff!important;color:#f17800!important;border:1px solid #f17800!important;box-shadow:none!important}
+html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design button[data-stock-notify]{background:#fff!important;color:#ff5a00!important;border:1px solid #ff5a00!important;box-shadow:none!important}
 
 /* Neutral favorites and quantity controls; text-only show-more action. */
 html body button.pd-reference-heart{background:transparent!important;color:#59616d!important;border-color:#d1d5db!important;box-shadow:none!important}
 html body button.pd-reference-heart svg{color:inherit!important;stroke:currentColor!important}
 html body button:is(.product-qty-btn,.cart-qty-btn){background:#f3f4f6!important;color:#374151!important;border-color:#d1d5db!important;box-shadow:none!important}
-html body button.seo-text-block__toggle{background:transparent!important;color:#f17800!important;border:0!important;box-shadow:none!important;text-shadow:none!important}
+html body button.seo-text-block__toggle{background:transparent!important;color:#ff5a00!important;border:0!important;box-shadow:none!important;text-shadow:none!important}
 
 /* Additional photos are selected directly, without arrow controls. */
 html body .product-detail .pd-thumbnail-scroll-controls{display:none!important}
 
-/* Coupon/card action: orange text on white, with a soft gray border. */
+/* Coupon/card action: blue text on white, with a soft gray border. */
 html body button.btn.btn-coupon.btn-coupon--full,
 html body button.btn.btn-coupon.btn-coupon--full:hover,
 html body button.btn.btn-coupon.btn-coupon--full:focus-visible{
- background:#fff!important;color:#f17800!important;border:1px solid #d1d5db!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;
+ background:#fff!important;color:#ff5a00!important;border:1px solid #d1d5db!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;
 }
 html body button.btn.btn-coupon.btn-coupon--full span{color:inherit!important;background:transparent!important}
 
-/* Mobile category menu: neutral close control and light orange accents. */
+/* Mobile category menu: neutral close control and light blue accents. */
 html body #mobileCategoriesDialog button[data-categories-close]{background:transparent!important;color:#000!important;border:0!important;box-shadow:none!important}
 html body #mobileCategoriesDialog .mobile-categories-extra{background:#fff!important;color:#253041!important;border:1px solid #e5e7eb!important;border-radius:12px;padding:14px;margin-top:10px;box-shadow:none!important}
-html body #mobileCategoriesDialog .mobile-categories-extra span:first-child{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:8px;background:#fff3e8!important;color:#f17800!important;font-size:18px}
-html body #mobileCategoriesDialog .mobile-categories-extra span:last-child{color:#f17800!important}
-html body #mobileCategoriesDialog .mobile-categories-extra--sale{border-color:#f8d4b0!important;color:#d65b00!important}
+html body #mobileCategoriesDialog .mobile-categories-extra span:first-child{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:8px;background:#edf7fd!important;color:#0095d2!important;font-size:18px}
+html body #mobileCategoriesDialog .mobile-categories-extra span:last-child{color:#0095d2!important}
+html body #mobileCategoriesDialog .mobile-categories-extra--sale{border-color:#cce8f5!important;color:#0095d2!important}
 
 
 
-/* Consistent orange icons and labels throughout the mobile bottom menu. */
+/* Consistent blue icons and labels throughout the mobile bottom menu. */
 
 
 
@@ -163,13 +165,13 @@ html body #couponChoiceDialog .coupon-choice-icon{background:#f3f4f6!important;c
 
 
 
-/* Pale orange category icon tiles. */
-html body #mobileHomeCategories .mobile-home-category-grid>a{background:#fff6ed!important;border-color:#ffe7ce!important;box-shadow:none!important}
-html body #mobileHomeCategories .mobile-home-category-grid>a:hover{background:#fff0e1!important}
+/* Pale blue category icon tiles. */
+html body #mobileHomeCategories .mobile-home-category-grid>a{background:#edf7fd!important;border-color:#cce8f5!important;box-shadow:none!important}
+html body #mobileHomeCategories .mobile-home-category-grid>a:hover{background:#edf7fd!important}
 
 /* Shopping benefits share the pale category background. */
 html body.home-mobile-reference :is(.mobile-home-benefits,.home-trust-bar),
-html body.home-mobile-reference :is(.mobile-home-benefits__item,.home-trust-bar__item){background:#fff6ed!important;box-shadow:none!important;border-color:#ffe7ce!important}
+html body.home-mobile-reference :is(.mobile-home-benefits__item,.home-trust-bar__item){background:#edf7fd!important;box-shadow:none!important;border-color:#cce8f5!important}
 
 /* Category icons stay in one horizontally scrollable row. */
 html body #mobileHomeCategories .mobile-home-category-grid{display:grid!important;grid-template-columns:none!important;grid-template-rows:auto!important;grid-auto-flow:column!important;grid-auto-columns:110px;gap:10px!important;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;scrollbar-width:thin;padding-bottom:6px;max-width:100%;box-sizing:border-box}
@@ -179,18 +181,18 @@ html body #mobileHomeCategories .mobile-home-category-grid>a{min-width:0;scroll-
 /* No colored background on notification actions, including hover. */
 html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design button.product-card-add-btn--notify,
 html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design button.product-card-add-btn--notify:hover,
-html body button[data-stock-notify]:hover{background:#fff!important;background-image:none!important;color:#f17800!important;border:1px solid #f17800!important;box-shadow:none!important;filter:none!important}
+html body button[data-stock-notify]:hover{background:#fff!important;background-image:none!important;color:#ff5a00!important;border:1px solid #ff5a00!important;box-shadow:none!important;filter:none!important}
 
 /* Notification label never paints a second background inside the button. */
 html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design button[data-stock-notify] > span,
-html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design button[data-stock-notify] [data-stock-notify-label]{background:transparent!important;background-image:none!important;color:#f17800!important;border:0!important;box-shadow:none!important;text-shadow:none!important}
+html body .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design button[data-stock-notify] [data-stock-notify-label]{background:transparent!important;background-image:none!important;color:#ff5a00!important;border:0!important;box-shadow:none!important;text-shadow:none!important}
 
-/* Admin access uses an orange administrator icon. */
-html body #header :is(.logo-admin-panel,.staff-admin-nav-btn){background:transparent!important;color:#f17800!important;border:0!important;box-shadow:none!important}
-html body #header :is(.logo-admin-panel,.staff-admin-nav-btn) svg{display:block;width:26px;height:26px;color:#f17800!important;stroke:currentColor!important;fill:none!important}
+/* Admin access uses an blue administrator icon. */
+html body #header :is(.logo-admin-panel,.staff-admin-nav-btn){background:transparent!important;color:#ff5a00!important;border:0!important;box-shadow:none!important}
+html body #header :is(.logo-admin-panel,.staff-admin-nav-btn) svg{display:block;width:26px;height:26px;color:#ff5a00!important;stroke:currentColor!important;fill:none!important}
 html body #header .logo-admin-panel{display:inline-flex;align-items:center;justify-content:center;padding:6px}
 
-/* Separate mobile search text from the orange magnifier button. */
+/* Separate mobile search text from the blue magnifier button. */
 @media(max-width:1024px){
  html body #header form#searchForm .search-combobox{flex:1 1 auto!important;min-width:0!important;padding-left:0!important;padding-right:10px!important;box-sizing:border-box}
  html body #header form#searchForm input#searchInput{box-sizing:border-box;width:100%!important;min-width:0!important;padding-left:16px!important;padding-right:8px!important;text-indent:0!important}
@@ -199,8 +201,8 @@ html body #header .logo-admin-panel{display:inline-flex;align-items:center;justi
 
 /* Product detail notifications match the outlined notification on cards. */
 html body.product-mobile-reference .product-detail .product-detail-purchase button.btn.btn-primary.btn-add-to-bag--notify[data-stock-notify],
-html body .product-detail .product-detail-purchase button.btn.btn-primary.btn-add-to-bag--notify[data-stock-notify]{background:#fff!important;background-image:none!important;color:#f17800!important;border:1px solid #f17800!important;box-shadow:none!important;text-shadow:none!important;filter:none!important}
-html body .product-detail button.btn-add-to-bag--notify[data-stock-notify] [data-stock-notify-label]{background:transparent!important;background-image:none!important;color:#f17800!important;box-shadow:none!important}
+html body .product-detail .product-detail-purchase button.btn.btn-primary.btn-add-to-bag--notify[data-stock-notify]{background:#fff!important;background-image:none!important;color:#ff5a00!important;border:1px solid #ff5a00!important;box-shadow:none!important;text-shadow:none!important;filter:none!important}
+html body .product-detail button.btn-add-to-bag--notify[data-stock-notify] [data-stock-notify-label]{background:transparent!important;background-image:none!important;color:#ff5a00!important;box-shadow:none!important}
 
 /* Product options occupy their own row below the photo gallery. */
 html body .product-gallery .pd-options-below-image{grid-column:2;grid-row:2;display:flex;justify-content:flex-end;min-width:0;margin-top:12px}
@@ -218,10 +220,10 @@ html body.product-mobile-reference #mainAddToCartForm #mainAddToCartBtn{
 html body.product-mobile-reference #mainAddToCartForm #mainAddToCartBtn svg{width:18px!important;height:18px!important;flex-shrink:0}
 
 /* Recent purchase notification matches the storefront palette. */
-html body #socialProofToast{box-sizing:border-box;background:#fff!important;border:1px solid #ffe0bf!important;border-left:4px solid #f17800!important;border-radius:12px;box-shadow:none!important;padding:14px 42px 14px 16px;max-width:calc(100vw - 24px)}
+html body #socialProofToast{box-sizing:border-box;background:#fff!important;border:1px solid #cce8f5!important;border-left:4px solid #0095d2!important;border-radius:12px;box-shadow:none!important;padding:14px 42px 14px 16px;max-width:calc(100vw - 24px)}
 html body #socialProofToast .social-proof-toast__text{color:#374151;font-size:13px;line-height:1.55;overflow-wrap:anywhere}
 html body #socialProofToast .social-proof-toast__text strong{color:#17263c}
-html body #socialProofToast .social-proof-toast__text a{color:#db6200!important;text-decoration:none;font-weight:650}
+html body #socialProofToast .social-proof-toast__text a{color:#0095d2!important;text-decoration:none;font-weight:650}
 html body #socialProofToast .social-proof-toast__text a:hover{text-decoration:underline;text-underline-offset:3px}
 html body #socialProofToast button.social-proof-toast__close{display:grid;place-items:center;width:28px;height:28px;background:transparent!important;color:#111!important;border:0!important;box-shadow:none!important;font-size:24px}
 

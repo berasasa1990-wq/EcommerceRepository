@@ -24,7 +24,7 @@
  body #header .header-search-form input::placeholder{color:#939dab!important}
  body #header .header-search-icon{color:#414b59!important;padding-left:16px!important}
  body #header .header-category-select{display:block!important;width:144px;min-width:0;border:0;background:#fff;color:#1e2732;padding:0 12px;font-size:13px;outline-offset:2px}
- body #header .header-search-form .header-search-submit{display:flex!important;min-width:58px!important;width:58px!important;min-height:50px!important;padding:0!important;background:#ff5100!important;border-radius:0 10px 10px 0!important;color:#fff!important}
+ body #header .header-search-form .header-search-submit{display:flex!important;min-width:58px!important;width:58px!important;min-height:50px!important;padding:0!important;background:#0095d2!important;border-radius:0 10px 10px 0!important;color:#fff!important}
  body #header .header-search-submit-icon{display:block!important;width:23px;height:23px}
  body #header .header-search-submit-label{display:none!important}
  body #header .nav-actions{display:flex!important;align-items:center;gap:16px!important;overflow:visible!important}
@@ -43,12 +43,12 @@
  body #header .nav-actions .nav-action-link.reference-header-search,
  body #header .nav-actions .reference-header-menu,
  body #header .nav-actions .nav-action-link.reference-header-menu{display:none!important}
- body #header .nav-actions .desktop-sale-link{display:flex!important;align-items:center;gap:10px;background:#ff5100;color:#fff!important;border:0;border-radius:9px;padding:10px 14px!important;margin-left:2px;font-size:13px;font-weight:700;white-space:nowrap;text-decoration:none;box-shadow:0 3px 9px #1421390c}
+ body #header .nav-actions .desktop-sale-link{display:flex!important;align-items:center;gap:10px;background:#0095d2;color:#fff!important;border:0;border-radius:9px;padding:10px 14px!important;margin-left:2px;font-size:13px;font-weight:700;white-space:nowrap;text-decoration:none;box-shadow:0 3px 9px #1421390c}
  body #header .cart-badge,
- body #header .wishlist-badge{display:flex!important;background:#ff5100!important;color:#fff!important;border:2px solid white;min-width:20px;height:20px;align-items:center;justify-content:center;top:-8px;right:-10px}
+ body #header .wishlist-badge{display:flex!important;background:#0095d2!important;color:#fff!important;border:2px solid white;min-width:20px;height:20px;align-items:center;justify-content:center;top:-8px;right:-10px}
  body #header .reference-header-heart .nav-action-icon{position:relative;display:inline-flex}
  body #header .reference-header-heart .nav-action-icon::after{content:none!important;display:none!important}
- body #header .reference-header-heart.wishlist-btn--has-items svg{fill:#ff5100;stroke:#ff5100}
+ body #header .reference-header-heart.wishlist-btn--has-items svg{fill:#0095d2;stroke:#0095d2}
  body #header .reference-header-heart.wishlist-btn--pulse-once svg{animation:cart-icon-add-pulse .9s ease-in-out 1}
  body #header .wishlist-menu.is-open .reference-header-heart{background:#fff1ea;border-radius:12px}
  body #header .wishlist-popover{right:-18px}

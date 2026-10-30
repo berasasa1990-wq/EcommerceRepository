@@ -6,11 +6,11 @@ dialog.post-offer { box-sizing: border-box; width: min(960px, calc(100% - 32px))
 .post-offer__check { display: grid; place-items: center; width: 64px; height: 64px; margin: 0 auto 10px; border-radius: 50%; background: #e0f4df; color: #198a2b; font-size: 42px; font-weight: 700; }
 .post-offer__header h2 { margin: 0 0 6px; font-size: clamp(22px, 2.4vw, 30px); line-height: 1.2; }
 .post-offer__header p { margin: 0; color: #606671; }
-.post-offer__banner { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px; border: 1px solid #ffe1c9; border-radius: 14px; background: #fff3e9; }
-.post-offer__banner h3 { margin: 0 0 8px; font-size: clamp(20px, 2vw, 28px); color: #ed6000; }
+.post-offer__banner { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px; border: 1px solid #cce8f5; border-radius: 14px; background: #fff3e9; }
+.post-offer__banner h3 { margin: 0 0 8px; font-size: clamp(20px, 2vw, 28px); color: #0095d2; }
 .post-offer__banner p { margin: 4px 0; line-height: 1.4; font-size: 14px; }
 .post-offer__timer { flex-shrink: 0; text-align: center; font-size: 12px; }
-.post-offer__timer strong { display: block; margin: 5px 0; border-radius: 7px; padding: 6px 12px; background: #f56600; color: #fff; font-size: 28px; font-variant-numeric: tabular-nums; }
+.post-offer__timer strong { display: block; margin: 5px 0; border-radius: 7px; padding: 6px 12px; background: #0095d2; color: #fff; font-size: 28px; font-variant-numeric: tabular-nums; }
 .post-offer__timer small { color: #646b74; }
 .post-offer__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin: 20px 0; }
 .post-offer__product { display: flex; flex-direction: column; min-width: 0; padding: 14px; border: 1px solid #ebedef; border-radius: 14px; box-shadow: 0 1px 5px #0000000c; }
@@ -24,8 +24,8 @@ dialog.post-offer { box-sizing: border-box; width: min(960px, calc(100% - 32px))
 .post-offer__variation select { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #dfe2e5; border-radius: 6px; background: #fff; font: inherit; color: #17191c; }
 .post-offer__prices { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-top: auto; padding: 14px 0 10px; }
 .post-offer__prices del { color: #9297a0; font-size: 14px; }
-.post-offer__prices strong { color: #f36500; font-size: 23px; }
-.post-offer__add, .post-offer__finish { display: block; border: 0; border-radius: 9px; padding: 14px 10px; background: #f56600; color: white; font-size: 14px; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; }
+.post-offer__prices strong { color: #0095d2; font-size: 23px; }
+.post-offer__add, .post-offer__finish { display: block; border: 0; border-radius: 9px; padding: 14px 10px; background: #0095d2; color: white; font-size: 14px; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; }
 .post-offer__add:disabled { background: #eceff0; color: #54615a; cursor: default; }
 .post-offer__feedback { margin: 6px 0 0; font-size: 12px; color: #526058; }
 .post-offer__feedback:empty { display: none; }
@@ -75,7 +75,7 @@ html body #postOrderOffer .post-offer__skip:focus-visible {
     border-radius: 8px;
     border: 0 !important;
     background: #f0f1f3 !important;
-    color: #f56600 !important;
+    color: #0095d2 !important;
     font-weight: 600;
     box-shadow: none !important;
 }
@@ -150,7 +150,7 @@ html body #postOrderOffer .post-offer__finish:disabled { opacity: .5; cursor: de
 .order-confirmation__summary { margin-top: 20px; padding: 16px 20px; border-radius: 12px; background: #f7f8fa; }
 .order-confirmation__summary p { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin: 0; font-size: 13px; color: #737c87; }
 .order-confirmation__summary .order-confirmation__total { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e8ed; color: #25303c; font-size: 15px; font-weight: 600; }
-.order-confirmation__total strong { color: #f56600; font-size: 24px; white-space: nowrap; }
+.order-confirmation__total strong { color: #0095d2; font-size: 24px; white-space: nowrap; }
 .order-confirmation__note { margin: 18px 0; text-align: center; font-size: 12px; line-height: 1.6; color: #818994; }
 .order-confirmation .post-offer__finish { font-size: 14px; padding: 14px; }
 @media (max-width: 600px) {
@@ -174,7 +174,7 @@ html body #postOrderOffer .post-offer__finish:disabled { opacity: .5; cursor: de
 .account-order-receipt .order-totals { margin-top: 20px; padding: 16px; border: 0; border-radius: 12px; background: #f7f8fa; }
 .account-order-receipt .order-totals-row { font-size: 13px; color: #737c87; }
 .account-order-receipt .order-totals-row--total { padding-top: 14px; border-top: 1px solid #e5e8ed; color: #25303c; }
-.account-order-receipt .order-totals-row--total strong { color: #f56600; font-size: 23px; }
+.account-order-receipt .order-totals-row--total strong { color: #0095d2; font-size: 23px; }
 .account-order-receipt .account-tracking { margin: 20px 0; padding: 20px 24px; border: 1px solid #e8ebee; border-radius: 14px; background: #f7f8fa; }
 .account-order-receipt .account-tracking h2 { font-size: 18px; }
 .account-order-receipt .account-order-info p { overflow-wrap: anywhere; }
@@ -188,7 +188,7 @@ html body #postOrderOffer .post-offer__finish:disabled { opacity: .5; cursor: de
 #postOrderOffer .post-offer__new-price { margin-left: auto; text-align: right; }
 #postOrderOffer .post-offer__total { padding: 12px 16px; border-radius: 10px; background: #f7f8fa; text-align: left; }
 #postOrderOffer .post-offer__total p { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 6px; }
-#postOrderOffer .post-offer__total [data-offer-total] { color: #f56600; font-size: 20px; white-space: nowrap; }
+#postOrderOffer .post-offer__total [data-offer-total] { color: #0095d2; font-size: 20px; white-space: nowrap; }
 #postOrderOffer .post-offer__total small { display: block; color: #7c8590; font-size: 10px; }
 /* Compact touch layout; the offer scrolls within the phone viewport. */
 @media (max-width: 1024px) {
@@ -259,13 +259,13 @@ html body #postOrderOffer .post-offer__prices {
     flex-wrap: wrap;
     min-width: 0;
 }
-html body #postOrderOffer [data-offer-price] { display: block !important; visibility: visible !important; opacity: 1 !important; color: #e85b00 !important; background: transparent !important; font-weight: 800; font-size: 20px; line-height: 1.3; }
+html body #postOrderOffer [data-offer-price] { display: block !important; visibility: visible !important; opacity: 1 !important; color: #0095d2 !important; background: transparent !important; font-weight: 800; font-size: 20px; line-height: 1.3; }
 html body #postOrderOffer [data-offer-regular] { display: block !important; color: #828b96 !important; text-decoration: line-through !important; font-size: 13px; line-height: 1.3; }
 html body #postOrderOffer .post-offer__actions { display: flex !important; flex-direction: column !important; align-items: stretch; gap: 10px; width: 100%; clear: both; }
 html body #postOrderOffer .post-offer__actions > button { display: block !important; width: 100% !important; box-sizing: border-box; margin: 0; float: none !important; }
 html body #postOrderOffer .post-offer__skip,
 html body #postOrderOffer .post-offer__skip:hover,
-html body #postOrderOffer .post-offer__skip:focus-visible { background: #fff !important; color: #f56600 !important; border: 1px solid #f56600 !important; }
+html body #postOrderOffer .post-offer__skip:focus-visible { background: #fff !important; color: #0095d2 !important; border: 1px solid #0095d2 !important; }
 #postOrderOffer .post-offer__selected[hidden] { display: none !important; }
 #postOrderOffer .post-offer__selected { padding: 10px 0; margin: 10px 0; border-top: 1px solid #e3e6ea; }
 #postOrderOffer .post-offer__selected ul { list-style: none; margin: 8px 0 0; padding: 0; }
@@ -350,8 +350,8 @@ html body dialog#postOrderOffer button.post-offer__skip,
 html body dialog#postOrderOffer button.post-offer__skip:is(:hover, :focus, :focus-visible, :active) {
     background: #fff !important;
     background-image: none !important;
-    color: #f56600 !important;
-    border: 1px solid #f56600 !important;
+    color: #0095d2 !important;
+    border: 1px solid #0095d2 !important;
     box-shadow: none !important;
     text-shadow: none !important;
     animation: none !important;

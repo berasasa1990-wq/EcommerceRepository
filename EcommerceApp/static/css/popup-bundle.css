@@ -1168,14 +1168,14 @@
 .bundle-pack-hint--deal {
   padding: 8px 10px;
   border-radius: 10px;
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
+  background: #edf7fd;
+  border: 1px solid #cce8f5;
   color: #9a3412;
   font-size: 13px;
 }
 
 .bundle-pack-hint--deal s {
-  color: #c2410c;
+  color: #007fb5;
   font-weight: 700;
 }
 

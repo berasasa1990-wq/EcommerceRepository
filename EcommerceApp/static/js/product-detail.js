@@ -537,10 +537,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function chooseProductQuantity(form) {
+        const dialog = document.getElementById('productQuantityDialog');
+        const input = document.getElementById('productQuantityInput');
+        const quantity = form.querySelector('[name="quantity"]');
+        if (!dialog || !input || !quantity || dialog.open) return Promise.resolve(false);
+        const maximum = Number(quantity.dataset.quantityMax);
+        if (maximum > 0) input.max = String(maximum);
+        else input.removeAttribute('max');
+        input.value = quantity.value || '1';
+        dialog.returnValue = '';
+        return new Promise(resolve => {
+            dialog.addEventListener('close', () => {
+                const confirmed = dialog.returnValue === 'confirm';
+                if (confirmed) quantity.value = input.value;
+                resolve(confirmed);
+            }, { once: true });
+            dialog.querySelector('[data-quantity-cancel]').onclick = () => dialog.close('cancel');
+            dialog.showModal();
+            input.focus();
+            input.select();
+        });
+    }
+
     document.querySelectorAll('form.add-to-cart-form, form.product-detail-variation-form, form.product-other-options-form, form.pd-bundle__form, form.pd-flash__form, form.pd-qtydeal__form').forEach((form) => {
-        form.addEventListener('submit', (event) => {
+        form.addEventListener('submit', async (event) => {
             event.preventDefault();
             form.dataset.buyNowTarget = event.submitter?.dataset.buyNow || '';
+            if (form.id === 'mainAddToCartForm' && !await chooseProductQuantity(form)) return;
             submitAddToCartForm(form);
         });
     });

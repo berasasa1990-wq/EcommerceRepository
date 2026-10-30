@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <link rel="manifest" href="{% url 'pwa_manifest' %}">
-    <meta name="theme-color" content="#ff6500">
+    <meta name="theme-color" content="#0095d2">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="icon" type="image/x-icon" href="{% static 'img/carpologija-favicon.ico' %}">
@@ -84,7 +84,7 @@
     <link rel="dns-prefetch" href="https://www.google-analytics.com">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
     <style>@media(max-width:1024px){.desktop-category-extra,.desktop-category-nav,.desktop-sale-link{display:none!important}}</style>
-    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20260919-wishlist-heart" media="(min-width: 1025px)">
+    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20261030-orange-buttons-badges" media="(min-width: 1025px)">
 
     {% if meta_pixel_id %}
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin>
@@ -163,17 +163,17 @@
 
     {% block lcp_preload %}{% endblock %}
     {% if user.is_authenticated or request.resolver_match.url_name == 'set_builder' %}
-    <link rel="stylesheet" href="{% static 'css/storefront-core.min.css' %}?v=20261030-arial-font">
+    <link rel="stylesheet" href="{% static 'css/storefront-core.min.css' %}?v=20261030-orange-buttons-badges">
     {% else %}
-    <link rel="stylesheet" href="{% static 'css/storefront-core-public.min.css' %}?v=20261030-arial-font">
+    <link rel="stylesheet" href="{% static 'css/storefront-core-public.min.css' %}?v=20261030-orange-buttons-badges">
     {% endif %}
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
     {% endif %}
-    <style id="site-orange">:root{--ozr-orange:#FF5A00;--ozr-orange-hover:#E04F00;--btn-cart:#FF5A00;--btn-cart-hover:#E04F00;--btn-banner:#FF5A00;--btn-banner-hover:#E04F00;}.header{border-bottom:2px solid var(--ozr-orange,#FF5A00);}.home-products--akcija,.home-brand-strip-section--mockup{border-top:2px solid var(--ozr-orange,#FF5A00)!important;}</style>
-    <link rel="stylesheet" href="{% static 'css/navigation.min.css' %}?v=20261020-search-gap-restored">
+    <style id="site-accent">:root{--ozr-accent:#0095d2;--ozr-accent-hover:#007fb5;--btn-cart:#FF5A00;--btn-cart-hover:#E04F00;--btn-banner:#FF5A00;--btn-banner-hover:#E04F00;}.header{border-bottom:2px solid var(--ozr-accent,#0095d2);}.home-products--akcija,.home-brand-strip-section--mockup{border-top:2px solid var(--ozr-accent,#0095d2)!important;}</style>
+    <link rel="stylesheet" href="{% static 'css/navigation.min.css' %}?v=20261030-orange-buttons-badges">
     {% block extra_css %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/storefront-extras.min.css' %}?v=20261020-search-gap-restored">
+    <link rel="stylesheet" href="{% static 'css/storefront-extras.min.css' %}?v=20261030-orange-buttons-badges">
     {% if user.is_superuser %}
     <style>
         body #header .logo-brand:has(.logo-admin-panel) {
@@ -207,11 +207,11 @@
             text-align: center;
             text-decoration: none;
         }
-        body #header .logo-admin-panel:hover { border-color: #ff5a00; color: #ff5a00; }
-        body #header .logo-admin-panel:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
+        body #header .logo-admin-panel:hover { border-color: #0095d2; color: #0095d2; }
+        body #header .logo-admin-panel:focus-visible { outline: 2px solid #0095d2; outline-offset: 3px; }
     </style>
     {% endif %}
-    <link rel="stylesheet" href="{% static 'css/mobile-chrome.min.css' %}?v=20261026-smaller-category-icons">
+    <link rel="stylesheet" href="{% static 'css/mobile-chrome.min.css' %}?v=20261030-orange-buttons-badges">
 
     <style>.desktop-trust-bar,.header-category-select,.header-register{display:none!important}</style>
     <style>
@@ -335,8 +335,8 @@
     <style>
     .desktop-trust-bar nav a.site-wholesale-link {
         display:inline-block; font-weight:800; letter-spacing:.06em;
-        color:#ff5a00; white-space:nowrap;
-        animation:site-wholesale-pulse 1.8s ease-in-out infinite;
+        color:#0095d2; white-space:nowrap;
+        animation:none;
     }
     @keyframes site-wholesale-pulse {
         0%,100% { opacity:1; }
@@ -349,15 +349,16 @@
     }
     </style>
     {% if user.is_authenticated or request.resolver_match.url_name == 'set_builder' %}
-    <link rel="stylesheet" href="{% static 'css/storefront-theme.min.css' %}?v=20261026-category-hover">
+    <link rel="stylesheet" href="{% static 'css/storefront-theme.min.css' %}?v=20261030-orange-buttons-badges">
     {% else %}
-    <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261026-category-hover">
+    <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261030-orange-buttons-badges">
     {% endif %}
     {% block warehouse_theme_css %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261030-mojaigracka-header">
-    <link rel="stylesheet" href="{% static 'css/product-grid-desktop.css' %}?v=20261019-related-three" media="(min-width: 1025px)">
-    <link rel="stylesheet" href="{% static 'css/product-sale-remaining.css' %}?v=20261021">
-    <link rel="stylesheet" href="{% static 'css/site-page-spacing.css' %}?v=20261020-equal-side-gutters">
+    <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261030-orange-count-badges">
+    <link rel="stylesheet" href="{% static 'css/product-grid-desktop.css' %}?v=20261030-related-four-fit" media="(min-width: 1025px)">
+    <link rel="stylesheet" href="{% static 'css/product-sale-remaining.css' %}?v=20261030-orange-buttons-badges">
+    <link rel="stylesheet" href="{% static 'css/site-page-spacing.css' %}?v=20261030-orange-buttons-badges">
+    <link rel="stylesheet" href="{% static 'css/no-pulsing.css' %}?v=20261030-disable-pulses">
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="shared-site-header {% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
@@ -802,16 +803,16 @@
     <script type="application/ld+json">{{ website_json_ld|safe }}</script>
     {% endif %}
     {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/csrf-session.js' %}?v=20261001" data-cookie-name="{{ csrf_cookie_name }}" defer></script>
-    <script src="{% static 'js/main.min.js' %}?v=20261019-desktop-inline" defer></script>
-    <script src="{% static 'js/desktop-reference.js' %}?v=20260914-dropdowns" defer></script>
-    <script src="{% static 'js/stock-notify.js' %}?v=20260916-notify-no-autofocus" defer></script>
+    <script src="{% static 'js/csrf-session.js' %}?v=20261030-orange-buttons-badges" data-cookie-name="{{ csrf_cookie_name }}" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20261030-orange-buttons-badges" defer></script>
+    <script src="{% static 'js/desktop-reference.js' %}?v=20261030-orange-buttons-badges" defer></script>
+    <script src="{% static 'js/stock-notify.js' %}?v=20261030-orange-buttons-badges" defer></script>
     {% if site_settings.javno_online_posjetioci %}
-    <script>idleLoadScript("{% static 'js/public-online-visitors.js' %}?v=20261018-visible-only");</script>
+    <script>idleLoadScript("{% static 'js/public-online-visitors.js' %}?v=20261030-orange-buttons-badges");</script>
     {% endif %}
     {% if request.resolver_match.url_name == 'product_detail' %}
     {% if not user.is_authenticated or not user.is_superuser %}
-    <script>idleLoadScript("{% static 'js/almost-cart.js' %}?v=20260712v3");</script>
+    <script>idleLoadScript("{% static 'js/almost-cart.js' %}?v=20261030-orange-buttons-badges");</script>
     {% endif %}
     {% endif %}
     {# Live praćenje svih osim superusera — incognito / gost / registrovan #}
@@ -820,12 +821,12 @@
          data-heartbeat-url="{% url 'live_visitor_heartbeat' %}"
          data-leave-url="{% url 'live_visitor_leave' %}"
          data-session-key="{{ request.session.session_key|default:'' }}"></div>
-    <script>idleLoadScript("{% static 'js/visitor-presence.js' %}?v=20261018-single-flight");</script>
+    <script>idleLoadScript("{% static 'js/visitor-presence.js' %}?v=20261030-orange-buttons-badges");</script>
     {% endif %}
     {% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
     {% include 'partials/staff_site_editor.html' %}
-    <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20261019-red-missing-details">
-    <script src="{% static 'js/staff-site-edit.js' %}?v=20260929bulkTags" defer></script>
+    <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20261030-orange-buttons-badges">
+    <script src="{% static 'js/staff-site-edit.js' %}?v=20261030-orange-buttons-badges" defer></script>
     {% endif %}
     <div class="setb-gate" id="setBuilderGate" hidden
          data-unlock-url="{% url 'set_builder_unlock' %}"
@@ -846,7 +847,7 @@
             </form>
         </div>
     </div>
-    <script src="{% static 'js/set-builder-gate.js' %}?v=20260903beta" defer></script>
+    <script src="{% static 'js/set-builder-gate.js' %}?v=20261030-orange-buttons-badges" defer></script>
     {% include 'partials/permanent_input_history.html' %}
     <script>
       if ('serviceWorker' in navigator && window.isSecureContext) {

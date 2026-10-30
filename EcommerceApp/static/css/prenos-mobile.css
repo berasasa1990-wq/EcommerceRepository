@@ -154,7 +154,7 @@
     width: 18px;
     height: 18px;
     flex-shrink: 0;
-    color: #db610b;
+    color: #0095d2;
 }
 .pk-prenos .pk-prenos-name {
     font-size: clamp(15px, 4.1vw, 20px);
@@ -205,7 +205,7 @@
     white-space: nowrap;
 }
 .prenos-quantity-heading strong {
-    color: #fa7008;
+    color: #0095d2;
     font-size: 18px;
     margin-left: 3px;
 }
@@ -230,8 +230,8 @@
     touch-action: manipulation;
 }
 .pk-prenos #pkPrenosPlus {
-    border-color: #ff740c;
-    color: #ff740c;
+    border-color: #0095d2;
+    color: #0095d2;
     background: #fff7f0;
 }
 .pk-prenos .pk-prenos-step input {
