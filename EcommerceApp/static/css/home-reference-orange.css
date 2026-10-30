@@ -33,14 +33,6 @@ body.home-mobile-reference .seo-text-block--below{max-width:1200px;margin:30px a
 body.home-mobile-reference .seo-text-block__toggle{color:#007fb5}
 @media(min-width:1025px){
  body.home-mobile-reference .promo-bar{display:none!important}
- body.home-mobile-reference #header .header-shell{max-width:1660px}
- body.home-mobile-reference #header .header-row--primary{grid-template-columns:310px minmax(300px,1fr) auto!important;min-height:78px!important;padding-bottom:0!important}
- body.home-mobile-reference #header .logo-image{max-width:150px;max-height:92px}
- body.home-mobile-reference #header .header-search-form{background:#edf7fd!important;box-shadow:none!important;border-color:#cce8f5!important}
- body.home-mobile-reference #header .header-search-submit{background:transparent!important;color:#222!important}
- body.home-mobile-reference #header .header-row--categories{padding-left:340px;min-height:50px;background:#fff!important}
- body.home-mobile-reference #header .nav-menu{justify-content:flex-start;gap:10px}
- body.home-mobile-reference #header .nav-menu>li>a{font-size:14px;color:#192431!important}
  body.home-mobile-reference #mobileHomeCategories{display:block!important;margin:20px 0}
  body.home-mobile-reference #mobileHomeCategories .mobile-home-heading{display:none}
  body.home-mobile-reference #homeCategoryTrack{display:flex!important;gap:14px;overflow:auto;padding:0 0 6px}
@@ -67,38 +59,10 @@ body.home-mobile-reference .seo-text-block__toggle{color:#007fb5}
 @media(max-width:550px){.ref-promos{grid-template-columns:1fr}.ref-promo{min-height:170px}.ref-special-seal{width:78px;height:78px;flex-shrink:0;font-size:10px}.ref-special-seal strong{font-size:18px}.ref-newsletter form{flex-wrap:wrap}.ref-newsletter input{flex-basis:100%}.ref-newsletter button{width:100%}.ref-bottom-benefits .mobile-home-benefits{grid-template-columns:1fr 1fr}.ref-bottom-benefits strong{font-size:12px}.ref-bottom-benefits span{font-size:11px}body.home-mobile-reference .home-section-header__title{font-size:21px}}
 .ref-home-nav,.ref-desktop-nav{display:none}
 @media(min-width:1025px){
- body.home-mobile-reference #header .header-row--categories{display:flex!important;align-items:center;gap:16px}
- body.home-mobile-reference #header .header-row--categories>.mobile-nav-panel{display:none!important}
- body.home-mobile-reference #header .ref-home-nav{display:block;padding:12px 18px;background:var(--storefront-action-gradient);color:#fff;border-radius:10px;font-weight:700;text-decoration:none}
- body.home-mobile-reference #header .ref-desktop-nav{display:flex;align-items:center;gap:22px;white-space:nowrap}
- body.home-mobile-reference #header .ref-desktop-nav a{font-size:14px;font-weight:650;color:#192431;text-decoration:none}
- body.home-mobile-reference #header .cats-dropdown{display:block!important}
- body.home-mobile-reference #header .cats-dropdown__btn{background:transparent!important;color:#192431!important;border:0!important;padding:8px 0;white-space:nowrap}
- body.home-mobile-reference #header .cats-dropdown__burger{display:none}
 }
 
 /* Desktop reference header: two rows, no persistent category sidebar. */
 @media(min-width:1025px){
- html body.home-mobile-reference #header .desktop-category-nav,
- html body.home-mobile-reference #header .nav-wholesale-prompt,
- html body.home-mobile-reference #header .nav-link-veleprodaja,
- html body.home-mobile-reference #header .nav-actions .desktop-sale-link{display:none!important}
- html body.home-mobile-reference #header .header-shell{width:100%;max-width:1700px;margin:0 auto;padding:0 28px!important}
- html body.home-mobile-reference #header .header-row--primary{display:grid!important;grid-template-columns:310px minmax(240px,1fr) auto!important;gap:28px!important;padding:16px 0 0!important;min-height:80px!important}
- html body.home-mobile-reference #header .header-search-form{border:1px solid #cce8f5!important;background:#edf7fd!important;height:48px!important;min-height:48px!important}
- html body.home-mobile-reference #header .header-search-form input{height:46px!important;background:transparent!important;color:#222!important}
- html body.home-mobile-reference #header .header-category-select{display:none!important}
- html body.home-mobile-reference #header .header-search-form .header-search-submit{background:transparent!important;color:#222!important;min-height:46px!important;height:46px!important}
- html body.home-mobile-reference #header .header-search-form .header-search-submit svg{color:#222!important;stroke:currentColor!important}
- html body.home-mobile-reference #header .header-search-icon{display:none!important}
- html body.home-mobile-reference #header .header-row--categories{position:relative;display:flex!important;justify-content:flex-start!important;flex-wrap:nowrap!important;padding:6px 0 12px 338px!important;gap:20px!important;border:0!important;min-height:55px!important;background:#fff!important}
- html body.home-mobile-reference #header .cats-dropdown{position:relative!important;inset:auto!important;width:auto!important;min-width:0!important;flex:0 0 auto!important;margin:0!important}
- html body.home-mobile-reference #header .cats-dropdown__btn{width:auto!important;height:40px!important;min-height:40px!important;padding:8px 0!important;font-size:14px!important;gap:6px!important}
- html body.home-mobile-reference #header .cats-dropdown__panel{position:absolute!important;top:100%!important;left:0!important;right:auto!important;bottom:auto!important;width:280px!important;min-height:0!important;height:auto!important;max-height:70vh!important;overflow:auto!important;box-shadow:0 8px 24px #0002!important;border:1px solid #eee!important;border-radius:10px!important}
- html body.home-mobile-reference #header .cats-dropdown__panel[hidden]{display:none!important}
- html body.home-mobile-reference #header .ref-desktop-nav{display:flex!important;gap:22px!important;margin:0!important;flex:0 0 auto}
- html body.home-mobile-reference #header .ref-desktop-nav a{font-size:14px!important}
- html body.home-mobile-reference #header .ref-home-nav{font-size:14px;padding:10px 18px;white-space:nowrap}
  html body.home-mobile-reference main,
  html body.home-mobile-reference.cats-sidebar-open main{margin-left:0!important;padding:0 18px!important;width:100%!important;max-width:none!important}
  html body.home-mobile-reference .hero-carousel{margin:12px 0 20px!important;width:100%!important;max-width:none!important;border-radius:12px;overflow:hidden}
@@ -106,10 +70,6 @@ body.home-mobile-reference .seo-text-block__toggle{color:#007fb5}
  html body.home-mobile-reference .hero-carousel :is(.slide-image-img,.slide-image-video){width:100%;height:100%;object-fit:cover;object-position:center}
 }
 @media(min-width:1025px) and (max-width:1350px){
- html body.home-mobile-reference #header .header-row--primary{grid-template-columns:200px minmax(220px,1fr) auto!important;gap:20px!important}
- html body.home-mobile-reference #header .header-row--categories{padding-left:220px!important;gap:12px!important}
- html body.home-mobile-reference #header .ref-desktop-nav{gap:14px!important}
- html body.home-mobile-reference #header .ref-desktop-nav a{font-size:13px!important}
 }
 
 /* Light gray category tiles on desktop and mobile. */
@@ -157,3 +117,9 @@ body.home-mobile-reference .latest-blog__card>.latest-blog__image>img{position:a
 body.home-mobile-reference .latest-blog__body{grid-column:2}
 @media(max-width:1000px){body.home-mobile-reference .latest-blog__card{--blog-image-width:130px;min-height:150px}}
 @media(max-width:550px){body.home-mobile-reference .latest-blog__card{--blog-image-width:105px;min-height:145px}}
+
+.ref-promos--uploads{grid-template-columns:repeat(2,minmax(0,1fr))}.ref-promos--uploads>.ref-promo,.ref-promos--uploads>.ref-promo-upload{box-sizing:border-box;min-width:0;min-height:260px}.ref-promo-upload{display:block;overflow:hidden;border-radius:13px;background:#f1f5f9;aspect-ratio:15/7}.ref-promo-upload img{display:block;width:100%;height:100%;object-fit:cover}.ref-promo-upload:focus-visible{outline:3px solid #111;outline-offset:3px}@media(max-width:550px){.ref-promos--uploads{gap:10px}.ref-promos--uploads>.ref-promo,.ref-promos--uploads>.ref-promo-upload{min-height:130px}.ref-promos--uploads>.ref-promo{padding:14px 10px}.ref-promos--uploads .ref-promo h2{font-size:18px}.ref-promos--uploads .ref-promo>span{font-size:9px;letter-spacing:1px}.ref-promos--uploads .ref-promo p{font-size:12px}.ref-promos--uploads .ref-promo a{padding:8px 10px;font-size:11px;gap:6px}}
+
+/* Let homepage product images fill their existing media area. */
+html body.home-mobile-reference .home-products .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image{padding-top:12px!important}
+html body.home-mobile-reference .home-products .product-catalog .product-card.product-card--catalog.product-card--reference-design.product-card--reference-design .product-image :is(picture,img){max-width:100%!important;max-height:100%!important}

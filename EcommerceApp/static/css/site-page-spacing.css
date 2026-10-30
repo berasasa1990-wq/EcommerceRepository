@@ -37,3 +37,9 @@ html body.shared-site-header:not(.staff-blue-page):not(.staff-admin-page):not(.m
     padding-left: 0 !important;
     padding-right: 0 !important;
 }
+
+/* Give the homepage more breathing room on both sides. */
+body.home-mobile-reference { --storefront-page-gutter: 36px; }
+@media (min-width: 1025px) {
+    body.home-mobile-reference { --storefront-page-gutter: clamp(72px, 7vw, 140px); }
+}

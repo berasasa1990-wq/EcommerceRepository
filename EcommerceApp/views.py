@@ -2332,7 +2332,7 @@ def _featured_catalog_qs(products_qs, request=None):
 
 
 def _home_featured_products(request=None):
-    """Izdvojena ponuda sadrži samo artikle označene HIT ponudom."""
+    """Ručno odabrani artikli, ili HIT ponuda kada odabir nije postavljen."""
     return _home_cache_get(
         'home_featured_products_v5',
         lambda: _home_featured_products_uncached(request),
@@ -2340,6 +2340,11 @@ def _home_featured_products(request=None):
 
 
 def _home_featured_products_uncached(request=None):
+    selected = HomeFeaturedProduct.objects.filter(postavke=SiteSettings.load())
+    if selected.exists():
+        ids = list(selected.filter(aktivan=True).order_by('redoslijed', 'pk').values_list('artikal_id', flat=True))
+        products = {p.pk: p for p in _home_product_queryset(request).filter(pk__in=ids)}
+        return [products[pk] for pk in ids if pk in products][:HOME_SECTION_PRODUCT_LIMIT]
     return list(
         _order_qs_by_lager_priority(
             _home_product_queryset(request).filter(je_hit=True),
@@ -6686,6 +6691,70 @@ def staff_company_debts(request):
 
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
+def staff_banners(request):
+    from django.forms import modelform_factory
+    from .forms import HeroBannerSettingsForm, BannerAdminForm
+
+    fixed_banners = {
+        'hero': ('hero_slika', 'hero_link', 'Početni banner'),
+        'bestsellers': ('bestsellers_banner_slika', 'bestsellers_banner_link', 'Banner ispod najprodavanijih proizvoda'),
+        'promo_new': ('promo_new_slika', 'promo_new_link', 'Noviteti — lijevi banner'),
+        'promo_sale': ('promo_sale_slika', 'promo_sale_link', 'Posebna ponuda — desni banner'),
+    }
+    site = SiteSettings.load()
+    if request.method == 'POST' and 'delete_banner' in request.POST:
+        target = request.POST['delete_banner']
+        if target in fixed_banners:
+            fields = fixed_banners[target][:2]
+            for field in fields:
+                setattr(site, field, '')
+            site.save(update_fields=list(fields))
+        elif target.isdigit():
+            get_object_or_404(Banner, pk=target).delete()
+        else:
+            raise Http404('Banner nije pronađen.')
+        messages.success(request, 'Banner je obrisan.')
+        return redirect('staff_banners')
+    editing = request.GET.get('edit', '')
+    adding = request.GET.get('add') == '1'
+    form = None
+    title = ''
+    if editing in fixed_banners:
+        fields = fixed_banners[editing][:2]
+        form_class = modelform_factory(SiteSettings, form=HeroBannerSettingsForm, fields=fields)
+        form = form_class(request.POST if request.method == 'POST' else None,
+                          request.FILES if request.method == 'POST' else None, instance=site)
+        title = fixed_banners[editing][2]
+    elif adding or editing:
+        instance = get_object_or_404(Banner, pk=editing) if editing.isdigit() else None
+        if editing and instance is None:
+            raise Http404('Banner nije pronađen.')
+        form = BannerAdminForm(request.POST if request.method == 'POST' else None,
+                               request.FILES if request.method == 'POST' else None,
+                               instance=instance, initial={'tip': Banner.BannerType.FEATURED})
+        if adding:
+            form.fields['tip'].choices = [(Banner.BannerType.FEATURED, 'Promotivni banner ispod kategorija'),
+                                         (Banner.BannerType.SPOTLIGHT, 'Izdvojeni banner prije proizvoda')]
+        title = instance.naslov or f'Banner #{instance.pk}' if instance else 'Dodaj banner'
+    if request.method == 'POST':
+        if form is None:
+            raise Http404('Odaberite banner za uređivanje.')
+        if form.is_valid():
+            if editing in fixed_banners:
+                form.save(commit=False).save(update_fields=list(form.Meta.fields))
+            else:
+                form.save()
+            messages.success(request, 'Banner je sačuvan.')
+            return redirect('staff_banners')
+    return render(request, 'staff/banners.html', {
+        **_base_context(), 'banner_form': form, 'editor_title': title,
+        'banner_site': site, 'promo_banners': [{'key': key, 'title': fixed_banners[key][2], 'image': getattr(site, fixed_banners[key][0]), 'help': 'Dva bannera jedan pored drugog · preporučeno 1200 × 560 px'} for key in ('promo_new', 'promo_sale')], 'banners': Banner.objects.order_by('redoslijed', 'pk'),
+        'preview_image': getattr(site, fixed_banners[editing][0]) if editing in fixed_banners else (getattr(form.instance, 'slika', None) if form else None),
+    })
+
+
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
 def staff_hero_settings(request):
     from .forms import HeroBannerSettingsForm, SiteSEOSettingsForm, PageSEOSettingsForm
     from .models import PageSEO
@@ -9718,10 +9787,35 @@ def staff_home_sections(request):
 
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
-@require_GET
 def staff_home_page(request):
+    from .forms import HomeFeaturedProductsForm
+
+    if request.GET.get('search') == '1':
+        query = (request.GET.get('q') or '').strip()
+        products = Product.objects.filter(aktivan=True).filter(
+            Q(naziv__icontains=query) | Q(sifra__icontains=query)
+        ).order_by('naziv', 'pk')[:30] if query else []
+        return JsonResponse({'products': [
+            {'id': p.pk, 'label': f'{p.naziv} ({p.sifra})'} for p in products
+        ]})
+    settings = SiteSettings.load()
+    selected = HomeFeaturedProduct.objects.filter(postavke=settings)
+    form = HomeFeaturedProductsForm(
+        request.POST if request.method == 'POST' else None,
+        initial={'artikli': list(selected.filter(aktivan=True).values_list('artikal_id', flat=True))},
+    )
+    if request.method == 'POST' and form.is_valid():
+        with transaction.atomic():
+            selected.delete()
+            HomeFeaturedProduct.objects.bulk_create([
+                HomeFeaturedProduct(postavke=settings, artikal=product, redoslijed=index)
+                for index, product in enumerate(form.cleaned_data['artikli'])
+            ])
+        _invalidate_storefront_product_caches()
+        messages.success(request, 'Izdvojena ponuda je sačuvana.')
+        return redirect('staff_home_page')
     return render(request, 'staff/home_page.html', {
-        **_base_context(),
+        **_base_context(), 'featured_form': form,
         'section_count': HomeProductSection.objects.count(),
     })
 

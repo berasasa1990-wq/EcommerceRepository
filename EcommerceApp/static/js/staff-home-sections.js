@@ -3,11 +3,13 @@
     const search = editor.querySelector('[data-role=product-search]');
     if (!search) return;
     const name = editor.querySelector('input[name=naziv]');
+    if (name) {
     name.placeholder = 'Npr. Izdvojeni artikli';
     name.addEventListener('blur', () => {
         const value = name.value.trim().toLocaleLowerCase('bs');
         name.value = value.charAt(0).toLocaleUpperCase('bs') + value.slice(1);
     });
+    }
     const selected = editor.querySelector('[data-role=selected-products]');
     const results = editor.querySelector('[data-role=product-results]');
     const status = editor.querySelector('[data-role=search-status]');
@@ -67,7 +69,7 @@
             }
         }, 250);
     });
-    editor.querySelector('.section-close').addEventListener('click', () => {
+    editor.querySelector('.section-close')?.addEventListener('click', () => {
         editor.closest('details').open = false;
     });
     });

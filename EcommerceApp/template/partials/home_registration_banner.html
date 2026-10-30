@@ -1,5 +1,4 @@
-<aside class="home-registration-banner" aria-label="Popust za registraciju">
-    <svg class="home-registration-banner__gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9M12 8v13M12 8H8.5A2.5 2.5 0 1 1 11 5.5L12 8Zm0 0h3.5A2.5 2.5 0 1 0 13 5.5L12 8Z"/></svg>
-    <p>Registruj se i ostvari <strong>10% popusta</strong> uz jednokratni kupon za prvu narudžbu.</p>
-    <a href="{% url 'register' %}?loyalty_popup=1">Registruj se <span aria-hidden="true">→</span></a>
+{% load static %}
+<aside class="home-registration-banner home-registration-banner--uploaded" aria-label="Pogodnosti registracije">
+    <a href="{% url 'register' %}?loyalty_popup=1"><img src="{% static 'img/registration-banner-1600x320.png' %}" alt="Registruj se i ostvari dodatne pogodnosti — kreiraj račun" width="1600" height="320" loading="lazy" decoding="async"></a>
 </aside>

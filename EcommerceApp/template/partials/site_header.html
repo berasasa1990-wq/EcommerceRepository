@@ -1,0 +1,328 @@
+{% load static %}
+    <header class="header" id="header">
+        <div class="header-shell">
+            <div class="header-row header-row--primary">
+                <div class="header-leading">
+                    <button class="nav-toggle" id="navToggle" aria-label="Otvori meni">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                    </button>
+                    {% if user.is_superuser or user.is_staff %}
+                    <a href="{% url 'staff_admin_panel' %}" class="nav-action-link staff-orders-btn staff-admin-nav-btn" aria-label="Admin Panel" title="Admin Panel">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 9-5M17 11l4 2v4c0 3-4 5-4 5s-4-2-4-5v-4l4-2Z"/><path d="m15 16 1.5 1.5L19 15"/></svg>
+                        <span class="nav-action-label">Admin Panel</span>
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div class="logo-brand">
+                    <a href="{% url 'home' %}" class="logo" aria-label="Carpologija BH">
+                        {% if site_settings.logo %}
+                        <img src="{{ site_settings.logo.url }}" alt="Carpologija BH" class="logo-image" width="480" height="76" loading="eager" fetchpriority="low" decoding="async">
+                        {% else %}
+                        <svg class="logo-icon" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+                            <circle cx="18" cy="18" r="17" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M10 22c4-6 8-9 14-10-2 4-2 8 0 12-5-1-9-1-14-2z" fill="currentColor"/>
+                            <path d="M24 12c2 2 3 5 2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            <circle cx="13" cy="19" r="1" fill="currentColor"/>
+                        </svg>
+                        <span class="logo-text">
+                            <span class="logo-name">opremaza<span class="logo-accent">ribolov</span></span><span class="logo-tld">.ba</span>
+                        </span>
+                        {% endif %}
+                    </a>
+
+                </div>
+
+                <div class="header-search" id="headerSearch">
+                    <form class="header-search-form" method="get" action="{% url 'home' %}" id="searchForm">
+                        <span class="header-search-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="7"/>
+                                <path d="M20 20l-3-3"/>
+                            </svg>
+                        </span>
+                        <div class="search-combobox" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-haspopup="listbox">
+                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži proizvode..." autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
+                        </div>
+                        <select name="kategorija" class="header-category-select" aria-label="Kategorija pretrage">
+                            <option value="">Sve kategorije</option>
+                            {% for cat in nav_categories %}<option value="{{ cat.slug }}"{% if filter_params.kategorija == cat.slug %} selected{% endif %}>{{ cat.naziv }}</option>{% endfor %}
+                        </select>
+                        <button type="submit" class="header-search-submit" aria-label="Pretraži proizvode">
+                            <svg class="header-search-submit-icon" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/></svg>
+                            <span class="header-search-submit-label">TRAŽI</span>
+                        </button>
+                        <button type="button" class="search-close" id="searchClose" aria-label="Zatvori pretragu">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </form>
+                    <div class="search-suggestions" id="searchSuggestions" role="listbox" hidden></div>
+                </div>
+
+                <div class="nav-actions">
+                    <button type="button" class="nav-action-link reference-header-search" data-mobile-home-search aria-label="Pretraga"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.8"/><path d="m16.2 16.2 5.4 5.4"/></svg></button>
+                    {% if contact_phone %}
+                    <a href="tel:{{ contact_phone_digits|default:contact_phone }}" class="nav-action-link header-phone" aria-label="Telefon {{ contact_phone }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                        <span class="nav-action-label header-phone__text">
+                            <span class="header-phone__kicker">POZOVI NAS</span>
+                            <span class="header-phone__num">{{ contact_phone }}</span>
+                        </span>
+                    </a>
+                    {% endif %}
+
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'account' %}" class="nav-action-link account-btn" aria-label="Nalog">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 21v-1a8 7 0 0 1 16 0v1Z"/>
+                            <circle cx="12" cy="6" r="4"/>
+                        </svg>
+                        <span class="nav-action-label">Nalog</span>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'login' %}" class="nav-action-link account-btn" aria-label="Prijava">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 21v-1a8 7 0 0 1 16 0v1Z"/>
+                            <circle cx="12" cy="6" r="4"/>
+                        </svg>
+                        <span class="nav-action-label">Prijava</span>
+                    </a>
+                    {% endif %}
+                    {% if not user.is_authenticated %}
+                    <a class="nav-action-link header-register" href="{% url 'register' %}">
+                        <span class="header-register-badge">REGISTRUJ SE</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="6" r="4"/><path d="M2 22v-3a8 7 0 0 1 16 0v3zM20 8v8M16 12h8"/></svg>
+                        <span class="nav-action-label">Registracija</span>
+                    </a>
+                    {% endif %}
+                    <div class="wishlist-menu">
+                    <button type="button" class="nav-action-link reference-header-heart" data-mobile-favorites aria-label="Lista želja" aria-haspopup="dialog" aria-expanded="false" aria-controls="wishlistPopover">
+                        <span class="nav-action-icon">
+                            <svg class="wishlist-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+                            <span class="wishlist-badge" data-wishlist-count>0</span>
+                        </span>
+                        <span class="nav-action-label">Lista želja</span>
+                    </button>
+                    <div class="wishlist-popover" id="wishlistPopover" hidden>
+                        {% include 'partials/wishlist_panel.html' %}
+                    </div>
+                    </div>
+                    <div class="nav-cart-stack">
+                    <a href="{% url 'cart' %}" class="nav-action-link cart-btn{% if cart_count %} cart-btn--has-items{% endif %}" aria-label="Korpa" data-cart-count="{{ cart_count|default:0 }}">
+                        <span class="nav-action-icon">
+                            <svg class="cart-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 3h3l3 13h11l3-10H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
+                </svg>
+                            <span class="cart-badge">{{ cart_count|default:0 }}</span>
+                        </span>
+                        <span class="nav-action-label">Korpa</span>
+                    </a>
+                    {% if user.is_authenticated and user.is_superuser %}
+                    <div class="staff-edit-controls">
+                    {% if staff_edit_mode %}
+                    <button type="button" class="staff-missing-filter-toggle" data-staff-missing-filter-toggle aria-controls="staffMissingFilter" aria-expanded="{% if request.GET.nedostaje %}true{% else %}false{% endif %}">Filter</button>
+                    {% endif %}
+                    <form method="post" action="{% url 'staff_toggle_edit_mode' %}" class="staff-edit-toggle-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <input type="hidden" name="enabled" value="0">
+                        <label class="staff-edit-toggle">
+                            <input type="checkbox" name="enabled" value="1"{% if staff_edit_mode %} checked{% endif %} onchange="this.form.submit()">
+                            Edit
+                        </label>
+                    </form>
+                    </div>
+                    {% endif %}
+                    </div>
+                    <a class="desktop-sale-link" href="{% url 'home' %}?akcija=1#product-showcase" hidden>Akcijska ponuda <span aria-hidden="true">%</span></a>
+                    <button type="button" class="nav-action-link reference-header-menu" data-mobile-home-menu aria-label="Otvori kategorije"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg></button>
+                    {% if user.is_superuser %}
+                    <a href="{% url 'staff_admin_panel' %}" class="logo-admin-panel" aria-label="Admin panel" title="Admin panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 9-5M17 11l4 2v4c0 3-4 5-4 5s-4-2-4-5v-4l4-2Z"/><path d="m15 16 1.5 1.5L19 15"/></svg></a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <nav class="desktop-category-nav" aria-label="Kategorije proizvoda" hidden>
+                {% for nav_cat in nav_categories %}
+                {% if nav_cat.podkategorije.all %}
+                <details class="desktop-category-dropdown">
+                    <summary>{{ nav_cat.naziv }} <span aria-hidden="true">⌄</span></summary>
+                    <div class="desktop-category-dropdown__panel">
+                        <a class="desktop-category-dropdown__all" href="{{ nav_cat.get_absolute_url }}?all=1">Sve {{ nav_cat.naziv|lower }}</a>
+                        {% for sub in nav_cat.podkategorije.all %}
+                        <a href="{{ sub.get_absolute_url }}">{{ sub.naziv }}</a>
+                        {% endfor %}
+                    </div>
+                </details>
+                {% else %}<a href="{{ nav_cat.get_absolute_url }}">{{ nav_cat.naziv }}</a>{% endif %}
+                {% endfor %}
+            </nav>
+            <nav class="header-row header-row--categories" aria-label="Kategorije">
+                <a class="ref-home-nav" href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' and not filters_active %} aria-current="page"{% endif %}>Početna</a>
+                <div class="cats-dropdown{% if cats_sidebar_open %} is-open cats-dropdown--locked{% endif %}" id="catsDropdown">
+                    <button type="button" class="cats-dropdown__btn" id="catsDropdownBtn" aria-expanded="{% if cats_sidebar_open %}true{% else %}false{% endif %}" aria-controls="catsDropdownPanel"{% if cats_sidebar_open %} aria-disabled="true"{% endif %}>
+                        <span class="cats-dropdown__burger" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                                <line x1="4" y1="7" x2="20" y2="7"/>
+                                <line x1="4" y1="12" x2="20" y2="12"/>
+                                <line x1="4" y1="17" x2="20" y2="17"/>
+                            </svg>
+                        </span>
+                        <span class="cats-dropdown__btn-label">Sve kategorije</span>
+                        <span class="cats-dropdown__btn-chevron" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </span>
+                    </button>
+                    <div class="cats-dropdown__panel" id="catsDropdownPanel"{% if not cats_sidebar_open %} hidden{% endif %}>
+                        <ul class="cats-dropdown__list">
+                            {% for nav_cat in nav_categories %}
+                            <li class="cats-dropdown__item{% if nav_cat.podkategorije.all %} cats-dropdown__item--has-sub{% endif %}{% if category %}{% if nav_cat.pk == category.pk or category.roditelj_id == nav_cat.pk or category.roditelj and category.roditelj.roditelj_id == nav_cat.pk %} is-open is-current{% endif %}{% endif %}">
+                                <a href="{{ nav_cat.get_absolute_url }}" class="cats-dropdown__link"{% if nav_cat.podkategorije.all %} data-cats-toggle="1" aria-expanded="{% if category %}{% if nav_cat.pk == category.pk or category.roditelj_id == nav_cat.pk or category.roditelj and category.roditelj.roditelj_id == nav_cat.pk %}true{% else %}false{% endif %}{% else %}false{% endif %}"{% endif %}>
+                                    {% if nav_cat.ikonica_pocetna %}
+                                    <img class="cats-dropdown__category-image" src="{{ nav_cat.ikonica_pocetna.url }}" alt="" width="28" height="28" loading="lazy" decoding="async">
+                                    {% else %}
+                                    {% include 'partials/nav_category_icon.html' with naziv=nav_cat.naziv slug=nav_cat.slug %}
+                                    {% endif %}
+                                    <span class="cats-dropdown__name">{{ nav_cat.naziv }} <span class="category-available-count">({{ nav_cat.available_product_count }})</span></span>
+                                    {% if nav_cat.podkategorije.all %}
+                                    <span class="cats-dropdown__chevron" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                                    </span>
+                                    {% endif %}
+                                </a>
+                                {% if nav_cat.podkategorije.all %}
+                                <ul class="cats-dropdown__sub">
+                                    <li class="cats-dropdown__sub-all">
+                                        <a href="{{ nav_cat.get_absolute_url }}?all=1"{% if category and category.pk == nav_cat.pk %} class="is-current"{% endif %}>
+                                            <span class="cats-dropdown__sub-arrow" aria-hidden="true">›</span>
+                                            Sve {{ nav_cat.naziv|lower }}
+                                        </a>
+                                    </li>
+                                    {% for sub in nav_cat.podkategorije.all %}
+                                    <li>
+                                        <a href="{{ sub.get_absolute_url }}"{% if category and category.pk == sub.pk %} class="is-current"{% endif %}>{{ sub.naziv }} <span class="category-available-count">({{ sub.available_product_count }})</span></a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                            <li class="cats-dropdown__item cats-dropdown__item--sale{% if filter_params.akcija %} is-current{% endif %}">
+                                <a href="{% url 'home' %}?akcija=1#product-showcase" class="cats-dropdown__link cats-dropdown__link--sale">
+                                    <span class="cat-ico" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.2"/><circle cx="16" cy="16" r="2.2"/><path d="M7 17L17 7"/></svg>
+                                    </span>
+                                    <span class="cats-dropdown__name">Akcije i popusti</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="ref-desktop-nav"><a href="{% url 'home' %}?akcija=1">Akcije</a><a href="{% url 'home' %}?noviteti=1">Novo</a><a href="{% url 'home' %}#najprodavaniji">Najprodavanije</a><a href="{% url 'vlog_list' %}">Blog</a><a href="{% url 'about_us' %}">O nama</a><a href="{% url 'home' %}#footerContact">Kontakt</a></div>
+                <div class="mobile-nav-panel" id="mobileNavPanel">
+                    <div class="mobile-nav-panel__header">
+                        <button type="button" class="mobile-nav-panel__back" id="mobileNavClose" aria-label="Zatvori meni kategorija">
+                            <span class="mobile-nav-panel__back-icon" aria-hidden="true">‹</span>
+                            Nazad
+                        </button>
+                    </div>
+                    <ul class="nav-menu" id="navLinks">
+                    {% for category in nav_categories %}
+                    <li class="nav-item {% if category.podkategorije.all %}has-mega-menu{% endif %}"
+                        data-nav-item
+                        {% if category.podkategorije.all %}data-mega-target="mega-{{ category.slug }}"{% endif %}>
+                        <a href="{{ category.get_absolute_url }}">
+                            {{ category.naziv }}
+                            {% if category.podkategorije.all %}
+                            <span class="nav-chevron" aria-hidden="true"></span>
+                            {% endif %}
+                        </a>
+                        {% if category.podkategorije.all %}
+                        <ul class="nav-submenu">
+                            <li class="nav-submenu-all">
+                                <a href="{{ category.get_absolute_url }}?all=1">Sve u {{ category.naziv }}</a>
+                            </li>
+                            {% for sub in category.podkategorije.all %}
+                            <li class="nav-submenu-group">
+                                <a href="{{ sub.get_absolute_url }}" class="nav-submenu-title">{{ sub.naziv }}</a>
+                                {% if sub.podkategorije.all %}
+                                <ul class="nav-submenu-nested">
+                                    {% for subsub in sub.podkategorije.all %}
+                                    <li><a href="{{ subsub.get_absolute_url }}">{{ subsub.naziv }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                    <li class="nav-item nav-item--akcija">
+                        <a href="{% url 'home' %}?akcija=1#product-showcase" class="nav-link-akcija">AKCIJE</a>
+                    </li>
+                    <li class="nav-item nav-item--set">
+                        <a href="{% url 'set_builder' %}" class="nav-link-set{% if request.resolver_match.url_name == 'set_builder' %} is-current{% endif %}" data-set-builder-gate>
+                            Kreiraj svoj set
+                            <span class="nav-link-set__beta">BETA</span>
+                        </a>
+                    </li>
+                    <li class="nav-item nav-item--noviteti nav-item--akcija-mobile">
+                        <a href="{% url 'home' %}?noviteti=1#product-showcase" class="nav-link-noviteti">NOVITETI</a>
+                    </li>
+                    </ul>
+                </div>
+                <div class="mobile-nav-subview" id="mobileNavSubview" aria-hidden="true">
+                    <button type="button" class="mobile-nav-back" id="mobileNavBack">
+                        <span class="mobile-nav-back__icon" aria-hidden="true">‹</span>
+                        Nazad
+                    </button>
+                    <h2 class="mobile-nav-subview-title" id="mobileNavSubTitle"></h2>
+                    <div class="mobile-nav-subview-body" id="mobileNavSubBody"></div>
+                </div>
+
+                <span class="nav-wholesale-prompt">Želite naše usluge veleprodaje? Kliknite --&gt;</span>
+                <a href="{% url 'b2b_catalog' %}" class="nav-link-veleprodaja">VELEPRODAJA</a>
+            </nav>
+
+            {# Plutajuća dugmad Akcija/Noviteti uklonjena — sekcije su na početnoj #}
+        </div>
+
+        <div class="mega-menu-panel" id="megaMenuPanel">
+            {% for category in nav_categories %}
+            {% if category.podkategorije.all %}
+            <div class="mega-menu" id="mega-{{ category.slug }}" data-mega-menu>
+                <div class="mega-menu-inner">
+                    <div class="mega-menu-subcategories">
+                        {% for sub in category.podkategorije.all %}
+                        <div class="mega-menu-group">
+                            <p class="mega-menu-group-title">
+                                <a href="{{ sub.get_absolute_url }}">{{ sub.naziv }}</a>
+                            </p>
+                            {% if sub.podkategorije.all %}
+                            <ul>
+                                {% for subsub in sub.podkategorije.all %}
+                                <li>
+                                    <a href="{{ subsub.get_absolute_url }}">{{ subsub.naziv }}</a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </header>

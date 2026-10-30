@@ -90,6 +90,23 @@ class SiteSettings(models.Model):
     bestsellers_banner_link = models.URLField(
         max_length=500, blank=True, verbose_name='Link bannera ispod najprodavanijih proizvoda',
     )
+    promo_new_slika = models.ImageField(
+        upload_to='site/promos/', blank=True, verbose_name='Noviteti — slika bannera',
+        help_text='Preporučeno 1200 × 560 px. Tekst i grafiku pripremite unutar slike.',
+    )
+    promo_new_link = models.CharField(max_length=500, blank=True, verbose_name='Noviteti — link (opcionalno)')
+    promo_sale_slika = models.ImageField(
+        upload_to='site/promos/', blank=True, verbose_name='Posebna ponuda — slika bannera',
+        help_text='Preporučeno 1200 × 560 px. Tekst i grafiku pripremite unutar slike.',
+    )
+    promo_sale_link = models.CharField(max_length=500, blank=True, verbose_name='Posebna ponuda — link (opcionalno)')
+
+    registration_slika = models.ImageField(
+        upload_to='site/registration/', blank=True, verbose_name='Registracija — slika bannera',
+        help_text='Preporučeno 1600 × 320 px. Tekst i grafiku pripremite unutar slike.',
+    )
+    registration_link = models.CharField(max_length=500, blank=True, verbose_name='Registracija — link (opcionalno)')
+
     loyalty_banner_slika = models.ImageField(
         upload_to='site/loyalty/', blank=True,
         verbose_name='Loyalty banner — mobilna slika',
@@ -966,6 +983,18 @@ class SiteSettings(models.Model):
         if raw.startswith(('http://', 'https://', '/')):
             return raw
         return f'/{raw.strip("/")}/'
+
+    @property
+    def registration_href(self):
+        return self.normalize_banner_link(self.registration_link) or '/registracija/?loyalty_popup=1'
+
+    @property
+    def promo_new_href(self):
+        return self.normalize_banner_link(self.promo_new_link) or '/?noviteti=1'
+
+    @property
+    def promo_sale_href(self):
+        return self.normalize_banner_link(self.promo_sale_link) or '/?akcija=1'
 
     @property
     def loyalty_banner_href(self):

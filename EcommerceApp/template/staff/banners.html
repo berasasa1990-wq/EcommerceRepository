@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block page_title %}<title>Banneri</title>{% endblock %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/hero-settings.css' %}">
+<style>
+.banner-manager{max-width:1100px;margin:24px auto;padding:20px}.banner-manager__heading,.banner-manager__row{display:flex;align-items:center;justify-content:space-between;gap:20px}.banner-manager__row{padding:18px 0;border-bottom:1px solid #e5e7eb}.banner-manager__row small{display:block;margin-top:5px;color:#64748b}.banner-manager .banner-manager__action{display:inline-block;padding:9px 18px;border-radius:8px;background:transparent!important;color:#000!important;border:0;box-shadow:none!important;font:inherit;cursor:pointer;text-decoration:none!important;white-space:nowrap}.banner-manager__form{max-width:760px}.banner-manager__form input:not([type=checkbox]),.banner-manager__form select,.banner-manager__form textarea{box-sizing:border-box;max-width:100%}.banner-manager__preview{display:block;max-width:100%;max-height:260px;object-fit:contain;margin:16px 0}.banner-manager__save{display:flex;gap:16px;align-items:center;margin:24px 0}
+
+.banner-manager .banner-manager__action:hover{background:transparent!important;color:#000!important;text-decoration:underline!important}.banner-manager .banner-manager__action:focus-visible{outline:2px solid #000;outline-offset:3px}.banner-manager__info{flex:1;min-width:0}.banner-manager__thumbnail{display:block;width:160px;height:90px;object-fit:contain;border:1px solid #e5e7eb;border-radius:8px;background:#f8fafc;flex-shrink:0}.banner-manager .banner-manager__status{display:inline-block;margin-top:6px;font-size:13px;font-weight:700}.banner-manager .banner-manager__status--active{color:#15803d!important}.banner-manager .banner-manager__status--inactive{color:#b91c1c!important}@media(max-width:600px){.banner-manager{padding:14px}.banner-manager__row{gap:12px;flex-wrap:wrap}.banner-manager__thumbnail{width:100px;height:64px}.banner-manager__info{flex-basis:calc(100% - 112px)}.banner-manager__row>.banner-manager__actions{margin-left:auto}}
+.banner-manager__actions{display:flex;align-items:center;gap:4px;flex-shrink:0}.banner-manager__actions form{margin:0}
+</style>
+{% endblock %}
+{% block content %}
+<section class="banner-manager">
+<a href="{% url 'staff_admin_panel' %}">← Admin panel</a>
+{% if banner_form %}
+<div class="banner-manager__heading"><h1>{{ editor_title }}</h1><a href="{% url 'staff_banners' %}">← Svi banneri</a></div>
+<form method="post" enctype="multipart/form-data" class="banner-manager__form">
+{% csrf_token %}{{ banner_form.non_field_errors }}
+{% for field in banner_form %}{% include 'staff/partials/hero_settings_field.html' with field=field %}{% endfor %}
+{% if preview_image %}<img class="banner-manager__preview" src="{{ preview_image.url }}" alt="Pregled bannera">{% endif %}
+<div class="banner-manager__save"><button type="submit">Sačuvaj banner</button><a href="{% url 'staff_banners' %}">Odustani</a></div>
+</form>
+{% else %}
+<div class="banner-manager__heading"><h1>Banneri</h1><a class="banner-manager__action" href="{% url 'staff_banners' %}?add=1">Dodaj</a></div>
+<div class="banner-manager__row">
+{% if banner_site.hero_slika %}<img class="banner-manager__thumbnail" src="{{ banner_site.hero_slika.url }}" alt="Početni banner" loading="lazy">{% endif %}
+<div class="banner-manager__info"><strong>Početni banner</strong><small>Glavni banner na vrhu početne · {% if banner_site.hero_slika %}Slika postavljena{% else %}Bez slike{% endif %}</small><span class="banner-manager__status banner-manager__status--{% if banner_site.hero_slika %}active{% else %}inactive{% endif %}">{% if banner_site.hero_slika %}Aktivan{% else %}Neaktivan{% endif %}</span></div><div class="banner-manager__actions"><a class="banner-manager__action" href="?edit=hero">Uredi</a><form method="post" action="{% url 'staff_banners' %}">{% csrf_token %}<button class="banner-manager__action" type="submit" name="delete_banner" value="hero">Obriši</button></form></div></div>
+<div class="banner-manager__row">
+{% if banner_site.bestsellers_banner_slika %}<img class="banner-manager__thumbnail" src="{{ banner_site.bestsellers_banner_slika.url }}" alt="Banner ispod najprodavanijih proizvoda" loading="lazy">{% endif %}
+<div class="banner-manager__info"><strong>Banner ispod najprodavanijih proizvoda</strong><small>{% if banner_site.bestsellers_banner_slika %}Slika postavljena{% else %}Bez slike{% endif %}</small><span class="banner-manager__status banner-manager__status--{% if banner_site.bestsellers_banner_slika %}active{% else %}inactive{% endif %}">{% if banner_site.bestsellers_banner_slika %}Aktivan{% else %}Neaktivan{% endif %}</span></div><div class="banner-manager__actions"><a class="banner-manager__action" href="?edit=bestsellers">Uredi</a><form method="post" action="{% url 'staff_banners' %}">{% csrf_token %}<button class="banner-manager__action" type="submit" name="delete_banner" value="bestsellers">Obriši</button></form></div></div>
+{% for promo in promo_banners %}<div class="banner-manager__row">
+{% if promo.image %}<img class="banner-manager__thumbnail" src="{{ promo.image.url }}" alt="{{ promo.title }}" loading="lazy">{% endif %}
+<div class="banner-manager__info"><strong>{{ promo.title }}</strong><small>{{ promo.help }}</small><span class="banner-manager__status banner-manager__status--{% if promo.image %}active{% else %}inactive{% endif %}">{% if promo.image %}Aktivan{% else %}Neaktivan{% endif %}</span></div>
+<div class="banner-manager__actions"><a class="banner-manager__action" href="?edit={{ promo.key }}">Uredi</a><form method="post" action="{% url 'staff_banners' %}">{% csrf_token %}<button class="banner-manager__action" type="submit" name="delete_banner" value="{{ promo.key }}">Obriši</button></form></div></div>{% endfor %}
+{% for banner in banners %}<div class="banner-manager__row">
+{% if banner.aktivan and banner.slika %}<img class="banner-manager__thumbnail" src="{{ banner.slika.url }}" alt="{{ banner.naslov|default:'Banner' }}" loading="lazy">{% endif %}
+<div class="banner-manager__info"><strong>{{ banner.naslov|default:'Banner' }} #{{ banner.pk }}</strong><small>{{ banner.get_tip_display }}</small><span class="banner-manager__status banner-manager__status--{% if banner.aktivan %}active{% else %}inactive{% endif %}">{% if banner.aktivan %}Aktivan{% else %}Neaktivan{% endif %}</span></div><div class="banner-manager__actions"><a class="banner-manager__action" href="?edit={{ banner.pk }}">Uredi</a><form method="post" action="{% url 'staff_banners' %}">{% csrf_token %}<button class="banner-manager__action" type="submit" name="delete_banner" value="{{ banner.pk }}">Obriši</button></form></div></div>{% endfor %}
+{% endif %}
+</section>
+{% endblock %}

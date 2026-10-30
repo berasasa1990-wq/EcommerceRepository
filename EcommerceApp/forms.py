@@ -1105,8 +1105,11 @@ class HeroBannerSettingsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['hero_link'].required = False
+        if 'hero_link' in self.fields:
+            self.fields['hero_link'].required = False
         for name in ('hero_slika', 'bestsellers_banner_slika'):
+            if name not in self.fields:
+                continue
             self.fields[name].help_text = '1600 × 600 px, najviše 80 KB nakon obrade. JPG, PNG, WebP ili AVIF. Drugi omjeri se centralno izrezuju; tekst i grafiku pripremi unutar slike.'
             self.fields[name].widget.attrs['accept'] = 'image/jpeg,image/png,image/webp,image/avif'
 
@@ -1146,3 +1149,22 @@ class StaffBlogForm(forms.ModelForm):
             'sadrzaj': forms.Textarea(attrs={'rows': 12}),
             'objavljeno': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
         }
+
+
+class HomeFeaturedProductsForm(forms.Form):
+    artikli = forms.ModelMultipleChoiceField(
+        queryset=None, required=False, widget=forms.CheckboxSelectMultiple,
+        label='Artikli u izdvojenoj ponudi',
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import Product
+        ids = self.data.getlist('artikli') if self.is_bound else self.initial.get('artikli', [])
+        self.fields['artikli'].queryset = Product.objects.filter(aktivan=True, pk__in=ids).order_by('naziv', 'pk')
+
+    def clean_artikli(self):
+        products = self.cleaned_data['artikli']
+        if len(products) > 4:
+            raise forms.ValidationError('Odaberite najviše četiri artikla.')
+        return products

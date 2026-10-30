@@ -215,7 +215,8 @@
     margin: 24px 0 0;
 }
 .product-mobile-reference .pd-purchase-related,
-.product-mobile-reference .product-detail-content {
+.product-mobile-reference .product-detail-content,
+.product-mobile-reference .product-detail > .product-detail-policies {
     padding-left: var(--pd-breadcrumb-inset, 0px);
     padding-right: max(0px, calc((100% - 28px) / 2.15 - 444px));
 }
@@ -237,7 +238,8 @@
     .product-mobile-reference .product-detail { padding: 18px 16px 32px; }
     .product-mobile-reference .product-detail-grid { gap: 24px; }
     .product-mobile-reference .pd-purchase-related,
-    .product-mobile-reference .product-detail-content { padding-right: max(0px, calc((100% - 24px) / 2.15 - 444px)); }
+    .product-mobile-reference .product-detail-content,
+    .product-mobile-reference .product-detail > .product-detail-policies { padding-right: max(0px, calc((100% - 24px) / 2.15 - 444px)); }
     .product-mobile-reference .pd-purchase-related .pd-related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 700px) {
@@ -253,7 +255,8 @@
     .product-mobile-reference .product-detail:has(.product-gallery.has-thumbnails) { --pd-breadcrumb-inset: max(0px, calc(22% - 13.2px)); }
     .product-mobile-reference .product-detail-grid { grid-template-columns: 1fr; gap: 14px; }
     .product-mobile-reference .pd-purchase-related,
-    .product-mobile-reference .product-detail-content { padding-right: max(0px, calc(100% - 444px)); }
+    .product-mobile-reference .product-detail-content,
+    .product-mobile-reference .product-detail > .product-detail-policies { padding-right: max(0px, calc(100% - 444px)); }
     .product-mobile-reference .product-gallery.has-thumbnails { grid-template-columns: minmax(52px, 1fr) minmax(0, calc((100% - 60px) * .78)); gap: 8px; }
     .product-mobile-reference .product-gallery .pd-gallery-bar { width: 52px; }
     .product-mobile-reference .product-gallery .product-thumbnail { flex-basis: 46px; width: 46px; height: 46px; }

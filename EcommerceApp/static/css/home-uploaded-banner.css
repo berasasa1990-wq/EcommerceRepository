@@ -3,3 +3,7 @@ html body main>.home-uploaded-banner,html body .online-shop-home-content>.home-u
 html body .home-uploaded-banner img{display:block;width:100%;height:auto;aspect-ratio:8/3;object-fit:contain;margin:0;padding:0;border:0}
 @media(max-width:700px){html body main>.home-uploaded-banner,html body .online-shop-home-content>.home-uploaded-banner{margin-bottom:16px!important;border-radius:8px}}
 html body.home-mobile-reference main>.home-uploaded-banner--bestsellers{order:10}
+
+/* Main banner: 1920 × 720 proportions, scaled to the available page width. */
+html body.home-mobile-reference main > .home-uploaded-banner:not(.home-uploaded-banner--bestsellers) { max-width: 1920px !important; }
+html body.home-mobile-reference main > .home-uploaded-banner:not(.home-uploaded-banner--bestsellers) img { aspect-ratio: 1920 / 720; }

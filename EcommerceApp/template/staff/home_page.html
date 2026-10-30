@@ -14,6 +14,21 @@
     </header>
     <div class="home-editor__sections">
         <article class="home-editor__section">
+            <h2>Izdvojena ponuda</h2>
+            <p>Odaberi do četiri artikla za sekciju „Izdvojena ponuda” na početnoj. Prikazuju se aktivni artikli na stanju. Bez ručnog odabira prikazuje se HIT ponuda.</p>
+            <form method="post" class="section-form">
+                {% csrf_token %}{{ featured_form.non_field_errors }}
+                <h3>Odabrani artikli <span data-role="selected-count">0</span></h3>
+                <p>Ukloni kvačicu da izbaciš artikal iz ponude.</p>
+                <div data-role="selected-products">{{ featured_form.artikli }}</div>{{ featured_form.artikli.errors }}
+                <label for="featuredProductSearch">Dodaj artikal — naziv ili šifra</label>
+                <input type="search" id="featuredProductSearch" data-role="product-search" autocomplete="off" placeholder="Unesi naziv ili šifru">
+                <p data-role="search-status" role="status" aria-live="polite"></p>
+                <div data-role="product-results"></div>
+                <div class="home-editor__actions"><button type="submit">Sačuvaj izdvojenu ponudu</button></div>
+            </form>
+        </article>
+        <article class="home-editor__section">
             <h2>Sekcije</h2>
             <p>Kreiraj novu sekciju ili uredi naziv i artikle u već kreiranim sekcijama.</p>
             <p>Kreiranih sekcija: {{ section_count }}</p>
@@ -27,3 +42,5 @@
     </div>
 </section>
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/staff-home-sections.js' %}?v=20261030-featured-editor" defer></script>{% endblock %}
