@@ -1,0 +1,41 @@
+/* Fixed registration promotion. */
+body.home-mobile-reference main > .home-registration-banner--text {
+    display: grid; grid-template-columns: 240px minmax(0, 1fr) 210px;
+    gap: 32px; min-height: 280px; padding: 32px; margin: 24px 0;
+    position: relative; overflow: hidden; border: 1px solid #56341e;
+    border-radius: 16px; background: radial-gradient(ellipse at top right, #6a301a55, transparent 60%), #141414;
+    color: #f8fafc; box-shadow: 0 8px 24px #1f130b14;
+}
+.home-registration-banner--text * { box-sizing: border-box; }
+.home-registration-banner__brand { display: flex; flex-direction: column; align-items: center; gap: 22px; padding-right: 28px; border-right: 1px solid #ffffff26; }
+.home-registration-banner__brand img { display: block; width: 100%; height: auto; max-width: 240px; border-radius: 4px; }
+.home-registration-banner__discount { color: #ff851b; text-align: center; font-size: 68px; font-weight: 800; line-height: 1; }
+.home-registration-banner__discount span { display: block; margin-top: 10px; font-size: 10px; letter-spacing: 1.6px; color: #fed7aa; }
+.home-registration-banner__content { min-width: 0; }
+.home-registration-banner__eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: #fdba74; }
+.home-registration-banner--text h2 { margin: 10px 0 14px; font-size: clamp(24px, 2.3vw, 34px); line-height: 1.18; letter-spacing: -.5px; color: #fff; }
+.home-registration-banner--text p { max-width: 680px; margin: 0; font-size: 14px; line-height: 1.75; color: #d1d5db; }
+.home-registration-banner--text ul { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 0; margin: 20px 0 0; list-style: none; font-size: 12px; font-weight: 600; color: #f8fafc; }
+.home-registration-banner--text li::before { content: "✓"; margin-right: 7px; color: #ff922d; }
+.home-registration-banner__cta { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.home-registration-banner--text .home-registration-banner__cta a { display: inline-flex; justify-content: center; margin: 0; width: 100%; padding: 15px 20px; border: 1px solid #ff9c45; border-radius: 9px; background: #ff851b; color: #171717; font-size: 15px; font-weight: 750; text-decoration: none; box-shadow: 0 4px 16px #ff851b20; }
+.home-registration-banner--text .home-registration-banner__cta a:hover { background: #ffa54d; }
+.home-registration-banner--text .home-registration-banner__cta a:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+.home-registration-banner__cta > span { font-size: 12px; line-height: 1.6; color: #b8bcc4; }
+@media(max-width:1100px) {
+    body.home-mobile-reference main > .home-registration-banner--text { grid-template-columns: 200px minmax(0,1fr); gap: 24px; }
+    .home-registration-banner__brand { grid-row: span 2; }
+    .home-registration-banner__cta { align-items: flex-start; text-align: left; }
+    .home-registration-banner--text .home-registration-banner__cta a { width: auto; min-width: 200px; }
+}
+@media(max-width:600px) {
+    body.home-mobile-reference main > .home-registration-banner--text { grid-template-columns: minmax(0,1fr); padding: 24px 20px; gap: 24px; }
+    .home-registration-banner__brand { grid-row: auto; flex-direction: row; justify-content: space-between; gap: 16px; padding: 0 0 22px; border-right: 0; border-bottom: 1px solid #ffffff26; }
+    .home-registration-banner__brand img { width: 55%; }
+    .home-registration-banner__discount { font-size: 48px; }
+    .home-registration-banner__discount span { font-size: 8px; letter-spacing: .5px; }
+    .home-registration-banner--text h2 { font-size: 26px; }
+    .home-registration-banner--text ul { flex-direction: column; gap: 10px; }
+    .home-registration-banner__cta { align-items: center; text-align: center; }
+    .home-registration-banner--text .home-registration-banner__cta a { width: 100%; }
+}

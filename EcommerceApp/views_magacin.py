@@ -385,6 +385,25 @@ def magacin_home(request):
 
 @login_required(login_url='login')
 @user_passes_test(warehouse_user_required)
+def magacin_wms(request):
+    validated = Order.objects.filter(_validated_orders_q()).exclude(status=Order.Status.OTKAZANA)
+    pending = _unvalidated_orders_qs().order_by('-kreirana', '-pk')
+    if request.GET.get('wms_state') == '1':
+        response = JsonResponse({'pending_ids': list(pending.values_list('pk', flat=True)),
+                                 'validated_count': validated.count()})
+        response['Cache-Control'] = 'no-store'
+        return response
+    show_validated = request.GET.get('validirane') == '1'
+    context = _magacin_context(request, section='wms', page_title='WMS — Magacin')
+    context.update(orders=validated.order_by('-kreirana', '-pk') if show_validated else pending,
+                   show_validated=show_validated, validated_count=validated.count())
+    response = render(request, 'staff/magacin/wms.html', context)
+    response['Cache-Control'] = 'no-store'
+    return response
+
+
+@login_required(login_url='login')
+@user_passes_test(warehouse_user_required)
 def magacin_brzi_unos(request):
     """Korak 1: sken / šifra / barkod / naziv → pronađi postojeći artikal."""
     from .quick_activation import find_products, find_single_product, normalize_scan_code
@@ -3436,12 +3455,19 @@ def magacin_narudzbe_stampa(request):
     from .views import _order_print_job
 
     brojevi = [b.strip() for b in request.GET.getlist('b') if (b or '').strip()]
-    brojevi = list(dict.fromkeys(brojevi))[:30]
+    brojevi = list(dict.fromkeys(brojevi))
+    from_wms = request.GET.get('wms') == '1'
+    wms_validated = request.GET.get('wms') == 'validated'
+    if not from_wms and not wms_validated:
+        brojevi = brojevi[:30]
     if not brojevi:
         messages.error(request, 'Odaberi barem jednu narudžbu za štampu.')
         return redirect('staff_magacin_narudzbe')
+    queryset = _unvalidated_orders_qs() if from_wms else Order.objects.all()
+    if wms_validated:
+        queryset = queryset.filter(_validated_orders_q())
     orders = list(
-        Order.objects.filter(broj__in=brojevi)
+        queryset.filter(broj__in=brojevi)
         .exclude(status=Order.Status.OTKAZANA)
         .prefetch_related('stavke', 'magacin_holds')
     )
@@ -3460,6 +3486,10 @@ def magacin_narudzbe_stampa(request):
         )
         return redirect(_provjera_url(first, next_print=True))
     print_jobs = [_order_print_job(order) for order in ordered]
+    if from_wms:
+        from .wms import paper_picking_job
+        for order, job in zip(ordered, print_jobs):
+            job['wms_picking'] = paper_picking_job(request, order)
     context = {
         **print_jobs[0],
         'print_jobs': print_jobs,
@@ -5686,7 +5716,7 @@ def _pick_line_loc(raw):
     return _pick_line_loc_from_key((raw or {}).get('key'))
 
 
-def apply_order_pick(order, lines, *, finalize=False, user=None):
+def apply_order_pick(order, lines, *, finalize=False, user=None, preserve_unavailable=False):
     """Sačuvaj picking i postavi količinu za fakturu.
 
     finalize=True (završi picking): stavke s 0 pokupljenih se skidaju s narudžbe
@@ -5780,7 +5810,7 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
             order.refresh_from_db()
         return {'cancelled': False, 'removed': True}
 
-    if finalize and is_prenos_mp_order(order):
+    if finalize and is_prenos_mp_order(order) and not preserve_unavailable:
         for item_id, loc, qty in missing_lines:
             item = OrderItem.objects.filter(pk=item_id, narudzba=order).first()
             if item is None:
@@ -5797,6 +5827,12 @@ def apply_order_pick(order, lines, *, finalize=False, user=None):
             elif item.kolicina_pokupljeno is not None:
                 qty = max(0, int(item.kolicina_pokupljeno or 0))
             else:
+                continue
+            if qty <= 0 and preserve_unavailable:
+                item.kolicina_pokupljeno = 0
+                item.kolicina = 0
+                item.wms_out_of_stock = True
+                item.save(update_fields=['kolicina_pokupljeno', 'kolicina', 'wms_out_of_stock'])
                 continue
             if qty <= 0:
                 result = _drop_zero(item, '', int(item.kolicina or 0))

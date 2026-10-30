@@ -1,0 +1,18 @@
+<section class="wms-picking-sheet" aria-label="Picking lista narudžbe {{ order.broj }}">
+    <header class="wms-picking-header">
+        <div><p>CARPOLOGIJA BH · MAGACIN</p><h1>PICKING LISTA</h1><h2>Narudžba #{{ order.broj }}</h2><p>{{ order.display_customer_name }} · {{ order.kreirana|date:'d.m.Y. H:i' }}</p></div>
+        <div class="wms-picking-qr">
+            {% if job.wms_picking.qr %}<img src="{{ job.wms_picking.qr }}" width="150" height="150" alt="QR za validaciju narudžbe {{ order.broj }}">{% endif %}
+            <strong>#{{ order.broj }}</strong>
+            <span>Skeniraj za potvrdu preuzimanja ili unos manjka.</span>
+        </div>
+    </header>
+    <p>Uzmi navedenu količinu sa svake lokacije. Nakon skeniranja QR koda potvrdi sve količine ili unesi koliko je stvarno pronađeno.</p>
+    {% if job.wms_picking.error %}<p class="wms-picking-error"><strong>Potrebna provjera:</strong> {{ job.wms_picking.error }} Validacija nije moguća dok se ne riješe nedostajuće količine.</p>{% endif %}
+    <table class="wms-picking-table">
+        <colgroup><col><col><col><col><col></colgroup>
+        <thead><tr><th colspan="5">Picking lista · Narudžba #{{ order.broj }}</th></tr><tr><th>Naziv artikla</th><th>Šifra</th><th>Lokacija</th><th class="wms-picking-qty">Uzeti kom.</th><th class="wms-picking-check">✓</th></tr></thead>
+        <tbody>{% for row in job.wms_picking.rows %}<tr><td>{{ row.naziv }}</td><td>{{ row.sifra|default:'—' }}</td><td><strong>{{ row.display_loc }}</strong></td><td class="wms-picking-qty"><strong>{{ row.need }}</strong></td><td class="wms-picking-check"></td></tr>{% empty %}<tr><td colspan="5">Nema stavki za picking.</td></tr>{% endfor %}</tbody>
+    </table>
+    <footer class="wms-picking-footer">Narudžba #{{ order.broj }} · Preuzeo/la: ____________________ · Datum: ______________</footer>
+</section>

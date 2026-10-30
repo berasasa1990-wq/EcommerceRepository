@@ -14,6 +14,7 @@ from . import views_b2b
 from . import views_catalog_api
 from . import views_feed
 from . import views_ledger
+from . import wms
 from . import views_magacin
 from . import views_product_sets
 from . import views_site_prep
@@ -182,6 +183,8 @@ urlpatterns = [
     path('nalog/aktiviraj-korisnika/', views.staff_activate_user, name='staff_activate_user'),
     path('nalog/aktivne-korpe/', views.staff_active_carts, name='staff_active_carts'),
     path('nalog/magacin/', views_magacin.magacin_home, name='staff_magacin'),
+    path('nalog/magacin/wms/', views_magacin.magacin_wms, name='staff_magacin_wms'),
+    path('nalog/magacin/wms/validacija/<str:token>/', wms.validate_qr, name='staff_magacin_wms_validate'),
     path('nalog/magacin/pregled/', views_magacin.magacin_pregled, name='staff_magacin_pregled'),
     path('nalog/magacin/barkod-provjera/', views_magacin.magacin_barkod_provjera, name='staff_magacin_barkod_provjera'),
     path('nalog/magacin/dupli-barkodovi/<int:pk>/obrisi/', views_magacin.magacin_dupli_barkod_obrisi, name='staff_magacin_dupli_barkod_obrisi'),

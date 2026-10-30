@@ -11,40 +11,40 @@ body.magacin-page .mg-app .mg-sidebar{
   min-height:100dvh;
   height:auto;
   overflow:visible;
-  background:#fff;
+  background:#eee;
   border:0;
-  border-right:1px solid #d5e7f1;
-  color:#0094CD;
+  border-right:1px solid #ccc;
+  color:#333;
   box-shadow:none;
-  scrollbar-color:#95deef #fff;
+  scrollbar-color:#aaa #eee;
 }
 body.magacin-page .mg-app .mg-sidebar > *{flex-shrink:0}
-body.magacin-page .mg-app .mg-side-top{display:flex;align-items:center;justify-content:space-between;padding:10px 8px;margin-bottom:6px;gap:8px;border-bottom:1px solid #d5e7f1}
-body.magacin-page .mg-app .mg-brand-lockup{display:flex;align-items:center;gap:10px;padding:6px 8px;color:#0094CD;text-decoration:none;font-size:16px;font-weight:800;letter-spacing:.02em}
-body.magacin-page .mg-app .mg-brand-cube{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border:1px solid #d5e7f1;border-radius:6px;background:transparent;color:#0094CD}
+body.magacin-page .mg-app .mg-side-top{display:flex;align-items:center;justify-content:space-between;padding:10px 8px;margin-bottom:6px;gap:8px;border-bottom:1px solid #ccc}
+body.magacin-page .mg-app .mg-brand-lockup{display:flex;align-items:center;gap:10px;padding:6px 8px;color:#333;text-decoration:none;font-size:16px;font-weight:800;letter-spacing:.02em}
+body.magacin-page .mg-app .mg-brand-cube{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border:1px solid #ccc;border-radius:2px;background:transparent;color:#333}
 body.magacin-page .mg-app .mg-brand-cube svg{width:18px;height:18px}
-body.magacin-page .mg-app .mg-nav{display:flex;flex-direction:column;gap:4px;padding:4px 8px 12px}
-body.magacin-page .mg-app :is(.mg-nav a,.mg-nav-locked){display:flex;align-items:center;gap:8px;min-height:42px;box-sizing:border-box;padding:10px 12px;border:1px solid #d5e7f1;border-radius:10px;background:transparent;box-shadow:none;color:#0094CD;text-decoration:none;font-size:13px;font-weight:700;line-height:1.25;animation:none}
+body.magacin-page .mg-app .mg-nav{display:flex;flex-direction:column;gap:0;padding:4px 8px 12px}
+body.magacin-page .mg-app :is(.mg-nav a,.mg-nav-locked){display:flex;align-items:center;gap:8px;min-height:36px;box-sizing:border-box;padding:8px 10px;border:0;border-bottom:1px solid #ccc;border-radius:0;background:transparent;box-shadow:none;color:#333;text-decoration:none;font-size:13px;font-weight:500;line-height:1.25;animation:none}
 body.magacin-page .mg-app .mg-nav :is(a,.mg-nav-locked) svg{width:20px;height:20px;flex-shrink:0;color:inherit}
 body.magacin-page .mg-app .mg-nav a:not(.mg-nav-locked)::after{content:"›";margin-left:auto;font-size:18px;font-weight:400;color:inherit;line-height:1}
-body.magacin-page .mg-app .mg-nav a:hover,body.magacin-page .mg-app .mg-nav a.is-active{background:#effaff;border-color:#95deef;color:#0094CD}
+body.magacin-page .mg-app .mg-nav a:hover,body.magacin-page .mg-app .mg-nav a.is-active{background:#ddd;border-color:#aaa;color:#333}
 body.magacin-page .mg-app .mg-nav a.is-active{font-weight:800}
-body.magacin-page .mg-app .mg-side-foot{margin:auto 12px 16px;padding:12px 14px;border:1px solid #d5e7f1;border-radius:12px;background:transparent;box-shadow:none}
-body.magacin-page .mg-app .mg-side-label{padding:18px 18px 8px;font-size:11px;font-weight:700;letter-spacing:.12em;color:#0094CD}
+body.magacin-page .mg-app .mg-side-foot{margin:auto 12px 16px;padding:12px 14px;border:1px solid #ccc;border-radius:2px;background:transparent;box-shadow:none}
+body.magacin-page .mg-app .mg-side-label{padding:18px 18px 8px;font-size:11px;font-weight:700;letter-spacing:.12em;color:#333}
 body.magacin-page .mg-app .mg-side-foot .mg-side-label{padding:0 2px 10px}
-body.magacin-page .mg-app .mg-sync-meta{margin:0 0 4px;font-size:12px;color:#0094CD}
-body.magacin-page .mg-app .mg-sync-meta strong{font-weight:500;color:#0094CD}
-body.magacin-page .mg-app .mg-version{color:#0094CD}
-body.magacin-page .mg-app .mg-sidebar :is(.mg-history-btn,.mg-side-close){display:block;min-height:36px;padding:8px 10px;border:1px solid #d5e7f1;border-radius:10px;background:transparent;box-shadow:none;color:#0094CD;text-align:center;font-family:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer}
+body.magacin-page .mg-app .mg-sync-meta{margin:0 0 4px;font-size:12px;color:#333}
+body.magacin-page .mg-app .mg-sync-meta strong{font-weight:500;color:#333}
+body.magacin-page .mg-app .mg-version{color:#333}
+body.magacin-page .mg-app .mg-sidebar :is(.mg-history-btn,.mg-side-close){display:block;min-height:36px;padding:8px 10px;border:1px solid #ccc;border-radius:2px;background:transparent;box-shadow:none;color:#333;text-align:center;font-family:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer}
 body.magacin-page .mg-app .mg-sidebar .mg-history-btn{margin-top:12px}
-body.magacin-page .mg-app .mg-sidebar :is(.mg-history-btn,.mg-side-close):hover{background:#effaff;border-color:#95deef}
+body.magacin-page .mg-app .mg-sidebar :is(.mg-history-btn,.mg-side-close):hover{background:#ddd;border-color:#aaa}
 body.magacin-page .mg-app .mg-sidebar .mg-side-close{display:none}
 body.magacin-page .mg-app .mg-sidebar button:disabled{opacity:.55;cursor:default}
-body.magacin-page .mg-app .mg-sidebar :is(a,button):focus-visible{outline:3px solid #fff;outline-offset:2px}
-body.magacin-page .mg-app .mg-sidebar .mg-nav-locked{cursor:not-allowed;color:#b6dbe8;background:transparent;animation:none}
-body.magacin-page .mg-app .mg-sidebar .mg-menu-lock{width:16px;height:16px;flex:0 0 16px;margin-left:auto;color:#b6dbe8}
+body.magacin-page .mg-app .mg-sidebar :is(a,button):focus-visible{outline:2px solid #555;outline-offset:2px}
+body.magacin-page .mg-app .mg-sidebar .mg-nav-locked{cursor:not-allowed;color:#888;background:transparent;animation:none}
+body.magacin-page .mg-app .mg-sidebar .mg-menu-lock{width:16px;height:16px;flex:0 0 16px;margin-left:auto;color:#888}
 body.magacin-page .mg-app .mg-side-foot>.mg-nav-locked{margin-bottom:6px}
-body.magacin-page .mg-app .mg-nav-count{border-radius:999px;padding:2px 6px;background:#fff;color:#0078aa;font-size:11px;line-height:1.3}
+body.magacin-page .mg-app .mg-nav-count{border-radius:2px;padding:2px 6px;background:#eee;color:#333;font-size:11px;line-height:1.3}
 @media(max-width:1100px){
   body.magacin-page .mg-app .mg-sidebar{display:none;position:fixed;z-index:90;inset:0;width:100%;height:100dvh;flex-basis:auto;align-self:auto;overflow-y:auto}
   body.magacin-page .mg-app.nav-open .mg-sidebar{display:flex}
@@ -57,19 +57,19 @@ body.magacin-page.is-pick .mg-app:not(.nav-open) .mg-sidebar{display:none}
 
 .mg-mobile-heading{display:none}
 @media(max-width:1100px){
- body.magacin-page .mg-mobile-heading{box-sizing:border-box;position:fixed;inset:0 0 auto;z-index:80;display:flex;align-items:center;gap:12px;height:calc(64px + env(safe-area-inset-top,0px));padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;margin:0;background:#fff;border-bottom:1px solid #d5e7f1;color:#0094CD;font-weight:700;box-shadow:none}
+ body.magacin-page .mg-mobile-heading{box-sizing:border-box;position:fixed;inset:0 0 auto;z-index:80;display:flex;align-items:center;gap:12px;height:calc(64px + env(safe-area-inset-top,0px));padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;margin:0;background:#eee;border-bottom:1px solid #ccc;color:#333;font-weight:700;box-shadow:none}
  html body.magacin-page .mg-app .mg-main{padding-top:calc(80px + env(safe-area-inset-top,0px))}
  body.magacin-page .mg-main>.mg-chrome{display:none}
- body.magacin-page .mg-mobile-heading button{display:grid;place-items:center;width:44px;height:44px;padding:10px;border:1px solid #d5e7f1;border-radius:10px;background:#fff;color:#0094CD;box-shadow:none}
+ body.magacin-page .mg-mobile-heading button{display:grid;place-items:center;width:44px;height:44px;padding:10px;border:1px solid #ccc;border-radius:2px;background:#eee;color:#333;box-shadow:none}
  body.magacin-page .mg-mobile-heading svg{width:24px;height:24px}
  body.magacin-page .mg-app .mg-nav>:not([data-mobile-warehouse-link]),body.magacin-page .mg-app .mg-side-foot{display:none}
- body.magacin-page .mg-app .mg-sidebar{inset:0;width:100%;height:100dvh;min-height:100dvh;max-height:100dvh;padding:12px;background:#fff;color:#0094CD;border:0;border-radius:0;overflow-y:auto;overscroll-behavior:contain}
- body.magacin-page .mg-app .mg-side-top{border-color:#d5e7f1;margin-bottom:8px}
- body.magacin-page .mg-app :is(.mg-brand-lockup,.mg-brand-cube){color:#0094CD;background:transparent;border-color:#d5e7f1}
- body.magacin-page .mg-app .mg-nav a{background:#fff;color:#0094CD;border-color:#d5e7f1}
- body.magacin-page .mg-app .mg-nav a:is(:hover,.is-active){background:#fff;color:#0094CD;border-color:#95deef}
- body.magacin-page .mg-app .mg-sidebar .mg-side-close{background:#fff;color:#0094CD;border-color:#d5e7f1}
- body.magacin-page .mg-app .mg-nav-count{background:#effaff;color:#0094CD}
+ body.magacin-page .mg-app .mg-sidebar{inset:0;width:100%;height:100dvh;min-height:100dvh;max-height:100dvh;padding:12px;background:#eee;color:#333;border:0;border-radius:0;overflow-y:auto;overscroll-behavior:contain}
+ body.magacin-page .mg-app .mg-side-top{border-color:#ccc;margin-bottom:8px}
+ body.magacin-page .mg-app :is(.mg-brand-lockup,.mg-brand-cube){color:#333;background:transparent;border-color:#ccc}
+ body.magacin-page .mg-app .mg-nav a{background:#eee;color:#333;border-color:#ccc}
+ body.magacin-page .mg-app .mg-nav a:is(:hover,.is-active){background:#eee;color:#333;border-color:#aaa}
+ body.magacin-page .mg-app .mg-sidebar .mg-side-close{background:#eee;color:#333;border-color:#ccc}
+ body.magacin-page .mg-app .mg-nav-count{background:#ddd;color:#333}
 }
 
 @media(min-width:1101px){body.magacin-page .mg-app .mg-nav .mg-bulk-mobile{display:none}}
@@ -77,3 +77,9 @@ body.magacin-page.is-pick .mg-app:not(.nav-open) .mg-sidebar{display:none}
 @media(max-width:1100px){
  body.magacin-page .mg-app .mg-nav a.mg-bulk-mobile[data-mobile-warehouse-link]{display:flex}
 }
+
+/* Plain grey navigation, including notification and mobile states. */
+body.magacin-page .mg-app .mg-sidebar :is(a,button,.mg-brand-cube,.mg-nav-count){background-image:none!important;box-shadow:none!important;animation:none!important;transition:none}
+body.magacin-page .mg-app .mg-nav a:not(.mg-nav-locked)::after{content:none}
+body.magacin-page .mg-app .mg-nav a.is-active{background:#d4d4d4;border-color:#aaa;color:#111}
+body.magacin-page .mg-app .mg-nav a:hover{background:#ddd;color:#111}

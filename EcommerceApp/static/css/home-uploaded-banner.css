@@ -7,3 +7,12 @@ html body.home-mobile-reference main>.home-uploaded-banner--bestsellers{order:10
 /* Main banner: 1920 × 720 proportions, scaled to the available page width. */
 html body.home-mobile-reference main > .home-uploaded-banner:not(.home-uploaded-banner--bestsellers) { max-width: 1920px !important; }
 html body.home-mobile-reference main > .home-uploaded-banner:not(.home-uploaded-banner--bestsellers) img { aspect-ratio: 1920 / 720; }
+
+@media (max-width: 767px) {
+    html body.home-mobile-reference main > .home-uploaded-banner:not(.home-uploaded-banner--bestsellers) img {
+        height: clamp(300px, 80vw, 520px);
+        aspect-ratio: auto;
+        object-fit: cover;
+        object-position: center;
+    }
+}

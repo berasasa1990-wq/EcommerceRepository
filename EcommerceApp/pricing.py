@@ -291,6 +291,7 @@ def sazetak_iz_narudzbe(order):
         and not std_free
         and not is_vp_order(order)
         and not order_waived_shipping(order)
+        and not (medjuzbir == 0 and any(item.wms_out_of_stock for item in order.stavke.all()))
     ):
         dostava = std_dostava
         ukupno = _kvantiziraj(goods + dostava)
@@ -358,7 +359,7 @@ def pripremi_stavke_za_racun(order):
         if oi.ledger_missing_line_id:
             continue
         qty = oi.kolicina_faktura
-        if qty <= 0:
+        if qty <= 0 and not oi.wms_out_of_stock:
             continue
         naziv = oi.naziv or ''
         is_akcija = 'popust iz akcije' in naziv.lower()
@@ -371,7 +372,7 @@ def pripremi_stavke_za_racun(order):
         charged = (orig * qty).quantize(Decimal('0.01'))
 
         deal_match = deal_pattern.search(naziv)
-        if deal_match:
+        if deal_match and qty > 0:
             try:
                 deal_vrsta = deal_match.group(1)
                 disc_qty = int(deal_match.group(2))
@@ -383,7 +384,7 @@ def pripremi_stavke_za_racun(order):
                 disc = None
                 disc_qty = 0
                 charged = (orig * qty).quantize(Decimal('0.01'))
-        elif is_akcija:
+        elif is_akcija and qty > 0:
             m = akcija_pattern.search(naziv)
             if m:
                 try:
@@ -412,7 +413,7 @@ def pripremi_stavke_za_racun(order):
         if not popust_opis:
             if is_deal and deal_vrsta:
                 popust_opis = f'Deal {deal_vrsta}' + (f' (−{deal_pct}%)' if deal_pct else '')
-            elif is_akcija:
+            elif is_akcija and qty > 0:
                 popust_opis = 'Uslov / akcija prodaja'
             elif bazna is not None and bazna > orig:
                 popust_opis = 'Snižena cijena'
@@ -431,6 +432,7 @@ def pripremi_stavke_za_racun(order):
             'varijacija_naziv': oi.varijacija_naziv,
             'sifra': oi.sifra,
             'kolicina': qty,
+            'out_of_stock': oi.wms_out_of_stock and qty == 0,
             'cijena': orig,
             'bazna_cijena': bazna,
             'ukupno': charged,

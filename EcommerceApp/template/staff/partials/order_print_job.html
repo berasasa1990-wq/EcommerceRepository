@@ -3,5 +3,6 @@
     <div class="invoice-sheet">
         {% include 'staff/partials/order_preview.html' with print_preview=True %}
     </div>
+    {% if job.wms_picking %}{% include 'staff/partials/wms_picking_print.html' %}{% endif %}
 </div>
 {% endwith %}

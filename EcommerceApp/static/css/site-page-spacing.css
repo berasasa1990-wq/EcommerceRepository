@@ -39,7 +39,18 @@ html body.shared-site-header:not(.staff-blue-page):not(.staff-admin-page):not(.m
 }
 
 /* Give the homepage more breathing room on both sides. */
-body.home-mobile-reference { --storefront-page-gutter: 36px; }
+body.home-mobile-reference { --storefront-page-gutter: 16px; }
+@media (max-width: 767px) {
+    /* Mobile sections already provide their original inner spacing. */
+    body.home-mobile-reference { --storefront-page-gutter: 0px; }
+}
 @media (min-width: 1025px) {
     body.home-mobile-reference { --storefront-page-gutter: clamp(72px, 7vw, 140px); }
+}
+
+@media (max-width: 767px) {
+    html body.shared-site-header.home-mobile-reference:not(.staff-blue-page):not(.staff-admin-page):not(.magacin-page) > main > .home-products {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
 }

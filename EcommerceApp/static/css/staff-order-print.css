@@ -36,3 +36,78 @@
  .order-preview__footer{margin-top:16px;padding-top:14px;font-size:10px}
  .order-preview tr,.order-preview__card,.order-preview__intro,.order-preview__brand,.order-preview__footer{break-inside:avoid}
 }
+
+/* Plain invoice header with the storefront logo. */
+.invoice-sheet .order-preview__brand{background:#fff;color:#111;border-bottom:1px solid #ccc}
+.invoice-sheet .order-preview__brand img{background:transparent;padding:0;border-radius:0}
+.invoice-sheet .order-preview__intro .order-preview__card,.invoice-sheet .order-preview dl.order-preview__meta{background:#fff;border-color:#ccc}
+.invoice-sheet .order-preview__intro :is(h2,dt,dd,a){color:#111}
+.order-preview__warranty{display:block;color:#111;line-height:1.5;font-size:12px}
+.order-preview__warranty span{display:block}
+@media print{.order-preview__warranty{font-size:9px;break-inside:avoid;page-break-inside:avoid}}
+
+/* Monochrome invoice on screen and paper. */
+.invoice-sheet .order-preview,.invoice-sheet .order-preview *{color:#000!important;background-color:#fff!important;background-image:none!important;border-color:#999!important;box-shadow:none!important;text-shadow:none!important}
+.invoice-sheet .order-preview img{filter:grayscale(100%)}
+.invoice-sheet .order-preview__warranty{display:block;width:100%;max-width:none;text-align:left;margin:0;padding:0;box-sizing:border-box}
+.invoice-sheet .order-preview__warranty span{display:block;width:100%}
+.invoice-sheet .order-preview .order-preview__order-number{font-size:32px;font-weight:800;line-height:1.15;letter-spacing:.5px}
+@media print{
+ .invoice-sheet .order-preview .order-preview__order-number{font-size:24pt}
+ .invoice-sheet .order-preview__warranty{font-size:10px;line-height:1.5}
+}
+
+/* Combine recipient and shipping details beside the logo. */
+.invoice-sheet .order-preview__brand{align-items:center}
+.invoice-sheet .order-preview__recipient{flex:0 1 440px;min-width:0}
+.invoice-sheet .order-preview__recipient h2{font-size:15px;margin:0 0 12px}
+.invoice-sheet .order-preview__recipient dl{display:grid;grid-template-columns:100px minmax(0,1fr);gap:5px 12px;font-size:12px;line-height:1.4}
+.invoice-sheet .order-preview__recipient dd{margin:0;overflow-wrap:anywhere}
+.invoice-sheet .order-preview__intro{display:block}
+.invoice-sheet .order-preview dl.order-preview__meta{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px 16px;align-items:center;min-width:0}
+.invoice-sheet .order-preview__meta dt,.invoice-sheet .order-preview__meta dd{margin:0;grid-column:auto}
+@media print{
+ .invoice-sheet .order-preview__recipient{flex-basis:360px}
+ .invoice-sheet .order-preview__recipient h2{font-size:12px;margin-bottom:8px}
+ .invoice-sheet .order-preview__recipient dl{font-size:10px;grid-template-columns:85px minmax(0,1fr);gap:4px 10px}
+}
+@media screen and (max-width:600px){
+ .invoice-sheet .order-preview__brand{flex-direction:column;align-items:stretch}
+ .invoice-sheet .order-preview__recipient{flex-basis:auto}
+ .invoice-sheet .order-preview dl.order-preview__meta{grid-template-columns:1fr 1fr}
+}
+
+.invoice-sheet .order-preview__recipient dl{align-items:center}
+
+.invoice-sheet .order-preview__brand>div:first-child{flex:1;min-width:0}
+.invoice-sheet .order-preview__logo-meta{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:10px;width:100%}
+.invoice-sheet .order-preview__logo-meta>div{display:flex;flex-direction:column;gap:4px}
+.invoice-sheet .order-preview__logo-meta span{font-size:10px;letter-spacing:0}
+.invoice-sheet .order-preview__logo-meta .order-preview__date strong{font-size:11px;white-space:nowrap;font-weight:600}
+.invoice-sheet .order-preview__number{text-align:right}
+@media print{
+ .invoice-sheet .order-preview__recipient{flex:0 1 52%}
+ .invoice-sheet .order-preview__logo-meta{gap:12px}
+ .invoice-sheet .order-preview__logo-meta span{font-size:9px}
+ .invoice-sheet .order-preview__logo-meta .order-preview__date strong{font-size:9px}
+}
+
+/* Order number occupies its own central header column. */
+.invoice-sheet .order-preview__brand{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.6fr) minmax(0,1fr);gap:18px;align-items:center}
+.invoice-sheet .order-preview__brand img{width:100%;max-width:180px}
+.invoice-sheet .order-preview__brand>.order-preview__number{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;min-width:0}
+.invoice-sheet .order-preview__number>span{font-size:10px;letter-spacing:0}
+.invoice-sheet .order-preview__number .order-preview__order-number{white-space:nowrap}
+@media screen and (max-width:600px){.invoice-sheet .order-preview__brand{grid-template-columns:minmax(0,1fr)}.invoice-sheet .order-preview__brand>.order-preview__number{align-items:flex-start;text-align:left}}
+
+.invoice-sheet .order-preview__recipient{justify-self:end;width:max-content;max-width:100%;margin-left:auto}
+.invoice-sheet .order-preview__recipient h2,.invoice-sheet .order-preview__recipient dd{text-align:right}
+
+.invoice-sheet .order-preview__brand>.order-preview__number{justify-self:center;width:100%;text-align:center}
+.invoice-sheet .order-preview__number>span,.invoice-sheet .order-preview__number>.order-preview__order-number{display:block;width:100%;text-align:center}
+
+.invoice-sheet .order-preview__warranty{padding:12px 0;border-top:1px solid #999;border-bottom:1px solid #999;font-size:11px;line-height:1.7}
+.invoice-sheet .order-preview__warranty span{text-align:center;text-align-last:auto}
+.invoice-sheet .order-preview__warranty span:first-child{font-weight:600}
+@media print{.invoice-sheet .order-preview__warranty{font-size:10px;padding:8px 0;line-height:1.7}}
+@media screen and (max-width:600px){.invoice-sheet .order-preview__warranty span{text-align:center;text-align-last:auto}}

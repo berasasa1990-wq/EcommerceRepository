@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="bs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Picking narudžbe #{{ order.broj }}</title>
+<style>
+*{box-sizing:border-box}body{font:16px/1.6 system-ui,sans-serif;background:#eee;color:#222;margin:0;padding:20px}main{max-width:640px;margin:5vh auto;background:#fff;padding:28px;border-radius:14px;border:1px solid #ccc}h1{font-size:25px;margin-top:0}h2{font-size:19px}button,.button{display:inline-flex;justify-content:center;padding:12px 18px;border-radius:8px;font:inherit;background:#444;color:#fff;border:1px solid #444;cursor:pointer;text-decoration:none}.secondary{background:#fff;color:#222;border-color:#aaa}.actions{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}label{display:block;font-weight:600;margin:14px 0 6px}input{width:100%;padding:12px;border:1px solid #aaa;border-radius:8px;font:inherit}input[type=number]{max-width:180px}.success{color:#333}.error{color:#222;font-weight:700}.muted{color:#666;font-size:14px}.result{width:100%;text-align:left;background:#f5f5f5;color:#222;border-color:#ccc;flex-direction:column;align-items:flex-start}.result small{font-size:13px}.matches{display:grid;gap:10px;margin:16px 0}.matches form{margin:0}.location{padding:12px 0;border-top:1px solid #ddd}.summary{width:100%;border-collapse:collapse;font-size:14px}.summary td,.summary th{padding:10px 6px;border-bottom:1px solid #ddd;text-align:left}.summary td:last-child{font-weight:700}.summary-wrap{overflow-x:auto}@media(max-width:450px){body{padding:12px}main{padding:20px;margin:16px auto}.actions>*{flex:1}}
+</style></head>
+<body><main><h1>Narudžba #{{ order.broj }}</h1><p class="muted">{{ order.display_customer_name }}</p>
+{% if message %}<p role="status" class="{% if error %}error{% elif success %}success{% endif %}">{{ message }}</p>{% endif %}
+{% if stage == 'question' %}
+<h2>Da li su svi artikli sa liste pokupljeni?</h2><p>Odaberi „Da“ samo ako su preuzete sve količine sa svih lokacija navedenih na picking listi.</p>
+<div class="actions"><form method="post">{% csrf_token %}<button name="action" value="all" type="submit">Da, validatuj narudžbu</button></form><a class="button secondary" href="?mode=missing">Ne, unesi pronađene količine</a></div>
+{% elif stage == 'missing' %}
+<h2>Koji artikal nije pokupljen u cijelosti?</h2>
+<form method="get"><input type="hidden" name="mode" value="missing"><input type="hidden" name="changes" value="{{ changes }}"><label for="articleSearch">Šifra ili naziv artikla</label><input id="articleSearch" name="q" value="{{ query }}" placeholder="Pretraži artikle ove narudžbe" autocomplete="off"><div class="actions"><button type="submit">Pronađi artikal</button></div></form>
+{% if query %}<div class="matches">{% for item in matches %}<form method="get"><input type="hidden" name="mode" value="missing"><input type="hidden" name="changes" value="{{ changes }}"><button type="submit" name="item" value="{{ item.pk }}" class="result"><strong>{{ item.product_naziv|default:item.naziv }}</strong><small>Šifra: {{ item.sifra|default:'—' }} · Naručeno: {{ item.kolicina }}</small></button></form>{% empty %}<p>Nema artikla s tom šifrom ili nazivom u ovoj narudžbi.</p>{% endfor %}</div>{% endif %}
+{% if selected %}
+<section><h2>{{ selected.product_naziv|default:selected.naziv }}</h2><p>Šifra: {{ selected.sifra|default:'—' }} · Naručeno: {{ selected.kolicina }}</p><p>Upiši koliko je pronađeno. Ako artikal nije pronađen, unesi <strong>0</strong>.</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="save"><input type="hidden" name="item" value="{{ selected.pk }}"><input type="hidden" name="changes" value="{{ changes }}">
+{% for row in item_rows %}<div class="location"><label for="{{ row.input_name }}">Pronađeno na lokaciji {{ row.display_loc }}</label><p class="muted">Za uzeti sa liste: {{ row.need }}</p><input type="number" inputmode="numeric" id="{{ row.input_name }}" name="{{ row.input_name }}" min="0" max="{% if row.missing %}0{% else %}{{ row.need }}{% endif %}" value="{% if row.missing %}0{% else %}{{ row.found }}{% endif %}" step="1" required></div>{% endfor %}
+<div class="actions"><button type="submit">Potvrdi pronađenu količinu</button></div></form></section>
+{% endif %}
+{% if saved %}<p role="status" class="success">Količina je zabilježena za završnu potvrdu.</p>{% endif %}
+{% if summary %}<h2>Pregled izmjena</h2><div class="summary-wrap"><table class="summary"><thead><tr><th>Artikal</th><th>Naručeno</th><th>Pronađeno</th></tr></thead><tbody>{% for item in summary %}<tr><td>{{ item.name }}<br><small>{{ item.code }}</small></td><td>{{ item.ordered }}</td><td>{% if item.found == 0 %}Nema na stanju{% else %}{{ item.found }}{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+<p>Za ostale artikle potvrđuješ sve količine s picking liste. Po potrebi prvo pronađi i ispravi još neki artikal.</p><form method="post">{% csrf_token %}<input type="hidden" name="action" value="complete"><input type="hidden" name="changes" value="{{ changes }}"><div class="actions"><button type="submit">Potvrdi izmjene i validatuj narudžbu</button></div></form>{% endif %}
+{% elif stage == 'result' %}
+{% if success %}<p class="success"><strong>✓ Validatovana</strong> — narudžba je uklonjena iz nevalidatovanih u WMS-u.</p><p><a class="button secondary" href="{% url 'staff_magacin_wms' %}?validirane=1">✓ Validatovane narudžbe</a></p>{% endif %}
+<a class="button" href="{% url 'staff_order_detail' order.broj %}">Otvori ažurirani račun</a>
+{% endif %}
+<p><a href="{% url 'staff_magacin_wms' %}">← WMS</a></p></main></body></html>

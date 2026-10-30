@@ -1,23 +1,27 @@
+{% load static %}
 <article class="order-preview" {% if not print_preview %}id="orderInvoice"{% endif %}>
     <header class="order-preview__brand">
-        <div>{% if logo_url %}<img src="{{ logo_url }}" alt="Carpologija BH">{% elif site_settings.logo %}<img src="{{ site_settings.logo.url }}" alt="Carpologija BH">{% else %}<strong>CARPOLOGIJA.BH</strong>{% endif %}<span>OPREMA ZA RIBOLOV</span></div>
-        <div class="order-preview__benefits"><span>Brza dostava</span><span>Sigurna kupovina</span><span>Stručna podrška</span></div>
+        <div>{% if logo_url %}<img src="{{ logo_url }}" alt="Carpologija BH">{% elif site_settings.logo %}<img src="{{ site_settings.logo.url }}" alt="Carpologija BH">{% elif print_preview %}<img src="{% static 'img/carpologija-nav-logo-dark.jpg' %}" alt="Carpologija BH">{% else %}<strong>CARPOLOGIJA.BH</strong>{% endif %}<span>OPREMA ZA RIBOLOV</span>{% if print_preview %}<div class="order-preview__logo-meta"><div class="order-preview__date"><span>Datum i vrijeme</span><strong>{{ order.kreirana|date:"d.m.Y. H:i" }}</strong></div></div>{% endif %}</div>
+        {% if print_preview %}
+        <div class="order-preview__number"><span>Broj narudžbe</span><strong class="order-preview__order-number">#{{ order.broj }}</strong></div>
+        <section class="order-preview__recipient"><h2>Podaci o kupcu</h2><dl><dt>Ime i prezime</dt><dd>{{ order.display_customer_name }}</dd><dt>Telefon</dt><dd>{{ order.telefon|default:'—' }}</dd><dt>Email</dt><dd>{{ order.email|default:'—' }}</dd><dt>Adresa dostave</dt><dd>{{ order.adresa|default:'—' }}, {{ order.postanski_broj }} {{ order.grad|default:'—' }}</dd></dl></section>
+        {% else %}<div class="order-preview__benefits"><span>Brza dostava</span><span>Sigurna kupovina</span><span>Stručna podrška</span></div>{% endif %}
     </header>
     <div class="order-preview__body">
         {% if order.exchange_for_id %}<p class="order-preview__badge">Zamjena za #{{ order.exchange_for.broj }} · Bez otkupa · Preuzimanje zamjenskog paketa</p>{% endif %}
-        <section class="order-preview__intro">
+        {% if not print_preview %}<section class="order-preview__intro">
             <div class="order-preview__customer-grid">
             <section class="order-preview__card"><h2>Podaci o kupcu</h2><dl><dt>Ime i prezime</dt><dd>{{ order.display_customer_name }}</dd><dt>Telefon</dt><dd><a href="tel:{{ order.telefon }}">{{ order.telefon|default:'—' }}</a></dd><dt>Email</dt><dd>{{ order.email|default:'—' }}</dd></dl></section>
             <section class="order-preview__card"><h2>Adresa dostave</h2><dl><dt>Ulica</dt><dd>{{ order.adresa|default:'—' }}</dd><dt>Grad</dt><dd>{{ order.grad|default:'—' }}</dd><dt>Poštanski broj</dt><dd>{{ order.postanski_broj|default:'—' }}</dd></dl></section>
             </div>
-            <dl class="order-preview__meta"><dt>Datum i vrijeme</dt><dd>{{ order.kreirana|date:"d.m.Y. H:i" }}</dd><dt>Broj narudžbe</dt><dd>#{{ order.broj }}</dd></dl>
-        </section>
+            <dl class="order-preview__meta"><dt>Datum i vrijeme</dt><dd>{{ order.kreirana|date:"d.m.Y. H:i" }}</dd><dt>Broj narudžbe</dt><dd class="order-preview__order-number">#{{ order.broj }}</dd></dl>
+        </section>{% endif %}
         <section class="order-preview__items"><h2>Stavke narudžbe</h2>
             <div class="order-preview__table-wrap"><table><thead><tr><th>Proizvod</th><th>Cijena</th><th>Količina</th><th>Ukupno</th></tr></thead><tbody>
             {% for item in stavke %}<tr>
                 <td><div class="order-preview__product">{% if item.preview_image %}<img src="{{ item.preview_image }}" alt="" width="72" height="72" loading="lazy">{% else %}<span class="order-preview__placeholder" aria-hidden="true">▧</span>{% endif %}<div><strong>{{ item.product_naziv|default:item.naziv }}</strong>{% if item.sifra %}<small>Šifra: {{ item.sifra }}</small>{% endif %}{% if item.varijacija_naziv %}<small>{{ item.varijacija_naziv }}</small>{% endif %}{% if item.popust_opis %}<small class="order-preview__discount">{{ item.popust_opis }}{% if item.popust_iznos %} · Ušteda {{ item.popust_iznos }} KM{% endif %}</small>{% endif %}</div></div></td>
                 <td>{% if item.is_deal_promo and item.discounted_unit_price %}<del>{{ item.cijena }} KM</del><small>{{ item.discounted_qty }} kom. po {{ item.discounted_unit_price }} KM</small>{% elif item.is_akcija_promo and item.discounted_unit_price %}<del>{{ item.cijena }} KM</del><small>1 kom. po {{ item.discounted_unit_price }} KM</small>{% else %}{% if item.ima_snizenje and item.bazna_cijena > item.cijena %}<del>{{ item.bazna_cijena }} KM</del>{% endif %}{{ item.cijena }} KM{% endif %}</td>
-                <td>{{ item.kolicina }}</td><td><strong>{{ item.ukupno }} KM</strong></td>
+                <td>{% if item.out_of_stock %}<strong>Nema na stanju</strong>{% else %}{{ item.kolicina }}{% endif %}</td><td><strong>{{ item.ukupno }} KM</strong></td>
             </tr>{% empty %}<tr><td colspan="4">Nema stavki narudžbe.</td></tr>{% endfor %}
             </tbody></table></div>
         </section>
@@ -26,6 +30,6 @@
             <section class="order-preview__card order-preview__soft order-preview__totals"><h2>Ukupno</h2><dl><dt>Ukupno proizvodi<small class="order-preview__vat">PDV je uračunat u cijenu</small></dt><dd>{{ summary.medjuzbir }} KM</dd><dt>Dostava – xExpress</dt><dd>{{ summary.dostava }} KM</dd>{% if summary.popust %}<dt>{{ summary.popust_opis|default:'Popust' }}</dt><dd>−{{ summary.popust }} KM</dd>{% endif %}</dl><div class="order-preview__total"><strong>Ukupno za naplatu</strong><b>{{ summary.ukupno }} KM</b></div></section>
 
         </div>
-        <footer class="order-preview__footer"><strong>Carpologija BH · Oprema za ribolov</strong><span>carpologijabh.ba · carpologijabh@gmail.com</span></footer>
+        <footer class="order-preview__footer">{% if print_preview %}<div class="order-preview__warranty"><span>Ovaj dokument predstavlja garantni list za narudžbu #{{ order.broj }} i odnosi se na kupljene artikle, njihove nazive i količine navedene na ovom računu.</span><span>Garantni list sačuvajte kao dokaz kupovine i priložite ga uz artikal prilikom reklamacije, uz navođenje broja narudžbe i opis uočenog problema.</span></div>{% endif %}<strong>Carpologija BH · Oprema za ribolov</strong><span>carpologijabh.ba · carpologijabh@gmail.com</span></footer>
     </div>
 </article>

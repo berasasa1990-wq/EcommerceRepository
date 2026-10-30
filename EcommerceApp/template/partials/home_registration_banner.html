@@ -1,4 +1,14 @@
 {% load static %}
-<aside class="home-registration-banner home-registration-banner--uploaded" aria-label="Pogodnosti registracije">
-    <a href="{% url 'register' %}?loyalty_popup=1"><img src="{% static 'img/registration-banner-1600x320.png' %}" alt="Registruj se i ostvari dodatne pogodnosti — kreiraj račun" width="1600" height="320" loading="lazy" decoding="async"></a>
+<aside class="home-registration-banner home-registration-banner--text" aria-labelledby="registration-banner-title">
+    <div class="home-registration-banner__brand">
+        <img src="{% static 'img/carpologija-nav-logo-dark.jpg' %}" alt="Carpologija BH — oprema za ribolov" width="1000" height="200" loading="lazy" decoding="async">
+        <div class="home-registration-banner__discount" aria-hidden="true">10%<span>ZA PRVU NARUDŽBU</span></div>
+    </div>
+    <div class="home-registration-banner__content">
+        <span class="home-registration-banner__eyebrow">VIŠE POGODNOSTI UZ TVOJ RAČUN</span>
+        <h2 id="registration-banner-title">Registruj se i ostvari 10% popusta</h2>
+        <p>Kreiraj svoj račun i iskoristi jednokratni kupon za prvu narudžbu. Sačuvaj omiljene artikle i prati svoje narudžbe na jednom mjestu.</p>
+        <ul><li>Kupon za prvu narudžbu</li><li>Lista želja</li><li>Pregled narudžbi</li></ul>
+    </div>
+    <div class="home-registration-banner__cta"><a href="{% url 'register' %}?loyalty_popup=1">Registruj se <span aria-hidden="true">→</span></a><span>Pridruži se Carpologija BH zajednici.</span></div>
 </aside>

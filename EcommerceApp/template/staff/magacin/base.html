@@ -14,8 +14,9 @@
 {% endblock %}
 
 {% block warehouse_theme_css %}
-<link rel="stylesheet" href="{% static 'css/staff-magacin-menu.css' %}?v=20261021-bulk-mobile-menu">
+<link rel="stylesheet" href="{% static 'css/staff-magacin-menu.css' %}?v=20261030-plain-grey-menu">
 <link rel="stylesheet" media="screen" href="{% static 'css/warehouse-workspace.css' %}?v=20261021-bulk-mobile-menu">
+<link rel="stylesheet" media="screen" href="{% static 'css/warehouse-monochrome.css' %}?v=20261030-shared-grey">
 {% endblock %}
 
 {% block flash_messages %}
@@ -38,6 +39,12 @@
             <button type="button" class="mg-btn mg-side-close" id="mgNavClose" hidden>Zatvori</button>
         </div>
         <nav class="mg-nav">
+            {% if request.user|warehouse_can:"staff_magacin_wms" %}
+            <a href="{% url 'staff_magacin_wms' %}" data-mobile-warehouse-link class="{% if magacin_section == 'wms' %}is-active{% endif %}"{% if magacin_section == 'wms' %} aria-current="page"{% endif %}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21V8l9-5 9 5v13H3z"/><path d="M7 21V11h10v10M7 15h10M12 11v10"/></svg>
+                WMS
+            </a>
+            {% endif %}
             {% if request.user|warehouse_can:"staff_magacin_pregled" %}
             <a href="{% url 'staff_magacin_pregled' %}" class="{% if magacin_section == 'pregled' %}is-active{% endif %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -212,19 +219,8 @@
     <div class="mg-main">
         <header class="mg-mobile-heading"><button type="button" data-magacin-menu aria-label="Otvori meni magacina" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><span>Magacin</span></header>
         {% block magacin_before_search %}{% endblock %}
-        {% if not hide_top_search %}
-        {% if magacin_section == 'rezervni' or magacin_section == 'popis_test' or magacin_section == 'popis' or magacin_section == 'stampa_deklaracije' or magacin_section == 'stampa_cijena' or magacin_section == 'lokacije' or magacin_section == 'zalihe' or magacin_section == 'mp_dnevno' or magacin_section == 'transferi' or magacin_section == 'provjera_lagera' or magacin_section == 'fali_na_sajtu' %}
-        {% else %}
+        {% if not hide_top_search and magacin_section == 'artikli' %}
         <div class="mg-page-bar mg-chrome">
-            {% if magacin_section == 'narudzbe' %}
-            <form class="mg-page-search mg-chrome-search" method="get" action="{% url 'staff_magacin_narudzbe' %}" role="search">
-                {% if show_validated %}<input type="hidden" name="validirane" value="1">{% endif %}
-                {% if show_all_validated %}<input type="hidden" name="sve" value="1">{% elif show_validated and day and not is_today %}<input type="hidden" name="datum" value="{{ day|date:'Y-m-d' }}">{% endif %}
-                {% if izvor_filter and izvor_filter != 'sve' %}<input type="hidden" name="izvor" value="{{ izvor_filter }}">{% endif %}
-                <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
-                <input type="search" name="pretraga" value="{{ order_query }}" placeholder="Pretraži po imenu ili broju narudžbe..." autocomplete="off">
-            </form>
-            {% else %}
             <form class="mg-page-search mg-chrome-search" method="get" action="{% url 'staff_magacin_artikli' %}" role="search" id="mgArticleSearchForm">
                 <svg class="mg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
                 <input type="search" name="pretraga" value="{{ magacin_search }}" placeholder="Pretraži artikle po nazivu, šifri ili barkodu..." autocomplete="off" id="mgArticleSearch" aria-label="Pretraži artikle po nazivu, šifri ili barkodu" enterkeyhint="search">
@@ -237,7 +233,6 @@
                 {% endif %}
                 {% endblock %}
             </form>
-            {% endif %}
             <div class="mg-chrome-right">
                 <button type="button" class="mg-chrome-icon" id="mgArticleScanBtn" title="Skeniraj barkod" aria-label="Skeniraj barkod">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -254,7 +249,6 @@
                 </div>
             </div>
         </div>
-        {% endif %}
         {% endif %}
         {% block magacin_content %}{% endblock %}
     </div>

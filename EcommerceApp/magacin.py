@@ -4338,6 +4338,8 @@ def sync_webshop_charges_to_picked(order):
         if item.kolicina_pokupljeno is None:
             continue
         picked = max(0, int(item.kolicina_pokupljeno or 0))
+        if picked <= 0 and item.wms_out_of_stock:
+            continue
         if picked <= 0:
             item.delete()
             continue

@@ -110,15 +110,16 @@ class BannerManagerTests(TestCase):
         self.assertIn('/?noviteti=1', html)
         self.assertIn('/?akcija=1', html)
 
-    def test_registration_image_replaces_copy(self):
+    def test_registration_banner_has_fixed_text_and_benefits(self):
         from django.template.loader import render_to_string
         site = SiteSettings(registration_slika='site/registration/banner.jpg')
         html = render_to_string('partials/home_registration_banner.html', {'site_settings': site})
-        self.assertIn('img/registration-banner-1600x320.png', html)
         self.assertNotIn('site/registration/banner.jpg', html)
         self.assertIn('/registracija/?loyalty_popup=1', html)
-        self.assertNotIn('<p>', html)
-        self.assertIn('home-registration-banner--uploaded', html)
+        self.assertNotIn('<img', html)
+        self.assertIn('Registruj se i ostvari 10% popusta', html)
+        self.assertIn('Lista želja', html)
+        self.assertIn('Pregled narudžbi', html)
 
     @patch('EcommerceApp.views._base_context', return_value={})
     def test_registration_banner_is_fixed(self, context):

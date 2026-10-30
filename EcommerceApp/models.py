@@ -4791,6 +4791,7 @@ class OrderItem(models.Model):
         verbose_name='Pokupljeno',
         help_text='Količina potvrđena na pickingu. Ako je manja, faktura ide po ovoj količini.',
     )
+    wms_out_of_stock = models.BooleanField(default=False, editable=False)
     rezervni_dio = models.BooleanField(
         default=False,
         db_index=True,

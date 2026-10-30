@@ -63,7 +63,7 @@
                     <span class="item-variation">{{ item.varijacija_naziv }}</span>
                     {% endif %}
                 </td>
-                <td class="col-qty">{{ item.kolicina }}</td>
+                <td class="col-qty">{% if item.out_of_stock %}Nema na stanju{% else %}{{ item.kolicina }}{% endif %}</td>
                 <td class="col-price">
                     {% if item.is_deal_promo and item.discounted_unit_price %}
                         <span style="text-decoration: line-through; color: #999;">{{ item.cijena }} KM</span>

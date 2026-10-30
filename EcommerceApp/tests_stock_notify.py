@@ -64,7 +64,7 @@ class StockNotifyTests(TestCase):
     def test_product_detail_shows_notify_instead_of_sold_out(self):
         page = self.client.get(reverse('product_detail', args=[self.product.slug]))
         self.assertEqual(page.status_code, 200)
-        self.assertContains(page, 'Obavijesti kada bude na stanju')
+        self.assertContains(page, 'Obavijesti pri dolasku')
         self.assertContains(page, reverse('stock_notify', args=[self.product.slug]))
         self.assertContains(page, 'stockNotifyOverlay')
         self.assertNotContains(page, 'btn-add-to-bag--sold')

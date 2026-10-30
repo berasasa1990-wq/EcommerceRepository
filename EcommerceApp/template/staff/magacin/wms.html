@@ -1,0 +1,64 @@
+{% extends 'staff/magacin/base.html' %}
+{% load static %}
+
+{% block body_class %}{{ block.super }} is-wms{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff-wms.css' %}?v=20261030-monochrome-override">
+{% endblock %}
+
+{% block magacin_content %}
+<div id="wmsWorkspace">
+<div class="mg-toolbar wms-toolbar">
+    <div>
+        <h1>WMS</h1>
+        <p class="mg-count">{% if show_validated %}Validatovane narudžbe{% else %}Nevalidatovane narudžbe{% endif %} · <span id="wmsOrderCount">{{ orders|length }}</span></p>
+    </div>
+    <div class="wms-view-actions">
+        {% if show_validated %}<a class="mg-btn" href="{% url 'staff_magacin_wms' %}">← Nevalidatovane</a>{% endif %}
+        <a class="mg-btn wms-validated-link{% if show_validated %} is-active{% endif %}" href="{% url 'staff_magacin_wms' %}?validirane=1"{% if show_validated %} aria-current="page"{% endif %}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg>
+            Validatovane (<span id="wmsValidatedCount">{{ validated_count }}</span>)
+        </a>
+    </div>
+</div>
+<form id="wmsPrintForm" data-show-validated="{% if show_validated %}1{% else %}0{% endif %}" data-state-url="{% url 'staff_magacin_wms' %}?wms_state=1" method="get" action="{% url 'staff_magacin_narudzbe_stampa' %}" target="_blank">
+    <input type="hidden" name="wms" value="{% if show_validated %}validated{% else %}1{% endif %}">
+    <div class="mg-bulk-bar">
+        <label class="mg-check"><input type="checkbox" id="wmsSelectAll"{% if not orders %} disabled{% endif %}> Čekiraj sve</label>
+        <button type="submit" class="mg-btn" id="wmsPrintSelected" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+            Štampaj odabrane
+        </button>
+        <span id="wmsSelectedCount" class="mg-muted" role="status">Odabrano: 0</span>
+    </div>
+<section class="mg-card" style="overflow-x:auto;">
+    <table class="mg-table">
+        <thead><tr><th>Odabir</th><th>Broj</th><th>Kupac</th><th>Izvor</th><th>Status</th><th>Lager</th><th>Datum</th><th class="num">Ukupno</th><th></th></tr></thead>
+        <tbody>
+        {% for order in orders %}
+        <tr data-wms-order-id="{{ order.pk }}">
+            <td><input type="checkbox" name="b" value="{{ order.broj }}" class="wms-order-check" aria-label="Odaberi narudžbu {{ order.broj }}"></td>
+            <td><a href="{% url 'staff_order_detail' order.broj %}"><strong>{{ order.broj }}</strong></a></td>
+            <td>{{ order.display_customer_name }}{% if order.grad %}<br><span class="mg-muted">{{ order.grad }}</span>{% endif %}</td>
+            <td>{% if order.is_mp_transfer %}Prenosnica u MP{% else %}{{ order.get_izvor_display }}{% endif %}</td>
+            <td>{% if show_validated %}<span class="wms-status-validated"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg> Validatovana</span>{% else %}<span class="mg-pill {{ order.get_status_pill_class }}">{{ order.get_status_label }}</span>{% endif %}</td>
+            <td>{{ order.get_lager_status_display }}</td>
+            <td>{{ order.kreirana|date:"d.m.Y. H:i" }}</td>
+            <td class="num">{{ order.ukupno|floatformat:2 }} KM</td>
+            <td><a class="mg-btn" href="{% url 'staff_order_detail' order.broj %}">Otvori</a></td>
+        </tr>
+        {% endfor %}
+        <tr id="wmsEmptyRow"{% if orders %} hidden{% endif %}><td colspan="9" class="mg-muted">{% if show_validated %}Nema validatovanih narudžbi.{% else %}Nema narudžbi koje čekaju validaciju.{% endif %}</td></tr>
+        </tbody>
+    </table>
+</section>
+</form>
+</div>
+{% endblock %}
+
+{% block magacin_js %}
+{{ block.super }}
+<script src="{% static 'js/staff-wms.js' %}?v=20261030-validated-refresh" defer></script>
+{% endblock %}

@@ -354,10 +354,10 @@
     <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261030-orange-buttons-badges">
     {% endif %}
     {% block warehouse_theme_css %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261030-home-nav-orange">
+    <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261030-original-mobile-header">
     <link rel="stylesheet" href="{% static 'css/product-grid-desktop.css' %}?v=20261030-related-four-fit" media="(min-width: 1025px)">
     <link rel="stylesheet" href="{% static 'css/product-sale-remaining.css' %}?v=20261030-orange-buttons-badges">
-    <link rel="stylesheet" href="{% static 'css/site-page-spacing.css' %}?v=20261030-home-gutters-v3">
+    <link rel="stylesheet" href="{% static 'css/site-page-spacing.css' %}?v=20261030-mobile-original-width">
     <link rel="stylesheet" href="{% static 'css/no-pulsing.css' %}?v=20261030-disable-pulses">
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="shared-site-header {% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">

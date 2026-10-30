@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block body_class %}product-mobile-reference{% endblock %}
+{% block body_class %}product-mobile-reference catalog-header-reference{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/product-zoom.css' %}?v=20261030-white-orange-zoom">
@@ -9,6 +9,11 @@
 {% if staff_product_tools %}
 <link rel="stylesheet" href="{% static 'css/staff-image-fit.css' %}?v=20261030-orange-buttons-badges">
 {% endif %}
+{% endblock %}
+
+{% block warehouse_theme_css %}
+{{ block.super }}
+<link rel="stylesheet" media="(max-width: 767px)" href="{% static 'css/product-mobile-layout.css' %}?v=20261030-mobile-hide-options">
 {% endblock %}
 
 {% block lcp_preload %}

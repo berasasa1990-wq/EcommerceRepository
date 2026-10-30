@@ -1,0 +1,37 @@
+.wms-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.wms-view-actions{display:flex;align-items:center;gap:12px;margin-left:auto}.wms-validated-link,.wms-status-validated{display:inline-flex;align-items:center;gap:6px}.wms-view-actions .wms-validated-link,.wms-status-validated{color:#333}.wms-view-actions .wms-validated-link.is-active{background:#eee;border-color:#aaa}.wms-status-validated{font-weight:650;white-space:nowrap}#wmsEmptyRow[hidden]{display:none}
+
+/* Simple grey WMS workspace. */
+html body.magacin-page.is-wms,html body.magacin-page.is-wms .mg-app{
+ --mg-bg:#eee;--mg-card:#fff;--mg-line:#ccc;--mg-muted:#666;--mg-label:#555;--mg-text:#222;
+ --mg-accent:#444;--mg-accent-hover:#222;--mg-accent-soft:#e5e5e5;--mg-accent-line:#bbb;
+ --mg-green:#444;--mg-green-soft:#eee;--mg-green-text:#333;--mg-green-num:#333;
+ --site-action-gradient:linear-gradient(#eee,#eee);
+}
+html body.magacin-page.is-wms .mg-main{background:#eee;color:#222}
+html body.magacin-page.is-wms .mg-main :is(.mg-toolbar,.mg-bulk-bar,.mg-card,.mg-chrome){border:1px solid #ccc;border-radius:2px;background:#f7f7f7;box-shadow:none}
+html body.magacin-page.is-wms .mg-main :is(a,button,.mg-pill,.wms-status-validated,.mg-muted,.mg-count){color:#333!important;text-shadow:none}
+html body.magacin-page.is-wms .mg-main :is(button,.mg-btn){background:#e5e5e5!important;background-image:none!important;border:1px solid #aaa!important;border-radius:2px;box-shadow:none!important;font-weight:500;min-height:34px;padding:6px 12px;transition:none}
+html body.magacin-page.is-wms .mg-main :is(button,.mg-btn):hover{background:#d5d5d5!important}
+html body.magacin-page.is-wms .mg-main .wms-validated-link.is-active{background:#ccc!important;border-color:#888!important;font-weight:700}
+html body.magacin-page.is-wms .mg-main :is(.mg-btn,.mg-chrome-icon) svg{color:#333!important}
+html body.magacin-page.is-wms .mg-main :is(a,button,input):focus-visible{outline:2px solid #555;outline-offset:2px}
+html body.magacin-page.is-wms .mg-main input{border-color:#bbb;border-radius:2px;background:#fff;color:#222;accent-color:#555}
+html body.magacin-page.is-wms .mg-main .mg-table{font-size:13px;background:#fff}
+html body.magacin-page.is-wms .mg-main .mg-table th{background:#ddd;color:#222;border:1px solid #bbb;padding:9px 10px}
+html body.magacin-page.is-wms .mg-main .mg-table td{background:#fff;border:1px solid #ccc;padding:8px 10px}
+html body.magacin-page.is-wms .mg-main .mg-table tbody tr:hover td{background:#f2f2f2}
+html body.magacin-page.is-wms .mg-main .mg-pill{background:#eee!important;border:1px solid #ccc;border-radius:2px;box-shadow:none;animation:none}
+
+/* Override storefront action styles inside the WMS workspace. */
+html body.is-wms #mgApp #wmsWorkspace{color:#222;background:#eee;--site-action-gradient:linear-gradient(#e5e5e5,#e5e5e5)}
+html body.is-wms #mgApp #wmsWorkspace *{color:#222!important;border-color:#bbb!important;box-shadow:none!important;text-shadow:none!important;accent-color:#555}
+html body.is-wms #mgApp #wmsWorkspace :is(a,button,.mg-pill,.wms-status-validated){background-image:none!important;animation:none!important}
+html body.is-wms #mgApp #wmsWorkspace :is(button,.mg-btn){background:#e5e5e5!important;color:#222!important;border:1px solid #aaa!important}
+html body.is-wms #mgApp #wmsWorkspace :is(button,.mg-btn):hover{background:#d5d5d5!important}
+html body.is-wms #mgApp #wmsWorkspace :is(.mg-pill,.wms-validated-link.is-active){background:#ddd!important}
+html body.is-wms #mgApp #wmsWorkspace :is(.mg-toolbar,.mg-bulk-bar,.mg-card){background:#f7f7f7!important;background-image:none!important}
+html body.is-wms #mgApp #wmsWorkspace .mg-table th{background:#ddd!important}
+html body.is-wms #mgApp #wmsWorkspace .mg-table td{background:#fff!important}
+html body.is-wms #mgApp #wmsWorkspace .mg-table tbody tr:hover td{background:#f2f2f2!important}
+html body.is-wms #mgApp #wmsWorkspace :is(button,.mg-btn) svg{color:#222!important;stroke:currentColor!important}
+html body.is-wms #mgApp #wmsWorkspace :is(a,button,input):focus-visible{outline:2px solid #555!important}

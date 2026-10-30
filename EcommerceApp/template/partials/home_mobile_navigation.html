@@ -21,7 +21,7 @@
     </div>
 </section>
 
-<script src="{% static 'js/home-mobile-reference.js' %}?v=20260917-category-icons" defer></script>
+<script src="{% static 'js/home-mobile-reference.js' %}?v=20261030-no-duplicate-search" defer></script>
 
 <style>
 #mobileHomeCategories .home-category-sets-label {
@@ -130,5 +130,57 @@ html body #mobileHomeCategories #homeCategoryTrack :is(.mobile-home-category-ico
     html body #mobileHomeCategories #homeCategoryTrack :is(img,svg,.cat-ico) {
         width: 85px !important; height: 85px !important;
     }
+}
+/* Smaller category frames, with room for the icon and label. */
+@media (max-width: 1024px) {
+    html body #mobileHomeCategories #homeCategoryTrack > a {
+        flex: 0 0 65px;
+        width: 65px;
+        height: 72px;
+        aspect-ratio: auto;
+        border-radius: 6px;
+        font-size: 10px;
+        line-height: 12px;
+    }
+}
+@media (min-width: 1025px) {
+    html body #mobileHomeCategories #homeCategoryTrack > a {
+        flex-basis: 95px;
+        height: 95px;
+        border-radius: 6px;
+    }
+}
+@media (max-width: 767px) {
+    html body #mobileHomeCategories #homeCategoryTrack {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 0 0 8px;
+        overflow-x: auto;
+        scrollbar-width: thin !important;
+        scrollbar-color: #aaa #eee;
+        -ms-overflow-style: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    html body #mobileHomeCategories #homeCategoryTrack > a {
+        flex: 0 0 calc((100% - 30px) / 6);
+        width: calc((100% - 30px) / 6);
+        min-width: 0;
+        height: 72px;
+        font-size: 9px;
+        line-height: 11px;
+    }
+    html body #mobileHomeCategories #homeCategoryTrack :is(.mobile-home-category-icon,.cat-ico,.cat-ico svg) {
+        width: clamp(30px, 9vw, 44px) !important;
+        height: 44px !important;
+        max-width: 100%;
+        object-fit: contain;
+    }
+    html body #mobileHomeCategories #homeCategoryTrack::-webkit-scrollbar {
+        display: block !important;
+        height: 5px;
+    }
+    html body #mobileHomeCategories #homeCategoryTrack::-webkit-scrollbar-track { background: #eee; }
+    html body #mobileHomeCategories #homeCategoryTrack::-webkit-scrollbar-thumb { background: #aaa; border-radius: 3px; }
+    html body #mobileHomeCategories > .home-category-controls { display: none !important; }
 }
 </style>
