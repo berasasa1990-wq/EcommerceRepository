@@ -1,19 +1,7 @@
 {% if product_bundle and product_bundle.items %}
 {% with akcija=product_bundle.akcija items=product_bundle.items pricing=product_bundle.pricing %}
 <section class="pd-inline-bundle" aria-label="Bundle set za ovaj artikal">
-    <header class="pd-inline-bundle__header">
-    <form method="post" action="{% url 'add_to_cart' items.0.product.slug %}" class="pd-bundle__form">
-        {% csrf_token %}
-        <input type="hidden" name="quantity" value="1">
-        <input type="hidden" name="stay" value="1">
-        <input type="hidden" name="akcija_id" value="{{ akcija.pk }}">
-        <button type="submit" class="pd-inline-bundle__button">
-            <span>Kupi sve iz seta za</span>
-            <strong>{{ pricing.total_snizena|floatformat:"-2" }} KM</strong>
-            {% if pricing.has_discount %}<s>{{ pricing.total_bazna|floatformat:"-2" }} KM</s>{% endif %}
-        </button>
-    </form>
-    </header>
+    <header class="pd-inline-bundle__header"><h2>SET PONUDA</h2><p>Kupite sve artikle zajedno i ostvarite popust na cijeli set.</p></header>
     <div class="pd-inline-bundle__items">
         {% for item in items %}
         <article class="pd-inline-bundle__item">
@@ -30,6 +18,19 @@
             </div>
         </article>
         {% endfor %}
+    </div>
+    <div class="pd-inline-bundle__summary"><span>Ukupno za set</span>
+        {% if pricing.has_discount %}<s>{{ pricing.total_bazna|floatformat:2 }} KM</s>{% endif %}
+        <strong>{{ pricing.total_snizena|floatformat:2 }} KM</strong>
+    <form method="post" action="{% url 'add_to_cart' items.0.product.slug %}" class="pd-bundle__form">
+        {% csrf_token %}
+        <input type="hidden" name="quantity" value="1">
+        <input type="hidden" name="stay" value="1">
+        <input type="hidden" name="akcija_id" value="{{ akcija.pk }}">
+        <button type="submit" class="pd-inline-bundle__button">
+            <span>Dodaj set u korpu</span>
+        </button>
+    </form>
     </div>
 </section>
 {% endwith %}

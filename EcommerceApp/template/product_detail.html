@@ -4,11 +4,8 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/product-zoom.css' %}?v=20260916">
-<link rel="stylesheet" href="{% static 'css/product-sale-alignment.v20260908.css' %}">
 <link rel="stylesheet" href="{% static 'css/product-inline-qty.v20260912.css' %}">
-<link rel="stylesheet" href="{% static 'css/product-inline-bundle.v20260912.css' %}">
-<link rel="stylesheet" href="{% static 'css/product-detail-mobile.css' %}?v=20260915-smaller-title-price">
-<link rel="stylesheet" href="{% static 'css/product-reference.css' %}?v=20261019-square-desktop">
+<link rel="stylesheet" href="{% static 'css/product-reference.css' %}?v=20261030-artikal-breadcrumb-align">
 {% if staff_product_tools %}
 <link rel="stylesheet" href="{% static 'css/staff-image-fit.css' %}?v=20260829imgFit">
 {% endif %}
@@ -46,16 +43,21 @@
 <script src="{% static 'js/product-zoom.js' %}?v=20260916" defer></script>
 {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 <section class="product-detail" data-product-card data-product-id="{{ product.pk }}" data-default-name="{{ product.naziv }}" data-default-price="{{ product.prikazna_cijena }}" data-category="{% if product.kategorija %}{{ product.kategorija.naziv }}{% endif %}"{% if product.na_stanju %} data-in-stock="1"{% endif %}{% if meta_pixel_id and meta_view_content_event_id %} data-meta-view-content data-content-id="{{ product.sifra|default:product.pk }}" data-content-name="{{ product.naziv }}" data-content-value="{{ product.prikazna_cijena }}" data-event-id="{{ meta_view_content_event_id }}"{% endif %}>
-    <nav class="pd-reference-breadcrumb" aria-label="Putanja"><a href="{% url 'home' %}">Početna</a><span class="pd-crumb-mobile">{% if product.kategorija %}<span>/</span><a href="{{ product.kategorija.get_absolute_url }}">{{ product.kategorija.naziv }}</a>{% endif %}{% if product.brend %}<span>/</span><span>{{ product.brend.naziv }}</span>{% endif %}</span><span class="pd-crumb-desktop" aria-hidden="true">›</span><span class="pd-crumb-desktop">{{ seo_h1|default:product.naziv }}</span></nav>
+    <nav class="pd-reference-breadcrumb" aria-label="Putanja"><a href="{% url 'home' %}">Početna</a><span>/</span>{% if product.kategorija %}<a href="{{ product.kategorija.get_absolute_url }}">{{ product.kategorija.naziv }}</a><span>/</span>{% endif %}<span aria-current="page">{{ seo_h1|default:product.naziv }}</span></nav>
     <div class="product-detail-grid">
-        <div class="product-gallery">
+        <div class="product-gallery has-thumbnails">
             <div class="product-gallery-main" id="mainProductImageWrap">
+                <div class="pd-reference-toolbar">
                 <button type="button" class="home-card-heart pd-reference-heart" aria-label="Omiljeno — {{ product.naziv }}" data-favorite-id="{{ product.pk }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></button>
                 <div class="product-gallery-overlays">
                     {% if product.je_novitet %}
                     <span class="product-detail-corner-badge product-detail-corner-badge--novitet is-pulse" aria-label="Noviteti">NOVITETI</span>
+                    {% elif product.na_akciji and product.akcija_postotak %}
+                    <span class="product-detail-corner-badge">-{{ product.akcija_postotak|floatformat:0 }}%</span>
                     {% endif %}
                 </div>
+                </div>
+                <div class="pd-reference-photo">
                 {% if product.prikazna_slika %}
                 {% with img=product.prikazna_slika_responsive %}
                 <img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" id="mainProductImage" width="{{ img.width }}" height="{{ img.height }}" sizes="(max-width: 768px) 92vw, 50vw" loading="eager" fetchpriority="high" decoding="async" data-full-src="{{ product.prikazna_slika.url }}">
@@ -77,10 +79,10 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6M7 10h6M10 7v6"/></svg>
                 </button>
                 {% endif %}
-                <div class="pd-desktop-dots" id="pdDesktopDots" hidden></div>
+                </div>
 
             </div>
-            {% if product.prikazna_slika or product.dodatne_slike.exists %}
+            {% if product.dodatne_slike.exists %}
             <div class="pd-gallery-bar">
 
                 <div class="product-thumbnails" id="productThumbnails" aria-label="Slike proizvoda">
@@ -122,11 +124,12 @@
              data-product-id="{{ product.pk }}"
              data-product-name="{{ product.naziv }}"
              {% if product.prikazna_slika %} data-default-image="{{ product.prikazna_slika.url }}"{% endif %}>
-            {% if product.brend %}<p class="pd-reference-brand">{{ product.brend.naziv }}</p>{% endif %}
+            {% if product.kategorija %}<a class="pd-reference-category" href="{{ product.kategorija.get_absolute_url }}">{{ product.kategorija.naziv }}</a>{% endif %}
             <div class="product-detail-title-row">
                 <h1>{{ seo_h1|default:product.naziv }}</h1>
-                <p class="pd-mobile-meta"><span>Šifra: {{ product.sifra }}</span>{% if product.brend %}<span>Brend: {{ product.brend.naziv }}</span>{% endif %}</p>
+                <button type="button" class="pd-reference-share" data-product-share aria-label="Podijeli artikal" title="Podijeli artikal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg></button>
             </div>
+            <p class="pd-reference-share-status" role="status" hidden></p>
             <div class="product-detail-body">
             {% if product.proizvedeno_u_japanu %}
             <div class="made-in-japan made-in-japan--detail" role="note" aria-label="Proizvedeno u Japanu">
@@ -455,7 +458,6 @@
             </div>
             {% endif %}
 
-            {% if product.brend %}<p class="pd-desktop-price-brand">{{ product.brend.naziv }}</p>{% endif %}
             <div class="pd-options-price{% if product.na_akciji %} pd-options-price--sale{% endif %}">
                 <div class="pd-options-price__price">
                     {% if not product.varijacije.count %}
@@ -493,6 +495,8 @@
                     {% include 'partials/product_stock_label.html' with product=product detail_stock=True %}
                 </div>
             </div>
+
+            {% if product.brend %}<div class="pd-reference-brand-logo">{% if product.brend.slika %}<img src="{{ product.brend.slika.url }}" alt="{{ product.brend.naziv }}" width="70" height="24" loading="lazy">{% else %}{{ product.brend.naziv }}{% endif %}</div>{% endif %}
 
             {% if not product.varijacije.count %}
             {% if not product.na_stanju %}
@@ -538,19 +542,18 @@
             </div>
             {% endif %}
 
-        {% if related_products %}
-        <aside class="pd-bottom-related pd-purchase-related" aria-label="Povezani proizvodi">
-            <h2>Povezani proizvodi</h2>
-            <div class="product-catalog pd-related-grid">
-                {% for item in related_products|slice:':3' %}
-                {% include 'partials/product_catalog_card.html' with product=item home_reference_card=True hide_variations=True %}
-                {% endfor %}
+            <div class="pd-reference-overview">
+                <dl class="pd-reference-facts">
+                    <div><dt>Šifra artikla</dt><dd>{{ product.sifra|default:'—' }}</dd></div>
+                    {% if product.brend %}<div><dt>Brend</dt><dd>{{ product.brend.naziv }}</dd></div>{% endif %}
+                    {% if product.kategorija %}<div><dt>Kategorija</dt><dd>{{ product.kategorija.naziv }}</dd></div>{% endif %}
+                </dl>
+                {% if product.opis %}<a class="pd-reference-description-link" href="#product-description"><span>Opis</span><span aria-hidden="true">↓</span></a>{% endif %}
             </div>
-        </aside>
-        {% endif %}
+
+
 
             {% include 'partials/product_qty_deal.html' %}
-            {% include 'partials/product_bundle_set.html' %}
 
             {% if product.varijacije.count and product_available %}
 
@@ -570,6 +573,19 @@
     </div>
 
 
+
+    {% include 'partials/product_bundle_set.html' %}
+
+        {% if related_products %}
+        <aside class="pd-bottom-related pd-purchase-related" aria-label="Povezani proizvodi">
+            <h2>Povezani proizvodi</h2>
+            <div class="product-catalog pd-related-grid">
+                {% for item in related_products|slice:':4' %}
+                {% include 'partials/product_catalog_card.html' with product=item home_reference_card=True hide_variations=True %}
+                {% endfor %}
+            </div>
+        </aside>
+        {% endif %}
 
     {% if site_settings.politika_dostava or site_settings.politika_povrat %}
     <div class="product-detail-policies">
@@ -598,13 +614,9 @@
     </div>
     {% endif %}
 
-    <div class="pd-bottom-layout">
-        <div class="pd-bottom-details">{% include 'partials/product_mobile_details.html' %}</div>
-
-    </div>
     <div class="product-detail-content">
         {% if product.opis %}
-        <div class="product-detail-opis-col">
+        <div class="product-detail-opis-col" id="product-description">
             <h2 class="product-detail-section-title">OPIS PROIZVODA</h2>
             <div class="product-detail-description">
                 {% if '<' in product.opis and '>' in product.opis %}
@@ -682,9 +694,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/product-reference.js' %}?v=20261019-square-desktop" defer></script>
+<script src="{% static 'js/product-reference.js' %}?v=20261030-artikal-clean" defer></script>
 <script src="{% static 'js/product-detail.min.js' %}?v=20260915-feature-cleanup" defer></script>
-<script src="{% static 'js/product-detail-mobile.js' %}?v=20260915-desktop-arrows" defer></script>
 {% if staff_product_tools %}
 <script src="{% static 'js/staff-image-fit.js' %}?v=20260829imgFit"></script>
 {% endif %}

@@ -25,7 +25,7 @@
         var(--staff-edit-banner-height) + var(--promo-height) + var(--header-height)
     );
     --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-sans: Arial, Helvetica, sans-serif;
     --home-product-inset: 12px;
     --product-detail-side-inset: var(--home-product-inset);
     --home-mobile-side-inset: clamp(8px, 5.12vw, 20px);

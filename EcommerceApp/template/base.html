@@ -162,12 +162,10 @@
     {% endwith %}
 
     {% block lcp_preload %}{% endblock %}
-    <link rel="preload" href="{% static 'fonts/inter-latin-400.woff2' %}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{% static 'fonts/inter-latin-ext-400.woff2' %}" as="font" type="font/woff2" crossorigin>
     {% if user.is_authenticated or request.resolver_match.url_name == 'set_builder' %}
-    <link rel="stylesheet" href="{% static 'css/storefront-core.min.css' %}?v=20261026-unused-css">
+    <link rel="stylesheet" href="{% static 'css/storefront-core.min.css' %}?v=20261030-arial-font">
     {% else %}
-    <link rel="stylesheet" href="{% static 'css/storefront-core-public.min.css' %}?v=20261026-unused-css">
+    <link rel="stylesheet" href="{% static 'css/storefront-core-public.min.css' %}?v=20261030-arial-font">
     {% endif %}
     {% if theme_ui and theme_ui.css_vars %}
     <style id="site-theme">:root{ {{ theme_ui.css_vars }} }</style>
@@ -216,7 +214,6 @@
     <link rel="stylesheet" href="{% static 'css/mobile-chrome.min.css' %}?v=20261026-smaller-category-icons">
 
     <style>.desktop-trust-bar,.header-category-select,.header-register{display:none!important}</style>
-    <link rel="stylesheet" href="{% static 'css/header-reference.css' %}?v=20260919-wishlist-popover" media="(min-width: 1025px)">
     <style>
       @media (min-width: 1025px) {
         body #header .nav-actions .reference-header-search,
@@ -357,7 +354,7 @@
     <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261026-category-hover">
     {% endif %}
     {% block warehouse_theme_css %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261022-category-flyout">
+    <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261030-mojaigracka-header">
     <link rel="stylesheet" href="{% static 'css/product-grid-desktop.css' %}?v=20261019-related-three" media="(min-width: 1025px)">
     <link rel="stylesheet" href="{% static 'css/product-sale-remaining.css' %}?v=20261021">
     <link rel="stylesheet" href="{% static 'css/site-page-spacing.css' %}?v=20261020-equal-side-gutters">
@@ -417,9 +414,7 @@
                         </span>
                         {% endif %}
                     </a>
-                    {% if user.is_superuser %}
-                    <a href="{% url 'staff_admin_panel' %}" class="logo-admin-panel" aria-label="Admin panel" title="Admin panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 9-5M17 11l4 2v4c0 3-4 5-4 5s-4-2-4-5v-4l4-2Z"/><path d="m15 16 1.5 1.5L19 15"/></svg></a>
-                    {% endif %}
+
                 </div>
 
                 <div class="header-search" id="headerSearch">
@@ -431,7 +426,7 @@
                             </svg>
                         </span>
                         <div class="search-combobox" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-haspopup="listbox">
-                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži po nazivu ili sifri" autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
+                            <input type="search" name="q" id="searchInput" value="{{ search_query }}" placeholder="Pretraži proizvode..." autocomplete="off" enterkeyhint="search" aria-autocomplete="list">
                         </div>
                         <select name="kategorija" class="header-category-select" aria-label="Kategorija pretrage">
                             <option value="">Sve kategorije</option>
@@ -530,6 +525,9 @@
                     </div>
                     <a class="desktop-sale-link" href="{% url 'home' %}?akcija=1#product-showcase" hidden>Akcijska ponuda <span aria-hidden="true">%</span></a>
                     <button type="button" class="nav-action-link reference-header-menu" data-mobile-home-menu aria-label="Otvori kategorije"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg></button>
+                    {% if user.is_superuser %}
+                    <a href="{% url 'staff_admin_panel' %}" class="logo-admin-panel" aria-label="Admin panel" title="Admin panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 9-5M17 11l4 2v4c0 3-4 5-4 5s-4-2-4-5v-4l4-2Z"/><path d="m15 16 1.5 1.5L19 15"/></svg></a>
+                    {% endif %}
                 </div>
             </div>
 
