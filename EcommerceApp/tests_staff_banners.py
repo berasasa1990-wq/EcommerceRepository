@@ -89,6 +89,7 @@ class BannerManagerTests(TestCase):
                 response = staff_banners(self.request('?edit=' + key))
                 self.assertContains(response, 'name="' + key + '_slika"')
                 self.assertContains(response, 'type="file"')
+                self.assertContains(response, 'name="' + key + '_slika_mobilna"')
 
     @patch('EcommerceApp.views.messages.success')
     def test_promo_save_preserves_other_banner(self, success):
@@ -116,7 +117,8 @@ class BannerManagerTests(TestCase):
         html = render_to_string('partials/home_registration_banner.html', {'site_settings': site})
         self.assertNotIn('site/registration/banner.jpg', html)
         self.assertIn('/registracija/?loyalty_popup=1', html)
-        self.assertNotIn('<img', html)
+        self.assertIn('img/carpologija-nav-logo-dark.jpg', html)
+        self.assertNotIn('registration-banner-1600x320.png', html)
         self.assertIn('Registruj se i ostvari 10% popusta', html)
         self.assertIn('Lista želja', html)
         self.assertIn('Pregled narudžbi', html)
@@ -130,3 +132,128 @@ class BannerManagerTests(TestCase):
             staff_banners(self.request('?edit=registration'))
         with self.assertRaises(Http404):
             staff_banners(self.request(data={'delete_banner': 'registration'}))
+
+    @patch('EcommerceApp.views.messages.success')
+    def test_mobile_promo_upload_preserves_desktop_and_other_promo(self, success):
+        import io
+        from tempfile import TemporaryDirectory
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+        for key in ('promo_new', 'promo_sale'):
+            with self.subTest(key=key), TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+                site = SiteSettings.load()
+                setattr(site, key + '_slika', 'site/promos/desktop.jpg')
+                site.save(update_fields=[key + '_slika'])
+                data = io.BytesIO()
+                Image.new('RGB', (600, 560), 'white').save(data, format='PNG')
+                upload = SimpleUploadedFile('phone.png', data.getvalue(), content_type='image/png')
+                response = staff_banners(self.request('?edit=' + key, {key + '_slika_mobilna': upload}))
+                self.assertEqual(response.status_code, 302)
+                site.refresh_from_db()
+                self.assertEqual(getattr(site, key + '_slika').name, 'site/promos/desktop.jpg')
+                image = getattr(site, key + '_slika_mobilna')
+                self.assertTrue(image)
+                with Image.open(image.path) as stored:
+                    self.assertEqual(stored.size, (600, 560))
+
+    def test_promo_mobile_picture_source_and_desktop_fallback(self):
+        from django.template.loader import render_to_string
+        site = SiteSettings(promo_new_slika='promos/desktop.jpg', promo_new_slika_mobilna='promos/phone.jpg',
+                            promo_sale_slika='promos/sale.jpg')
+        html = render_to_string('partials/home_reference_promos.html', {'site_settings': site})
+        self.assertIn(f'<source media="(max-width: 767px)" srcset="{site.promo_new_slika_mobilna.url}">', html)
+        self.assertIn(f'src="{site.promo_new_slika.url}"', html)
+        self.assertIn(f'src="{site.promo_sale_slika.url}"', html)
+        self.assertEqual(html.count('<source'), 1)
+
+    def test_mobile_only_promo_retains_text_for_desktop(self):
+        from django.template.loader import render_to_string
+        site = SiteSettings(promo_new_slika_mobilna='promos/phone.jpg')
+        html = render_to_string('partials/home_reference_promos.html', {'site_settings': site})
+        self.assertIn('ref-promo-upload--mobile-only', html)
+        self.assertIn('ref-promo--desktop-only', html)
+        self.assertIn('OTKRIJTE NOVITETE', html)
+
+    @patch('EcommerceApp.views.messages.success')
+    def test_delete_promo_clears_both_images(self, success):
+        site = SiteSettings.load()
+        SiteSettings.objects.filter(pk=site.pk).update(promo_new_slika='promos/desktop.jpg',
+                                                      promo_new_slika_mobilna='promos/phone.jpg',
+                                                      promo_sale_slika_mobilna='promos/keep.jpg')
+        response = staff_banners(self.request(data={'delete_banner': 'promo_new'}))
+        self.assertEqual(response.status_code, 302)
+        site.refresh_from_db()
+        self.assertFalse(site.promo_new_slika)
+        self.assertFalse(site.promo_new_slika_mobilna)
+        self.assertEqual(site.promo_sale_slika_mobilna.name, 'promos/keep.jpg')
+
+    @patch('EcommerceApp.views._base_context', return_value={})
+    def test_all_fixed_editors_include_phone_image_upload(self, context):
+        for key, field in (('hero', 'hero_slika_mobilna'), ('bestsellers', 'bestsellers_banner_slika_mobilna'),
+                           ('promo_new', 'promo_new_slika_mobilna'), ('promo_sale', 'promo_sale_slika_mobilna')):
+            with self.subTest(key=key):
+                response = staff_banners(self.request('?edit=' + key))
+                self.assertContains(response, 'name="' + field + '"')
+                self.assertContains(response, 'Slika za telefon')
+
+    @patch('EcommerceApp.views.messages.success')
+    def test_fixed_phone_upload_preserves_desktop_image(self, success):
+        import io
+        from tempfile import TemporaryDirectory
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+        for key, prefix in (('hero', 'hero'), ('bestsellers', 'bestsellers_banner')):
+            with self.subTest(key=key), TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+                site = SiteSettings.load()
+                setattr(site, prefix + '_slika', 'site/existing-desktop.jpg')
+                site.save(update_fields=[prefix + '_slika'])
+                data = io.BytesIO()
+                Image.new('RGB', (900, 720), 'white').save(data, format='PNG')
+                upload = SimpleUploadedFile('phone.png', data.getvalue(), content_type='image/png')
+                response = staff_banners(self.request('?edit=' + key, {prefix + '_slika_mobilna': upload}))
+                self.assertEqual(response.status_code, 302)
+                site.refresh_from_db()
+                self.assertEqual(getattr(site, prefix + '_slika').name, 'site/existing-desktop.jpg')
+                self.assertTrue(getattr(site, prefix + '_slika_mobilna'))
+
+    def test_fixed_banners_use_phone_sources(self):
+        from django.template.loader import render_to_string
+        for template, prefix in (('home_uploaded_banner', 'hero'), ('home_bestsellers_banner', 'bestsellers_banner')):
+            with self.subTest(template=template):
+                site = SiteSettings(**{prefix + '_slika': 'site/desktop.jpg', prefix + '_slika_mobilna': 'site/phone.jpg'})
+                html = render_to_string('partials/' + template + '.html', {'site_settings': site})
+                self.assertIn(f'<source media="(max-width: 767px)" srcset="{getattr(site, prefix + "_slika_mobilna").url}">', html)
+                self.assertIn('site/desktop.jpg', html)
+
+    @patch('EcommerceApp.views.messages.success')
+    def test_delete_main_clears_phone_image(self, success):
+        site = SiteSettings.load()
+        site.hero_slika_mobilna = 'site/phone.jpg'
+        site.save(update_fields=['hero_slika_mobilna'])
+        self.assertEqual(staff_banners(self.request(data={'delete_banner': 'hero'})).status_code, 302)
+        site.refresh_from_db()
+        self.assertFalse(site.hero_slika_mobilna)
+
+    @patch('EcommerceApp.views._base_context', return_value={})
+    def test_promo_editor_has_separate_upload_cards_and_no_english_widget(self, context):
+        response = staff_banners(self.request('?edit=promo_new'))
+        self.assertContains(response, 'Slika za računar')
+        self.assertContains(response, 'Upload slike za telefon')
+        self.assertContains(response, 'name="promo_new_slika_mobilna"')
+        self.assertContains(response, 'data-banner-upload', count=2)
+        self.assertContains(response, '600 × 560 px')
+        self.assertNotContains(response, 'Currently:')
+        self.assertNotContains(response, 'Change:')
+        self.assertEqual(response['Cache-Control'], 'no-store, max-age=0')
+
+    @patch('EcommerceApp.views.messages.success')
+    def test_clear_phone_image_preserves_desktop(self, success):
+        site = SiteSettings.load()
+        site.promo_new_slika = 'site/promos/desktop.jpg'
+        site.promo_new_slika_mobilna = 'site/promos/phone.jpg'
+        site.save(update_fields=['promo_new_slika', 'promo_new_slika_mobilna'])
+        response = staff_banners(self.request('?edit=promo_new', {'promo_new_slika_mobilna-clear': 'on'}))
+        self.assertEqual(response.status_code, 302)
+        site.refresh_from_db()
+        self.assertEqual(site.promo_new_slika.name, 'site/promos/desktop.jpg')
+        self.assertFalse(site.promo_new_slika_mobilna)

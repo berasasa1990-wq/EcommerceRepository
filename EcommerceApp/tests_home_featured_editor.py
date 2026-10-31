@@ -12,17 +12,21 @@ class FeaturedEditorTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_superuser('featured-admin', 'featured@example.com', 'password')
-        cls.products = [Product.objects.create(naziv=f'Featured {i}', sifra=f'FEATURED-{i}', cijena='10', aktivan=True, na_stanju=True, stanje=10) for i in range(5)]
+        cls.products = [Product.objects.create(naziv=f'Featured {i}', sifra=f'FEATURED-{i}', cijena='10', aktivan=True, na_stanju=True, stanje=10) for i in range(7)]
 
     def request(self, data):
         request = RequestFactory().post('/nalog/admin/pocetna-stranica/', data)
         request.user = self.admin
         return request
 
-    def test_reject_more_than_four(self):
+    def test_reject_more_than_six(self):
         form = HomeFeaturedProductsForm(self.request({'artikli': [p.pk for p in self.products]}).POST)
         self.assertFalse(form.is_valid())
         self.assertIn('artikli', form.errors)
+
+    def test_accept_six_featured_products(self):
+        form = HomeFeaturedProductsForm(self.request({'artikli': [p.pk for p in self.products[:6]]}).POST)
+        self.assertTrue(form.is_valid(), form.errors)
 
     @patch('EcommerceApp.views.messages.success')
     @patch('EcommerceApp.views._invalidate_storefront_product_caches')

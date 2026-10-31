@@ -146,3 +146,20 @@ html body.home-mobile-reference .home-products .product-catalog .product-card.pr
         object-position: center;
     }
 }
+
+@media (max-width: 767px) {
+    html body.home-mobile-reference .home-products--izdvojeno .home-product-carousel__track {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px;
+    }
+    html body.home-mobile-reference .home-products--izdvojeno .home-product-carousel__slide:nth-child(-n+6) { display: block !important; }
+    html body.home-mobile-reference .home-products--izdvojeno .home-product-carousel__slide:nth-child(n+7) { display: none !important; }
+}
+
+.ref-promo-upload picture{display:block;width:100%;height:100%}
+.ref-promos--uploads>.ref-promo-upload--mobile-only{display:none!important}
+@media(max-width:767px){
+ .ref-promos--uploads>.ref-promo-upload--mobile-only{display:block!important}
+ .ref-promos--uploads>.ref-promo--desktop-only{display:none!important}
+}

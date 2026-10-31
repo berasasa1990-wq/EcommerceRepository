@@ -77,6 +77,10 @@ class SiteSettings(models.Model):
         upload_to='site/hero/', blank=True, verbose_name='Slika artikla',
         help_text='PNG ili WebP s prozirnom pozadinom daje najbolji izgled. Bez učitane slike banner se prikazuje bez artikla.',
     )
+    hero_slika_mobilna = models.ImageField(
+        upload_to='site/mobile/', blank=True, verbose_name='Početni banner — slika za telefon',
+        help_text='Preporučeno 900 × 720 px. Koristi se samo na telefonu. Ako je prazno, koristi se slika za računar.',
+    )
     hero_link = models.URLField(
         max_length=500, default='https://carpologijabh.ba/kategorija/Jakne/',
         verbose_name='Link bannera',
@@ -87,6 +91,10 @@ class SiteSettings(models.Model):
         verbose_name='Banner ispod najprodavanijih proizvoda',
         help_text='1600 × 600 px, najviše 80 KB nakon automatske optimizacije.',
     )
+    bestsellers_banner_slika_mobilna = models.ImageField(
+        upload_to='site/mobile/', blank=True, verbose_name='Banner ispod najprodavanijih proizvoda — slika za telefon',
+        help_text='Preporučeno 600 × 560 px. Koristi se samo na telefonu. Ako je prazno, koristi se slika za računar.',
+    )
     bestsellers_banner_link = models.URLField(
         max_length=500, blank=True, verbose_name='Link bannera ispod najprodavanijih proizvoda',
     )
@@ -94,10 +102,18 @@ class SiteSettings(models.Model):
         upload_to='site/promos/', blank=True, verbose_name='Noviteti — slika bannera',
         help_text='Preporučeno 1200 × 560 px. Tekst i grafiku pripremite unutar slike.',
     )
+    promo_new_slika_mobilna = models.ImageField(
+        upload_to='site/promos/mobile/', blank=True, verbose_name='Noviteti — slika za telefon',
+        help_text='Preporučeno 600 × 560 px. Koristi se na telefonu; bez nje se prikazuje osnovna slika bannera.',
+    )
     promo_new_link = models.CharField(max_length=500, blank=True, verbose_name='Noviteti — link (opcionalno)')
     promo_sale_slika = models.ImageField(
         upload_to='site/promos/', blank=True, verbose_name='Posebna ponuda — slika bannera',
         help_text='Preporučeno 1200 × 560 px. Tekst i grafiku pripremite unutar slike.',
+    )
+    promo_sale_slika_mobilna = models.ImageField(
+        upload_to='site/promos/mobile/', blank=True, verbose_name='Posebna ponuda — slika za telefon',
+        help_text='Preporučeno 600 × 560 px. Koristi se na telefonu; bez nje se prikazuje osnovna slika bannera.',
     )
     promo_sale_link = models.CharField(max_length=500, blank=True, verbose_name='Posebna ponuda — link (opcionalno)')
 

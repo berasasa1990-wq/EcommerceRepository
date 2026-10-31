@@ -428,6 +428,7 @@ class BannerAdminForm(forms.ModelForm):
     class Meta:
         model = Banner
         fields = '__all__'
+        labels = {'slika_mobilna': 'Slika za telefon'}
 
     def clean_video(self):
         video = self.cleaned_data.get('video')
@@ -1107,6 +1108,9 @@ class HeroBannerSettingsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if 'hero_link' in self.fields:
             self.fields['hero_link'].required = False
+        for name in ('hero_slika_mobilna', 'bestsellers_banner_slika_mobilna', 'promo_new_slika_mobilna', 'promo_sale_slika_mobilna'):
+            if name in self.fields:
+                self.fields[name].widget.attrs['accept'] = 'image/jpeg,image/png,image/webp,image/avif'
         for name in ('hero_slika', 'bestsellers_banner_slika'):
             if name not in self.fields:
                 continue
@@ -1165,6 +1169,6 @@ class HomeFeaturedProductsForm(forms.Form):
 
     def clean_artikli(self):
         products = self.cleaned_data['artikli']
-        if len(products) > 4:
-            raise forms.ValidationError('Odaberite najviše četiri artikla.')
+        if len(products) > 6:
+            raise forms.ValidationError('Odaberite najviše šest artikala.')
         return products

@@ -16,3 +16,7 @@ html body.home-mobile-reference main > .home-uploaded-banner:not(.home-uploaded-
         object-position: center;
     }
 }
+
+.home-uploaded-banner picture{display:block;width:100%}
+@media(min-width:768px){html body main>.home-uploaded-banner--mobile-only{display:none!important}}
+@media(max-width:767px){html body .home-uploaded-banner--bestsellers img{aspect-ratio:auto;height:auto}}

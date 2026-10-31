@@ -1,7 +1,10 @@
-{% if site_settings.hero_slika %}
-<section class="home-uploaded-banner" aria-label="Promotivna ponuda">
+{% if site_settings.hero_slika or site_settings.hero_slika_mobilna %}
+<section class="home-uploaded-banner{% if not site_settings.hero_slika %} home-uploaded-banner--mobile-only{% endif %}" aria-label="Promotivna ponuda">
     {% if site_settings.hero_link %}<a href="{{ site_settings.hero_link }}" aria-label="Pogledaj promotivnu ponudu">{% endif %}
-    <img src="{{ site_settings.hero_slika.url }}" alt="Promotivna ponuda" width="1920" height="720" fetchpriority="high" loading="eager" decoding="async">
+    <picture>
+        {% if site_settings.hero_slika_mobilna %}<source media="(max-width: 767px)" srcset="{{ site_settings.hero_slika_mobilna.url }}">{% endif %}
+        <img src="{% if site_settings.hero_slika %}{{ site_settings.hero_slika.url }}{% else %}{{ site_settings.hero_slika_mobilna.url }}{% endif %}" alt="Promotivna ponuda" width="1920" height="720" fetchpriority="high" loading="eager" decoding="async">
+    </picture>
     {% if site_settings.hero_link %}</a>{% endif %}
 </section>
 {% endif %}

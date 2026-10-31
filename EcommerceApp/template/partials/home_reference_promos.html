@@ -1,13 +1,15 @@
 <section class="ref-promos ref-promos--uploads" aria-label="Posebne ponude">
 {% url 'home' as home_url %}
 {% if site_settings.promo_new_slika %}
-<a class="ref-promo-upload" href="{{ site_settings.promo_new_href }}"><img src="{{ site_settings.promo_new_slika.url }}" alt="Otkrijte novitete" loading="lazy"></a>
+<a class="ref-promo-upload" href="{{ site_settings.promo_new_href }}"><picture>{% if site_settings.promo_new_slika_mobilna %}<source media="(max-width: 767px)" srcset="{{ site_settings.promo_new_slika_mobilna.url }}">{% endif %}<img src="{{ site_settings.promo_new_slika.url }}" alt="Otkrijte novitete" loading="lazy"></picture></a>
 {% else %}
-<article class="ref-promo ref-promo--dark"><span>NAJNOVIJE U PONUDI</span><h2>OTKRIJTE NOVITETE</h2><p>Pronađite nešto za sebe.</p><a href="{{ home_url }}?noviteti=1">Pogledaj ponudu <span aria-hidden="true">→</span></a></article>
+{% if site_settings.promo_new_slika_mobilna %}<a class="ref-promo-upload ref-promo-upload--mobile-only" href="{{ site_settings.promo_new_href }}"><img src="{{ site_settings.promo_new_slika_mobilna.url }}" alt="Otkrijte novitete" loading="lazy"></a>{% endif %}
+<article class="ref-promo {% if site_settings.promo_new_slika_mobilna %}ref-promo--desktop-only {% endif %}ref-promo--dark"><span>NAJNOVIJE U PONUDI</span><h2>OTKRIJTE NOVITETE</h2><p>Pronađite nešto za sebe.</p><a href="{{ home_url }}?noviteti=1">Pogledaj ponudu <span aria-hidden="true">→</span></a></article>
 {% endif %}
 {% if site_settings.promo_sale_slika %}
-<a class="ref-promo-upload" href="{{ site_settings.promo_sale_href }}"><img src="{{ site_settings.promo_sale_slika.url }}" alt="Posebna ponuda" loading="lazy"></a>
+<a class="ref-promo-upload" href="{{ site_settings.promo_sale_href }}"><picture>{% if site_settings.promo_sale_slika_mobilna %}<source media="(max-width: 767px)" srcset="{{ site_settings.promo_sale_slika_mobilna.url }}">{% endif %}<img src="{{ site_settings.promo_sale_slika.url }}" alt="Posebna ponuda" loading="lazy"></picture></a>
 {% else %}
-<article class="ref-promo ref-promo--light"><span>POSEBNA PONUDA</span><h2>VIŠE ZA VAŠ NOVAC</h2><p>Istražite artikle na akciji.</p><a href="{{ home_url }}?akcija=1">Pogledaj ponudu <span aria-hidden="true">→</span></a></article>
+{% if site_settings.promo_sale_slika_mobilna %}<a class="ref-promo-upload ref-promo-upload--mobile-only" href="{{ site_settings.promo_sale_href }}"><img src="{{ site_settings.promo_sale_slika_mobilna.url }}" alt="Posebna ponuda" loading="lazy"></a>{% endif %}
+<article class="ref-promo {% if site_settings.promo_sale_slika_mobilna %}ref-promo--desktop-only {% endif %}ref-promo--light"><span>POSEBNA PONUDA</span><h2>VIŠE ZA VAŠ NOVAC</h2><p>Istražite artikle na akciji.</p><a href="{{ home_url }}?akcija=1">Pogledaj ponudu <span aria-hidden="true">→</span></a></article>
 {% endif %}
 </section>

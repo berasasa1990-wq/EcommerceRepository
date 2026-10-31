@@ -6701,11 +6701,16 @@ def staff_banners(request):
         'promo_new': ('promo_new_slika', 'promo_new_link', 'Noviteti — lijevi banner'),
         'promo_sale': ('promo_sale_slika', 'promo_sale_link', 'Posebna ponuda — desni banner'),
     }
+    mobile_fields = {'hero': 'hero_slika_mobilna', 'bestsellers': 'bestsellers_banner_slika_mobilna',
+                     'promo_new': 'promo_new_slika_mobilna', 'promo_sale': 'promo_sale_slika_mobilna'}
+    def banner_fields(key):
+        return fixed_banners[key][:2] + ((mobile_fields[key],) if key in mobile_fields else ())
+
     site = SiteSettings.load()
     if request.method == 'POST' and 'delete_banner' in request.POST:
         target = request.POST['delete_banner']
         if target in fixed_banners:
-            fields = fixed_banners[target][:2]
+            fields = banner_fields(target)
             for field in fields:
                 setattr(site, field, '')
             site.save(update_fields=list(fields))
@@ -6720,7 +6725,7 @@ def staff_banners(request):
     form = None
     title = ''
     if editing in fixed_banners:
-        fields = fixed_banners[editing][:2]
+        fields = banner_fields(editing)
         form_class = modelform_factory(SiteSettings, form=HeroBannerSettingsForm, fields=fields)
         form = form_class(request.POST if request.method == 'POST' else None,
                           request.FILES if request.method == 'POST' else None, instance=site)
@@ -6746,11 +6751,39 @@ def staff_banners(request):
                 form.save()
             messages.success(request, 'Banner je sačuvan.')
             return redirect('staff_banners')
-    return render(request, 'staff/banners.html', {
+    image_editors = []
+    extra_fields = []
+    if form:
+        if editing in fixed_banners:
+            desktop_name = fixed_banners[editing][0]
+            mobile_name = mobile_fields[editing]
+        else:
+            desktop_name, mobile_name = 'slika', 'slika_mobilna'
+        for name, heading, device in ((desktop_name, 'Slika za računar', 'desktop'),
+                                      (mobile_name, 'Slika za telefon', 'mobile')):
+            if name not in form.fields:
+                continue
+            field = form[name]
+            image = getattr(form.instance, name, None)
+            dimensions = ('900 × 720 px' if editing == 'hero' else '600 × 560 px') if device == 'mobile' else ('1920 × 720 px' if editing == 'hero' else '1200 × 560 px')
+            image_editors.append({'field': field, 'heading': heading, 'device': device,
+                                  'image': image, 'dimensions': dimensions})
+        image_names = {editor['field'].name for editor in image_editors}
+        extra_fields = [field for field in form if field.name not in image_names]
+        for field in extra_fields:
+            if field.name.endswith('_link'):
+                field.field.label = 'Link bannera (opcionalno)'
+                field.field.help_text = 'Isti link koristi se na računaru i telefonu.'
+
+    response = render(request, 'staff/banners.html', {
         **_base_context(), 'banner_form': form, 'editor_title': title,
-        'banner_site': site, 'promo_banners': [{'key': key, 'title': fixed_banners[key][2], 'image': getattr(site, fixed_banners[key][0]), 'help': 'Dva bannera jedan pored drugog · preporučeno 1200 × 560 px'} for key in ('promo_new', 'promo_sale')], 'banners': Banner.objects.order_by('redoslijed', 'pk'),
+        'image_editors': image_editors, 'extra_fields': extra_fields,
+        'banner_site': site, 'promo_banners': [{'key': key, 'title': fixed_banners[key][2], 'image': getattr(site, fixed_banners[key][0]) or getattr(site, mobile_fields[key]), 'help': 'Računar: 1200 × 560 px · Telefon: 600 × 560 px'} for key in ('promo_new', 'promo_sale')], 'banners': Banner.objects.order_by('redoslijed', 'pk'),
+        'preview_mobile_image': getattr(site, mobile_fields[editing]) if editing in mobile_fields else (getattr(form.instance, 'slika_mobilna', None) if form else None),
         'preview_image': getattr(site, fixed_banners[editing][0]) if editing in fixed_banners else (getattr(form.instance, 'slika', None) if form else None),
     })
+    response['Cache-Control'] = 'no-store, max-age=0'
+    return response
 
 
 @login_required(login_url='login')

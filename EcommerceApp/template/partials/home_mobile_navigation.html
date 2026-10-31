@@ -183,4 +183,34 @@ html body #mobileHomeCategories #homeCategoryTrack :is(.mobile-home-category-ico
     html body #mobileHomeCategories #homeCategoryTrack::-webkit-scrollbar-thumb { background: #aaa; border-radius: 3px; }
     html body #mobileHomeCategories > .home-category-controls { display: none !important; }
 }
+@media (min-width: 1025px) {
+    html body #mobileHomeCategories #homeCategoryTrack {
+        display: flex !important;
+        flex-wrap: nowrap;
+        width: 100%;
+        gap: 6px !important;
+        overflow-x: visible;
+        box-sizing: border-box;
+    }
+    html body #mobileHomeCategories #homeCategoryTrack > a {
+        flex: 1 1 0;
+        width: auto;
+        min-width: 0;
+        height: 100px;
+        aspect-ratio: auto;
+        padding: 4px 2px;
+        gap: 2px;
+        font-size: clamp(9px, .8vw, 12px);
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+    html body #mobileHomeCategories #homeCategoryTrack :is(img,svg,.cat-ico) {
+        width: clamp(36px, 4vw, 64px) !important;
+        height: clamp(36px, 4vw, 64px) !important;
+        max-width: 100%;
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+    html body #mobileHomeCategories > .home-category-controls { display: none !important; }
+}
 </style>

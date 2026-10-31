@@ -1,7 +1,10 @@
-{% if site_settings.bestsellers_banner_slika %}
-<section class="home-uploaded-banner home-uploaded-banner--bestsellers" aria-label="Banner ispod najprodavanijih proizvoda">
+{% if site_settings.bestsellers_banner_slika or site_settings.bestsellers_banner_slika_mobilna %}
+<section class="home-uploaded-banner home-uploaded-banner--bestsellers{% if not site_settings.bestsellers_banner_slika %} home-uploaded-banner--mobile-only{% endif %}" aria-label="Banner ispod najprodavanijih proizvoda">
     {% if site_settings.bestsellers_banner_link %}<a href="{{ site_settings.bestsellers_banner_link }}" aria-label="Pogledaj promotivnu ponudu">{% endif %}
-    <img src="{{ site_settings.bestsellers_banner_slika.url }}" alt="Promotivna ponuda" width="1600" height="600" loading="lazy" decoding="async">
+    <picture>
+        {% if site_settings.bestsellers_banner_slika_mobilna %}<source media="(max-width: 767px)" srcset="{{ site_settings.bestsellers_banner_slika_mobilna.url }}">{% endif %}
+        <img src="{% if site_settings.bestsellers_banner_slika %}{{ site_settings.bestsellers_banner_slika.url }}{% else %}{{ site_settings.bestsellers_banner_slika_mobilna.url }}{% endif %}" alt="Promotivna ponuda" width="1600" height="600" loading="lazy" decoding="async">
+    </picture>
     {% if site_settings.bestsellers_banner_link %}</a>{% endif %}
 </section>
 {% endif %}
