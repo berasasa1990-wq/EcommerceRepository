@@ -1,5 +1,6 @@
+{% load ecommerce_extras %}
 {% if product.prikazna_slika %}
-{% with img=product.prikazna_slika_responsive %}
+{% with img=product.prikazna_slika|catalog_card_image %}
 <img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" width="{{ img.width }}" height="{{ img.height }}" sizes="{{ image_sizes|default:'(max-width: 768px) 50vw, 16vw' }}" loading="{{ image_loading|default:'lazy' }}"{% if image_loading == 'eager' %} fetchpriority="high"{% else %} fetchpriority="low"{% endif %} decoding="async" data-main-image>
 {% endwith %}
 {% else %}

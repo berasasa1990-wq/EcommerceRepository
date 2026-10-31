@@ -257,3 +257,27 @@ class BannerManagerTests(TestCase):
         site.refresh_from_db()
         self.assertEqual(site.promo_new_slika.name, 'site/promos/desktop.jpg')
         self.assertFalse(site.promo_new_slika_mobilna)
+
+    @patch('EcommerceApp.views._base_context', return_value={})
+    def test_first_two_banner_thumbnails_have_real_image_urls(self, context):
+        site = SiteSettings.load()
+        site.hero_slika = 'site/hero/preview.jpg'
+        site.bestsellers_banner_slika = 'site/bestsellers/preview.jpg'
+        site.save(update_fields=['hero_slika', 'bestsellers_banner_slika'])
+        response = staff_banners(self.request())
+        self.assertContains(response, f'src="{site.hero_slika.url}"')
+        self.assertContains(response, f'src="{site.bestsellers_banner_slika.url}"')
+        self.assertNotContains(response, 'class="banner-manager__thumbnail" src=""')
+
+    @patch('EcommerceApp.views._base_context', return_value={})
+    def test_first_two_banner_thumbnails_fall_back_to_mobile_images(self, context):
+        site = SiteSettings.load()
+        site.hero_slika = ''
+        site.bestsellers_banner_slika = ''
+        site.hero_slika_mobilna = 'site/mobile/hero.jpg'
+        site.bestsellers_banner_slika_mobilna = 'site/mobile/bestsellers.jpg'
+        site.save(update_fields=['hero_slika', 'bestsellers_banner_slika', 'hero_slika_mobilna', 'bestsellers_banner_slika_mobilna'])
+        response = staff_banners(self.request())
+        self.assertContains(response, f'src="{site.hero_slika_mobilna.url}"')
+        self.assertContains(response, f'src="{site.bestsellers_banner_slika_mobilna.url}"')
+        self.assertNotContains(response, 'class="banner-manager__thumbnail" src=""')

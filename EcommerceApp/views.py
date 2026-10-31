@@ -6765,9 +6765,9 @@ def staff_banners(request):
                 continue
             field = form[name]
             image = getattr(form.instance, name, None)
-            dimensions = ('900 × 720 px' if editing == 'hero' else '600 × 560 px') if device == 'mobile' else ('1920 × 720 px' if editing == 'hero' else '1200 × 560 px')
+            dimensions = ('900 × 720 px' if editing == 'hero' else '600 × 560 px') if device == 'mobile' else ('1920 × 720 px' if editing == 'hero' else '1600 × 600 px' if editing == 'bestsellers' else '1200 × 560 px')
             image_editors.append({'field': field, 'heading': heading, 'device': device,
-                                  'image': image, 'dimensions': dimensions})
+                                  'image': image, 'dimensions': dimensions, 'limit': 'Najviše 60 KB nakon automatske optimizacije.' if editing in ('promo_new', 'promo_sale') else ''})
         image_names = {editor['field'].name for editor in image_editors}
         extra_fields = [field for field in form if field.name not in image_names]
         for field in extra_fields:
@@ -6778,6 +6778,8 @@ def staff_banners(request):
     response = render(request, 'staff/banners.html', {
         **_base_context(), 'banner_form': form, 'editor_title': title,
         'image_editors': image_editors, 'extra_fields': extra_fields,
+        'hero_list_image': site.hero_slika or site.hero_slika_mobilna,
+        'bestsellers_list_image': site.bestsellers_banner_slika or site.bestsellers_banner_slika_mobilna,
         'banner_site': site, 'promo_banners': [{'key': key, 'title': fixed_banners[key][2], 'image': getattr(site, fixed_banners[key][0]) or getattr(site, mobile_fields[key]), 'help': 'Računar: 1200 × 560 px · Telefon: 600 × 560 px'} for key in ('promo_new', 'promo_sale')], 'banners': Banner.objects.order_by('redoslijed', 'pk'),
         'preview_mobile_image': getattr(site, mobile_fields[editing]) if editing in mobile_fields else (getattr(form.instance, 'slika_mobilna', None) if form else None),
         'preview_image': getattr(site, fixed_banners[editing][0]) if editing in fixed_banners else (getattr(form.instance, 'slika', None) if form else None),

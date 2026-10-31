@@ -4,7 +4,7 @@
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block body_class %}staff-banner-page{% endblock %}
 {% block warehouse_theme_css %}
-<link rel="stylesheet" href="{% static 'css/staff-banners.css' %}?v=20261031-editor-mobile-v2">
+<link rel="stylesheet" href="{% static 'css/staff-banners.css' %}?v=20261031-separated-actions">
 {% endblock %}
 {% block content %}
 <section class="banner-manager" id="bannerManager">
@@ -16,7 +16,7 @@
 <div class="banner-manager__uploads">
 {% for editor in image_editors %}
 <section class="banner-manager__upload" data-banner-upload>
-    <header><span class="banner-manager__device">{% if editor.device == 'mobile' %}TELEFON{% else %}RAČUNAR{% endif %}</span><h2>{{ editor.heading }}</h2><p>Preporučeno {{ editor.dimensions }} · JPG, PNG ili WebP</p></header>
+    <header><span class="banner-manager__device">{% if editor.device == 'mobile' %}TELEFON{% else %}RAČUNAR{% endif %}</span><h2>{{ editor.heading }}</h2><p>Preporučeno {{ editor.dimensions }} · JPG, PNG ili WebP</p>{% if editor.limit %}<p>{{ editor.limit }}</p>{% endif %}</header>
     <div class="banner-manager__image-box banner-manager__image-box--{{ editor.device }}">
         <img{% if editor.image %} src="{{ editor.image.url }}"{% endif %} alt="Pregled: {{ editor.heading }}" data-banner-preview{% if not editor.image %} hidden{% endif %}>
         <span class="banner-manager__empty" data-banner-empty{% if editor.image %} hidden{% endif %}>{% if editor.device == 'mobile' %}Dodaj sliku za telefonsku verziju{% else %}Dodaj sliku za računar{% endif %}</span>
@@ -35,15 +35,13 @@
 </form>
 <script src="{% static 'js/staff-banners.js' %}?v=20261031-preview" defer></script>
 {% else %}
-{% firstof banner_site.hero_slika banner_site.hero_slika_mobilna as hero_list_image %}
-{% firstof banner_site.bestsellers_banner_slika banner_site.bestsellers_banner_slika_mobilna as bestsellers_list_image %}
 <div class="banner-manager__heading"><h1>Banneri</h1><a class="banner-manager__action" href="{% url 'staff_banners' %}?add=1">Dodaj</a></div>
 <div class="banner-manager__row">
 {% if hero_list_image %}<img class="banner-manager__thumbnail" src="{{ hero_list_image.url }}" alt="Početni banner" loading="lazy">{% endif %}
-<div class="banner-manager__info"><strong>Početni banner</strong><small>Glavni banner na vrhu početne · {% if hero_list_image %}Slika postavljena{% else %}Bez slike{% endif %}</small><span class="banner-manager__status banner-manager__status--{% if hero_list_image %}active{% else %}inactive{% endif %}">{% if hero_list_image %}Aktivan{% else %}Neaktivan{% endif %}</span></div><div class="banner-manager__actions"><a class="banner-manager__action" href="?edit=hero">Uredi</a><form method="post" action="{% url 'staff_banners' %}">{% csrf_token %}<button class="banner-manager__action" type="submit" name="delete_banner" value="hero">Obriši</button></form></div></div>
+<div class="banner-manager__info"><strong>Početni banner</strong><small>Računar: 1920 × 720 px · Telefon: 900 × 720 px</small><small>Glavni banner na vrhu početne · {% if hero_list_image %}Slika postavljena{% else %}Bez slike{% endif %}</small><span class="banner-manager__status banner-manager__status--{% if hero_list_image %}active{% else %}inactive{% endif %}">{% if hero_list_image %}Aktivan{% else %}Neaktivan{% endif %}</span></div><div class="banner-manager__actions"><a class="banner-manager__action" href="?edit=hero">Uredi</a><form method="post" action="{% url 'staff_banners' %}">{% csrf_token %}<button class="banner-manager__action" type="submit" name="delete_banner" value="hero">Obriši</button></form></div></div>
 <div class="banner-manager__row">
 {% if bestsellers_list_image %}<img class="banner-manager__thumbnail" src="{{ bestsellers_list_image.url }}" alt="Banner ispod najprodavanijih proizvoda" loading="lazy">{% endif %}
-<div class="banner-manager__info"><strong>Banner ispod najprodavanijih proizvoda</strong><small>{% if bestsellers_list_image %}Slika postavljena{% else %}Bez slike{% endif %}</small><span class="banner-manager__status banner-manager__status--{% if bestsellers_list_image %}active{% else %}inactive{% endif %}">{% if bestsellers_list_image %}Aktivan{% else %}Neaktivan{% endif %}</span></div><div class="banner-manager__actions"><a class="banner-manager__action" href="?edit=bestsellers">Uredi</a><form method="post" action="{% url 'staff_banners' %}">{% csrf_token %}<button class="banner-manager__action" type="submit" name="delete_banner" value="bestsellers">Obriši</button></form></div></div>
+<div class="banner-manager__info"><strong>Banner ispod najprodavanijih proizvoda</strong><small>Računar: 1600 × 600 px · Telefon: 600 × 560 px</small><small>{% if bestsellers_list_image %}Slika postavljena{% else %}Bez slike{% endif %}</small><span class="banner-manager__status banner-manager__status--{% if bestsellers_list_image %}active{% else %}inactive{% endif %}">{% if bestsellers_list_image %}Aktivan{% else %}Neaktivan{% endif %}</span></div><div class="banner-manager__actions"><a class="banner-manager__action" href="?edit=bestsellers">Uredi</a><form method="post" action="{% url 'staff_banners' %}">{% csrf_token %}<button class="banner-manager__action" type="submit" name="delete_banner" value="bestsellers">Obriši</button></form></div></div>
 {% for promo in promo_banners %}<div class="banner-manager__row">
 {% if promo.image %}<img class="banner-manager__thumbnail" src="{{ promo.image.url }}" alt="{{ promo.title }}" loading="lazy">{% endif %}
 <div class="banner-manager__info"><strong>{{ promo.title }}</strong><small>{{ promo.help }}</small><span class="banner-manager__status banner-manager__status--{% if promo.image %}active{% else %}inactive{% endif %}">{% if promo.image %}Aktivan{% else %}Neaktivan{% endif %}</span></div>

@@ -876,6 +876,13 @@ class SiteSettings(models.Model):
             process_site_logo,
         )
 
+        for field_name in ('promo_new_slika', 'promo_new_slika_mobilna', 'promo_sale_slika', 'promo_sale_slika_mobilna'):
+            image = getattr(self, field_name)
+            if image and not image._committed:
+                from .utils.images import prepare_promo_banner
+                processed = prepare_promo_banner(image, mobile=field_name.endswith('_mobilna'))
+                image.save(processed.name, processed, save=False)
+
         for field_name in ('hero_slika', 'bestsellers_banner_slika'):
             image = getattr(self, field_name)
             if image and not image._committed:

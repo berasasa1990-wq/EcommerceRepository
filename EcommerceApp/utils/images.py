@@ -2265,3 +2265,61 @@ def prepare_homepage_banner(upload):
         if best is not None:
             return ContentFile(best, name=stem + '.' + extension)
     raise ValidationError('Ova slika ne staje u 80 KB uz očuvan kvalitet na 1600 × 600 px. Učitaj jednostavniju sliku ili smanji šum i sitne detalje.')
+
+
+PROMO_BANNER_MAX_BYTES = 60_000
+
+
+def prepare_promo_banner(upload, *, mobile=False):
+    """Optimise the two promo banners without cropping or aggressive quality loss."""
+    from pathlib import Path
+    from django.core.exceptions import ValidationError
+    from PIL import UnidentifiedImageError
+
+    upload.seek(0)
+    raw = upload.read()
+    upload.seek(0)
+    stem = Path(upload.name).stem
+    try:
+        with Image.open(BytesIO(raw)) as source:
+            if getattr(source, 'is_animated', False):
+                raise ValidationError('Učitaj statičnu sliku bannera, bez animacije.')
+            source.load()
+            if source.format in ('PNG', 'JPEG', 'WEBP', 'AVIF') and len(raw) <= PROMO_BANNER_MAX_BYTES:
+                extension = {'JPEG': 'jpg'}.get(source.format, source.format.lower())
+                return ContentFile(raw, name=stem + '.' + extension)
+            image = ImageOps.exif_transpose(source).convert('RGBA' if 'A' in source.getbands() or 'transparency' in source.info else 'RGB')
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as exc:
+        raise ValidationError('Slika se ne može pročitati. Učitaj JPG, PNG, WebP ili AVIF.') from exc
+
+    image.thumbnail((600, 560) if mobile else (1200, 560), Image.Resampling.LANCZOS)
+    # Prefer lossless WebP, then the highest quality AVIF/WebP that meets the limit.
+    buffer = BytesIO()
+    image.save(buffer, format='WEBP', lossless=True, method=6)
+    if buffer.tell() <= PROMO_BANNER_MAX_BYTES:
+        return ContentFile(buffer.getvalue(), name=stem + '.webp')
+
+    for _ in range(6):
+        for extension, minimum in (('avif', 65), ('webp', 75)):
+            low, high, best = minimum, 95, None
+            while low <= high:
+                quality = (low + high) // 2
+                if extension == 'avif':
+                    data = _encode_avif_safe(image, quality)
+                    if data is None:
+                        break
+                else:
+                    output = BytesIO()
+                    image.save(output, format='WEBP', quality=quality, method=6)
+                    data = output.getvalue()
+                if len(data) <= PROMO_BANNER_MAX_BYTES:
+                    best = data
+                    low = quality + 1
+                else:
+                    high = quality - 1
+            if best is not None:
+                return ContentFile(best, name=stem + '.' + extension)
+        if image.width <= (320 if mobile else 600):
+            break
+        image = image.resize((max(1, round(image.width * .9)), max(1, round(image.height * .9))), Image.Resampling.LANCZOS)
+    raise ValidationError('Slika ne može stati u 60 KB uz dobar kvalitet. Učitaj jednostavniju sliku, bez mnogo šuma i sitnih detalja.')

@@ -1091,6 +1091,34 @@ class HeroBannerSettingsForm(forms.ModelForm):
     def clean_bestsellers_banner_slika(self):
         return self._clean_banner_image('bestsellers_banner_slika')
 
+    def clean_promo_new_slika(self):
+        upload = self.cleaned_data.get('promo_new_slika')
+        if upload and hasattr(upload, 'content_type'):
+            from .utils.images import prepare_promo_banner
+            return prepare_promo_banner(upload, mobile=False)
+        return upload
+
+    def clean_promo_new_slika_mobilna(self):
+        upload = self.cleaned_data.get('promo_new_slika_mobilna')
+        if upload and hasattr(upload, 'content_type'):
+            from .utils.images import prepare_promo_banner
+            return prepare_promo_banner(upload, mobile=True)
+        return upload
+
+    def clean_promo_sale_slika(self):
+        upload = self.cleaned_data.get('promo_sale_slika')
+        if upload and hasattr(upload, 'content_type'):
+            from .utils.images import prepare_promo_banner
+            return prepare_promo_banner(upload, mobile=False)
+        return upload
+
+    def clean_promo_sale_slika_mobilna(self):
+        upload = self.cleaned_data.get('promo_sale_slika_mobilna')
+        if upload and hasattr(upload, 'content_type'):
+            from .utils.images import prepare_promo_banner
+            return prepare_promo_banner(upload, mobile=True)
+        return upload
+
     class Meta:
         model = SiteSettings
         fields = ('hero_slika', 'hero_link', 'bestsellers_banner_slika', 'bestsellers_banner_link')

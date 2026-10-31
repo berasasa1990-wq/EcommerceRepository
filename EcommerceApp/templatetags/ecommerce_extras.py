@@ -82,3 +82,9 @@ def description_blocks(value):
         else:
             blocks.append({'kind': kind, 'lines': [text]})
     return blocks
+
+
+@register.filter
+def catalog_card_image(image_field):
+    from EcommerceApp.catalog_images import catalog_card_image_meta
+    return catalog_card_image_meta(image_field)
