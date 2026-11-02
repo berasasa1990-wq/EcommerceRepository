@@ -79,7 +79,7 @@ class HomepageBannerUploadTests(TestCase):
         with Image.open(self.site.hero_slika) as image:
             self.assertEqual(image.size, (1600, 600))
         html = render_to_string('partials/home_uploaded_banner.html', {'site_settings': self.site})
-        self.assertIn('width="1600" height="600"', html)
+        self.assertIn('width="1920" height="720"', html)
         self.assertIn('https://example.com/ponuda/', html)
         self.assertNotIn('fishing-hero', html)
         self.assertNotIn('<h1', html)

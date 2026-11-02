@@ -6666,7 +6666,8 @@ def staff_banners(request):
     mobile_fields = {'hero': 'hero_slika_mobilna', 'bestsellers': 'bestsellers_banner_slika_mobilna',
                      'promo_new': 'promo_new_slika_mobilna', 'promo_sale': 'promo_sale_slika_mobilna'}
     def banner_fields(key):
-        return fixed_banners[key][:2] + ((mobile_fields[key],) if key in mobile_fields else ())
+        return (fixed_banners[key][:2] + ((mobile_fields[key],) if key in mobile_fields else ())
+                + (('hero_video_mobilni',) if key == 'hero' else ()))
 
     site = SiteSettings.load()
     if request.method == 'POST' and 'delete_banner' in request.POST:

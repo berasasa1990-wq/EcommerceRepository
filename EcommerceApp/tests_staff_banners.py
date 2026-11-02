@@ -241,7 +241,7 @@ class BannerManagerTests(TestCase):
         self.assertContains(response, 'Upload slike za telefon')
         self.assertContains(response, 'name="promo_new_slika_mobilna"')
         self.assertContains(response, 'data-banner-upload', count=2)
-        self.assertContains(response, '600 × 560 px')
+        self.assertContains(response, '1000 × 625 px')
         self.assertNotContains(response, 'Currently:')
         self.assertNotContains(response, 'Change:')
         self.assertEqual(response['Cache-Control'], 'no-store, max-age=0')
@@ -281,3 +281,37 @@ class BannerManagerTests(TestCase):
         self.assertContains(response, f'src="{site.hero_slika_mobilna.url}"')
         self.assertContains(response, f'src="{site.bestsellers_banner_slika_mobilna.url}"')
         self.assertNotContains(response, 'class="banner-manager__thumbnail" src=""')
+
+    @patch('EcommerceApp.views._base_context', return_value={})
+    def test_hero_editor_has_mobile_mp4_upload(self, context):
+        response = staff_banners(self.request('?edit=hero'))
+        self.assertContains(response, 'name="hero_video_mobilni"')
+        self.assertContains(response, 'accept="video/mp4,.mp4"')
+
+    @patch('EcommerceApp.views.messages.success')
+    def test_mobile_hero_video_upload_clear_and_delete(self, success):
+        import tempfile
+        from .tests_home_mobile_video import video
+        site = SiteSettings.load()
+        site.hero_slika = 'site/hero/desktop.jpg'
+        site.save()
+        with tempfile.TemporaryDirectory() as directory, override_settings(MEDIA_ROOT=directory):
+            response = staff_banners(self.request('?edit=hero', {
+                'hero_link': 'https://example.com/offer/', 'hero_video_mobilni': video(10),
+            }))
+            self.assertEqual(response.status_code, 302)
+            site.refresh_from_db()
+            self.assertTrue(site.hero_video_mobilni.storage.exists(site.hero_video_mobilni.name))
+            self.assertEqual(site.hero_slika.name, 'site/hero/desktop.jpg')
+            response = staff_banners(self.request('?edit=hero', {
+                'hero_link': 'https://example.com/offer/', 'hero_video_mobilni-clear': 'on',
+            }))
+            self.assertEqual(response.status_code, 302)
+            site.refresh_from_db()
+            self.assertFalse(site.hero_video_mobilni)
+            site.hero_video_mobilni = 'site/mobile/videos/old.mp4'
+            site.save()
+            response = staff_banners(self.request(data={'delete_banner': 'hero'}))
+            self.assertEqual(response.status_code, 302)
+            site.refresh_from_db()
+            self.assertFalse(site.hero_video_mobilni)

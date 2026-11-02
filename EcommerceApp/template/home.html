@@ -7,7 +7,7 @@
 {% endblock %}
 {% block extra_css %}
 {% if filters_active %}<link rel="stylesheet" href="{% static 'css/category-product-images.css' %}?v=20261102-full-image-search">{% endif %}
-{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-uploaded-banner.css' %}?v=20261031-mobile-categories-no-background">{% endif %}
+{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-uploaded-banner.css' %}?v=20261102-mobile-hero-video">{% endif %}
 
 <style>
 body.home-mobile-reference main > .home-registration-banner { order: 3; display: flex; align-items: center; gap: 14px; width: 100%; min-height: 78px; box-sizing: border-box; padding: 20px 18px; margin: 12px 0; border: 1px solid #f3dac5; border-radius: 10px; background: #edf7fd; color: #263342; }
@@ -280,6 +280,16 @@ html body.home-mobile-reference .home-products .product-catalog article.product-
     html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo, .home-products--sets) .home-section-header__actions {
         display: none !important;
     }
+    html body.home-mobile-reference .home-products.home-products--sets .home-section-header {
+        flex-direction: row;
+        gap: 16px;
+    }
+    html body.home-mobile-reference .home-products.home-products--sets .home-section-header__text {
+        width: auto;
+    }
+    html body.home-mobile-reference .home-products.home-products--sets .home-section-header__actions {
+        display: flex !important;
+    }
     html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo, .home-products--sets) .home-section-header__title {
         font-size: 21px !important;
         line-height: 1.2;
@@ -295,23 +305,9 @@ html body.home-mobile-reference .home-products .product-catalog article.product-
         display: block !important;
     }
     html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo) .home-product-carousel__viewport {
-        overflow-x: scroll !important;
-        overflow-y: hidden !important;
-        touch-action: pan-x pan-y !important;
-        scrollbar-width: thin;
-        scrollbar-color: #657337 #ededed;
-        padding-bottom: 8px;
-    }
-    html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo) .home-product-carousel__viewport::-webkit-scrollbar {
-        display: block;
-        height: 6px;
-    }
-    html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo) .home-product-carousel__viewport::-webkit-scrollbar-track {
-        background: #ededed;
-    }
-    html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo) .home-product-carousel__viewport::-webkit-scrollbar-thumb {
-        background: #657337;
-        border-radius: 3px;
+        overflow: hidden !important;
+        touch-action: pan-y !important;
+        padding-bottom: 0;
     }
     html body.home-mobile-reference .home-products:is(.home-products--izdvojeno, .home-products--novo) .home-product-carousel__track {
         display: grid !important;
@@ -321,7 +317,8 @@ html body.home-mobile-reference .home-products .product-catalog article.product-
         grid-auto-columns: calc((100% - 6px) / 2) !important;
         gap: 6px !important;
         width: 100% !important;
-        transform: none !important;
+        transform: translate3d(var(--carousel-offset, 0px), 0, 0) !important;
+        transition: transform 450ms ease;
     }
     html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo, .home-products--sets) .home-product-carousel__track > .home-product-carousel__slide {
         width: 100% !important;
@@ -455,7 +452,8 @@ html body.home-mobile-reference .home-products .product-catalog article.product-
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
-                {% include 'partials/home_section_header.html' with title='SETOVI' header_mod='sets' see_all_url='' %}
+                {% url 'category' 'setovi' as sets_url %}
+                {% include 'partials/home_section_header.html' with title='SETOVI' header_mod='sets' see_all_url=sets_url %}
                 {% include 'partials/home_product_carousel.html' with use_home_image=True products=home_set_products|slice:':4' hide_variations=True visible_desktop=6 visible_mobile=2 carousel_no_arrows=True %}
             </div>
         </div>

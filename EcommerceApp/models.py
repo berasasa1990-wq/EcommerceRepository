@@ -82,6 +82,12 @@ class SiteSettings(models.Model):
         upload_to='site/mobile/', blank=True, verbose_name='Početni banner — slika za telefon',
         help_text='Preporučeno 900 × 720 px. Koristi se samo na telefonu. Ako je prazno, koristi se slika za računar.',
     )
+    hero_video_mobilni = models.FileField(
+        upload_to=home_mobile_video_upload_to, blank=True,
+        validators=[validate_home_mobile_video],
+        verbose_name='Početni banner — video za telefon',
+        help_text='MP4, 1080 × 1350 px (4:5), najviše 10 sekundi i 20 MB. Na telefonu ima prednost nad slikom; automatski se pušta bez zvuka i kontrola.',
+    )
     hero_link = models.URLField(
         max_length=500, default='https://carpologijabh.ba/kategorija/Jakne/',
         verbose_name='Link bannera',

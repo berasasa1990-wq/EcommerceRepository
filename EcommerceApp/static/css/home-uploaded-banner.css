@@ -129,3 +129,19 @@ html body.home-mobile-reference main > .home-uploaded-banner:not(.home-uploaded-
         background:transparent!important;
     }
 }
+
+/* A portrait video replaces the hero image on phones. */
+html body .home-uploaded-banner__video { display: none; }
+.home-uploaded-banner__video::-webkit-media-controls,
+.home-uploaded-banner__video::-webkit-media-controls-enclosure,
+.home-uploaded-banner__video::-webkit-media-controls-panel { display: none !important; }
+@media (max-width: 767px) {
+    html body .home-uploaded-banner__video {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1080 / 1350;
+        object-fit: cover;
+    }
+    html body .home-uploaded-banner--has-mobile-video picture { display: none; }
+}

@@ -923,8 +923,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 return window.innerWidth <= 768 ? mobile : desktop;
             }
 
+            function slideCount() {
+                // Desktop-only extras are hidden on phones and cannot be autoplay targets.
+                if (root.closest('.home-products--izdvojeno, .home-products--novo')) {
+                    return Array.from(slides).filter(slide => getComputedStyle(slide).display !== 'none').length;
+                }
+                return slides.length;
+            }
+
             function maxIndex() {
-                return Math.max(0, slides.length - visibleCount());
+                return Math.max(0, slideCount() - visibleCount());
             }
 
             function slideStep() {
@@ -950,8 +958,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             function updatePosition() {
                 const offset = index * slideStep();
+                track.style.setProperty('--carousel-offset', `${-offset}px`);
                 track.style.transform = `translate3d(-${offset}px, 0, 0)`;
-                const isStatic = slides.length <= visibleCount();
+                const isStatic = slideCount() <= visibleCount();
                 if (prevBtn) prevBtn.disabled = isStatic;
                 if (nextBtn) nextBtn.disabled = isStatic;
                 root.classList.toggle('home-product-carousel--static', isStatic);
@@ -998,7 +1007,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             function startAutoplay() {
                 clearInterval(autoplayTimer);
-                if (slides.length <= visibleCount()) return;
+                if (slideCount() <= visibleCount()) return;
                 autoplayTimer = setInterval(() => {
                     if (index >= maxIndex()) {
                         goTo(0, { animate: false });
@@ -1161,7 +1170,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 root.classList.remove('is-dragging');
             });
 
-            window.addEventListener('resize', updateLayout);
+            window.addEventListener('resize', () => {
+                updateLayout();
+                resetAutoplay();
+            });
             updateLayout();
             startAutoplay();
         });

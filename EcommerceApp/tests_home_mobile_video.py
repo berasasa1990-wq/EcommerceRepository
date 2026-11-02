@@ -78,3 +78,17 @@ class HomeMobileVideoTests(SimpleTestCase):
         self.assertEqual(storage.open(original_first_name).read(), video(3).read())
         self.assertEqual(storage.open(original_second_name).read(), video(5).read())
         self.assertEqual(storage.open(second.name).read(), video(7).read())
+
+    def test_hero_can_display_only_a_video_with_link(self):
+        from types import SimpleNamespace
+        from django.template.loader import render_to_string
+        site = SimpleNamespace(hero_slika='', hero_slika_mobilna='',
+                               hero_video_mobilni=SimpleNamespace(url='/media/hero.mp4'),
+                               hero_link='https://example.com/offer/')
+        html = render_to_string('partials/home_uploaded_banner.html', {'site_settings': site})
+        self.assertIn('home-uploaded-banner--mobile-only', html)
+        self.assertIn('src="/media/hero.mp4"', html)
+        self.assertIn('autoplay muted loop playsinline', html)
+        self.assertIn('href="https://example.com/offer/"', html)
+        self.assertNotIn('controls', html)
+        self.assertNotIn('<img', html)
