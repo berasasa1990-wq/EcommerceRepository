@@ -680,6 +680,12 @@ def magacin_brzi_unos_aktivacija(request, product_id):
                 form_errors.append('Pakovanje: količina mora biti najmanje 2 komada.')
                 pack_value = None
 
+        from .forms import FeaturedProductImageForm
+        featured_form = FeaturedProductImageForm(request.POST, request.FILES, instance=product)
+        if not featured_form.is_valid():
+            form_errors.extend('Slika za početnu ponudu: ' + str(error)
+                               for error in [error for errors in featured_form.errors.values() for error in errors])
+
         if not form_errors:
             try:
                 _check_barcode_input(request, product, form_data['barkod'])
@@ -688,6 +694,7 @@ def magacin_brzi_unos_aktivacija(request, product_id):
         if not form_errors and cijena is not None:
             try:
                 tagovi = resolve_tags(form_data['tagovi'])
+                featured_form.save(commit=False)
                 activate_product(
                     product,
                     cijena=cijena,
@@ -704,6 +711,9 @@ def magacin_brzi_unos_aktivacija(request, product_id):
                     proizvedeno_u_japanu=bool(form_data['proizvedeno_u_japanu']),
                     image_manual_fit=(request.POST.get('slika_rucno') or '') == '1',
                 )
+                if {'slika_izdvojena', 'slika_novo'}.intersection(featured_form.changed_data):
+                    from .views import _invalidate_storefront_product_caches
+                    _invalidate_storefront_product_caches()
                 tag_note = f', {len(tagovi)} tag(ova)' if tagovi else ''
                 cat_note = f', {kategorija.naziv}' if kategorija else ''
                 extra_note = f', +{len(extra_images)} slika' if extra_images else ''
@@ -2241,7 +2251,15 @@ def _save_product_edit(request, product):
     uploaded = request.FILES.get('slika')
     if uploaded:
         product.slika = uploaded
+    from .forms import FeaturedProductImageForm
+    featured_form = FeaturedProductImageForm(request.POST, request.FILES, instance=product)
+    if not featured_form.is_valid():
+        raise MagacinError('Slika za početnu ponudu: ' + '; '.join([error for errors in featured_form.errors.values() for error in errors]))
+    featured_form.save(commit=False)
     product.save()
+    if {'slika_izdvojena', 'slika_novo'}.intersection(featured_form.changed_data):
+        from .views import _invalidate_storefront_product_caches
+        _invalidate_storefront_product_caches()
 
     tag_ids = [int(tid) for tid in request.POST.getlist('tagovi') if str(tid).isdigit()]
     product.tagovi.set(Tag.objects.filter(pk__in=tag_ids))

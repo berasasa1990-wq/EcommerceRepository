@@ -1085,7 +1085,7 @@ class CategoryAdmin(admin.ModelAdmin):
             ),
         }),
         ('Prikaz', {
-            'fields': ('redoslijed', 'prikazi_u_meniju', 'aktivan', 'ikonica_pocetna'),
+            'fields': ('redoslijed', 'prikazi_u_meniju', 'aktivan', 'ikonica_pocetna', 'ikonica_izdvojena'),
         }),
         ('SEO (Google) — kategorija je ključna za ranking', {
             'fields': (
@@ -2184,6 +2184,12 @@ class NaStanjuFilter(admin.SimpleListFilter):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if {'slika_izdvojena', 'slika_novo'}.intersection(form.changed_data):
+            from .views import _invalidate_storefront_product_caches
+            _invalidate_storefront_product_caches()
+
     change_list_template = 'admin/EcommerceApp/product/change_list.html'
     change_form_template = 'admin/EcommerceApp/product/change_form.html'
     actions = [
@@ -2299,7 +2305,7 @@ class ProductAdmin(admin.ModelAdmin):
         }),
         ('Slika i cijena', {
             'fields': (
-                'slika', 'pregled_slike_velika', 'cijena', 'pakovanje_komada',
+                'slika', 'pregled_slike_velika', 'slika_izdvojena', 'slika_novo', 'cijena', 'pakovanje_komada',
                 'akcija_postotak', 'akcijska_cijena', 'akcija_do',
                 'na_stanju', 'stanje',
             ),

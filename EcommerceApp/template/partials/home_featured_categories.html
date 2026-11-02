@@ -1,0 +1,36 @@
+<section class="home-featured-categories" aria-label="Izdvojene kategorije">
+    <h2>Izdvojene kategorije</h2>
+    <div class="home-featured-categories__grid">
+        {% include 'partials/home_featured_category.html' with label='Štapovi' key='stap' icon_name='štapovi' %}
+        {% include 'partials/home_featured_category.html' with label='Odjeća i obuća' key='garderob' icon_name='odjeća' %}
+        {% include 'partials/home_featured_category.html' with label='Setovi' key='setov' icon_name='setovi' %}
+        {% include 'partials/home_featured_category.html' with label='Mamci' key='mam' icon_name='mamci' %}
+        {% include 'partials/home_featured_category.html' with label='Mašinice' key='masin' icon_name='mašinice' %}
+    </div>
+</section>
+<script>
+(() => {
+    const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const categories = [
+        {% for cat in nav_categories %}
+        { name: '{{ cat.naziv|escapejs }}', slug: '{{ cat.slug|escapejs }}', url: '{{ cat.get_absolute_url|escapejs }}', image: '{% if cat.ikonica_izdvojena %}{{ cat.ikonica_izdvojena.url|escapejs }}{% elif cat.ikonica_pocetna %}{{ cat.ikonica_pocetna.url|escapejs }}{% endif %}' },
+        {% endfor %}
+    ];
+    document.querySelectorAll('[data-featured-category]').forEach(tile => {
+        const key = tile.dataset.featuredCategory;
+        const category = categories.find(cat => normalize(cat.name + ' ' + cat.slug).includes(key)
+            || (key === 'garderob' && /odjec|obuc/.test(normalize(cat.name))));
+        if (!category) return;
+        tile.href = category.url;
+        if (category.image) {
+            const image = document.createElement('img');
+            image.src = category.image;
+            image.alt = '';
+            image.width = 88;
+            image.height = 88;
+            image.loading = 'lazy';
+            tile.querySelector('.cat-ico').replaceWith(image);
+        }
+    });
+})();
+</script>

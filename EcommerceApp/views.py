@@ -23,7 +23,7 @@ from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Case, Count, Exists, F, IntegerField, Max, Min, OuterRef, Prefetch, Q, Sum, Value, When
 from django.db.models.functions import Lower, Trim, TruncDate
 from django.utils import timezone
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.html import escape, mark_safe, strip_tags
@@ -322,7 +322,7 @@ def _filter_size_scope_qs(filter_params, base_qs=None, *, request=None):
     if filter_params.get('izdvojeno'):
         qs = _featured_catalog_qs(qs, request)
     if filter_params.get('noviteti'):
-        qs = qs.filter(pk__in=_latest_import_product_ids(), na_stanju=True, stanje__gt=0)
+        qs = qs.filter(pk__in=_selected_new_product_ids(), na_stanju=True, stanje__gt=0)
     if filter_params.get('brend'):
         brand = Brand.objects.filter(slug=filter_params['brend']).first()
         if brand:
@@ -1869,7 +1869,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     if params.get('izdvojeno'):
         products_qs = _featured_catalog_qs(products_qs, request)
     if params.get('noviteti'):
-        products_qs = products_qs.filter(pk__in=_latest_import_product_ids(), na_stanju=True, stanje__gt=0)
+        products_qs = products_qs.filter(pk__in=_selected_new_product_ids(), na_stanju=True, stanje__gt=0)
     if params.get('brend'):
         brand = Brand.objects.filter(slug=params['brend']).first()
         products_qs = products_qs.filter(brend_id=brand.pk) if brand else products_qs.none()
@@ -1938,7 +1938,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
         products = [product for product in products if _product_is_on_sale(product)]
 
     if params['noviteti']:
-        latest_ids = set(_latest_import_product_ids())
+        latest_ids = set(_selected_new_product_ids())
         products = [product for product in products if product.pk in latest_ids and product.na_stanju and product.stanje > 0]
 
     if params['velicina']:
@@ -2297,17 +2297,11 @@ def _fill_home_section_products(products, request=None):
     return items
 
 
-def _latest_import_product_ids():
-    from .models import UvozStavka
-
-    rows = UvozStavka.objects.filter(
-        product__isnull=False,
-        status__in=[UvozStavka.Status.CREATED, UvozStavka.Status.UPDATED],
-    )
-    latest = rows.order_by('-uvoz__kreiran', '-uvoz_id').values_list('uvoz_id', flat=True).first()
-    if latest is None:
-        return []
-    return list(dict.fromkeys(rows.filter(uvoz_id=latest).order_by('redoslijed', 'pk').values_list('product_id', flat=True)))
+def _selected_new_product_ids():
+    """New arrivals are selected explicitly; imports never populate this section."""
+    return list(HomeNovoProduct.objects.filter(
+        postavke=SiteSettings.load(), aktivan=True,
+    ).order_by('redoslijed', 'pk').values_list('artikal_id', flat=True))
 
 
 def _home_latest_products(request=None):
@@ -2315,11 +2309,10 @@ def _home_latest_products(request=None):
 
 
 def _home_latest_products_uncached(request=None):
-    product_ids = _latest_import_product_ids()
+    product_ids = _selected_new_product_ids()
     if not product_ids:
         return []
-    # First find eligible IDs without constructing/prefetching every imported
-    # product. Preserve the original import order and visibility rules.
+    # Preserve the manual order while applying storefront visibility rules.
     eligible_ids = set(_home_product_queryset(request).filter(pk__in=product_ids).values_list('pk', flat=True))
     selected_ids = [pk for pk in product_ids if pk in eligible_ids][:HOME_SECTION_PRODUCT_LIMIT]
     products = {p.pk: p for p in _home_product_queryset(request).filter(pk__in=selected_ids)}
@@ -2843,6 +2836,7 @@ def home(request):
         'featured_cards': [_banner_to_card(b) for b in featured_banners],
         'spotlight': spotlight,
         'latest_products': latest_products,
+        'home_set_products': _home_product_queryset(request).filter(is_set=True).order_by('-kreiran', '-pk')[:12] if not filters_active else [],
         'bestselling_products': bestselling_products,
         'hero_banners': [site_settings, *site_settings.hero_banners.filter(aktivan=True)] if not filters_active else [],
         'custom_home_sections': custom_home_sections,
@@ -6659,38 +6653,6 @@ def staff_admin_panel(request):
 
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
-@require_GET
-def staff_company_debts(request):
-    from .models import CompanyPayment
-    from .company_payment_filters import display_payer_name
-
-    payments = CompanyPayment.objects.filter(amount__gt=0, source_verified=True, currency__in=('BAM', 'EUR', 'USD')).exclude(source_subject__icontains='cms')
-    from decimal import Decimal
-    grouped = {}
-    visible_payments = []
-    for payment in payments.order_by(F('date').desc(nulls_last=True), '-pk'):
-        company = display_payer_name(payment.payer)
-        if company is None:
-            continue
-        visible_payments.append(payment)
-        key = (company, payment.currency)
-        if key not in grouped:
-            grouped[key] = {'company': company, 'currency': payment.currency,
-                            'total': Decimal('0.00'), 'payments': []}
-        grouped[key]['total'] += payment.amount
-        grouped[key]['payments'].append(payment)
-    payment_groups = sorted(grouped.values(), key=lambda group: (group['company'].casefold(), group['currency']))
-    context = {
-        **_base_context(),
-        'payments': visible_payments, 'payment_groups': payment_groups,
-    }
-    response = render(request, 'staff/company_debts.html', context)
-    response['Cache-Control'] = 'private, no-store'
-    return response
-
-
-@login_required(login_url='login')
-@user_passes_test(_superuser_required)
 def staff_banners(request):
     from django.forms import modelform_factory
     from .forms import HeroBannerSettingsForm, BannerAdminForm
@@ -6765,7 +6727,7 @@ def staff_banners(request):
                 continue
             field = form[name]
             image = getattr(form.instance, name, None)
-            dimensions = ('900 × 720 px' if editing == 'hero' else '600 × 560 px') if device == 'mobile' else ('1920 × 720 px' if editing == 'hero' else '1600 × 600 px' if editing == 'bestsellers' else '1200 × 560 px')
+            dimensions = ('1080 × 1350 px' if editing == 'hero' else '1000 × 625 px' if editing in ('promo_new', 'promo_sale') else '600 × 560 px') if device == 'mobile' else ('1920 × 720 px' if editing == 'hero' else '1600 × 600 px' if editing == 'bestsellers' else '1200 × 560 px')
             image_editors.append({'field': field, 'heading': heading, 'device': device,
                                   'image': image, 'dimensions': dimensions, 'limit': 'Najviše 60 KB nakon automatske optimizacije.' if editing in ('promo_new', 'promo_sale') else ''})
         image_names = {editor['field'].name for editor in image_editors}
@@ -6780,7 +6742,7 @@ def staff_banners(request):
         'image_editors': image_editors, 'extra_fields': extra_fields,
         'hero_list_image': site.hero_slika or site.hero_slika_mobilna,
         'bestsellers_list_image': site.bestsellers_banner_slika or site.bestsellers_banner_slika_mobilna,
-        'banner_site': site, 'promo_banners': [{'key': key, 'title': fixed_banners[key][2], 'image': getattr(site, fixed_banners[key][0]) or getattr(site, mobile_fields[key]), 'help': 'Računar: 1200 × 560 px · Telefon: 600 × 560 px'} for key in ('promo_new', 'promo_sale')], 'banners': Banner.objects.order_by('redoslijed', 'pk'),
+        'banner_site': site, 'promo_banners': [{'key': key, 'title': fixed_banners[key][2], 'image': getattr(site, fixed_banners[key][0]) or getattr(site, mobile_fields[key]), 'help': 'Računar: 1200 × 560 px · Telefon: 1000 × 625 px'} for key in ('promo_new', 'promo_sale')], 'banners': Banner.objects.order_by('redoslijed', 'pk'),
         'preview_mobile_image': getattr(site, mobile_fields[editing]) if editing in mobile_fields else (getattr(form.instance, 'slika_mobilna', None) if form else None),
         'preview_image': getattr(site, fixed_banners[editing][0]) if editing in fixed_banners else (getattr(form.instance, 'slika', None) if form else None),
     })
@@ -7976,6 +7938,14 @@ def staff_product_quick_edit(request, slug):
                 product.slika = uploaded
                 changed.append('slika')
 
+        from .forms import FeaturedProductImageForm
+        featured_form = FeaturedProductImageForm(request.POST, request.FILES, instance=product)
+        if featured_form.is_valid():
+            featured_form.save(commit=False)
+        else:
+            errors.extend('Slika za početnu ponudu: ' + str(error)
+                          for error in [error for errors in featured_form.errors.values() for error in errors])
+
         if errors:
             for err in errors:
                 messages.error(request, err)
@@ -7983,6 +7953,8 @@ def staff_product_quick_edit(request, slug):
             return redirect('product_detail', slug=slug)
 
         product.save()
+        if {'slika_izdvojena', 'slika_novo'}.intersection(featured_form.changed_data):
+            _invalidate_storefront_product_caches()
         # Dodatne slike (opcionalno u istom save-u)
         uploads = request.FILES.getlist('dodatne_slike')
         if uploads:
@@ -9834,23 +9806,36 @@ def staff_home_page(request):
             {'id': p.pk, 'label': f'{p.naziv} ({p.sifra})'} for p in products
         ]})
     settings = SiteSettings.load()
-    selected = HomeFeaturedProduct.objects.filter(postavke=settings)
-    form = HomeFeaturedProductsForm(
-        request.POST if request.method == 'POST' else None,
-        initial={'artikli': list(selected.filter(aktivan=True).values_list('artikal_id', flat=True))},
-    )
-    if request.method == 'POST' and form.is_valid():
+    is_post = request.method == 'POST'
+    section = request.POST.get('section', 'featured') if is_post else None
+    selections = {
+        'featured': HomeFeaturedProduct.objects.filter(postavke=settings),
+        'new': HomeNovoProduct.objects.filter(postavke=settings),
+    }
+    forms = {
+        key: HomeFeaturedProductsForm(
+            request.POST if is_post and section == key else None,
+            initial={'artikli': list(selected.filter(aktivan=True).values_list('artikal_id', flat=True))},
+            auto_id=f'id_{key}_%s',
+        ) for key, selected in selections.items()
+    }
+    forms['new'].fields['artikli'].label = 'Artikli u Novom u ponudi'
+    if is_post and section not in forms:
+        return HttpResponseBadRequest('Nepoznata sekcija.')
+    if is_post and forms[section].is_valid():
+        selected = selections[section]
+        model = HomeNovoProduct if section == 'new' else HomeFeaturedProduct
         with transaction.atomic():
             selected.delete()
-            HomeFeaturedProduct.objects.bulk_create([
-                HomeFeaturedProduct(postavke=settings, artikal=product, redoslijed=index)
-                for index, product in enumerate(form.cleaned_data['artikli'])
+            model.objects.bulk_create([
+                model(postavke=settings, artikal=product, redoslijed=index)
+                for index, product in enumerate(forms[section].cleaned_data['artikli'])
             ])
         _invalidate_storefront_product_caches()
-        messages.success(request, 'Izdvojena ponuda je sačuvana.')
+        messages.success(request, 'Novo u ponudi je sačuvano.' if section == 'new' else 'Izdvojena ponuda je sačuvana.')
         return redirect('staff_home_page')
     return render(request, 'staff/home_page.html', {
-        **_base_context(), 'featured_form': form,
+        **_base_context(), 'featured_form': forms['featured'], 'new_form': forms['new'],
         'section_count': HomeProductSection.objects.count(),
     })
 

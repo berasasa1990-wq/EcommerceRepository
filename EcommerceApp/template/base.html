@@ -354,18 +354,78 @@
     <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261030-orange-buttons-badges">
     {% endif %}
     {% block warehouse_theme_css %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261030-original-mobile-header">
+    <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261031-mobile-admin-edit-cart">
     <link rel="stylesheet" href="{% static 'css/product-grid-desktop.css' %}?v=20261030-related-four-fit" media="(min-width: 1025px)">
     <link rel="stylesheet" href="{% static 'css/product-sale-remaining.css' %}?v=20261030-orange-buttons-badges">
     <link rel="stylesheet" href="{% static 'css/site-page-spacing.css' %}?v=20261030-mobile-banners-aligned">
     <link rel="stylesheet" href="{% static 'css/no-pulsing.css' %}?v=20261030-disable-pulses">
+    <style>
+        @media (max-width: 767px) {
+            html body .product-card.product-card.product-card.product-card.product-card.product-card .home-card-heart,
+            html body.product-mobile-reference .product-detail button.home-card-heart {
+                display: none !important;
+            }
+        }
+    </style>
+    <style>
+    .site-sale-notice { display:block; padding:7px 12px; background:var(--storefront-action-gradient, linear-gradient(180deg, #ff9800 0%, #ff5000 100%)); color:#fff; text-align:center; font-size:13px; line-height:1.4; text-decoration:none; }
+    .site-sale-notice:hover, .site-sale-notice:focus-visible { text-decoration:underline; text-underline-offset:3px; }
+    html body.shared-site-header .site-chrome-sticky .promo-bar.site-contact-strip { display:flex!important; position:relative!important; inset:auto!important; flex-direction:column; gap:3px; width:100%!important; max-width:none; margin:0!important; border-radius:0!important; box-sizing:border-box; height:auto; min-height:0; padding:5px 12px; background:#f5f5f7; color:#111; line-height:1.4; }
+    .site-contact-strip .site-viber-contacts { display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; }
+    html body .site-contact-strip .site-viber-contacts a { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; margin:0; color:#111!important; font-size:14px; font-weight:700; text-decoration:none; }
+    .site-contact-strip .site-viber-contacts a:hover, .site-contact-strip .site-viber-contacts a:focus-visible { text-decoration:underline; }
+    .site-viber-contacts img { display:block; width:22px; height:22px; flex:0 0 22px; padding:3px; box-sizing:border-box; border-radius:5px; background:#7360f2; }
+    .site-contact-strip .site-delivery-notice { font-size:12px; font-weight:700; }
+    @media (max-width: 767px) {
+    html body .site-chrome-sticky .desktop-original-promo { display: none !important; }
+    html body.home-mobile-reference .home-products .product-card .product-card-hit-label { display: none !important; }
+    html body .product-card .desktop-original-hit,
+    html body .product-card .mobile-hidden-stock { display: none !important; }
+    html body .product-catalog article.product-card.product-card--catalog.product-card--reference-design.product-card--unified.product-card--unified .product-card__body:has(> .product-card-hit-label) {
+        padding-top: 6px !important;
+    }
+    .product-card .product-card-hit-label {
+        display: table;
+        position: static;
+        margin: 0 0 6px;
+        padding: 3px 8px;
+        border-radius: 5px;
+        background: #657337;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 15px;
+    }
+    }
+    @media (min-width: 768px) {
+        html body .product-card .product-card-hit-label { display: none !important; }
+        html body.shared-site-header .site-chrome-sticky .site-sale-notice,
+        html body.shared-site-header .site-chrome-sticky .promo-bar.site-contact-strip { display: none !important; }
+    }
+    @media (max-width: 767px) {
+        body .site-chrome-sticky {
+            transform: translateY(calc(-1 * var(--site-chrome-scroll-offset, 0px)));
+            transition: none !important;
+        }
+    }
+    </style>
 </head>
 <body data-menu-color="{{ site_settings.boja_menija|default:'white' }}"{% if user.is_authenticated and user.email %} data-stock-notify-logged="1"{% endif %} class="shared-site-header {% block body_class %}{% endblock %}{% if staff_edit_mode %} staff-edit-mode-on{% endif %}{% if cats_sidebar_open %} cats-sidebar-open{% endif %}">
     {# Bijeli sloj ispod fiksne promo trake i headera — sadržaj se ne vidi kroz procijep pri scrollu #}
     <div class="site-chrome-backdrop" aria-hidden="true"></div>
 
     <div class="site-chrome-sticky">
-    <div class="promo-bar">
+    <a class="site-sale-notice" href="{% url 'home' %}?akcija=1"><strong>Iskoristi akciju - klikni ovdje!</strong></a>
+    <div class="promo-bar site-contact-strip">
+        <div class="site-viber-contacts">
+            <a href="viber://chat?number=%2B38765838653" aria-label="Otvori Viber za 065838653"><img src="{% static 'img/contact/viber.svg' %}" alt="" aria-hidden="true" width="22" height="22">065838653</a>
+            <span class="site-viber-separator">/</span>
+            <a href="viber://chat?number=%2B38765497431" aria-label="Otvori Viber za 065497431">065497431</a>
+        </div>
+        <strong class="site-delivery-notice">BESPLATNA DOSTAVA iznad 250 KM</strong>
+    </div>
+
+    <div class="promo-bar desktop-original-promo">
         <div class="desktop-trust-bar">
             <div class="desktop-trust-benefits">
                 <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4h13v13H2zM15 9h4l3 4v4h-7M5 8h7M5 11h7"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>Besplatna dostava za narudžbe iznad {{ site_settings.besplatna_dostava_od|default:'250'|floatformat:'-2' }} KM</span>
@@ -390,6 +450,7 @@
         var chrome = document.querySelector('.site-chrome-sticky');
         var promo = chrome.querySelector('.promo-bar');
         var header = document.getElementById('header');
+        var saleNotice = chrome.querySelector('.site-sale-notice');
         var pending = false;
         function setHeight(name, height) {
             var value = Math.ceil(height) + 'px';
@@ -401,10 +462,15 @@
             var promoH = promo.getBoundingClientRect().height;
             var headerH = header.getBoundingClientRect().height;
             var totalH = chrome.getBoundingClientRect().height;
+            var noticesH = promoH + saleNotice.getBoundingClientRect().height;
+            var scrollOffset = window.innerWidth <= 767
+                ? Math.min(Math.max(window.scrollY, 0), noticesH) : 0;
+            // Follow the page until the notices leave the viewport, then hold the header.
+            root.style.setProperty('--site-chrome-scroll-offset', scrollOffset + 'px');
             setHeight('--promo-height', promoH);
             setHeight('--header-height', headerH);
             setHeight('--site-chrome-height', totalH);
-            setHeight('--site-chrome-top', totalH + 2);
+            setHeight('--site-chrome-top', totalH - scrollOffset + 2);
         }
         function schedule() {
             if (pending) return;
@@ -414,6 +480,7 @@
         window.syncSiteChromeOffset = schedule;
         measure();
         window.addEventListener('resize', schedule, { passive: true });
+        window.addEventListener('scroll', schedule, { passive: true });
         window.addEventListener('load', schedule, { once: true });
         if (window.ResizeObserver) {
             var observer = new ResizeObserver(schedule);

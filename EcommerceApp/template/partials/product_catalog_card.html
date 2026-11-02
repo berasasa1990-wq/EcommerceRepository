@@ -19,7 +19,7 @@
     {% elif product.je_novitet or home_section_badge == 'novo' %}
     <span class="product-card-corner-badge product-card-corner-badge--novitet">Novo</span>
     {% elif product.je_hit or home_section_badge == 'hit' %}
-    <span class="product-card-corner-badge product-card-corner-badge--hit">HIT</span>
+    <span class="product-card-corner-badge product-card-corner-badge--hit desktop-original-hit">HIT</span>
     {% endif %}
     <button type="button" class="home-card-heart" aria-label="Omiljeno — {{ product.naziv }}" data-favorite-id="{{ product.pk }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
@@ -42,6 +42,11 @@
         <div class="product-card__body">
             {% if not home_reference_card %}
             <p class="product-card__pack"{% if product.pakovanje_cijena_hint %} title="{{ product.pakovanje_cijena_hint }}"{% endif %}>{% if product.je_pakovanje %}{{ product.pakovanje_label|default:"Pakovanje" }}{% else %}&nbsp;{% endif %}</p>
+            {% endif %}
+            {% if not product.katalog_na_akciji and not product.katalog_akcija_postotak and not product.je_novitet and home_section_badge != 'novo' %}
+            {% if product.je_hit or home_section_badge == 'hit' %}
+            <span class="product-card-hit-label">HIT ponuda</span>
+            {% endif %}
             {% endif %}
             <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card__title" data-product-name{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>{{ product.naziv }}</a>
             {% include 'partials/product_staff_missing.html' with product=product %}
@@ -74,7 +79,7 @@
     {% endif %}
 
     <div class="product-card__footer{% if product.pakovanje_uz_cijenu_kartica %} product-card__footer--pack{% endif %}">
-        <p class="reference-card-stock{% if not product.na_stanju %} is-out{% endif %}">{% if product.na_stanju %}<span>Na stanju · {{ product.stanje }} kom</span>{% else %}Nije na stanju{% endif %}</p>
+        <p class="reference-card-stock{% if not product.na_stanju %} is-out{% elif home_reference_card %} mobile-hidden-stock{% endif %}">{% if product.na_stanju %}<span>Na stanju · {{ product.stanje }} kom</span>{% else %}Nije na stanju{% endif %}</p>
         <div class="product-card__price-row">
             <div class="product-card__price-block">
                 {% if card_variations|length > 1 %}

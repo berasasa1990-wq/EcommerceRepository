@@ -4,8 +4,8 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase
 
 from .forms import HomeFeaturedProductsForm
-from .models import HomeFeaturedProduct, Product, SiteSettings
-from .views import staff_home_page, _home_featured_products_uncached
+from .models import HomeFeaturedProduct, HomeNovoProduct, Product, SiteSettings
+from .views import staff_home_page, _home_featured_products_uncached, _home_latest_products_uncached
 
 
 class FeaturedEditorTests(TestCase):
@@ -51,3 +51,28 @@ class FeaturedEditorTests(TestCase):
         request = self.request({'artikli': [self.products[1].pk]})
         request.user.is_superuser = False
         self.assertEqual(staff_home_page(request).status_code, 302)
+
+    @patch('EcommerceApp.views.messages.success')
+    @patch('EcommerceApp.views._invalidate_storefront_product_caches')
+    def test_new_arrivals_save_is_separate_from_featured(self, invalidate, success):
+        settings = SiteSettings.load()
+        HomeFeaturedProduct.objects.create(postavke=settings, artikal=self.products[0])
+        HomeNovoProduct.objects.create(postavke=settings, artikal=self.products[1])
+        response = staff_home_page(self.request({'section': 'new', 'artikli': [self.products[2].pk]}))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(list(HomeNovoProduct.objects.values_list('artikal_id', flat=True)), [self.products[2].pk])
+        self.assertEqual(list(HomeFeaturedProduct.objects.values_list('artikal_id', flat=True)), [self.products[0].pk])
+        invalidate.assert_called_once()
+
+    def test_no_automatic_new_arrivals_without_manual_selection(self):
+        self.assertEqual(_home_latest_products_uncached(), [])
+
+    def test_new_arrivals_follow_manual_order_and_visibility(self):
+        settings = SiteSettings.load()
+        HomeNovoProduct.objects.create(postavke=settings, artikal=self.products[2], redoslijed=0)
+        HomeNovoProduct.objects.create(postavke=settings, artikal=self.products[1], redoslijed=1)
+        HomeNovoProduct.objects.create(postavke=settings, artikal=self.products[0], redoslijed=2, aktivan=False)
+        self.assertEqual([p.pk for p in _home_latest_products_uncached()], [self.products[2].pk, self.products[1].pk])
+
+    def test_unknown_section_is_rejected(self):
+        self.assertEqual(staff_home_page(self.request({'section': 'invalid'})).status_code, 400)

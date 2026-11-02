@@ -876,7 +876,7 @@ class SiteSettings(models.Model):
             process_site_logo,
         )
 
-        for field_name in ('promo_new_slika', 'promo_new_slika_mobilna', 'promo_sale_slika', 'promo_sale_slika_mobilna'):
+        for field_name in ('promo_new_slika', 'promo_new_slika_mobilna', 'promo_sale_slika', 'promo_sale_slika_mobilna', 'bestsellers_banner_slika_mobilna'):
             image = getattr(self, field_name)
             if image and not image._committed:
                 from .utils.images import prepare_promo_banner
@@ -1282,6 +1282,11 @@ class Category(models.Model):
         verbose_name='Ikonica na početnoj',
         help_text='Preporuka: 256 × 256 px, PNG ili WebP s prozirnom pozadinom. Bez slike se koristi standardna ikonica.',
     )
+    ikonica_izdvojena = models.ImageField(
+        upload_to='categories/icons/', blank=True,
+        verbose_name='Ikonica za izdvojene kategorije',
+        help_text='Posebna slika za izdvojene kategorije na početnoj. Automatski AVIF do 15 KB i 256 × 256 px. Bez slike se koristi obična ikonica.',
+    )
     slug = models.SlugField(unique=True, blank=True)
     roditelj = models.ForeignKey(
         'self', on_delete=models.CASCADE, null=True, blank=True,
@@ -1385,13 +1390,14 @@ class Category(models.Model):
             self.search_tagovi = self.normalize_search_tagovi(self.search_tagovi)
         from .utils.images import is_new_upload, process_category_icon
         update_fields = kwargs.get('update_fields')
-        if (update_fields is None or 'ikonica_pocetna' in update_fields) and is_new_upload(self.ikonica_pocetna):
-            # Do not silently save an oversized original if conversion fails.
-            processed = process_category_icon(self.ikonica_pocetna)
-            from uuid import uuid4
-            # R2 overwrites same-name files; a fresh URL also bypasses CDN/browser cache.
-            processed.name = f'category-{uuid4().hex}.avif'
-            self.ikonica_pocetna.save(processed.name, processed, save=False)
+        for field_name in ('ikonica_pocetna', 'ikonica_izdvojena'):
+            icon = getattr(self, field_name)
+            if (update_fields is None or field_name in update_fields) and is_new_upload(icon):
+                # Both icon uploads use the same strict size limit and fresh CDN URL.
+                processed = process_category_icon(icon)
+                from uuid import uuid4
+                processed.name = f'category-{uuid4().hex}.avif'
+                icon.save(processed.name, processed, save=False)
         super().save(*args, **kwargs)
         from django.db import transaction
         from .category_visibility import invalidate_category_product_cache
@@ -1980,7 +1986,7 @@ class HomeFeaturedProduct(models.Model):
 
 
 class HomeNovoProduct(models.Model):
-    """Ručno odabrani noviteti na početnoj (kad je noviteti_mod = manual)."""
+    """Ručno odabrani artikli za Novo u ponudi na početnoj."""
     postavke = models.ForeignKey(
         SiteSettings,
         on_delete=models.CASCADE,
@@ -3370,6 +3376,16 @@ class Product(models.Model):
         help_text='Prikazuje se na stranici artikla.',
     )
     slika = models.ImageField(upload_to='products/', blank=True, null=True)
+    slika_izdvojena = models.ImageField(
+        upload_to='products/featured/', blank=True,
+        verbose_name='Slika za izdvojenu ponudu',
+        help_text='Koristi se samo u Izdvojenoj ponudi na početnoj. Prazno = postojeća slika artikla.',
+    )
+    slika_novo = models.ImageField(
+        upload_to='products/new/', blank=True,
+        verbose_name='Slika za Novo u ponudi',
+        help_text='Koristi se samo u Novom u ponudi na početnoj. Prazno = postojeća slika artikla.',
+    )
     na_stanju = models.BooleanField(default=True, verbose_name='Na stanju')
     stanje = models.PositiveIntegerField(default=0, verbose_name='Količina')
     pakovanje_komada = models.PositiveSmallIntegerField(
@@ -3566,6 +3582,14 @@ class Product(models.Model):
                 'slika',
                 post_process=process_product_image_named(image_base),
             )
+        if self.slika_izdvojena:
+            from .utils.images import apply_image_processing, process_product_image_named
+            apply_image_processing(self, 'slika_izdvojena',
+                post_process=process_product_image_named(f'{self.slug}-izdvojena'))
+        if self.slika_novo:
+            from .utils.images import apply_image_processing, process_product_image_named
+            apply_image_processing(self, 'slika_novo',
+                post_process=process_product_image_named(f'{self.slug}-novo'))
         # NOT NULL search kolone — nikad ne šalji NULL (Odoo import / bulk create)
         if self.search_keywords is None:
             self.search_keywords = ''
@@ -3847,6 +3871,16 @@ class Product(models.Model):
         if not slika:
             return None
         return product_image_responsive_meta(slika)
+
+    @property
+    def izdvojena_slika_responsive(self):
+        from .utils.images import product_image_responsive_meta
+        return product_image_responsive_meta(self.slika_izdvojena) if self.slika_izdvojena else self.prikazna_slika_responsive
+
+    @property
+    def novo_slika_responsive(self):
+        from .utils.images import product_image_responsive_meta
+        return product_image_responsive_meta(self.slika_novo) if self.slika_novo else self.prikazna_slika_responsive
 
     @property
     def seo_title(self):
@@ -7320,29 +7354,6 @@ class HeroBanner(models.Model):
 
     def __str__(self):
         return self.hero_opis[:70]
-
-
-class CompanyPayment(models.Model):
-    source_key = models.CharField(max_length=64, unique=True)
-    source_subject = models.CharField(max_length=998, blank=True)
-    source_uid = models.CharField(max_length=32, blank=True)
-    source_verified = models.BooleanField(default=False, db_index=True)
-    date = models.DateTimeField(null=True, blank=True)
-    payer = models.CharField(max_length=160, db_index=True)
-    amount = models.DecimalField(max_digits=16, decimal_places=2)
-    currency = models.CharField(max_length=3, blank=True)
-    filter_matches = models.JSONField(default=dict, blank=True)
-    imported_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ('-date', '-pk')
-        verbose_name = 'Uplata firme'
-        verbose_name_plural = 'Uplate firmi'
-
-
-class CompanyStatementImportState(models.Model):
-    key = models.CharField(max_length=64, primary_key=True)
-    last_uid = models.PositiveBigIntegerField(default=0)
 
 
 class BulkPriceBatch(models.Model):

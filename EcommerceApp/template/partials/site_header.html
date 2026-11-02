@@ -79,6 +79,8 @@
                     </a>
                     {% endif %}
 
+                    <div class="mobile-header-tools">
+                    <button type="button" class="nav-action-link reference-header-menu" data-mobile-home-menu aria-label="Otvori kategorije"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg></button>
                     {% if user.is_authenticated %}
                     <a href="{% url 'account' %}" class="nav-action-link account-btn" aria-label="Nalog">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -96,6 +98,8 @@
                         <span class="nav-action-label">Prijava</span>
                     </a>
                     {% endif %}
+                    <button type="button" class="nav-action-link reference-header-search" data-mobile-home-search aria-label="Pretraži proizvode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/></svg></button>
+                    </div>
                     {% if not user.is_authenticated %}
                     <a class="nav-action-link header-register" href="{% url 'register' %}">
                         <span class="header-register-badge">REGISTRUJ SE</span>
@@ -116,15 +120,9 @@
                     </div>
                     </div>
                     <div class="nav-cart-stack">
-                    <a href="{% url 'cart' %}" class="nav-action-link cart-btn{% if cart_count %} cart-btn--has-items{% endif %}" aria-label="Korpa" data-cart-count="{{ cart_count|default:0 }}">
-                        <span class="nav-action-icon">
-                            <svg class="cart-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M2 3h3l3 13h11l3-10H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
-                </svg>
-                            <span class="cart-badge">{{ cart_count|default:0 }}</span>
-                        </span>
-                        <span class="nav-action-label">Korpa</span>
-                    </a>
+                    {% if user.is_superuser %}
+                    <a href="{% url 'staff_admin_panel' %}" class="logo-admin-panel" aria-label="Admin panel" title="Admin panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 9-5M17 11l4 2v4c0 3-4 5-4 5s-4-2-4-5v-4l4-2Z"/><path d="m15 16 1.5 1.5L19 15"/></svg></a>
+                    {% endif %}
                     {% if user.is_authenticated and user.is_superuser %}
                     <div class="staff-edit-controls">
                     {% if staff_edit_mode %}
@@ -141,12 +139,17 @@
                     </form>
                     </div>
                     {% endif %}
+                    <a href="{% url 'cart' %}" class="nav-action-link cart-btn{% if cart_count %} cart-btn--has-items{% endif %}" aria-label="Korpa" data-cart-count="{{ cart_count|default:0 }}">
+                        <span class="nav-action-icon">
+                            <svg class="cart-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 3h3l3 13h11l3-10H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
+                </svg>
+                            <span class="cart-badge">{{ cart_count|default:0 }}</span>
+                        </span>
+                        <span class="nav-action-label">Korpa</span>
+                    </a>
                     </div>
                     <a class="desktop-sale-link" href="{% url 'home' %}?akcija=1#product-showcase" hidden>Akcijska ponuda <span aria-hidden="true">%</span></a>
-                    <button type="button" class="nav-action-link reference-header-menu" data-mobile-home-menu aria-label="Otvori kategorije"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg></button>
-                    {% if user.is_superuser %}
-                    <a href="{% url 'staff_admin_panel' %}" class="logo-admin-panel" aria-label="Admin panel" title="Admin panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 9-5M17 11l4 2v4c0 3-4 5-4 5s-4-2-4-5v-4l4-2Z"/><path d="m15 16 1.5 1.5L19 15"/></svg></a>
-                    {% endif %}
                 </div>
             </div>
 

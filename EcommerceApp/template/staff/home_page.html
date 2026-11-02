@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% block body_class %}catalog-header-reference{% endblock %}
 {% block page_title %}<title>Početna stranica</title>{% endblock %}
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block extra_css %}
@@ -17,7 +18,7 @@
             <h2>Izdvojena ponuda</h2>
             <p>Odaberi do šest artikala za sekciju „Izdvojena ponuda” na početnoj. Prikazuju se aktivni artikli na stanju. Bez ručnog odabira prikazuje se HIT ponuda.</p>
             <form method="post" class="section-form">
-                {% csrf_token %}{{ featured_form.non_field_errors }}
+                {% csrf_token %}<input type="hidden" name="section" value="featured">{{ featured_form.non_field_errors }}
                 <h3>Odabrani artikli <span data-role="selected-count">0</span></h3>
                 <p>Ukloni kvačicu da izbaciš artikal iz ponude.</p>
                 <div data-role="selected-products">{{ featured_form.artikli }}</div>{{ featured_form.artikli.errors }}
@@ -26,6 +27,21 @@
                 <p data-role="search-status" role="status" aria-live="polite"></p>
                 <div data-role="product-results"></div>
                 <div class="home-editor__actions"><button type="submit">Sačuvaj izdvojenu ponudu</button></div>
+            </form>
+        </article>
+        <article class="home-editor__section">
+            <h2>Novo u ponudi</h2>
+            <p>Odaberi do šest artikala za sekciju „Novo u ponudi” na početnoj. Prikazuju se aktivni artikli na stanju. Prikazuju se samo ručno odabrani artikli. Uvoz ne dodaje artikle u ovu sekciju.</p>
+            <form method="post" class="section-form">
+                {% csrf_token %}<input type="hidden" name="section" value="new">{{ new_form.non_field_errors }}
+                <h3>Odabrani artikli <span data-role="selected-count">0</span></h3>
+                <p>Ukloni kvačicu da izbaciš artikal iz ponude.</p>
+                <div data-role="selected-products">{{ new_form.artikli }}</div>{{ new_form.artikli.errors }}
+                <label for="newProductSearch">Dodaj artikal — naziv ili šifra</label>
+                <input type="search" id="newProductSearch" data-role="product-search" autocomplete="off" placeholder="Unesi naziv ili šifru">
+                <p data-role="search-status" role="status" aria-live="polite"></p>
+                <div data-role="product-results"></div>
+                <div class="home-editor__actions"><button type="submit">Sačuvaj novo u ponudi</button></div>
             </form>
         </article>
         <article class="home-editor__section">

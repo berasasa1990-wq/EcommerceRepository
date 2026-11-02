@@ -3,6 +3,9 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.views.decorators.cache import cache_page
+from django.views.decorators.gzip import gzip_page
+from django.middleware.http import ConditionalGetMiddleware
+from django.utils.decorators import decorator_from_middleware
 
 from .models import Product, ProductVariation
 
@@ -82,7 +85,9 @@ def _feed_items(request):
     return items
 
 
+@decorator_from_middleware(ConditionalGetMiddleware)
 @cache_page(60 * 15)
+@gzip_page
 def facebook_feed(request):
     xml = render_to_string(
         'feeds/facebook_feed.xml',

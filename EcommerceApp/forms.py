@@ -1091,6 +1091,13 @@ class HeroBannerSettingsForm(forms.ModelForm):
     def clean_bestsellers_banner_slika(self):
         return self._clean_banner_image('bestsellers_banner_slika')
 
+    def clean_bestsellers_banner_slika_mobilna(self):
+        upload = self.cleaned_data.get('bestsellers_banner_slika_mobilna')
+        if upload and hasattr(upload, 'content_type'):
+            from .utils.images import prepare_promo_banner
+            return prepare_promo_banner(upload, mobile=True)
+        return upload
+
     def clean_promo_new_slika(self):
         upload = self.cleaned_data.get('promo_new_slika')
         if upload and hasattr(upload, 'content_type'):
@@ -1136,6 +1143,13 @@ class HeroBannerSettingsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if 'hero_link' in self.fields:
             self.fields['hero_link'].required = False
+        if 'hero_slika_mobilna' in self.fields:
+            self.fields['hero_slika_mobilna'].help_text = 'Preporučeno 1080 × 1350 px (4:5). Koristi se samo na telefonu. Ako je prazno, koristi se slika za računar.'
+        if 'bestsellers_banner_slika_mobilna' in self.fields:
+            self.fields['bestsellers_banner_slika_mobilna'].help_text = 'Samo za telefon. Automatska optimizacija na najviše 60 KB, uz očuvan omjer i dobar kvalitet.'
+        for name in ('promo_new_slika_mobilna', 'promo_sale_slika_mobilna'):
+            if name in self.fields:
+                self.fields[name].help_text = 'Preporučeno 1000 × 625 px (8:5). Koristi se samo na telefonu.'
         for name in ('hero_slika_mobilna', 'bestsellers_banner_slika_mobilna', 'promo_new_slika_mobilna', 'promo_sale_slika_mobilna'):
             if name in self.fields:
                 self.fields[name].widget.attrs['accept'] = 'image/jpeg,image/png,image/webp,image/avif'
@@ -1200,3 +1214,20 @@ class HomeFeaturedProductsForm(forms.Form):
         if len(products) > 6:
             raise forms.ValidationError('Odaberite najviše šest artikala.')
         return products
+
+
+class FeaturedProductImageForm(forms.Form):
+    slika_izdvojena = forms.ImageField(required=False, label='Slika za izdvojenu ponudu')
+    slika_novo = forms.ImageField(required=False, label='Slika za Novo u ponudi')
+
+    def __init__(self, *args, instance, **kwargs):
+        self.instance = instance
+        kwargs.setdefault('initial', {'slika_izdvojena': instance.slika_izdvojena, 'slika_novo': instance.slika_novo})
+        super().__init__(*args, **kwargs)
+
+    def save(self, commit=True):
+        self.instance.slika_izdvojena = self.cleaned_data['slika_izdvojena'] or ''
+        self.instance.slika_novo = self.cleaned_data['slika_novo'] or ''
+        if commit:
+            self.instance.save(update_fields=['slika_izdvojena', 'slika_novo'])
+        return self.instance

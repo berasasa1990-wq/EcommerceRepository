@@ -1,0 +1,23 @@
+CarpologijaBH bandwidth audit — lokalna validacija, 2026-10-31
+
+1. manage.py test EcommerceApp.tests_http_bandwidth --noinput
+   Završni novi suite: 14 testova, OK.
+
+2. manage.py test EcommerceApp.tests_http_bandwidth EcommerceApp.tests_permissions_policy EcommerceApp.tests_wms EcommerceApp.tests_monri EcommerceApp.tests_checkout_notifications EcommerceApp.tests_backup_durability EcommerceApp.tests_permanent_history --noinput
+   80 testova, OK. U ovom ranijem izboru bilo je prvih 11 novih testova.
+
+3. manage.py test EcommerceApp.tests_http_bandwidth EcommerceApp.tests_seo_domain EcommerceApp.tests_meta_page_view --noinput
+   Završni izbor: 25 testova, 24 prolazi, 1 failure.
+   SeoDomainTests.test_home_product_and_category_use_apex_canonical
+   Očekuje jedan h1 na početnoj; dobija nula.
+
+4. Isti pojedinačni SEO test pokrenut sa originalnim views_feed.py i
+   settings.py iz git HEAD (bez audit patcha): isti failure 0 != 1.
+   Audit izmjene vraćene u finally bloku nakon provjere.
+   Postojeći SEO problem nije mijenjan u okviru bandwidth audita.
+
+5. git diff --check: OK.
+   Django system check u navedenim izborima: bez prijavljenih problema.
+
+Testovi koriste izolovanu lokalnu Django test bazu.
+Nema deploya, pusha, produkcijske migracije niti produkcijskih promjena.

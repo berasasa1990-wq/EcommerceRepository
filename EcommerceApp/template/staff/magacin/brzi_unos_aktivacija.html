@@ -1023,6 +1023,24 @@
               {% endif %}
 
               <div class="bu-extra-zone">
+                <label for="id_slika_izdvojena"><strong>Slika za izdvojenu ponudu na početnoj</strong></label>
+                {% if product.slika_izdvojena %}
+                <div class="bu-current"><img src="{{ product.slika_izdvojena.url }}" alt="Slika za izdvojenu ponudu"></div>
+                <label><input type="checkbox" name="slika_izdvojena-clear"> Ukloni posebnu sliku</label>
+                {% endif %}
+                <input type="file" id="id_slika_izdvojena" name="slika_izdvojena" accept="image/*">
+                <p>Samo za Izdvojenu ponudu na početnoj. Bez nje se koristi postojeća slika artikla.</p>
+              </div>
+<div class="bu-extra-zone">
+                <label for="id_slika_novo"><strong>Slika za Novo u ponudi na početnoj</strong></label>
+                {% if product.slika_novo %}
+                <div class="bu-current"><img src="{{ product.slika_novo.url }}" alt="Slika za Novo u ponudi"></div>
+                <label><input type="checkbox" name="slika_novo-clear"> Ukloni posebnu sliku</label>
+                {% endif %}
+                <input type="file" id="id_slika_novo" name="slika_novo" accept="image/*">
+                <p>Samo za Novo u ponudi na početnoj. Bez nje se koristi postojeća slika artikla.</p>
+              </div>
+              <div class="bu-extra-zone">
                 <strong>Dodatne slike <span class="bu-opt">(opcionalno)</span></strong>
                 {% if existing_extra_images %}
                 <div class="bu-extra-existing">

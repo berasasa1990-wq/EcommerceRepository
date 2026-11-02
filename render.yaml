@@ -51,12 +51,6 @@ services:
         sync: false  # Proton SMTP token
       - key: EMAIL_HOST_USER
         sync: false  # narudzbe@opremazaribolov.ba
-      - key: COMPANY_MAIL_USER
-        value: carpologijabh@gmail.com
-      - key: COMPANY_MAIL_APP_PASSWORD
-        sync: false
-      - key: COMPANY_MAIL_FOLDER
-        value: INBOX
       - key: DEFAULT_FROM_EMAIL
         sync: false  # narudzbe@opremazaribolov.ba
       - key: ORDER_NOTIFICATION_EMAIL

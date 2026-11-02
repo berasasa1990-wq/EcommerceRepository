@@ -1,6 +1,28 @@
+{% if use_new_image and product.slika_novo %}
+<picture>
 {% if product.prikazna_slika %}
+{% with desktop_img=product.prikazna_slika_responsive %}
+<source media="(min-width: 768px)" srcset="{% if desktop_img.srcset %}{{ desktop_img.srcset }}{% else %}{{ desktop_img.src }}{% endif %}" sizes="{{ image_sizes|default:'(max-width: 768px) 100vw, 25vw' }}">
+{% endwith %}
+{% endif %}
+{% with img=product.novo_slika_responsive %}
+{% include 'partials/product_image_element.html' %}
+{% endwith %}
+</picture>
+{% elif use_featured_image and product.slika_izdvojena %}
+<picture>
+{% if product.prikazna_slika %}
+{% with desktop_img=product.prikazna_slika_responsive %}
+<source media="(min-width: 768px)" srcset="{% if desktop_img.srcset %}{{ desktop_img.srcset }}{% else %}{{ desktop_img.src }}{% endif %}" sizes="{{ image_sizes|default:'(max-width: 768px) 100vw, 25vw' }}">
+{% endwith %}
+{% endif %}
+{% with img=product.izdvojena_slika_responsive %}
+{% include 'partials/product_image_element.html' %}
+{% endwith %}
+</picture>
+{% elif product.prikazna_slika %}
 {% with img=product.prikazna_slika_responsive %}
-<img src="{{ img.src }}"{% if img.srcset %} srcset="{{ img.srcset }}"{% endif %} alt="{{ product.naziv }}" width="{{ img.width }}" height="{{ img.height }}" sizes="{{ image_sizes|default:'(max-width: 768px) 50vw, 16vw' }}" loading="{{ image_loading|default:'lazy' }}"{% if image_loading == 'eager' %} fetchpriority="high"{% else %} fetchpriority="low"{% endif %} decoding="async" data-main-image>
+{% include 'partials/product_image_element.html' %}
 {% endwith %}
 {% else %}
 <div class="product-image-placeholder" data-main-image>

@@ -1,0 +1,4 @@
+<a class="home-featured-category" href="{% url 'home' %}?q={{ label|urlencode }}" data-featured-category="{{ key }}">
+    {% include 'partials/nav_category_icon.html' with naziv=icon_name slug=key %}
+    <span>{{ label }}</span>
+</a>

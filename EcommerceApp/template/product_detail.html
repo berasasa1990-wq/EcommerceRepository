@@ -359,6 +359,24 @@
                                     <input type="hidden" name="slika_rucno" value="0" data-fit-flag>
                                 </div>
                             </label>
+                            <div class="staff-product-price-label">
+                                <label for="id_slika_izdvojena">Slika za izdvojenu ponudu na početnoj</label>
+                                {% if product.slika_izdvojena %}
+                                <div class="staff-image-preview staff-image-preview--main"><img src="{{ product.slika_izdvojena.url }}" alt="Slika za izdvojenu ponudu" loading="lazy"></div>
+                                <label><input type="checkbox" name="slika_izdvojena-clear"> Ukloni posebnu sliku</label>
+                                {% endif %}
+                                <input type="file" id="id_slika_izdvojena" name="slika_izdvojena" accept="image/*" class="staff-file-input">
+                                <small>Samo za Izdvojenu ponudu na početnoj. Bez nje se koristi postojeća slika artikla.</small>
+                            </div>
+<div class="staff-product-price-label">
+                                <label for="id_slika_novo">Slika za Novo u ponudi na početnoj</label>
+                                {% if product.slika_novo %}
+                                <div class="staff-image-preview staff-image-preview--main"><img src="{{ product.slika_novo.url }}" alt="Slika za Novo u ponudi" loading="lazy"></div>
+                                <label><input type="checkbox" name="slika_novo-clear"> Ukloni posebnu sliku</label>
+                                {% endif %}
+                                <input type="file" id="id_slika_novo" name="slika_novo" accept="image/*" class="staff-file-input">
+                                <small>Samo za Novo u ponudi na početnoj. Bez nje se koristi postojeća slika artikla.</small>
+                            </div>
                             {% if product.dodatne_slike.exists %}
                             <div class="staff-extra-images">
                                 <span class="staff-product-price-label"><span>Dodatne slike</span></span>

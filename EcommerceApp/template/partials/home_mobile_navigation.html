@@ -1,7 +1,6 @@
 {% load static %}
 {# Mobile shortcuts reuse the existing category, search, account and cart flows. #}
 <section class="mobile-home-categories" id="mobileHomeCategories" aria-label="Kategorije">
-    <div class="mobile-home-heading"><h2>Kategorije</h2></div>
     <div class="home-category-controls">
         <button type="button" data-category-scroll="-1" aria-label="Prethodne kategorije" aria-controls="homeCategoryTrack">‹</button>
         <button type="button" data-category-scroll="1" aria-label="Sljedeće kategorije" aria-controls="homeCategoryTrack">›</button>
@@ -21,9 +20,38 @@
     </div>
 </section>
 
+<script>
+(() => {
+    const categories = document.getElementById('mobileHomeCategories');
+    const chrome = document.querySelector('.site-chrome-sticky');
+    if (!categories || !chrome) return;
+    const originalPosition = document.createComment('Home category position');
+    categories.before(originalPosition);
+    const mobile = window.matchMedia('(max-width: 767px)');
+    const placeCategories = () => {
+        if (mobile.matches) chrome.append(categories);
+        else originalPosition.after(categories);
+        if (window.syncSiteChromeOffset) window.syncSiteChromeOffset();
+    };
+    mobile.addEventListener('change', placeCategories);
+    placeCategories();
+})();
+</script>
+
 <script src="{% static 'js/home-mobile-reference.js' %}?v=20261030-no-duplicate-search" defer></script>
 
 <style>
+@media (max-width: 767px) {
+    html body #mobileHomeCategories,
+    html body .site-chrome-sticky #mobileHomeCategories {
+        display: none !important;
+        width: 100% !important;
+        box-sizing: border-box;
+        margin: 0 !important;
+        padding: 4px !important;
+        background: #fff;
+    }
+}
 #mobileHomeCategories .home-category-sets-label {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
 }

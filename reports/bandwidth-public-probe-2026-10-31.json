@@ -1,0 +1,680 @@
+{
+  "collected_at_utc": "2026-10-31T10:03:33.168531+00:00",
+  "records": [
+    {
+      "dns_hostname": "carpologijabh.ba",
+      "addresses": [
+        "104.21.27.32",
+        "172.67.168.219"
+      ]
+    },
+    {
+      "dns_hostname": "ecommercerepository.onrender.com",
+      "addresses": [
+        "216.24.57.16",
+        "216.24.57.18"
+      ]
+    },
+    {
+      "dns_hostname": "media.opremazaribolov.ba",
+      "addresses": [
+        "104.21.83.46",
+        "172.67.214.8"
+      ]
+    },
+    {
+      "dns_hostname": "www.carpologijabh.ba",
+      "addresses": [
+        "104.21.27.32",
+        "172.67.168.219"
+      ]
+    },
+    {
+      "requested_url": "https://www.carpologijabh.ba/",
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "chain": [
+        {
+          "url": "https://www.carpologijabh.ba/",
+          "status": 301,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d44338948eb1-VIE"
+          },
+          "sampled_body_bytes": 60,
+          "truncated": false,
+          "duration_ms": 249,
+          "location": "https://carpologijabh.ba/"
+        },
+        {
+          "url": "https://carpologijabh.ba/",
+          "status": 200,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Content-Length": "41254",
+            "Content-Encoding": "gzip",
+            "Vary": "Cookie, Accept-Encoding",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d444ccf65aab-VIE",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "282799d5-f8d4-4326"
+          },
+          "sampled_body_bytes": 41254,
+          "truncated": false,
+          "duration_ms": 549,
+          "decoded_body_bytes": 413254
+        }
+      ]
+    },
+    {
+      "requested_url": "https://carpologijabh.ba/",
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "chain": [
+        {
+          "url": "https://carpologijabh.ba/",
+          "status": 200,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Content-Length": "41220",
+            "Content-Encoding": "gzip",
+            "Vary": "Cookie, Accept-Encoding",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d4485cd9a0c4-VIE",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "16a97954-a786-4245"
+          },
+          "sampled_body_bytes": 41220,
+          "truncated": false,
+          "duration_ms": 534,
+          "decoded_body_bytes": 413226
+        }
+      ]
+    },
+    {
+      "requested_url": "http://www.carpologijabh.ba/",
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "chain": [
+        {
+          "url": "http://www.carpologijabh.ba/",
+          "status": 301,
+          "headers": {
+            "Content-Type": "text/html; charset=UTF-8",
+            "Server": "cloudflare",
+            "CF-Ray": "a531d44b0e04ec20-ZAG"
+          },
+          "sampled_body_bytes": 534,
+          "truncated": false,
+          "duration_ms": 88,
+          "location": "https://www.carpologijabh.ba/"
+        },
+        {
+          "url": "https://www.carpologijabh.ba/",
+          "status": 301,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d44c3ad15b24-VIE"
+          },
+          "sampled_body_bytes": 60,
+          "truncated": false,
+          "duration_ms": 265,
+          "location": "https://carpologijabh.ba/"
+        },
+        {
+          "url": "https://carpologijabh.ba/",
+          "status": 200,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Content-Length": "41212",
+            "Content-Encoding": "gzip",
+            "Vary": "Cookie, Accept-Encoding",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d44daa762693-VIE",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "0dd09462-5ecb-4b5c"
+          },
+          "sampled_body_bytes": 41212,
+          "truncated": false,
+          "duration_ms": 554,
+          "decoded_body_bytes": 413228
+        }
+      ]
+    },
+    {
+      "requested_url": "http://carpologijabh.ba/",
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "chain": [
+        {
+          "url": "http://carpologijabh.ba/",
+          "status": 301,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Content-Length": "60",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d450ba766c86-ZAG"
+          },
+          "sampled_body_bytes": 60,
+          "truncated": false,
+          "duration_ms": 134,
+          "location": "https://carpologijabh.ba/"
+        },
+        {
+          "url": "https://carpologijabh.ba/",
+          "status": 200,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Content-Length": "41228",
+            "Content-Encoding": "gzip",
+            "Vary": "Cookie, Accept-Encoding",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d4524e205b82-VIE",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "fd8ffbe6-1f4d-4c2a"
+          },
+          "sampled_body_bytes": 41228,
+          "truncated": false,
+          "duration_ms": 624,
+          "decoded_body_bytes": 413214
+        }
+      ]
+    },
+    {
+      "requested_url": "https://ecommercerepository.onrender.com/healthz",
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "chain": [
+        {
+          "url": "https://ecommercerepository.onrender.com/healthz",
+          "status": 200,
+          "headers": {
+            "Content-Type": "text/plain",
+            "Vary": "Accept-Encoding",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d455ce03ec26-ZAG",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "7b1d6cce-a3d6-4beb"
+          },
+          "sampled_body_bytes": 2,
+          "truncated": false,
+          "duration_ms": 315,
+          "decoded_body_bytes": 2
+        }
+      ]
+    },
+    {
+      "requested_url": "https://ecommercerepository.onrender.com/",
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "chain": [
+        {
+          "url": "https://ecommercerepository.onrender.com/",
+          "status": 200,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Content-Length": "41274",
+            "Content-Encoding": "gzip",
+            "Vary": "Cookie, Accept-Encoding",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d457c8cfec1c-ZAG",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "d8ffe4e8-88d6-4e4e"
+          },
+          "sampled_body_bytes": 41274,
+          "truncated": false,
+          "duration_ms": 548,
+          "decoded_body_bytes": 413281
+        }
+      ]
+    },
+    {
+      "requested_url": "https://carpologijabh.ba/static/css/desktop-reference.9decfaa585f5.css?v=20261030-orange-buttons-badges",
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "chain": [
+        {
+          "url": "https://carpologijabh.ba/static/css/desktop-reference.9decfaa585f5.css",
+          "status": 200,
+          "headers": {
+            "Content-Type": "text/css; charset=\"utf-8\"",
+            "Content-Encoding": "gzip",
+            "Cache-Control": "max-age=315360000, public, immutable",
+            "ETag": "W/\"6ae5a7b2-e6b4\"",
+            "Last-Modified": "Sat, 31 Oct 2026 09:32:50 GMT",
+            "Vary": "Accept-Encoding",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d45b88959c23-VIE",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "4cedc204-47b8-4eb1"
+          },
+          "sampled_body_bytes": 9497,
+          "truncated": false,
+          "duration_ms": 200,
+          "decoded_body_bytes": 59060
+        }
+      ]
+    },
+    {
+      "requested_url": "https://carpologijabh.ba/static/css/desktop-reference.9decfaa585f5.css?v=20261030-orange-buttons-badges",
+      "accept_encoding": "gzip",
+      "conditional": true,
+      "chain": [
+        {
+          "url": "https://carpologijabh.ba/static/css/desktop-reference.9decfaa585f5.css",
+          "status": 200,
+          "headers": {
+            "Content-Type": "text/css; charset=\"utf-8\"",
+            "Content-Encoding": "gzip",
+            "Cache-Control": "max-age=315360000, public, immutable",
+            "ETag": "W/\"6ae5a7b2-e6b4\"",
+            "Last-Modified": "Sat, 31 Oct 2026 09:32:50 GMT",
+            "Vary": "Accept-Encoding",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d45cc92fde3b-VIE",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "df1f9ecb-224b-4855"
+          },
+          "sampled_body_bytes": 9497,
+          "truncated": false,
+          "duration_ms": 196,
+          "decoded_body_bytes": 59060
+        }
+      ]
+    },
+    {
+      "requested_url": "https://carpologijabh.ba/static/css/storefront-core-public.min.696e82a3cf33.css?v=20261030-orange-buttons-badges",
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "chain": [
+        {
+          "url": "https://carpologijabh.ba/static/css/storefront-core-public.min.696e82a3cf33.css",
+          "status": 200,
+          "headers": {
+            "Content-Type": "text/css; charset=\"utf-8\"",
+            "Content-Encoding": "gzip",
+            "Cache-Control": "max-age=315360000, public, immutable",
+            "ETag": "W/\"6ae5a7b2-685ec\"",
+            "Last-Modified": "Sat, 31 Oct 2026 09:32:50 GMT",
+            "Vary": "Accept-Encoding",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d45dcb12ec2a-ZAG",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "c2031142-f1e4-4c5c"
+          },
+          "sampled_body_bytes": 69079,
+          "truncated": false,
+          "duration_ms": 287,
+          "decoded_body_bytes": 427500
+        }
+      ]
+    },
+    {
+      "requested_url": "https://carpologijabh.ba/static/css/storefront-core-public.min.696e82a3cf33.css?v=20261030-orange-buttons-badges",
+      "accept_encoding": "gzip",
+      "conditional": true,
+      "chain": [
+        {
+          "url": "https://carpologijabh.ba/static/css/storefront-core-public.min.696e82a3cf33.css",
+          "status": 200,
+          "headers": {
+            "Content-Type": "text/css; charset=\"utf-8\"",
+            "Content-Encoding": "gzip",
+            "Cache-Control": "max-age=315360000, public, immutable",
+            "ETag": "W/\"6ae5a7b2-685ec\"",
+            "Last-Modified": "Sat, 31 Oct 2026 09:32:50 GMT",
+            "Vary": "Accept-Encoding",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d45feb66c21c-VIE",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "e600f536-09c3-46d5"
+          },
+          "sampled_body_bytes": 69050,
+          "truncated": false,
+          "duration_ms": 305,
+          "decoded_body_bytes": 427500
+        }
+      ]
+    },
+    {
+      "requested_url": "https://carpologijabh.ba/static/css/navigation.min.4c4d32fdb5b2.css?v=20261030-orange-buttons-badges",
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "chain": [
+        {
+          "url": "https://carpologijabh.ba/static/css/navigation.min.4c4d32fdb5b2.css",
+          "status": 200,
+          "headers": {
+            "Content-Type": "text/css; charset=\"utf-8\"",
+            "Content-Encoding": "gzip",
+            "Cache-Control": "max-age=315360000, public, immutable",
+            "ETag": "W/\"6ae5a7b2-574\"",
+            "Last-Modified": "Sat, 31 Oct 2026 09:32:50 GMT",
+            "Vary": "Accept-Encoding",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d461da220b0f-VIE",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "751b08ca-338e-4585"
+          },
+          "sampled_body_bytes": 542,
+          "truncated": false,
+          "duration_ms": 204,
+          "decoded_body_bytes": 1396
+        }
+      ]
+    },
+    {
+      "requested_url": "https://carpologijabh.ba/static/css/navigation.min.4c4d32fdb5b2.css?v=20261030-orange-buttons-badges",
+      "accept_encoding": "gzip",
+      "conditional": true,
+      "chain": [
+        {
+          "url": "https://carpologijabh.ba/static/css/navigation.min.4c4d32fdb5b2.css",
+          "status": 200,
+          "headers": {
+            "Content-Type": "text/css; charset=\"utf-8\"",
+            "Content-Encoding": "gzip",
+            "Cache-Control": "max-age=315360000, public, immutable",
+            "ETag": "W/\"6ae5a7b2-574\"",
+            "Last-Modified": "Sat, 31 Oct 2026 09:32:50 GMT",
+            "Vary": "Accept-Encoding",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d462fcafec2a-ZAG",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "5f7822f2-b3fe-4b4a"
+          },
+          "sampled_body_bytes": 542,
+          "truncated": false,
+          "duration_ms": 187,
+          "decoded_body_bytes": 1396
+        }
+      ]
+    },
+    {
+      "requested_url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png",
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "chain": [
+        {
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png",
+          "status": 200,
+          "headers": {
+            "Content-Type": "image/png",
+            "Content-Length": "59119",
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "ETag": "\"d9000463b0ff04f9649c6bce1f1c66ca\"",
+            "Last-Modified": "Tue, 15 Sep 2026 14:10:28 GMT",
+            "Age": "1429734",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "HIT",
+            "CF-Ray": "a531d4644e42a464-VIE"
+          },
+          "sampled_body_bytes": 59119,
+          "truncated": false,
+          "duration_ms": 297,
+          "decoded_body_bytes": 59119
+        }
+      ]
+    },
+    {
+      "requested_url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png",
+      "accept_encoding": "gzip",
+      "conditional": true,
+      "chain": [
+        {
+          "url": "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png",
+          "status": 304,
+          "headers": {
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "ETag": "\"d9000463b0ff04f9649c6bce1f1c66ca\"",
+            "Last-Modified": "Tue, 15 Sep 2026 14:10:28 GMT",
+            "Age": "1429735",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "HIT",
+            "CF-Ray": "a531d465fd293247-VIE"
+          },
+          "sampled_body_bytes": 0,
+          "truncated": false,
+          "duration_ms": 190,
+          "decoded_body_bytes": 0
+        }
+      ]
+    },
+    {
+      "requested_url": "https://media.opremazaribolov.ba/categories/icons/category-a6404cf040d848c7af72d7a3c7074364.avif",
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "chain": [
+        {
+          "url": "https://media.opremazaribolov.ba/categories/icons/category-a6404cf040d848c7af72d7a3c7074364.avif",
+          "status": 200,
+          "headers": {
+            "Content-Type": "image/avif",
+            "Content-Length": "4979",
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "ETag": "\"78445e9c145a91c8cfe3e56941cbe4cd\"",
+            "Last-Modified": "Sun, 11 Oct 2026 18:32:41 GMT",
+            "Age": "1697428",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "HIT",
+            "CF-Ray": "a531d4675c713cc0-VIE"
+          },
+          "sampled_body_bytes": 4979,
+          "truncated": false,
+          "duration_ms": 237,
+          "decoded_body_bytes": 4979
+        }
+      ]
+    },
+    {
+      "requested_url": "https://media.opremazaribolov.ba/categories/icons/category-a6404cf040d848c7af72d7a3c7074364.avif",
+      "accept_encoding": "gzip",
+      "conditional": true,
+      "chain": [
+        {
+          "url": "https://media.opremazaribolov.ba/categories/icons/category-a6404cf040d848c7af72d7a3c7074364.avif",
+          "status": 304,
+          "headers": {
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "ETag": "\"78445e9c145a91c8cfe3e56941cbe4cd\"",
+            "Last-Modified": "Sun, 11 Oct 2026 18:32:41 GMT",
+            "Age": "1697428",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "HIT",
+            "CF-Ray": "a531d46a38e75b48-VIE"
+          },
+          "sampled_body_bytes": 0,
+          "truncated": false,
+          "duration_ms": 417,
+          "decoded_body_bytes": 0
+        }
+      ]
+    },
+    {
+      "requested_url": "https://carpologijabh.ba/facebook-feed.xml",
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "chain": [
+        {
+          "url": "https://carpologijabh.ba/facebook-feed.xml",
+          "status": 200,
+          "headers": {
+            "Content-Type": "application/xml; charset=utf-8",
+            "Content-Encoding": "gzip",
+            "Cache-Control": "max-age=900",
+            "Vary": "Cookie",
+            "Age": "679",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d46b89e54341-VIE",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "1aed9d38-ed9c-4666"
+          },
+          "sampled_body_bytes": 887177,
+          "truncated": false,
+          "duration_ms": 1494,
+          "decoded_body_bytes": 8654552
+        }
+      ]
+    },
+    {
+      "requested_url": "https://carpologijabh.ba/facebook-feed.xml",
+      "accept_encoding": "identity",
+      "conditional": false,
+      "chain": [
+        {
+          "url": "https://carpologijabh.ba/facebook-feed.xml",
+          "status": 200,
+          "headers": {
+            "Content-Type": "application/xml; charset=utf-8",
+            "Cache-Control": "max-age=900",
+            "Vary": "Cookie",
+            "Age": "680",
+            "Server": "cloudflare",
+            "CF-Cache-Status": "DYNAMIC",
+            "CF-Ray": "a531d474bd6c5b94-VIE",
+            "X-Render-Origin-Server": "gunicorn",
+            "Rndr-Id": "818e538b-0c62-4573"
+          },
+          "sampled_body_bytes": 4000001,
+          "truncated": true,
+          "duration_ms": 6458
+        }
+      ]
+    }
+  ],
+  "public_asset_urls": [
+    "https://carpologijabh.ba/static/css/desktop-reference.9decfaa585f5.css?v=20261030-orange-buttons-badges",
+    "https://carpologijabh.ba/static/css/storefront-core-public.min.696e82a3cf33.css?v=20261030-orange-buttons-badges",
+    "https://carpologijabh.ba/static/css/navigation.min.4c4d32fdb5b2.css?v=20261030-orange-buttons-badges",
+    "https://carpologijabh.ba/static/css/home-uploaded-banner.b59b46c6fd48.css?v=20261031-mobile-banner-upload",
+    "https://carpologijabh.ba/static/css/home-registration-banner.61afae39eb2e.css?v=20261030-logo",
+    "https://carpologijabh.ba/static/css/storefront-extras.min.8bb37fcf16ca.css?v=20261030-orange-buttons-badges",
+    "https://carpologijabh.ba/static/css/mobile-chrome.min.9a9027200377.css?v=20261030-orange-buttons-badges",
+    "https://carpologijabh.ba/static/css/storefront-theme-public.min.60a903555a5c.css?v=20261030-orange-buttons-badges",
+    "https://carpologijabh.ba/static/css/home-reference-orange.cba13447e23c.css?v=20261031-promo-mobile-images",
+    "https://carpologijabh.ba/static/css/shared-site-header.163ff7bc49e1.css?v=20261030-original-mobile-header",
+    "https://carpologijabh.ba/static/css/product-grid-desktop.f9a22af6f295.css?v=20261030-related-four-fit",
+    "https://carpologijabh.ba/static/css/product-sale-remaining.e608b885a66c.css?v=20261030-orange-buttons-badges",
+    "https://carpologijabh.ba/static/css/site-page-spacing.9f3f4a000964.css?v=20261030-mobile-banners-aligned",
+    "https://carpologijabh.ba/static/css/no-pulsing.cda13527ef4e.css?v=20261030-disable-pulses",
+    "https://media.opremazaribolov.ba/site/eadb5d64-5f25-4a72-a0cf-0402626609b2.png",
+    "https://media.opremazaribolov.ba/categories/icons/category-a6404cf040d848c7af72d7a3c7074364.avif",
+    "https://media.opremazaribolov.ba/categories/icons/category-18b255e5bf2d4391bdcf579b35b1a891.avif",
+    "https://media.opremazaribolov.ba/categories/icons/category-b8600ad9884641ea89fa99514f777f0a.avif",
+    "https://media.opremazaribolov.ba/categories/icons/category-cb4a1437984144f0ac94c1dcd1944cb4.avif",
+    "https://media.opremazaribolov.ba/categories/icons/category-6b9b6debfdcb446ebd9261022a98a502.avif",
+    "https://media.opremazaribolov.ba/categories/icons/category-c4d4c6766f6f4a289e2b8eb805326423.avif",
+    "https://media.opremazaribolov.ba/categories/icons/category-30f80eda2ade4f7d8457d5f1654d8a15.avif",
+    "https://media.opremazaribolov.ba/categories/icons/category-a288c49acf7e49d28b6b851a9b244165.avif",
+    "https://media.opremazaribolov.ba/categories/icons/category-c1e54a1b942843b6ad1fd721c7374f59.avif",
+    "https://media.opremazaribolov.ba/categories/icons/category-1b077cfa99024694a354ca3becc74669.avif",
+    "https://media.opremazaribolov.ba/categories/icons/category-595a0c60948045879f8244fb1553f00a.avif",
+    "https://media.opremazaribolov.ba/categories/icons/category-5edaf09417694a2fa9ae1fd83538d512.avif",
+    "https://media.opremazaribolov.ba/categories/icons/category-9f5dd774299844f29352775f998bd42c.avif",
+    "https://media.opremazaribolov.ba/site/mobile/Unknown-19.png",
+    "https://media.opremazaribolov.ba/site/hero/MATE_CSeries_Fishing_Chair_Collection_1.png_MATE_Winter_Fishing_Gear_Showcase.webp",
+    "https://carpologijabh.ba/static/js/home-mobile-reference.e2ca5345e533.js?v=20261030-no-duplicate-search",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-mt13863-mate-bahus-carp-10ft-3m-35lb-56680920229.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-mt13870-mate-rhea-88-268cm-xf-15-55g-5676c573bbf.avif",
+    "https://media.opremazaribolov.ba/site/promos/mobile/Unknown-17.png",
+    "https://media.opremazaribolov.ba/site/promos/Unknown-15.png",
+    "https://media.opremazaribolov.ba/site/promos/mobile/Unknown-18.png",
+    "https://media.opremazaribolov.ba/site/promos/Unknown-14.png",
+    "https://media.opremazaribolov.ba/products/bkk-9060-jigg-hook-50.avif",
+    "https://media.opremazaribolov.ba/products/bkk-9050-jigg-hook-30.avif",
+    "https://media.opremazaribolov.ba/products/bkk-9060-jigg-hook-60.avif",
+    "https://media.opremazaribolov.ba/products/bkk-6066-3x-np-1-bn-bulk-trokuke-5270f29e77b.avif",
+    "https://media.opremazaribolov.ba/products/bkk-9060-jigg-hook-40.avif",
+    "https://media.opremazaribolov.ba/products/bkk-9050-jigg-hook-40.avif",
+    "https://media.opremazaribolov.ba/products/bkk-9050-jigg-hook-60.avif",
+    "https://media.opremazaribolov.ba/products/ced083-fox-edges-distance-lead-113g-olovo.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-cl8245-cline-solid-carp-8000fd-570de644090.avif",
+    "https://media.opremazaribolov.ba/products/mt10163-mate-slim-fish-120mm-red-head-6pcs-varalica.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-npg038-rage-pro-grub-10cm-pike-x-30-5611d7bda3b.avif",
+    "https://media.opremazaribolov.ba/products/nzs125-fox-rage-zander-pro-lemon-tiger-10cm.avif",
+    "https://media.opremazaribolov.ba/site/bestsellers/IMG_8826.avif",
+    "https://carpologijabh.ba/static/img/carpologija-nav-logo-dark.7b1db371e25e.jpg",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-cl8600-cline-sienna-spin-198cm-6-18g-59090477241.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-cl8630-cline-river-stick-240cm-50-150g-57b4c939b8e.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-mt14034-mate-spicy-spin-4000-582144b3709.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-mt14048-mate-itana-4000-th4000-91bb-52-58e0fb734b2.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-mt14227-mate-chroma-spin-90-270cm-15-5-56fb0a356e8.avif",
+    "https://media.opremazaribolov.ba/products/mt14291-mate-danube-spicy-spin-rmk-90-274cm-10-40g-2sec.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-nlu148-fox-rage-camo-voyager-large-car-57e42c6a18a.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-nlu150-fox-rage-camo-voyager-chest-pac-57f424d41a1.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-ccl264-fox-collection-soft-shell-jacke-5500fab4383.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-mt10743-mate-fleece-vest-black-l-prslu-54c7fdcc895.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-mt12252-mate-camo-comfort-thermo-suit-59079c46506.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-mt12251-mate-camo-comfort-thermo-suit-56375c4afda.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-mt12262-mate-winter-urban-jacket-m-5500e2fcec6.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-npr426-fox-rage-voyager-lightweight-wi-57f442587ce.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-chh036-fox-collection-bobble-hat-black-57e0e60466c.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-chh037-fox-collection-bobble-hat-green-57e0e993093.avif",
+    "https://media.opremazaribolov.ba/products/odoo-template-2708.avif",
+    "https://media.opremazaribolov.ba/products/odoo-template-3240.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-mt13701-mate-knitted-beanie-54d96e917a9.avif",
+    "https://media.opremazaribolov.ba/products/oprema-za-ribolov-carpologijabh-mt13702-mate-fold-up-beanie-54d99223b18.avif",
+    "https://media.opremazaribolov.ba/brands/avid_carp_logo_3_1.png",
+    "https://media.opremazaribolov.ba/brands/images-3.png",
+    "https://media.opremazaribolov.ba/brands/blackcat-color-700px.png",
+    "https://media.opremazaribolov.ba/brands/C-line-Tackle-Bag_1.png",
+    "https://media.opremazaribolov.ba/brands/duel-8u.png",
+    "https://media.opremazaribolov.ba/brands/fox-carp-logo-png_seeklogo-551066_1.png",
+    "https://media.opremazaribolov.ba/brands/FOX_RAGE_200x48.png",
+    "https://media.opremazaribolov.ba/brands/images.png",
+    "https://media.opremazaribolov.ba/brands/images_15.png",
+    "https://media.opremazaribolov.ba/brands/Korum-Logo_1.png",
+    "https://media.opremazaribolov.ba/brands/images-96.png",
+    "https://media.opremazaribolov.ba/brands/livetarget-es.png",
+    "https://media.opremazaribolov.ba/brands/mate_logo.png",
+    "https://media.opremazaribolov.ba/brands/matrix_logo.png",
+    "https://media.opremazaribolov.ba/brands/mustad-logo-png_seeklogo-369325.png",
+    "https://media.opremazaribolov.ba/brands/2018_New_okuma_logo_BLACK_2.jpg.png",
+    "https://media.opremazaribolov.ba/brands/dawda-2-2.png",
+    "https://media.opremazaribolov.ba/brands/1244_1.png",
+    "https://media.opremazaribolov.ba/brands/salmo_varalice_fKsQaCb.png",
+    "https://media.opremazaribolov.ba/brands/spomb-logo-png_seeklogo-369329.png",
+    "https://media.opremazaribolov.ba/brands/xzoga.png",
+    "https://media.opremazaribolov.ba/brands/yo-zuri-zh.png",
+    "https://media.opremazaribolov.ba/brands/zebco_logo.png",
+    "https://media.opremazaribolov.ba/brands/zippo.png",
+    "https://media.opremazaribolov.ba/vlogs/varalicarenje_blog.avif",
+    "https://media.opremazaribolov.ba/vlogs/feeder_ribolov_blog.avif",
+    "https://media.opremazaribolov.ba/vlogs/saranski_ribolov_blog.avif",
+    "https://carpologijabh.ba/static/js/mobile-search.47f7eeed7018.js?v=20261019-desktop-inline",
+    "https://carpologijabh.ba/static/js/mobile-dock.036b8bcd3d5a.js?v=20260919-wishlist-mobile",
+    "https://carpologijabh.ba/static/css/footer-payments.d3d6d2069731.css?v=20261002",
+    "https://carpologijabh.ba/static/css/footer-mobile.67223a4ba5fb.css?v=20261015-compact-columns",
+    "https://carpologijabh.ba/static/css/shared-site-footer.99b8100f11e0.css?v=20261018-1",
+    "https://carpologijabh.ba/static/img/payments/monri.be907b1a7333.png",
+    "https://carpologijabh.ba/static/img/payments/raiffeisen.1ee2b4e4ef3f.svg",
+    "https://carpologijabh.ba/static/img/payments/mastercard.5d9473e7febe.png",
+    "https://carpologijabh.ba/static/img/payments/maestro.bebb0266e84e.png",
+    "https://carpologijabh.ba/static/img/payments/visa-secure.b549a47ad9c1.jpg",
+    "https://carpologijabh.ba/static/img/payments/mastercard-id-check.560f92d1ed56.png",
+    "https://carpologijabh.ba/static/js/csrf-session.65f7f73fe3d9.js?v=20261030-orange-buttons-badges",
+    "https://carpologijabh.ba/static/js/main.min.a6aca33fdee0.js?v=20261030-orange-buttons-badges",
+    "https://carpologijabh.ba/static/js/desktop-reference.c45e453519c3.js?v=20261030-orange-buttons-badges",
+    "https://carpologijabh.ba/static/js/stock-notify.21256c2e1d5a.js?v=20261030-orange-buttons-badges",
+    "https://carpologijabh.ba/static/js/set-builder-gate.bc038f1ffcee.js?v=20261030-orange-buttons-badges"
+  ],
+  "note": "Public unauthenticated point-in-time samples, not Render network accounting or 24-hour totals."
+}

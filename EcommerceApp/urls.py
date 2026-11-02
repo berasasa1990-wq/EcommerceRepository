@@ -174,7 +174,6 @@ urlpatterns = [
     path('nalog/admin/blog/', views.staff_blog, name='staff_blog'),
     path('nalog/admin/banneri/', views.staff_banners, name='staff_banners'),
     path('nalog/admin/settings/', views.staff_hero_settings, name='staff_hero_settings'),
-    path('nalog/admin/dugovanja-firmi/', views.staff_company_debts, name='staff_company_debts'),
     path('nalog/b2b-live/', views.staff_b2b_live, name='staff_b2b_live'),
     path('nalog/edit-mode/', views.staff_toggle_edit_mode, name='staff_toggle_edit_mode'),
     path('nalog/site-edit/', views.staff_site_edit_save, name='staff_site_edit_save'),

@@ -255,7 +255,11 @@ INSTALLED_APPS = [
     'django.contrib.sitemaps',
 ]
 
+HTTP_DIAGNOSTICS_ENABLED = _env("HTTP_DIAGNOSTICS_ENABLED", "false").lower() in ("1", "true", "yes")
+HTTP_DIAGNOSTICS_SAMPLE_RATE = float(_env("HTTP_DIAGNOSTICS_SAMPLE_RATE", "1"))
+
 MIDDLEWARE = [
+    "EcommerceApp.middleware.http_diagnostics.HttpDiagnosticsMiddleware",
     # Include the policy on early responses too (HTTPS redirects and static files).
     'EcommerceApp.middleware.permissions_policy.PermissionsPolicyMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -581,10 +585,6 @@ ORDER_NOTIFICATION_EMAIL = _env(
 ).strip().lower()
 EMAIL_TIMEOUT = int(_env('EMAIL_TIMEOUT', '30'))
 
-# Read-only Gmail inbox for the administrator's company payments page.
-COMPANY_MAIL_USER = _env('COMPANY_MAIL_USER', 'carpologijabh@gmail.com').strip()
-COMPANY_MAIL_APP_PASSWORD = _env('COMPANY_MAIL_APP_PASSWORD').replace(' ', '')
-COMPANY_MAIL_FOLDER = _env('COMPANY_MAIL_FOLDER', 'INBOX')
 
 SITE_URL = _env('SITE_URL', 'https://carpologijabh.ba').rstrip('/')
 # SEO URL-ovi ostaju na glavnom domenu i kada SITE_URL okruženja pokazuje na Render.
@@ -679,6 +679,13 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {'monri_console': {'class': 'logging.StreamHandler', 'level': 'INFO'}},
     'loggers': {'EcommerceApp.monri': {'handlers': ['monri_console'], 'level': 'INFO', 'propagate': False}},
+}
+LOGGING['formatters'] = {'bandwidth_json': {'format': '%(message)s'}}
+LOGGING['handlers']['bandwidth_console'] = {
+    'class': 'logging.StreamHandler', 'level': 'INFO', 'formatter': 'bandwidth_json',
+}
+LOGGING['loggers']['EcommerceApp.http_bandwidth'] = {
+    'handlers': ['bandwidth_console'], 'level': 'INFO', 'propagate': False,
 }
 _MONRI_CONFIG = read_monri_config(_MONRI_PROCESS_ENV, _ENV_VALUES)
 MONRI_ENABLED = _MONRI_CONFIG['MONRI_ENABLED']

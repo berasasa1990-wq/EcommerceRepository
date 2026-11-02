@@ -1,0 +1,96 @@
+{
+  "collected_at_utc": "2026-10-31T10:08:06.781388+00:00",
+  "records": [
+    {
+      "url": "https://carpologijabh.ba/sitemap.xml",
+      "status": 200,
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "sampled_body_bytes": 50113,
+      "truncated": false,
+      "headers": {
+        "Content-Type": "application/xml",
+        "Content-Encoding": "gzip",
+        "Vary": "Accept-Encoding",
+        "CF-Cache-Status": "DYNAMIC",
+        "Server": "cloudflare",
+        "X-Render-Origin-Server": "gunicorn"
+      },
+      "decoded_body_bytes": 657856
+    },
+    {
+      "url": "https://carpologijabh.ba/robots.txt",
+      "status": 200,
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "sampled_body_bytes": 469,
+      "truncated": false,
+      "headers": {
+        "Content-Type": "text/plain",
+        "Content-Encoding": "gzip",
+        "Vary": "Accept-Encoding",
+        "CF-Cache-Status": "DYNAMIC",
+        "Server": "cloudflare",
+        "X-Render-Origin-Server": "gunicorn"
+      },
+      "decoded_body_bytes": 854
+    },
+    {
+      "url": "https://carpologijabh.ba/static/img/carpologija-nav-logo-dark.7b1db371e25e.jpg",
+      "status": 200,
+      "accept_encoding": "gzip",
+      "conditional": false,
+      "sampled_body_bytes": 86659,
+      "truncated": false,
+      "headers": {
+        "Content-Type": "image/jpeg",
+        "Content-Length": "86659",
+        "Cache-Control": "max-age=315360000, public, immutable",
+        "ETag": "\"6ae5a7b2-15283\"",
+        "Last-Modified": "Sat, 31 Oct 2026 09:32:50 GMT",
+        "CF-Cache-Status": "DYNAMIC",
+        "Server": "cloudflare",
+        "X-Render-Origin-Server": "gunicorn"
+      },
+      "decoded_body_bytes": 86659
+    },
+    {
+      "url": "https://carpologijabh.ba/static/css/storefront-core-public.min.696e82a3cf33.css",
+      "status": 200,
+      "accept_encoding": "identity",
+      "conditional": false,
+      "sampled_body_bytes": 427500,
+      "truncated": false,
+      "headers": {
+        "Content-Type": "text/css; charset=\"utf-8\"",
+        "Cache-Control": "max-age=315360000, public, immutable",
+        "ETag": "W/\"6ae5a7b2-685ec\"",
+        "Last-Modified": "Sat, 31 Oct 2026 09:32:50 GMT",
+        "Vary": "Accept-Encoding",
+        "CF-Cache-Status": "DYNAMIC",
+        "Server": "cloudflare",
+        "X-Render-Origin-Server": "gunicorn"
+      },
+      "decoded_body_bytes": 427500
+    },
+    {
+      "url": "https://carpologijabh.ba/static/css/storefront-core-public.min.696e82a3cf33.css",
+      "status": 200,
+      "accept_encoding": "identity",
+      "conditional": true,
+      "sampled_body_bytes": 427500,
+      "truncated": false,
+      "headers": {
+        "Content-Type": "text/css; charset=\"utf-8\"",
+        "Cache-Control": "max-age=315360000, public, immutable",
+        "ETag": "W/\"6ae5a7b2-685ec\"",
+        "Last-Modified": "Sat, 31 Oct 2026 09:32:50 GMT",
+        "Vary": "Accept-Encoding",
+        "CF-Cache-Status": "DYNAMIC",
+        "Server": "cloudflare",
+        "X-Render-Origin-Server": "gunicorn"
+      },
+      "decoded_body_bytes": 427500
+    }
+  ]
+}

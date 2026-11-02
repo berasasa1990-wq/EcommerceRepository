@@ -86,3 +86,65 @@ html body.shared-site-header #header a.ref-home-nav {
     padding: 8px 14px !important;
     border-radius: 8px;
 }
+
+/* Mobile header uses only the logo/actions row, without the search bar. */
+@media (max-width: 1024px) {
+ html body.shared-site-header #header #headerSearch { display:none!important; }
+ html body.shared-site-header #header .wishlist-menu { display:none!important; }
+}
+
+/* Keep the mobile logo centered between equally sized side columns. */
+.mobile-header-tools { display:contents; }
+@media (min-width:1025px) {
+ html body.shared-site-header #header .nav-cart-stack > .cart-btn { order:-1; }
+}
+@media (max-width:1024px) {
+ html body.shared-site-header #header .header-row--primary {
+    display:grid!important;
+    grid-template-columns:minmax(92px,1fr) minmax(0,160px) minmax(92px,1fr)!important;
+    grid-template-areas:'tools logo cart'!important;
+    align-items:center; gap:0!important; padding:8px 10px!important;
+ }
+ html body.shared-site-header #header .header-leading { display:none!important; }
+ html body.shared-site-header #header .nav-actions { display:contents!important; }
+ html body.shared-site-header #header .mobile-header-tools {
+    grid-area:tools; display:flex!important; align-items:center; justify-content:flex-start; gap:3px;
+ }
+ html body.shared-site-header #header .mobile-header-tools .nav-action-link {
+    display:inline-flex!important; align-items:center; justify-content:center;
+    width:28px!important; min-width:28px!important; height:44px; padding:0!important; margin:0;
+    background:transparent!important; color:#111!important; border:0; box-shadow:none;
+ }
+ html body.shared-site-header #header .mobile-header-tools svg {
+    width:23px; height:23px; fill:none; stroke:currentColor; stroke-width:1.75;
+ }
+ html body.shared-site-header #header .mobile-header-tools .nav-action-label { display:none!important; }
+ html body.shared-site-header #header .logo-brand {
+    grid-area:logo; justify-self:center; justify-content:center; align-items:center;
+    width:100%; min-width:0; padding:0!important;
+ }
+ html body.shared-site-header #header .logo-brand .logo {
+    display:flex; justify-content:center; width:100%; max-width:160px; margin:0; transform:none;
+ }
+ html body.shared-site-header #header .logo-image {
+    width:100%!important; height:auto!important; max-width:160px!important; max-height:48px!important;
+    object-fit:contain; object-position:center!important;
+ }
+ html body.shared-site-header #header .nav-cart-stack {
+    grid-area:cart; display:flex!important; flex-direction:row; align-items:center; justify-content:flex-end; gap:5px; justify-self:end;
+ }
+ html body.shared-site-header #header .header-row--primary:has(.staff-edit-controls) {
+    grid-template-columns:minmax(108px,1fr) minmax(0,160px) minmax(108px,1fr)!important;
+ }
+ html body.shared-site-header #header .nav-cart-stack .logo-admin-panel {
+    display:inline-flex!important; position:static!important; align-items:center; justify-content:center;
+    width:24px; min-width:24px; height:36px; margin:0; padding:0; border:0; background:transparent;
+ }
+ html body.shared-site-header #header .nav-cart-stack .logo-admin-panel svg { width:23px; height:23px; }
+ html body.shared-site-header #header .nav-cart-stack .staff-edit-controls { display:flex; align-items:center; gap:3px; margin:0; }
+ html body.shared-site-header #header .nav-cart-stack .staff-edit-toggle-form { margin:0; }
+ html body.shared-site-header #header .nav-cart-stack .staff-edit-toggle { display:inline-flex; align-items:center; gap:2px; color:#111; font-size:10px; white-space:nowrap; }
+ html body.shared-site-header #header .nav-cart-stack .staff-edit-toggle input { width:13px; height:13px; margin:0; }
+ html body.shared-site-header #header .header-phone,
+ html body.shared-site-header #header .header-register { display:none!important; }
+}

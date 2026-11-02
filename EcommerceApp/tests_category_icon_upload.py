@@ -65,3 +65,28 @@ class CategoryIconUploadTests(TestCase):
         self.assertEqual(fresh.ikonica_pocetna.url, category.ikonica_pocetna.url)
         self.assertTrue(fresh.ikonica_pocetna.name.endswith('.avif'))
         self.assertLessEqual(fresh.ikonica_pocetna.size, 15000)
+
+    def test_featured_upload_is_small_and_independent_of_regular_icon(self):
+        category = Category.objects.create(
+            naziv='Štapovi', ikonica_pocetna=self.upload(),
+            ikonica_izdvojena=self.upload(noisy=True),
+        )
+        regular_name = category.ikonica_pocetna.name
+        self.assertNotEqual(category.ikonica_izdvojena.name, regular_name)
+        self.assertLessEqual(category.ikonica_izdvojena.size, 15000)
+        with Image.open(category.ikonica_izdvojena) as image:
+            self.assertEqual(image.format, 'AVIF')
+            self.assertLessEqual(max(image.size), 256)
+        from django.template.loader import render_to_string
+        from django.utils.html import escapejs
+        html = render_to_string('partials/home_featured_categories.html', {'nav_categories': [category]})
+        self.assertIn(escapejs(category.ikonica_izdvojena.url), html)
+        self.assertNotIn(escapejs(category.ikonica_pocetna.url), html)
+        category.ikonica_izdvojena = self.upload()
+        category.save(update_fields=['ikonica_izdvojena'])
+        category.refresh_from_db()
+        self.assertEqual(category.ikonica_pocetna.name, regular_name)
+        category.ikonica_izdvojena = ''
+        category.save(update_fields=['ikonica_izdvojena'])
+        html = render_to_string('partials/home_featured_categories.html', {'nav_categories': [category]})
+        self.assertIn(escapejs(category.ikonica_pocetna.url), html)
