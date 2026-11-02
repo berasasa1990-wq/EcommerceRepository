@@ -1,4 +1,9 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/category-product-images.css' %}?v=20261102-full-image-search">
+{% endblock %}
 {% block body_class %}catalog-header-reference category-hide-search{% endblock %}
 
 {% block page_title %}
