@@ -63,3 +63,18 @@ class StaffBlogTests(TestCase):
         response = self.client.post(reverse('staff_blog'), {'naslov': 'Nedozvoljen'})
         self.assertEqual(response.status_code, 302)
         self.assertFalse(HomeVlog.objects.exists())
+
+    def test_homepage_includes_all_blog_posts_for_mobile(self):
+        from django.template.loader import render_to_string
+        from .views import _home_vlogs
+
+        posts = [HomeVlog.objects.create(naslov=f'Blog {i}', slika=f'vlog/post-{i}.jpg', aktivan=True)
+                 for i in range(5)]
+        cache.delete(f'home_vlogs_v2:{HOME_VLOG_LIMIT}')
+        rows = _home_vlogs()
+        self.assertEqual(len(rows), 5)
+        html = render_to_string('partials/home_latest_blog.html', {'home_vlogs': rows})
+        for post in posts:
+            self.assertIn(post.naslov, html)
+        self.assertEqual(html.count('<article class="latest-blog__card'), 5)
+        self.assertEqual(html.count('latest-blog__card latest-blog__card--mobile-extra'), 2)

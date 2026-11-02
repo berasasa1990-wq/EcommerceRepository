@@ -1216,20 +1216,18 @@ class HomeFeaturedProductsForm(forms.Form):
         return products
 
 
-class FeaturedProductImageForm(forms.Form):
-    slika_izdvojena = forms.ImageField(required=False, label='Slika za izdvojenu ponudu')
-    slika_novo = forms.ImageField(required=False, label='Slika za Novo u ponudi')
+class HomepageProductImageForm(forms.Form):
+    slika_pocetna = forms.ImageField(required=False, label='Slika za početnu stranicu')
 
     def __init__(self, *args, instance, **kwargs):
         self.instance = instance
-        kwargs.setdefault('initial', {'slika_izdvojena': instance.slika_izdvojena, 'slika_novo': instance.slika_novo})
+        kwargs.setdefault('initial', {'slika_pocetna': instance.slika_pocetna})
         super().__init__(*args, **kwargs)
 
     def save(self, commit=True):
-        self.instance.slika_izdvojena = self.cleaned_data['slika_izdvojena'] or ''
-        self.instance.slika_novo = self.cleaned_data['slika_novo'] or ''
+        self.instance.slika_pocetna = self.cleaned_data['slika_pocetna'] or ''
         if commit:
-            self.instance.save(update_fields=['slika_izdvojena', 'slika_novo'])
+            self.instance.save(update_fields=['slika_pocetna'])
         return self.instance
 
 

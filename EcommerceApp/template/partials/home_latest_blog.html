@@ -7,6 +7,19 @@ html body.home-mobile-reference .latest-blog__body { grid-column:2; }
 html body.home-mobile-reference .latest-blog__body p { display:block!important; white-space:normal!important; overflow-wrap:anywhere; -webkit-line-clamp:unset; }
 @media(max-width:1000px){html body.home-mobile-reference .latest-blog__card {grid-template-columns:130px minmax(0,1fr)!important}html body.home-mobile-reference .latest-blog__card > .latest-blog__image {width:130px!important}}
 @media(max-width:550px){html body.home-mobile-reference .latest-blog__card {grid-template-columns:105px minmax(0,1fr)!important}html body.home-mobile-reference .latest-blog__card > .latest-blog__image {width:105px!important}}
+@media(min-width:768px){
+html body.home-mobile-reference .latest-blog__card--mobile-extra { display:none!important; }
+}
+@media(max-width:767px){
+html body.home-mobile-reference .latest-blog__header { display:block; text-align:center; }
+html body.home-mobile-reference .latest-blog__header > a { display:none; }
+html body.home-mobile-reference .latest-blog__grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 12px; }
+html body.home-mobile-reference .latest-blog__card { display:flex!important; flex-direction:column; min-height:0; border:0; border-radius:0; }
+html body.home-mobile-reference .latest-blog__card > .latest-blog__image { position:relative!important; inset:auto!important; width:100%!important; height:auto!important; aspect-ratio:8/5; min-height:0!important; flex:none; }
+html body.home-mobile-reference .latest-blog__body { display:block; padding:10px 0 0; text-align:center; }
+html body.home-mobile-reference .latest-blog__body :is(time,p,.latest-blog__more) { display:none!important; }
+html body.home-mobile-reference .latest-blog__body h3 { margin:0; font-size:14px; line-height:1.4; }
+}
 </style>
 <section class="latest-blog" aria-labelledby="latest-blog-title">
     <header class="latest-blog__header">
@@ -14,8 +27,8 @@ html body.home-mobile-reference .latest-blog__body p { display:block!important; 
         <a href="{% url 'vlog_list' %}">Pogledaj sve članke <span aria-hidden="true">→</span></a>
     </header>
     <div class="latest-blog__grid">
-        {% for post in home_vlogs|slice:':3' %}
-        <article class="latest-blog__card">
+        {% for post in home_vlogs %}
+        <article class="latest-blog__card{% if forloop.counter > 3 %} latest-blog__card--mobile-extra{% endif %}">
             <a class="latest-blog__image" href="{% url 'vlog_detail' post.slug %}" aria-label="{{ post.naslov }}">
                 <img src="{{ post.slika_url }}" alt="{{ post.naslov }}" width="800" height="500" loading="lazy" decoding="async">
             </a>

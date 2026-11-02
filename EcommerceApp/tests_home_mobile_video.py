@@ -52,3 +52,29 @@ class HomeMobileVideoTests(SimpleTestCase):
         form = HomeMobileVideoForm(data={}, files={'home_mobile_video_2': video(11)}, instance=SiteSettings())
         self.assertFalse(form.is_valid())
         self.assertIn('home_mobile_video_2', form.errors)
+
+    def test_same_filename_uploads_do_not_overwrite_either_video(self):
+        from django.core.files.storage import InMemoryStorage
+        from .models import SiteSettings
+
+        # Match production's overwrite behavior instead of local auto-renaming.
+        class OverwriteStorage(InMemoryStorage):
+            def get_available_name(self, name, max_length=None):
+                if self.exists(name):
+                    self.delete(name)
+                return name
+
+        storage = OverwriteStorage()
+        instance = SiteSettings()
+        first = instance.home_mobile_video
+        second = instance.home_mobile_video_2
+        first.storage = second.storage = storage
+        first.save('promo.mp4', video(3), save=False)
+        second.save('promo.mp4', video(5), save=False)
+        original_first_name = first.name
+        original_second_name = second.name
+        second.save('promo.mp4', video(7), save=False)
+        self.assertEqual(len({first.name, original_second_name, second.name}), 3)
+        self.assertEqual(storage.open(original_first_name).read(), video(3).read())
+        self.assertEqual(storage.open(original_second_name).read(), video(5).read())
+        self.assertEqual(storage.open(second.name).read(), video(7).read())

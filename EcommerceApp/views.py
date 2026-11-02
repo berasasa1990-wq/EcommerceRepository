@@ -2260,7 +2260,7 @@ HOME_SECTION_PRODUCT_VISIBLE = 5
 HOME_SECTION_PRODUCT_VISIBLE_DESKTOP = 6
 HOME_SECTION_PRODUCT_VISIBLE_MOBILE = 2
 HOME_CATEGORY_SHOWCASE_LIMIT = 6
-HOME_VLOG_LIMIT = 3
+HOME_VLOG_LIMIT = None
 HOME_CACHE_TTL = 180
 
 
@@ -7938,8 +7938,8 @@ def staff_product_quick_edit(request, slug):
                 product.slika = uploaded
                 changed.append('slika')
 
-        from .forms import FeaturedProductImageForm
-        featured_form = FeaturedProductImageForm(request.POST, request.FILES, instance=product)
+        from .forms import HomepageProductImageForm
+        featured_form = HomepageProductImageForm(request.POST, request.FILES, instance=product)
         if featured_form.is_valid():
             featured_form.save(commit=False)
         else:
@@ -7953,7 +7953,7 @@ def staff_product_quick_edit(request, slug):
             return redirect('product_detail', slug=slug)
 
         product.save()
-        if {'slika_izdvojena', 'slika_novo'}.intersection(featured_form.changed_data):
+        if {'slika_pocetna'}.intersection(featured_form.changed_data):
             _invalidate_storefront_product_caches()
         # Dodatne slike (opcionalno u istom save-u)
         uploads = request.FILES.getlist('dodatne_slike')

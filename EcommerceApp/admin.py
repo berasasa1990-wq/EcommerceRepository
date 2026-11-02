@@ -2187,7 +2187,7 @@ class NaStanjuFilter(admin.SimpleListFilter):
 class ProductAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        if {'slika_izdvojena', 'slika_novo'}.intersection(form.changed_data):
+        if {'slika_pocetna'}.intersection(form.changed_data):
             from .views import _invalidate_storefront_product_caches
             _invalidate_storefront_product_caches()
 
@@ -2306,7 +2306,7 @@ class ProductAdmin(admin.ModelAdmin):
         }),
         ('Slika i cijena', {
             'fields': (
-                'slika', 'pregled_slike_velika', 'slika_izdvojena', 'slika_novo', 'cijena', 'pakovanje_komada',
+                'slika', 'pregled_slike_velika', 'slika_pocetna', 'cijena', 'pakovanje_komada',
                 'akcija_postotak', 'akcijska_cijena', 'akcija_do',
                 'na_stanju', 'stanje',
             ),

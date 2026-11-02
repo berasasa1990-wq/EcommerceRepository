@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 from .b2b_validators import validate_banner_link
-from .utils.videos import validate_home_mobile_video
+from .utils.videos import validate_home_mobile_video, home_mobile_video_upload_to
 
 
 def _akcija_jos_vazi(akcija_do):
@@ -88,7 +88,7 @@ class SiteSettings(models.Model):
         help_text='Unesi puni link (https://…). Klik na banner i dugme „Istraži ponudu” otvara ovaj link.',
     )
     home_mobile_video_2 = models.FileField(
-        upload_to='site/mobile/videos/', blank=True,
+        upload_to=home_mobile_video_upload_to, blank=True,
         verbose_name='Video ispod Setova (mobilni)',
         validators=[validate_home_mobile_video],
         help_text='MP4, najviše 10 sekundi i 20 MB. Automatsko puštanje bez zvuka na telefonu.',
@@ -104,7 +104,7 @@ class SiteSettings(models.Model):
         help_text='Unesi https:// link ili putanju, npr. /?akcija=1. Bez linka video nije klikabilan.',
     )
     home_mobile_video = models.FileField(
-        upload_to='site/mobile/videos/', blank=True,
+        upload_to=home_mobile_video_upload_to, blank=True,
         verbose_name='Video ispod izdvojenih kategorija (mobilni)',
         validators=[validate_home_mobile_video],
         help_text='MP4, najviše 10 sekundi i 20 MB. Automatsko puštanje bez zvuka na telefonu.',
@@ -3399,15 +3399,10 @@ class Product(models.Model):
         help_text='Prikazuje se na stranici artikla.',
     )
     slika = models.ImageField(upload_to='products/', blank=True, null=True)
-    slika_izdvojena = models.ImageField(
-        upload_to='products/featured/', blank=True,
-        verbose_name='Slika za izdvojenu ponudu',
-        help_text='Koristi se samo u Izdvojenoj ponudi na početnoj. Prazno = postojeća slika artikla.',
-    )
-    slika_novo = models.ImageField(
-        upload_to='products/new/', blank=True,
-        verbose_name='Slika za Novo u ponudi',
-        help_text='Koristi se samo u Novom u ponudi na početnoj. Prazno = postojeća slika artikla.',
+    slika_pocetna = models.ImageField(
+        upload_to='products/homepage/', blank=True,
+        verbose_name='Slika za početnu stranicu',
+        help_text='Koristi se samo na početnoj stranici, u svim sekcijama. Prazno = postojeća slika artikla.',
     )
     na_stanju = models.BooleanField(default=True, verbose_name='Na stanju')
     stanje = models.PositiveIntegerField(default=0, verbose_name='Količina')
@@ -3605,14 +3600,10 @@ class Product(models.Model):
                 'slika',
                 post_process=process_product_image_named(image_base),
             )
-        if self.slika_izdvojena:
+        if self.slika_pocetna:
             from .utils.images import apply_image_processing, process_product_image_named
-            apply_image_processing(self, 'slika_izdvojena',
-                post_process=process_product_image_named(f'{self.slug}-izdvojena'))
-        if self.slika_novo:
-            from .utils.images import apply_image_processing, process_product_image_named
-            apply_image_processing(self, 'slika_novo',
-                post_process=process_product_image_named(f'{self.slug}-novo'))
+            apply_image_processing(self, 'slika_pocetna',
+                post_process=process_product_image_named(f'{self.slug}-pocetna'))
         # NOT NULL search kolone — nikad ne šalji NULL (Odoo import / bulk create)
         if self.search_keywords is None:
             self.search_keywords = ''
@@ -3896,14 +3887,9 @@ class Product(models.Model):
         return product_image_responsive_meta(slika)
 
     @property
-    def izdvojena_slika_responsive(self):
+    def pocetna_slika_responsive(self):
         from .utils.images import product_image_responsive_meta
-        return product_image_responsive_meta(self.slika_izdvojena) if self.slika_izdvojena else self.prikazna_slika_responsive
-
-    @property
-    def novo_slika_responsive(self):
-        from .utils.images import product_image_responsive_meta
-        return product_image_responsive_meta(self.slika_novo) if self.slika_novo else self.prikazna_slika_responsive
+        return product_image_responsive_meta(self.slika_pocetna) if self.slika_pocetna else self.prikazna_slika_responsive
 
     @property
     def seo_title(self):

@@ -75,23 +75,15 @@
                 <input type="file" name="slika" accept="image/*">
             </div>
             <div class="mg-field">
-                <label for="id_slika_izdvojena">Slika za izdvojenu ponudu na početnoj</label>
-                {% if product.slika_izdvojena %}
-                <img src="{{ product.slika_izdvojena.url }}" alt="Slika za izdvojenu ponudu" class="mg-edit-thumb">
-                <label class="mg-zero-check"><input type="checkbox" name="slika_izdvojena-clear"> Ukloni posebnu sliku</label>
+                <label for="id_slika_pocetna">Slika za početnu stranicu</label>
+                {% if product.slika_pocetna %}
+                <img src="{{ product.slika_pocetna.url }}" alt="Slika za početnu stranicu" class="mg-edit-thumb">
+                <label class="mg-zero-check"><input type="checkbox" name="slika_pocetna-clear"> Ukloni posebnu sliku</label>
                 {% endif %}
-                <input type="file" id="id_slika_izdvojena" name="slika_izdvojena" accept="image/*">
-                <small>Samo za Izdvojenu ponudu na početnoj. Bez nje se koristi postojeća slika artikla.</small>
+                <input type="file" id="id_slika_pocetna" name="slika_pocetna" accept="image/*">
+                <small>Koristi se u svim sekcijama početne stranice. Bez nje se koristi postojeća slika artikla.</small>
             </div>
-<div class="mg-field">
-                <label for="id_slika_novo">Slika za Novo u ponudi na početnoj</label>
-                {% if product.slika_novo %}
-                <img src="{{ product.slika_novo.url }}" alt="Slika za Novo u ponudi" class="mg-edit-thumb">
-                <label class="mg-zero-check"><input type="checkbox" name="slika_novo-clear"> Ukloni posebnu sliku</label>
-                {% endif %}
-                <input type="file" id="id_slika_novo" name="slika_novo" accept="image/*">
-                <small>Samo za Novo u ponudi na početnoj. Bez nje se koristi postojeća slika artikla.</small>
-            </div>
+
             <div class="mg-field">
                 <label>Dodatne slike</label>
                 {% for img in dodatne_slike %}

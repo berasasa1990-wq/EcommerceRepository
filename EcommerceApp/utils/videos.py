@@ -1,6 +1,7 @@
 import json
 import struct
 import subprocess
+import uuid
 from pathlib import Path
 
 from django.core.exceptions import ValidationError
@@ -167,3 +168,9 @@ def validate_home_mobile_video(uploaded_file):
         raise ValidationError('Trajanje videa nije moguće provjeriti. Učitajte ispravan MP4 video.')
     if duration > 10:
         raise ValidationError(f'Video može trajati najviše 10 sekundi (trenutno: {duration:.1f} s).')
+
+
+def home_mobile_video_upload_to(instance, filename):
+    # R2 overwrites identical keys and serves immutable cached media.
+    # A new key keeps both slots and every replacement independent.
+    return f'site/mobile/videos/{uuid.uuid4().hex}{Path(filename).suffix.lower()}'
