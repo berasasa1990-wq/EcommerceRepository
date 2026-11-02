@@ -777,6 +777,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         )
 
     fieldsets = (
+        ('Mobilni video', {'fields': ('home_mobile_video',)}),
         ('Početni banner', {
             'fields': ('hero_slika', 'hero_link'),
             'description': 'Cijela slika bannera: 1600 × 600 px, najviše 80 KB nakon automatske optimizacije.',

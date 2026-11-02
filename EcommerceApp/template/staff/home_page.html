@@ -15,6 +15,15 @@
     </header>
     <div class="home-editor__sections">
         <article class="home-editor__section">
+            <h2>Video ispod izdvojenih kategorija — mobilni</h2>
+            <p>MP4 video do 10 sekundi i 20 MB. Na telefonu se automatski pušta bez zvuka, u petlji.</p>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}<input type="hidden" name="section" value="video">
+                {{ video_form.as_p }}
+                <div class="home-editor__actions"><button type="submit">Sačuvaj video</button></div>
+            </form>
+        </article>
+        <article class="home-editor__section">
             <h2>Izdvojena ponuda</h2>
             <p>Odaberi do šest artikala za sekciju „Izdvojena ponuda” na početnoj. Prikazuju se aktivni artikli na stanju. Bez ručnog odabira prikazuje se HIT ponuda.</p>
             <form method="post" class="section-form">

@@ -537,6 +537,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Show the available stock in quantity validation messages.
+    document.querySelectorAll('#productQuantityInput, .product-qty-input').forEach(input => {
+        const updateQuantityValidity = () => {
+            input.setCustomValidity('');
+            if (input.validity.rangeOverflow) {
+                input.setCustomValidity(`Dostupna količina za narudžbu: ${input.max} kom.`);
+            }
+        };
+        input.addEventListener('input', updateQuantityValidity);
+        input.addEventListener('change', updateQuantityValidity);
+        input.addEventListener('invalid', updateQuantityValidity);
+    });
+
     function chooseProductQuantity(form) {
         const dialog = document.getElementById('productQuantityDialog');
         const input = document.getElementById('productQuantityInput');
@@ -545,6 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const maximum = Number(quantity.dataset.quantityMax);
         if (maximum > 0) input.max = String(maximum);
         else input.removeAttribute('max');
+        input.setCustomValidity('');
         input.value = quantity.value || '1';
         dialog.returnValue = '';
         return new Promise(resolve => {

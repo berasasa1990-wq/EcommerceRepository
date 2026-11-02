@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 from .b2b_validators import validate_banner_link
+from .utils.videos import validate_home_mobile_video
 
 
 def _akcija_jos_vazi(akcija_do):
@@ -85,6 +86,12 @@ class SiteSettings(models.Model):
         max_length=500, default='https://carpologijabh.ba/kategorija/Jakne/',
         verbose_name='Link bannera',
         help_text='Unesi puni link (https://…). Klik na banner i dugme „Istraži ponudu” otvara ovaj link.',
+    )
+    home_mobile_video = models.FileField(
+        upload_to='site/mobile/videos/', blank=True,
+        verbose_name='Video ispod izdvojenih kategorija (mobilni)',
+        validators=[validate_home_mobile_video],
+        help_text='MP4, najviše 10 sekundi i 20 MB. Automatsko puštanje bez zvuka na telefonu.',
     )
     bestsellers_banner_slika = models.ImageField(
         upload_to='site/bestsellers/', blank=True,

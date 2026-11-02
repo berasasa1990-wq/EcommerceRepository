@@ -1,0 +1,7 @@
+{% if site_settings.home_mobile_video %}
+<section class="home-mobile-video" aria-label="Promotivni video">
+    <video autoplay muted loop playsinline controls preload="none" aria-label="Promotivni video">
+        <source src="{{ site_settings.home_mobile_video.url }}" type="video/mp4" media="(max-width: 767px)">
+    </video>
+</section>
+{% endif %}

@@ -1231,3 +1231,10 @@ class FeaturedProductImageForm(forms.Form):
         if commit:
             self.instance.save(update_fields=['slika_izdvojena', 'slika_novo'])
         return self.instance
+
+
+class HomeMobileVideoForm(forms.ModelForm):
+    class Meta:
+        model = SiteSettings
+        fields = ('home_mobile_video',)
+        widgets = {'home_mobile_video': forms.ClearableFileInput(attrs={'accept': 'video/mp4,.mp4'})}

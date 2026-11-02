@@ -9795,7 +9795,7 @@ def staff_home_sections(request):
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_home_page(request):
-    from .forms import HomeFeaturedProductsForm
+    from .forms import HomeFeaturedProductsForm, HomeMobileVideoForm
 
     if request.GET.get('search') == '1':
         query = (request.GET.get('q') or '').strip()
@@ -9819,6 +9819,21 @@ def staff_home_page(request):
             auto_id=f'id_{key}_%s',
         ) for key, selected in selections.items()
     }
+    video_form = HomeMobileVideoForm(
+        request.POST if is_post and section == 'video' else None,
+        request.FILES if is_post and section == 'video' else None,
+        instance=settings,
+    )
+    if is_post and section == 'video':
+        if video_form.is_valid():
+            video_form.save()
+            _invalidate_storefront_product_caches()
+            messages.success(request, 'Mobilni video je sačuvan.')
+            return redirect('staff_home_page')
+        return render(request, 'staff/home_page.html', {
+            **_base_context(), 'featured_form': forms['featured'], 'new_form': forms['new'],
+            'video_form': video_form, 'section_count': HomeProductSection.objects.count(),
+        })
     forms['new'].fields['artikli'].label = 'Artikli u Novom u ponudi'
     if is_post and section not in forms:
         return HttpResponseBadRequest('Nepoznata sekcija.')
@@ -9836,7 +9851,7 @@ def staff_home_page(request):
         return redirect('staff_home_page')
     return render(request, 'staff/home_page.html', {
         **_base_context(), 'featured_form': forms['featured'], 'new_form': forms['new'],
-        'section_count': HomeProductSection.objects.count(),
+        'section_count': HomeProductSection.objects.count(), 'video_form': video_form,
     })
 
 
