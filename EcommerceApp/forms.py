@@ -1236,5 +1236,6 @@ class FeaturedProductImageForm(forms.Form):
 class HomeMobileVideoForm(forms.ModelForm):
     class Meta:
         model = SiteSettings
-        fields = ('home_mobile_video',)
-        widgets = {'home_mobile_video': forms.ClearableFileInput(attrs={'accept': 'video/mp4,.mp4'})}
+        fields = ('home_mobile_video', 'home_mobile_video_link', 'home_mobile_video_2', 'home_mobile_video_2_link')
+        widgets = {name: forms.ClearableFileInput(attrs={'accept': 'video/mp4,.mp4'})
+                   for name in ('home_mobile_video', 'home_mobile_video_2')}

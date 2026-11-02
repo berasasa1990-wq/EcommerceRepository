@@ -140,6 +140,14 @@ html body.home-mobile-reference main > .home-featured-categories {
     background: #fff;
 }
 html body.home-mobile-reference main > .home-mobile-video { display: none; }
+.home-mobile-video video::-webkit-media-controls,
+.home-mobile-video video::-webkit-media-controls-enclosure,
+.home-mobile-video video::-webkit-media-controls-panel,
+.home-mobile-video video::-webkit-media-controls-timeline,
+.home-mobile-video video::-webkit-media-controls-current-time-display,
+.home-mobile-video video::-webkit-media-controls-time-remaining-display {
+    display: none !important;
+}
 @media (max-width: 767px) {
     html body.home-mobile-reference main > .home-mobile-video { display: block; order: 4; margin: 0 0 24px; }
     .home-mobile-video video { display: block; width: 100%; height: auto; border-radius: 12px; }
@@ -263,7 +271,7 @@ html body.home-mobile-reference .home-products .product-catalog article.product-
     html body.home-mobile-reference .home-products--novo .home-product-carousel__track > .home-product-carousel__slide {
         display: block !important;
     }
-    html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo, .home-products--sets) .home-product-carousel__viewport {
+    html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo) .home-product-carousel__viewport {
         overflow-x: scroll !important;
         overflow-y: hidden !important;
         touch-action: pan-x pan-y !important;
@@ -271,18 +279,18 @@ html body.home-mobile-reference .home-products .product-catalog article.product-
         scrollbar-color: #657337 #ededed;
         padding-bottom: 8px;
     }
-    html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo, .home-products--sets) .home-product-carousel__viewport::-webkit-scrollbar {
+    html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo) .home-product-carousel__viewport::-webkit-scrollbar {
         display: block;
         height: 6px;
     }
-    html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo, .home-products--sets) .home-product-carousel__viewport::-webkit-scrollbar-track {
+    html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo) .home-product-carousel__viewport::-webkit-scrollbar-track {
         background: #ededed;
     }
-    html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo, .home-products--sets) .home-product-carousel__viewport::-webkit-scrollbar-thumb {
+    html body.home-mobile-reference :is(.home-products--izdvojeno, .home-products--novo) .home-product-carousel__viewport::-webkit-scrollbar-thumb {
         background: #657337;
         border-radius: 3px;
     }
-    html body.home-mobile-reference .home-products:is(.home-products--izdvojeno, .home-products--novo, .home-products--sets) .home-product-carousel__track {
+    html body.home-mobile-reference .home-products:is(.home-products--izdvojeno, .home-products--novo) .home-product-carousel__track {
         display: grid !important;
         grid-template-columns: none !important;
         grid-auto-flow: column !important;
@@ -418,19 +426,20 @@ html body.home-mobile-reference .home-products .product-catalog article.product-
 {% endif %}
 
 {% include 'partials/home_featured_categories.html' %}
-{% include 'partials/home_mobile_video.html' %}
+{% include 'partials/home_mobile_video.html' with video_file=site_settings.home_mobile_video video_link=site_settings.home_mobile_video_link %}
 {% if home_set_products %}
 <section class="category-page category-page--shop home-products home-products--sets" aria-label="Setovi">
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
                 {% include 'partials/home_section_header.html' with title='SETOVI' header_mod='sets' see_all_url='' %}
-                {% include 'partials/home_product_carousel.html' with products=home_set_products|slice:':4' hide_variations=True visible_desktop=6 visible_mobile=2 %}
+                {% include 'partials/home_product_carousel.html' with products=home_set_products|slice:':4' hide_variations=True visible_desktop=6 visible_mobile=2 carousel_no_arrows=True %}
             </div>
         </div>
     </div>
 </section>
 {% endif %}
+{% include 'partials/home_mobile_video.html' with video_file=site_settings.home_mobile_video_2 video_link=site_settings.home_mobile_video_2_link %}
 {% include 'partials/home_reference_promos.html' %}
 
 

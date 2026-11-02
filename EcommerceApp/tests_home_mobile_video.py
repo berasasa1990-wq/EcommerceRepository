@@ -33,3 +33,22 @@ class HomeMobileVideoTests(SimpleTestCase):
     def test_rejects_invalid_mp4(self):
         with self.assertRaisesMessage(ValidationError, 'nije moguće provjeriti'):
             validate_home_mobile_video(SimpleUploadedFile('bad.mp4', b'bad'))
+
+    def test_video_template_keeps_link_and_has_no_controls(self):
+        from types import SimpleNamespace
+        from django.template.loader import render_to_string
+        html = render_to_string('partials/home_mobile_video.html', {
+            'video_file': SimpleNamespace(url='/media/second.mp4'),
+            'video_link': '/?akcija=1',
+        })
+        self.assertIn('src="/media/second.mp4"', html)
+        self.assertIn('href="/?akcija=1"', html)
+        self.assertIn('autoplay muted loop playsinline', html)
+        self.assertNotIn('controls', html)
+
+    def test_second_upload_has_same_validation(self):
+        from .forms import HomeMobileVideoForm
+        from .models import SiteSettings
+        form = HomeMobileVideoForm(data={}, files={'home_mobile_video_2': video(11)}, instance=SiteSettings())
+        self.assertFalse(form.is_valid())
+        self.assertIn('home_mobile_video_2', form.errors)

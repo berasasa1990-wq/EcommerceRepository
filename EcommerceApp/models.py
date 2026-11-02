@@ -87,6 +87,22 @@ class SiteSettings(models.Model):
         verbose_name='Link bannera',
         help_text='Unesi puni link (https://…). Klik na banner i dugme „Istraži ponudu” otvara ovaj link.',
     )
+    home_mobile_video_2 = models.FileField(
+        upload_to='site/mobile/videos/', blank=True,
+        verbose_name='Video ispod Setova (mobilni)',
+        validators=[validate_home_mobile_video],
+        help_text='MP4, najviše 10 sekundi i 20 MB. Automatsko puštanje bez zvuka na telefonu.',
+    )
+    home_mobile_video_2_link = models.CharField(
+        max_length=500, blank=True, validators=[validate_banner_link],
+        verbose_name='Link na klik videa ispod Setova (opcionalno)',
+        help_text='Unesi https:// link ili putanju, npr. /?akcija=1.',
+    )
+    home_mobile_video_link = models.CharField(
+        max_length=500, blank=True, validators=[validate_banner_link],
+        verbose_name='Link na klik videa (opcionalno)',
+        help_text='Unesi https:// link ili putanju, npr. /?akcija=1. Bez linka video nije klikabilan.',
+    )
     home_mobile_video = models.FileField(
         upload_to='site/mobile/videos/', blank=True,
         verbose_name='Video ispod izdvojenih kategorija (mobilni)',
