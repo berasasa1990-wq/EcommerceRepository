@@ -331,3 +331,114 @@ class PaperPickingTests(TestCase):
         self.assertContains(response, 'js/csrf-session.js')
         self.assertContains(response, 'js/staff-wms-qr.js')
         self.assertEqual(response['Referrer-Policy'], 'same-origin')
+
+    def stage_shortage(self, token=None, first=1, second=0):
+        token = token or self.token()
+        with patch('EcommerceApp.wms.render', side_effect=lambda request, template, context, **kw: context):
+            return validate_qr(self.request('post', {'action': 'save', 'item': str(self.item.pk),
+                'found_0': str(first), 'found_1': str(second)}), token)
+
+    def stage_alternatives(self, context, token, **choices):
+        data = {'action': 'save_alternatives', 'item': str(self.item.pk), 'changes': context['changes'], **choices}
+        with patch('EcommerceApp.wms.render', side_effect=lambda request, template, context, **kw: context):
+            return validate_qr(self.request('post', data), token)
+
+    def test_shortage_offers_popup_and_deducts_chosen_locations_only_on_final_confirmation(self):
+        c = WarehouseLocation.objects.create(sifra='C-03', naziv='Polica C')
+        d = WarehouseLocation.objects.create(sifra='D-04', naziv='Polica D')
+        apply_movement(product=self.product, location=c, tip='prijem', kolicina=4)
+        apply_movement(product=self.product, location=d, tip='prijem', kolicina=2)
+        token = self.token()
+        context = self.stage_shortage(token)
+        self.assertEqual(context['alternative_remaining'], 4)
+        self.assertEqual({row['location'].pk for row in context['alternatives']}, {c.pk, d.pk})
+        html = render_to_string('staff/magacin/wms_qr.html', context)
+        self.assertIn('data-alternative-dialog', html)
+        self.assertIn('C-03', html)
+        self.assertIn('D-04', html)
+        stocks = {row.location_id: row for row in WarehouseStock.objects.filter(product=self.product)}
+        chosen = self.stage_alternatives(context, token, **{f'alt_{stocks[c.pk].pk}': '3', f'alt_{stocks[d.pk].pk}': '1'})
+        self.assertTrue(chosen['saved'])
+        self.assertEqual(chosen['summary'][0]['found'], 5)
+        self.assertEqual(WarehouseStock.objects.get(pk=stocks[c.pk].pk).kolicina, 4)
+        response = validate_qr(self.request('post', {'action': 'complete', 'changes': chosen['changes']}), token)
+        self.assertContains(response, 'je validatovana.')
+        self.assertEqual(self.stock(), [1, 4, 1, 1])
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.kolicina_faktura, 5)
+        repeated = validate_qr(self.request('post', {'action': 'complete', 'changes': chosen['changes']}), token)
+        self.assertEqual(repeated.status_code, 200)
+        self.assertEqual(self.stock(), [1, 4, 1, 1])
+
+    def test_zero_original_quantity_can_be_replaced_with_other_location(self):
+        c = WarehouseLocation.objects.create(sifra='C-03')
+        apply_movement(product=self.product, location=c, tip='prijem', kolicina=5)
+        stock = WarehouseStock.objects.get(product=self.product, location=c)
+        token = self.token()
+        context = self.stage_shortage(token, first=0)
+        chosen = self.stage_alternatives(context, token, **{f'alt_{stock.pk}': '5'})
+        response = validate_qr(self.request('post', {'action': 'complete', 'changes': chosen['changes']}), token)
+        self.assertContains(response, 'je validatovana.')
+        self.assertEqual(self.stock(), [2, 4, 0])
+        self.item.refresh_from_db()
+        self.assertFalse(self.item.wms_out_of_stock)
+
+    def test_alternatives_can_be_skipped_without_deducting_them(self):
+        c = WarehouseLocation.objects.create(sifra='C-03')
+        apply_movement(product=self.product, location=c, tip='prijem', kolicina=5)
+        token = self.token()
+        context = self.stage_shortage(token)
+        with patch('EcommerceApp.wms.render', side_effect=lambda request, template, context, **kw: context):
+            skipped = validate_qr(self.request('post', {'action': 'skip_alternatives', 'item': str(self.item.pk),
+                'changes': context['changes']}), token)
+        self.assertEqual(skipped['summary'][0]['found'], 1)
+        response = validate_qr(self.request('post', {'action': 'complete', 'changes': skipped['changes']}), token)
+        self.assertContains(response, 'je validatovana.')
+        self.assertEqual(self.stock(), [1, 4, 5])
+
+    def test_changed_alternative_stock_rolls_back_instead_of_deducting_another_location(self):
+        c = WarehouseLocation.objects.create(sifra='C-03')
+        apply_movement(product=self.product, location=c, tip='prijem', kolicina=4)
+        stock = WarehouseStock.objects.get(product=self.product, location=c)
+        token = self.token()
+        chosen = self.stage_alternatives(self.stage_shortage(token), token, **{f'alt_{stock.pk}': '4'})
+        WarehouseStock.objects.filter(pk=stock.pk).update(kolicina=1)
+        response = validate_qr(self.request('post', {'action': 'complete', 'changes': chosen['changes']}), token)
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(self.stock(), [2, 4, 1])
+        self.order.refresh_from_db()
+        self.assertNotEqual(self.order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.item.refresh_from_db()
+        self.assertIsNone(self.item.kolicina_pokupljeno)
+
+    def test_rejects_over_order_quantity_and_other_product_location(self):
+        c = WarehouseLocation.objects.create(sifra='C-03')
+        apply_movement(product=self.product, location=c, tip='prijem', kolicina=10)
+        stock = WarehouseStock.objects.get(product=self.product, location=c)
+        token = self.token()
+        context = self.stage_shortage(token)
+        response = validate_qr(self.request('post', {'action': 'save_alternatives', 'item': str(self.item.pk),
+            'changes': context['changes'], f'alt_{stock.pk}': '5'}), token)
+        self.assertEqual(response.status_code, 409)
+        other = Product.objects.create(naziv='Drugi artikal', sifra='ALT-OTHER', cijena=10)
+        apply_movement(product=other, location=c, tip='prijem', kolicina=10)
+        other_stock = WarehouseStock.objects.get(product=other, location=c)
+        response = validate_qr(self.request('post', {'action': 'save_alternatives', 'item': str(self.item.pk),
+            'changes': context['changes'], f'alt_{other_stock.pk}': '1'}), token)
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(self.stock(), [2, 4, 10])
+
+    def test_alternatives_respect_other_orders_reservations(self):
+        c = WarehouseLocation.objects.create(sifra='C-03')
+        apply_movement(product=self.product, location=c, tip='prijem', kolicina=5)
+        other = Order.objects.create(ime_prezime='Druga narudžba', ukupno=40)
+        reserve_for_order(other, self.product, 4, location=c, user=self.user)
+        token = self.token()
+        context = self.stage_shortage(token)
+        self.assertEqual(context['alternatives'][0]['available'], 1)
+        stock = WarehouseStock.objects.get(product=self.product, location=c)
+        chosen = self.stage_alternatives(context, token, **{f'alt_{stock.pk}': '1'})
+        response = validate_qr(self.request('post', {'action': 'complete', 'changes': chosen['changes']}), token)
+        self.assertContains(response, 'je validatovana.')
+        stock.refresh_from_db()
+        self.assertEqual((stock.kolicina, stock.rezervisano), (4, 4))

@@ -2,10 +2,22 @@
 <!doctype html>
 <html lang="bs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Picking narudžbe #{{ order.broj }}</title>
 <meta name="theme-color" content="#f5f7fa">
-<link rel="stylesheet" href="{% static 'css/wms-qr.css' %}?v=20261103-scanner">
+<link rel="stylesheet" href="{% static 'css/wms-qr.css' %}?v=20261103-scanner-top">
 </head>
 <body><main>
 <header class="picking-header"><a class="picking-brand" href="{% url 'staff_magacin_wms' %}">CARPOLOGIJA <span>WMS</span></a><span class="picking-label">PICKING</span></header>
+{% if stage == 'result' %}
+<div class="picking-scan-top">
+<button type="button" class="scan-new-button" data-scan-new aria-controls="pickingScanner" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M7 7h3v3H7zm7 0h3v3h-3zm-7 7h3v3H7zm7 0h3v3h-3z"/></svg>Skeniraj novu narudžbu</button>
+<section id="pickingScanner" class="picking-scanner" hidden data-validation-template="{% url 'staff_magacin_wms_validate' 'PICKINGTOKEN' %}">
+<div class="scanner-heading"><h2>Skeniraj picking QR kod</h2><button type="button" class="scanner-close" data-scan-close aria-label="Zatvori kameru">×</button></div>
+<p class="muted">Usmjeri kameru na QR kod sljedeće picking liste.</p>
+<div id="pickingQrReader" class="scanner-reader"></div>
+<p data-scan-status role="status" aria-live="polite"></p>
+<button type="button" class="button secondary" data-scan-retry hidden>Pokušaj ponovo</button>
+</section>
+</div>
+{% endif %}
 {% if stage == 'result' and success %}<div class="picking-success-icon" aria-hidden="true">✓</div><p class="picking-status">✓ Validatovana</p>{% endif %}
 <h1>Narudžba #{{ order.broj }}</h1><p class="picking-customer">{{ order.display_customer_name }}</p>
 {% if message %}<p role="status" class="picking-message {% if error %}error{% elif success %}success{% endif %}">{{ message }}</p>{% endif %}
@@ -23,23 +35,32 @@
 <div class="actions"><button type="submit">Potvrdi pronađenu količinu</button></div></form></section>
 {% endif %}
 {% if saved %}<p role="status" class="success">Količina je zabilježena za završnu potvrdu.</p>{% endif %}
-{% if summary %}<h2>Pregled izmjena</h2><div class="summary-wrap"><table class="summary"><thead><tr><th>Artikal</th><th>Naručeno</th><th>Pronađeno</th></tr></thead><tbody>{% for item in summary %}<tr><td>{{ item.name }}<br><small>{{ item.code }}</small></td><td>{{ item.ordered }}</td><td>{% if item.found == 0 %}Nema na stanju{% else %}{{ item.found }}{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+{% if alternatives %}
+<dialog class="alternative-dialog" data-alternative-dialog data-remaining="{{ alternative_remaining }}" open aria-labelledby="alternativeTitle">
+    <div class="alternative-heading"><span class="picking-label">DRUGE LOKACIJE</span><h2 id="alternativeTitle">Artikal postoji i na drugim lokacijama</h2><p>{{ alternative_item.product_naziv|default:alternative_item.naziv }}</p></div>
+    <p class="muted">Do naručene količine nedostaje još <strong>{{ alternative_remaining }} kom.</strong> Unesi koliko si preuzeo s drugih lokacija ili nastavi bez njih.</p>
+    {% if error %}<p class="error" role="alert">{{ message }}</p>{% endif %}
+    <form method="post" data-csrf-refresh-url="{% url 'auth_csrf_token' %}" data-alternative-form>
+        {% csrf_token %}<input type="hidden" name="item" value="{{ alternative_item.pk }}"><input type="hidden" name="changes" value="{{ changes }}">
+        {% for location in alternatives %}<div class="alternative-location">
+            <label for="alt_{{ location.stock_id }}">{{ location.label }}<small>Slobodno: {{ location.available }} kom.</small></label>
+            <input type="number" inputmode="numeric" id="alt_{{ location.stock_id }}" name="alt_{{ location.stock_id }}" min="0" max="{{ location.available }}" value="0" step="1" data-alternative-quantity aria-label="Preuzeto s lokacije {{ location.label }}">
+        </div>{% endfor %}
+        <p class="muted" data-alternative-total aria-live="polite">Odabrano: 0 / {{ alternative_remaining }} kom.</p>
+        <div class="actions"><button type="submit" name="action" value="save_alternatives">Potvrdi odabrane lokacije</button><button type="submit" class="secondary" name="action" value="skip_alternatives" data-skip-alternatives formnovalidate>Nastavi bez drugih lokacija</button></div>
+    </form>
+</dialog>
+{% endif %}
+{% if summary %}<h2>Pregled izmjena</h2><div class="summary-wrap"><table class="summary"><thead><tr><th>Artikal</th><th>Naručeno</th><th>Pronađeno</th></tr></thead><tbody>{% for item in summary %}<tr><td>{{ item.name }}<br><small>{{ item.code }}</small>{% for location in item.locations %}<div class="summary-location">{{ location.label }} · {{ location.quantity }} kom.</div>{% endfor %}</td><td>{{ item.ordered }}</td><td>{% if item.found == 0 %}Nema na stanju{% else %}{{ item.found }}{% endif %}</td></tr>{% endfor %}</tbody></table></div>
 <p>Za ostale artikle potvrđuješ sve količine s picking liste. Po potrebi prvo pronađi i ispravi još neki artikal.</p><form method="post" data-csrf-refresh-url="{% url 'auth_csrf_token' %}">{% csrf_token %}<input type="hidden" name="action" value="complete"><input type="hidden" name="changes" value="{{ changes }}"><div class="actions"><button type="submit">Potvrdi izmjene i validatuj narudžbu</button></div></form>{% endif %}
 {% elif stage == 'result' %}
 <div class="picking-result-actions">
-<button type="button" class="scan-new-button" data-scan-new aria-controls="pickingScanner" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M7 7h3v3H7zm7 0h3v3h-3zm-7 7h3v3H7zm7 0h3v3h-3z"/></svg>Skeniraj novu narudžbu</button>
 <a class="button secondary" href="{% url 'staff_order_detail' order.broj %}">Otvori ažurirani račun <span aria-hidden="true">↗</span></a>
 {% if success %}<a class="button secondary" href="{% url 'staff_magacin_wms' %}?validirane=1">Validatovane narudžbe <span aria-hidden="true">→</span></a>{% endif %}
 </div>
 {% endif %}
-<section id="pickingScanner" class="picking-scanner" hidden data-validation-template="{% url 'staff_magacin_wms_validate' 'PICKINGTOKEN' %}">
-<div class="scanner-heading"><h2>Skeniraj picking QR kod</h2><button type="button" class="scanner-close" data-scan-close aria-label="Zatvori kameru">×</button></div>
-<p class="muted">Usmjeri kameru na QR kod sljedeće picking liste.</p>
-<div id="pickingQrReader" class="scanner-reader"></div>
-<p data-scan-status role="status" aria-live="polite"></p>
-<button type="button" class="button secondary" data-scan-retry hidden>Pokušaj ponovo</button>
-</section>
 <footer class="picking-footer"><a href="{% url 'staff_magacin_wms' %}">← Nazad na WMS</a><span>Magacin · Picking</span></footer></main>
 <script src="{% static 'js/csrf-session.js' %}?v=20261103-wms-qr" data-cookie-name="{{ csrf_cookie_name|default:'csrftoken' }}" defer></script>
-<script src="{% static 'js/staff-wms-qr.js' %}?v=20261103-scan-next" defer></script>
+<script src="{% static 'js/staff-wms-qr.js' %}?v=20261103-scanner-top" defer></script>
+<script src="{% static 'js/wms-picking-alternatives.js' %}?v=20261103-alternative-locations" defer></script>
 </body></html>

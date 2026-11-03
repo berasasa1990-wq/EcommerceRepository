@@ -61,6 +61,61 @@ def paper_picking_job(request, order):
     return {'rows': plan['rows'], 'error': plan['error'], 'qr': _etiketa_qr_data_uri(url)}
 
 
+def alternative_locations(order, item, plan):
+    """Offer unreserved stock for the exact product/variation outside printed locations."""
+    from .magacin import _location_for_pick_label, is_ignored_stock_location
+    if not item.artikal_id:
+        return []
+    same_items = set(order.stavke.filter(artikal_id=item.artikal_id, varijacija_id=item.varijacija_id)
+                     .values_list('pk', flat=True))
+    original_ids = set()
+    for row in plan['rows']:
+        if row['item_id'] in same_items:
+            location = _location_for_pick_label(row['loc'])
+            if location:
+                original_ids.add(location.pk)
+    result = []
+    stocks = WarehouseStock.objects.filter(product_id=item.artikal_id, variation_id=item.varijacija_id,
+        location__aktivan=True, kolicina__gt=0).exclude(location_id__in=original_ids).select_related('location').order_by('location__sifra', 'pk')
+    for stock in stocks:
+        if stock.dostupno > 0 and not is_ignored_stock_location(stock.location):
+            result.append({'stock_id': stock.pk, 'location': stock.location,
+                           'label': stock.location.sifra, 'available': stock.dostupno,
+                           'key': f'alt:{item.pk}:{stock.pk}'})
+    return result
+
+
+def _alternative_lines(order, plan, quantities, *, reserve=False, user=None):
+    from .magacin import reserve_for_order
+    items = {item.pk: item for item in order.stavke.filter(is_set_parent=False, ledger_excess_line__isnull=True)}
+    rows = []
+    needed = Counter()
+    chosen = {}
+    for key, qty in quantities.items():
+        if not key.startswith('alt:'):
+            continue
+        try:
+            _, item_id, stock_id = key.split(':')
+            item = items[int(item_id)]
+            candidate = next(row for row in alternative_locations(order, item, plan)
+                             if row['stock_id'] == int(stock_id))
+        except (KeyError, ValueError, StopIteration):
+            raise MagacinError('Alternativna lokacija više nije dostupna. Ponovo unesi pronađene količine.')
+        if type(qty) is not int or qty <= 0:
+            raise MagacinError('Količina s alternativne lokacije mora biti pozitivan cijeli broj.')
+        needed[candidate['stock_id']] += qty
+        chosen[candidate['stock_id']] = (candidate, item)
+        rows.append({'key': key, 'item_id': item.pk, 'loc': candidate['label'], 'got': qty, 'need': qty, 'done': True})
+    for stock_id, qty in needed.items():
+        candidate, item = chosen[stock_id]
+        if qty > candidate['available']:
+            raise MagacinError('Na odabranoj alternativnoj lokaciji više nema dovoljno slobodne količine.')
+        if reserve and reserve_for_order(order, item.artikal, qty, variation=item.varijacija,
+                location=candidate['location'], exact=True, user=user):
+            raise MagacinError('Stanje na alternativnoj lokaciji se promijenilo. Ponovo provjeri količine.')
+    return rows
+
+
 @transaction.atomic
 def complete_paper_picking(order_id, digest, user, quantities=None):
     from .views_magacin import _unvalidated_orders_qs, apply_order_pick, order_needs_mp_check, claim_order_pick
@@ -78,7 +133,7 @@ def complete_paper_picking(order_id, digest, user, quantities=None):
         raise MagacinError('Narudžba ili lokacije su promijenjene. Odštampaj novu picking listu.')
     quantities = quantities or {}
     valid_keys = {row['key'] for row in plan['rows']}
-    if set(quantities) - valid_keys:
+    if {key for key in quantities if not key.startswith('alt:')} - valid_keys:
         raise MagacinError('Odabrani artikal nije na ovoj picking listi.')
     if plan['base_error'] or plan['overallocated']:
         raise MagacinError(plan['error'])
@@ -94,11 +149,19 @@ def complete_paper_picking(order_id, digest, user, quantities=None):
             raise MagacinError('Već potvrđeno preuzimanje se ne može mijenjati ovom listom.')
         totals[row['item_id']] += got
         lines.append(dict(row, got=got, done=True))
+    alternative_rows = _alternative_lines(order, plan, quantities)
+    for row in alternative_rows:
+        totals[row['item_id']] += row['got']
+        lines.append(row)
+    ordered = dict(order.stavke.values_list('pk', 'kolicina'))
+    if any(qty > ordered.get(item_id, 0) for item_id, qty in totals.items()):
+        raise MagacinError('Ukupna pronađena količina ne smije biti veća od naručene.')
     if order_needs_mp_check(order):
         raise MagacinError('Prvo završi provjeru artikala u maloprodaji.')
     claimed, holder = claim_order_pick(order, user)
     if not claimed:
         raise MagacinError(f"Narudžbu je već preuzeo {holder or 'drugi radnik'}.")
+    _alternative_lines(order, plan, quantities, reserve=True, user=user)
     zero_ids = [item_id for item_id, qty in totals.items() if qty == 0]
     order.stavke.filter(pk__in=zero_ids).update(wms_out_of_stock=True)
     apply_order_pick(order, lines, finalize=True, user=user, preserve_unavailable=True)
@@ -157,9 +220,9 @@ def validate_qr(request, token):
                                                        quantities if action == 'complete' else None)
                 context.update(order=order, stage='result', success=True,
                                message=f'Narudžba #{order.broj} je validatovana. Račun je usklađen s pokupljenim količinama.')
-            elif action not in (None, 'save'):
+            elif action not in (None, 'save', 'save_alternatives', 'skip_alternatives'):
                 raise MagacinError('Odaberi Da ili Ne prije potvrde narudžbe.')
-            elif data.get('mode') == 'missing' or action == 'save':
+            elif data.get('mode') == 'missing' or action in ('save', 'save_alternatives', 'skip_alternatives'):
                 context['stage'] = 'missing'
                 plan = picking_plan(order)
                 if plan['digest'] != digest:
@@ -187,6 +250,45 @@ def validate_qr(request, token):
                             raise MagacinError('Pronađena količina mora biti od 0 do količine na lokaciji sa liste.')
                         updates[row['key']] = value
                     quantities.update(updates)
+                    # Re-entering the original quantities replaces this item's previous alternative selection.
+                    quantities = {key: qty for key, qty in quantities.items() if not key.startswith(f'alt:{selected.pk}:')}
+                    context['saved'] = True
+                    remaining = int(selected.kolicina) - sum(updates.values())
+                    alternatives = alternative_locations(order, selected, plan) if remaining > 0 else []
+                    if alternatives:
+                        context.update(alternative_item=selected, alternatives=alternatives, alternative_remaining=remaining)
+                elif action in ('save_alternatives', 'skip_alternatives'):
+                    if not selected:
+                        raise MagacinError('Artikal nije na ovoj picking listi.')
+                    original = [row for row in rows if row['item_id'] == selected.pk]
+                    if not original or not all(row['key'] in quantities for row in original):
+                        raise MagacinError('Prvo potvrdi količine s originalnih lokacija.')
+                    if action == 'save_alternatives':
+                        candidates = alternative_locations(order, selected, plan)
+                        original_found = sum(quantities.get(row['key'], row['need']) for row in original)
+                        if candidates:
+                            context.update(alternative_item=selected, alternatives=candidates,
+                                           alternative_remaining=max(0, selected.kolicina - original_found))
+                        valid_inputs = {f"alt_{candidate['stock_id']}" for candidate in candidates}
+                        if any(key.startswith('alt_') and key not in valid_inputs and value not in ('', '0')
+                               for key, value in data.items()):
+                            raise MagacinError('Odabrana alternativna lokacija više nije dostupna.')
+                        quantities = {key: qty for key, qty in quantities.items() if not key.startswith(f'alt:{selected.pk}:')}
+                        for candidate in candidates:
+                            try:
+                                qty = int(data.get(f"alt_{candidate['stock_id']}", '0'))
+                            except (TypeError, ValueError):
+                                raise MagacinError('Unesi cijeli broj za alternativnu lokaciju.')
+                            if qty < 0 or qty > candidate['available']:
+                                raise MagacinError('Količina ne smije biti veća od slobodnog stanja na lokaciji.')
+                            if qty:
+                                quantities[candidate['key']] = qty
+                        found = sum(quantities.get(row['key'], row['need']) for row in original)
+                        found += sum(qty for key, qty in quantities.items() if key.startswith(f'alt:{selected.pk}:'))
+                        if found > selected.kolicina:
+                            raise MagacinError('Ukupna pronađena količina ne smije biti veća od naručene.')
+                        _alternative_lines(order, plan, quantities)
+                        context.pop('alternatives', None)
                     context['saved'] = True
                 else:
                     context['selected'] = selected
@@ -202,8 +304,15 @@ def validate_qr(request, token):
                     item_rows = [row for row in rows if row['item_id'] == item.pk]
                     if any(row['key'] in quantities for row in item_rows):
                         found = sum(quantities.get(row['key'], row['need']) for row in item_rows)
+                        found += sum(qty for key, qty in quantities.items() if key.startswith(f'alt:{item.pk}:'))
+                        selected_locations = []
+                        for key, qty in quantities.items():
+                            if key.startswith(f'alt:{item.pk}:'):
+                                stock = WarehouseStock.objects.filter(pk=int(key.rsplit(':', 1)[-1])).select_related('location').first()
+                                if stock:
+                                    selected_locations.append({'label': stock.location.sifra, 'quantity': qty})
                         summary.append({'name': item.product_naziv or item.naziv, 'code': item.sifra,
-                                        'ordered': item.kolicina, 'found': found})
+                                        'ordered': item.kolicina, 'found': found, 'locations': selected_locations})
                 context['summary'] = summary
     except (MagacinError, ValueError) as exc:
         context.update(message=str(exc), error=True)

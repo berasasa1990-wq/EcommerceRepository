@@ -56,7 +56,7 @@
         panel.hidden = false;
         retry.hidden = true;
         status.textContent = 'Pokrećem kameru…';
-        panel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+        panel.scrollIntoView({behavior: 'smooth', block: 'start'});
         await stop();
         if (currentSession !== session) return;
         handled = false;
