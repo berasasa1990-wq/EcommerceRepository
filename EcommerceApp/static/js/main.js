@@ -858,7 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function startAutoplay() {
-            autoplayTimer = setInterval(() => goToSlide(currentIndex + 1), 5000);
+            autoplayTimer = setInterval(() => goToSlide(currentIndex + 1), 3000);
         }
 
         function resetAutoplay() {
@@ -915,7 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let index = 0;
             let autoplayTimer = null;
             let gap = 8;
-            const autoplayMs = parseInt(root.dataset.autoplayMs, 10) || 4500;
+            const autoplayMs = parseInt(root.dataset.autoplayMs, 10) || 3000;
 
             function visibleCount() {
                 const mobile = parseInt(root.dataset.visibleMobile, 10) || 2;

@@ -82,6 +82,30 @@ class SiteSettings(models.Model):
         upload_to='site/mobile/', blank=True, verbose_name='Početni banner — slika za telefon',
         help_text='Preporučeno 900 × 720 px. Koristi se samo na telefonu. Ako je prazno, koristi se slika za računar.',
     )
+    hero_video_desktop = models.FileField(
+        upload_to=home_mobile_video_upload_to, blank=True,
+        validators=[validate_home_mobile_video],
+        verbose_name='Početni banner — video za desktop',
+        help_text='MP4, preporučeno 1920 × 720 px, najviše 10 sekundi i 20 MB. Samo desktop: automatsko puštanje bez zvuka i kontrola; ima prednost nad slikom.',
+    )
+    promo_new_video_desktop = models.FileField(
+        upload_to=home_mobile_video_upload_to, blank=True,
+        validators=[validate_home_mobile_video],
+        verbose_name='Lijevi banner — video za desktop',
+        help_text='MP4, preporučeno 1200 × 560 px, najviše 10 sekundi i 20 MB. Samo desktop: automatsko puštanje bez zvuka i kontrola; ima prednost nad slikom.',
+    )
+    promo_sale_video_desktop = models.FileField(
+        upload_to=home_mobile_video_upload_to, blank=True,
+        validators=[validate_home_mobile_video],
+        verbose_name='Desni banner — video za desktop',
+        help_text='MP4, preporučeno 1200 × 560 px, najviše 10 sekundi i 20 MB. Samo desktop: automatsko puštanje bez zvuka i kontrola; ima prednost nad slikom.',
+    )
+    bestsellers_video_desktop = models.FileField(
+        upload_to=home_mobile_video_upload_to, blank=True,
+        validators=[validate_home_mobile_video],
+        verbose_name='Banner ispod najprodavanijih proizvoda — video za desktop',
+        help_text='MP4, preporučeno 1600 × 600 px, najviše 10 sekundi i 20 MB. Samo desktop: automatsko puštanje bez zvuka i kontrola; ima prednost nad slikom.',
+    )
     hero_video_mobilni = models.FileField(
         upload_to=home_mobile_video_upload_to, blank=True,
         validators=[validate_home_mobile_video],

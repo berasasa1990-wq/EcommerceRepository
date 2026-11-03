@@ -2,12 +2,14 @@
     const videos = [...document.querySelectorAll('[data-home-autoplay]')];
     if (!videos.length) return;
     const mobile = window.matchMedia('(max-width: 767px)');
+    const desktop = window.matchMedia('(min-width: 1025px)');
     const pending = new WeakSet();
     const timers = new WeakMap();
 
     function visible(video) {
         const rect = video.getBoundingClientRect();
-        return mobile.matches && !document.hidden && rect.width > 0 && rect.height > 0
+        const deviceMatches = video.dataset.homeAutoplay === 'desktop' ? desktop.matches : mobile.matches;
+        return deviceMatches && !document.hidden && rect.width > 0 && rect.height > 0
             && rect.bottom > 0 && rect.top < window.innerHeight;
     }
 

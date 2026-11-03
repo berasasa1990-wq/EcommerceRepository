@@ -211,5 +211,7 @@ def validate_qr(request, token):
     context['changes'] = _signed_changes(order_id, digest, quantities)
     response = render(request, 'staff/magacin/wms_qr.html', context, status=status)
     response['Cache-Control'] = 'no-store'
-    response['Referrer-Policy'] = 'no-referrer'
+    # HTTPS form submissions need a same-origin Referer for Django's CSRF check.
+    # Keep the signed picking URL private when navigating to another origin.
+    response['Referrer-Policy'] = 'same-origin'
     return response

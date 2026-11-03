@@ -151,3 +151,26 @@ html body .home-uploaded-banner__video { display: none; }
 .ref-promo-upload__video::-webkit-media-controls,
 .ref-promo-upload__video::-webkit-media-controls-enclosure,
 .ref-promo-upload__video::-webkit-media-controls-panel { display: none !important; }
+
+/* Desktop video has its own upload and never replaces mobile media. */
+html body .home-uploaded-banner__desktop-video,
+html body .ref-promos--uploads > .ref-promo-upload--desktop-video { display: none !important; }
+.home-uploaded-banner__desktop-video::-webkit-media-controls,
+.home-uploaded-banner__desktop-video::-webkit-media-controls-enclosure,
+.home-uploaded-banner__desktop-video::-webkit-media-controls-panel { display: none !important; }
+@media (max-width: 1024px) {
+    html body main > .home-uploaded-banner--desktop-video-only { display: none !important; }
+}
+@media (min-width: 1025px) {
+    html body .home-uploaded-banner__desktop-video {
+        display: block !important;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 8 / 3;
+        object-fit: cover;
+    }
+    html body .home-uploaded-banner--has-desktop-video picture { display: none !important; }
+    html body .ref-promos--uploads > .ref-promo-upload--desktop-video { display: block !important; }
+    html body .ref-promos--uploads > .ref-promo--desktop-video-replaced { display: none !important; }
+    html body .ref-promo-upload--desktop-video { aspect-ratio: 1200 / 560; overflow: hidden; }
+}

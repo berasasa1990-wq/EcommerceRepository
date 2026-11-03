@@ -14,7 +14,7 @@
     <p class="stock{% if product.na_stanju %} stock--available{% endif %}">{% if product.na_stanju %}Na stanju · {{ product.stanje }} kom{% else %}Nije na stanju{% endif %}</p>
     <div class="product-prices"><strong class="price">{{ product.katalog_prikazna_cijena }} KM</strong>{% if product.katalog_na_akciji %}<s>{{ product.katalog_bazna_cijena }} KM</s>{% endif %}</div>
     {% if site_settings.besplatna_dostava_od and product.katalog_prikazna_cijena >= site_settings.besplatna_dostava_od %}<span class="free-delivery">Besplatna dostava</span>{% endif %}
-    <div class="product-brand-row">{% if product.brend %}<span class="product-brand">{% if product.brend.slika %}<img src="{{ product.brend.slika.url }}" alt="{{ product.brend.naziv }}" loading="lazy" width="85" height="24">{% else %}{{ product.brend.naziv }}{% endif %}</span>{% endif %}{% include 'partials/product_sale_remaining.html' %}</div>
+    <div class="product-brand-row">{% if product.brend %}<span class="product-brand">{{ product.brend.naziv }}</span>{% endif %}{% include 'partials/product_sale_remaining.html' %}</div>
     {% with card_variations=product.varijacije.all %}
     {% if card_variations|length > 1 %}<div class="catalog-variation-data" hidden>{% for var in card_variations %}<span data-catalog-variation data-variation-id="{{ var.pk }}" data-variation-name="{{ var.naziv }}"></span>{% endfor %}</div>{% endif %}
     {% if product.na_stanju %}

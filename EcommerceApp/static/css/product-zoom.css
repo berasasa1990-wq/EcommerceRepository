@@ -26,3 +26,9 @@ html body.product-mobile-reference #mainProductImageWrap button.pd-zoom-button s
     color: #ff5a00 !important;
     stroke: currentColor;
 }
+
+@media (max-width: 767px) {
+    html body.product-mobile-reference #mainProductImageWrap button.pd-zoom-button {
+        display: none !important;
+    }
+}

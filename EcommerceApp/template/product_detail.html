@@ -3,9 +3,9 @@
 {% block body_class %}product-mobile-reference catalog-header-reference{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/product-zoom.css' %}?v=20261030-white-orange-zoom">
+<link rel="stylesheet" href="{% static 'css/product-zoom.css' %}?v=20261103-hide-mobile-zoom">
 <link rel="stylesheet" href="{% static 'css/product-inline-qty.v20260912.css' %}">
-<link rel="stylesheet" href="{% static 'css/product-reference.css' %}?v=20261030-policies-alignment">
+<link rel="stylesheet" href="{% static 'css/product-reference.css' %}?v=20261103-thumbnails-below">
 {% if staff_product_tools %}
 <link rel="stylesheet" href="{% static 'css/staff-image-fit.css' %}?v=20261030-orange-buttons-badges">
 {% endif %}
@@ -498,7 +498,6 @@
                 </div>
             </div>
 
-            {% if product.brend %}<div class="pd-reference-brand-logo">{% if product.brend.slika %}<img src="{{ product.brend.slika.url }}" alt="{{ product.brend.naziv }}" width="70" height="24" loading="lazy">{% else %}{{ product.brend.naziv }}{% endif %}</div>{% endif %}
 
             {% if not product.varijacije.count %}
             {% if not product.na_stanju %}

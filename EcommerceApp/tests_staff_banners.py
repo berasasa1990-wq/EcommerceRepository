@@ -365,3 +365,59 @@ class BannerManagerTests(TestCase):
         self.assertNotIn('controls', html)
         self.assertIn('/?noviteti=1', html)
         self.assertIn('/?akcija=1', html)
+
+    @patch('EcommerceApp.views._base_context', return_value={})
+    def test_all_fixed_banners_offer_desktop_video(self, context):
+        for key in ('hero', 'promo_new', 'promo_sale', 'bestsellers'):
+            with self.subTest(key=key):
+                response = staff_banners(self.request('?edit=' + key))
+                self.assertContains(response, f'name="{key}_video_desktop"')
+                self.assertContains(response, 'accept="video/mp4,.mp4"')
+
+    @patch('EcommerceApp.views.messages.success')
+    def test_desktop_video_upload_clear_and_delete_preserve_mobile(self, success):
+        import tempfile
+        from .tests_home_mobile_video import video
+        site = SiteSettings.load()
+        site.hero_video_mobilni = 'site/mobile/original.mp4'
+        site.save()
+        with tempfile.TemporaryDirectory() as directory, override_settings(MEDIA_ROOT=directory):
+            for key in ('hero', 'promo_new', 'promo_sale', 'bestsellers'):
+                link = 'hero_link' if key == 'hero' else 'bestsellers_banner_link' if key == 'bestsellers' else f'{key}_link'
+                response = staff_banners(self.request('?edit=' + key, {
+                    link: 'https://example.com/offer/', f'{key}_video_desktop': video(5),
+                }))
+                self.assertEqual(response.status_code, 302)
+                site.refresh_from_db()
+                field = getattr(site, f'{key}_video_desktop')
+                self.assertTrue(field.storage.exists(field.name))
+            self.assertEqual(site.hero_video_mobilni.name, 'site/mobile/original.mp4')
+            response = staff_banners(self.request('?edit=hero', {
+                'hero_link': 'https://example.com/offer/', 'hero_video_desktop-clear': 'on',
+            }))
+            self.assertEqual(response.status_code, 302)
+            site.refresh_from_db()
+            self.assertFalse(site.hero_video_desktop)
+            self.assertTrue(site.hero_video_mobilni)
+            for key in ('promo_new', 'promo_sale', 'bestsellers'):
+                self.assertEqual(staff_banners(self.request(data={'delete_banner': key})).status_code, 302)
+                site.refresh_from_db()
+                self.assertFalse(getattr(site, f'{key}_video_desktop'))
+
+    def test_desktop_video_render_preserves_mobile_sources_and_links(self):
+        from django.template.loader import render_to_string
+        site = SiteSettings(hero_video_desktop='site/desktop.mp4', hero_video_mobilni='site/mobile.mp4',
+                            hero_link='https://example.com/offer/', hero_slika_mobilna='site/mobile.jpg',
+                            promo_new_video_desktop='site/left.mp4', promo_sale_video_desktop='site/right.mp4',
+                            bestsellers_video_desktop='site/bestsellers.mp4')
+        hero = render_to_string('partials/home_uploaded_banner.html', {'site_settings': site})
+        self.assertIn('data-home-autoplay="desktop"', hero)
+        self.assertIn('data-src="/media/site/desktop.mp4"', hero)
+        self.assertIn('data-src="/media/site/mobile.mp4"', hero)
+        self.assertIn('srcset="/media/site/mobile.jpg"', hero)
+        self.assertIn('href="https://example.com/offer/"', hero)
+        promos = render_to_string('partials/home_reference_promos.html', {'site_settings': site})
+        self.assertEqual(promos.count('data-home-autoplay="desktop"'), 2)
+        bestsellers = render_to_string('partials/home_bestsellers_banner.html', {'site_settings': site})
+        self.assertIn('home-uploaded-banner--desktop-video-only', bestsellers)
+        self.assertIn('data-src="/media/site/bestsellers.mp4"', bestsellers)

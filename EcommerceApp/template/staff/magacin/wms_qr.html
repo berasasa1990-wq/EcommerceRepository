@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="bs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Picking narudžbe #{{ order.broj }}</title>
 <style>
@@ -7,22 +8,24 @@
 {% if message %}<p role="status" class="{% if error %}error{% elif success %}success{% endif %}">{{ message }}</p>{% endif %}
 {% if stage == 'question' %}
 <h2>Da li su svi artikli sa liste pokupljeni?</h2><p>Odaberi „Da“ samo ako su preuzete sve količine sa svih lokacija navedenih na picking listi.</p>
-<div class="actions"><form method="post">{% csrf_token %}<button name="action" value="all" type="submit">Da, validatuj narudžbu</button></form><a class="button secondary" href="?mode=missing">Ne, unesi pronađene količine</a></div>
+<div class="actions"><form method="post" data-csrf-refresh-url="{% url 'auth_csrf_token' %}">{% csrf_token %}<button name="action" value="all" type="submit">Da, validatuj narudžbu</button></form><a class="button secondary" href="?mode=missing">Ne, unesi pronađene količine</a></div>
 {% elif stage == 'missing' %}
 <h2>Koji artikal nije pokupljen u cijelosti?</h2>
 <form method="get"><input type="hidden" name="mode" value="missing"><input type="hidden" name="changes" value="{{ changes }}"><label for="articleSearch">Šifra ili naziv artikla</label><input id="articleSearch" name="q" value="{{ query }}" placeholder="Pretraži artikle ove narudžbe" autocomplete="off"><div class="actions"><button type="submit">Pronađi artikal</button></div></form>
 {% if query %}<div class="matches">{% for item in matches %}<form method="get"><input type="hidden" name="mode" value="missing"><input type="hidden" name="changes" value="{{ changes }}"><button type="submit" name="item" value="{{ item.pk }}" class="result"><strong>{{ item.product_naziv|default:item.naziv }}</strong><small>Šifra: {{ item.sifra|default:'—' }} · Naručeno: {{ item.kolicina }}</small></button></form>{% empty %}<p>Nema artikla s tom šifrom ili nazivom u ovoj narudžbi.</p>{% endfor %}</div>{% endif %}
 {% if selected %}
 <section><h2>{{ selected.product_naziv|default:selected.naziv }}</h2><p>Šifra: {{ selected.sifra|default:'—' }} · Naručeno: {{ selected.kolicina }}</p><p>Upiši koliko je pronađeno. Ako artikal nije pronađen, unesi <strong>0</strong>.</p>
-<form method="post">{% csrf_token %}<input type="hidden" name="action" value="save"><input type="hidden" name="item" value="{{ selected.pk }}"><input type="hidden" name="changes" value="{{ changes }}">
+<form method="post" data-csrf-refresh-url="{% url 'auth_csrf_token' %}">{% csrf_token %}<input type="hidden" name="action" value="save"><input type="hidden" name="item" value="{{ selected.pk }}"><input type="hidden" name="changes" value="{{ changes }}">
 {% for row in item_rows %}<div class="location"><label for="{{ row.input_name }}">Pronađeno na lokaciji {{ row.display_loc }}</label><p class="muted">Za uzeti sa liste: {{ row.need }}</p><input type="number" inputmode="numeric" id="{{ row.input_name }}" name="{{ row.input_name }}" min="0" max="{% if row.missing %}0{% else %}{{ row.need }}{% endif %}" value="{% if row.missing %}0{% else %}{{ row.found }}{% endif %}" step="1" required></div>{% endfor %}
 <div class="actions"><button type="submit">Potvrdi pronađenu količinu</button></div></form></section>
 {% endif %}
 {% if saved %}<p role="status" class="success">Količina je zabilježena za završnu potvrdu.</p>{% endif %}
 {% if summary %}<h2>Pregled izmjena</h2><div class="summary-wrap"><table class="summary"><thead><tr><th>Artikal</th><th>Naručeno</th><th>Pronađeno</th></tr></thead><tbody>{% for item in summary %}<tr><td>{{ item.name }}<br><small>{{ item.code }}</small></td><td>{{ item.ordered }}</td><td>{% if item.found == 0 %}Nema na stanju{% else %}{{ item.found }}{% endif %}</td></tr>{% endfor %}</tbody></table></div>
-<p>Za ostale artikle potvrđuješ sve količine s picking liste. Po potrebi prvo pronađi i ispravi još neki artikal.</p><form method="post">{% csrf_token %}<input type="hidden" name="action" value="complete"><input type="hidden" name="changes" value="{{ changes }}"><div class="actions"><button type="submit">Potvrdi izmjene i validatuj narudžbu</button></div></form>{% endif %}
+<p>Za ostale artikle potvrđuješ sve količine s picking liste. Po potrebi prvo pronađi i ispravi još neki artikal.</p><form method="post" data-csrf-refresh-url="{% url 'auth_csrf_token' %}">{% csrf_token %}<input type="hidden" name="action" value="complete"><input type="hidden" name="changes" value="{{ changes }}"><div class="actions"><button type="submit">Potvrdi izmjene i validatuj narudžbu</button></div></form>{% endif %}
 {% elif stage == 'result' %}
 {% if success %}<p class="success"><strong>✓ Validatovana</strong> — narudžba je uklonjena iz nevalidatovanih u WMS-u.</p><p><a class="button secondary" href="{% url 'staff_magacin_wms' %}?validirane=1">✓ Validatovane narudžbe</a></p>{% endif %}
 <a class="button" href="{% url 'staff_order_detail' order.broj %}">Otvori ažurirani račun</a>
 {% endif %}
-<p><a href="{% url 'staff_magacin_wms' %}">← WMS</a></p></main></body></html>
+<p><a href="{% url 'staff_magacin_wms' %}">← WMS</a></p></main>
+<script src="{% static 'js/csrf-session.js' %}?v=20261103-wms-qr" data-cookie-name="{{ csrf_cookie_name|default:'csrftoken' }}" defer></script>
+</body></html>

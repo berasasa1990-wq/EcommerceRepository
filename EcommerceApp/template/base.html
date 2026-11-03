@@ -84,7 +84,7 @@
     <link rel="dns-prefetch" href="https://www.google-analytics.com">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
     <style>@media(max-width:1024px){.desktop-category-extra,.desktop-category-nav,.desktop-sale-link{display:none!important}}</style>
-    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20261030-orange-buttons-badges" media="(min-width: 1025px)">
+    <link rel="stylesheet" href="{% static 'css/desktop-reference.css' %}?v=20261103-full-width-images" media="(min-width: 1025px)">
 
     {% if meta_pixel_id %}
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin>
@@ -415,7 +415,7 @@
     <div class="site-chrome-backdrop" aria-hidden="true"></div>
 
     <div class="site-chrome-sticky">
-    <a class="site-sale-notice" href="{% url 'home' %}?akcija=1"><strong>Iskoristi akciju - klikni ovdje!</strong></a>
+    <a class="site-sale-notice" href="{% url 'register' %}"><strong>Registruj se i ostvari 10% pri prvoj kupovini</strong></a>
     <div class="promo-bar site-contact-strip">
         <div class="site-viber-contacts">
             <a href="viber://chat?number=%2B38765838653" aria-label="Otvori Viber za 065838653"><img src="{% static 'img/contact/viber.svg' %}" alt="" aria-hidden="true" width="22" height="22">065838653</a>
@@ -545,7 +545,7 @@
     {% endif %}
     {% block structured_data %}{% endblock %}
     <script src="{% static 'js/csrf-session.js' %}?v=20261030-orange-buttons-badges" data-cookie-name="{{ csrf_cookie_name }}" defer></script>
-    <script src="{% static 'js/main.min.js' %}?v=20261102-mobile-home-autoplay" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20261103-autoplay-three-seconds" defer></script>
     <script src="{% static 'js/desktop-reference.js' %}?v=20261030-orange-buttons-badges" defer></script>
     <script src="{% static 'js/stock-notify.js' %}?v=20261030-orange-buttons-badges" defer></script>
     {% if site_settings.javno_online_posjetioci %}

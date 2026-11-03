@@ -344,3 +344,71 @@ html body.product-mobile-reference .pd-reference-description-link,
 html body.product-mobile-reference .product-detail-opis-col > h2 {
     color: #ff5a00 !important;
 }
+
+/* Fill the main product photo frame on every screen size. */
+html body.product-mobile-reference #mainProductImageWrap .pd-reference-toolbar {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 2;
+    min-height: 0;
+    padding: 10px;
+    pointer-events: none;
+}
+html body.product-mobile-reference #mainProductImageWrap .pd-reference-toolbar button {
+    pointer-events: auto;
+}
+html body.product-mobile-reference #mainProductImageWrap .pd-reference-photo {
+    position: relative;
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important;
+    padding: 0 !important;
+    overflow: hidden;
+}
+html body.product-mobile-reference #mainProductImageWrap .pd-reference-photo img#mainProductImage {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    object-fit: cover !important;
+    object-position: center !important;
+}
+
+/* Start the additional photos directly below the main image. */
+html body.product-mobile-reference .product-gallery.has-thumbnails {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+html body.product-mobile-reference .product-gallery #mainProductImageWrap {
+    width: 100%;
+    margin: 0;
+}
+html body.product-mobile-reference .product-gallery .pd-gallery-bar {
+    position: static;
+    width: 100%;
+    height: auto;
+    margin: 6px 0 0;
+    padding: 0;
+}
+html body.product-mobile-reference .product-gallery .pd-gallery-bar .product-thumbnails {
+    position: static;
+    inset: auto;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    width: 100%;
+    height: auto;
+    padding: 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+html body.product-mobile-reference .product-gallery .product-thumbnail {
+    flex-shrink: 0;
+}

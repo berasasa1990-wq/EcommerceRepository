@@ -267,3 +267,55 @@ class PaperPickingTests(TestCase):
         ):
             validated = magacin_wms(self.request(data={'validirane': '1'}))
         self.assertEqual([o.pk for o in validated['orders']], [self.order.pk])
+
+    def test_https_qr_confirmation_preserves_referer_and_validates_once(self):
+        import re
+        from django.urls import reverse
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
+        url = reverse('staff_magacin_wms_validate', kwargs={'token': self.token()})
+        page = client.get(url, secure=True)
+        self.assertEqual(page.status_code, 200)
+        self.assertEqual(page['Referrer-Policy'], 'same-origin')
+        self.assertIn('no-store', page['Cache-Control'])
+        self.assertContains(page, 'data-csrf-refresh-url=')
+        self.assertContains(page, 'js/csrf-session.js')
+        token = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', page.content.decode()).group(1)
+        referer = 'https://testserver' + url
+        response = client.post(url, {'action': 'all', 'csrfmiddlewaretoken': token},
+                               secure=True, HTTP_REFERER=referer)
+        self.assertEqual(response.status_code, 200)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertEqual(self.stock(), [0, 1])
+        repeated = client.post(url, {'action': 'all', 'csrfmiddlewaretoken': token},
+                               secure=True, HTTP_REFERER=referer)
+        self.assertEqual(repeated.status_code, 200)
+        self.assertEqual(self.stock(), [0, 1])
+
+    def test_qr_confirmation_refreshes_token_after_login_rotation(self):
+        from django.middleware.csrf import _get_new_csrf_string
+        from django.urls import reverse
+        from django.conf import settings
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
+        url = reverse('staff_magacin_wms_validate', kwargs={'token': self.token()})
+        client.get(url, secure=True)
+        # Another tab may rotate the cookie while the scanned QR page is open.
+        client.cookies[settings.CSRF_COOKIE_NAME] = _get_new_csrf_string()
+        refresh = client.get(reverse('auth_csrf_token'), secure=True)
+        response = client.post(url, {'action': 'all', 'csrfmiddlewaretoken': refresh.json()['csrfToken']},
+                               secure=True, HTTP_REFERER='https://testserver' + url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.stock(), [0, 1])
+
+    def test_qr_confirmation_still_rejects_cross_origin_requests(self):
+        from django.urls import reverse
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
+        url = reverse('staff_magacin_wms_validate', kwargs={'token': self.token()})
+        token = client.get(reverse('auth_csrf_token'), secure=True).json()['csrfToken']
+        response = client.post(url, {'action': 'all', 'csrfmiddlewaretoken': token}, secure=True,
+                               HTTP_ORIGIN='https://other.example', HTTP_REFERER='https://other.example/')
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.stock(), [2, 4])

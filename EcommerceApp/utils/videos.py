@@ -116,6 +116,10 @@ def validate_home_mobile_video(uploaded_file):
 
     if not uploaded_file:
         return
+    # Existing files were validated when uploaded. Do not fetch them again
+    # while saving another banner or changing its link.
+    if getattr(uploaded_file, '_committed', False):
+        return
     if Path(uploaded_file.name).suffix.lower() != '.mp4':
         raise ValidationError('Video mora biti u MP4 formatu.')
     if uploaded_file.size > BANNER_VIDEO_MAX_BYTES:
