@@ -45,7 +45,7 @@ class HomepageProductImageTests(TestCase):
         special = render_to_string('partials/product_image.html', {'product': self.product, 'use_home_image': True})
         normal = render_to_string('partials/product_image.html', {'product': self.product})
         self.assertIn('/media/products/homepage/special.png', special)
-        self.assertNotIn('/media/products/main.png', special)
+        self.assertIn('media="(min-width: 1025px)" srcset="/media/products/main.png"', special)
         self.assertIn('/media/products/main.png', normal)
         self.assertNotIn('/media/products/homepage/special.png', normal)
         self.product.slika_pocetna = ''
@@ -147,10 +147,10 @@ class HomepageProductImageTests(TestCase):
             html = self.client.get(reverse('home')).content.decode()
         featured = re.search(r'<section[^>]*home-products--izdvojeno[^>]*>(.*?)</section>', html, re.S).group(1)
         self.assertIn('/media/products/homepage/special.png', featured)
-        # Every homepage section uses the same override for this product.
+        # Mobile keeps the homepage override; desktop uses the main product image.
         latest = re.search(r'<section[^>]*home-products--novo[^>]*>(.*?)</section>', html, re.S).group(1)
         self.assertIn('/media/products/homepage/special.png', latest)
-        self.assertNotIn('/media/products/main.png', latest)
+        self.assertIn('media="(min-width: 1025px)" srcset="/media/products/main.png"', latest)
         detail = self.client.get(self.product.get_absolute_url()).content.decode()
         self.assertIn('/media/products/main.png', detail)
         self.assertNotIn('/media/products/homepage/special.png', detail)
