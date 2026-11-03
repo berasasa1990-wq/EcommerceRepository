@@ -315,3 +315,53 @@ class BannerManagerTests(TestCase):
             self.assertEqual(response.status_code, 302)
             site.refresh_from_db()
             self.assertFalse(site.hero_video_mobilni)
+
+    @patch('EcommerceApp.views._base_context', return_value={})
+    def test_both_promo_editors_offer_mp4_upload(self, context):
+        for key in ('promo_new', 'promo_sale'):
+            response = staff_banners(self.request('?edit=' + key))
+            self.assertContains(response, f'name="{key}_video_mobilni"')
+            self.assertContains(response, 'accept="video/mp4,.mp4"')
+
+    @patch('EcommerceApp.views.messages.success')
+    def test_promo_video_uploads_are_independent_and_can_be_cleared(self, success):
+        import tempfile
+        from .tests_home_mobile_video import video
+        site = SiteSettings.load()
+        with tempfile.TemporaryDirectory() as directory, override_settings(MEDIA_ROOT=directory):
+            for key in ('promo_new', 'promo_sale'):
+                response = staff_banners(self.request('?edit=' + key, {
+                    f'{key}_link': '/?akcija=1', f'{key}_video_mobilni': video(5),
+                }))
+                self.assertEqual(response.status_code, 302)
+            site.refresh_from_db()
+            self.assertNotEqual(site.promo_new_video_mobilni.name, site.promo_sale_video_mobilni.name)
+            for key in ('promo_new', 'promo_sale'):
+                field = getattr(site, f'{key}_video_mobilni')
+                self.assertTrue(field.storage.exists(field.name))
+            sale_name = site.promo_sale_video_mobilni.name
+            response = staff_banners(self.request('?edit=promo_new', {
+                'promo_new_link': '/?noviteti=1', 'promo_new_video_mobilni-clear': 'on',
+            }))
+            self.assertEqual(response.status_code, 302)
+            site.refresh_from_db()
+            self.assertFalse(site.promo_new_video_mobilni)
+            self.assertEqual(site.promo_sale_video_mobilni.name, sale_name)
+            response = staff_banners(self.request(data={'delete_banner': 'promo_sale'}))
+            self.assertEqual(response.status_code, 302)
+            site.refresh_from_db()
+            self.assertFalse(site.promo_sale_video_mobilni)
+
+    def test_promo_videos_keep_links_and_mobile_autoplay(self):
+        from django.template.loader import render_to_string
+        site = SiteSettings(promo_new_video_mobilni='site/new.mp4',
+                            promo_sale_video_mobilni='site/sale.mp4',
+                            promo_new_slika='site/new.jpg', promo_sale_slika='site/sale.jpg')
+        html = render_to_string('partials/home_reference_promos.html', {'site_settings': site})
+        self.assertEqual(html.count('data-home-autoplay autoplay muted loop playsinline'), 2)
+        self.assertIn('data-src="/media/site/new.mp4"', html)
+        self.assertIn('data-src="/media/site/sale.mp4"', html)
+        self.assertIn('ref-promo-upload ref-promo--desktop-only', html)
+        self.assertNotIn('controls', html)
+        self.assertIn('/?noviteti=1', html)
+        self.assertIn('/?akcija=1', html)

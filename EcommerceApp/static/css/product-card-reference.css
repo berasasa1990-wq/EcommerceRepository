@@ -184,3 +184,18 @@ html body .pd-similar-card h3{font-size:12px;line-height:1.35}
         transform: scale(1.035) !important;
     }
 }
+
+/* Keep room for three lines of product names in every listing. */
+html body .product-catalog article.product-card.product-card--catalog.product-card--reference-design.product-card--unified.product-card--unified .product-card__title {
+    -webkit-line-clamp: 3 !important;
+    height: auto !important;
+    min-height: 54px !important;
+    max-height: 54px !important;
+    white-space: normal !important;
+}
+@media (max-width: 767px) {
+    html body .product-catalog article.product-card.product-card--catalog.product-card--reference-design.product-card--unified.product-card--unified .product-card__title {
+        min-height: 51px !important;
+        max-height: 51px !important;
+    }
+}

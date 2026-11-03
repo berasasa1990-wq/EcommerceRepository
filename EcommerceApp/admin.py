@@ -786,6 +786,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('bestsellers_banner_slika', 'bestsellers_banner_link'),
             'description': '1600 × 600 px, najviše 80 KB nakon automatske optimizacije. Bez slike se ne prikazuje.',
         }),
+        ('Mobilni video — lijevi i desni banner', {'fields': ('promo_new_video_mobilni', 'promo_sale_video_mobilni')}),
         ('Boja', {
             'fields': ('boja_menija',),
             'description': 'Odaberi Bijela ili Crna, pa sačuvaj. Promjena važi za meni kategorija i pogodnosti ispod banera na računaru i mobitelu.',

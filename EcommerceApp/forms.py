@@ -1141,8 +1141,9 @@ class HeroBannerSettingsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if 'hero_video_mobilni' in self.fields:
-            self.fields['hero_video_mobilni'].widget.attrs['accept'] = 'video/mp4,.mp4'
+        for name in ('hero_video_mobilni', 'promo_new_video_mobilni', 'promo_sale_video_mobilni'):
+            if name in self.fields:
+                self.fields[name].widget.attrs['accept'] = 'video/mp4,.mp4'
         if 'hero_link' in self.fields:
             self.fields['hero_link'].required = False
         if 'hero_slika_mobilna' in self.fields:

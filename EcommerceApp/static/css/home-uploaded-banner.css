@@ -145,3 +145,9 @@ html body .home-uploaded-banner__video { display: none; }
     }
     html body .home-uploaded-banner--has-mobile-video picture { display: none; }
 }
+
+/* Both mobile promo videos use the existing autoplay controller. */
+.ref-promo-upload__video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ref-promo-upload__video::-webkit-media-controls,
+.ref-promo-upload__video::-webkit-media-controls-enclosure,
+.ref-promo-upload__video::-webkit-media-controls-panel { display: none !important; }

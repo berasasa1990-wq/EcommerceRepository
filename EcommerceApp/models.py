@@ -127,6 +127,18 @@ class SiteSettings(models.Model):
     bestsellers_banner_link = models.URLField(
         max_length=500, blank=True, verbose_name='Link bannera ispod najprodavanijih proizvoda',
     )
+    promo_new_video_mobilni = models.FileField(
+        upload_to=home_mobile_video_upload_to, blank=True,
+        validators=[validate_home_mobile_video],
+        verbose_name='Lijevi banner — video za telefon',
+        help_text='MP4, preporučeno 1000 × 625 px, najviše 10 sekundi i 20 MB. Na telefonu zamjenjuje sliku i automatski se pušta bez zvuka i kontrola.',
+    )
+    promo_sale_video_mobilni = models.FileField(
+        upload_to=home_mobile_video_upload_to, blank=True,
+        validators=[validate_home_mobile_video],
+        verbose_name='Desni banner — video za telefon',
+        help_text='MP4, preporučeno 1000 × 625 px, najviše 10 sekundi i 20 MB. Na telefonu zamjenjuje sliku i automatski se pušta bez zvuka i kontrola.',
+    )
     promo_new_slika = models.ImageField(
         upload_to='site/promos/', blank=True, verbose_name='Noviteti — slika bannera',
         help_text='Preporučeno 1200 × 560 px. Tekst i grafiku pripremite unutar slike.',

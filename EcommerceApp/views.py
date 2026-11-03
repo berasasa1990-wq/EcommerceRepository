@@ -6667,7 +6667,7 @@ def staff_banners(request):
                      'promo_new': 'promo_new_slika_mobilna', 'promo_sale': 'promo_sale_slika_mobilna'}
     def banner_fields(key):
         return (fixed_banners[key][:2] + ((mobile_fields[key],) if key in mobile_fields else ())
-                + (('hero_video_mobilni',) if key == 'hero' else ()))
+                + ((f'{key}_video_mobilni',) if key in ('hero', 'promo_new', 'promo_sale') else ()))
 
     site = SiteSettings.load()
     if request.method == 'POST' and 'delete_banner' in request.POST:
@@ -6743,7 +6743,7 @@ def staff_banners(request):
         'image_editors': image_editors, 'extra_fields': extra_fields,
         'hero_list_image': site.hero_slika or site.hero_slika_mobilna,
         'bestsellers_list_image': site.bestsellers_banner_slika or site.bestsellers_banner_slika_mobilna,
-        'banner_site': site, 'promo_banners': [{'key': key, 'title': fixed_banners[key][2], 'image': getattr(site, fixed_banners[key][0]) or getattr(site, mobile_fields[key]), 'help': 'Računar: 1200 × 560 px · Telefon: 1000 × 625 px'} for key in ('promo_new', 'promo_sale')], 'banners': Banner.objects.order_by('redoslijed', 'pk'),
+        'banner_site': site, 'promo_banners': [{'key': key, 'title': fixed_banners[key][2], 'video': getattr(site, f'{key}_video_mobilni'), 'image': getattr(site, fixed_banners[key][0]) or getattr(site, mobile_fields[key]), 'help': 'Računar: 1200 × 560 px · Telefon: 1000 × 625 px'} for key in ('promo_new', 'promo_sale')], 'banners': Banner.objects.order_by('redoslijed', 'pk'),
         'preview_mobile_image': getattr(site, mobile_fields[editing]) if editing in mobile_fields else (getattr(form.instance, 'slika_mobilna', None) if form else None),
         'preview_image': getattr(site, fixed_banners[editing][0]) if editing in fixed_banners else (getattr(form.instance, 'slika', None) if form else None),
     })

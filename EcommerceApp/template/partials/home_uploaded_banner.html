@@ -2,8 +2,8 @@
 <section class="home-uploaded-banner{% if not site_settings.hero_slika %} home-uploaded-banner--mobile-only{% endif %}{% if site_settings.hero_video_mobilni %} home-uploaded-banner--has-mobile-video{% endif %}" aria-label="Promotivna ponuda">
     {% if site_settings.hero_link %}<a href="{{ site_settings.hero_link }}" aria-label="Pogledaj promotivnu ponudu">{% endif %}
     {% if site_settings.hero_video_mobilni %}
-    <video class="home-uploaded-banner__video" autoplay muted loop playsinline preload="none" width="1080" height="1350" aria-label="Promotivna ponuda">
-        <source src="{{ site_settings.hero_video_mobilni.url }}" type="video/mp4" media="(max-width: 767px)">
+    <video data-home-autoplay class="home-uploaded-banner__video" autoplay muted loop playsinline preload="none" width="1080" height="1350" aria-label="Promotivna ponuda">
+        <source data-src="{{ site_settings.hero_video_mobilni.url }}" type="video/mp4">
     </video>
     {% endif %}
     {% if site_settings.hero_slika or site_settings.hero_slika_mobilna %}

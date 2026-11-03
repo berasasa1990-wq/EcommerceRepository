@@ -349,9 +349,9 @@
     }
     </style>
     {% if user.is_authenticated or request.resolver_match.url_name == 'set_builder' %}
-    <link rel="stylesheet" href="{% static 'css/storefront-theme.min.css' %}?v=20261030-orange-buttons-badges">
+    <link rel="stylesheet" href="{% static 'css/storefront-theme.min.css' %}?v=20261103-three-line-names">
     {% else %}
-    <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261030-orange-buttons-badges">
+    <link rel="stylesheet" href="{% static 'css/storefront-theme-public.min.css' %}?v=20261103-three-line-names">
     {% endif %}
     {% block warehouse_theme_css %}{% endblock %}
     <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261031-mobile-admin-edit-cart">

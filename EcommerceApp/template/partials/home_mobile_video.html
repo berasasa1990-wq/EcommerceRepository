@@ -1,8 +1,8 @@
 {% if video_file %}
 <section class="home-mobile-video" aria-label="Promotivni video">
     {% if video_link %}<a href="{{ video_link }}" aria-label="Pogledaj ponudu iz videa" style="display:block">{% endif %}
-    <video autoplay muted loop playsinline preload="none" aria-label="Promotivni video">
-        <source src="{{ video_file.url }}" type="video/mp4" media="(max-width: 767px)">
+    <video data-home-autoplay autoplay muted loop playsinline preload="none" aria-label="Promotivni video">
+        <source data-src="{{ video_file.url }}" type="video/mp4">
     </video>
     {% if video_link %}</a>{% endif %}
 </section>
