@@ -12,10 +12,8 @@
     data-category="{% if product.kategorija %}{{ product.kategorija.naziv }}{% endif %}"
     {% if product.na_stanju %}data-in-stock="1"{% endif %}
 >
-    {% if product.katalog_akcija_postotak %}
-    <span class="product-card-corner-badge product-card-corner-badge--sale">-{{ product.katalog_akcija_postotak }}%{% include "partials/product_sale_remaining.html" %}</span>
-    {% elif product.katalog_na_akciji %}
-    <span class="product-card-corner-badge product-card-corner-badge--sale">Akcija</span>
+    {% if product.katalog_na_akciji or product.katalog_akcija_postotak %}
+    <div class="product-sale-ribbon"><span>SNIŽENO</span>{% if product.katalog_akcija_postotak %}<strong>-{{ product.katalog_akcija_postotak }}%</strong>{% endif %}</div>
     {% elif product.je_novitet or home_section_badge == 'novo' %}
     <span class="product-card-corner-badge product-card-corner-badge--novitet">Novo</span>
     {% elif product.je_hit or home_section_badge == 'hit' %}
@@ -24,6 +22,7 @@
     <button type="button" class="home-card-heart" aria-label="Omiljeno — {{ product.naziv }}" data-favorite-id="{{ product.pk }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
     </button>
+    {% if product.katalog_na_akciji %}{% include "partials/product_sale_remaining.html" %}{% endif %}
     <div class="product-card__top">
         <div class="product-card__media">
             <div class="product-image">

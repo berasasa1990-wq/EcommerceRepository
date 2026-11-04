@@ -1821,6 +1821,13 @@ def search_suggest(request):
 
 
 
+def _random_sale_order(products):
+    # Keep a daily mix stable across pagination, regardless of database ordering.
+    mixed = sorted(products, key=lambda product: product.pk)
+    random.Random(f'sale:{timezone.localdate().isoformat()}').shuffle(mixed)
+    return mixed
+
+
 def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     params = _get_filter_params(request)
     search_q = _normalize_phrase(params.get('q') or '')
@@ -1932,6 +1939,8 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
             products,
             descending=(sort == 'opadajuca'),
         )
+    elif params.get('akcija') and not search_q:
+        products = _random_sale_order(products)
     elif not search_q and (allowed_category_ids is not None or params.get('kategorija') or params.get('brend')):
         products = sorted(products, key=lambda product: (product.kreiran, product.pk), reverse=True)
     elif search_q and len(search_q) >= 2 and len(products) > SEARCH_FINE_RANK_TOP:

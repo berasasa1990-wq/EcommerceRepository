@@ -198,6 +198,16 @@ html body.home-mobile-reference .home-products .product-catalog article.product-
     }
 }
 
+html body.home-mobile-reference main > .home-sale-promo-banner {
+    order: 3 !important;
+    margin: 8px 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    border-radius: 12px;
+}
+.home-sale-promo-banner a { display: block; }
+.home-sale-promo-banner img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 1; }
+.home-sale-promo-banner a:focus-visible { outline: 3px solid #f56a08; outline-offset: -3px; }
 html body.home-mobile-reference main > .home-featured-categories {
     order: 3;
     margin: 0 0 24px;
@@ -490,6 +500,8 @@ html body.home-mobile-reference .home-products .product-catalog article.product-
     </div>
 </section>
 {% endif %}
+
+{% include 'partials/home_sale_promo_banner.html' %}
 
 {% include 'partials/home_featured_categories.html' %}
 {% include 'partials/home_mobile_video.html' with video_file=site_settings.home_mobile_video video_link=site_settings.home_mobile_video_link %}
