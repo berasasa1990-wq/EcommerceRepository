@@ -1666,31 +1666,9 @@ def _suggest_product_queryset(request=None):
 
 
 def _suggest_thumb_url(image_field):
-    """
-    120w thumb URL bez storage.exists() (sporo na cloud storage-u).
-    Konvencija processiranja: {base}-120w.avif / .jpg / …
-    """
+    """Use the stored image; imported/replaced uploads may have no 120w variant."""
     if not image_field or not getattr(image_field, 'name', None):
         return ''
-    name = image_field.name
-    if '/' in name:
-        folder, filename = name.rsplit('/', 1)
-    else:
-        folder, filename = '', name
-    base = filename.rsplit('.', 1)[0]
-    storage = image_field.storage
-    # Prefer avif (glavni format u pipeline-u), pa ista ekstenzija glavne slike
-    candidates = [f'{base}-120w.avif']
-    if '.' in filename:
-        ext = filename.rsplit('.', 1)[-1].lower()
-        if ext != 'avif':
-            candidates.append(f'{base}-120w.{ext}')
-    for variant in candidates:
-        path = f'{folder}/{variant}' if folder else variant
-        try:
-            return storage.url(path)
-        except Exception:
-            continue
     try:
         return image_field.url
     except Exception:
