@@ -536,41 +536,6 @@
     {% block mobile_dock %}{% include 'partials/mobile_dock.html' %}{% endblock %}
     {% include 'partials/footer.html' %}
     {% include 'partials/contact_float.html' %}
-    {% if site_settings.javno_online_posjetioci %}
-    {% include 'partials/public_online_visitors.html' %}
-    {% endif %}
-    {% include 'partials/catalog_variation_modal.html' %}
-    {% include 'partials/stock_notify_popup.html' %}
-
-
-
-    {% if organization_json_ld %}
-    <script type="application/ld+json">{{ organization_json_ld|safe }}</script>
-    {% endif %}
-    {% if website_json_ld %}
-    <script type="application/ld+json">{{ website_json_ld|safe }}</script>
-    {% endif %}
-    {% block structured_data %}{% endblock %}
-    <script src="{% static 'js/csrf-session.js' %}?v=20261030-orange-buttons-badges" data-cookie-name="{{ csrf_cookie_name }}" defer></script>
-    <script src="{% static 'js/main.min.js' %}?v=20261103-autoplay-three-seconds" defer></script>
-    <script src="{% static 'js/desktop-reference.js' %}?v=20261030-orange-buttons-badges" defer></script>
-    <script src="{% static 'js/stock-notify.js' %}?v=20261030-orange-buttons-badges" defer></script>
-    {% if site_settings.javno_online_posjetioci %}
-    <script>idleLoadScript("{% static 'js/public-online-visitors.js' %}?v=20261030-orange-buttons-badges");</script>
-    {% endif %}
-    {% if request.resolver_match.url_name == 'product_detail' %}
-    {% if not user.is_authenticated or not user.is_superuser %}
-    <script>idleLoadScript("{% static 'js/almost-cart.js' %}?v=20261030-orange-buttons-badges");</script>
-    {% endif %}
-    {% endif %}
-    {# Live praćenje svih osim superusera — incognito / gost / registrovan #}
-    {% if not user.is_authenticated or not user.is_superuser %}
-    <div id="visitorPresenceRoot" hidden
-         data-heartbeat-url="{% url 'live_visitor_heartbeat' %}"
-         data-leave-url="{% url 'live_visitor_leave' %}"
-         data-session-key="{{ request.session.session_key|default:'' }}"></div>
-    <script>idleLoadScript("{% static 'js/visitor-presence.js' %}?v=20261030-orange-buttons-badges");</script>
-    {% endif %}
     {% if staff_edit_mode and user.is_authenticated and user.is_superuser %}
     {% include 'partials/staff_site_editor.html' %}
     <link rel="stylesheet" href="{% static 'css/staff-site-edit.css' %}?v=20261030-orange-buttons-badges">

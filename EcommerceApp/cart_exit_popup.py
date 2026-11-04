@@ -2,14 +2,12 @@
 Poslednji minut ponuda — samo kad kupac hoće da izađe sa sajta (exit intent).
 
 Artikal se bira pametno:
-1) skoro dodao u korpu (kursor na dugmetu, nije kliknuo)
-2) #1 sell preporuka po gledanju
-3) fallback: SiteSettings.korpa_exit_popup_artikal
+1) postojeća istorija gledanja (bez novih upisa)
+2) fallback: SiteSettings.korpa_exit_popup_artikal
 """
 
 from decimal import Decimal, InvalidOperation
 
-from .almost_cart import top_almost_cart_product_id
 from .cart_tracking import get_cart_session_key
 from .models import LiveVisitor, Product, SiteSettings, _izracunaj_akcijsku_od_postotka
 
@@ -66,22 +64,14 @@ def _product_usable(product):
 
 
 def resolve_exit_product(request):
-    """Odaberi artikal za Poslednji minut (intent > gledanje > admin default)."""
+    """Odaberi artikal za Poslednji minut (istorija gledanja > admin default)."""
     session_key = get_cart_session_key(request)
     visitor = None
     if session_key:
         visitor = LiveVisitor.objects.filter(session_key=session_key).first()
 
-    # 1) Skoro korpa
+    # Existing browsing history is read-only; Almost Cart no longer participates.
     if visitor:
-        almost_id = top_almost_cart_product_id(visitor)
-        if almost_id:
-            product = Product.objects.filter(pk=almost_id, aktivan=True).first()
-            if _product_usable(product):
-                return product, 'almost_cart'
-
-        # 2) Sell preporuka
-
         # 3) Najgledaniji artikal u sesiji
         products = getattr(visitor, 'pregledani_proizvodi', None) or []
         best = None

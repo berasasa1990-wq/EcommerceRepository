@@ -20,8 +20,8 @@ class VisitorFilterTests(SimpleTestCase):
         request.session = SimpleNamespace(session_key='visitor-session')
         return request
 
-    def test_browsers_allowed_and_known_bots_excluded(self):
-        self.assertTrue(should_track_visitor(self.request()))
+    def test_tracking_disabled_for_browsers_and_bots(self):
+        self.assertFalse(should_track_visitor(self.request()))
         for ua in ('', 'Googlebot', 'python-httpx/0.28', 'Mozilla/5.0 HeadlessChrome/130', 'meta-externalagent'):
             with self.subTest(ua=ua):
                 self.assertFalse(should_track_visitor(self.request(HTTP_USER_AGENT=ua)))
@@ -31,20 +31,20 @@ class VisitorFilterTests(SimpleTestCase):
             with self.subTest(path=path):
                 self.assertFalse(should_track_visitor(self.request(path)))
 
-    def test_only_successful_html_get_is_tracked(self):
+    def test_no_response_is_tracked(self):
         for response, expected in ((HttpResponse('page'), True), (HttpResponse(status=404), False),
                                    (HttpResponse(status=500), False), (HttpResponse(status=302), False),
                                    (JsonResponse({'ok': True}), False),
                                    (HttpResponse('image', content_type='image/jpeg'), False)):
             with self.subTest(status=response.status_code, content_type=response['Content-Type']):
-                with patch('EcommerceApp.middleware.live_visitor.track_live_visitor') as track:
+                with patch('EcommerceApp.live_visitors.track_live_visitor') as track:
                     LiveVisitorMiddleware(lambda request: response)(self.request())
-                    self.assertEqual(track.call_count, int(expected))
+                    track.assert_not_called()
 
     def test_head_is_not_page_visit(self):
         request = self.request()
         request.method = 'HEAD'
-        with patch('EcommerceApp.middleware.live_visitor.track_live_visitor') as track:
+        with patch('EcommerceApp.live_visitors.track_live_visitor') as track:
             LiveVisitorMiddleware(lambda request: HttpResponse())(request)
             track.assert_not_called()
 

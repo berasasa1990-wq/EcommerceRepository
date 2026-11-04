@@ -577,40 +577,9 @@ def get_configured_exclude_ips() -> set[str]:
     return ips
 
 
-def remember_owner_ip(request) -> str:
-    """
-    Zapamti IP staff/superusera da se ne broji u analyticsu ni kad nije ulogovan.
-    Briše eventualne LiveVisitor redove s tim IP-om.
-    """
-    from django.core.cache import cache
-
-    user = getattr(request, 'user', None)
-    if not user or not user.is_authenticated:
-        return ''
-    if not (user.is_superuser or user.is_staff):
-        return ''
-
-    ip = _normalize_ip(get_client_ip(request))
-    if not ip or ip in ('unknown',) or not _is_valid_db_ip(ip):
-        return ''
-
-    cache_key = f'{OWNER_IP_CACHE_PREFIX}{ip}'
-    already = cache.get(cache_key)
-    cache.set(cache_key, 1, OWNER_IP_CACHE_TTL)
-
-    # Očisti postojeće „lažne” posjete s vlasničkog IP-a (jednom po TTL ciklusu)
-    if not already:
-        try:
-            deleted, _ = LiveVisitor.objects.filter(ip_adresa=ip).delete()
-            if deleted:
-                logger.info(
-                    'Uklonjeno %s LiveVisitor redova za vlasnički IP %s',
-                    deleted,
-                    ip,
-                )
-        except Exception:
-            pass
-    return ip
+def remember_owner_ip(request):
+    """Live Visitors is retired; preserve this call signature without tracking side effects."""
+    return ''
 
 
 def visitors_analytics_qs():
@@ -690,49 +659,8 @@ def is_non_visitor_path(path):
     )
 
 def should_track_visitor(request):
-    """
-    Ne prati: staff/superuser, isključene IP, botove (UA), admin/static putanje.
-    """
-    user = getattr(request, 'user', None)
-    if user and getattr(user, 'is_authenticated', False):
-        if user.is_superuser or user.is_staff:
-            # Zapamti IP da se ne broji ni kad izloguje
-            try:
-                remember_owner_ip(request)
-            except Exception:
-                pass
-            return False
-
-    ip = _normalize_ip(get_client_ip(request))
-    if ip and is_excluded_visitor_ip(ip):
-        return False
-
-    ua = request.META.get('HTTP_USER_AGENT') or ''
-    if is_bot_user_agent(ua):
-        return False
-
-    path = request.path or ''
-    if is_non_visitor_path(path):
-        return False
-    skip_prefixes = (
-        '/admin/',
-        '/api/',
-        '/static/',
-        '/media/',
-        '/nalog/',
-        '/sitemap',
-        '/robots.txt',
-        '/favicon',
-        '/priprema-pristup/',
-        '/healthz',
-    )
-    if path in ('/facebook-feed.xml', '/healthz', '/healthz/'):
-        return False
-    if any(path.startswith(prefix) for prefix in skip_prefixes):
-        return False
-    if request.method not in ('GET', 'POST', 'HEAD'):
-        return False
-    return True
+    """Live Visitors is retired; preserve this call signature without tracking side effects."""
+    return False
 
 
 def _ensure_session_key(request):
@@ -750,23 +678,13 @@ def _left_cache_key(session_key):
 
 
 def touch_visitor_presence(session_key):
-    """Označi sesiju aktivnom za staff toast (cache + briše left flag)."""
-    if not session_key:
-        return
-    from django.core.cache import cache
-
-    cache.set(_presence_cache_key(session_key), 1, PRESENCE_CACHE_TTL)
-    cache.delete(_left_cache_key(session_key))
+    """Live Visitors is retired; preserve this call signature without tracking side effects."""
+    return None
 
 
 def clear_visitor_presence(session_key):
-    """Odmah označi sesiju offline za staff toast."""
-    if not session_key:
-        return
-    from django.core.cache import cache
-
-    cache.delete(_presence_cache_key(session_key))
-    cache.set(_left_cache_key(session_key), 1, LEFT_CACHE_TTL)
+    """Live Visitors is retired; preserve this call signature without tracking side effects."""
+    return None
 
 
 def is_visitor_marked_left(session_key):
@@ -796,134 +714,13 @@ def resolve_presence_session_key(request, body_session_key=''):
 
 
 def maybe_notify_visitor_online(session_key):
-    """
-    ISKLJUČENO: superuser više ne dobija toast samo jer je kupac online.
-    Notifikacije idu samo za: korpa, registracija, kupovina, prihvaćena ponuda.
-    """
+    """Live Visitors is retired; preserve this call signature without tracking side effects."""
     return False
-    # --- legacy (zadržano radi reference, nedostižno) ---
-    session_key = (session_key or '').strip()
-    if not session_key:
-        return False
-    from django.core.cache import cache
-
-    cache_key = f'{ONLINE_NOTIFIED_CACHE_PREFIX}{session_key}'
-    if cache.get(cache_key):
-        return False
-
-    visitor = (
-        LiveVisitor.objects.filter(session_key=session_key)
-        .only('first_seen', 'last_seen', 'ime', 'email', 'grad', 'trenutno_gleda')
-        .first()
-    )
-    if not visitor:
-        return False
-
-    now = timezone.now()
-    first_seen = visitor.first_seen or visitor.last_seen or now
-    on_site_seconds = max(0, int((now - first_seen).total_seconds()))
-    if on_site_seconds < ONLINE_NOTIFY_AFTER_SECONDS:
-        return False
-
-    # Mora još uvijek biti „online” (aktivnost mlađa od 1 min)
-    if visitor.last_seen:
-        idle_seconds = max(0, int((now - visitor.last_seen).total_seconds()))
-        if idle_seconds >= ONLINE_MINUTES * 60:
-            return False
-
-    cache.set(cache_key, 1, ONLINE_NOTIFIED_CACHE_TTL)
-    try:
-        from .staff_alerts import notify_visitor_online
-        notify_visitor_online(
-            ime=visitor.ime or '',
-            email=visitor.email or '',
-            grad=visitor.grad or '',
-            session_key=session_key,
-            trenutno_gleda=(visitor.trenutno_gleda or '')[:120],
-        )
-    except Exception:
-        cache.delete(cache_key)
-        return False
-    return True
 
 
 def heartbeat_live_visitor(request, body_session_key=''):
-    """Laki ping dok je tab otvoren — osvježava last_seen, trenutnu stranicu + presence."""
-    if not should_track_visitor(request):
-        return False
-    reported_path = request.POST.get('path') or request.GET.get('path') or ''
-    if is_non_visitor_path(reported_path):
-        return False
-
-    session_key = resolve_presence_session_key(request, body_session_key)
-    if not session_key:
-        session_key = _ensure_session_key(request)
-    if not session_key:
-        return False
-
-    now = timezone.now()
-    update_fields = {'last_seen': now, 'uredjaj': detect_visitor_device(request)}
-
-    # Path iz body-ja treba prije throttle-a da se „Sada:” ipak osvježi na navigaciji.
-    body_path_preview = ''
-    try:
-        body_path_preview = (request.POST.get('path') or request.GET.get('path') or '').strip()
-    except Exception:
-        body_path_preview = ''
-    from django.core.cache import cache as _hb_cache
-    hb_key = f'lv_hb:{session_key}'
-    last_hb_path = _hb_cache.get(hb_key)
-    if last_hb_path is not None and last_hb_path == (body_path_preview or last_hb_path):
-        touch_visitor_presence(session_key)
-        return True
-    _hb_cache.set(hb_key, body_path_preview or last_hb_path or '/', 20)
-
-    # Live „Sada:” — klijent šalje path + q sa stvarne stranice (ne poll URL)
-    body_path = ''
-    body_q = ''
-    try:
-        body_path = (request.POST.get('path') or request.GET.get('path') or '').strip()
-        body_q = (request.POST.get('q') or request.GET.get('q') or '').strip()
-    except Exception:
-        body_path = ''
-        body_q = ''
-    if body_path and len(body_path) <= 300 and not is_background_request_path(body_path):
-        page_path, page_label = _resolve_current_page(body_path, query=body_q)
-        if page_label:
-            update_fields['trenutna_putanja'] = page_path
-            update_fields['trenutno_gleda'] = page_label
-        # Dwell na artiklu dok heartbeat šalje path
-
-    updated = LiveVisitor.objects.filter(session_key=session_key).update(**update_fields)
-    if not updated:
-        # Nema reda (incognito / prvi ping) — kreiraj da staff odmah vidi live
-        page_label = (update_fields.get('trenutno_gleda') or 'Na sajtu')[:200]
-        page_path = (update_fields.get('trenutna_putanja') or '/')[:300]
-        try:
-            LiveVisitor.objects.create(
-                session_key=session_key,
-                user=user if user and getattr(user, 'is_authenticated', False) else None,
-                ime=_display_name(user)[:120] if user else 'Gost',
-                email=_display_email(user)[:254] if user else '',
-                grad='',
-                drzava=BOSNIA_HERZEGOVINA_COUNTRY_CODE,
-                ip_adresa=get_client_ip(request) or None,
-                uredjaj=update_fields['uredjaj'],
-                trenutna_putanja=page_path,
-                trenutno_gleda=page_label,
-                last_seen=now,
-            )
-            updated = True
-        except Exception:
-            # Race: drugi request kreirao red
-            updated = bool(
-                LiveVisitor.objects.filter(session_key=session_key).update(**update_fields)
-            )
-    touch_visitor_presence(session_key)
-    # Staff toast odmah
-    if updated or session_key:
-        maybe_notify_visitor_online(session_key)
-    return bool(updated) or bool(session_key)
+    """Live Visitors is retired; preserve this call signature without tracking side effects."""
+    return False
 
 
 def _parse_leave_at_seconds(request):
@@ -956,41 +753,8 @@ def _parse_leave_at_seconds(request):
 
 
 def mark_live_visitor_left(request, body_session_key=''):
-    """
-    Posjetilac je zatvorio tab / otišao sa sajta.
-    Odmah offline za staff (left flag + last_seen).
-    Ignoriše leave ako je u međuvremenu nova stranica već trackala (navigacija).
-    """
-    user = getattr(request, 'user', None)
-    if user is not None and user.is_authenticated and user.is_superuser:
-        return False
-
-    session_key = resolve_presence_session_key(request, body_session_key)
-    if not session_key:
-        return False
-
-    visitor = (
-        LiveVisitor.objects.filter(session_key=session_key)
-        .only('last_seen')
-        .first()
-    )
-    leave_at = _parse_leave_at_seconds(request)
-    if visitor and visitor.last_seen:
-        last_ts = visitor.last_seen.timestamp()
-        # Navigacija: stara stranica šalje leave, nova je već trackala last_seen
-        if leave_at is not None and last_ts > leave_at + 0.4:
-            return False
-        # Bez leave_at: ako je last_seen svježi (<1.5 s) — vjerojatno navigacija
-        if leave_at is None:
-            age = max(0.0, timezone.now().timestamp() - last_ts)
-            if age < 1.5:
-                return False
-
-    clear_visitor_presence(session_key)
-    # 2 s unazad — odmah ispod ONLINE_MINUTES prozora, ali ne „prije 1.5 min”
-    offline_at = timezone.now() - timedelta(seconds=2)
-    LiveVisitor.objects.filter(session_key=session_key).update(last_seen=offline_at)
-    return True
+    """Live Visitors is retired; preserve this call signature without tracking side effects."""
+    return False
 
 
 VISITOR_COOKIE = 'ozb_vid'
@@ -998,215 +762,13 @@ VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 400  # ~13 mjeseci
 
 
 def _touch_visitor_identity(request, session_key):
-    """
-    Trajni cookie → broj dolazaka na sajt.
-    Nova sesija za isti token = +1 posjeta (nije prvi put).
-    """
-    import secrets
-
-    from .models import SiteVisitorIdentity
-
-    token = (request.COOKIES.get(VISITOR_COOKIE) or '').strip()
-    if not token or len(token) < 16 or len(token) > 64:
-        token = secrets.token_hex(16)
-        request._ozb_vid_set = token
-
-    identity, created = SiteVisitorIdentity.objects.get_or_create(
-        token=token,
-        defaults={
-            'visit_count': 1,
-            'last_session_key': session_key or '',
-        },
-    )
-    if not created:
-        last_sk = (identity.last_session_key or '').strip()
-        if session_key and last_sk and last_sk != session_key:
-            identity.visit_count = (identity.visit_count or 1) + 1
-            identity.last_session_key = session_key
-            identity.save(update_fields=['visit_count', 'last_session_key', 'last_seen'])
-        elif session_key and not last_sk:
-            identity.last_session_key = session_key
-            identity.save(update_fields=['last_session_key', 'last_seen'])
-        else:
-            # ista sesija — samo last_seen
-            SiteVisitorIdentity.objects.filter(pk=identity.pk).update(last_seen=timezone.now())
-            identity.refresh_from_db(fields=['visit_count', 'last_session_key', 'last_seen'])
-    return identity
+    """Live Visitors is retired; preserve this call signature without tracking side effects."""
+    return None
 
 
 def track_live_visitor(request):
-    """
-    Evidentiraj posjetioca (live analitika).
-    Ne prati: staff/superuser, isključene IP-ove (vlasnik), admin putanje.
-    """
-    if not should_track_visitor(request):
-        return
-    session_key = _ensure_session_key(request)
-    if not session_key:
-        return
-
-    ip = get_client_ip(request)
-    from .visitor_geo import _is_public_ip
-    from django.core.cache import cache as _cache
-
-    is_local_ip = not _is_public_ip(ip)
-    user = request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
-    now = timezone.now()
-    path = getattr(request, 'path', '') or ''
-    device = detect_visitor_device(request)
-
-    # Throttle: ista putanja unutar 15 s → samo last_seen (isti live UI, manje CPU/DB)
-    throttle_key = f'lv_track:{session_key}'
-    last_path = _cache.get(throttle_key)
-    if (
-        last_path is not None
-        and last_path == path
-        and not is_background_request_path(path)
-    ):
-        LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now, uredjaj=device)
-        touch_visitor_presence(session_key)
-        return
-    if not is_background_request_path(path):
-        _cache.set(throttle_key, path, 15)
-
-    # Svaki posjetilac se prati — lokalni = BA, javni = geo ili BA ako nepoznato
-    if is_local_ip:
-        country = BOSNIA_HERZEGOVINA_COUNTRY_CODE
-    else:
-        country = (resolve_visitor_country(request, ip=ip) or '').strip().upper()
-        if not country:
-            country = BOSNIA_HERZEGOVINA_COUNTRY_CODE
-
-    # Poll / heartbeat / AJAX — samo last_seen (+ kreiraj red ako nedostaje)
-    if is_background_request_path(path):
-        updated = LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now, uredjaj=device)
-        if not updated:
-            try:
-                LiveVisitor.objects.create(
-                    session_key=session_key,
-                    user=user,
-                    ime=_display_name(user)[:120],
-                    email=_display_email(user)[:254],
-                    grad='',
-                    drzava=country[:2] if country else BOSNIA_HERZEGOVINA_COUNTRY_CODE,
-                    ip_adresa=ip or None,
-                    uredjaj=device,
-                    trenutna_putanja='/',
-                    trenutno_gleda='Na sajtu',
-                    last_seen=now,
-                )
-            except Exception:
-                LiveVisitor.objects.filter(session_key=session_key).update(last_seen=now)
-        touch_visitor_presence(session_key)
-        if not (user and getattr(user, 'is_superuser', False)):
-            maybe_notify_visitor_online(session_key)
-        return
-
-    identity = None
-    try:
-        identity = _touch_visitor_identity(request, session_key)
-    except Exception:
-        identity = None
-
-    existing_visitor = LiveVisitor.objects.filter(session_key=session_key).only(
-        'pregledane_kategorije',
-        'pregledani_proizvodi',
-        'izvor_dolaska',
-        'grad',
-        'visitor_token',
-        'site_visit_count',
-        'trenutna_putanja',
-        'trenutno_gleda',
-    ).first()
-    existing_grad = (existing_visitor.grad if existing_visitor else '') or ''
-
-    grad = ''
-    if not country or country == BOSNIA_HERZEGOVINA_COUNTRY_CODE:
-        grad = resolve_visitor_city(request, ip=ip) or ''
-    if not grad and user and user.is_authenticated:
-        profil = getattr(user, 'profil', None)
-        if profil and profil.grad:
-            grad = profil.grad.strip()
-    if not grad:
-        grad = existing_grad
-
-    product = _product_from_request(request)
-    existing_categories = list(
-        (existing_visitor.pregledane_kategorije if existing_visitor else None) or [],
-    )
-    new_categories = _category_names_from_request(request, product=product)
-    if new_categories:
-        existing_categories = _merge_category_history(existing_categories, new_categories)
-
-    existing_products = list(
-        (existing_visitor.pregledani_proizvodi if existing_visitor else None) or [],
-    )
-    if product:
-        existing_products = _merge_product_history(existing_products, product)
-
-    existing_source = (existing_visitor.izvor_dolaska if existing_visitor else '') or ''
-    # Izvor se pamti pri prvom ulasku; ne prepisuj kasnije unutrašnjim navigacijama
-    traffic_source = existing_source or detect_traffic_source(request)
-
-    page_path, page_label = _current_page_from_request(request, product=product)
-    # Ako iz nekog razloga nema labela, zadrži prethodno „Sada:”
-    if not page_label and existing_visitor:
-        page_path = (existing_visitor.trenutna_putanja or '')[:300]
-        page_label = (existing_visitor.trenutno_gleda or '')[:200]
-
-    # Dwell: broji vrijeme na stranici artikla (popup 10% nakon 1 min)
-
-    visit_count = 1
-    visitor_token = ''
-    if identity is not None:
-        visit_count = max(1, int(identity.visit_count or 1))
-        visitor_token = (identity.token or '')[:64]
-
-    defaults = {
-        'user': user,
-        'ime': _display_name(user)[:120],
-        'email': _display_email(user)[:254],
-        'grad': (grad or '')[:100],
-        'drzava': (country or BOSNIA_HERZEGOVINA_COUNTRY_CODE)[:2],
-        'ip_adresa': ip or None,
-        'visitor_token': visitor_token,
-        'site_visit_count': visit_count,
-        'pregledane_kategorije': existing_categories,
-        'pregledani_proizvodi': existing_products,
-        'izvor_dolaska': (traffic_source or '')[:32],
-        'uredjaj': device,
-        'trenutna_putanja': page_path,
-        'trenutno_gleda': page_label,
-        'last_seen': now,
-    }
-    # update pa create umjesto update_or_create (select_for_update + DEFERRED deadlock na SQLite)
-    created = False
-    updated = LiveVisitor.objects.filter(session_key=session_key).update(**defaults)
-    if updated:
-        _visitor = None
-    else:
-        try:
-            _visitor = LiveVisitor.objects.create(session_key=session_key, **defaults)
-            created = True
-        except Exception:
-            # Race: drugi request je upravo kreirao red
-            updated = LiveVisitor.objects.filter(session_key=session_key).update(**defaults)
-            if not updated:
-                raise
-            created = False
-    touch_visitor_presence(session_key)
-    # Staff toast „Kupac na sajtu” odmah na ulazak
-    if not (user and user.is_superuser):
-        maybe_notify_visitor_online(session_key)
-    if random.random() < 0.02:
-        cleanup_stale_live_visitors()
-
-    # AI prodaja (jedan sistem — max 2 popup-a, 1–2 artikla, ≤10%)
-
-
-
-
-
+    """Live Visitors is retired; preserve this call signature without tracking side effects."""
+    return None
 
 def cleanup_stale_live_visitors():
     # Retain historical records until explicitly deleted by the owner.
@@ -1214,52 +776,8 @@ def cleanup_stale_live_visitors():
 
 
 def public_online_visitors_payload(limit=24):
-    """
-    Javni, privatni pregled ko je online na sajtu.
-    Bez emaila / punog imena — samo Gost/Kupac + grad (ako postoji).
-    Superuseri se ne prikazuju.
-    """
-    now = timezone.now()
-    cutoff = now - timedelta(minutes=ONLINE_MINUTES)
-    qs = (
-        LiveVisitor.objects
-        .filter(last_seen__gte=cutoff)
-        .select_related('user')
-        .order_by('-last_seen')[: max(1, min(int(limit or 24), 60))]
-    )
-    items = []
-    for visitor in qs:
-        user = getattr(visitor, 'user', None)
-        if user is not None and (
-            getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False)
-        ):
-            continue
-        is_registered = bool(user and getattr(user, 'is_authenticated', False) and user.pk)
-        grad = (getattr(visitor, 'grad', None) or '').strip()
-        if is_registered:
-            role = 'Kupac'
-        else:
-            role = 'Gost'
-        if grad:
-            label = f'{role} · {grad}'
-        else:
-            label = role
-        looking = (getattr(visitor, 'trenutno_gleda', None) or '').strip()
-        # skraćeno, bez osjetljivih detalja
-        if looking and len(looking) > 48:
-            looking = looking[:45] + '…'
-        items.append({
-            'label': label,
-            'role': role,
-            'city': grad,
-            'looking': looking,
-        })
-    return {
-        'ok': True,
-        'count': len(items),
-        'items': items,
-        'generated_at': now.isoformat(),
-    }
+    """Live Visitors is retired; preserve this call signature without tracking side effects."""
+    return {'ok': True, 'disabled': True, 'count': 0, 'items': []}
 
 
 def _ago_action_label(dt, now):

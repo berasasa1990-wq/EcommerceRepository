@@ -63,7 +63,6 @@
                 data-product-slug="{{ product.slug }}"
                 data-product-id="{{ product.pk }}"
                 data-product-name="{{ product.naziv }}"
-                data-almost-cart
                 aria-label="{{ site_settings.tekst_dugme_korpa|default:'Dodaj u korpu' }} — {{ product.naziv }}"
                 {% if card_variations|length > 1 %}data-pick-variation="1"{% endif %}
                 {% if card_variations|length == 1 %}

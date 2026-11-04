@@ -18,7 +18,7 @@
     {% with card_variations=product.varijacije.all %}
     {% if card_variations|length > 1 %}<div class="catalog-variation-data" hidden>{% for var in card_variations %}<span data-catalog-variation data-variation-id="{{ var.pk }}" data-variation-name="{{ var.naziv }}"></span>{% endfor %}</div>{% endif %}
     {% if product.na_stanju %}
-    <button type="button" class="purchase product-card-add-btn" data-catalog-add data-product-slug="{{ product.slug }}" data-product-id="{{ product.pk }}" data-product-name="{{ product.naziv }}" data-almost-cart {% if card_variations|length > 1 %}data-pick-variation="1"{% elif card_variations|length == 1 %}{% for var in card_variations %}data-variation-id="{{ var.pk }}"{% endfor %}{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M1 2h3l4 14h12l3-10H5"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg>Dodaj u korpu</button>
+    <button type="button" class="purchase product-card-add-btn" data-catalog-add data-product-slug="{{ product.slug }}" data-product-id="{{ product.pk }}" data-product-name="{{ product.naziv }}"  {% if card_variations|length > 1 %}data-pick-variation="1"{% elif card_variations|length == 1 %}{% for var in card_variations %}data-variation-id="{{ var.pk }}"{% endfor %}{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M1 2h3l4 14h12l3-10H5"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg>Dodaj u korpu</button>
     {% else %}{% include 'partials/stock_notify_button.html' with product=product notify_label='Obavijesti pri dolasku' %}{% endif %}
     {% endwith %}
   </div>

@@ -513,7 +513,6 @@
                         <button type="submit" class="btn btn-primary btn-add-to-bag"
                                 data-product-id="{{ product.pk }}"
                                 data-product-name="{{ product.naziv }}"
-                                data-almost-cart
                                 id="mainAddToCartBtn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M2 3h1.5l2.2 11.2a1.25 1.25 0 0 0 1.22 1h10.16a1.25 1.25 0 0 0 1.22-.96L20.4 8H6.8"/>
@@ -695,7 +694,7 @@
                     <button type="submit" class="btn btn-primary product-other-options-add"
                             data-product-id="{{ opt.pk }}"
                             data-product-name="{{ opt.naziv }}"
-                            data-almost-cart>{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
+                            >{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
                 </form>
                 {% elif opt.na_stanju %}
                 <form method="post" action="{% url 'add_to_cart' opt.slug %}" class="product-other-options-form">
@@ -704,7 +703,7 @@
                     <button type="submit" class="btn btn-primary product-other-options-add"
                             data-product-id="{{ opt.pk }}"
                             data-product-name="{{ opt.naziv }}"
-                            data-almost-cart>{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
+                            >{{ site_settings.tekst_dugme_korpa|default:"Dodaj u korpu" }}</button>
                 </form>
                 {% endif %}
             </article>

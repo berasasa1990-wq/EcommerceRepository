@@ -134,6 +134,7 @@ urlpatterns = [
     path('kreiraj-set/zamjena/', views.set_builder_alternatives, name='set_builder_alternatives'),
     path('kreiraj-set/korpa/', views.set_builder_add_cart, name='set_builder_add_cart'),
     path('drustveni-dokaz/', views.social_proof_poll, name='social_proof_poll'),
+    # Retired tracking URLs return disabled responses for old cached clients.
     path('uzivo/prisutan/', views.live_visitor_heartbeat, name='live_visitor_heartbeat'),
     path('uzivo/odlazak/', views.live_visitor_leave, name='live_visitor_leave'),
     path('uzivo/javno/', views.public_online_visitors, name='public_online_visitors'),

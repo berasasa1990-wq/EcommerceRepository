@@ -7471,101 +7471,36 @@ def social_proof_poll(request):
 
 @require_POST
 def almost_cart_track(request):
-    """
-    Kursor na „Dodaj u korpu” bez klika → skoro_korpa.
-    clicked=1 briše (korisnik je kliknuo).
-    """
-    from .almost_cart import record_almost_cart
-
-    try:
-        product_id = int(request.POST.get('product_id') or 0)
-    except (TypeError, ValueError):
-        product_id = 0
-    if not product_id:
-        return JsonResponse({'ok': False, 'message': 'Nedostaje artikal.'}, status=400)
-
-    product_name = (request.POST.get('product_name') or '')[:120]
-    clicked = (request.POST.get('clicked') or '') in ('1', 'true', 'yes')
-    record_almost_cart(
-        request,
-        product_id,
-        product_name=product_name,
-        clicked=clicked,
-    )
-    return JsonResponse({'ok': True, 'clicked': clicked})
+    """Retired endpoint kept harmless for previously cached pages."""
+    response = JsonResponse({'ok': True, 'disabled': True, 'tracked': False})
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 @csrf_exempt
 @require_POST
 def live_visitor_heartbeat(request):
-    """Ping dok je posjetilac na sajtu (osvježava last_seen + presence)."""
-    from .live_visitors import heartbeat_live_visitor
-
-    body_key = (
-        request.POST.get('session_key')
-        or request.GET.get('session_key')
-        or ''
-    )
-    if request.user.is_authenticated and request.user.is_superuser:
-        return JsonResponse({'ok': True, 'tracked': False})
-    tracked = heartbeat_live_visitor(request, body_session_key=body_key)
-    return JsonResponse({'ok': True, 'tracked': tracked})
+    """Retired endpoint kept harmless for previously cached pages."""
+    response = JsonResponse({'ok': True, 'disabled': True, 'tracked': False})
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 @require_GET
 def public_online_visitors(request):
-    """
-    Javni API: ko je trenutno na sajtu (samo ako je uključeno u Podešavanjima).
-    Privatno — bez emaila i punog imena.
-    """
-    from .models import SiteSettings
-    from .live_visitors import public_online_visitors_payload
-
-    try:
-        enabled = bool(SiteSettings.load().javno_online_posjetioci)
-    except Exception:
-        enabled = False
-    if not enabled:
-        return JsonResponse({'ok': False, 'disabled': True, 'count': 0, 'items': []}, status=404)
-    payload = public_online_visitors_payload(limit=24)
-    response = JsonResponse(payload)
-    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    """Retired endpoint kept harmless for previously cached pages."""
+    response = JsonResponse({'ok': True, 'disabled': True, 'count': 0, 'items': []})
+    response['Cache-Control'] = 'no-store'
     return response
 
 
 @csrf_exempt
 @require_POST
 def live_visitor_leave(request):
-    """
-    Beacon kad posjetilac zatvori tab / ode sa sajta.
-    csrf_exempt: sendBeacon ne šalje pouzdano CSRF; veže se na sesiju (+ session_key u body).
-    """
-    from .live_visitors import mark_live_visitor_left
-
-    body_key = (
-        request.POST.get('session_key')
-        or request.GET.get('session_key')
-        or ''
-    )
-    # sendBeacon body nije uvijek u request.POST — parsiraj raw body
-    if not body_key and request.body:
-        try:
-            from urllib.parse import parse_qs
-            parsed = parse_qs(request.body.decode('utf-8', errors='ignore'))
-            vals = parsed.get('session_key') or []
-            if vals:
-                body_key = vals[0]
-        except Exception:
-            body_key = ''
-    # FormData leave_at ostaje u request.POST; query fallback
-    if not request.POST.get('leave_at') and request.GET.get('leave_at'):
-        # mark_live_visitor_left čita i GET
-        pass
-
-    if request.user.is_authenticated and request.user.is_superuser:
-        return JsonResponse({'ok': True, 'left': False})
-    left = mark_live_visitor_left(request, body_session_key=body_key)
-    return JsonResponse({'ok': True, 'left': left})
+    """Retired endpoint kept harmless for previously cached pages."""
+    response = JsonResponse({'ok': True, 'disabled': True, 'left': False})
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 def _active_cart_groups(queryset):

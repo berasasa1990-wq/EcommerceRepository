@@ -4,7 +4,7 @@ import hashlib
 from django.db import transaction
 
 AUDIT_TABLE = 'EcommerceApp_systemdatarevision'
-EXCLUDED = {AUDIT_TABLE.lower(), 'ecommerceapp_manualorderdraftrevision', 'ecommerceapp_savedforminput', 'ecommerceapp_preservedmediafile'}
+EXCLUDED = {'ecommerceapp_livevisitor', AUDIT_TABLE.lower(), 'ecommerceapp_manualorderdraftrevision', 'ecommerceapp_savedforminput', 'ecommerceapp_preservedmediafile'}
 
 
 def install_history(connection, baseline=False, tables=None):
