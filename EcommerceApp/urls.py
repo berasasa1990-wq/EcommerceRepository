@@ -9,6 +9,7 @@ from django.urls import reverse_lazy
 from django.views.decorators.cache import never_cache
 
 from . import views
+from . import product_social_images
 from . import manual_order_drafts, data_history
 from . import views_b2b
 from . import views_catalog_api
@@ -107,6 +108,7 @@ urlpatterns = [
     path('blog/<slug:slug>/', views.vlog_detail, name='vlog_detail'),
     path('vlog/<slug:slug>/', RedirectView.as_view(pattern_name='vlog_detail', permanent=True)),
     path('kategorija/<slug:slug>/', views.category_detail, name='category'),
+    path('artikal/<slug:slug>/slika-za-dijeljenje.jpg', product_social_images.product_share_image, name='product_share_image'),
     path('artikal/<slug:slug>/', views.product_detail, name='product_detail'),
     path('artikal/<slug:slug>/brza-izmjena/', views.staff_product_quick_edit, name='staff_product_quick_edit'),
     path('artikal/<slug:slug>/olx-objavi/', views.staff_post_product_olx, name='staff_post_product_olx'),

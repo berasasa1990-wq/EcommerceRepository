@@ -11,7 +11,7 @@
   <a class="product-image" href="{{ product.get_absolute_url }}" aria-label="{{ product.naziv }}">{% include 'partials/product_image.html' with product=product image_loading='lazy' image_sizes='(max-width: 600px) 50vw, 16vw' %}</a>
   <div class="card-copy">
     <h3><a href="{{ product.get_absolute_url }}" data-product-name>{{ product.naziv }}</a></h3>
-    <p class="stock{% if product.na_stanju %} stock--available{% endif %}">{% if product.na_stanju %}Na stanju · {{ product.stanje }} kom{% else %}Nije na stanju{% endif %}</p>
+    <p class="stock{% if product.na_stanju %} stock--available{% endif %}">{% if product.na_stanju %}Na stanju · <span class="stock-quantity">{{ product.stanje }} kom</span>{% else %}Nije na stanju{% endif %}</p>
     <div class="product-prices"><strong class="price">{{ product.katalog_prikazna_cijena }} KM</strong>{% if product.katalog_na_akciji %}<s>{{ product.katalog_bazna_cijena }} KM</s>{% endif %}</div>
     {% if site_settings.besplatna_dostava_od and product.katalog_prikazna_cijena >= site_settings.besplatna_dostava_od %}<span class="free-delivery">Besplatna dostava</span>{% endif %}
     <div class="product-brand-row">{% if product.brend %}<span class="product-brand">{{ product.brend.naziv }}</span>{% endif %}{% include 'partials/product_sale_remaining.html' %}</div>

@@ -3322,6 +3322,9 @@ def product_detail(request, slug):
         )
         lcp_image_url = request.build_absolute_uri(product.prikazna_slika.url)
 
+    from .product_social_images import share_image_context
+    social_image = share_image_context(request, product)
+
     related_products = _related_category_products(product, request=request)
     similar_name_products = storefront_products(find_similar_name_products(product, _product_queryset(request)))
     site_settings = SiteSettings.load()
@@ -3330,6 +3333,7 @@ def product_detail(request, slug):
     context = {
         **_base_context(),
         'product': product,
+        **social_image,
         'in_stock_variations': in_stock_variations,
         'ima_varijacije': bool(in_stock_variations),
         'product_available': product_available,
