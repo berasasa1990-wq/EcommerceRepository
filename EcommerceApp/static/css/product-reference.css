@@ -412,3 +412,7 @@ html body.product-mobile-reference .product-gallery .pd-gallery-bar .product-thu
 html body.product-mobile-reference .product-gallery .product-thumbnail {
     flex-shrink: 0;
 }
+
+html body.product-mobile-reference .product-gallery .product-thumbnail[hidden] {
+    display: none !important;
+}

@@ -5,7 +5,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/product-zoom.css' %}?v=20261103-hide-mobile-zoom">
 <link rel="stylesheet" href="{% static 'css/product-inline-qty.v20260912.css' %}">
-<link rel="stylesheet" href="{% static 'css/product-reference.css' %}?v=20261103-thumbnails-below">
+<link rel="stylesheet" href="{% static 'css/product-reference.css' %}?v=20261104-image-recovery">
 {% if staff_product_tools %}
 <link rel="stylesheet" href="{% static 'css/staff-image-fit.css' %}?v=20261030-orange-buttons-badges">
 {% endif %}
@@ -717,6 +717,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/product-image-recovery.js' %}?v=20261104-missing-main" defer></script>
 <script src="{% static 'js/product-reference.js' %}?v=20261030-orange-buttons-badges" defer></script>
 <script src="{% static 'js/product-detail.min.js' %}?v=20261102-quantity-stock-message" defer></script>
 {% if staff_product_tools %}
