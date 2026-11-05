@@ -602,8 +602,10 @@ def send_stock_back_email(*, to_email, product):
         render_to_string('emails/stock_back.html', ctx),
         'text/html',
     )
-    mail.send(fail_silently=False)
-    logger.info('Obavijest o stanju poslana na %s za artikal %s', to_email, product.pk)
+    sent = mail.send(fail_silently=False)
+    if sent:
+        logger.info('Obavijest o stanju poslana na %s za artikal %s', to_email, product.pk)
+    return sent
 
 
 def send_order_emails(order):

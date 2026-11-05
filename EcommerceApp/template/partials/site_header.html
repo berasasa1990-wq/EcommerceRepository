@@ -107,18 +107,6 @@
                         <span class="nav-action-label">Registracija</span>
                     </a>
                     {% endif %}
-                    <div class="wishlist-menu">
-                    <button type="button" class="nav-action-link reference-header-heart" data-mobile-favorites aria-label="Lista želja" aria-haspopup="dialog" aria-expanded="false" aria-controls="wishlistPopover">
-                        <span class="nav-action-icon">
-                            <svg class="wishlist-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
-                            <span class="wishlist-badge" data-wishlist-count>0</span>
-                        </span>
-                        <span class="nav-action-label">Lista želja</span>
-                    </button>
-                    <div class="wishlist-popover" id="wishlistPopover" hidden>
-                        {% include 'partials/wishlist_panel.html' %}
-                    </div>
-                    </div>
                     <div class="nav-cart-stack">
                     {% if user.is_superuser %}
                     <a href="{% url 'staff_admin_panel' %}" class="logo-admin-panel" aria-label="Admin panel" title="Admin panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 9-5M17 11l4 2v4c0 3-4 5-4 5s-4-2-4-5v-4l4-2Z"/><path d="m15 16 1.5 1.5L19 15"/></svg></a>

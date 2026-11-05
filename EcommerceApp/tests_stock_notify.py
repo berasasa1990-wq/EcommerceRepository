@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core import mail
+from django.db import transaction
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from .models import Brand, Product, StockNotify, WarehouseLocation
@@ -60,6 +61,69 @@ class StockNotifyTests(TestCase):
         row = StockNotify.objects.get(product=self.product)
         self.assertEqual(row.email, 'ana@example.com')
         self.assertEqual(row.user, user)
+
+    def test_logged_in_without_email_can_enter_email(self):
+        user = User.objects.create_user('bez-emaila', password='pass')
+        self.client.force_login(user)
+        response = self.client.post(
+            reverse('stock_notify', args=[self.product.slug]),
+            {'email': 'Uneseni@example.com'},
+        )
+        self.assertEqual(response.status_code, 200)
+        row = StockNotify.objects.get(product=self.product)
+        self.assertEqual(row.email, 'uneseni@example.com')
+        self.assertEqual(row.user, user)
+
+    def test_product_save_notifies_guest_and_account_once_after_commit(self):
+        subscribe(product=self.product, email='gost@example.com')
+        user = User.objects.create_user('kupac', 'nalog@example.com', 'pass')
+        self.client.force_login(user)
+        self.client.post(reverse('stock_notify', args=[self.product.slug]))
+        with self.captureOnCommitCallbacks(execute=True):
+            self.product.na_stanju = True
+            self.product.stanje = 3
+            self.product.save(update_fields=['na_stanju', 'stanje'])
+            self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual({m.to[0] for m in mail.outbox}, {'gost@example.com', 'nalog@example.com'})
+        with self.captureOnCommitCallbacks(execute=True):
+            self.product.save()
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_failed_email_stays_pending_for_retry(self):
+        subscribe(product=self.product, email='gost@example.com')
+        Product.objects.filter(pk=self.product.pk).update(na_stanju=True, stanje=2)
+        with self.settings(EMAIL_HOST_PASSWORD=''):
+            self.assertEqual(notify_back_in_stock(self.product.pk), 0)
+        self.assertIsNone(StockNotify.objects.get(product=self.product).notified_at)
+        with patch('EcommerceApp.emails.EmailMultiAlternatives.send', return_value=0):
+            self.assertEqual(notify_back_in_stock(self.product.pk), 0)
+        self.assertIsNone(StockNotify.objects.get(product=self.product).notified_at)
+        self.assertEqual(notify_back_in_stock(self.product.pk), 1)
+
+    def test_unsaved_stock_flag_does_not_send(self):
+        subscribe(product=self.product, email='gost@example.com')
+        with self.captureOnCommitCallbacks(execute=True) as callbacks:
+            self.product.na_stanju = True
+            self.product.naziv = 'Novo ime'
+            self.product.save(update_fields=['naziv'])
+        self.assertEqual(callbacks, [])
+        self.assertIsNone(StockNotify.objects.get(product=self.product).notified_at)
+
+    def test_rolled_back_restock_does_not_send(self):
+        subscribe(product=self.product, email='gost@example.com')
+        with self.captureOnCommitCallbacks(execute=True) as callbacks:
+            try:
+                with transaction.atomic():
+                    self.product.na_stanju = True
+                    self.product.save(update_fields=['na_stanju'])
+                    raise ValueError('rollback')
+            except ValueError:
+                pass
+        self.assertEqual(callbacks, [])
+        self.product.refresh_from_db()
+        self.assertFalse(self.product.na_stanju)
+        self.assertIsNone(StockNotify.objects.get(product=self.product).notified_at)
 
     def test_product_detail_shows_notify_instead_of_sold_out(self):
         page = self.client.get(reverse('product_detail', args=[self.product.slug]))

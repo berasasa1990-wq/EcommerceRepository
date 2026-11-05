@@ -14,6 +14,7 @@
 {% block warehouse_theme_css %}
 {{ block.super }}
 <link rel="stylesheet" media="(max-width: 767px)" href="{% static 'css/product-mobile-layout.css' %}?v=20261030-mobile-hide-options">
+<link rel="stylesheet" media="(min-width: 1025px)" href="{% static 'css/product-desktop-layout.css' %}?v=20261105-smaller-related">
 {% endblock %}
 
 {% block lcp_preload %}
@@ -53,7 +54,6 @@
         <div class="product-gallery has-thumbnails">
             <div class="product-gallery-main" id="mainProductImageWrap">
                 <div class="pd-reference-toolbar">
-                <button type="button" class="home-card-heart pd-reference-heart" aria-label="Omiljeno — {{ product.naziv }}" data-favorite-id="{{ product.pk }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></button>
                 <div class="product-gallery-overlays">
                     {% if product.je_novitet %}
                     <span class="product-detail-corner-badge product-detail-corner-badge--novitet is-pulse" aria-label="Noviteti">NOVITETI</span>
@@ -545,11 +545,11 @@
             <div class="pd-reference-overview">
                 <dl class="pd-reference-facts">
                     <div><dt>Šifra artikla</dt><dd>{{ product.sifra|default:'—' }}</dd></div>
-                    {% if product.brend %}<div><dt>Brend</dt><dd>{{ product.brend.naziv }}</dd></div>{% endif %}
                     {% if product.kategorija %}<div><dt>Kategorija</dt><dd>{{ product.kategorija.naziv }}</dd></div>{% endif %}
+                    {% if product.brend %}<div><dt>Brend</dt><dd>{{ product.brend.naziv }}</dd></div>{% endif %}
                 </dl>
-                <p class="pd-reference-share-status" role="status" hidden></p>
                 {% if product.opis %}<a class="pd-reference-description-link" href="#product-description"><span>Opis</span><span aria-hidden="true">↓</span></a>{% endif %}
+                <p class="pd-reference-share-status" role="status" hidden></p>
             <div class="pd-options-below-description">
                 {% if similar_name_products %}
                 <button type="button" class="product-other-options-btn pd-image-options" id="productOtherOptionsBtn" data-other-options-open>
@@ -586,16 +586,20 @@
 
     {% include 'partials/product_bundle_set.html' %}
 
-        {% if related_products %}
-        <aside class="pd-bottom-related pd-purchase-related" aria-label="Povezani proizvodi">
-            <h2>Povezani proizvodi</h2>
-            <div class="product-catalog pd-related-grid">
-                {% for item in related_products|slice:':4' %}
-                {% include 'partials/product_catalog_card.html' with product=item home_reference_card=True hide_variations=True %}
-                {% endfor %}
+    <div class="product-detail-content">
+        {% if product.opis %}
+        <div class="product-detail-opis-col" id="product-description">
+            <h2 class="product-detail-section-title">OPIS PROIZVODA</h2>
+            <div class="product-detail-description">
+                {% if '<' in product.opis and '>' in product.opis %}
+                {{ product.opis|safe }}
+                {% else %}
+                <div class="product-detail-description-text">{{ product.opis|linebreaks }}</div>
+                {% endif %}
             </div>
-        </aside>
+        </div>
         {% endif %}
+    </div>
 
     {% if site_settings.politika_dostava or site_settings.politika_povrat %}
     <div class="product-detail-policies">
@@ -624,21 +628,21 @@
     </div>
     {% endif %}
 
-    <div class="product-detail-content">
-        {% if product.opis %}
-        <div class="product-detail-opis-col" id="product-description">
-            <h2 class="product-detail-section-title">OPIS PROIZVODA</h2>
-            <div class="product-detail-description">
-                {% if '<' in product.opis and '>' in product.opis %}
-                {{ product.opis|safe }}
-                {% else %}
-                <div class="product-detail-description-text">{{ product.opis|linebreaks }}</div>
-                {% endif %}
+        {% if related_products %}
+        <aside class="pd-bottom-related pd-purchase-related" aria-label="Povezani proizvodi">
+            <h2>Povezani proizvodi</h2>
+            <div class="product-catalog pd-related-grid">
+                {% for item in related_products|slice:':4' %}
+                {% include 'partials/product_catalog_card.html' with product=item home_reference_card=True hide_variations=True %}
+                {% endfor %}
             </div>
-        </div>
+        </aside>
         {% endif %}
+
+    <div class="product-detail-content">
         {% include 'partials/product_why_buy.html' %}
     </div>
+
 </section>
 
 <dialog id="productQuantityDialog" class="pd-quantity-dialog" aria-labelledby="productQuantityTitle">

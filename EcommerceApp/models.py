@@ -3619,6 +3619,14 @@ class Product(models.Model):
             return self._save_product(*args, **kwargs)
 
     def _save_product(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields')
+        restocked = (
+            self.pk and self.na_stanju
+            and (update_fields is None or 'na_stanju' in update_fields)
+            and type(self).objects.using(self._state.db or 'default').filter(
+                pk=self.pk, na_stanju=False,
+            ).exists()
+        )
         if not self.slug:
             self.slug = _build_unique_slug(
                 Product,
@@ -3658,6 +3666,10 @@ class Product(models.Model):
         if self.search_document is None:
             self.search_document = ''
         super().save(*args, **kwargs)
+
+        if restocked:
+            from .stock_notify import schedule_back_in_stock
+            schedule_back_in_stock(self.pk, using=self._state.db)
 
     @property
     def na_akciji(self):

@@ -5,7 +5,7 @@ import logging
 from django.core.exceptions import ValidationError
 from django.core.signing import dumps, loads
 from django.core.validators import validate_email
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from .models import Product, StockNotify
@@ -46,6 +46,11 @@ def subscribe(*, product, email, user=None):
     return 'created'
 
 
+def schedule_back_in_stock(product_id, *, using='default'):
+    """Pošalji tek nakon uspješnog spremanja zalihe."""
+    transaction.on_commit(lambda: notify_back_in_stock(product_id), using=using)
+
+
 def notify_back_in_stock(product_id):
     product = Product.objects.select_related('brend').filter(pk=product_id).first()
     if product is None or not product.na_stanju:
@@ -61,7 +66,8 @@ def notify_back_in_stock(product_id):
     now = timezone.now()
     for row in pending:
         try:
-            send_stock_back_email(to_email=row.email, product=product)
+            if not send_stock_back_email(to_email=row.email, product=product):
+                continue
             row.notified_at = now
             row.save(update_fields=['notified_at'])
             sent += 1

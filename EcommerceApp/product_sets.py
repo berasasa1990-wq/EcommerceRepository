@@ -31,8 +31,12 @@ def set_stock_totals(product):
 
 def refresh_set(product):
     qty = set_stock_totals(product)['dostupno']
+    was_out = Product.objects.filter(pk=product.pk, na_stanju=False).exists()
     Product.objects.filter(pk=product.pk).update(stanje=qty, na_stanju=qty > 0)
     product.stanje, product.na_stanju = qty, qty > 0
+    if qty > 0 and was_out:
+        from .stock_notify import schedule_back_in_stock
+        schedule_back_in_stock(product.pk)
     return qty
 
 
