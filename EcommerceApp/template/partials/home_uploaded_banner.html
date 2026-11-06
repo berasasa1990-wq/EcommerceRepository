@@ -1,6 +1,7 @@
 {% load static ecommerce_extras %}
 {% homepage_slides site_settings as slides %}
 {% if slides %}<div class="home-banner-slider" data-home-banner-slider aria-label="Početni banneri">{% endif %}
+{% if not slides %}
 {% if site_settings.hero_slika or site_settings.hero_slika_mobilna or site_settings.hero_video_mobilni or site_settings.hero_video_desktop %}
 <section class="home-uploaded-banner{% if not site_settings.hero_slika and not site_settings.hero_video_desktop %} home-uploaded-banner--mobile-only{% endif %}{% if site_settings.hero_video_mobilni %} home-uploaded-banner--has-mobile-video{% endif %}{% if site_settings.hero_video_desktop %} home-uploaded-banner--has-desktop-video{% if not site_settings.hero_slika and not site_settings.hero_slika_mobilna and not site_settings.hero_video_mobilni %} home-uploaded-banner--desktop-video-only{% endif %}{% endif %}" aria-label="Promotivna ponuda">
     {% if site_settings.hero_link %}<a href="{{ site_settings.hero_link }}" aria-label="Pogledaj promotivnu ponudu">{% endif %}
@@ -25,12 +26,13 @@
     {% if site_settings.hero_link %}</a>{% endif %}
 </section>
 {% endif %}
+{% endif %}
 
 {% for slide in slides %}
-<section class="home-uploaded-banner" data-home-slide{% if not forloop.first or site_settings.hero_slika or site_settings.hero_slika_mobilna or site_settings.hero_video_mobilni or site_settings.hero_video_desktop %} hidden{% endif %} aria-label="Promotivna ponuda">
+<section class="home-uploaded-banner" data-home-slide{% if not forloop.first %} hidden{% endif %} aria-label="Promotivna ponuda">
 {% if slide.hero_link %}<a href="{{ slide.hero_link }}">{% endif %}
-<img {% if forloop.first and not site_settings.hero_slika and not site_settings.hero_slika_mobilna and not site_settings.hero_video_mobilni and not site_settings.hero_video_desktop %}src="{{ slide.hero_slika.url }}" fetchpriority="high"{% else %}data-slide-src="{{ slide.hero_slika.url }}"{% endif %} alt="Promotivna ponuda" width="1600" height="600" decoding="async">
+<img {% if forloop.first %}src="{{ slide.hero_slika.url }}" fetchpriority="high"{% else %}data-slide-src="{{ slide.hero_slika.url }}"{% endif %} alt="Promotivna ponuda" width="1600" height="600" decoding="async">
 {% if slide.hero_link %}</a>{% endif %}
 </section>
 {% endfor %}
-{% if slides %}<div class="home-banner-slider__controls"><button type="button" data-slide-prev aria-label="Prethodni banner">‹</button><button type="button" data-slide-pause aria-label="Pauziraj smjenjivanje">Pauza</button><button type="button" data-slide-next aria-label="Sljedeći banner">›</button></div></div><script src="{% static 'js/home-banner-slider.js' %}" defer></script>{% endif %}
+{% if slides %}<div class="home-banner-slider__controls"{% if slides|length == 1 %} hidden{% endif %}><button type="button" data-slide-prev aria-label="Prethodni banner">‹</button><button type="button" data-slide-pause aria-label="Pauziraj smjenjivanje">Pauza</button><button type="button" data-slide-next aria-label="Sljedeći banner">›</button></div></div><script src="{% static 'js/home-banner-slider.js' %}" defer></script>{% endif %}
