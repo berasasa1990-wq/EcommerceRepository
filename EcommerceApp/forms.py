@@ -1086,7 +1086,23 @@ class HeroBannerSettingsForm(forms.ModelForm):
         return upload
 
     def clean_hero_slika(self):
-        return self._clean_banner_image('hero_slika')
+        upload = self._clean_banner_image('hero_slika')
+        if upload and not getattr(upload, '_committed', False):
+            from .models import HeroBanner
+            candidate = HeroBanner(settings=self.instance, hero_slika=upload)
+            try:
+                candidate.clean(include_primary=False)
+            except forms.ValidationError as exc:
+                raise forms.ValidationError(exc.messages)
+            return candidate.hero_slika.file
+        return upload
+
+    def clean_hero_slika_mobilna(self):
+        upload = self.cleaned_data.get('hero_slika_mobilna')
+        if upload and hasattr(upload, 'content_type'):
+            from .utils.images import prepare_homepage_banner
+            return prepare_homepage_banner(upload, size=(1080, 1350), max_bytes=200_000)
+        return upload
 
     def clean_bestsellers_banner_slika(self):
         return self._clean_banner_image('bestsellers_banner_slika')
@@ -1148,7 +1164,7 @@ class HeroBannerSettingsForm(forms.ModelForm):
         if 'hero_link' in self.fields:
             self.fields['hero_link'].required = False
         if 'hero_slika_mobilna' in self.fields:
-            self.fields['hero_slika_mobilna'].help_text = 'Preporučeno 1080 × 1350 px (4:5). Koristi se samo na telefonu. Ako je prazno, koristi se slika za računar.'
+            self.fields['hero_slika_mobilna'].help_text = 'Preporučeno 1080 × 1350 px (4:5), najviše 200 KB nakon automatske optimizacije. Koristi se samo na telefonu. Ako je prazno, koristi se slika za računar.'
         if 'bestsellers_banner_slika_mobilna' in self.fields:
             self.fields['bestsellers_banner_slika_mobilna'].help_text = 'Samo za telefon. Automatska optimizacija na najviše 60 KB, uz očuvan omjer i dobar kvalitet.'
         for name in ('promo_new_slika_mobilna', 'promo_sale_slika_mobilna'):
@@ -1241,3 +1257,16 @@ class HomeMobileVideoForm(forms.ModelForm):
         fields = ('home_mobile_video', 'home_mobile_video_link', 'home_mobile_video_2', 'home_mobile_video_2_link')
         widgets = {name: forms.ClearableFileInput(attrs={'accept': 'video/mp4,.mp4'})
                    for name in ('home_mobile_video', 'home_mobile_video_2')}
+
+
+class HomepageSlideForm(forms.ModelForm):
+    class Meta:
+        from .models import HeroBanner
+        model = HeroBanner
+        fields = ('hero_slika', 'hero_link', 'redoslijed', 'aktivan')
+        labels = {'hero_slika': 'Slika bannera', 'hero_link': 'Link bannera (opcionalno)'}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['hero_slika'].required = True
+        self.fields['hero_slika'].help_text = 'Jedna slika za računar i telefon. Automatska obrada na 1600 × 600 px i najviše 80 KB.'

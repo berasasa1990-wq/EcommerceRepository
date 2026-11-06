@@ -39,6 +39,7 @@ def storefront_products(products):
     prices = {
         row['pk']: row for row in Product.objects.filter(pk__in=ids).values(
             'pk', 'cijena', 'akcijska_cijena', 'akcija_do',
+            'stanje', 'na_stanju', 'magacin_sync_at', 'is_set',
         )
     }
     offers = {}

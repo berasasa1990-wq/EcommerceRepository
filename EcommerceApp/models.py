@@ -948,11 +948,22 @@ class SiteSettings(models.Model):
                 processed = prepare_promo_banner(image, mobile=field_name.endswith('_mobilna'))
                 image.save(processed.name, processed, save=False)
 
+        mobile_hero = self.hero_slika_mobilna
+        if mobile_hero and not mobile_hero._committed:
+            from .utils.images import prepare_homepage_banner
+            processed = prepare_homepage_banner(mobile_hero, size=(1080, 1350), max_bytes=200_000)
+            mobile_hero.save(processed.name, processed, save=False)
+
         for field_name in ('hero_slika', 'bestsellers_banner_slika'):
             image = getattr(self, field_name)
             if image and not image._committed:
                 from .utils.images import prepare_homepage_banner
-                processed = prepare_homepage_banner(image)
+                if field_name == 'hero_slika':
+                    candidate = HeroBanner(settings=self, hero_slika=image.file)
+                    candidate.clean(include_primary=False)
+                    processed = candidate.hero_slika.file
+                else:
+                    processed = prepare_homepage_banner(image)
                 image.save(processed.name, processed, save=False)
         if self.logo:
             apply_image_processing(self, 'logo', post_process=process_site_logo)
@@ -7415,8 +7426,39 @@ class HeroBanner(models.Model):
         verbose_name = 'Hero banner'
         verbose_name_plural = 'Hero banneri'
 
+    def clean(self, *, include_primary=True):
+        super().clean()
+        image = self.hero_slika
+        if not image or image._committed:
+            return
+        import hashlib
+        from django.core.exceptions import ValidationError
+        from .utils.images import prepare_homepage_banner
+        processed = prepare_homepage_banner(image)
+        digest = hashlib.sha256(processed.read()).digest()
+        processed.seek(0)
+        others = list(type(self).objects.filter(settings_id=self.settings_id).exclude(pk=self.pk))
+        candidates = [banner.hero_slika for banner in others if banner.hero_slika]
+        if include_primary and self.settings_id and self.settings.hero_slika:
+            candidates.append(self.settings.hero_slika)
+        for candidate in candidates:
+            try:
+                with candidate.storage.open(candidate.name, 'rb') as existing:
+                    existing = prepare_homepage_banner(existing)
+                    existing_digest = hashlib.sha256(existing.read()).digest()
+            except (FileNotFoundError, ValidationError):
+                # A missing or legacy unoptimizable file must not block new uploads.
+                continue
+            if existing_digest == digest:
+                raise ValidationError({'hero_slika': 'Ova slika je već postavljena kao početni banner.'})
+        self.hero_slika = processed
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return self.hero_opis[:70]
+        return self.hero_opis[:70] or f'Početni banner #{self.pk}'
 
 
 class BulkPriceBatch(models.Model):

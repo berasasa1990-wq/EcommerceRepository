@@ -2210,8 +2210,9 @@ HOMEPAGE_BANNER_SIZE = (1600, 600)
 HOMEPAGE_BANNER_MAX_BYTES = 80_000
 
 
-def prepare_homepage_banner(upload):
-    """Keep a 1600×600 banner sharp while enforcing an 80,000-byte ceiling."""
+def prepare_homepage_banner(upload, *, size=HOMEPAGE_BANNER_SIZE, max_bytes=None):
+    """Fit a static banner to its target size and enforce the upload byte budget."""
+    max_bytes = HOMEPAGE_BANNER_MAX_BYTES if max_bytes is None else max_bytes
     from pathlib import Path
     from django.core.exceptions import ValidationError
     from PIL import UnidentifiedImageError
@@ -2223,14 +2224,14 @@ def prepare_homepage_banner(upload):
                 raise ValidationError('Učitaj jednu statičnu sliku bannera, bez animacije.')
             image = ImageOps.exif_transpose(source)
             # Optimized uploads can pass through a form and model without a second lossy encode.
-            if source.format in ('WEBP', 'AVIF') and image.size == HOMEPAGE_BANNER_SIZE:
+            if source.format in ('WEBP', 'AVIF') and image.size == size:
                 source.load()
                 upload.seek(0)
                 original = upload.read()
-                if len(original) <= HOMEPAGE_BANNER_MAX_BYTES:
+                if len(original) <= max_bytes:
                     extension = source.format.lower()
                     return ContentFile(original, name=Path(upload.name).stem + '.' + extension)
-            image = ImageOps.fit(_image_to_rgb(image), HOMEPAGE_BANNER_SIZE, method=Image.Resampling.LANCZOS)
+            image = ImageOps.fit(_image_to_rgb(image), size, method=Image.Resampling.LANCZOS)
     except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as exc:
         raise ValidationError('Slika se ne može pročitati. Učitaj ispravan JPG, PNG, WebP ili AVIF.') from exc
     finally:
@@ -2246,7 +2247,7 @@ def prepare_homepage_banner(upload):
 
     stem = Path(upload.name).stem
     lossless = webp()
-    if len(lossless) <= HOMEPAGE_BANNER_MAX_BYTES:
+    if len(lossless) <= max_bytes:
         return ContentFile(lossless, name=stem + '.webp')
     for extension, encode in (('webp', webp), ('avif', _encode_avif_safe)):
         # Do not sacrifice resolution or fall back to a severely degraded image.
@@ -2257,14 +2258,14 @@ def prepare_homepage_banner(upload):
             data = encode(quality) if extension == 'webp' else encode(image, quality)
             if data is None:
                 break
-            if len(data) <= HOMEPAGE_BANNER_MAX_BYTES:
+            if len(data) <= max_bytes:
                 best = data
                 low = quality + 1
             else:
                 high = quality - 1
         if best is not None:
             return ContentFile(best, name=stem + '.' + extension)
-    raise ValidationError('Ova slika ne staje u 80 KB uz očuvan kvalitet na 1600 × 600 px. Učitaj jednostavniju sliku ili smanji šum i sitne detalje.')
+    raise ValidationError(f'Ova slika ne staje u {max_bytes // 1000} KB uz očuvan kvalitet na {size[0]} × {size[1]} px. Učitaj jednostavniju sliku ili smanji šum i sitne detalje.')
 
 
 PROMO_BANNER_MAX_BYTES = 60_000

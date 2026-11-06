@@ -2291,6 +2291,34 @@ def _selected_new_product_ids():
     ).order_by('redoslijed', 'pk').values_list('artikal_id', flat=True))
 
 
+def _home_bestselling_ids():
+    # Cache the ranking only; product visibility, prices and stock remain live.
+    return _home_cache_get('home_bestselling_ids_v1', lambda: list(
+        OrderItem.objects.filter(
+            narudzba__status__in=[Order.Status.POTVRDJENA, Order.Status.POSLANA, Order.Status.ZAVRSENA],
+            narudzba__izvor=Order.Izvor.WEBSHOP,
+            artikal__isnull=False,
+        ).values('artikal_id').annotate(sold=Sum('kolicina'))
+        .order_by('-sold', 'artikal_id').values_list('artikal_id', flat=True)[:12]
+    ), ttl=60)
+
+
+def _refresh_home_product_sections(context):
+    """One live price/stock batch for all home carousels, shared during this render only."""
+    from .storefront_stock import storefront_products
+
+    products = {}
+    for key in ('latest_products', 'bestselling_products', 'featured_products', 'sale_products', 'home_set_products'):
+        context[key] = list(context.get(key) or [])
+        products.update((product.pk, product) for product in context[key])
+    for key in ('home_category_showcases', 'home_brand_showcases'):
+        for section in context.get(key) or []:
+            products.update((product.pk, product) for product in section['products'])
+    for section in context.get('custom_home_sections') or []:
+        products.update((product.pk, product) for product in section.visible_products)
+    context['storefront_products_by_id'] = {product.pk: product for product in storefront_products(products.values())}
+
+
 def _home_latest_products(request=None):
     return _home_latest_products_uncached(request)
 
@@ -2719,29 +2747,20 @@ def home(request):
             else:
                 catalog_subtitle = f'Nema artikala za {size_label}.'
     else:
-        bestselling_ids = list(
-            OrderItem.objects.filter(
-                narudzba__status__in=[Order.Status.POTVRDJENA, Order.Status.POSLANA, Order.Status.ZAVRSENA],
-                narudzba__izvor=Order.Izvor.WEBSHOP,
-                artikal__isnull=False,
-            ).values('artikal_id').annotate(sold=Sum('kolicina')).order_by('-sold', 'artikal_id').values_list('artikal_id', flat=True)[:12]
-        )
-        bestselling_by_id = {p.pk: p for p in _product_queryset(request).filter(pk__in=bestselling_ids)}
+        bestselling_ids = _home_bestselling_ids()
+        bestselling_by_id = {p.pk: p for p in _product_queryset(request).prefetch_related(None).filter(pk__in=bestselling_ids)}
         bestselling_products = [bestselling_by_id[pk] for pk in bestselling_ids if pk in bestselling_by_id]
         from django.db.models import Prefetch
         custom_home_sections = list(HomeProductSection.objects.filter(aktivan=True).prefetch_related(
-            Prefetch('artikli', queryset=_product_queryset(request).order_by('naziv', 'pk'), to_attr='visible_products')
+            Prefetch('artikli', queryset=_product_queryset(request).prefetch_related(None).order_by('naziv', 'pk'), to_attr='visible_products')
         ))
         latest_products = _home_latest_products(request)
         featured_products = _home_featured_products(request)
         featured_desktop_extra_ids = []
-        if site_settings.prikazi_akcijsku_sekciju:
-            sale_products = _home_sale_products(request)
-        home_trust_items = _home_trust_items()
-        home_promo_cards = []
-        home_category_showcases = _home_category_showcases(request)
-        home_brand_showcases = _home_brand_showcases(request)
         home_vlogs = _home_vlogs()
+        # The current home template does not render the legacy sale/trust/category/
+        # brand sections. Keep their context empty instead of fetching unused products.
+        home_promo_cards = []
 
     # Evaluiraj banere jednom (izbjegni .exists() + .first() = 2× query)
     hero_banners_list = list(hero_banners)
@@ -2823,7 +2842,7 @@ def home(request):
         'featured_cards': [_banner_to_card(b) for b in featured_banners],
         'spotlight': spotlight,
         'latest_products': latest_products,
-        'home_set_products': _home_product_queryset(request).filter(is_set=True).order_by('-kreiran', '-pk')[:12] if not filters_active else [],
+        'home_set_products': _home_product_queryset(request).prefetch_related(None).filter(is_set=True).order_by('-kreiran', '-pk')[:4] if not filters_active else [],
         'bestselling_products': bestselling_products,
         'hero_banners': [site_settings, *site_settings.hero_banners.filter(aktivan=True)] if not filters_active else [],
         'custom_home_sections': custom_home_sections,
@@ -2853,6 +2872,9 @@ def home(request):
         'home_section_product_visible_mobile': HOME_SECTION_PRODUCT_VISIBLE_MOBILE,
         'canonical_url': settings.SEO_CANONICAL_URL + '/',
     }
+    if not filters_active:
+        _refresh_home_product_sections(context)
+
     # SEO: početna ili filtrirani katalog (akcija / noviteti / pretraga / brend)
     selected_brand = context['selected_brand']
     if filters_active:
@@ -6646,7 +6668,8 @@ def staff_admin_panel(request):
 @user_passes_test(_superuser_required)
 def staff_banners(request):
     from django.forms import modelform_factory
-    from .forms import HeroBannerSettingsForm, BannerAdminForm
+    from .forms import HeroBannerSettingsForm, BannerAdminForm, HomepageSlideForm
+    from .models import HeroBanner
 
     fixed_banners = {
         'hero': ('hero_slika', 'hero_link', 'Početni banner'),
@@ -6669,6 +6692,8 @@ def staff_banners(request):
             for field in fields:
                 setattr(site, field, '')
             site.save(update_fields=list(fields))
+        elif target.startswith('slide-') and target[6:].isdigit():
+            get_object_or_404(HeroBanner, pk=target[6:], settings=site).delete()
         elif target.isdigit():
             get_object_or_404(Banner, pk=target).delete()
         else:
@@ -6679,7 +6704,15 @@ def staff_banners(request):
     adding = request.GET.get('add') == '1'
     form = None
     title = ''
-    if editing in fixed_banners:
+    slide_editor = request.GET.get('add') == 'slide' or editing.startswith('slide-')
+    if slide_editor:
+        if editing and not editing[6:].isdigit():
+            raise Http404('Banner nije pronađen.')
+        instance = get_object_or_404(HeroBanner, pk=editing[6:], settings=site) if editing else HeroBanner(settings=site)
+        form = HomepageSlideForm(request.POST if request.method == 'POST' else None,
+                                 request.FILES if request.method == 'POST' else None, instance=instance)
+        title = 'Početni banner — jedna slika'
+    elif editing in fixed_banners:
         fields = banner_fields(editing)
         form_class = modelform_factory(SiteSettings, form=HeroBannerSettingsForm, fields=fields)
         form = form_class(request.POST if request.method == 'POST' else None,
@@ -6709,7 +6742,9 @@ def staff_banners(request):
     image_editors = []
     extra_fields = []
     if form:
-        if editing in fixed_banners:
+        if slide_editor:
+            desktop_name, mobile_name = 'hero_slika', ''
+        elif editing in fixed_banners:
             desktop_name = fixed_banners[editing][0]
             mobile_name = mobile_fields[editing]
         else:
@@ -6720,7 +6755,7 @@ def staff_banners(request):
                 continue
             field = form[name]
             image = getattr(form.instance, name, None)
-            dimensions = ('1080 × 1350 px' if editing == 'hero' else '1000 × 625 px' if editing in ('promo_new', 'promo_sale') else '600 × 560 px') if device == 'mobile' else ('1920 × 720 px' if editing == 'hero' else '1600 × 600 px' if editing == 'bestsellers' else '1200 × 560 px')
+            dimensions = '1600 × 600 px (jedna slika za sve uređaje)' if slide_editor else ('1080 × 1350 px' if editing == 'hero' else '1000 × 625 px' if editing in ('promo_new', 'promo_sale') else '600 × 560 px') if device == 'mobile' else ('1920 × 720 px' if editing == 'hero' else '1600 × 600 px' if editing == 'bestsellers' else '1200 × 560 px')
             image_editors.append({'field': field, 'heading': heading, 'device': device,
                                   'image': image, 'dimensions': dimensions, 'limit': 'Najviše 60 KB nakon automatske optimizacije.' if editing in ('promo_new', 'promo_sale') else ''})
         image_names = {editor['field'].name for editor in image_editors}
@@ -6735,6 +6770,7 @@ def staff_banners(request):
         'image_editors': image_editors, 'extra_fields': extra_fields,
         'hero_list_image': site.hero_slika or site.hero_slika_mobilna,
         'bestsellers_list_image': site.bestsellers_banner_slika or site.bestsellers_banner_slika_mobilna,
+        'homepage_slides': site.hero_banners.exclude(hero_slika=''),
         'banner_site': site, 'promo_banners': [{'key': key, 'title': fixed_banners[key][2], 'video': getattr(site, f'{key}_video_mobilni') or getattr(site, f'{key}_video_desktop'), 'image': getattr(site, fixed_banners[key][0]) or getattr(site, mobile_fields[key]), 'help': 'Računar: 1200 × 560 px · Telefon: 1000 × 625 px'} for key in ('promo_new', 'promo_sale')], 'banners': Banner.objects.order_by('redoslijed', 'pk'),
         'preview_mobile_image': getattr(site, mobile_fields[editing]) if editing in mobile_fields else (getattr(form.instance, 'slika_mobilna', None) if form else None),
         'preview_image': getattr(site, fixed_banners[editing][0]) if editing in fixed_banners else (getattr(form.instance, 'slika', None) if form else None),

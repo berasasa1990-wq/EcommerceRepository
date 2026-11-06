@@ -10,7 +10,7 @@
 <section class="banner-manager" id="bannerManager">
 <a href="{% url 'staff_admin_panel' %}">← Admin panel</a>
 {% if banner_form %}
-<div class="banner-manager__heading"><div><p class="banner-manager__eyebrow">UREĐIVANJE BANNERA</p><h1>{{ editor_title }}</h1><p class="banner-manager__intro">Postavi sadržaj za računar i telefon, pa sačuvaj izmjene. Za desktop i telefon možeš učitati zaseban MP4 video.</p></div><a class="banner-manager__back" href="{% url 'staff_banners' %}">← Svi banneri</a></div>
+<div class="banner-manager__heading"><div><p class="banner-manager__eyebrow">UREĐIVANJE BANNERA</p><h1>{{ editor_title }}</h1><p class="banner-manager__intro">Dodatni početni banner koristi jednu sliku za sve uređaje. Redoslijed određuje smjenjivanje; isključi prikaz da privremeno sakriješ banner.</p></div><a class="banner-manager__back" href="{% url 'staff_banners' %}">← Svi banneri</a></div>
 <form method="post" enctype="multipart/form-data" class="banner-manager__form" id="bannerEditForm">
 {% csrf_token %}{{ banner_form.non_field_errors }}
 <div class="banner-manager__uploads">
@@ -35,7 +35,7 @@
 </form>
 <script src="{% static 'js/staff-banners.js' %}?v=20261031-preview" defer></script>
 {% else %}
-<div class="banner-manager__heading"><h1>Banneri</h1><a class="banner-manager__action" href="{% url 'staff_banners' %}?add=1">Dodaj</a></div>
+<div class="banner-manager__heading"><h1>Banneri</h1><a class="banner-manager__action" href="?add=slide">Dodaj početni banner</a><a class="banner-manager__action" href="{% url 'staff_banners' %}?add=1">Dodaj</a></div>
 <div class="banner-manager__row">
 {% if hero_list_image %}<img class="banner-manager__thumbnail" src="{{ hero_list_image.url }}" alt="Početni banner" loading="lazy">{% endif %}
 <div class="banner-manager__info"><strong>Početni banner</strong><small>Računar: 1920 × 720 px · Telefon: 1080 × 1350 px</small><small>Glavni banner na vrhu početne · {% if banner_site.hero_video_desktop %}Video za desktop postavljen{% elif banner_site.hero_video_mobilni %}Video za telefon postavljen{% elif hero_list_image %}Slika postavljena{% else %}Bez slike{% endif %}</small><span class="banner-manager__status banner-manager__status--{% if hero_list_image or banner_site.hero_video_mobilni or banner_site.hero_video_desktop %}active{% else %}inactive{% endif %}">{% if hero_list_image or banner_site.hero_video_mobilni or banner_site.hero_video_desktop %}Aktivan{% else %}Neaktivan{% endif %}</span></div><div class="banner-manager__actions"><a class="banner-manager__action" href="?edit=hero">Uredi</a><form method="post" action="{% url 'staff_banners' %}">{% csrf_token %}<button class="banner-manager__action" type="submit" name="delete_banner" value="hero">Obriši</button></form></div></div>
@@ -46,6 +46,7 @@
 {% if promo.image %}<img class="banner-manager__thumbnail" src="{{ promo.image.url }}" alt="{{ promo.title }}" loading="lazy">{% endif %}
 <div class="banner-manager__info"><strong>{{ promo.title }}</strong><small>{{ promo.help }}</small>{% if promo.video %}<small>Video postavljen</small>{% endif %}<span class="banner-manager__status banner-manager__status--{% if promo.image or promo.video %}active{% else %}inactive{% endif %}">{% if promo.image or promo.video %}Aktivan{% else %}Neaktivan{% endif %}</span></div>
 <div class="banner-manager__actions"><a class="banner-manager__action" href="?edit={{ promo.key }}">Uredi</a><form method="post" action="{% url 'staff_banners' %}">{% csrf_token %}<button class="banner-manager__action" type="submit" name="delete_banner" value="{{ promo.key }}">Obriši</button></form></div></div>{% endfor %}
+{% for slide in homepage_slides %}<div class="banner-manager__row"><img class="banner-manager__thumbnail" src="{{ slide.hero_slika.url }}" alt="Početni banner" loading="lazy"><div class="banner-manager__info"><strong>Početni banner #{{ slide.pk }}</strong><small>Redoslijed: {{ slide.redoslijed }} · {% if slide.aktivan %}Aktivan{% else %}Neaktivan{% endif %} · Jedna slika</small></div><a href="?edit=slide-{{ slide.pk }}">Uredi</a><form method="post">{% csrf_token %}<button name="delete_banner" value="slide-{{ slide.pk }}">Obriši</button></form></div>{% endfor %}
 {% for banner in banners %}<div class="banner-manager__row">
 {% if banner.aktivan and banner.slika %}<img class="banner-manager__thumbnail" src="{{ banner.slika.url }}" alt="{{ banner.naslov|default:'Banner' }}" loading="lazy">{% endif %}
 <div class="banner-manager__info"><strong>{{ banner.naslov|default:'Banner' }} #{{ banner.pk }}</strong><small>{{ banner.get_tip_display }}</small><span class="banner-manager__status banner-manager__status--{% if banner.aktivan %}active{% else %}inactive{% endif %}">{% if banner.aktivan %}Aktivan{% else %}Neaktivan{% endif %}</span></div><div class="banner-manager__actions"><a class="banner-manager__action" href="?edit={{ banner.pk }}">Uredi</a><form method="post" action="{% url 'staff_banners' %}">{% csrf_token %}<button class="banner-manager__action" type="submit" name="delete_banner" value="{{ banner.pk }}">Obriši</button></form></div></div>{% endfor %}

@@ -174,3 +174,14 @@ html body .ref-promos--uploads > .ref-promo-upload--desktop-video { display: non
     html body .ref-promos--uploads > .ref-promo--desktop-video-replaced { display: none !important; }
     html body .ref-promo-upload--desktop-video { aspect-ratio: 1200 / 560; overflow: hidden; }
 }
+
+html body main > .home-banner-slider { display:block; order:0; position:relative; width:100%; max-width:1920px; margin:0 auto 24px; overflow:hidden; }
+html body .home-banner-slider > .home-uploaded-banner { margin:0!important; width:100%; }
+html body .home-banner-slider > .home-uploaded-banner[hidden],
+html body .home-banner-slider__controls[hidden] { display:none!important; }
+.home-banner-slider__controls { display:flex; justify-content:center; gap:12px; padding:8px; }
+.home-banner-slider__controls button { min-width:44px; min-height:44px; cursor:pointer; border:1px solid #ccc; border-radius:6px; background:#fff; color:#222; }
+@media(max-width:767px) {
+ html body.home-mobile-reference main > .home-banner-slider { width:100vw; max-width:none; margin:0 calc(50% - 50vw); }
+ html body .home-banner-slider img { aspect-ratio:8/3; height:auto; object-fit:contain; }
+}

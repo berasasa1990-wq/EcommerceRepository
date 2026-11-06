@@ -52,9 +52,13 @@ def loyalty_bodovi(cijena):
     return int(value.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
 
 
-@register.simple_tag
-def live_stock_products(products):
+@register.simple_tag(takes_context=True)
+def live_stock_products(context, products):
     from EcommerceApp.storefront_stock import storefront_products
+    products = list(products)
+    refreshed = context.get('storefront_products_by_id')
+    if refreshed is not None and all(product.pk in refreshed for product in products):
+        return [refreshed[product.pk] for product in products]
     return storefront_products(products)
 
 
@@ -82,3 +86,18 @@ def description_blocks(value):
         else:
             blocks.append({'kind': kind, 'lines': [text]})
     return blocks
+
+
+@register.simple_tag
+def homepage_slides(site):
+    if not site or not getattr(site, 'pk', None):
+        return []
+    # Never open image files or probe remote storage while rendering the home page.
+    seen = {site.hero_slika.name} if site.hero_slika else set()
+    slides = []
+    for banner in site.hero_banners.filter(aktivan=True).exclude(hero_slika=''):
+        if banner.hero_slika.name in seen:
+            continue
+        seen.add(banner.hero_slika.name)
+        slides.append(banner)
+    return slides
