@@ -7413,6 +7413,7 @@ class CardPayment(models.Model):
 
 
 class HeroBanner(models.Model):
+    pozicija = models.CharField(max_length=20, default='hero', choices=(('hero', 'Glavni banner'), ('bestsellers', 'Ispod najprodavanijih proizvoda')), verbose_name='Pozicija')
     settings = models.ForeignKey(SiteSettings, on_delete=models.CASCADE, related_name='hero_banners')
     hero_opis = models.TextField(verbose_name='Opis bannera')
     hero_slika = models.ImageField(upload_to='site/hero/', blank=True, verbose_name='Slika artikla')
@@ -7437,10 +7438,12 @@ class HeroBanner(models.Model):
         processed = prepare_homepage_banner(image)
         digest = hashlib.sha256(processed.read()).digest()
         processed.seek(0)
-        others = list(type(self).objects.filter(settings_id=self.settings_id).exclude(pk=self.pk))
+        others = list(type(self).objects.filter(settings_id=self.settings_id, pozicija=self.pozicija).exclude(pk=self.pk))
         candidates = [banner.hero_slika for banner in others if banner.hero_slika]
-        if include_primary and self.settings_id and self.settings.hero_slika:
-            candidates.append(self.settings.hero_slika)
+        if include_primary and self.settings_id:
+            primary = self.settings.bestsellers_banner_slika if self.pozicija == 'bestsellers' else self.settings.hero_slika
+            if primary:
+                candidates.append(primary)
         for candidate in candidates:
             try:
                 with candidate.storage.open(candidate.name, 'rb') as existing:

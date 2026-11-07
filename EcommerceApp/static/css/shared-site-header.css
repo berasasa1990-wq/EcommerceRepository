@@ -148,3 +148,17 @@ html body.shared-site-header #header a.ref-home-nav {
  html body.shared-site-header #header .header-phone,
  html body.shared-site-header #header .header-register { display:none!important; }
 }
+
+/* Keep account, cart, admin and Edit in one compact desktop group. */
+@media (min-width:1025px) {
+ html body.shared-site-header #header .nav-actions { display:flex!important; flex:0 0 auto; width:auto!important; justify-content:flex-end!important; gap:12px!important; }
+ html body.shared-site-header #header .mobile-header-tools { display:flex!important; flex:0 0 auto; width:auto!important; }
+ html body.shared-site-header #header .nav-actions .account-btn { width:auto!important; min-width:44px; padding:0!important; margin:0!important; }
+ html body.shared-site-header #header .nav-cart-stack { display:flex!important; flex-direction:row!important; align-items:center!important; gap:12px!important; width:auto!important; margin:0!important; padding:0!important; }
+ html body.shared-site-header #header .nav-cart-stack > .cart-btn { position:relative!important; margin:0!important; padding:0!important; order:-1; }
+ html body.shared-site-header #header .nav-cart-stack > .logo-admin-panel { position:static!important; margin:0!important; flex:0 0 auto; }
+ html body.shared-site-header #header .staff-edit-controls { display:flex; align-items:center; margin:0!important; white-space:nowrap; }
+}
+
+@media (min-width:1025px) { html body.shared-site-header #header .header-shell { grid-template-columns:minmax(220px,.44fr) minmax(0,1fr) auto; } }
+@media (min-width:1025px) and (max-width:1200px) { html body.shared-site-header #header .header-shell { grid-template-columns:160px minmax(0,1fr) auto; } }

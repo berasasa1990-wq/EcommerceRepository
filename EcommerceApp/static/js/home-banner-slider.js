@@ -1,5 +1,7 @@
 (() => {
   document.querySelectorAll('[data-home-banner-slider]').forEach(root => {
+    if (root.dataset.sliderReady) return;
+    root.dataset.sliderReady = '1';
     const slides = [...root.querySelectorAll(':scope > .home-uploaded-banner')];
     const controls = root.querySelector('.home-banner-slider__controls');
     if (slides.length < 2) { controls.hidden = true; return; }

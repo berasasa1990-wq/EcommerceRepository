@@ -6704,14 +6704,14 @@ def staff_banners(request):
     adding = request.GET.get('add') == '1'
     form = None
     title = ''
-    slide_editor = request.GET.get('add') == 'slide' or editing.startswith('slide-')
+    slide_editor = request.GET.get('add') in ('slide', 'bestsellers-slide') or editing.startswith('slide-')
     if slide_editor:
         if editing and not editing[6:].isdigit():
             raise Http404('Banner nije pronađen.')
-        instance = get_object_or_404(HeroBanner, pk=editing[6:], settings=site) if editing else HeroBanner(settings=site)
+        instance = get_object_or_404(HeroBanner, pk=editing[6:], settings=site) if editing else HeroBanner(settings=site, pozicija='bestsellers' if request.GET.get('add') == 'bestsellers-slide' else 'hero')
         form = HomepageSlideForm(request.POST if request.method == 'POST' else None,
                                  request.FILES if request.method == 'POST' else None, instance=instance)
-        title = 'Početni banner — jedna slika'
+        title = 'Banner ispod najprodavanijih — jedna slika' if instance.pozicija == 'bestsellers' else 'Početni banner — jedna slika'
     elif editing in fixed_banners:
         fields = banner_fields(editing)
         form_class = modelform_factory(SiteSettings, form=HeroBannerSettingsForm, fields=fields)

@@ -200,3 +200,21 @@ class HomepageBannerUploadTests(TestCase):
         self.assertTrue(html[end:].lstrip().startswith('<section class="home-uploaded-banner home-uploaded-banner--bestsellers"'))
         self.assertNotIn('Veliki izbor', html)
         self.assertNotIn('chair-banner', html)
+
+@override_settings(STORAGES={'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'}, 'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
+class BannerPositionTests(TestCase):
+    def test_secondary_slider_keeps_primary_and_orders_only_active_secondary_images(self):
+        from .models import HeroBanner
+        from .templatetags.ecommerce_extras import homepage_slides
+        site = SiteSettings.objects.create(bestsellers_banner_slika='site/primary.webp')
+        HeroBanner.objects.create(settings=site, hero_slika='site/hero.webp')
+        later = HeroBanner.objects.create(settings=site, pozicija='bestsellers', hero_slika='site/later.webp', redoslijed=2)
+        first = HeroBanner.objects.create(settings=site, pozicija='bestsellers', hero_slika='site/first.webp', redoslijed=1)
+        HeroBanner.objects.create(settings=site, pozicija='bestsellers', hero_slika='site/hidden.webp', aktivan=False)
+        self.assertEqual([slide.pk for slide in homepage_slides(site, 'bestsellers')], [first.pk, later.pk])
+        html = render_to_string('partials/home_bestsellers_banner.html', {'site_settings': site})
+        self.assertIn('site/primary.webp', html)
+        self.assertIn('site/first.webp', html)
+        self.assertNotIn('site/hero.webp', html)
+        self.assertNotIn('site/hidden.webp', html)
+        self.assertEqual(html.count('<section '), 3)

@@ -89,13 +89,14 @@ def description_blocks(value):
 
 
 @register.simple_tag
-def homepage_slides(site):
+def homepage_slides(site, position="hero"):
     if not site or not getattr(site, 'pk', None):
         return []
     # Never open image files or probe remote storage while rendering the home page.
-    seen = {site.hero_slika.name} if site.hero_slika else set()
+    primary = site.bestsellers_banner_slika if position == 'bestsellers' else site.hero_slika
+    seen = {primary.name} if primary else set()
     slides = []
-    for banner in site.hero_banners.filter(aktivan=True).exclude(hero_slika=''):
+    for banner in site.hero_banners.filter(aktivan=True, pozicija=position).exclude(hero_slika=''):
         if banner.hero_slika.name in seen:
             continue
         seen.add(banner.hero_slika.name)
