@@ -7417,6 +7417,7 @@ class HeroBanner(models.Model):
     settings = models.ForeignKey(SiteSettings, on_delete=models.CASCADE, related_name='hero_banners')
     hero_opis = models.TextField(verbose_name='Opis bannera')
     hero_slika = models.ImageField(upload_to='site/hero/', blank=True, verbose_name='Slika artikla')
+    hero_slika_mobilna = models.ImageField(upload_to='site/hero/mobile/', blank=True, verbose_name='Slika za telefon')
     hero_link = models.URLField(max_length=500, blank=True, verbose_name='Link bannera',
                                 help_text='Prazno = link glavnog bannera.')
     redoslijed = models.PositiveIntegerField(default=0, verbose_name='Redoslijed')
@@ -7429,6 +7430,10 @@ class HeroBanner(models.Model):
 
     def clean(self, *, include_primary=True):
         super().clean()
+        mobile = self.hero_slika_mobilna
+        if mobile and not mobile._committed:
+            from .utils.images import prepare_homepage_banner
+            self.hero_slika_mobilna = prepare_homepage_banner(mobile, size=(1080, 1350), max_bytes=200_000)
         image = self.hero_slika
         if not image or image._committed:
             return

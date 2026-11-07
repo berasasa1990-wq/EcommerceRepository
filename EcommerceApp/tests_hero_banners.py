@@ -218,3 +218,30 @@ class BannerPositionTests(TestCase):
         self.assertNotIn('site/hero.webp', html)
         self.assertNotIn('site/hidden.webp', html)
         self.assertEqual(html.count('<section '), 3)
+
+    def test_primary_and_additional_banner_render_with_independent_phone_image(self):
+        from .forms import HomepageSlideForm
+        site = SiteSettings.objects.create(hero_slika='site/main.webp', hero_slika_mobilna='site/main-phone.webp')
+        form = HomepageSlideForm({'hero_link': '', 'redoslijed': 1, 'aktivan': True},
+                                {'hero_slika': upload(), 'hero_slika_mobilna': upload((1080, 1350))})
+        form.instance.settings = site
+        self.assertTrue(form.is_valid(), form.errors)
+        slide = form.save()
+        with Image.open(slide.hero_slika_mobilna) as image:
+            self.assertEqual(image.size, (1080, 1350))
+        html = render_to_string('partials/home_uploaded_banner.html', {'site_settings': site})
+        self.assertIn('site/main.webp', html)
+        self.assertIn('site/main-phone.webp', html)
+        self.assertIn(slide.hero_slika.url, html)
+        self.assertIn(slide.hero_slika_mobilna.url, html)
+        self.assertEqual(html.count('<section '), 2)
+        self.assertEqual(html.count(' hidden'), 1)
+
+    def test_without_phone_image_desktop_banner_is_valid(self):
+        from .forms import HomepageSlideForm
+        site = SiteSettings.objects.create()
+        form = HomepageSlideForm({'hero_link': '', 'redoslijed': 0, 'aktivan': True}, {'hero_slika': upload()})
+        form.instance.settings = site
+        self.assertTrue(form.is_valid(), form.errors)
+        slide = form.save()
+        self.assertFalse(slide.hero_slika_mobilna)

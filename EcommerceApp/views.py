@@ -6711,7 +6711,7 @@ def staff_banners(request):
         instance = get_object_or_404(HeroBanner, pk=editing[6:], settings=site) if editing else HeroBanner(settings=site, pozicija='bestsellers' if request.GET.get('add') == 'bestsellers-slide' else 'hero')
         form = HomepageSlideForm(request.POST if request.method == 'POST' else None,
                                  request.FILES if request.method == 'POST' else None, instance=instance)
-        title = 'Banner ispod najprodavanijih — jedna slika' if instance.pozicija == 'bestsellers' else 'Početni banner — jedna slika'
+        title = 'Banner ispod najprodavanijih — desktop i telefon' if instance.pozicija == 'bestsellers' else 'Početni banner — desktop i telefon'
     elif editing in fixed_banners:
         fields = banner_fields(editing)
         form_class = modelform_factory(SiteSettings, form=HeroBannerSettingsForm, fields=fields)
@@ -6743,7 +6743,7 @@ def staff_banners(request):
     extra_fields = []
     if form:
         if slide_editor:
-            desktop_name, mobile_name = 'hero_slika', ''
+            desktop_name, mobile_name = 'hero_slika', 'hero_slika_mobilna'
         elif editing in fixed_banners:
             desktop_name = fixed_banners[editing][0]
             mobile_name = mobile_fields[editing]
@@ -6755,7 +6755,7 @@ def staff_banners(request):
                 continue
             field = form[name]
             image = getattr(form.instance, name, None)
-            dimensions = '1600 × 600 px (jedna slika za sve uređaje)' if slide_editor else ('1080 × 1350 px' if editing == 'hero' else '1000 × 625 px' if editing in ('promo_new', 'promo_sale') else '600 × 560 px') if device == 'mobile' else ('1920 × 720 px' if editing == 'hero' else '1600 × 600 px' if editing == 'bestsellers' else '1200 × 560 px')
+            dimensions = ('1080 × 1350 px' if device == 'mobile' else '1600 × 600 px') if slide_editor else ('1080 × 1350 px' if editing == 'hero' else '1000 × 625 px' if editing in ('promo_new', 'promo_sale') else '600 × 560 px') if device == 'mobile' else ('1920 × 720 px' if editing == 'hero' else '1600 × 600 px' if editing == 'bestsellers' else '1200 × 560 px')
             image_editors.append({'field': field, 'heading': heading, 'device': device,
                                   'image': image, 'dimensions': dimensions, 'limit': 'Najviše 60 KB nakon automatske optimizacije.' if editing in ('promo_new', 'promo_sale') else ''})
         image_names = {editor['field'].name for editor in image_editors}

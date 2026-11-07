@@ -1263,10 +1263,12 @@ class HomepageSlideForm(forms.ModelForm):
     class Meta:
         from .models import HeroBanner
         model = HeroBanner
-        fields = ('hero_slika', 'hero_link', 'redoslijed', 'aktivan')
-        labels = {'hero_slika': 'Slika bannera', 'hero_link': 'Link bannera (opcionalno)'}
+        fields = ('hero_slika', 'hero_slika_mobilna', 'hero_link', 'redoslijed', 'aktivan')
+        labels = {'hero_slika': 'Slika za računar', 'hero_link': 'Link bannera (opcionalno)'}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['hero_slika'].required = True
-        self.fields['hero_slika'].help_text = 'Jedna slika za računar i telefon. Automatska obrada na 1600 × 600 px i najviše 80 KB.'
+        self.fields['hero_slika'].help_text = 'Slika za računar: 1600 × 600 px, do 80 KB nakon obrade.'
+
+        self.fields['hero_slika_mobilna'].help_text = 'Slika za telefon: 1080 × 1350 px. Ako je ne dodaš, koristi se slika za računar.'

@@ -22,7 +22,7 @@
 {% for slide in slides %}
 <section class="home-uploaded-banner home-uploaded-banner--bestsellers" data-home-slide{% if not forloop.first or site_settings.bestsellers_banner_slika or site_settings.bestsellers_banner_slika_mobilna or site_settings.bestsellers_video_desktop %} hidden{% endif %} aria-label="Promotivna ponuda">
 {% if slide.hero_link %}<a href="{{ slide.hero_link }}">{% endif %}
-<img src="{{ slide.hero_slika.url }}" alt="Promotivna ponuda" width="1600" height="600" loading="lazy" decoding="async">
+<picture>{% if slide.hero_slika_mobilna %}<source media="(max-width: 767px)" srcset="{{ slide.hero_slika_mobilna.url }}">{% endif %}<img src="{{ slide.hero_slika.url }}" alt="Promotivna ponuda" width="1600" height="600" loading="lazy" decoding="async"></picture>
 {% if slide.hero_link %}</a>{% endif %}
 </section>
 {% endfor %}
