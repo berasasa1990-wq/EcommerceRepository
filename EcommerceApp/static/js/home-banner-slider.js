@@ -4,12 +4,13 @@
     root.dataset.sliderReady = '1';
     const slides = [...root.querySelectorAll(':scope > .home-uploaded-banner')];
     const controls = root.querySelector('.home-banner-slider__controls');
-    if (slides.length < 2) { controls.hidden = true; return; }
+    if (slides.length < 2) { if (controls) controls.hidden = true; return; }
+    const interval = Number(root.dataset.slideInterval) || 6000;
     let index = 0, timer, paused = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const pause = root.querySelector('[data-slide-pause]');
     const schedule = () => {
       clearTimeout(timer);
-      if (!paused && !document.hidden && !root.matches(':hover') && !root.contains(document.activeElement)) timer = setTimeout(() => show(index + 1), 6000);
+      if (!paused && !document.hidden && (!controls || !root.matches(':hover')) && !root.contains(document.activeElement)) timer = setTimeout(() => show(index + 1), interval);
     };
     let generation = 0;
     async function show(next) {
@@ -33,11 +34,11 @@
       });
       schedule();
     }
-    root.querySelector('[data-slide-prev]').addEventListener('click', () => show(index - 1));
-    root.querySelector('[data-slide-next]').addEventListener('click', () => show(index + 1));
-    const label = () => { pause.textContent = paused ? 'Pokreni' : 'Pauza'; pause.setAttribute('aria-label', paused ? 'Pokreni smjenjivanje' : 'Pauziraj smjenjivanje'); };
-    pause.addEventListener('click', () => { paused = !paused; label(); schedule(); });
-    root.addEventListener('mouseenter', () => clearTimeout(timer));
+    root.querySelector('[data-slide-prev]')?.addEventListener('click', () => show(index - 1));
+    root.querySelector('[data-slide-next]')?.addEventListener('click', () => show(index + 1));
+    const label = () => { if (!pause) return; pause.textContent = paused ? 'Pokreni' : 'Pauza'; pause.setAttribute('aria-label', paused ? 'Pokreni smjenjivanje' : 'Pauziraj smjenjivanje'); };
+    pause?.addEventListener('click', () => { paused = !paused; label(); schedule(); });
+    if (controls) root.addEventListener('mouseenter', () => clearTimeout(timer));
     root.addEventListener('mouseleave', schedule);
     root.addEventListener('focusin', () => clearTimeout(timer));
     root.addEventListener('focusout', () => setTimeout(schedule, 0));

@@ -1,6 +1,6 @@
 {% load static ecommerce_extras %}
 {% homepage_slides site_settings as slides %}
-{% if slides %}<div class="home-banner-slider" data-home-banner-slider aria-label="Početni banneri">{% endif %}
+{% if slides %}<div class="home-banner-slider" data-home-banner-slider data-slide-interval="3000" aria-label="Početni banneri">{% endif %}
 {% if site_settings.hero_slika or site_settings.hero_slika_mobilna or site_settings.hero_video_mobilni or site_settings.hero_video_desktop %}
 <section class="home-uploaded-banner{% if not site_settings.hero_slika and not site_settings.hero_video_desktop %} home-uploaded-banner--mobile-only{% endif %}{% if site_settings.hero_video_mobilni %} home-uploaded-banner--has-mobile-video{% endif %}{% if site_settings.hero_video_desktop %} home-uploaded-banner--has-desktop-video{% if not site_settings.hero_slika and not site_settings.hero_slika_mobilna and not site_settings.hero_video_mobilni %} home-uploaded-banner--desktop-video-only{% endif %}{% endif %}" aria-label="Promotivna ponuda">
     {% if site_settings.hero_link %}<a href="{{ site_settings.hero_link }}" aria-label="Pogledaj promotivnu ponudu">{% endif %}
@@ -34,4 +34,4 @@
 {% if slide.hero_link %}</a>{% endif %}
 </section>
 {% endfor %}
-{% if slides %}<div class="home-banner-slider__controls"><button type="button" data-slide-prev aria-label="Prethodni banner">‹</button><button type="button" data-slide-pause aria-label="Pauziraj smjenjivanje">Pauza</button><button type="button" data-slide-next aria-label="Sljedeći banner">›</button></div></div><script src="{% static 'js/home-banner-slider.js' %}?v=20261107" defer></script>{% endif %}
+{% if slides %}</div><script src="{% static 'js/home-banner-slider.js' %}?v=20261107-auto-3s" defer></script>{% endif %}
