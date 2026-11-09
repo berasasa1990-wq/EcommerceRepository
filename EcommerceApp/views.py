@@ -1155,7 +1155,7 @@ def invalidate_product_tag_search_cache():
 
 def _product_ids_for_tag_query_cached(q_key: str) -> frozenset:
     """
-    Artikli čiji M2M tag odgovara upitu (isti match engine kao potkategorija tagovi).
+    Artikli čiji M2M tag odgovara upitu, uključujući tag unutar dužeg upita.
     q_key = _phrase_key(upit) — već foldan.
     """
     if not q_key or len(q_key) < 2:
@@ -1169,11 +1169,9 @@ def _product_ids_for_tag_query_cached(q_key: str) -> frozenset:
         name = row.get('naziv') or ''
         if not name:
             continue
-        if _tag_matches_category_search_tag(name, query):
-            matching_tag_ids.append(row['id'])
-            continue
-        # Jednorječni: širi fuzzy (npr. „shimano” ≈ „Shimano”)
-        if ' ' not in query and _tag_matches_query(name, query):
+        # Product tags may occur anywhere in the query, e.g. čizma in eva čizme.
+        # Use the same matcher as the Python relevance score.
+        if _tag_matches_category_search_tag(name, query) or _tag_matches_query(name, query):
             matching_tag_ids.append(row['id'])
 
     if not matching_tag_ids:
@@ -6129,7 +6127,7 @@ def _magacin_hold_picks(order, items):
     from .magacin import is_ignored_stock_location, maloprodaja_last_sort_key
     holds = list(
         order.magacin_holds.exclude(status=OrderStockHold.Status.OTKAZANO)
-        .select_related('location', 'product', 'variation')
+        .select_related('location', 'product', 'variation').order_by('pk')
     )
     if not holds:
         return {}
@@ -6311,7 +6309,7 @@ def _build_order_packing_lines(order):
     from .magacin import NIJE_POPISAN_LABEL, maloprodaja_last_sort_key, order_has_nije_popisan
 
     items = list(
-        order.stavke.filter(ledger_excess_line__isnull=True, is_set_parent=False).select_related('artikal', 'artikal__brend', 'artikal__kategorija', 'varijacija', 'set_parent').all()
+        order.stavke.filter(ledger_excess_line__isnull=True, is_set_parent=False).select_related('artikal', 'artikal__brend', 'artikal__kategorija', 'varijacija', 'set_parent').order_by('pk')
     )
     lines = []
     packing_error = None

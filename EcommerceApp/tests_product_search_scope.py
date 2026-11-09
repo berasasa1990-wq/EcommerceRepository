@@ -25,6 +25,29 @@ class ProductSearchScopeTests(TestCase):
         score = Product.objects.filter(pk=self.category_only.pk).annotate(score=_suggest_relevance_annotation('unikatpecanje')).get().score
         self.assertEqual(score, 10)
 
+    def test_product_tag_inside_longer_query_matches_results_and_suggestions(self):
+        import json
+
+        boots = Product.objects.create(naziv='Obuća za ribolov', cijena=20)
+        boots.tagovi.add(Tag.objects.create(naziv='čizma'))
+        for query in ('eva cizme', 'zelene cizme', 'čizme zelene', 'eva čizma'):
+            with self.subTest(query=query):
+                ids = set(_apply_search_filter(Product.objects.all(), query).values_list('pk', flat=True))
+                self.assertIn(boots.pk, ids)
+                self.assertNotIn(self.category_only.pk, ids)
+                request = RequestFactory().get('/api/pretraga/', {'q': query})
+                request.user = AnonymousUser()
+                request.session = {}
+                data = json.loads(search_suggest(request).content)
+                self.assertIn(boots.naziv, [row['naziv'] for row in data['results']])
+                self.assertGreater(_search_relevance_score(boots, query), 0)
+
+    def test_multiword_product_tag_inside_longer_query(self):
+        self.tagged.tagovi.add(Tag.objects.create(naziv='feeder set'))
+        ids = set(_apply_search_filter(Product.objects.all(), 'novi feeder set zeleni').values_list('pk', flat=True))
+        self.assertIn(self.tagged.pk, ids)
+        self.assertNotIn(self.named.pk, ids)
+
     def test_autocomplete_excludes_category_only_matches(self):
         import json
         request = RequestFactory().get('/pretraga/', {'q': 'unikatpecanje'})

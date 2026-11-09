@@ -41,7 +41,9 @@ def picking_plan(order):
     snapshot = {
         'items': [(i.pk, i.artikal_id, i.varijacija_id, i.naziv, i.sifra, i.kolicina,
                    str(i.cijena), i.kolicina_pokupljeno) for i in items],
-        'queue': [(r['key'], r['item_id'], r['loc'], r['need']) for r in queue],
+        # Row order is presentation only; PostgreSQL need not return unordered
+        # queries in the same order during printing and QR validation.
+        'queue': sorted((r['key'], r['item_id'], r['loc'], r['need']) for r in queue),
         'state': order.pick_state, 'events': order.pick_short_events,
         'total': str(order.ukupno), 'status': order.status, 'lager': order.lager_status,
     }

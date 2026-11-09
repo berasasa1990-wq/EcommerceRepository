@@ -78,6 +78,43 @@ class PaperPickingTests(TestCase):
             complete_paper_picking(self.order.pk, digest, self.user)
         self.assertEqual(self.stock(), [2, 4])
 
+    def test_row_order_does_not_invalidate_printed_qr(self):
+        from .views_magacin import _order_pick_bundle
+
+        digest = picking_plan(self.order)['digest']
+        queue, groups, error = _order_pick_bundle(self.order)
+        with patch('EcommerceApp.views_magacin._order_pick_bundle',
+                   return_value=(list(reversed(queue)), groups, error)):
+            self.assertEqual(picking_plan(self.order)['digest'], digest)
+            order, changed = complete_paper_picking(self.order.pk, digest, self.user)
+        self.assertTrue(changed)
+        self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertEqual(self.stock(), [0, 1])
+
+    def test_database_row_order_does_not_change_location_allocation(self):
+        from django.db import connection
+
+        if connection.vendor != 'sqlite':
+            self.skipTest('SQLite unordered-query reversal reproduces database row ordering changes.')
+        # Two lines for one product share the same location reservations.
+        self.item.kolicina = 3
+        self.item.save(update_fields=['kolicina'])
+        OrderItem.objects.create(narudzba=self.order, artikal=self.product,
+                                 naziv=self.product.naziv, sifra=self.product.sifra,
+                                 cijena=10, kolicina=2)
+        digest = picking_plan(self.order)['digest']
+        with connection.cursor() as cursor:
+            cursor.execute('PRAGMA reverse_unordered_selects = ON')
+        try:
+            self.assertEqual(picking_plan(Order.objects.get(pk=self.order.pk))['digest'], digest)
+            order, changed = complete_paper_picking(self.order.pk, digest, self.user)
+        finally:
+            with connection.cursor() as cursor:
+                cursor.execute('PRAGMA reverse_unordered_selects = OFF')
+        self.assertTrue(changed)
+        self.assertEqual(order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertEqual(self.stock(), [0, 1])
+
     def test_validation_failure_rolls_back_pick_and_stock(self):
         digest = picking_plan(self.order)['digest']
         with patch('EcommerceApp.wms.validate_order_stock', side_effect=MagacinError('Greška')):
