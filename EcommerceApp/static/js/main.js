@@ -17,6 +17,8 @@ window.addEventListener('pageshow', (event) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    if (document.documentElement.dataset.storefrontMainReady) return;
+    document.documentElement.dataset.storefrontMainReady = 'true';
     const scrollTopBtn = document.getElementById('scrollTopBtn');
     if (scrollTopBtn) {
         const toggleScrollTopBtn = () => {
@@ -284,57 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
         navToggle.setAttribute('aria-controls', 'mobileNavPanel');
     }
 
-    const catsDropdown = document.getElementById('catsDropdown');
-    const catsDropdownBtn = document.getElementById('catsDropdownBtn');
-    const catsDropdownPanel = document.getElementById('catsDropdownPanel');
-    const catsLockedOpen = Boolean(
-        catsDropdown?.classList.contains('cats-dropdown--locked')
-        || document.body.classList.contains('cats-sidebar-open')
-    );
-    function setCatsDropdownOpen(open) {
-        if (!catsDropdown || !catsDropdownBtn) return;
-        if (catsLockedOpen && !open) return;
-        catsDropdown.classList.toggle('is-open', open);
-        catsDropdownBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-        if (catsDropdownPanel) catsDropdownPanel.hidden = !open;
-        document.body.classList.toggle('cats-sidebar-open', open && window.innerWidth > 1024);
-    }
-    if (catsDropdown?.classList.contains('is-open') || catsLockedOpen) {
-        setCatsDropdownOpen(true);
-    }
-    if (catsDropdownBtn && catsDropdown) {
-        catsDropdownBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (catsLockedOpen) return;
-            setCatsDropdownOpen(!catsDropdown.classList.contains('is-open'));
-        });
-        catsDropdown.addEventListener('click', (e) => {
-            const toggle = e.target.closest('[data-cats-toggle]');
-            if (!toggle || !catsDropdown.contains(toggle)) return;
-            e.preventDefault();
-            e.stopPropagation();
-            const item = toggle.closest('.cats-dropdown__item--has-sub');
-            if (!item) return;
-            const willOpen = !item.classList.contains('is-open');
-            catsDropdown.querySelectorAll('.cats-dropdown__item--has-sub.is-open').forEach((el) => {
-                if (el !== item) {
-                    el.classList.remove('is-open');
-                    const btn = el.querySelector('[data-cats-toggle]');
-                    if (btn) btn.setAttribute('aria-expanded', 'false');
-                }
-            });
-            item.classList.toggle('is-open', willOpen);
-            toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-        });
-        document.addEventListener('click', (e) => {
-            if (catsLockedOpen) return;
-            if (!catsDropdown.contains(e.target)) setCatsDropdownOpen(false);
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !catsLockedOpen) setCatsDropdownOpen(false);
-        });
-    }
+    // category-menu.js owns category clicks; avoid toggling each menu twice.
 
     mobileNavClose?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -500,17 +452,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function positionSearchSuggestions() {
         if (!searchSuggestions || searchSuggestions.hidden || !headerSearch) return;
-        const rect = headerSearch.getBoundingClientRect();
-        searchSuggestions.style.position = 'fixed';
-        searchSuggestions.style.left = Math.round(rect.left) + 'px';
-        searchSuggestions.style.width = Math.round(rect.width) + 'px';
-        searchSuggestions.style.right = 'auto';
-        searchSuggestions.style.top = Math.round(rect.bottom + 4) + 'px';
+        // Anchor to the input wrapper, including inside the transformed mobile header.
+        searchSuggestions.style.position = 'absolute';
+        searchSuggestions.style.left = '0';
+        searchSuggestions.style.width = '100%';
+        searchSuggestions.style.right = '0';
+        searchSuggestions.style.top = 'calc(100% + 4px)';
         searchSuggestions.style.zIndex = '14000';
     }
 
     function searchSuggestLimit() {
-        return window.innerWidth <= 768 ? 4 : 8;
+        return 5;
     }
 
     function renderSearchSuggestions(results, query, hasMore = false) {
@@ -531,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const mobile = window.innerWidth <= 768;
-        const shown = mobile ? results.slice(0, 4) : results;
+        const shown = results.slice(0, 5);
         const items = shown.map((item) => {
             // Sve lazy — ne čekaj slike prije prikaza liste (brži osjećaj pretrage)
             const thumb = item.image
@@ -553,8 +505,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const base = searchForm?.getAttribute('action') || '/';
         const allResultsUrl = `${base}?q=${encodeURIComponent(query)}#product-showcase`;
-        const showFooter = mobile ? shown.length > 0 : hasMore;
-        const footerLabel = mobile ? 'Otvori sve' : `Vidi sve rezultate za „${escapeHtml(query)}"`;
+        const showFooter = shown.length > 0;
+        const footerLabel = 'Prikaži više';
         const footer = showFooter
             ? `<p class="search-suggestions-footer"><a href="${escapeHtml(allResultsUrl)}">${footerLabel}</a></p>`
             : '';
@@ -583,15 +535,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const generation = ++searchGeneration;
         searchFetchController = new AbortController();
 
-        // Ne flashaj “Pretraga…” odmah — prikaži tek ako odgovor kasni
-        const loadingTimer = window.setTimeout(() => {
-            if (generation !== searchGeneration || searchInput?.value.trim() !== query) return;
-            searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-loading">Pretraga…</div>';
+        if (searchSuggestions.hidden) {
+            searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-loading">Pretražujemo proizvode…</div>';
             searchSuggestions.hidden = false;
             setSuggestionsExpanded(true);
             setSearchSuggestActive(true);
             positionSearchSuggestions();
-        }, 140);
+        }
 
         try {
             const response = await fetch(`${searchSuggestUrl}?q=${encodeURIComponent(query)}&limit=${searchSuggestLimit()}`, {
@@ -600,18 +550,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (!response.ok) throw new Error('Search failed');
             const data = await response.json();
+            if (!Array.isArray(data.results)) throw new Error('Invalid search response');
             if (generation !== searchGeneration || searchInput?.value.trim() !== query) return;
-            window.clearTimeout(loadingTimer);
             renderSearchSuggestions(data.results || [], data.query || query, Boolean(data.has_more));
         } catch (error) {
-            window.clearTimeout(loadingTimer);
             if (error.name === 'AbortError' || generation !== searchGeneration) return;
             searchSuggestions.innerHTML = '<div role="status" class="search-suggestions-empty">Pretraga trenutno nije dostupna.</div>';
             searchSuggestions.hidden = false;
+            setSuggestionsExpanded(true);
             setSearchSuggestActive(true);
             positionSearchSuggestions();
-        } finally {
-            window.clearTimeout(loadingTimer);
         }
     }
 
@@ -620,12 +568,12 @@ document.addEventListener('DOMContentLoaded', () => {
         searchGeneration++;
         searchFetchController?.abort();
         const value = searchInput?.value.trim() || '';
-        if (!value) {
+        if (value.length < 2) {
             clearSearchSuggestions();
             return;
         }
         // Duži debounce = manje requestova dok se kuca (manje opterećenje)
-        const delay = value.length <= 3 ? 280 : 200;
+        const delay = 150;
         searchDebounceTimer = window.setTimeout(() => fetchSearchSuggestions(value), delay);
     }
 

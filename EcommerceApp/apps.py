@@ -39,6 +39,18 @@ class EcommerceappConfig(AppConfig):
 
         from django.db.models.signals import post_delete, post_save
 
+        from django.core.cache import cache
+        from .models import Product
+
+        def invalidate_search_names(sender, **kwargs):
+            fields = kwargs.get('update_fields')
+            if fields is not None and not {'naziv', 'aktivan'} & set(fields):
+                return
+            cache.delete('search_name_words_v1')
+
+        post_save.connect(invalidate_search_names, sender=Product, dispatch_uid='search_name_save', weak=False)
+        post_delete.connect(invalidate_search_names, sender=Product, dispatch_uid='search_name_delete', weak=False)
+
         from .product_sets import refresh_dependent_sets
         from .models import Product, ProductVariation, ProductSetComponent, WarehouseStock
         for model in (Product, ProductVariation, ProductSetComponent, WarehouseStock):

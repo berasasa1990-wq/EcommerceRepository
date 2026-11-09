@@ -29,13 +29,15 @@
     headerInput?.addEventListener('click', openHeaderSearch);
     dialog.addEventListener('click',e=>{if(e.target.closest('.mobile-home-dock button')&&!e.target.closest('[data-mobile-home-search]'))close();});
     async function search(){
-        controller?.abort();const current=++generation, query=input.value.trim();results.replaceChildren();all.hidden=true;related.hidden=true;
-        if(query.length<2){status.textContent='Unesite najmanje dva znaka.';return;}
+        controller?.abort();const current=++generation, query=input.value.trim();
+        if(query.length<2){results.replaceChildren();all.hidden=true;related.hidden=true;status.textContent='Unesite najmanje dva znaka.';return;}
         controller=new AbortController();status.textContent='Pretražujemo…';
         try{
-            const response=await fetch(`/api/pretraga/?q=${encodeURIComponent(query)}&limit=4`,{signal:controller.signal});
+            const response=await fetch(`/api/pretraga/?q=${encodeURIComponent(query)}&limit=5`,{signal:controller.signal});
             if(!response.ok)throw new Error();const data=await response.json();if(current!==generation)return;
             status.textContent=data.results.length?'':'Nema proizvoda za ovu pretragu.';
+            results.replaceChildren();
+            const fragment=document.createDocumentFragment();
             const categories=new Map();
             data.results.forEach(item=>{
                 const row=element('article','mobile-search-result');const link=element('a','mobile-search-result__main');link.href=item.url;
@@ -46,12 +48,13 @@
                     const add=element('button','','');add.type='button';add.setAttribute('aria-label',`Dodaj u korpu — ${item.naziv}`);add.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="7" width="14" height="15" rx="2"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg>';
                     add.addEventListener('click',async()=>{if(typeof window.catalogAddProductToCart!=='function'){location.href=item.url;return;}add.disabled=true;try{const r=await window.catalogAddProductToCart(item.slug,item.variation_ids[0]||'');if(r.requires_qty_deal_choice||r.requires_gratis_choice){close();return;}add.textContent='✓';status.textContent='Artikal je dodan u korpu.';}catch(e){status.textContent=e.message||'Dodavanje nije uspjelo.';}finally{add.disabled=false;}});side.append(add);
                 }else{const more=element('a','mobile-search-result__more','›');more.href=item.url;more.setAttribute('aria-label',`Pogledaj ${item.naziv}`);side.append(more);}
-                row.append(side);results.append(row);if(item.category)categories.set(item.category.url,item.category.name);
+                row.append(side);fragment.append(row);if(item.category)categories.set(item.category.url,item.category.name);
             });
+            results.append(fragment);
             all.href=`/?q=${encodeURIComponent(query)}#product-showcase`;all.hidden=!data.results.length;
             related.querySelector('div').replaceChildren();categories.forEach((name,url)=>{const a=element('a','',name);a.href=url;related.querySelector('div').append(a);});related.hidden=!categories.size;
         }catch(e){if(e.name!=='AbortError'&&current===generation)status.textContent='Pretraga trenutno nije dostupna. Pokušajte ponovo.';}
     }
-    input.addEventListener('input',()=>{controller?.abort();generation++;clearTimeout(timer);timer=setTimeout(search,220);});
+    input.addEventListener('input',()=>{controller?.abort();generation++;clearTimeout(timer);timer=setTimeout(search,150);});
     matchMedia('(max-width: 1024px)').addEventListener('change',e=>{if(!e.matches&&dialog.open)close();});
 })();

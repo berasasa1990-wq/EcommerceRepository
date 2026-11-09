@@ -2,7 +2,8 @@
     const menu = document.getElementById('catsDropdown');
     const button = document.getElementById('catsDropdownBtn');
     const panel = document.getElementById('catsDropdownPanel');
-    if (!menu || !button || !panel) return;
+    if (!menu || !button || !panel || menu.dataset.categoryMenuReady) return;
+    menu.dataset.categoryMenuReady = 'true';
 
     function setOpen(open) {
         menu.classList.toggle('is-open', open);

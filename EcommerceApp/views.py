@@ -742,6 +742,8 @@ def _edit_distance(a, b, *, max_dist=None):
             delete = prev[j] + 1
             sub = prev[j - 1] + (0 if ca == cb else 1)
             curr.append(min(ins, delete, sub))
+        if min(curr) > cap:
+            return cap + 1
         prev = curr
     return prev[-1]
 
@@ -908,15 +910,15 @@ def _invalidate_search_tag_caches():
 
 
 # —— Search score bands ——
-# Prioritet: 1) šifra / naziv  2) tek onda tag potkategorije
+# Prioritet: naziv, zatim šifra i tagovi artikla.
 SEARCH_SCORE = {
     'exact_sifra': 1100,       # šifra tačno
-    'exact_name': 1050,        # naziv tačno
+    'exact_name': 1250,        # naziv tačno, najviši prioritet
     'sifra_partial': 1000,     # šifra djelomično
-    'name_startswith': 950,    # naziv počinje upitom
+    'name_startswith': 1240,    # naziv počinje upitom
     # Sve riječi upita u nazivu, redoslijed nije bitan (itana feeder ⊆ … ITANA … Feeder …)
-    'name_all_words': 920,
-    'name_contains': 880,      # cijela fraza / podstring u nazivu
+    'name_all_words': 1230,
+    'name_contains': 1220,      # cijela fraza / podstring u nazivu
     # Tagovi artikla (M2M) — ispod naziva/šifre, iznad tagova potkategorije
     'exact_product_tag': 800,
     'product_tag': 760,
@@ -1344,6 +1346,39 @@ def _search_exists_match(raw):
     return match
 
 
+def _fuzzy_name_product_ids(query):
+    """Match misspelled words against a short-lived, lightweight name index."""
+    from django.core.cache import cache
+    from difflib import get_close_matches
+    words = _search_tokens(query)
+    if not words or len(words) > 10:
+        return set()
+    index = cache.get('search_name_words_v1')
+    if index is None:
+        index = {}
+        for pk, name in Product.objects.filter(aktivan=True).values_list('pk', 'naziv').iterator():
+            for word in set(_search_tokens(name)):
+                index.setdefault(word, set()).add(pk)
+        cache.set('search_name_words_v1', index, 60)
+    matches = None
+    for word in words:
+        ids = set()
+        for candidate, product_ids in index.items():
+            if word in candidate:
+                ids.update(product_ids)
+        # Avoid fuzzy matching short words and broad scans of unrelated lengths.
+        if not ids and len(word) >= 4:
+            allowance = 1 if len(word) <= 5 else 2
+            candidates = (w for w in index if abs(len(w) - len(word)) <= allowance)
+            for candidate in get_close_matches(word, candidates, n=5, cutoff=0.65):
+                if _edit_distance(word, candidate, max_dist=allowance) <= allowance:
+                    ids.update(index[candidate])
+        matches = ids if matches is None else matches & ids
+        if not matches:
+            break
+    return matches or set()
+
+
 def _apply_search_filter(products_qs, query):
     """
     Pretraga (prioritet):
@@ -1361,6 +1396,9 @@ def _apply_search_filter(products_qs, query):
 
     # 1–2) Naziv (sve riječi, bilo kojim redom) + šifra
     match = _search_exists_match(raw)
+    fuzzy_ids = _fuzzy_name_product_ids(raw)
+    if fuzzy_ids:
+        match |= Q(pk__in=fuzzy_ids)
 
     # 3) Explicit product tags also match phrases such as "feeder set".
     try:
@@ -1370,7 +1408,9 @@ def _apply_search_filter(products_qs, query):
     except Exception:
         pass
 
-    return products_qs.filter(match).distinct()
+    result = products_qs.filter(match).distinct()
+    result._search_fuzzy_ids = fuzzy_ids
+    return result
 
 
 def _product_lager_priority(product):
@@ -1460,7 +1500,7 @@ def _name_has_all_significant_words(name, query):
 
 def _search_relevance_score(product, query):
     """
-    Bodovanje — prioritet: šifra i naziv, pa tag potkategorije.
+    Bodovanje — naziv (uključujući greške), šifra, pa tag artikla.
 
     „itana feeder” na „… ITANA Tournament … Feeder …” → name_all_words (920)
     iznad tagova (750/700).
@@ -1512,6 +1552,8 @@ def _search_relevance_score(product, query):
     elif _name_has_all_significant_words(name, raw):
         # itana feeder → ITANA … Tournament … Feeder (redoslijed slobodan)
         best = max(best, S['name_all_words'])
+    elif _search_tokens(raw) and all(any(_word_fuzzy_eq(w, token) for token in _search_tokens(name)) for w in _search_tokens(raw)):
+        best = max(best, 1150)
     elif _text_has_query(name, qf, as_word=(len(qf) <= 4)) or (
         len(qf) > 4 and qf in name_f
     ):
@@ -1547,8 +1589,8 @@ def _oos_at_end(products):
 def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
     """
     Katalog / pretraga / kategorija:
-    0) Na stanju prvo, rasprodato na dnu
-    1) Ako ima search upit: relevantnost (score bandovi)
+    0) Ako ima search upit: relevantnost (naziv prije taga)
+    1) Unutar iste relevantnosti: na stanju prvo
     2) Hit redukovanje lagera → Favorizuj → Normal
     3) Unutar nivoa: cijena rastuće / opadajuće
     """
@@ -1567,10 +1609,6 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
         except Exception:
             pass
 
-    # Pripremi tagove proizvoda za sortiranje rezultata.
-    if query:
-        _product_ids_for_product_tag_query(query)
-
     def key(p):
         rel = -_search_relevance_score(p, query) if query else 0
         prio = _product_lager_priority(p)
@@ -1581,9 +1619,10 @@ def _sort_products_by_lager_priority(products, *, query='', price_sort=None):
         except Exception:
             price = 0.0
         in_stock = 0 if getattr(p, 'na_stanju', False) else 1
+        new = (0 if p.je_novitet else 1, -p.kreiran.timestamp() if p.je_novitet else 0) if query else ()
         if price_sort == 'opadajuca':
-            return (in_stock, rel, -prio, -price, name)
-        return (in_stock, rel, -prio, price, name)
+            return (rel, in_stock, *new, -prio, -price, name)
+        return (rel, in_stock, *new, -prio, price, name)
 
     return sorted(products, key=key)
 
@@ -1633,8 +1672,7 @@ def _weighted_home_product_order(products):
     return ordered
 
 
-SEARCH_SUGGEST_LIMIT = 8
-SEARCH_SUGGEST_CANDIDATE_POOL = 24
+SEARCH_SUGGEST_LIMIT = 5
 # Max artikala za punu pretragu (Enter). RANIJE 200 je sjekao rezultate
 # (admin 915 MATE, sajt samo 200). 5000 = sigurnosni strop radi CPU-a.
 SEARCH_FULL_RANK_POOL = 5000
@@ -1647,19 +1685,13 @@ def _suggest_product_queryset(request=None):
     """
     Lagani queryset za autocomplete — minimum polja, bez tagova M2M.
     """
-    from .models import AkcijaFlashLine
     qs = Product.objects.filter(aktivan=True)
     if not _staff_edit_mode_enabled(request):
         qs = qs.filter(sakriven_do_stanja=False)
-    return qs.defer(
+    # storefront_products loads current offers and variations once, in batches.
+    return qs.select_related('brend', 'kategorija').defer(
         'opis', 'meta_title', 'meta_description',
         'olx_listing_url', 'olx_listing_slug', 'olx_listing_id',
-    ).prefetch_related(
-        Prefetch('akcija_flash_lines', queryset=AkcijaFlashLine.objects.select_related('akcija').filter(akcija__aktivan=True)),
-        Prefetch(
-            'varijacije',
-            queryset=ProductVariation.objects.filter(na_stanju=True),
-        ),
     )
 
 
@@ -1673,12 +1705,12 @@ def _suggest_thumb_url(image_field):
         return ''
 
 
-def _suggest_relevance_annotation(query):
+def _suggest_relevance_annotation(query, *, fuzzy_ids=None):
     """
     SQL prioritet relevantnosti za brži ORDER BY (manji candidate pool).
 
     Prioritet (Case = prvi match pobjedi):
-      1) šifra / naziv (tačno → djelomično → sve riječi)
+      1) naziv (tačno → djelomično → greške), zatim šifra
       2) tek onda tag artikla
 
     Bez JOIN-a na tagovi__ (M2M) — koristi pk__in da ne duplicira redove.
@@ -1696,10 +1728,8 @@ def _suggest_relevance_annotation(query):
     whens = []
     for term in terms:
         whens.extend([
-            When(sifra__iexact=term, then=Value(120)),
-            When(naziv__iexact=term, then=Value(110)),
-            When(sifra__istartswith=term, then=Value(100)),
-            When(naziv__istartswith=term, then=Value(95)),
+            When(naziv__iexact=term, then=Value(150)),
+            When(naziv__istartswith=term, then=Value(145)),
         ])
 
     # Višerječni upit: SVE riječi u nazivu, bilo kojim redom — PRIJE fraze icontains
@@ -1710,13 +1740,12 @@ def _suggest_relevance_annotation(query):
             name_all_words &= (
                 Q(naziv__icontains=w) | Q(naziv_normalized__icontains=w)
             )
-        whens.append(When(name_all_words, then=Value(93)))
+        whens.append(When(name_all_words, then=Value(140)))
 
     for term in terms:
         whens.extend([
-            When(sifra__icontains=term, then=Value(90)),
-            When(naziv__icontains=term, then=Value(88)),
-            When(naziv_normalized__icontains=term, then=Value(87)),
+            When(naziv__icontains=term, then=Value(135)),
+            When(naziv_normalized__icontains=term, then=Value(134)),
         ])
 
     if len(words) >= 2:
@@ -1725,13 +1754,16 @@ def _suggest_relevance_annotation(query):
             sifra_all_words &= Q(sifra__icontains=w)
         whens.append(When(sifra_all_words, then=Value(84)))
 
-    # Tagovi artikla (M2M) — ispod naziva/šifre
-    try:
-        tag_product_ids = _product_ids_for_product_tag_query(raw)
-        if tag_product_ids:
-            whens.append(When(pk__in=list(tag_product_ids), then=Value(50)))
-    except Exception:
-        pass
+    if fuzzy_ids is None:
+        fuzzy_ids = _fuzzy_name_product_ids(raw)
+    if fuzzy_ids:
+        whens.append(When(pk__in=fuzzy_ids, then=Value(130)))
+    for term in terms:
+        whens.extend([
+            When(sifra__iexact=term, then=Value(120)),
+            When(sifra__icontains=term, then=Value(90)),
+        ])
+    # All remaining rows passed the product-tag filter; no second tag scan.
 
     return Case(*whens, default=Value(10), output_field=IntegerField())
 
@@ -1743,47 +1775,20 @@ def search_suggest(request):
     if len(_normalize_phrase(query)) < 2:
         return JsonResponse({'results': [], 'query': query, 'has_more': False})
 
-    # SQL filter + SQL order (širi pool), pa Python re-rank: naziv/šifra > tag
+    # Rank in SQL before LIMIT: names (including typos), SKU, then tags.
     products_qs = _apply_search_filter(_suggest_product_queryset(request), query)
     products_qs = products_qs.annotate(
-        _suggest_rel=_suggest_relevance_annotation(query),
+        _suggest_rel=_suggest_relevance_annotation(query, fuzzy_ids=getattr(products_qs, '_search_fuzzy_ids', None)),
         _new_created=Case(When(je_novitet=True, then='kreiran')),
-    ).order_by('-na_stanju', '-je_novitet', '-_new_created', '-_suggest_rel', '-prioritet_lagera', 'naziv')
+    ).order_by('-_suggest_rel', '-na_stanju', '-je_novitet', '-_new_created', '-prioritet_lagera', 'naziv')
 
     try:
         limit = int(request.GET.get('limit') or SEARCH_SUGGEST_LIMIT)
     except (TypeError, ValueError):
         limit = SEARCH_SUGGEST_LIMIT
     limit = max(1, min(limit, SEARCH_SUGGEST_LIMIT))
-    pool_size = max(limit + 4, min(SEARCH_SUGGEST_CANDIDATE_POOL, limit * 4))
-    pool = list(products_qs[:pool_size])
-    # Dedup po pk (zaštita ako JOIN ikad procuri)
-    seen = set()
-    unique_pool = []
-    for p in pool:
-        if p.pk in seen:
-            continue
-        seen.add(p.pk)
-        unique_pool.append(p)
-    pool = unique_pool
-
-    # Fini re-rank po stvarnom score-u (šifra/naziv ispred tagova)
-    try:
-        from django.db.models import prefetch_related_objects
-        prefetch_related_objects(pool, 'varijacije', 'tagovi')
-    except Exception:
-        pass
-    pool = sorted(
-        pool,
-        key=lambda p: (
-            0 if getattr(p, 'na_stanju', False) else 1,
-            0 if p.je_novitet else 1,
-            -p.kreiran.timestamp() if p.je_novitet else 0,
-            -_search_relevance_score(p, query),
-            -_product_lager_priority(p),
-            (p.naziv or '').lower(),
-        ),
-    )
+    # SQL already ranks names before tags. Fetch only one extra row for has_more.
+    pool = list(products_qs[:limit + 1])
 
     has_more = len(pool) > limit
     from .storefront_stock import storefront_products
@@ -1870,7 +1875,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
         products_qs = products_qs.annotate(
             _search_sql_rel=_suggest_relevance_annotation(search_q),
             _new_created=Case(When(je_novitet=True, then='kreiran')),
-        ).order_by('-na_stanju', '-je_novitet', '-_new_created', '-_search_sql_rel', '-prioritet_lagera', 'naziv')
+        ).order_by('-_search_sql_rel', '-na_stanju', '-je_novitet', '-_new_created', '-prioritet_lagera', 'naziv')
         products = list(products_qs[:SEARCH_FULL_RANK_POOL])
     else:
         products = list(products_qs)
@@ -1955,13 +1960,8 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
             price_sort='rastuca',
         )
 
-    if search_q and len(search_q) >= 2 and sort not in ('rastuca', 'opadajuca'):
-        # Stable sort keeps the existing ranking for products without NOVO.
-        products = sorted(products, key=lambda p: (
-            0 if p.je_novitet else 1,
-            -p.kreiran.timestamp() if p.je_novitet else 0,
-        ))
-    products = _oos_at_end(products)
+    if not search_q:
+        products = _oos_at_end(products)
     # Store the actual submitted webshop search, not every autocomplete keystroke.
     if search_q and len(search_q) >= 2 and not request.path.startswith(('/nalog/', '/app/')):
         if request.session.session_key is None:

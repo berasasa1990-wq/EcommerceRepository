@@ -1,17 +1,5 @@
 /* Compact search suggestions retain the original vertical list. */
 @media (min-width: 1025px) {
-    body.search-suggest-open #header .desktop-category-nav,
-    body.search-suggest-open #header .header-row--categories,
-    body.search-suggest-open #header .cats-dropdown__panel,
-    body.search-suggest-open #header .mega-menu-panel,
-    body #header:has(#searchInput:focus) .desktop-category-nav,
-    body #header:has(#searchInput:focus) .header-row--categories,
-    body #header:has(#searchInput:focus) .cats-dropdown__panel,
-    body #header:has(#searchInput:focus) .mega-menu-panel {
-        visibility: hidden !important;
-        pointer-events: none !important;
-    }
-
     body #header .header-search .search-suggestions {
         max-height: min(560px, calc(100dvh - 150px));
         overflow-y: auto;

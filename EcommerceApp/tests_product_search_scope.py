@@ -20,6 +20,33 @@ class ProductSearchScopeTests(TestCase):
         ids = set(_apply_search_filter(Product.objects.all(), 'unikatpecanje').values_list('pk', flat=True))
         self.assertEqual(ids, {self.named.pk, self.coded.pk, self.tagged.pk, self.variant.pk})
 
+    def test_name_and_typo_matches_rank_before_new_tagged_products(self):
+        import json
+        from django.core.cache import cache
+        cache.clear()
+        named = Product.objects.create(naziv='Shimano Catana stap', cijena=20)
+        tagged = Product.objects.create(naziv='Drugi novitet', cijena=10, je_novitet=True)
+        tagged.tagovi.add(Tag.objects.create(naziv='shimano'))
+        for query in ('shimano', 'shimnao', 'shimnao catnaa'):
+            with self.subTest(query=query):
+                request = RequestFactory().get('/api/pretraga/', {'q': query})
+                request.user = AnonymousUser()
+                request.session = {}
+                data = json.loads(search_suggest(request).content)
+                self.assertEqual(data['results'][0]['naziv'], named.naziv)
+                self.assertIn(named.pk, _apply_search_filter(Product.objects.all(), query).values_list('pk', flat=True))
+
+    def test_suggestions_return_five_and_indicate_more(self):
+        import json
+        for i in range(7):
+            Product.objects.create(naziv=f'Petrezultata proizvod {i}', cijena=10)
+        request = RequestFactory().get('/api/pretraga/', {'q': 'petrezultata', 'limit': 99})
+        request.user = AnonymousUser()
+        request.session = {}
+        data = json.loads(search_suggest(request).content)
+        self.assertEqual(len(data['results']), 5)
+        self.assertTrue(data['has_more'])
+
     def test_category_tags_do_not_affect_ranking(self):
         self.assertEqual(_search_relevance_score(self.category_only, 'unikatpecanje'), 0)
         score = Product.objects.filter(pk=self.category_only.pk).annotate(score=_suggest_relevance_annotation('unikatpecanje')).get().score
@@ -82,4 +109,6 @@ class ProductSearchScopeTests(TestCase):
         ids = [p.pk for p in products]
         self.assertEqual(ids[:2], [newer.pk, older.pk])
         self.assertNotIn(unrelated.pk, ids)
-        self.assertEqual(ids[-1], sold.pk)
+        # Name relevance now wins over stock/new badges on tag-only matches.
+        self.assertLess(ids.index(sold.pk), ids.index(self.tagged.pk))
+        self.assertGreater(ids.index(sold.pk), ids.index(self.named.pk))

@@ -178,7 +178,7 @@
     <style id="site-accent">:root{--ozr-accent:#0095d2;--ozr-accent-hover:#007fb5;--btn-cart:#FF5A00;--btn-cart-hover:#E04F00;--btn-banner:#FF5A00;--btn-banner-hover:#E04F00;}.header{border-bottom:2px solid var(--ozr-accent,#0095d2);}.home-products--akcija,.home-brand-strip-section--mockup{border-top:2px solid var(--ozr-accent,#0095d2)!important;}</style>
     <link rel="stylesheet" href="{% static 'css/navigation.min.css' %}?v=20261030-orange-buttons-badges">
     {% block extra_css %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/storefront-extras.min.css' %}?v=20261030-orange-buttons-badges">
+    <link rel="stylesheet" href="{% static 'css/storefront-extras.min.css' %}?v=20261109-category-clicks">
     {% if user.is_superuser %}
     <style>
         body #header .logo-brand:has(.logo-admin-panel) {
@@ -361,6 +361,7 @@
     <link rel="stylesheet" href="{% static 'css/product-sale-cards.css' %}?v=20261104-sale-ribbon-position-fix">
     <link rel="stylesheet" href="{% static 'css/stock-quantity.css' %}?v=20261104-black-quantity">
     {% block warehouse_theme_css %}{% endblock %}
+    <link rel="stylesheet" href="{% static 'css/search-suggestions.css' %}?v=20261109-anchored">
     <link rel="stylesheet" href="{% static 'css/shared-site-header.css' %}?v=20261107-compact-actions">
     <link rel="stylesheet" href="{% static 'css/product-grid-desktop.css' %}?v=20261103-full-square-images" media="(min-width: 1025px)">
     <link rel="stylesheet" href="{% static 'css/product-sale-remaining.css' %}?v=20261030-orange-buttons-badges">
@@ -533,8 +534,8 @@
     {% include 'partials/qty_deal_offer_modal.html' %}
     {% include 'partials/social_proof_toast.html' %}
     {% include 'partials/stock_notify_popup.html' %}
-    <script src="{% static 'js/main.min.js' %}?v=20261109-search-suggestions" defer></script>
-    <script src="{% static 'js/category-menu.js' %}?v=20261105" defer></script>
+    <script src="{% static 'js/main.min.js' %}?v=20261109-header-interactions" defer></script>
+    <script src="{% static 'js/category-menu.js' %}?v=20261109-single-handler" defer></script>
     <script src="{% static 'js/stock-notify.js' %}?v=20261105" defer></script>
 
     {% block mobile_dock %}{% include 'partials/mobile_dock.html' %}{% endblock %}

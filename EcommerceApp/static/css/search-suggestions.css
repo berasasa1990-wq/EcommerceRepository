@@ -1,0 +1,28 @@
+/* Keep the full-results action visible below the five product suggestions. */
+body #header .header-search .search-suggestions {
+    max-height: min(560px, calc(100dvh - 140px)) !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+body #header .search-suggestions-footer {
+    position: sticky;
+    bottom: 0;
+    margin: 0;
+    padding: 8px 12px;
+    background: #fff;
+}
+body #header .search-suggestions-footer a,
+body .mobile-search-dialog .mobile-search-all {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 16px;
+    margin-top: 8px;
+    border-radius: 8px;
+    background: #111 !important;
+    color: #fff !important;
+    font-weight: 600;
+    text-decoration: none;
+}
+body .mobile-search-dialog .mobile-search-all[hidden] { display: none; }
