@@ -3503,11 +3503,14 @@ def magacin_narudzbe_stampa(request):
             'Prvo označi Ima u MP ili Nema, pa štampaj.',
         )
         return redirect(_provjera_url(first, next_print=True))
-    print_jobs = [_order_print_job(order) for order in ordered]
+    picking_jobs = []
     if from_wms:
         from .wms import paper_picking_job
-        for order, job in zip(ordered, print_jobs):
-            job['wms_picking'] = paper_picking_job(request, order)
+        picking_jobs = [paper_picking_job(request, order) for order in ordered]
+    print_jobs = [_order_print_job(order) for order in ordered]
+    if from_wms:
+        for job, picking_job in zip(print_jobs, picking_jobs):
+            job['wms_picking'] = picking_job
     context = {
         **print_jobs[0],
         'print_jobs': print_jobs,

@@ -1,4 +1,4 @@
-// Scanning only opens the next picking page. Validation always needs confirmation.
+// Open the scanned order, independently of the printing or completion order.
 (() => {
     'use strict';
     const trigger = document.querySelector('[data-scan-new]');
@@ -78,7 +78,7 @@
                     return;
                 }
                 handled = true;
-                status.textContent = 'Kod je očitan. Otvaram sljedeću narudžbu…';
+                status.textContent = 'Kod je očitan. Otvaram skeniranu narudžbu…';
                 await stop();
                 if (currentSession === session) window.location.assign(next);
             }, () => { /* Frames without a QR code are normal. */ });

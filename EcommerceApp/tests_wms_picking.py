@@ -130,11 +130,51 @@ class PaperPickingTests(TestCase):
         token = self.token()
         response = validate_qr(self.request(), token)
         self.assertContains(response, 'Da li su svi artikli sa liste pokupljeni?')
+        self.assertContains(response, 'data-scan-new')
+        self.assertContains(response, 'Redoslijed nije bitan.')
         self.assertContains(response, 'staff-wms-qr.js')
         self.assertEqual(self.stock(), [2, 4])
         response = validate_qr(self.request('post'), token)
         self.assertContains(response, 'je validatovana.')
         self.assertEqual(self.stock(), [0, 1])
+
+    def test_printed_orders_sharing_stock_validate_in_reverse_order(self):
+        from .magacin import release_holds_for_product
+
+        release_holds_for_product(self.order, self.product, user=self.user)
+        self.item.kolicina = 3
+        self.item.save(update_fields=['kolicina'])
+        other = Order.objects.create(ime_prezime='Druga picking narudžba', ukupno=30,
+                                     medjuzbir=30, izvor=Order.Izvor.MAGACIN)
+        OrderItem.objects.create(narudzba=other, artikal=self.product, naziv=self.product.naziv,
+                                 sifra=self.product.sifra, cijena=10, kolicina=3)
+        tokens = []
+        for order in (self.order, other):
+            with patch('EcommerceApp.views_magacin._etiketa_qr_data_uri', return_value='qr') as qr:
+                paper_picking_job(self.request(), order)
+            tokens.append(resolve(urlsplit(qr.call_args.args[0]).path).kwargs['token'])
+        self.assertEqual(self.stock(), [2, 4])  # Printing reserves, never deducts.
+        printed_digest = picking_plan(self.order)['digest']
+        response = validate_qr(self.request('post'), tokens[1])
+        self.assertContains(response, 'je validatovana.')
+        self.order.refresh_from_db()
+        self.assertNotEqual(self.order.lager_status, Order.LagerStatus.VALIDIRANO)
+        self.assertEqual(picking_plan(self.order)['digest'], printed_digest)
+        response = validate_qr(self.request('post'), tokens[0])
+        self.assertContains(response, 'je validatovana.')
+        self.assertEqual(self.stock(), [0, 0])
+
+    def test_reprinting_does_not_duplicate_reservations(self):
+        from .magacin import release_holds_for_product
+
+        release_holds_for_product(self.order, self.product, user=self.user)
+        paper_picking_job(self.request(), self.order)
+        digest = picking_plan(self.order)['digest']
+        holds = list(self.order.magacin_holds.values_list('pk', 'kolicina', 'status'))
+        paper_picking_job(self.request(), self.order)
+        self.assertEqual(list(self.order.magacin_holds.values_list('pk', 'kolicina', 'status')), holds)
+        self.assertEqual(picking_plan(self.order)['digest'], digest)
+        self.assertEqual(self.stock(), [2, 4])
 
     def test_tampered_code_and_non_admin_are_denied(self):
         with self.assertRaises(Http404):

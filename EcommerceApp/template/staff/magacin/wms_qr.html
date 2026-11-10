@@ -6,18 +6,16 @@
 </head>
 <body><main>
 <header class="picking-header"><a class="picking-brand" href="{% url 'staff_magacin_wms' %}">CARPOLOGIJA <span>WMS</span></a><span class="picking-label">PICKING</span></header>
-{% if stage == 'result' %}
 <div class="picking-scan-top">
 <button type="button" class="scan-new-button" data-scan-new aria-controls="pickingScanner" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M7 7h3v3H7zm7 0h3v3h-3zm-7 7h3v3H7zm7 0h3v3h-3z"/></svg>Skeniraj novu narudžbu</button>
 <section id="pickingScanner" class="picking-scanner" hidden data-validation-template="{% url 'staff_magacin_wms_validate' 'PICKINGTOKEN' %}">
 <div class="scanner-heading"><h2>Skeniraj picking QR kod</h2><button type="button" class="scanner-close" data-scan-close aria-label="Zatvori kameru">×</button></div>
-<p class="muted">Usmjeri kameru na QR kod sljedeće picking liste.</p>
+<p class="muted">Skeniraj QR kod bilo koje završene picking liste. Redoslijed nije bitan.</p>
 <div id="pickingQrReader" class="scanner-reader"></div>
 <p data-scan-status role="status" aria-live="polite"></p>
 <button type="button" class="button secondary" data-scan-retry hidden>Pokušaj ponovo</button>
 </section>
 </div>
-{% endif %}
 {% if stage == 'result' and success %}<div class="picking-success-icon" aria-hidden="true">✓</div><p class="picking-status">✓ Validatovana</p>{% endif %}
 <h1>Narudžba #{{ order.broj }}</h1><p class="picking-customer">{{ order.display_customer_name }}</p>
 {% if message %}<p role="status" class="picking-message {% if error %}error{% elif success %}success{% endif %}">{{ message }}</p>{% endif %}
@@ -61,6 +59,6 @@
 {% endif %}
 <footer class="picking-footer"><a href="{% url 'staff_magacin_wms' %}">← Nazad na WMS</a><span>Magacin · Picking</span></footer></main>
 <script src="{% static 'js/csrf-session.js' %}?v=20261103-wms-qr" data-cookie-name="{{ csrf_cookie_name|default:'csrftoken' }}" defer></script>
-<script src="{% static 'js/staff-wms-qr.js' %}?v=20261103-scanner-top" defer></script>
+<script src="{% static 'js/staff-wms-qr.js' %}?v=20261110-any-order" defer></script>
 <script src="{% static 'js/wms-picking-alternatives.js' %}?v=20261103-alternative-locations" defer></script>
 </body></html>

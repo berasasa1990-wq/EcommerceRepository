@@ -53,9 +53,36 @@ def picking_plan(order):
             'overallocated': any(totals[item.pk] > int(item.kolicina) for item in items)}
 
 
+@transaction.atomic
+def _prepare_paper_picking(order_id, user):
+    """Reserve each printed order's shelves so completion order cannot reroute it."""
+    from .magacin import reserve_for_order
+    from .views import _magacin_hold_picks, _short_picked_qty_by_item, _item_remaining_pick_qty
+    from .views_magacin import _unvalidated_orders_qs
+
+    order = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
+    if not _unvalidated_orders_qs().filter(pk=order.pk).exists():
+        return picking_plan(order)
+    items = list(order.stavke.filter(
+        ledger_excess_line__isnull=True, is_set_parent=False,
+    ).select_related('artikal', 'varijacija').order_by('pk'))
+    product_ids = {item.artikal_id for item in items if item.artikal_id}
+    list(Product.objects.select_for_update().filter(pk__in=product_ids).order_by('pk'))
+    list(WarehouseStock.objects.select_for_update().filter(product_id__in=product_ids).order_by('pk'))
+    held = _magacin_hold_picks(order, items)
+    picked = _short_picked_qty_by_item(order)
+    for item in items:
+        if not item.artikal_id:
+            continue
+        remaining = held.get(item.pk, ([], _item_remaining_pick_qty(item, picked)))[1]
+        if remaining > 0:
+            reserve_for_order(order, item.artikal, remaining, variation=item.varijacija, user=user)
+    return picking_plan(order)
+
+
 def paper_picking_job(request, order):
     from .views_magacin import _etiketa_qr_data_uri
-    plan = picking_plan(order)
+    plan = _prepare_paper_picking(order.pk, request.user)
     for row in plan['rows']:
         row['display_loc'] = str(row['loc']).rstrip('/').rsplit('/', 1)[-1]
     token = signing.dumps({'order': order.pk, 'digest': plan['digest']}, salt=SALT, compress=True)
