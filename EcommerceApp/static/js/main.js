@@ -403,7 +403,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('searchInput');
     const searchCombobox = document.querySelector('.search-combobox');
     const searchSuggestions = document.getElementById('searchSuggestions');
+    function searchParams(query) {
+        const params = new URLSearchParams();
+        const current = new URLSearchParams(window.location.search);
+        ['kategorija', 'na_stanju', 'brend', 'velicina', 'cijena_od', 'cijena_do', 'sort', 'akcija', 'noviteti', 'izdvojeno'].forEach(key => {
+            if (current.get(key)) params.set(key, current.get(key));
+        });
+        const category = document.querySelector('#searchForm select[name="kategorija"]');
+        if (category) { if (category.value) params.set('kategorija', category.value); else params.delete('kategorija'); }
+        params.set('q', query);
+        return params;
+    }
+
+    searchForm?.addEventListener('submit', () => {
+        const form = searchForm;
+        const params = searchParams(searchInput.value.trim());
+        form.querySelectorAll('input[data-search-filter]').forEach(node => node.remove());
+        params.forEach((value, key) => {
+            if (key === 'q' || form.querySelector(`select[name="${key}"]`)) return;
+            const node = document.createElement('input');
+            node.type = 'hidden'; node.name = key; node.value = value; node.dataset.searchFilter = '1'; form.append(node);
+        });
+    });
     const searchSuggestUrl = '/api/pretraga/';
+    searchForm?.querySelector('select[name="kategorija"]')?.addEventListener('change', () => {
+        const query = searchInput?.value.trim() || '';
+        if (query.length >= 2) fetchSearchSuggestions(query);
+    });
     let searchDebounceTimer;
     let searchFetchController;
 
@@ -504,7 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
 
         const base = searchForm?.getAttribute('action') || '/';
-        const allResultsUrl = `${base}?q=${encodeURIComponent(query)}#product-showcase`;
+        const allResultsUrl = `${base}?${searchParams(query)}#product-showcase`;
         const showFooter = shown.length > 0;
         const footerLabel = 'Prikaži više';
         const footer = showFooter
@@ -544,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch(`${searchSuggestUrl}?q=${encodeURIComponent(query)}&limit=${searchSuggestLimit()}`, {
+            const response = await fetch(`${searchSuggestUrl}?${searchParams(query)}&limit=${searchSuggestLimit()}`, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
                 signal: searchFetchController.signal,
             });

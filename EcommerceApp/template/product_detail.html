@@ -542,6 +542,8 @@
             </div>
             {% endif %}
 
+            {% include 'partials/plus_percent_offer.html' with offer=plus_percent_offer only %}
+
             <div class="pd-reference-overview">
                 <dl class="pd-reference-facts">
                     <div><dt>Šifra artikla</dt><dd>{{ product.sifra|default:'—' }}</dd></div>

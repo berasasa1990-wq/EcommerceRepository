@@ -10,6 +10,9 @@ def _configure_sqlite(sender, connection, **kwargs):
     """WAL + busy_timeout smanjuju 'database is locked' pri lokalnom runserveru."""
     if connection.vendor != 'sqlite':
         return
+    from .search_expressions import fold, compact
+    connection.connection.create_function('shop_search_fold', 1, fold, deterministic=True)
+    connection.connection.create_function('shop_search_compact', 1, compact, deterministic=True)
     with connection.cursor() as cursor:
         cursor.execute('PRAGMA journal_mode=WAL;')
         cursor.execute('PRAGMA busy_timeout=60000;')
@@ -38,18 +41,6 @@ class EcommerceappConfig(AppConfig):
         post_migrate.connect(refresh_history_triggers, dispatch_uid='permanent_system_history')
 
         from django.db.models.signals import post_delete, post_save
-
-        from django.core.cache import cache
-        from .models import Product
-
-        def invalidate_search_names(sender, **kwargs):
-            fields = kwargs.get('update_fields')
-            if fields is not None and not {'naziv', 'aktivan'} & set(fields):
-                return
-            cache.delete('search_name_words_v1')
-
-        post_save.connect(invalidate_search_names, sender=Product, dispatch_uid='search_name_save', weak=False)
-        post_delete.connect(invalidate_search_names, sender=Product, dispatch_uid='search_name_delete', weak=False)
 
         from .product_sets import refresh_dependent_sets
         from .models import Product, ProductVariation, ProductSetComponent, WarehouseStock

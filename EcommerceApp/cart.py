@@ -384,8 +384,12 @@ class Cart:
         )
         korpa_nudjenje_map = build_korpa_nudjenje_map(self)
         products = {p.pk: p for p in Product.objects.filter(pk__in={item['product_id'] for item in self.cart.values()}).prefetch_related('varijacije')}
+        from .plus_percent import offers_for_products
+        plus_percent_offers = offers_for_products(products.values())
         variants = {v.pk: v for p in products.values() for v in p.varijacije.all()}
         available = self.availability(products=products, variants=variants)
+        from .plus_percent import discounts_for_cart
+        plus_discounts = discounts_for_cart(self.cart, plus_percent_offers, available)
         from .upsell import prime_quantity_deals
         from .models import Akcija
         prime_quantity_deals(products.values())
@@ -398,6 +402,7 @@ class Cart:
         for key, item in self.cart.items():
             item = item.copy()
             item['key'] = key
+            item['plus_percent_offer'] = plus_percent_offers.get(item['product_id'])
             if 'varijacija_naziv' not in item:
                 item['varijacija_naziv'] = (
                     item['naziv']
@@ -464,6 +469,24 @@ class Cart:
                         item['discounted_unit_price'] = disc_price
             except Exception:
                 pass
+
+            plus_action = plus_discounts.get(key)
+            if plus_action and not item.get('promo_line'):
+                original = item['cijena_decimal']
+                discounted = (original * (Decimal('1') - plus_action.popust_postotak / Decimal('100'))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                total = discounted * item['quantity']
+                if total < item['ukupno_stavka']:
+                    item['plus_original_unit_price'] = original
+                    item['plus_discount_percent'] = plus_action.popust_postotak
+                    item['cijena_decimal'] = discounted
+                    item['cijena'] = str(discounted)
+                    item['ukupno_stavka'] = total
+                    item['na_akciji'] = True
+                    item['deal_info'] = None
+                    item.pop('discounted_unit_price', None)
+                    item.pop('akcija_popup_discount', None)
+                    item['discount_percent'] = str(plus_action.popust_postotak)
+                    item['discount_source'] = f'+ % akcija #{plus_action.pk} — uz drugi kupljeni artikal'
 
             nudjenje = korpa_nudjenje_map.get(item['product_id'])
             if nudjenje:

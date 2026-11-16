@@ -1596,12 +1596,12 @@ class AkcijaAdmin(admin.ModelAdmin):
         'naziv', 'artikal__naziv', 'gratis_artikal__naziv', 'kategorija__naziv',
     )
     autocomplete_fields = ('artikal', 'gratis_artikal', 'kategorija')
-    filter_horizontal = ('bundle_artikli',)
+    filter_horizontal = ('bundle_artikli', 'plus_artikli')
     # Stavke bundle ponude.
     inlines = [AkcijaBundleLineInline]
 
     class Media:
-        js = ('admin/js/akcija_admin.v20260911.js?v=20261020-line-discounts',)
+        js = ('admin/js/akcija_admin.v20260911.js?v=20261111-plus-percent',)
         css = {'all': ('admin/css/akcija-admin.v20260910.css',)}
 
     # --- Fieldseti: svako polje SAMO JEDNOM (admin.E012) ---
@@ -1621,6 +1621,7 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'artikal',
                 'popust_postotak',
                 'gratis_artikal',
+                'plus_artikli',
             ),
             'description': (
                 'Pretraži artikle po nazivu ili šifri. Popust je opcionalan; prazno znači bez dodatnog popusta.'
@@ -1711,6 +1712,8 @@ class AkcijaAdmin(admin.ModelAdmin):
         if request.method != 'POST':
             return self.fieldsets
         tip = self._resolve_akcija_tip(request, obj)
+        if tip == Akcija.Tip.PLUS_PERCENT:
+            return self._FS_BASE + (('+ % — artikli ili kategorija', {'fields': ('plus_artikli', 'kategorija', 'popust_postotak')}),)
         if tip == Akcija.Tip.PONUDA:
             return self._FS_BASE + self._FS_ARTIKLI
         if tip == Akcija.Tip.BUNDLE:
@@ -1744,6 +1747,7 @@ class AkcijaAdmin(admin.ModelAdmin):
     def formfield_for_choice_field(self, db_field, request, **kwargs):
         if db_field.name == 'tip':
             kwargs['choices'] = [
+                (Akcija.Tip.PLUS_PERCENT, Akcija.Tip.PLUS_PERCENT.label),
                 (Akcija.Tip.BUNDLE, Akcija.Tip.BUNDLE.label),
                 (Akcija.Tip.QTY_DEAL, Akcija.Tip.QTY_DEAL.label),
                 (Akcija.Tip.PONUDA, Akcija.Tip.PONUDA.label),

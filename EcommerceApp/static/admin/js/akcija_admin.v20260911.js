@@ -61,6 +61,7 @@
         gratis_artikal: 1,
     };
 
+    FIELDS_BY_TIP.plus_percent = {naziv:1, tip:1, aktivan:1, redoslijed:1, plus_artikli:1, kategorija:1, popust_postotak:1};
     FIELDS_BY_TIP.poslije_narudzbe = {naziv:1, tip:1, aktivan:1, redoslijed:1};
 
     function update() {
@@ -96,6 +97,7 @@
             this.required = this.dataset.akcijaRequired === '1' && !$(this).closest('[hidden]').length;
         });
         var guides = {
+            plus_percent: '+ %: odaberite više artikala ili jednu kategoriju i unesite procenat popusta. Uslov je kupovina još jednog različitog artikla.',
             poslije_narudzbe: 'Poslije narudžbe (samo pouzećem / gotovinski, bez kartica): unesite najviše 4 artikla. Pored svakog artikla unesite njegov % sniženja. Kupac ima 15 minuta da doda po jedan komad na istu narudžbu bez dodatne dostave.',
             ponuda: '+ Ponuda: odaberi artikal koji kupac dodaje u korpu, zatim drugi artikal koji će mu se ponuditi. Popust je opcionalan.',
             qty_deal: 'Količinski popust: odaberi artikal i upiši popust uz željenu količinu. Na primjer, 2 komada → 10%. Ostale količine ostavi prazne.',
@@ -106,6 +108,7 @@
         if (!$guide.length) $guide = $('<p id="akcija-quick-guide" role="status">').css({padding:'16px', background:'#e5e5e2', color:'#292929', border:'1px solid #999', borderRadius:'6px', lineHeight:'1.6'}).prependTo($form);
         $guide.text(guides[tip] || '').prop('hidden', !guides[tip]);
         var labels = {
+            plus_percent: ['', 'Popust (%) uz drugi kupljeni artikal'],
             poslije_narudzbe: ['', 'Popust na dodatne artikle (%)'],
             ponuda: ['Artikal koji kupac dodaje u korpu', 'Popust na ponuđeni artikal (%)', 'Artikal koji nudimo kupcu'],
             qty_deal: ['Artikal za količinski popust'],

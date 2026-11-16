@@ -28,12 +28,34 @@
     // A click must also reopen the dialog when focus returned to this input on close.
     headerInput?.addEventListener('click', openHeaderSearch);
     dialog.addEventListener('click',e=>{if(e.target.closest('.mobile-home-dock button')&&!e.target.closest('[data-mobile-home-search]'))close();});
+    function searchParams(query) {
+        const params = new URLSearchParams();
+        const current = new URLSearchParams(window.location.search);
+        ['kategorija', 'na_stanju', 'brend', 'velicina', 'cijena_od', 'cijena_do', 'sort', 'akcija', 'noviteti', 'izdvojeno'].forEach(key => {
+            if (current.get(key)) params.set(key, current.get(key));
+        });
+        const category = document.querySelector('#searchForm select[name="kategorija"]');
+        if (category) { if (category.value) params.set('kategorija', category.value); else params.delete('kategorija'); }
+        params.set('q', query);
+        return params;
+    }
+
+    dialog.querySelector('form')?.addEventListener('submit', () => {
+        const form = dialog.querySelector('form');
+        const params = searchParams(input.value.trim());
+        form.querySelectorAll('input[data-search-filter]').forEach(node => node.remove());
+        params.forEach((value, key) => {
+            if (key === 'q' || form.querySelector(`select[name="${key}"]`)) return;
+            const node = document.createElement('input');
+            node.type = 'hidden'; node.name = key; node.value = value; node.dataset.searchFilter = '1'; form.append(node);
+        });
+    });
     async function search(){
         controller?.abort();const current=++generation, query=input.value.trim();
         if(query.length<2){results.replaceChildren();all.hidden=true;related.hidden=true;status.textContent='Unesite najmanje dva znaka.';return;}
         controller=new AbortController();status.textContent='Pretražujemo…';
         try{
-            const response=await fetch(`/api/pretraga/?q=${encodeURIComponent(query)}&limit=5`,{signal:controller.signal});
+            const response=await fetch(`/api/pretraga/?${searchParams(query)}&limit=5`,{signal:controller.signal});
             if(!response.ok)throw new Error();const data=await response.json();if(current!==generation)return;
             status.textContent=data.results.length?'':'Nema proizvoda za ovu pretragu.';
             results.replaceChildren();
@@ -51,7 +73,7 @@
                 row.append(side);fragment.append(row);if(item.category)categories.set(item.category.url,item.category.name);
             });
             results.append(fragment);
-            all.href=`/?q=${encodeURIComponent(query)}#product-showcase`;all.hidden=!data.results.length;
+            all.href=`/?${searchParams(query)}#product-showcase`;all.hidden=!data.results.length;
             related.querySelector('div').replaceChildren();categories.forEach((name,url)=>{const a=element('a','',name);a.href=url;related.querySelector('div').append(a);});related.hidden=!categories.size;
         }catch(e){if(e.name!=='AbortError'&&current===generation)status.textContent='Pretraga trenutno nije dostupna. Pokušajte ponovo.';}
     }

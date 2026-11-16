@@ -71,6 +71,7 @@
                         <h3 class="cart-item-title">
                             {% include 'partials/cart_item_name.html' with item=item %}
                         </h3>
+                        {% include 'partials/plus_percent_offer.html' with offer=item.plus_percent_offer only %}
                         {% if item.deal_info and item.deal_info.message %}
                         <div class="cart-item-deal-promo">{{ item.deal_info.message }}</div>
                         {% endif %}
@@ -90,6 +91,10 @@
                             {% if item.coupon_unit_price != None %}
                                 <span class="price-discounted coupon-price-new">{{ item.coupon_unit_price }} KM</span>
                                 <del class="price-original coupon-price-old">{{ item.cijena_decimal }} KM</del>
+                            {% elif item.plus_discount_percent %}
+                                <del class="price-original">{{ item.plus_original_unit_price|floatformat:2 }} KM</del>
+                                <span class="price-discounted">{{ item.cijena_decimal|floatformat:2 }} KM</span>
+                                <strong class="cart-item-deal-promo">−{{ item.plus_discount_percent|floatformat:"-2" }}%</strong>
                             {% elif item.deal_info and item.deal_info.has_discount and item.deal_info.discounted_unit_price %}
                                 <span class="price-original">{{ item.deal_info.full_unit_price }} KM</span>
                                 <span class="price-deal">{{ item.deal_info.discounted_unit_price }} KM</span>

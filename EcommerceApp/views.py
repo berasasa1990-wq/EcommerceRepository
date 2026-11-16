@@ -529,6 +529,7 @@ def _get_filter_params(request):
     if not _staff_edit_mode_enabled(request) or missing not in {'opis', 'slika', 'kategorija', 'tag'}:
         missing = ''
     return {
+        'na_stanju': request.GET.get('na_stanju', '').strip(),
         'q': request.GET.get('q', '').strip(),
         'kategorija': request.GET.get('kategorija', '').strip(),
         'brend': request.GET.get('brend', '').strip(),
@@ -659,9 +660,8 @@ _SEARCH_DIACRITIC_MAP = str.maketrans({
 
 
 def _search_fold(value):
-    if not value:
-        return ''
-    return str(value).casefold().translate(_SEARCH_DIACRITIC_MAP)
+    from .search_expressions import fold
+    return fold(value)
 
 
 def _normalize_phrase(value):
@@ -1273,27 +1273,46 @@ def _search_significant_words(raw):
     return _search_tokens(raw)
 
 
+def _search_aliases(qs):
+    from .search_expressions import SearchFold, SearchCompact
+    return qs.alias(_search_name=SearchFold('naziv'), _search_sku=SearchCompact('sifra'))
+
+
+def _code_key(query):
+    from .search_expressions import compact
+    return compact(query)
+
+
+def _code_in_name(query):
+    """Manufacturer codes sometimes exist only in a product's title."""
+    key = _code_key(query)
+    if not (any(c.isdigit() for c in key) and any(c.isalpha() for c in key)):
+        return Q(pk__in=[])
+    parts = re.findall(r'[a-z]+|[0-9]+', key)
+    pattern = r'(?<![a-z0-9])' + r'[-\s]*'.join(parts) + r'(?![a-z0-9])'
+    from django.db.models.lookups import Regex
+    from .search_expressions import SearchFold
+    return Q(Regex(SearchFold('naziv'), Value(pattern)))
+
+
 def _q_name_contains(term):
-    """Naziv (ili normalizirani naziv) sadrži term."""
-    term = (term or '').strip()
-    if not term:
-        return Q(pk__in=[])
-    return Q(naziv__icontains=term) | Q(naziv_normalized__icontains=term)
+    from django.db.models.lookups import Contains
+    from .search_expressions import SearchFold
+    return Q(Contains(SearchFold('naziv'), Value(_search_fold(term)))) if term else Q(pk__in=[])
 
 
-def _q_sifra_contains(term):
-    term = (term or '').strip()
-    if not term:
+def _q_sifra_contains(term, *, exact=False):
+    from .search_expressions import SearchCompact
+    key = _code_key(term)
+    if not key:
         return Q(pk__in=[])
-    variation_sifra = ProductVariation.objects.filter(
-        artikal_id=OuterRef('pk'),
-        sifra__icontains=term,
-    )
-    return (
-        Q(sifra__icontains=term)
-        | Q(sifra_normalized__icontains=term)
-        | Exists(variation_sifra)
-    )
+    lookup = 'exact' if exact else 'contains'
+    variation = ProductVariation.objects.alias(
+        _code=SearchCompact('sifra'),
+    ).filter(**{f'_code__{lookup}': key})
+    from django.db.models.lookups import Exact, Contains
+    condition = Exact if exact else Contains
+    return Q(condition(SearchCompact('sifra'), Value(key))) | Q(pk__in=variation.order_by().values('artikal_id'))
 
 
 def _q_name_or_sifra_contains(term):
@@ -1313,7 +1332,12 @@ def _name_all_tokens_q(raw):
         return Q(pk__in=[])
     and_q = Q()
     for token in tokens:
-        and_q &= _q_name_contains(token)
+        if token.isdigit():
+            from django.db.models.lookups import Regex
+            from .search_expressions import SearchFold
+            and_q &= Q(Regex(SearchFold('naziv'), Value(r'(?<![0-9])' + re.escape(token) + r'(?![0-9])')))
+        else:
+            and_q &= _q_name_contains(token)
     return and_q
 
 
@@ -1347,36 +1371,33 @@ def _search_exists_match(raw):
 
 
 def _fuzzy_name_product_ids(query):
-    """Match misspelled words against a short-lived, lightweight name index."""
-    from django.core.cache import cache
-    from difflib import get_close_matches
+    """Bound typo work to 300 database-selected candidates, never the catalogue."""
+    from django.db import connection
     words = _search_tokens(query)
     if not words or len(words) > 10:
         return set()
-    index = cache.get('search_name_words_v1')
-    if index is None:
-        index = {}
-        for pk, name in Product.objects.filter(aktivan=True).values_list('pk', 'naziv').iterator():
-            for word in set(_search_tokens(name)):
-                index.setdefault(word, set()).add(pk)
-        cache.set('search_name_words_v1', index, 60)
-    matches = None
+    # Broad exact searches do not need a second pass over fuzzy candidates.
+    qs = _search_aliases(Product.objects.filter(aktivan=True))
+    if qs.filter(_search_exists_match(query) | _code_in_name(query)).exists():
+        return set()
+    candidates = Q()
     for word in words:
-        ids = set()
-        for candidate, product_ids in index.items():
-            if word in candidate:
-                ids.update(product_ids)
-        # Avoid fuzzy matching short words and broad scans of unrelated lengths.
-        if not ids and len(word) >= 4:
-            allowance = 1 if len(word) <= 5 else 2
-            candidates = (w for w in index if abs(len(w) - len(word)) <= allowance)
-            for candidate in get_close_matches(word, candidates, n=5, cutoff=0.65):
-                if _edit_distance(word, candidate, max_dist=allowance) <= allowance:
-                    ids.update(index[candidate])
-        matches = ids if matches is None else matches & ids
-        if not matches:
-            break
-    return matches or set()
+        if len(word) < 4:
+            candidates &= _q_name_contains(word)
+        else:
+            anchor = Q(_search_name__regex=r'(^|[^a-z0-9])' + re.escape(word[:2]))
+            if connection.vendor == 'postgresql':
+                from django.contrib.postgres.lookups import TrigramWordSimilar
+                from django.db.models import TextField
+                TextField.register_lookup(TrigramWordSimilar)
+                anchor |= Q(_search_name__trigram_word_similar=word)
+            candidates &= anchor
+    matches = set()
+    for pk, name in qs.filter(candidates).order_by('pk').values_list('pk', 'naziv')[:300]:
+        tokens = _search_tokens(name)
+        if all(any(word in token or _word_fuzzy_eq(word, token) for token in tokens) for word in words):
+            matches.add(pk)
+    return matches
 
 
 def _apply_search_filter(products_qs, query):
@@ -1395,7 +1416,8 @@ def _apply_search_filter(products_qs, query):
         return products_qs.none()
 
     # 1–2) Naziv (sve riječi, bilo kojim redom) + šifra
-    match = _search_exists_match(raw)
+    products_qs = _search_aliases(products_qs)
+    match = _search_exists_match(raw) | _code_in_name(raw)
     fuzzy_ids = _fuzzy_name_product_ids(raw)
     if fuzzy_ids:
         match |= Q(pk__in=fuzzy_ids)
@@ -1676,8 +1698,6 @@ SEARCH_SUGGEST_LIMIT = 5
 # Max artikala za punu pretragu (Enter). RANIJE 200 je sjekao rezultate
 # (admin 915 MATE, sajt samo 200). 5000 = sigurnosni strop radi CPU-a.
 SEARCH_FULL_RANK_POOL = 5000
-# Fine Python re-rank samo prvih N (SQL score već drži naziv gore)
-SEARCH_FINE_RANK_TOP = 400
 STAFF_LOOKUP_LIMIT = 25
 
 
@@ -1706,66 +1726,31 @@ def _suggest_thumb_url(image_field):
 
 
 def _suggest_relevance_annotation(query, *, fuzzy_ids=None):
-    """
-    SQL prioritet relevantnosti za brži ORDER BY (manji candidate pool).
-
-    Prioritet (Case = prvi match pobjedi):
-      1) naziv (tačno → djelomično → greške), zatim šifra
-      2) tek onda tag artikla
-
-    Bez JOIN-a na tagovi__ (M2M) — koristi pk__in da ne duplicira redove.
-    """
-    raw = _normalize_phrase(query)
-    if not raw or len(raw) < 2:
+    """One canonical relevance order for full results and both suggest clients."""
+    raw = _search_fold(_normalize_phrase(query))
+    if len(raw) < 2:
         return Value(0, output_field=IntegerField())
-    folded = _search_fold(raw)
-    terms = [raw]
-    if folded and folded != raw.casefold():
-        terms.append(folded)
-
-    # Case uzima PRVI matching When — stavi više skorove prvo
-    # Naziv/šifra UVJEK iznad tagova (MATE u nazivu > tag match)
-    whens = []
-    for term in terms:
-        whens.extend([
-            When(naziv__iexact=term, then=Value(150)),
-            When(naziv__istartswith=term, then=Value(145)),
-        ])
-
-    # Višerječni upit: SVE riječi u nazivu, bilo kojim redom — PRIJE fraze icontains
-    words = _search_tokens(raw)
-    if len(words) >= 2:
-        name_all_words = Q()
-        for w in words:
-            name_all_words &= (
-                Q(naziv__icontains=w) | Q(naziv_normalized__icontains=w)
-            )
-        whens.append(When(name_all_words, then=Value(140)))
-
-    for term in terms:
-        whens.extend([
-            When(naziv__icontains=term, then=Value(135)),
-            When(naziv_normalized__icontains=term, then=Value(134)),
-        ])
-
-    if len(words) >= 2:
-        sifra_all_words = Q()
-        for w in words:
-            sifra_all_words &= Q(sifra__icontains=w)
-        whens.append(When(sifra_all_words, then=Value(84)))
-
+    from django.db.models.lookups import Exact
+    from .search_expressions import SearchFold
+    whens = [
+        When(_q_sifra_contains(raw, exact=True), then=Value(200)),
+        When(_code_in_name(raw), then=Value(190)),
+        When(Exact(SearchFold('naziv'), Value(raw)), then=Value(150)),
+        When(_name_all_tokens_q(raw), then=Value(140)),
+        When(_q_sifra_contains(raw), then=Value(120)),
+    ]
     if fuzzy_ids is None:
         fuzzy_ids = _fuzzy_name_product_ids(raw)
     if fuzzy_ids:
-        whens.append(When(pk__in=fuzzy_ids, then=Value(130)))
-    for term in terms:
-        whens.extend([
-            When(sifra__iexact=term, then=Value(120)),
-            When(sifra__icontains=term, then=Value(90)),
-        ])
-    # All remaining rows passed the product-tag filter; no second tag scan.
-
+        whens.append(When(pk__in=fuzzy_ids, then=Value(110)))
     return Case(*whens, default=Value(10), output_field=IntegerField())
+
+
+def _rank_search_queryset(qs, query):
+    return _search_aliases(qs).annotate(
+        _search_sql_rel=_suggest_relevance_annotation(query, fuzzy_ids=getattr(qs, '_search_fuzzy_ids', None)),
+        _new_created=Case(When(je_novitet=True, then='kreiran')),
+    ).order_by('-_search_sql_rel', '-na_stanju', '-je_novitet', '-_new_created', '-prioritet_lagera', '_search_name', 'pk')
 
 
 def search_suggest(request):
@@ -1777,18 +1762,21 @@ def search_suggest(request):
 
     # Rank in SQL before LIMIT: names (including typos), SKU, then tags.
     products_qs = _apply_search_filter(_suggest_product_queryset(request), query)
-    products_qs = products_qs.annotate(
-        _suggest_rel=_suggest_relevance_annotation(query, fuzzy_ids=getattr(products_qs, '_search_fuzzy_ids', None)),
-        _new_created=Case(When(je_novitet=True, then='kreiran')),
-    ).order_by('-_suggest_rel', '-na_stanju', '-je_novitet', '-_new_created', '-prioritet_lagera', 'naziv')
+    params = _get_filter_params(request)
+    products_qs = _search_scope_filters(products_qs, params)
+    products_qs = _rank_search_queryset(products_qs, query)
 
     try:
         limit = int(request.GET.get('limit') or SEARCH_SUGGEST_LIMIT)
     except (TypeError, ValueError):
         limit = SEARCH_SUGGEST_LIMIT
     limit = max(1, min(limit, SEARCH_SUGGEST_LIMIT))
-    # SQL already ranks names before tags. Fetch only one extra row for has_more.
-    pool = list(products_qs[:limit + 1])
+    # Fetch one extra row for has_more using the same ranking as full results.
+    if any(params.get(key) for key in ('cijena_od', 'cijena_do', 'velicina', 'sort', 'akcija', 'noviteti', 'izdvojeno', 'nedostaje')):
+        filtered, _ = _apply_product_filters(_product_queryset(request), request, record_search=False)
+        pool = filtered[:limit + 1]
+    else:
+        pool = list(products_qs[:limit + 1])
 
     has_more = len(pool) > limit
     from .storefront_stock import storefront_products
@@ -1831,7 +1819,18 @@ def _random_sale_order(products):
     return mixed
 
 
-def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
+def _search_scope_filters(qs, params):
+    if params.get('na_stanju') in ('1', 'true', 'on'):
+        qs = qs.filter(na_stanju=True)
+    if params.get('kategorija'):
+        category = Category.objects.filter(slug=params['kategorija'], aktivan=True).first()
+        qs = qs.filter(kategorija_id__in=category.get_descendant_ids()) if category else qs.none()
+    if params.get('brend'):
+        qs = qs.filter(brend__slug=params['brend'])
+    return qs
+
+
+def _apply_product_filters(products_qs, request, *, allowed_category_ids=None, record_search=True):
     params = _get_filter_params(request)
     search_q = _normalize_phrase(params.get('q') or '')
 
@@ -1851,6 +1850,8 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
         products_qs = products_qs.filter(tagovi__isnull=True)
 
     products_qs = _apply_search_filter(products_qs, params['q'])
+    if params.get('na_stanju') in ('1', 'true', 'on'):
+        products_qs = products_qs.filter(na_stanju=True)
 
     if params.get('akcija'):
         products_qs = _akcija_products_qs(products_qs)
@@ -1872,10 +1873,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
 
     # SQL pre-order za pretragu — naziv/šifra gore; NE sijeći na 200 (fali ostatak)
     if search_q and len(search_q) >= 2:
-        products_qs = products_qs.annotate(
-            _search_sql_rel=_suggest_relevance_annotation(search_q),
-            _new_created=Case(When(je_novitet=True, then='kreiran')),
-        ).order_by('-_search_sql_rel', '-na_stanju', '-je_novitet', '-_new_created', '-prioritet_lagera', 'naziv')
+        products_qs = _rank_search_queryset(products_qs, search_q)
         products = list(products_qs[:SEARCH_FULL_RANK_POOL])
     else:
         products = list(products_qs)
@@ -1946,13 +1944,8 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
         products = _random_sale_order(products)
     elif not search_q and (allowed_category_ids is not None or params.get('kategorija') or params.get('brend')):
         products = sorted(products, key=lambda product: (product.kreiran, product.pk), reverse=True)
-    elif search_q and len(search_q) >= 2 and len(products) > SEARCH_FINE_RANK_TOP:
-        head = _sort_products_by_lager_priority(
-            products[:SEARCH_FINE_RANK_TOP],
-            query=search_q,
-            price_sort='rastuca',
-        )
-        products = head + products[SEARCH_FINE_RANK_TOP:]
+    elif search_q and len(search_q) >= 2:
+        pass  # Preserve the shared database ranking, including stable tie breakers.
     else:
         products = _sort_products_by_lager_priority(
             products,
@@ -1963,7 +1956,7 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None):
     if not search_q:
         products = _oos_at_end(products)
     # Store the actual submitted webshop search, not every autocomplete keystroke.
-    if search_q and len(search_q) >= 2 and not request.path.startswith(('/nalog/', '/app/')):
+    if record_search and search_q and len(search_q) >= 2 and not request.path.startswith(('/nalog/', '/app/')):
         if request.session.session_key is None:
             request.session.create()
         SiteSearchEvent.objects.create(
@@ -3438,6 +3431,8 @@ def product_detail(request, slug):
     context['product_urgency'] = build_product_urgency(product)
     context['olx_configured'] = bool(settings.OLX_API_TOKEN)
     context['staff_product_tools'] = _staff_edit_mode_enabled(request)
+    from .plus_percent import offers_for_products
+    context['plus_percent_offer'] = offers_for_products([product]).get(product.pk)
     context['product_bundle'] = _product_page_bundle(product)
     context['flash_offer'] = _product_page_flash_offer(product)
 

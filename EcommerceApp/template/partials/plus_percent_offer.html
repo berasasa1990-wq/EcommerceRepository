@@ -1,0 +1,5 @@
+{% if offer %}
+<p class="plus-percent-offer" style="margin:12px 0;padding:12px 14px;border:1px solid #c8dfcc;border-radius:6px;background:#f0f8f1;color:#215b2d;line-height:1.5;">
+    Uz ovaj artikal ostvarujete <strong>{{ offer.popust_postotak|floatformat:"-2" }}% popusta</strong> na bilo koji drugi kupljeni artikal.
+</p>
+{% endif %}

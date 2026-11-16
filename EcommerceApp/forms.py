@@ -307,6 +307,15 @@ class AkcijaAdminForm(forms.ModelForm):
         if tip not in Akcija.ACTIVE_TIPS:
             self.add_error('tip', 'Dozvoljeni tipovi: Pop-up bundle, Kupi više, + Ponuda, Akcijska ponuda, Poslije narudžbe.')
             return cleaned
+        if tip == Akcija.Tip.PLUS_PERCENT:
+            products = cleaned.get('plus_artikli')
+            category = cleaned.get('kategorija')
+            if not products and not category:
+                self.add_error('plus_artikli', 'Odaberite artikle ili kategoriju.')
+            if products and category:
+                self.add_error('kategorija', 'Odaberite artikle ili kategoriju, ne oboje.')
+            if not cleaned.get('popust_postotak'):
+                self.add_error('popust_postotak', 'Unesite popust veći od 0% (najviše 100%).')
         if tip == Akcija.Tip.BUNDLE:
             trigger = cleaned.get('bundle_trigger') or Akcija.BundleTrigger.DELAY
             if trigger == Akcija.BundleTrigger.TRIGGER_PRODUCT and (not cleaned.get('artikal')):

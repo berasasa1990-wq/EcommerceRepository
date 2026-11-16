@@ -2245,6 +2245,7 @@ class Akcija(models.Model):
         # Aktivni tipovi (admin)
         BUNDLE = 'bundle', 'Pop-up bundle'
         QTY_DEAL = 'qty_deal', 'Kupi više (količinski %)'
+        PLUS_PERCENT = 'plus_percent', '+ %'
         PONUDA = 'ponuda', '+ Ponuda'
         AI_PRODAJA = 'ai_prodaja', 'AI prodaja / AI dwell'
         AKCIJSKA = 'akcijska', 'Akcijska ponuda'
@@ -2258,7 +2259,7 @@ class Akcija(models.Model):
         GRATIS = 'gratis', '+ Gratis (zastarjelo)'
 
     # Tipovi u listi Akcije (admin)
-    ACTIVE_TIPS = (Tip.BUNDLE, Tip.QTY_DEAL, Tip.PONUDA, Tip.AKCIJSKA, Tip.POSLIJE_NARUDZBE)
+    ACTIVE_TIPS = (Tip.PLUS_PERCENT, Tip.BUNDLE, Tip.QTY_DEAL, Tip.PONUDA, Tip.AKCIJSKA, Tip.POSLIJE_NARUDZBE)
     # Site-wide popup queue. Bundle više nije popup — prikaz ispod artikla.
     # Kupi više (qty_deal) iskače tek kad kupac doda artikal u korpu.
     POPUP_TIPS = ()
@@ -2318,6 +2319,11 @@ class Akcija(models.Model):
             '+ Ponuda: artikal koji se nudi u popupu (AI dwell stil) '
             'nakon dodavanja triggera. Obavezno za + Ponuda.'
         ),
+    )
+    plus_artikli = models.ManyToManyField(
+        'Product', blank=True, related_name='plus_percent_akcije',
+        verbose_name='Artikli za + %',
+        help_text='Odaberite artikle ili kategoriju. Popust vrijedi uz kupovinu drugog artikla.',
     )
     bundle_artikli = models.ManyToManyField(
         'Product',

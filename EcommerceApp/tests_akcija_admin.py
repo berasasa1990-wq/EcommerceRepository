@@ -102,3 +102,30 @@ class AkcijaAdminSaveTests(TestCase):
             formset = response.context['inline_admin_formsets'][0].formset
             self.assertTrue(formset.errors[0])
         self.assertFalse(Akcija.objects.filter(naziv=self.base['naziv']).exists())
+
+    def test_plus_percent_saves_multiple_products(self):
+        obj = self.save({'tip': 'plus_percent', 'plus_artikli': [p.pk for p in self.products], 'popust_postotak': '12,5%'})
+        self.assertEqual(obj.plus_artikli.count(), 2)
+        self.assertEqual(obj.popust_postotak, Decimal('12.5'))
+
+    def test_plus_percent_requires_selection_and_positive_discount(self):
+        response = self.client.post(self.url, {**self.base, 'tip': 'plus_percent', 'popust_postotak': '0'})
+        self.assertEqual(response.status_code, 200)
+        errors = response.context['adminform'].form.errors
+        self.assertIn('plus_artikli', errors)
+        self.assertIn('popust_postotak', errors)
+
+    def test_plus_percent_saves_category(self):
+        from .models import Category
+        category = Category.objects.create(naziv='Akcijska kategorija')
+        obj = self.save({'tip': 'plus_percent', 'kategorija': category.pk, 'popust_postotak': '15'})
+        self.assertEqual(obj.kategorija, category)
+        self.assertFalse(obj.plus_artikli.exists())
+
+    def test_plus_percent_rejects_category_with_products(self):
+        from .models import Category
+        category = Category.objects.create(naziv='Akcijska kategorija')
+        response = self.client.post(self.url, {**self.base, 'tip': 'plus_percent',
+            'plus_artikli': [self.products[0].pk], 'kategorija': category.pk, 'popust_postotak': '10'})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('kategorija', response.context['adminform'].form.errors)
