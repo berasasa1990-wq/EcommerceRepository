@@ -60,21 +60,19 @@
             status.textContent=data.results.length?'':'Nema proizvoda za ovu pretragu.';
             results.replaceChildren();
             const fragment=document.createDocumentFragment();
-            const categories=new Map();
             data.results.forEach(item=>{
-                const row=element('article','mobile-search-result');const link=element('a','mobile-search-result__main');link.href=item.url;
-                const img=element('img','');img.src=item.image||'';img.alt='';if(item.image)link.append(img);
-                const copy=element('div','');copy.append(element('small','',item.brand||''),element('strong','',item.naziv),element('small','',`Šifra: ${item.sifra||''}`),element('span',item.in_stock?'search-stock':'search-stock search-stock--out',item.in_stock?'● Na stanju':'Nije na stanju'));link.append(copy);row.append(link);
-                const side=element('div','mobile-search-result__side');side.append(element('strong','',`${item.price.replace('.',',')} KM`));
-                if(item.in_stock && item.variation_ids?.length<=1){
-                    const add=element('button','','');add.type='button';add.setAttribute('aria-label',`Dodaj u korpu — ${item.naziv}`);add.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="7" width="14" height="15" rx="2"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg>';
-                    add.addEventListener('click',async()=>{if(typeof window.catalogAddProductToCart!=='function'){location.href=item.url;return;}add.disabled=true;try{const r=await window.catalogAddProductToCart(item.slug,item.variation_ids[0]||'');if(r.requires_qty_deal_choice||r.requires_gratis_choice){close();return;}add.textContent='✓';status.textContent='Artikal je dodan u korpu.';}catch(e){status.textContent=e.message||'Dodavanje nije uspjelo.';}finally{add.disabled=false;}});side.append(add);
-                }else{const more=element('a','mobile-search-result__more','›');more.href=item.url;more.setAttribute('aria-label',`Pogledaj ${item.naziv}`);side.append(more);}
-                row.append(side);fragment.append(row);if(item.category)categories.set(item.category.url,item.category.name);
+                const row=element('article','mobile-search-result');
+                const link=element('a','mobile-search-result__main');link.href=item.url;
+                if(item.image){const img=element('img','');img.src=item.image;img.alt='';img.loading='lazy';img.decoding='async';link.append(img);}
+                link.append(element('strong','',item.naziv));
+                row.append(link);
+                const price=element('a','mobile-search-result__side');price.href=item.url;
+                price.append(element('strong','',`${item.price.replace('.',',')} KM`));row.append(price);
+                fragment.append(row);
             });
             results.append(fragment);
             all.href=`/?${searchParams(query)}#product-showcase`;all.hidden=!data.results.length;
-            related.querySelector('div').replaceChildren();categories.forEach((name,url)=>{const a=element('a','',name);a.href=url;related.querySelector('div').append(a);});related.hidden=!categories.size;
+            related.hidden=true;
         }catch(e){if(e.name!=='AbortError'&&current===generation)status.textContent='Pretraga trenutno nije dostupna. Pokušajte ponovo.';}
     }
     input.addEventListener('input',()=>{controller?.abort();generation++;clearTimeout(timer);timer=setTimeout(search,150);});

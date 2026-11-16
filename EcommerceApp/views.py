@@ -1718,11 +1718,33 @@ def _suggest_product_queryset(request=None):
     qs = Product.objects.filter(aktivan=True)
     if not _staff_edit_mode_enabled(request):
         qs = qs.filter(sakriven_do_stanja=False)
-    # storefront_products loads current offers and variations once, in batches.
-    return qs.select_related('brend', 'kategorija').defer(
-        'opis', 'meta_title', 'meta_description',
-        'olx_listing_url', 'olx_listing_slug', 'olx_listing_id',
+    from .models import AkcijaFlashLine
+    # Only fields needed for the image/name/price result. Pricing is batched;
+    # warehouse quantities, category trees and full product details are not read.
+    return qs.only('pk', 'naziv', 'slug', 'slika', 'cijena', 'akcijska_cijena', 'akcija_do').prefetch_related(
+        Prefetch('varijacije', queryset=ProductVariation.objects.only(
+            'pk', 'artikal_id', 'cijena', 'akcijska_cijena', 'slika',
+        ).order_by('redoslijed', 'id')),
+        Prefetch('akcija_flash_lines', queryset=AkcijaFlashLine.objects.filter(akcija__aktivan=True).select_related('akcija').only(
+            'product_id', 'akcija_id', 'popust_postotak', 'akcija__tip', 'akcija__aktivan',
+            'akcija__pocetak', 'akcija__trajanje_sati', 'akcija__popust_postotak',
+        )),
     )
+
+
+def _simple_search_items(products):
+    items = []
+    for product in products:
+        variations = list(product.varijacije.all())
+        for variation in variations:
+            variation.artikal = product
+        image = product.slika or next((v.slika for v in variations if v.slika), None)
+        items.append({
+            'naziv': product.naziv, 'slug': product.slug, 'url': product.get_absolute_url(),
+            'image': _suggest_thumb_url(image) if image else '',
+            'price': f'{_effective_product_price(product):.2f}',
+        })
+    return items
 
 
 def _suggest_thumb_url(image_field):
@@ -1790,30 +1812,7 @@ def search_suggest(request):
         pool = list(products_qs[:limit + 1])
 
     has_more = len(pool) > limit
-    from .storefront_stock import storefront_products
-    products = storefront_products(pool[:limit], refresh_prices=False)
-
-    results = []
-    for product in products:
-        _bind_variation_parents(product)
-        price = _effective_product_price(product)
-        # prikazna_slika može dirati varijacije — parent već bound
-        image_field = getattr(product, 'slika', None) or product.prikazna_slika
-        results.append({
-            'naziv': product.naziv,
-            'slug': product.slug,
-            'sifra': product.sifra,
-            'brand': product.brend.naziv if product.brend else '',
-            'in_stock': bool(product.na_stanju),
-            'stock': product.stanje,
-            'variation_ids': [v.pk for v in product.varijacije.all()],
-            'category': {'name': product.kategorija.naziv, 'url': product.kategorija.get_absolute_url()} if product.kategorija else None,
-            'url': product.get_absolute_url(),
-            'image': _suggest_thumb_url(image_field) if image_field else '',
-            'price': f'{price:.2f}',
-            'on_sale': _product_is_on_sale(product),
-            'pack': product.pakovanje_label or '',
-        })
+    results = _simple_search_items(pool[:limit])
 
     response = JsonResponse({'results': results, 'query': query, 'has_more': has_more})
     response['Cache-Control'] = 'private, max-age=60'
@@ -2677,15 +2676,18 @@ def home(request):
     home_url = reverse('home')
     site_settings = SiteSettings.load()
 
+    simple_search = bool(filter_params.get('q')) and not _staff_edit_mode_enabled(request)
     if filters_active:
         products_qs = (
+            _suggest_product_queryset(request) if simple_search and not any(filter_params.get(k) for k in ('cijena_od', 'cijena_do', 'velicina', 'sort', 'akcija', 'noviteti', 'izdvojeno', 'nedostaje')) else
             _prefetch_product_cards(Product.objects.all())
             if filter_params['nedostaje'] else _product_queryset(request)
         )
         products, filter_params = _apply_product_filters(products_qs, request)
-        scope_qs = _filter_size_scope_qs(filter_params, base_qs=products_qs, request=request)
-        filter_sizes = _available_sizes(scope_qs)
-        filter_size_groups = _size_filter_groups(home_url, filter_params, filter_sizes)
+        if not simple_search:
+            scope_qs = _filter_size_scope_qs(filter_params, base_qs=products_qs, request=request)
+            filter_sizes = _available_sizes(scope_qs)
+            filter_size_groups = _size_filter_groups(home_url, filter_params, filter_sizes)
         page_obj = _paginate_catalog_products(
             request,
             products,
@@ -2869,10 +2871,12 @@ def home(request):
         'home_vlogs': home_vlogs,
         'showcase_brands': _showcase_brands() if not filters_active else [],
         'search_products': search_products,
+        'simple_search': simple_search,
+        'simple_search_items': _simple_search_items(search_products) if simple_search else [],
         'page_obj': page_obj,
         'filters_active': filters_active,
         'filter_params': filter_params,
-        'filter_categories': _filter_categories() if filters_active else [],
+        'filter_categories': _filter_categories() if filters_active and not simple_search else [],
         'filter_size_groups': filter_size_groups,
         'filter_action': home_url,
         'filter_reset_url': _filter_reset_url(home_url, filter_params),

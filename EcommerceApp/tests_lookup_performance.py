@@ -40,5 +40,5 @@ class LookupPerformanceTests(TestCase):
         small, _ = self.measure(1)
         large, rows = self.measure(8)
         self.assertEqual(len(rows), 5)
-        self.assertTrue(all(row['on_sale'] for row in rows))
+        self.assertTrue(all(row['price'] == '108.00' for row in rows))
         self.assertLessEqual(large, small + 1)

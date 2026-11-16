@@ -515,17 +515,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const thumb = item.image
                 ? `<img src="${escapeHtml(item.image)}" alt="" width="48" height="48" loading="lazy" decoding="async">`
                 : placeholderThumbSvg;
-            const priceClass = item.on_sale ? ' search-suggestion-price--sale' : '';
-            const pack = item.pack
-                ? `<span class="search-suggestion-pack">${escapeHtml(item.pack)}</span>`
-                : '';
             return `<a href="${escapeHtml(item.url)}" class="search-suggestion" role="option">
                 <span class="search-suggestion-thumb">${thumb}</span>
                 <span class="search-suggestion-copy">
                     <span class="search-suggestion-name">${escapeHtml(item.naziv)}</span>
-                    ${pack}
                 </span>
-                <span class="search-suggestion-price${priceClass}">${escapeHtml(item.price)} KM</span>
+                <span class="search-suggestion-price">${escapeHtml(item.price)} KM</span>
             </a>`;
         }).join('');
 

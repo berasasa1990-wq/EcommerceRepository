@@ -172,3 +172,20 @@ class SearchRankingTests(TestCase):
             data = self.suggest('MT12221')
         self.assertEqual(data['results'][0]['price'], '123.45')
         self.assertFalse(any('AS "cijena"' in row['sql'] and 'AS "magacin_sync_at"' in row['sql'] for row in captured))
+
+    def test_suggestions_only_return_image_name_price_and_navigation(self):
+        with CaptureQueriesContext(connection) as queries:
+            data = self.suggest('MT12221')
+        self.assertEqual(set(data['results'][0]), {'naziv', 'slug', 'url', 'image', 'price'})
+        self.assertFalse(any('EcommerceApp_warehousestock' in q['sql'] for q in queries))
+        self.assertFalse(any('EcommerceApp_category' in q['sql'] for q in queries))
+        self.assertFalse(any('"opis"' in q['sql'] for q in queries))
+
+    def test_full_search_uses_simple_cards_without_cart_or_extra_filters(self):
+        response = self.client.get('/', {'q': 'MT12221'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['simple_search'])
+        self.assertEqual(response.context['simple_search_items'][0]['slug'], self.boot.slug)
+        self.assertEqual(response.context['filter_size_groups'], [])
+        self.assertNotContains(response, 'data-catalog-add')
+        self.assertEqual(response.context['meta_robots_content'], 'noindex, follow')
