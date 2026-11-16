@@ -412,8 +412,13 @@
     }
     @media (max-width: 767px) {
         body .site-chrome-sticky {
-            transform: translateY(calc(-1 * var(--site-chrome-scroll-offset, 0px)));
+            position: sticky !important;
+            inset: calc(-1 * var(--site-chrome-notices-height, 0px)) 0 auto !important;
+            transform: none;
             transition: none !important;
+        }
+        body .site-chrome-spacer {
+            display: none;
         }
     }
     </style>
@@ -469,16 +474,15 @@
             // Read all geometry before writing CSS: one layout pass.
             var promoH = promo.getBoundingClientRect().height;
             var headerH = header.getBoundingClientRect().height;
-            var totalH = chrome.getBoundingClientRect().height;
+            var chromeRect = chrome.getBoundingClientRect();
+            var totalH = chromeRect.height;
             var noticesH = promoH + saleNotice.getBoundingClientRect().height;
-            var scrollOffset = window.innerWidth <= 767
-                ? Math.min(Math.max(window.scrollY, 0), noticesH) : 0;
-            // Follow the page until the notices leave the viewport, then hold the header.
-            root.style.setProperty('--site-chrome-scroll-offset', scrollOffset + 'px');
+            // Mobile scroll is handled by CSS sticky; measure only on size changes.
+            setHeight('--site-chrome-notices-height', noticesH);
             setHeight('--promo-height', promoH);
             setHeight('--header-height', headerH);
             setHeight('--site-chrome-height', totalH);
-            setHeight('--site-chrome-top', totalH - scrollOffset + 2);
+            setHeight('--site-chrome-top', (window.innerWidth <= 767 ? chromeRect.bottom : totalH) + 2);
         }
         function schedule() {
             if (pending) return;
@@ -488,7 +492,6 @@
         window.syncSiteChromeOffset = schedule;
         measure();
         window.addEventListener('resize', schedule, { passive: true });
-        window.addEventListener('scroll', schedule, { passive: true });
         window.addEventListener('load', schedule, { once: true });
         if (window.ResizeObserver) {
             var observer = new ResizeObserver(schedule);

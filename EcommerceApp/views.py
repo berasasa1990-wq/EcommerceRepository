@@ -2486,7 +2486,7 @@ def _related_category_products(product, limit=HOME_SECTION_PRODUCT_LIMIT, reques
         return []
     return list(
         _order_qs_by_lager_priority(
-            _product_queryset(request)
+            _product_queryset(request).prefetch_related(None)
             .filter(kategorija_id=product.kategorija_id)
             .exclude(pk=product.pk),
             '-kreiran',
@@ -3314,17 +3314,22 @@ def product_detail(request, slug):
         product_qs = Product.objects.filter(aktivan=True, sakriven_do_stanja=False)
     product = get_object_or_404(
         product_qs
-        .select_related('kategorija', 'brend')
+        .select_related('kategorija', 'kategorija__roditelj', 'brend')
         .prefetch_related(
-            Prefetch('varijacije', queryset=ProductVariation.objects.order_by('redoslijed', 'id')),
             Prefetch('dodatne_slike', queryset=ProductImage.objects.order_by('redoslijed', 'id')),
-            'akcija_flash_lines__akcija',
             'tagovi',
         ),
         slug=slug,
     )
     from .storefront_stock import storefront_products
-    product = storefront_products([product])[0]
+    related_products = _related_category_products(product, request=request)
+    similar_name_products = find_similar_name_products(product, _product_queryset(request).prefetch_related(None))
+    # One stock/offer/variation batch for the main product and every visible card.
+    selected = {p.pk: p for p in [product, *related_products, *similar_name_products]}
+    live_products = {p.pk: p for p in storefront_products(selected.values(), refresh_prices=False)}
+    product = live_products[product.pk]
+    related_products = [live_products[p.pk] for p in related_products]
+    similar_name_products = [live_products[p.pk] for p in similar_name_products]
     in_stock_variations = [v for v in product.varijacije.all() if v.na_stanju]
     product_available = bool(product.na_stanju or in_stock_variations)
     lcp_image_url = None
@@ -3338,14 +3343,13 @@ def product_detail(request, slug):
     from .product_social_images import share_image_context
     social_image = share_image_context(request, product)
 
-    related_products = _related_category_products(product, request=request)
-    similar_name_products = storefront_products(find_similar_name_products(product, _product_queryset(request)))
     site_settings = SiteSettings.load()
     kategorija_naziv = product.kategorija.naziv if product.kategorija else ''
 
     context = {
         **_base_context(),
         'product': product,
+        'storefront_products_by_id': live_products,
         **social_image,
         'in_stock_variations': in_stock_variations,
         'ima_varijacije': bool(in_stock_variations),

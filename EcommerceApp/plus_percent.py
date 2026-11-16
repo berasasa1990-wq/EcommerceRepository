@@ -1,5 +1,7 @@
 """Selection of + % promotions shared by the product page and cart."""
-from .models import Akcija, Category
+from django.db.models import Q, Prefetch
+
+from .models import Akcija, Category, Product
 
 
 def offers_for_products(products):
@@ -16,10 +18,14 @@ def offers_for_products(products):
             category_id = parents.get(category_id)
         ancestors[product.pk] = ids
     offers = {}
+    product_ids = [p.pk for p in products]
+    category_ids = set().union(*ancestors.values())
     actions = Akcija.objects.filter(
         tip=Akcija.Tip.PLUS_PERCENT, aktivan=True,
         popust_postotak__gt=0, popust_postotak__lte=100,
-    ).prefetch_related('plus_artikli').order_by('redoslijed', '-pk')
+    ).filter(Q(plus_artikli__pk__in=product_ids) | Q(kategorija_id__in=category_ids)).distinct().prefetch_related(
+        Prefetch('plus_artikli', queryset=Product.objects.filter(pk__in=product_ids).only('pk')),
+    ).order_by('redoslijed', '-pk')
     for action in actions:
         selected = {p.pk for p in action.plus_artikli.all()}
         for product in products:

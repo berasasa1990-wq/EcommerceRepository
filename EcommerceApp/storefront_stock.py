@@ -26,11 +26,13 @@ def sku_quantity(product, variation=None):
     return max(0, int(target.stanje or 0)) if target.na_stanju else 0
 
 
-def storefront_products(products):
+def storefront_products(products, *, refresh_prices=True):
     """Return fresh presentation copies, never overwrite persisted catalog fields.
 
     Cached home-page objects are not trusted for quantities or prices.
     Current prices, offers, stocks and variants are read in batches.
+    Only callers with products freshly selected in this request may skip the
+    price reread; cached cards must keep the default.
     """
     products = list(products)
     if not products:
@@ -41,11 +43,14 @@ def storefront_products(products):
             'pk', 'cijena', 'akcijska_cijena', 'akcija_do',
             'stanje', 'na_stanju', 'magacin_sync_at', 'is_set',
         )
-    }
+    } if refresh_prices else {}
     offers = {}
     for line in AkcijaFlashLine.objects.filter(product_id__in=ids, akcija__aktivan=True).select_related('akcija'):
         offers.setdefault(line.product_id, []).append(line)
     tracked, quantities = warehouse_quantities(ids)
+    product_quantities = {}
+    for (product_id, _), quantity in quantities.items():
+        product_quantities[product_id] = product_quantities.get(product_id, 0) + quantity
     variants = {}
     for variant in ProductVariation.objects.filter(artikal_id__in=ids).order_by('redoslijed', 'id'):
         variants.setdefault(variant.artikal_id, []).append(variant)
@@ -63,7 +68,7 @@ def storefront_products(products):
             from .product_sets import set_stock_totals
             qty = set_stock_totals(product)['dostupno']
         elif managed:
-            qty = sum(value for (pk, _), value in quantities.items() if pk == product.pk)
+            qty = product_quantities.get(product.pk, 0)
         else:
             qty = max(0, product.stanje) if product.na_stanju else 0
         product.stanje, product.na_stanju = qty, qty > 0

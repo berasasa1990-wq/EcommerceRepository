@@ -66,7 +66,8 @@ class StorefrontWarehouseStockTests(TestCase):
         Product.objects.filter(pk=self.product.pk).update(cijena='33.90')
         html = render_to_string('partials/home_catalog_grid.html', {'products': [self.product]})
         self.assertIn('data-in-stock="1"', html)
-        self.assertIn('Na stanju · 7 kom', html)
+        from django.utils.html import strip_tags
+        self.assertIn('Na stanju · 7 kom', strip_tags(html))
         self.assertIn('data-default-price="33.90"', html)
         self.assertIn('class="price-current">33.90', html)
         stock.kolicina = 0
@@ -93,3 +94,31 @@ class StorefrontWarehouseStockTests(TestCase):
         response = self.client.post(reverse('add_to_cart', args=[self.product.slug]), {'stay': '1', 'quantity': '1'})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(self.client.session.get('cart'))
+
+    def test_fresh_product_can_skip_price_reread_without_skipping_warehouse(self):
+        Product.objects.filter(pk=self.product.pk).update(cijena='33.90')
+        WarehouseStock.objects.create(product=self.product, location=self.location, kolicina=7)
+        fresh = Product.objects.get(pk=self.product.pk)
+        with self.assertNumQueries(3):
+            card = storefront_products([fresh], refresh_prices=False)[0]
+            self.assertEqual(str(card.katalog_prikazna_cijena), '33.90')
+            self.assertEqual(card.stanje, 7)
+        self.assertEqual(self.product.stanje, 2)
+
+    def test_product_detail_batches_main_related_and_options(self):
+        from unittest.mock import patch
+        from .models import Category
+        category = Category.objects.create(naziv='Test oprema')
+        self.product.kategorija = category
+        self.product.save(update_fields=['kategorija'])
+        related = Product.objects.create(naziv='Drugi artikal', cijena=20, kategorija=category)
+        WarehouseStock.objects.create(product=related, location=self.location, kolicina=4)
+        with patch('EcommerceApp.storefront_stock.storefront_products', wraps=storefront_products) as refresh:
+            response = self.client.get(reverse('product_detail', args=[self.product.slug]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(refresh.call_count, 1)
+        self.assertEqual(response.context['storefront_products_by_id'][related.pk].stanje, 4)
+        self.assertEqual(response.context['related_products'][0].pk, related.pk)
+        WarehouseStock.objects.filter(product=related).update(kolicina=0)
+        response = self.client.get(reverse('product_detail', args=[self.product.slug]))
+        self.assertFalse(response.context['storefront_products_by_id'][related.pk].na_stanju)
