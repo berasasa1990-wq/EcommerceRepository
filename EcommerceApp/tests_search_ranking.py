@@ -137,3 +137,38 @@ class SearchRankingTests(TestCase):
         self.assertEqual(len(page_two), 6)
         self.assertFalse(set(page_one) & set(page_two))
         self.assertEqual([r['slug'] for r in self.suggest('paginacija masinica')['results']], page_one[:5])
+
+    def test_search_paginates_before_loading_product_objects(self):
+        from .search_results import SearchResults
+        from .views import _product_queryset, _paginate_catalog_products
+        Product.objects.bulk_create([Product(naziv=f'Brza pretraga {i:03}',
+            slug=f'brza-pretraga-{i}', cijena=10) for i in range(120)])
+        request = self.request({'q': 'brza pretraga'})
+        products, _ = _apply_product_filters(_product_queryset(request), request, record_search=False)
+        self.assertIsInstance(products, SearchResults)
+        self.assertIsNone(products.queryset._result_cache)
+        with self.assertNumQueries(1):
+            self.assertEqual(products.count(), 120)
+            self.assertEqual(len(products), 120)
+        page = _paginate_catalog_products(request, products)
+        self.assertIsNone(products.queryset._result_cache)
+        rows = list(page.object_list)
+        self.assertEqual(len(rows), 49)
+        self.assertIsNone(products.queryset._result_cache)
+        self.assertEqual(page.paginator.count, 120)
+
+    def test_size_filters_reuse_request_search_preparation(self):
+        from .views import _product_queryset, _filter_size_scope_qs, _fuzzy_name_product_ids
+        request = self.request({'q': 'wintr boots'})
+        with patch('EcommerceApp.views._fuzzy_name_product_ids', wraps=_fuzzy_name_product_ids) as fuzzy:
+            products, params = _apply_product_filters(_product_queryset(request), request, record_search=False)
+            _filter_size_scope_qs(params, request=request)
+            self.assertEqual(fuzzy.call_count, 1)
+            self.assertEqual(list(products)[0].pk, self.boot.pk)
+
+    def test_suggestions_read_latest_price_without_second_price_select(self):
+        Product.objects.filter(pk=self.boot.pk).update(cijena='123.45')
+        with CaptureQueriesContext(connection) as captured:
+            data = self.suggest('MT12221')
+        self.assertEqual(data['results'][0]['price'], '123.45')
+        self.assertFalse(any('AS "cijena"' in row['sql'] and 'AS "magacin_sync_at"' in row['sql'] for row in captured))

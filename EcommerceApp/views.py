@@ -20,8 +20,8 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db import DatabaseError, IntegrityError, transaction
-from django.db.models import Case, Count, Exists, F, IntegerField, Max, Min, OuterRef, Prefetch, Q, Sum, Value, When
-from django.db.models.functions import Lower, Trim, TruncDate
+from django.db.models import Case, Count, Exists, F, IntegerField, Max, Min, OuterRef, Prefetch, Q, Subquery, Sum, Value, When
+from django.db.models.functions import Coalesce, Lower, Trim, TruncDate
 from django.utils import timezone
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -187,8 +187,9 @@ def _in_stock_variations_qs():
 
 def _prefetch_product_cards(qs):
     from .models import AkcijaFlashLine
+    counts = ProductVariation.objects.filter(artikal_id=OuterRef('pk')).order_by().values('artikal_id').annotate(total=Count('pk')).values('total')
     return qs.select_related('kategorija', 'kategorija__roditelj', 'brend').annotate(
-        variation_count=Count('varijacije'),
+        variation_count=Coalesce(Subquery(counts, output_field=IntegerField()), Value(0)),
     ).prefetch_related(
         Prefetch('varijacije', queryset=_in_stock_variations_qs()),
         Prefetch('akcija_flash_lines', queryset=AkcijaFlashLine.objects.select_related('akcija').filter(akcija__aktivan=True)),
@@ -316,7 +317,7 @@ def _filter_size_scope_qs(filter_params, base_qs=None, *, request=None):
     """
     qs = base_qs if base_qs is not None else _product_queryset(request)
     if filter_params.get('q'):
-        qs = _apply_search_filter(qs, filter_params['q'])
+        qs = _apply_search_filter(qs, filter_params['q'], prepared=_request_search_data(request))
     if filter_params.get('akcija'):
         qs = _akcija_products_qs(qs)
     if filter_params.get('izdvojeno'):
@@ -505,9 +506,7 @@ def _available_sizes(products_qs):
     for naziv in Product.objects.filter(
         pk__in=products_qs.values('pk'),
         na_stanju=True,
-    ).annotate(
-        variation_count=Count('varijacije'),
-    ).filter(variation_count=0).values_list('naziv', flat=True):
+    ).filter(~Exists(ProductVariation.objects.filter(artikal_id=OuterRef('pk')))).values_list('naziv', flat=True):
         sizes.update(_variation_size_labels(naziv))
 
     return sorted(sizes, key=_size_sort_key)
@@ -1364,10 +1363,7 @@ def _search_exists_match(raw):
         return Q(pk__in=[])
     match = _name_all_tokens_q(raw)
     match |= _q_sifra_contains(raw)
-    folded = _search_fold(raw)
-    if folded and folded != raw:
-        match |= _q_sifra_contains(folded)
-    return match
+    return match  # SKU matching already canonicalizes case and diacritics.
 
 
 def _fuzzy_name_product_ids(query):
@@ -1400,7 +1396,15 @@ def _fuzzy_name_product_ids(query):
     return matches
 
 
-def _apply_search_filter(products_qs, query):
+def _request_search_data(request):
+    if request is None:
+        return {}
+    if not hasattr(request, '_prepared_product_search'):
+        request._prepared_product_search = {}
+    return request._prepared_product_search
+
+
+def _apply_search_filter(products_qs, query, *, prepared=None):
     """
     Pretraga (prioritet):
     1) naziv artikla — podstring / riječi (AND)
@@ -1417,18 +1421,24 @@ def _apply_search_filter(products_qs, query):
 
     # 1–2) Naziv (sve riječi, bilo kojim redom) + šifra
     products_qs = _search_aliases(products_qs)
-    match = _search_exists_match(raw) | _code_in_name(raw)
-    fuzzy_ids = _fuzzy_name_product_ids(raw)
-    if fuzzy_ids:
-        match |= Q(pk__in=fuzzy_ids)
+    key = _search_fold(raw)
+    if prepared is not None and key in prepared:
+        match, fuzzy_ids = prepared[key]
+    else:
+        match = _search_exists_match(raw) | _code_in_name(raw)
+        fuzzy_ids = _fuzzy_name_product_ids(raw)
+        if fuzzy_ids:
+            match |= Q(pk__in=fuzzy_ids)
 
-    # 3) Explicit product tags also match phrases such as "feeder set".
-    try:
-        product_tag_ids = _product_ids_for_product_tag_query(raw)
-        if product_tag_ids:
-            match |= Q(pk__in=product_tag_ids)
-    except Exception:
-        pass
+        # 3) Explicit product tags also match phrases such as "feeder set".
+        try:
+            product_tag_ids = _product_ids_for_product_tag_query(raw)
+            if product_tag_ids:
+                match |= Q(pk__in=product_tag_ids)
+        except Exception:
+            pass
+        if prepared is not None:
+            prepared[key] = (match, fuzzy_ids)
 
     result = products_qs.filter(match).distinct()
     result._search_fuzzy_ids = fuzzy_ids
@@ -1746,9 +1756,9 @@ def _suggest_relevance_annotation(query, *, fuzzy_ids=None):
     return Case(*whens, default=Value(10), output_field=IntegerField())
 
 
-def _rank_search_queryset(qs, query):
+def _rank_search_queryset(qs, query, *, fuzzy_ids=None):
     return _search_aliases(qs).annotate(
-        _search_sql_rel=_suggest_relevance_annotation(query, fuzzy_ids=getattr(qs, '_search_fuzzy_ids', None)),
+        _search_sql_rel=_suggest_relevance_annotation(query, fuzzy_ids=fuzzy_ids if fuzzy_ids is not None else getattr(qs, '_search_fuzzy_ids', None)),
         _new_created=Case(When(je_novitet=True, then='kreiran')),
     ).order_by('-_search_sql_rel', '-na_stanju', '-je_novitet', '-_new_created', '-prioritet_lagera', '_search_name', 'pk')
 
@@ -1761,10 +1771,11 @@ def search_suggest(request):
         return JsonResponse({'results': [], 'query': query, 'has_more': False})
 
     # Rank in SQL before LIMIT: names (including typos), SKU, then tags.
-    products_qs = _apply_search_filter(_suggest_product_queryset(request), query)
+    products_qs = _apply_search_filter(_suggest_product_queryset(request), query, prepared=_request_search_data(request))
+    fuzzy_ids = products_qs._search_fuzzy_ids
     params = _get_filter_params(request)
     products_qs = _search_scope_filters(products_qs, params)
-    products_qs = _rank_search_queryset(products_qs, query)
+    products_qs = _rank_search_queryset(products_qs, query, fuzzy_ids=fuzzy_ids)
 
     try:
         limit = int(request.GET.get('limit') or SEARCH_SUGGEST_LIMIT)
@@ -1780,7 +1791,7 @@ def search_suggest(request):
 
     has_more = len(pool) > limit
     from .storefront_stock import storefront_products
-    products = storefront_products(pool[:limit])
+    products = storefront_products(pool[:limit], refresh_prices=False)
 
     results = []
     for product in products:
@@ -1849,7 +1860,8 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None, r
     elif missing == 'tag':
         products_qs = products_qs.filter(tagovi__isnull=True)
 
-    products_qs = _apply_search_filter(products_qs, params['q'])
+    products_qs = _apply_search_filter(products_qs, params['q'], prepared=_request_search_data(request))
+    fuzzy_ids = getattr(products_qs, '_search_fuzzy_ids', None)
     if params.get('na_stanju') in ('1', 'true', 'on'):
         products_qs = products_qs.filter(na_stanju=True)
 
@@ -1873,7 +1885,13 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None, r
 
     # SQL pre-order za pretragu — naziv/šifra gore; NE sijeći na 200 (fali ostatak)
     if search_q and len(search_q) >= 2:
-        products_qs = _rank_search_queryset(products_qs, search_q)
+        products_qs = _rank_search_queryset(products_qs, search_q, fuzzy_ids=fuzzy_ids)
+        if not any(params.get(key) for key in ('cijena_od', 'cijena_do', 'velicina', 'sort', 'akcija', 'noviteti', 'izdvojeno', 'nedostaje')):
+            from .search_results import SearchResults
+            products = SearchResults(products_qs, SEARCH_FULL_RANK_POOL)
+            if record_search:
+                _record_site_search(request, search_q, products.count())
+            return products, params
         products = list(products_qs[:SEARCH_FULL_RANK_POOL])
     else:
         products = list(products_qs)
@@ -1956,15 +1974,19 @@ def _apply_product_filters(products_qs, request, *, allowed_category_ids=None, r
     if not search_q:
         products = _oos_at_end(products)
     # Store the actual submitted webshop search, not every autocomplete keystroke.
-    if record_search and search_q and len(search_q) >= 2 and not request.path.startswith(('/nalog/', '/app/')):
-        if request.session.session_key is None:
-            request.session.create()
-        SiteSearchEvent.objects.create(
-            session_key=request.session.session_key or '',
-            query=search_q[:160],
-            results_count=len(products),
-        )
+    if record_search and search_q and len(search_q) >= 2:
+        _record_site_search(request, search_q, len(products))
     return products, params
+
+
+def _record_site_search(request, query, count):
+    if request.path.startswith(('/nalog/', '/app/')):
+        return
+    if request.session.session_key is None:
+        request.session.create()
+    SiteSearchEvent.objects.create(
+        session_key=request.session.session_key or '', query=query[:160], results_count=count,
+    )
 
 
 CATALOG_PRODUCTS_PER_PAGE = 49
