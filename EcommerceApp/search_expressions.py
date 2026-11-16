@@ -17,11 +17,16 @@ def compact(value):
     return re.sub(r'[^a-z0-9]', '', fold(value))
 
 
-class SearchFold(Func):
+class _SearchFunction(Func):
+    def as_postgresql(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, function=f'public.{self.function}', **extra_context)
+
+
+class SearchFold(_SearchFunction):
     function = 'shop_search_fold'
     output_field = TextField()
 
 
-class SearchCompact(Func):
+class SearchCompact(_SearchFunction):
     function = 'shop_search_compact'
     output_field = TextField()

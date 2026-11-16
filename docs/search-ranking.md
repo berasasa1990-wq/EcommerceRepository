@@ -93,3 +93,13 @@ venv/bin/python manage.py test EcommerceApp.tests.CatalogNameSearchTests Ecommer
 Ukupno 28 prolaznih testova. Tri pada noviteta (`test_latest_import_is_stable_and_deduplicated`, `test_unfinished_import_is_ignored`, `test_see_all_uses_latest_import`) reproducirana su i izvršavanjem neizmijenjenih funkcija iz `git HEAD`: isti rezultat `[] != [2]`. Testovi očekuju posljednji uvoz, dok postojeća `_selected_new_product_ids` namjerno čita ručni izbor `HomeNovoProduct`. To nije mijenjano ovim zadatkom.
 
 Postojeći lookup test potvrđuje isti broj upita za 1 i 8 artikala (12/12), a storefront test potvrđuje batch obradu cijena/varijacija i limit 5. `manage.py check`, `makemigrations --check --dry-run`, `git diff --check` i Node syntax provjere za tri izmijenjena JS fajla prolaze.
+
+## Ispravka Render builda: `shop_search_fold(text) does not exist`
+
+PostgreSQL tokom `CREATE INDEX` mijenja `search_path` na `pg_catalog, pg_temp` ([dokumentacija](https://www.postgresql.org/docs/17/sql-createindex.html)). SQL funkcija `shop_search_compact` je u tijelu imala nekvalificirani poziv `shop_search_fold`; pri inliningu tokom gradnje indeksa aplikacijska funkcija zato nije bila vidljiva.
+
+Migracija 0353 i PostgreSQL ORM izrazi sada eksplicitno koriste `public.shop_search_fold` i `public.shop_search_compact`, uključujući unutrašnji poziv. SQLite zadržava svoje postojeće nazive. Ako je neuspjeli concurrent build ostavio INVALID indeks, 0353 uklanja samo takav indeks iz vlastitog spiska i ponovo ga gradi; validni indeksi ostaju. Migracija 0354 ponavlja idempotentnu instalaciju i za baze na kojima je stara 0353 već bila evidentirana kao završena.
+
+Nakon preuzimanja ispravke primijeniti `venv/bin/python manage.py migrate --noinput`, odnosno ponoviti postojeći Render build koji već izvršava migracije. Nije potrebno ručno brisati funkcije, validne indekse niti podatke. Deploy nije izvršen iz ove sesije.
+
+Regresije su u `EcommerceApp/tests_search_postgres.py`: provjera PostgreSQL SQL kompilacije, poziv pod ograničenim search_path, concurrent gradnja indeksa i oporavak INVALID indeksa. Tri integracijska slučaja zahtijevaju pravi PostgreSQL server; na SQLite-u se eksplicitno preskaču.
