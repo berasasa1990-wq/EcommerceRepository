@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 from .b2b_validators import validate_banner_link
+from .search_index import SearchIndexQuerySet
 from .utils.videos import validate_home_mobile_video, home_mobile_video_upload_to
 
 
@@ -1530,6 +1531,8 @@ class Category(models.Model):
 
 
 class Tag(models.Model):
+    objects = SearchIndexQuerySet.as_manager()
+
     naziv = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True, blank=True)
     roditelj = models.ForeignKey(
@@ -3441,6 +3444,8 @@ def _build_unique_slug(model_cls, source_text, *, pk=None, max_length=SLUG_MAX_L
 
 
 class Product(models.Model):
+    objects = SearchIndexQuerySet.as_manager()
+
     obrisan_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False, verbose_name='Uklonjen iz kataloga')
     is_set = models.BooleanField(default=False, db_index=True, verbose_name="Artikal je set")
     pracenje_zaliha = models.BooleanField(default=True)
@@ -4093,6 +4098,8 @@ class ProductSetComponent(models.Model):
 
 
 class ProductVariation(models.Model):
+    objects = SearchIndexQuerySet.as_manager()
+
     artikal = models.ForeignKey(
         Product, on_delete=models.CASCADE, related_name='varijacije',
     )

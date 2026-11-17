@@ -1366,34 +1366,10 @@ def _search_exists_match(raw):
     return match  # SKU matching already canonicalizes case and diacritics.
 
 
-def _fuzzy_name_product_ids(query):
-    """Bound typo work to 300 database-selected candidates, never the catalogue."""
-    from django.db import connection
-    words = _search_tokens(query)
-    if not words or len(words) > 10:
-        return set()
-    # Broad exact searches do not need a second pass over fuzzy candidates.
-    qs = _search_aliases(Product.objects.filter(aktivan=True))
-    if qs.filter(_search_exists_match(query) | _code_in_name(query)).exists():
-        return set()
-    candidates = Q()
-    for word in words:
-        if len(word) < 4:
-            candidates &= _q_name_contains(word)
-        else:
-            anchor = Q(_search_name__regex=r'(^|[^a-z0-9])' + re.escape(word[:2]))
-            if connection.vendor == 'postgresql':
-                from django.contrib.postgres.lookups import TrigramWordSimilar
-                from django.db.models import TextField
-                TextField.register_lookup(TrigramWordSimilar)
-                anchor |= Q(_search_name__trigram_word_similar=word)
-            candidates &= anchor
-    matches = set()
-    for pk, name in qs.filter(candidates).order_by('pk').values_list('pk', 'naziv')[:300]:
-        tokens = _search_tokens(name)
-        if all(any(word in token or _word_fuzzy_eq(word, token) for token in tokens) for word in words):
-            matches.add(pk)
-    return matches
+def _fuzzy_name_product_ids(query, *, candidates=None):
+    """Return at most 300 typo matches from the reusable candidate index."""
+    from .search_index import search_candidates
+    return (candidates if candidates is not None else search_candidates(query))[2]
 
 
 def _request_search_data(request):
@@ -1419,28 +1395,18 @@ def _apply_search_filter(products_qs, query, *, prepared=None):
     if len(raw) < 2:
         return products_qs.none()
 
-    # 1–2) Naziv (sve riječi, bilo kojim redom) + šifra
-    products_qs = _search_aliases(products_qs)
+    from .search_index import search_candidates
     key = _search_fold(raw)
     if prepared is not None and key in prepared:
-        match, fuzzy_ids = prepared[key]
+        ids, scores, fuzzy_ids = prepared[key]
     else:
-        match = _search_exists_match(raw) | _code_in_name(raw)
-        fuzzy_ids = _fuzzy_name_product_ids(raw)
-        if fuzzy_ids:
-            match |= Q(pk__in=fuzzy_ids)
-
-        # 3) Explicit product tags also match phrases such as "feeder set".
-        try:
-            product_tag_ids = _product_ids_for_product_tag_query(raw)
-            if product_tag_ids:
-                match |= Q(pk__in=product_tag_ids)
-        except Exception:
-            pass
+        candidates = search_candidates(raw)
+        ids, scores, _ = candidates
+        fuzzy_ids = _fuzzy_name_product_ids(raw, candidates=candidates)
         if prepared is not None:
-            prepared[key] = (match, fuzzy_ids)
-
-    result = products_qs.filter(match).distinct()
+            prepared[key] = (ids, scores, fuzzy_ids)
+    result = products_qs.filter(pk__in=ids).distinct()
+    result.query._storefront_search_scores = scores
     result._search_fuzzy_ids = fuzzy_ids
     return result
 
@@ -1779,13 +1745,17 @@ def _suggest_relevance_annotation(query, *, fuzzy_ids=None):
 
 
 def _rank_search_queryset(qs, query, *, fuzzy_ids=None):
+    scores = getattr(qs.query, '_storefront_search_scores', None)
+    relevance = Case(*[When(pk__in=ids, then=Value(score)) for score, ids in sorted(scores.items(), reverse=True)], default=Value(10), output_field=IntegerField()) if scores is not None else _suggest_relevance_annotation(query, fuzzy_ids=fuzzy_ids if fuzzy_ids is not None else getattr(qs, '_search_fuzzy_ids', None))
     return _search_aliases(qs).annotate(
-        _search_sql_rel=_suggest_relevance_annotation(query, fuzzy_ids=fuzzy_ids if fuzzy_ids is not None else getattr(qs, '_search_fuzzy_ids', None)),
+        _search_sql_rel=relevance,
         _new_created=Case(When(je_novitet=True, then='kreiran')),
     ).order_by('-_search_sql_rel', '-na_stanju', '-je_novitet', '-_new_created', '-prioritet_lagera', '_search_name', 'pk')
 
 
 def search_suggest(request):
+    from time import perf_counter
+    started = perf_counter()
     query = request.GET.get('q', '').strip()
     if not query:
         return JsonResponse({'results': [], 'query': '', 'has_more': False})
@@ -1816,6 +1786,7 @@ def search_suggest(request):
 
     response = JsonResponse({'results': results, 'query': query, 'has_more': has_more})
     response['Cache-Control'] = 'private, max-age=60'
+    response['Server-Timing'] = f'search;dur={(perf_counter() - started) * 1000:.1f}'
     return response
 
 

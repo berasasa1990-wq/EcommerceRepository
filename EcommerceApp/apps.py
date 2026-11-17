@@ -42,6 +42,14 @@ class EcommerceappConfig(AppConfig):
 
         from django.db.models.signals import post_delete, post_save
 
+        from .search_index import search_index_edited
+        from .models import Product, ProductVariation, Tag
+        from django.db.models.signals import m2m_changed
+        for model in (Product, ProductVariation, Tag):
+            post_save.connect(search_index_edited, sender=model, dispatch_uid='search_index_save_' + model.__name__)
+            post_delete.connect(search_index_edited, sender=model, dispatch_uid='search_index_delete_' + model.__name__)
+        m2m_changed.connect(search_index_edited, sender=Product.tagovi.through, dispatch_uid='search_index_tags')
+
         from .product_sets import refresh_dependent_sets
         from .models import Product, ProductVariation, ProductSetComponent, WarehouseStock
         for model in (Product, ProductVariation, ProductSetComponent, WarehouseStock):

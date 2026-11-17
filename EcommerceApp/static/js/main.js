@@ -593,8 +593,8 @@ document.addEventListener('DOMContentLoaded', () => {
             clearSearchSuggestions();
             return;
         }
-        // Duži debounce = manje requestova dok se kuca (manje opterećenje)
-        const delay = 150;
+        // Short debounce coalesces keystrokes without a visible pause.
+        const delay = 80;
         searchDebounceTimer = window.setTimeout(() => fetchSearchSuggestions(value), delay);
     }
 

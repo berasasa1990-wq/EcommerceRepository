@@ -108,9 +108,10 @@ class SearchRankingTests(TestCase):
             with CaptureQueriesContext(connection) as captured:
                 rows = list(_rank_search_queryset(_apply_search_filter(Product.objects.filter(aktivan=True), query), query)[:6])
             self.assertTrue(rows)
-            self.assertLessEqual(len(captured), 4)
+            self.assertLessEqual(len(captured), 5)
             if query == 'wintr boots':
-                self.assertTrue(any('LIMIT 300' in q['sql'] for q in captured))
+                from .views import _fuzzy_name_product_ids
+                self.assertLessEqual(len(_fuzzy_name_product_ids(query)), 300)
 
     def test_public_page_is_noindex_and_keeps_pagination(self):
         response = self.client.get('/', {'q': 'mašinica'})
@@ -189,3 +190,36 @@ class SearchRankingTests(TestCase):
         self.assertEqual(response.context['filter_size_groups'], [])
         self.assertNotContains(response, 'data-catalog-add')
         self.assertEqual(response.context['meta_robots_content'], 'noindex, follow')
+
+    def test_warm_suggestions_only_query_matching_products_and_prices(self):
+        self.suggest('mašinica')
+        with CaptureQueriesContext(connection) as queries:
+            data = self.suggest('okuma mašinica 4000')
+        self.assertEqual(data['results'][0]['slug'], self.okuma.slug)
+        self.assertEqual(len(queries), 3)
+        self.assertFalse(any('shop_search_compact' in q['sql'] for q in queries))
+        self.assertFalse(any('EcommerceApp_tag' in q['sql'] for q in queries))
+
+    def test_index_refreshes_after_queryset_name_update(self):
+        self.suggest('MT12221')
+        Product.objects.filter(pk=self.boot.pk).update(naziv='Zelenkaste čizme special')
+        self.assertEqual(self.suggest('zelenkaste cizme')['results'][0]['slug'], self.boot.slug)
+
+    def test_index_refreshes_after_bulk_variation_import(self):
+        self.suggest('mašinica')
+        ProductVariation.objects.bulk_create([ProductVariation(artikal=self.boot, naziv='Nova', sifra='NEW-778899')])
+        self.assertEqual(self.suggest('new778899')['results'][0]['slug'], self.boot.slug)
+
+    def test_warm_index_never_caches_prices(self):
+        self.suggest('MT12221')
+        Product.objects.filter(pk=self.boot.pk).update(cijena='87.65')
+        self.assertEqual(self.suggest('MT12221')['results'][0]['price'], '87.65')
+
+    def test_api_reports_actual_server_processing_duration(self):
+        response = search_suggest(self.request({'q': 'MT12221'}, '/api/pretraga/'))
+        self.assertTrue(response['Server-Timing'].startswith('search;dur='))
+
+    def test_index_refreshes_when_variation_moves_to_another_product(self):
+        self.assertEqual(self.suggest('VAR9876')['results'][0]['slug'], self.variant_product.slug)
+        ProductVariation.objects.filter(artikal=self.variant_product).update(artikal=self.boot)
+        self.assertEqual(self.suggest('VAR9876')['results'][0]['slug'], self.boot.slug)

@@ -75,6 +75,6 @@
             related.hidden=true;
         }catch(e){if(e.name!=='AbortError'&&current===generation)status.textContent='Pretraga trenutno nije dostupna. Pokušajte ponovo.';}
     }
-    input.addEventListener('input',()=>{controller?.abort();generation++;clearTimeout(timer);timer=setTimeout(search,150);});
+    input.addEventListener('input',()=>{controller?.abort();generation++;clearTimeout(timer);timer=setTimeout(search,80);});
     matchMedia('(max-width: 1024px)').addEventListener('change',e=>{if(!e.matches&&dialog.open)close();});
 })();

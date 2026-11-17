@@ -39,3 +39,25 @@ Izmijenjeni su `views.py`, novi `template/partials/simple_search_results.html`, 
 Lokalni završni uzorak pokazuje 11 SQL upita za punu listu umjesto ranijih 17, a 5 za prijedloge umjesto 6 (bez analitičkog zapisa u mjerenju). Vanjski header i navigacija na punoj stranici i dalje koriste svoj uobičajeni kontekst. Nema novih migracija i nije izvršen deploy.
 
 Završna provjera pojednostavljenog prikaza: 32 testa prolaze u SQLite testnom okruženju s direktno kreiranom trenutnom shemom; JavaScript syntax provjere i Django check prolaze. Ovaj rezultat se odnosi na sinhroniziranu trenutnu testnu shemu, a ne na izvršavanje svih historijskih migracija. Zahvat nema izmjena modela ili migracija.
+
+## Indeks kandidata u memoriji — 17.11.2026.
+
+Pretraga sada koristi `EcommerceApp/search_index.py`: indeks minimalnih podataka (ID, naziv, šifre i veze eksplicitnih tagova), s dvogramima za brzo izdvajanje kandidata. Podudaranje i bodovanje ne izvršavaju više normalizaciju i fuzzy provjeru nad cijelom SQL tabelom za svaki unos. Oba prikaza i dalje koriste ista pravila i konačno sortiranje po relevantnosti/dostupnosti u bazi, ali samo među izdvojenim ID-evima. Cijene, slike i vidljivost konačnih pogodaka čitaju se iz baze; indeks ne čuva cijene ili količine.
+
+Snapshot je lokalni po workeru i obnavlja se najkasnije nakon 60 sekundi. Normalni save/delete, izmjene tagova te Django `update`, `bulk_create` i `bulk_update` nad artiklima/varijacijama/tagovima invalidiraju indeks. Indeks iz transakcije ne prelazi u drugi transakcijski kontekst. Direktan SQL izvan Django managera i drugi workeri s nezavisnim LocMemCacheom mogu čekati sljedeće osvježavanje (do 60 s) za izmijenjene nazive/šifre; prikazana cijena i vidljivost se ne oslanjaju na snapshot. RLock štiti obnovu od istovremenih zahtjeva; najviše 256 posljednjih podudaranja po snapshotu ostaje u memoriji.
+
+Izmjene: `search_index.py`, registracija invalidacije u `apps.py`, manageri u `models.py`, povezivanje zajedničkog filtera i rangiranja u `views.py`; regresije u `tests_search_ranking.py`. Nema promjene sheme niti novih migracija. Desktop i mobilno čekanje nakon tipkanja smanjeno je sa 150 na 80 ms i ažurirane su verzije JS resursa. API sada vraća `Server-Timing: search;dur=...`, trajanje obrade u milisekundama. To ne mjeri mrežu, TLS, pokretanje servera ili čekanje prije ulaska zahtjeva u view.
+
+Lokalni SQLite katalog: 5872 artikla; medijana tri topla zahtjeva, jedan inicijalni poziv isključen, kod iz `git HEAD` u poređenju s radnim kodom:
+
+| Upit | Prijedlozi prije / poslije | Puna stranica prije / poslije |
+|---|---:|---:|
+| `masinica` | 20,74 / 1,92 ms | 46,72 / 12,62 ms |
+| `mate` | 25,11 / 6,96 ms | 44,76 / 19,04 ms |
+| `MT12221` | 50,60 / 1,42 ms | 80,60 / 9,18 ms |
+
+Topli prijedlozi sada rade tri SQL upita (pogoci, polja varijacija za cijenu, aktivne akcije za cijenu), a puna stranica devet u istom testnom okruženju. Hladna inicijalizacija indeksa na ovom katalogu zasebno je izmjerena na 366 ms; novi upit nad već izgrađenim indeksom na 2 ms, bez cijene/mreže. Zato se tople vrijednosti ne mogu obećati za prvo otvaranje novog workera.
+
+Produkcijsko čekanje od pet sekundi nije izmjereno: direktan javni zahtjev iz ovog okruženja nije imao dostupan DNS/mrežni pristup. Izmjene nisu deployane. Server-Timing je dodat upravo radi provjere procesorskog dijela tog čekanja nakon objave, umjesto zaključivanja samo iz lokalnih rezultata.
+
+Završna regresijska provjera: **51 test prolazi** u SQLite okruženju sa sinhroniziranom trenutnom shemom. Pokriveni su šifre i dijakritika, podudaranje API-ja i pune liste, cijene nakon zagrijavanja, izmjene naziva, bulk import, premještanje varijacije i tri upita za tople prijedloge. Django check, provjera migracija i JavaScript syntax provjere prolaze. Nove migracije nisu potrebne.
