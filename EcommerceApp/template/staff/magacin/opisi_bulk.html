@@ -20,9 +20,9 @@
     <form method="post" class="import-check-panel">
         {% csrf_token %}
         <label for="bulkDescriptions">Šifra - opis</label>
-        <p id="descriptionHint">Šifra prije crtice traži se u pripremljenim nazivima. Dodaj opis za svaki artikal. Sačuvaj opise priprema završni pregled, bez upisa artikala u bazu.</p>
-        <textarea id="bulkDescriptions" name="descriptions_text" rows="12" required aria-describedby="descriptionHint" placeholder="K0340051 - Ribolovna mašinica veličine 5000.&#10;K0310381 - Komplet držača za svjetleće ampule.">{{ descriptions_text }}</textarea>
-        <button type="submit">Sačuvaj opise</button>
+        <p id="descriptionHint">Šifra prije crtice traži se u pripremljenim nazivima. Dodaj opis za svaki artikal. Ako nema opisa, ostavi polje prazno i nastavi bez opisa. Nastavak priprema završni pregled, bez upisa artikala u bazu.</p>
+        <textarea id="bulkDescriptions" name="descriptions_text" rows="12" aria-describedby="descriptionHint" placeholder="K0340051 - Ribolovna mašinica veličine 5000.&#10;K0310381 - Komplet držača za svjetleće ampule.">{{ descriptions_text }}</textarea>
+        <button type="submit">Nastavi</button>
     </form>
 </div>
 {% endblock %}

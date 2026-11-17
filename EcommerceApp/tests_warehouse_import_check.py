@@ -70,6 +70,17 @@ class BulkArticlePreparationTests(SimpleTestCase):
         from .warehouse_import_check import parse_bulk_names
         self.assertEqual(parse_bulk_names('Naziv\tKoličina\nFOX jakna\t2\nMATE štap\t3\nfox jakna\t1'), ['FOX jakna', 'MATE štap'])
 
+    def test_brand_initials_at_start_or_code_prefix(self):
+        from .warehouse_import_check import detect_brand
+        brands = [{'id': 1, 'naziv': 'C Line'}, {'id': 2, 'naziv': 'FOX RAGE'}]
+        self.assertEqual(detect_brand('CL najlon', brands), 1)
+        self.assertEqual(detect_brand('cl123 najlon', brands), 1)
+        self.assertEqual(detect_brand('FR varalica', brands), 2)
+        self.assertIsNone(detect_brand('Najlon CL', brands))
+        self.assertIsNone(detect_brand('CLASSIC najlon', brands))
+        self.assertEqual(detect_brand('CL FOX RAGE varalica', brands), 2)
+        self.assertIsNone(detect_brand('CL najlon', brands + [{'id': 3, 'naziv': 'Carp Line'}]))
+
     def test_brand_matching_respects_word_boundaries_and_longer_brand(self):
         from .warehouse_import_check import detect_brand
         brands = [{'id': 1, 'naziv': 'FOX'}, {'id': 2, 'naziv': 'FOX RAGE'}, {'id': 3, 'naziv': 'MATE'}]

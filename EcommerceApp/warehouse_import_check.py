@@ -86,7 +86,7 @@ def parse_bulk_names(pasted):
 
 
 def detect_brand(name, brands):
-    """Match full brand names; a longer brand wins over its contained prefix."""
+    """Match full brand names, then unique brand initials at the start."""
     import re
     folded = normalize(name)
     matches = [brand for brand in brands if brand['naziv'].strip() and
@@ -95,6 +95,16 @@ def detect_brand(name, brands):
         brand['id'] != other['id'] and normalize(brand['naziv']) != normalize(other['naziv'])
         and normalize(brand['naziv']) in normalize(other['naziv']) for other in matches
     )]
+    if matches:
+        return matches[0]['id'] if len(matches) == 1 else None
+    prefix = re.match(r'[^\W\d_]+', folded)
+    if not prefix:
+        return None
+    matches = []
+    for brand in brands:
+        words = re.findall(r'[^\W\d_]+', normalize(brand['naziv']))
+        if len(words) > 1 and prefix.group() == ''.join(word[0] for word in words):
+            matches.append(brand)
     return matches[0]['id'] if len(matches) == 1 else None
 
 
@@ -216,6 +226,8 @@ def prepare_bulk_descriptions(rows, pasted):
     from django.utils.html import escape
     if not rows:
         raise ValueError('Prvo pripremi nazive i brendove artikala.')
+    if not pasted.strip():
+        return [dict(row, opis='') for row in rows]
     products = [SimpleNamespace(pk=index, naziv=row['naziv'], sifra='') for index, row in enumerate(rows)]
     descriptions = {}
     for code, description in parse_bulk_descriptions(pasted):
