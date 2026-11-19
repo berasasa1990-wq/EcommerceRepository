@@ -111,7 +111,8 @@ def invoice_price_notes(item, quantity):
             notes.append(f"Posebna VPC cijena — {snapshot['brand']}: MPC / {divisor} / 1,17 = {original:.2f} KM netto.")
         if percent > 0:
             saving = original - price
-            notes.append(f"Akcijski popust −{percent.normalize():f}%: {original:.2f} → {price:.2f} KM netto; "
+            display_percent = percent.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).normalize()
+            notes.append(f"Akcijski popust −{display_percent:f}%: {original:.2f} → {price:.2f} KM netto; "
                          f"sniženo {saving:.2f} KM/kom, ukupno {saving * quantity:.2f} KM.")
         rabat_percent = Decimal(str(snapshot.get('rabat_percent') or 0))
         if rabat_percent > 0:

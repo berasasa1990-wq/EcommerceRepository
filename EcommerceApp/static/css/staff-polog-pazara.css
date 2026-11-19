@@ -1,0 +1,345 @@
+.polog-page {
+  --polog-ink: #183246;
+  --polog-muted: #4d6171;
+  --polog-line: #ccdbe5;
+  --polog-blue: #006a96;
+  --polog-control-height: 46px;
+  box-sizing: border-box;
+  width: min(100%, 980px);
+  margin: clamp(18px, 4vw, 44px) auto;
+  padding: 0 clamp(12px, 3vw, 24px) 24px;
+  color: var(--polog-ink);
+}
+
+.polog-page .polog-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 16px;
+}
+
+.polog-page h1 {
+  margin: 0;
+  color: var(--polog-ink);
+  font-size: clamp(24px, 4vw, 36px);
+  line-height: 1.1;
+}
+
+.polog-total {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  max-width: min(57vw, 290px);
+  padding: 8px 10px;
+  border: 1px solid var(--polog-line);
+  border-radius: 10px;
+  background: #edf7fc;
+  text-align: right;
+}
+
+.polog-total-copy {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+}
+
+.polog-total span {
+  color: var(--polog-muted);
+  font-size: 12px;
+}
+
+.polog-total strong {
+  color: #095777;
+  font-size: clamp(17px, 3vw, 24px);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.polog-page button.polog-bank-trigger {
+  --site-action-gradient: #006a96;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--site-action-gradient);
+  color: #fff;
+  cursor: pointer;
+}
+
+.polog-page button.polog-bank-trigger:hover {
+  --site-action-gradient: #00567a;
+}
+
+.polog-banknote {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 14px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+}
+
+.polog-banknote::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.polog-panel {
+  padding: clamp(14px, 3vw, 24px);
+  border: 1px solid var(--polog-line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px #1832460d;
+}
+
+.polog-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 12px;
+  margin: 0;
+}
+
+.polog-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.polog-field :is(label, .polog-label) {
+  margin: 0;
+  color: var(--polog-ink);
+  font-weight: 700;
+}
+
+.polog-page :is(.polog-form, .polog-bank-form) :is(input[type="text"], .polog-date) {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--polog-control-height);
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid var(--polog-line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--polog-ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.polog-page .polog-form .polog-date {
+  background: #f2f6f9;
+}
+
+.polog-errors {
+  grid-column: 1 / -1;
+  color: #9b3127;
+}
+
+.polog-errors ul {
+  margin: 0;
+  padding-inline-start: 18px;
+}
+
+.polog-page :is(.polog-submit, .polog-dialog button) {
+  box-sizing: border-box;
+  min-height: var(--polog-control-height);
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--site-action-gradient);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.polog-page .polog-submit {
+  --site-action-gradient: #006a96;
+  width: 100%;
+  color: #fff;
+}
+
+.polog-page .polog-submit:hover {
+  --site-action-gradient: #00567a;
+}
+
+.polog-page :is(button, input, a):focus-visible {
+  outline: 2px solid var(--polog-blue);
+  outline-offset: 3px;
+}
+
+.polog-page a.polog-history-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin-top: 10px;
+  color: #595959;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.polog-page a.polog-history-link:hover {
+  color: #373737;
+}
+
+.polog-page .polog-dialog {
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  width: min(460px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  margin: auto;
+  padding: clamp(16px, 5vw, 26px);
+  overflow: auto;
+  border: 1px solid var(--polog-line);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--polog-ink);
+  box-shadow: 0 20px 56px #142a3659;
+}
+
+.polog-dialog::backdrop {
+  background: #122b3999;
+}
+
+.polog-dialog h2 {
+  margin: 0 0 16px;
+  font-size: clamp(20px, 4vw, 25px);
+  line-height: 1.2;
+}
+
+.polog-dialog-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.polog-page #polog-person .polog-dialog-actions button,
+.polog-page #polog-history .polog-history-close {
+  --site-action-gradient: #edf7fc;
+  border-color: #bad5e2;
+  color: #095777 !important;
+}
+
+.polog-page #polog-person .polog-dialog-actions button:hover,
+.polog-page #polog-history .polog-history-close:hover {
+  --site-action-gradient: #d9edf7;
+}
+
+.polog-page :is(#polog-person, #polog-bank) .polog-cancel {
+  --site-action-gradient: #f6a344;
+  border-color: #ce6e17;
+  color: #382009 !important;
+}
+
+.polog-page :is(#polog-person, #polog-bank) .polog-cancel:hover {
+  --site-action-gradient: #ffb55e;
+}
+
+.polog-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--polog-line);
+}
+
+.polog-bank-form .polog-dialog-footer {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.polog-bank-form .polog-submit {
+  width: auto;
+}
+
+.polog-bank-form .polog-errors {
+  margin-top: 8px;
+}
+
+.polog-page .polog-history {
+  width: min(680px, calc(100% - 24px));
+}
+
+.polog-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--polog-line);
+  border-radius: 8px;
+}
+
+.polog-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.polog-table th,
+.polog-table td {
+  padding: 9px clamp(6px, 2vw, 14px);
+  border-bottom: 1px solid var(--polog-line);
+  text-align: left;
+}
+
+.polog-table th {
+  background: #edf4f8;
+}
+
+.polog-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.polog-table :is(th, td):nth-child(2) {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.polog-table .polog-bank-amount {
+  color: #9b3127;
+}
+
+.polog-table td:last-child {
+  overflow-wrap: anywhere;
+}
+
+.polog-pages {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--polog-muted);
+}
+
+.polog-pages a {
+  color: var(--polog-blue);
+  text-decoration: underline;
+}
+
+@media (max-width: 620px) {
+  .polog-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .polog-submit {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 340px) {
+  .polog-dialog-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -30,9 +30,9 @@
         <div class="mg-field" id="pnCustomerSearchWrap"{% if ponuda.ime_prezime %} hidden{% endif %}>
             <label for="pnCustomerSearch">Izaberi postojećeg kupca</label>
             <input type="search" id="pnCustomerSearch" placeholder="Ime, telefon ili grad…" autocomplete="off" data-url="{% url 'staff_magacin_kupci_lookup' %}">
-            <div id="pnCustomerResults" aria-live="polite"></div>
+            <div id="pnCustomerResults" aria-live="polite" style="max-height:320px;overflow-y:auto"></div>
         </div>
-        <button type="button" class="mg-btn" id="pnNewCustomer" hidden>+ Dodaj kupca</button>
+        <button type="button" class="mg-btn" id="pnNewCustomer"{% if ponuda.ime_prezime %} hidden{% endif %}>+ Dodaj kupca</button>
         <p id="pnCustomerStatus" role="status"></p>
         <form method="post" action="{% url 'staff_magacin_ponuda_detail' ponuda.pk %}" class="pn-customer" id="pnCustomerForm" hidden>
             <input type="hidden" name="customer_id" id="pnCustomerId" value="{{ ponuda.customer_id|default:'' }}">
@@ -231,7 +231,7 @@
 {% endblock %}
 
 {% block magacin_js %}
-<script src="{% static 'js/ponuda-customer.js' %}?v=20260909-5" defer></script>
+<script src="{% static 'js/ponuda-customer.js' %}?v=20261117-shared-customers" defer></script>
 <script>
 (function () {
     var copyBtn = document.getElementById('pnCopyLink');

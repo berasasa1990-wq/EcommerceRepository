@@ -74,6 +74,7 @@ def izracunaj_sazetak(
     prize_discount_percent=None,
     prize_discount_km=None,
     prize_free_shipping=False,
+    viber_claims=(),
 ):
     postavke = SiteSettings.load()
     medjuzbir = _kvantiziraj(medjuzbir)
@@ -109,7 +110,7 @@ def izracunaj_sazetak(
 
     kupon = None
     if coupon_code:
-        kupon, _ = validiraj_kupon(coupon_code, user, subtotal=medjuzbir)
+        kupon, _ = validiraj_kupon(coupon_code, user, subtotal=medjuzbir, viber_claims=viber_claims)
         if kupon and kupon.vrsta == Coupon.Vrsta.DOSTAVA:
             dostava = Decimal('0.00')
 

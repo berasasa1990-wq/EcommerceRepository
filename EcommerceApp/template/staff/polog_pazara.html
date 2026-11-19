@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block page_title %}<title>Polog pazara</title>{% endblock %}
+{% block body_class %}staff-blue-page{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff-polog-pazara.css' %}?v=20261119bankHistory">
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/staff-polog-pazara.js' %}?v=20261119bankDeposit" defer></script>{% endblock %}
+
+{% block content %}
+<section class="polog-page">
+  <a href="{% url 'staff_admin_panel' %}" class="staff-page-back">← Nazad na Admin panel</a>
+  <header class="polog-heading">
+    <h1>Polog pazara</h1>
+    <div class="polog-total">
+      <div class="polog-total-copy">
+        <span>Ukupno evidentirano</span>
+        <strong>{{ ukupno|floatformat:2 }} KM</strong>
+      </div>
+      <button type="button" class="polog-bank-trigger" aria-label="Polog u banku" title="Polog u banku" aria-haspopup="dialog" aria-controls="polog-bank" data-polog-bank-open>
+        <i class="polog-banknote" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
+  <section class="polog-panel">
+    <form method="post" action="{% url 'staff_polog_pazara' %}" class="polog-form" id="polog-form">
+      {% csrf_token %}
+      <div class="polog-field"><span class="polog-label">Datum pologa</span><time class="polog-date" datetime="{{ danas|date:'Y-m-d' }}" data-polog-date>{{ danas|date:"d.m.Y." }}</time></div>
+      <div class="polog-field">{{ form.iznos.label_tag }}{{ form.iznos }}</div>
+      <button class="polog-submit" type="submit" aria-haspopup="dialog">Evidentiraj polog</button>
+      {% if form.errors %}
+      <div class="polog-errors" role="alert">{{ form.non_field_errors }}{{ form.iznos.errors }}{{ form.upisao.errors }}</div>
+      {% endif %}
+    </form>
+    <dialog id="polog-person" class="polog-dialog" aria-labelledby="polog-dialog-title" data-polog-dialog>
+      <h2 id="polog-dialog-title">Ko je upisao polog?</h2>
+      <div class="polog-dialog-actions">
+        {% for value, label in form.upisao.field.choices %}
+        <button type="submit" name="upisao" value="{{ value }}" form="polog-form">{{ label }}</button>
+        {% endfor %}
+      </div>
+      <div class="polog-dialog-footer">
+        <button class="polog-cancel" type="button" data-polog-cancel>Odustani</button>
+      </div>
+    </dialog>
+    <a href="{% url 'staff_polog_pazara' %}?historija=1" class="polog-history-link" data-polog-history-open aria-haspopup="dialog" aria-controls="polog-history">Evidentirani polozi</a>
+  </section>
+  <dialog id="polog-bank" class="polog-dialog" aria-labelledby="polog-bank-title" {% if bankovni_unos %}data-open-on-load{% endif %}>
+    <h2 id="polog-bank-title">Koliko novca polažeš u banku?</h2>
+    <form method="post" action="{% url 'staff_polog_pazara' %}" class="polog-bank-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="banka">
+      {{ banka_form.zahtjev }}
+      <div class="polog-field">{{ banka_form.iznos.label_tag }}{{ banka_form.iznos }}</div>
+      {% if banka_form.errors %}
+      <div class="polog-errors" role="alert">{{ banka_form.iznos.errors }}{{ banka_form.zahtjev.errors }}{{ banka_form.non_field_errors }}</div>
+      {% endif %}
+      <div class="polog-dialog-footer">
+        <button class="polog-cancel" type="button" data-polog-bank-cancel>Odustani</button>
+        <button class="polog-submit" type="submit">Evidentiraj bankovni polog</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="polog-history" class="polog-dialog polog-history" aria-labelledby="polog-history-title" {% if history_open %}data-open-on-load{% endif %}>
+    <h2 id="polog-history-title">Evidentirani polozi</h2>
+    <div class="polog-table-wrap">
+      <table class="polog-table">
+        <thead><tr><th scope="col">Datum</th><th scope="col">Iznos</th><th scope="col">Vrsta</th><th scope="col">Upisao</th></tr></thead>
+        <tbody>
+          {% for polog in page %}
+          <tr>
+            <td>{{ polog.datum|date:"d.m.Y." }}</td>
+            <td{% if polog.bankovni %} class="polog-bank-amount"{% endif %}>{% if polog.bankovni %}−{% endif %}{{ polog.iznos|floatformat:2 }} KM</td>
+            <td>{% if polog.bankovni %}Uzeto za banku{% else %}Polog pazara{% endif %}</td>
+            <td>{% if polog.upisao %}{{ polog.upisao|capfirst }}{% else %}{{ polog.osoba|default:"—" }}{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4">Još nema evidentiranih pologa.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page.has_other_pages %}
+    <nav class="polog-pages" aria-label="Stranice pologa">
+      {% if page.has_previous %}<a href="?historija=1&amp;page={{ page.previous_page_number }}">Prethodna</a>{% endif %}
+      <span>{{ page.number }} / {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a href="?historija=1&amp;page={{ page.next_page_number }}">Sljedeća</a>{% endif %}
+    </nav>
+    {% endif %}
+    <form method="dialog" class="polog-dialog-footer">
+      <button class="polog-history-close" type="submit">Zatvori</button>
+    </form>
+  </dialog>
+</section>
+{% endblock %}

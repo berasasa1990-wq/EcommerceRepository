@@ -1,0 +1,46 @@
+<form class="b2b-admin-search" method="get" action="{{ request.path }}" data-admin-search>
+  <label for="b2b-admin-query">{% if orders %}Broj narudžbe ili kupac{% else %}Firma, korisničko ime ili kontakt{% endif %}</label>
+  <div class="b2b-control-search">
+    <input id="b2b-admin-query" type="search" name="q" maxlength="150" value="{{ q }}">
+    <button type="submit">Traži</button>
+    {% if not orders %}<button type="button" data-admin-open-record="{% url 'b2b_control_account_add' %}">Dodaj novog</button>{% endif %}
+  </div>
+</form>
+<div class="b2b-admin-table">
+  <table>
+    <thead>
+      {% if orders %}
+      <tr><th>Narudžba</th><th>Kupac</th><th>Datum</th><th>Status</th><th>Ukupno</th><th aria-label="Radnje"></th></tr>
+      {% else %}
+      <tr><th>Firma</th><th>Korisničko ime</th><th>Kontakt</th><th>Status</th><th aria-label="Radnje"></th></tr>
+      {% endif %}
+    </thead>
+    <tbody>
+      {% for entry in page %}
+      {% if orders %}
+      <tr>
+        <td>#{{ entry.order.broj }}</td><td>{{ entry.account.company }}</td>
+        <td>{{ entry.created_at|date:"d.m.Y. H:i" }}</td><td>{{ entry.order.get_status_label }}</td>
+        <td>{{ entry.order.ukupno|floatformat:2 }} KM</td>
+        <td><a class="b2b-admin-edit" href="{% url 'b2b_control_order' entry.pk %}" data-admin-edit aria-label="Izmijeni narudžbu {{ entry.order.broj }}">Izmijeni</a></td>
+      </tr>
+      {% else %}
+      <tr>
+        <td>{{ entry.company }}</td><td>{{ entry.username }}</td>
+        <td>{{ entry.telefon|default:entry.email|default:"—" }}</td><td>{{ entry.is_active|yesno:"Aktivan,Neaktivan" }}</td>
+        <td><a class="b2b-admin-edit" href="{% url 'b2b_control_account' entry.pk %}" data-admin-edit aria-label="Izmijeni korisnika {{ entry.username }}">Izmijeni</a></td>
+      </tr>
+      {% endif %}
+      {% empty %}
+      <tr><td colspan="{% if orders %}6{% else %}5{% endif %}">Nema rezultata.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page.has_other_pages %}
+<nav class="b2b-admin-pagination" aria-label="Stranice rezultata">
+  {% if page.has_previous %}<a href="?q={{ q|urlencode }}&amp;page={{ page.previous_page_number }}" data-admin-page>Prethodna</a>{% endif %}
+  <span>{{ page.number }} / {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}<a href="?q={{ q|urlencode }}&amp;page={{ page.next_page_number }}" data-admin-page>Sljedeća</a>{% endif %}
+</nav>
+{% endif %}

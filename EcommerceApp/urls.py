@@ -11,7 +11,7 @@ from django.views.decorators.cache import never_cache
 from . import views
 from . import product_social_images
 from . import manual_order_drafts, data_history
-from . import views_b2b
+from . import views_b2b, views_b2b_control
 from . import views_catalog_api
 from . import views_feed
 from . import views_ledger
@@ -62,6 +62,13 @@ urlpatterns = [
     path("veleprodaja", views_b2b.catalog, name="b2b_catalog"),
     path("veleprodaja/", views_b2b.catalog),
     path("veleprodaja/odjava/", views_b2b.logout, name="b2b_logout"),
+    path("veleprodaja/kontrola/korisnici/", views_b2b_control.control_list, name="b2b_control_accounts"),
+    path("veleprodaja/kontrola/korisnici/novi/", views_b2b_control.account_details, name="b2b_control_account_add"),
+    path("veleprodaja/kontrola/korisnici/<int:pk>/", views_b2b_control.account_details, name="b2b_control_account"),
+    path("veleprodaja/kontrola/narudzbe/", views_b2b_control.control_list, {"orders": True}, name="b2b_control_orders"),
+    path("veleprodaja/kontrola/narudzbe/<int:pk>/", views_b2b_control.order_details, name="b2b_control_order"),
+    path("veleprodaja/kontrola/noviteti/", views_b2b.manage_collection, name="b2b_manage_new_arrivals"),
+    path("veleprodaja/kontrola/akcija/", views_b2b.manage_collection, {"sale": True}, name="b2b_manage_sale"),
     path('nalog/magacin/duguje/', views_ledger.ledger, name='staff_magacin_duguje'),
     path('api/sync/korisnik/', views_sync.sync_korisnik_api, name='sync_korisnik_api'),
     path('api/sync/narudzba/', views_sync.sync_narudzba_api, name='sync_narudzba_api'),
@@ -123,6 +130,7 @@ urlpatterns = [
     path('korpa/azuriraj/', views.update_cart, name='update_cart'),
     path('korpa/kupon/', views.apply_coupon, name='apply_coupon'),
     path('korpa/kupon/ukloni/', views.remove_coupon, name='remove_coupon'),
+    path('korpa/kupon/viber/<str:token>/', views.claim_viber_coupon, name='claim_viber_coupon'),
     path('korpa/ukloni/<str:key>/', views.remove_from_cart, name='remove_from_cart'),
     path('korpa/podsjetnik/primijeni/', views.cart_recovery_apply, name='cart_recovery_apply'),
     path('korpa/podsjetnik/zatvori/', views.cart_recovery_dismiss, name='cart_recovery_dismiss'),
@@ -172,6 +180,7 @@ urlpatterns = [
 
     path('nalog/admin/bulk-akcije/', bulk_actions, name='staff_bulk_actions'),
     path('nalog/admin/', views.staff_admin_panel, name='staff_admin_panel'),
+    path('nalog/admin/polog-pazara/', views.staff_polog_pazara, name='staff_polog_pazara'),
     path('nalog/admin/pocetna-stranica/', views.staff_home_page, name='staff_home_page'),
     path('nalog/admin/pocetna-stranica/sekcije/', views.staff_home_sections, name='staff_home_sections'),
     path('nalog/admin/blog/', views.staff_blog, name='staff_blog'),
@@ -443,6 +452,8 @@ urlpatterns = [
         name='staff_loyalty_card_barcode',
     ),
     path('nalog/narudzbe/', views.staff_orders_validation, name='staff_orders_validation'),
+    path('nalog/narudzbe/kupci/', views.staff_recent_web_buyers, name='staff_recent_web_buyers'),
+    path('nalog/narudzbe/kupci/<int:pk>/kupon/', views.staff_assign_web_buyer_coupon, name='staff_assign_web_buyer_coupon'),
     path('nalog/online-narudzbe/', views.staff_online_orders, name='staff_online_orders'),
     path('nalog/poklon-vaucer/', views.staff_gift_voucher, name='staff_gift_voucher'),
     path('nalog/poklon-vaucer/stampa/', views.staff_gift_voucher_print, name='staff_gift_voucher_print'),

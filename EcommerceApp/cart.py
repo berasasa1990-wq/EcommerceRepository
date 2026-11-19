@@ -38,6 +38,7 @@ def izracunaj_pdv(ukupno_sa_pdvom):
 
 
 class Cart:
+    VIBER_COUPON_CLAIMS_KEY = 'viber_coupon_claims'
     SESSION_KEY = 'cart'
     COUPON_KEY = 'applied_coupon'
     COUPON_APPLIED_KEY = 'coupon_applied_by_user'
@@ -544,6 +545,7 @@ class Cart:
             prize_discount_percent=reward_discount_percent(self.request),
             prize_discount_km=reward_discount_km(self.request),
             prize_free_shipping=reward_free_shipping(self.request),
+            viber_claims=self.request.session.get(self.VIBER_COUPON_CLAIMS_KEY, ()),
         )
         return summary
 

@@ -909,6 +909,24 @@ class MagacinViewTests(TestCase):
         })
         self.assertEqual(blocked.status_code, 302)
 
+    def test_ponuda_lists_all_shared_customers(self):
+        self.client.force_login(self.user)
+        WarehouseCustomer.objects.bulk_create([
+            WarehouseCustomer(ime_prezime=f'Kupac {index:02}', telefon=f'061{index:06}')
+            for index in range(45)
+        ])
+        lookup = reverse('staff_magacin_kupci_lookup')
+        self.assertEqual(len(self.client.get(lookup).json()['results']), 40)
+        results = self.client.get(lookup, {'all': '1'}).json()['results']
+        self.assertEqual(len(results), 45)
+        self.assertEqual(len(self.client.get(lookup, {'all': '1', 'q': 'Kupac'}).json()['results']), 45)
+        response = self.client.post(reverse('staff_magacin_kupci_save'), {
+            'ime_prezime': 'Kupac iz narudžbe', 'telefon': '062123456', 'postanski_broj': '71000',
+        })
+        self.assertTrue(response.json()['ok'])
+        results = self.client.get(lookup, {'all': '1', 'q': 'Kupac iz narudžbe'}).json()['results']
+        self.assertEqual(results[0]['id'], response.json()['customer']['id'])
+
     def test_ponuda_selects_existing_and_creates_customer(self):
         self.client.force_login(self.user)
         self.client.post(reverse('staff_magacin_ponude'), {'action': 'nova'})
@@ -944,6 +962,8 @@ class MagacinViewTests(TestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
         new = WarehouseCustomer.objects.get(telefon='062333444')
+        lookup = self.client.get(reverse('staff_magacin_kupci_lookup'), {'q': '062333444'})
+        self.assertEqual(lookup.json()['results'][0]['id'], new.pk)
         self.assertTrue(new.vp_kupac)
         self.assertTrue(new.odbio_posiljku)
         self.assertEqual(new.postanski_broj, '71000')

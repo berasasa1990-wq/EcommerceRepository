@@ -27,8 +27,43 @@ html body.catalog-header-reference #product-showcase .product-image :is(picture,
     object-position: center !important;
 }
 @media (max-width: 767px) {
+    html body.catalog-header-reference #product-showcase .product-catalog--simple-search .product-card__title {
+        text-align: center !important;
+    }
+    html body.catalog-header-reference #product-showcase .product-catalog--simple-search .price-current {
+        color: #00386e !important;
+        display: block;
+        width: 100%;
+        text-align: center !important;
+        align-self: flex-start;
+        padding-inline: 8px;
+    }
+    html body.catalog-header-reference #product-showcase .product-catalog--simple-search .product-card--catalog {
+        padding: 0 10px 10px !important;
+        border: 1px solid #dcebf7 !important;
+        border-radius: 22px !important;
+        background: #fff !important;
+        box-shadow: none !important;
+        overflow: hidden;
+    }
+    html body.catalog-header-reference #product-showcase .product-catalog--simple-search .product-card--catalog > img {
+        display: block;
+        flex-shrink: 0;
+        width: calc(100% + 20px) !important;
+        max-width: none !important;
+        height: auto !important;
+        aspect-ratio: 1;
+        margin-inline: -10px;
+        object-fit: cover !important;
+        object-position: center;
+    }
     html body.catalog-header-reference #product-showcase .product-card__media {
         width: calc(100% + 20px) !important;
         margin-inline: -10px !important;
+    }
+}
+@media (max-width: 600px) {
+    html body.catalog-header-reference #product-showcase .product-catalog--simple-search .product-card--catalog {
+        border-radius: 20px !important;
     }
 }

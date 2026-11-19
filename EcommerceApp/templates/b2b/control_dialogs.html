@@ -1,0 +1,15 @@
+<dialog class="b2b-quantity-dialog b2b-admin-dialog" aria-labelledby="b2b-admin-title" data-b2b-admin>
+  <h2 id="b2b-admin-title">Kontrola veleprodaje</h2>
+  <div class="b2b-admin-options" role="group" aria-label="Odaberi pregled">
+    <button type="button" data-admin-section="{% url 'b2b_control_accounts' %}" aria-pressed="false">B2B korisnici</button>
+    <button type="button" data-admin-section="{% url 'b2b_control_orders' %}" aria-pressed="false">B2B narudžbe</button>
+  </div>
+  <p role="status" data-admin-status></p>
+  <div data-admin-content></div>
+  <div class="quantity-dialog-actions"><button type="button" data-admin-close>Zatvori</button></div>
+</dialog>
+<dialog class="b2b-quantity-dialog b2b-admin-dialog" aria-label="Izmjena B2B podataka" data-b2b-admin-detail>
+  <p role="status" data-admin-status></p>
+  <div data-admin-content></div>
+  <div class="quantity-dialog-actions"><button type="button" data-admin-close>Nazad na listu</button></div>
+</dialog>

@@ -3,13 +3,72 @@
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block page_title %}<title>Narudžbe za validaciju — opremazaribolov.ba</title>{% endblock %}
 {% block body_class %}staff-blue-page validation-orders-page catalog-header-reference{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/staff-orders-validation.css' %}?v=20261020-orders">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff-orders-validation.css' %}?v=20261119-customers-aligned">
+<style>
+.validation-orders .vo-header-actions {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    max-width: 100%;
+}
+.validation-orders .vo-header-actions .vo-count { width: auto; min-width: 0; margin: 0; }
+.validation-orders .vo-customers {
+    --site-action-gradient: #effaff;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid #b7dce9;
+    border-radius: 8px;
+    background: #effaff;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.validation-orders #vo-customers-trigger { color: #006a96 !important; }
+.validation-orders .vo-customers svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.validation-orders .vo-customers:hover { --site-action-gradient: #e0f3fa; background: #e0f3fa; }
+.validation-orders .vo-customers:focus-visible { outline: 2px solid #006a96; outline-offset: 2px; }
+.validation-orders .vo-dialog { position: fixed; inset: 0; box-sizing: border-box; width: min(860px, calc(100% - 24px)); max-height: calc(100dvh - 24px); margin: auto; padding: clamp(12px, 3vw, 24px); overflow: auto; border: 1px solid #b7dce9; border-radius: 12px; background: #fff; color: #173b50; box-shadow: 0 16px 48px #173b5040; }
+.validation-orders .vo-dialog::backdrop { background: #173b506b; }
+.validation-orders .vo-dialog h2 { margin: 0 0 12px; font-size: 22px; }
+.validation-orders .vo-message-dialog { width: min(560px, calc(100% - 24px)); }
+.vo-buyers-table { overflow-x: auto; }
+.vo-buyers-table table { width: 100%; border-collapse: collapse; }
+.vo-buyers-table th, .vo-buyers-table td { padding: 8px 10px; border-bottom: 1px solid #d8e9f0; text-align: left; }
+.vo-buyers-table th { background: #effaff; }
+.vo-buyers-table td:nth-child(2), .vo-buyers-table td:nth-child(3) { white-space: nowrap; }
+.vo-dialog :is(.vo-viber, .vo-copy-viber, .vo-coupon-action, [data-vo-close]) { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 6px 10px; border: 0; border-radius: 7px; background: var(--site-action-gradient); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.vo-dialog :is(.vo-viber, .vo-copy-viber, .vo-coupon-action) { --site-action-gradient: #6650a4; }
+.vo-dialog button:disabled { --site-action-gradient: #596978; cursor: not-allowed; }
+.vo-dialog [data-vo-close] { --site-action-gradient: #406275; }
+.vo-dialog .vo-dialog-footer { display: flex; justify-content: flex-end; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.vo-message-dialog label { display: block; margin: 8px 0 4px; font-weight: 700; }
+.vo-message-dialog :is(input, textarea) { box-sizing: border-box; width: 100%; padding: 8px; border: 1px solid #b7dce9; border-radius: 6px; font: inherit; }
+.vo-message-dialog textarea { resize: vertical; }
+.vo-message-dialog .vo-viber-link { color: #59418c; text-decoration: underline; }
+.vo-coupon-details { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+@media (max-width: 700px) {
+    .validation-orders .vo-header-actions { width: 100%; }
+}
+</style>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'js/staff-recent-web-buyers.js' %}?v=20261119-assigned-coupon" defer></script>{% endblock %}
 {% block content %}
 <section class="validation-orders">
     <a class="vo-back" href="{% url 'staff_admin_panel' %}">← Nazad na Admin panel</a>
     <header class="vo-header">
         <div class="vo-heading"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V2h6v3M9 11h6M9 15h4"/></svg><div><h1>Narudžbe za validaciju</h1><p>Narudžbe koje još nisu validovane. Nakon validacije nestaju sa ove liste.</p></div></div>
-        <div class="vo-count{% if not pending_count %} is-empty{% endif %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8C3 8 6 0 10 4l2 4c9 0 6-8 2-4z"/></svg><div><strong>{{ pending_count }}</strong><span>nevalidovanih narudžbi</span></div><div class="vo-count-total"><strong>{{ pending_total|floatformat:2 }} KM</strong><span>Ukupan iznos</span></div></div>
+        <div class="vo-header-actions">
+            <button id="vo-customers-trigger" class="vo-customers" type="button" data-vo-buyers-url="{% url 'staff_recent_web_buyers' %}" aria-haspopup="dialog" aria-controls="vo-web-buyers">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Kupci
+            </button>
+            <div class="vo-count{% if not pending_count %} is-empty{% endif %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8C3 8 6 0 10 4l2 4c9 0 6-8 2-4z"/></svg><div><strong>{{ pending_count }}</strong><span>nevalidovanih narudžbi</span></div><div class="vo-count-total"><strong>{{ pending_total|floatformat:2 }} KM</strong><span>Ukupan iznos</span></div></div>
+        </div>
     </header>
     <form method="get" class="vo-filters">
         <label>Datum od<input type="date" name="date_from" value="{{ date_from }}"></label>
@@ -32,5 +91,61 @@
     </tbody></table></div>
     {% if orders.has_other_pages %}<nav class="vo-pagination" aria-label="Stranice narudžbi">{% if orders.has_previous %}<a href="?{{ page_query }}&amp;page={{ orders.previous_page_number }}">← Prethodna</a>{% endif %}<span>Stranica {{ orders.number }} od {{ orders.paginator.num_pages }}</span>{% if orders.has_next %}<a href="?{{ page_query }}&amp;page={{ orders.next_page_number }}">Sljedeća →</a>{% endif %}</nav>{% endif %}
 
+    <dialog id="vo-web-buyers" class="vo-dialog" aria-labelledby="vo-web-buyers-title">
+        <h2 id="vo-web-buyers-title">Zadnjih 20 webshop kupaca</h2>
+        <p role="status" data-vo-buyers-status></p>
+        <div data-vo-buyers-content></div>
+        <form method="dialog" class="vo-dialog-footer"><button data-vo-close>Zatvori</button></form>
+    </dialog>
+    <dialog id="vo-viber-message" class="vo-dialog vo-message-dialog" aria-labelledby="vo-viber-title">
+        <h2 id="vo-viber-title">Viber poruka za kupca</h2>
+        <p data-vo-viber-recipient></p>
+        <form data-vo-viber-form>
+            <div class="vo-coupon-details">
+                <button type="button" class="vo-coupon-action" data-vo-coupon-open aria-haspopup="dialog" aria-controls="vo-buyer-coupon">Kod za popust</button>
+                <strong data-vo-assigned-coupon></strong>
+            </div>
+            <label for="vo-viber-draft">Poruka</label>
+            <textarea id="vo-viber-draft" rows="8" readonly>🎉 *ČESTITAMO! OSVOJILI STE POPUST!* 🎁
+
+Bistro,
+
+Imamo sjajne vijesti! 🎣 Osvojili ste kod za popust koji možete iskoristiti prilikom kupovine na našem webshopu CarpologijaBH!
+
+🛒 Kako iskoristiti popust?
+
+1. Posjetite https://www.carpologijabh.ba/
+2. Dodajte željene artikle u korpu.
+4. Kliknite na *„Primijeni kod“* i odaberite kupon i vaš popust će se automatski obračunati! ✅
+5. Kupon vazi 7 dana
+
+🎁 *Vaš kod za popust:* [KOD]
+
+Uživajte u kupovini i hvala vam na povjerenju!
+
+🎣 *Vaša CarpologijaBH ekipa*</textarea>
+            <p role="status" data-vo-viber-status></p>
+            <div class="vo-dialog-footer">
+                <a class="vo-viber-link" data-vo-open-viber hidden>Otvori Viber</a>
+                <button data-vo-close type="button">Nazad</button>
+                <button class="vo-copy-viber" type="submit" disabled>Kopiraj i otvori Viber</button>
+            </div>
+        </form>
+    </dialog>
+    <dialog id="vo-buyer-coupon" class="vo-dialog vo-message-dialog" aria-labelledby="vo-buyer-coupon-title">
+        <h2 id="vo-buyer-coupon-title">Dodijeli kod za popust</h2>
+        <form method="post" data-vo-coupon-form>
+            {% csrf_token %}
+            <label for="vo-coupon-code">Naziv koda</label>
+            <input id="vo-coupon-code" name="kod" maxlength="20" required autocomplete="off" autocapitalize="characters">
+            <label for="vo-coupon-percent">Popust (%)</label>
+            <input id="vo-coupon-percent" name="postotak" inputmode="decimal" maxlength="6" required>
+            <p role="status" data-vo-coupon-status></p>
+            <div class="vo-dialog-footer">
+                <button data-vo-close type="button">Odustani</button>
+                <button class="vo-coupon-action" type="submit">Dodijeli kod</button>
+            </div>
+        </form>
+    </dialog>
 </section>
 {% endblock %}

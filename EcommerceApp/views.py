@@ -13,6 +13,7 @@ from django.conf import settings
 from .warehouse_access import warehouse_user_required
 from .models import SiteSettings
 from django import forms as django_forms
+from django.core import signing
 from django.core.files.base import ContentFile
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.contrib import messages
@@ -167,6 +168,7 @@ from .models import (
     Tag,
     UpsellOffer,
     UserProfile,
+    ViberKuponDodjela,
 )
 
 
@@ -4509,16 +4511,22 @@ def _loyalty_za_kupon(request):
 
 
 def _coupon_choices(request):
-    if not request.user.is_authenticated:
+    viber_claims = request.session.get(Cart.VIBER_COUPON_CLAIMS_KEY, ())
+    if not request.user.is_authenticated and not viber_claims:
         return []
-    card = _loyalty_za_kupon(request)
-    candidates = Coupon.objects.filter(aktivan=True).filter(
-        Q(vlasnik=request.user) | Q(loyalty_kartica=card)
-    ).distinct().order_by('automatski', '-kreiran')
+    eligible = Q(pk__in=viber_claims, vlasnik__isnull=True, viber_dodjela__isnull=False)
+    if request.user.is_authenticated:
+        eligible |= Q(vlasnik=request.user)
+        card = _loyalty_za_kupon(request)
+        if card:
+            eligible |= Q(loyalty_kartica=card)
+    candidates = Coupon.objects.filter(eligible, aktivan=True).exclude(
+        viber_dodjela__isnull=False, kreiran__lte=ViberKuponDodjela.granica_izdavanja(),
+    ).order_by('automatski', '-kreiran')
     choices = []
     seen_ids = set()
     for candidate in candidates:
-        coupon, error = validiraj_kupon(candidate.kod, request.user)
+        coupon, error = validiraj_kupon(candidate.kod, request.user, viber_claims=viber_claims)
         if not error and coupon and coupon.pk not in seen_ids:
             choices.append(coupon)
             seen_ids.add(coupon.pk)
@@ -4529,13 +4537,13 @@ def _cart_context(request, cart):
     loyalty_card = _loyalty_za_kupon(request)
     cart_items = list(cart)
     summary = cart.sazetak(user=request.user)
-    applied_code = cart.get_coupon_code() if cart.is_coupon_applied() else ''
-    if not applied_code:
-        applied_code = summary.get('kupon_kod') or ''
+    applied_code = (summary.get('kupon_kod') or '') if summary.get('kupon_primijenjen') else ''
     applied_coupon = None
     if applied_code and summary.get('kupon_primijenjen'):
         from .pricing import annotate_cart_coupon_prices
-        coupon, _ = validiraj_kupon(applied_code, request.user)
+        coupon, _ = validiraj_kupon(
+            applied_code, request.user, viber_claims=request.session.get(Cart.VIBER_COUPON_CLAIMS_KEY, ()),
+        )
         applied_coupon = coupon
         annotate_cart_coupon_prices(cart_items, coupon)
     if cart_items:
@@ -4651,7 +4659,7 @@ def apply_coupon(request):
     redirect_to = request.POST.get('next', 'cart')
     if request.POST.get('choose_reward') == '1':
         choices = _coupon_choices(request)
-        if len(choices) != 1:
+        if len(choices) != 1 or getattr(choices[0], 'viber_dodjela', None):
             return render(request, 'coupon_choice.html', {
                 'coupons': choices,
                 'coupon_next': 'checkout' if redirect_to == 'checkout' else 'cart',
@@ -4666,7 +4674,10 @@ def apply_coupon(request):
         kod = form.cleaned_data['kod']
 
     if kod:
-        coupon, error = validiraj_kupon(kod, request.user, subtotal=cart.ukupno)
+        coupon, error = validiraj_kupon(
+            kod, request.user, subtotal=cart.ukupno,
+            viber_claims=request.session.get(Cart.VIBER_COUPON_CLAIMS_KEY, ()),
+        )
         if error:
             messages.error(request, error)
         else:
@@ -5440,6 +5451,8 @@ def _account_dashboard_extras(request, *, orders, loyalty, loyalty_card, profil)
         Coupon.objects.filter(
             Q(vlasnik=request.user) | Q(loyalty_kartica=loyalty_card),
             aktivan=True,
+        ).exclude(
+            viber_dodjela__isnull=False, kreiran__lte=ViberKuponDodjela.granica_izdavanja(),
         ).order_by('automatski', '-kreiran')
     )
     closed = {Order.Status.ZAVRSENA, Order.Status.OTKAZANA}
@@ -6658,6 +6671,62 @@ def staff_admin_panel(request):
     return render(request, 'staff/admin_panel.html', context)
 
 
+@never_cache
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_http_methods(['GET', 'POST'])
+def staff_polog_pazara(request):
+    from .forms import BankovniPologForm, PologPazaraForm
+    from .models import BankovniPolog, PologPazara
+
+    def saldo_pazara():
+        banka = BankovniPolog.objects.aggregate(zbir=Sum('iznos', default=Decimal('0.00')))['zbir']
+        pazar = PologPazara.objects.aggregate(zbir=Sum('iznos', default=Decimal('0.00')))['zbir']
+        return (pazar - banka).quantize(Decimal('0.01'))
+
+    data = request.POST if request.method == 'POST' else None
+    bankovni_unos = data is not None and data.get('action') == 'banka'
+    form = PologPazaraForm(None if bankovni_unos else data)
+    banka_form = BankovniPologForm(data if bankovni_unos else None, prefix='banka')
+    if bankovni_unos and banka_form.is_valid():
+        with transaction.atomic():
+            # Bankovni unosi se serijaliziraju zaključavanjem istog prvog pologa.
+            first_deposit = PologPazara.objects.select_for_update().order_by('pk').values_list('pk', flat=True).first()
+            token = banka_form.cleaned_data['zahtjev']
+            if BankovniPolog.objects.filter(token=token).exists():
+                return redirect('staff_polog_pazara')
+            if first_deposit is None or banka_form.cleaned_data['iznos'] > saldo_pazara():
+                banka_form.add_error('iznos', 'Iznos za banku ne može biti veći od trenutnog salda.')
+            else:
+                bankovni_polog = banka_form.save(commit=False)
+                bankovni_polog.token = token
+                bankovni_polog.evidentirao = request.user
+                bankovni_polog.save()
+                messages.success(request, 'Bankovni polog je evidentiran.')
+                return redirect('staff_polog_pazara')
+    elif data is not None and not bankovni_unos and form.is_valid():
+        polog = form.save(commit=False)
+        polog.datum = timezone.localdate()
+        polog.evidentirao = request.user
+        polog.save()
+        messages.success(request, 'Polog je evidentiran.')
+        return redirect('staff_polog_pazara')
+    history_fields = ('datum', 'iznos', 'upisao', 'osoba', 'bankovni', 'kreiran', 'pk')
+    cash_history = PologPazara.objects.order_by().annotate(
+        osoba=F('evidentirao__username'), bankovni=Value(False),
+    ).values_list(*history_fields, named=True)
+    bank_history = BankovniPolog.objects.order_by().annotate(
+        datum=TruncDate('kreiran'), upisao=Value(''), osoba=F('evidentirao__username'), bankovni=Value(True),
+    ).values_list(*history_fields, named=True)
+    history = cash_history.union(bank_history, all=True).order_by('-datum', '-kreiran', '-bankovni', '-pk')
+    page = Paginator(history, 10).get_page(request.GET.get('page'))
+    return render(request, 'staff/polog_pazara.html', {
+        **_base_context(), 'form': form, 'page': page, 'danas': timezone.localdate(),
+        'ukupno': saldo_pazara(), 'banka_form': banka_form, 'bankovni_unos': bankovni_unos,
+        'history_open': not bankovni_unos and request.GET.get('historija') == '1',
+    })
+
+
 @login_required(login_url='login')
 @user_passes_test(_superuser_required)
 def staff_banners(request):
@@ -7708,6 +7777,104 @@ def _staff_online_orders_filter(request):
     if raw == 'sve':
         return 'sve'
     return 'nove'
+
+
+def _web_buyer_purchases():
+    return Order.objects.filter(izvor=Order.Izvor.WEBSHOP).exclude(
+        status__in=[Order.Status.CEKA_PLACANJE, Order.Status.OTKAZANA],
+    ).exclude(lager_status=Order.LagerStatus.OTKAZANO).exclude(
+        Q(ime_prezime__iexact='Prenos u MP') | Q(pick_state__kind__isnull=False, pick_state__kind='prenos_mp'),
+    )
+
+
+@never_cache
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_GET
+def staff_recent_web_buyers(request):
+    from .loyalty import viber_chat_url
+
+    purchases = _web_buyer_purchases().select_related('card_payment').order_by('-kreirana', '-pk')
+    buyers = []
+    seen = set()
+    for order in purchases.iterator(chunk_size=100):
+        viber_url = viber_chat_url(order.telefon)
+        identity = viber_url or order.email.strip().casefold() or order.pk
+        if identity in seen:
+            continue
+        seen.add(identity)
+        buyers.append({'order': order, 'viber_url': viber_url})
+        if len(buyers) == 20:
+            break
+    return HttpResponse(render_to_string('staff/partials/recent_web_buyers.html', {'buyers': buyers}))
+
+
+@never_cache
+@login_required(login_url='login')
+@user_passes_test(_superuser_required)
+@require_POST
+def staff_assign_web_buyer_coupon(request, pk):
+    from .forms import WebBuyerCouponForm
+
+    order = get_object_or_404(_web_buyer_purchases(), pk=pk)
+    data = request.POST.copy()
+    data['postotak'] = data.get('postotak', '').replace(',', '.')
+    form = WebBuyerCouponForm(data)
+    if not form.is_valid():
+        return JsonResponse({'error': ' '.join(error for errors in form.errors.values() for error in errors)}, status=400)
+    code = form.cleaned_data['kod']
+    percent = form.cleaned_data['postotak']
+    with transaction.atomic():
+        coupon = Coupon.objects.filter(kod__iexact=code).select_related('viber_dodjela').first()
+        if coupon:
+            assignment = getattr(coupon, 'viber_dodjela', None)
+            if assignment and assignment.narudzba_id == order.pk and coupon.kreiran <= ViberKuponDodjela.granica_izdavanja():
+                return JsonResponse({'error': 'Ovaj kod je istekao. Unesi novi kod.'}, status=409)
+            if not (
+                assignment and assignment.narudzba_id == order.pk and coupon.aktivan
+                and coupon.vrsta == Coupon.Vrsta.POSTOTAK and coupon.postotak == percent
+            ):
+                return JsonResponse({'error': 'Taj kod je već u upotrebi. Unesi drugi kod.'}, status=409)
+        else:
+            if LoyaltyCard.objects.filter(Q(kod__iexact=code) | Q(barkod__iexact=code)).exists():
+                return JsonResponse({'error': 'Taj kod je već u upotrebi. Unesi drugi kod.'}, status=409)
+            try:
+                with transaction.atomic():
+                    coupon = Coupon.objects.create(
+                        kod=code, naziv=f'Viber nagrada – {code}', postotak=percent, vlasnik_id=order.korisnik_id,
+                    )
+                    assignment = ViberKuponDodjela.objects.create(coupon=coupon, narudzba=order)
+            except IntegrityError:
+                return JsonResponse({'error': 'Taj kod je već u upotrebi. Unesi drugi kod.'}, status=409)
+    claim_url = ''
+    if not coupon.vlasnik_id:
+        token = signing.dumps(assignment.pk, salt='viber-coupon-claim')
+        claim_url = request.build_absolute_uri(reverse('claim_viber_coupon', args=[token]))
+    return JsonResponse({'code': coupon.kod, 'percent': format(percent.normalize(), 'f'), 'claim_url': claim_url})
+
+
+@never_cache
+@require_GET
+def claim_viber_coupon(request, token):
+    try:
+        assignment_id = signing.loads(token, salt='viber-coupon-claim')
+    except signing.BadSignature as exc:
+        raise Http404 from exc
+    assignment = get_object_or_404(
+        ViberKuponDodjela.objects.select_related('coupon'),
+        pk=assignment_id, coupon__aktivan=True, coupon__vlasnik__isnull=True,
+    )
+    response = redirect('cart')
+    response['Referrer-Policy'] = 'no-referrer'
+    if assignment.coupon.kreiran <= ViberKuponDodjela.granica_izdavanja():
+        messages.error(request, 'Viber kupon je istekao.')
+        return response
+    key = Cart.VIBER_COUPON_CLAIMS_KEY
+    claims = request.session.get(key, [])
+    if assignment.coupon_id not in claims:
+        request.session[key] = [*claims, assignment.coupon_id]
+    messages.success(request, 'Lični kupon je otključan. U korpi klikni Primijeni kupon ili karticu.')
+    return response
 
 
 @login_required(login_url='login')

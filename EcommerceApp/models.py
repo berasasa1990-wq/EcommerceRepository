@@ -1,5 +1,6 @@
 import uuid
 import re
+from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
@@ -4535,6 +4536,12 @@ class Coupon(models.Model):
         verbose_name = 'Kupon'
         verbose_name_plural = 'Kuponi'
 
+    @property
+    def viber_vrijedi_do(self):
+        if self.kreiran and getattr(self, 'viber_dodjela', None):
+            return self.kreiran + ViberKuponDodjela.TRAJANJE
+        return None
+
     def __str__(self):
         if self.vrsta == self.Vrsta.DOSTAVA:
             return f'{self.kod} — besplatna dostava'
@@ -7243,7 +7250,7 @@ class B2BBanner(models.Model):
 class B2BOfferItem(models.Model):
     settings = models.ForeignKey(B2BSettings, on_delete=models.CASCADE, related_name='offer_items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='b2b_offer_items', verbose_name='Artikal')
-    discount_percent = models.DecimalField('Sniženje (%)', max_digits=5, decimal_places=2, default=Decimal('0'),
+    discount_percent = models.DecimalField('Sniženje (%)', max_digits=13, decimal_places=10, default=Decimal('0'),
         validators=[MinValueValidator(0), MaxValueValidator(100)],
         help_text='Popust na B2B VPC netto cijenu. 0 = bez dodatnog sniženja.')
 
@@ -7487,3 +7494,48 @@ class BulkPriceBatch(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     items = models.JSONField(default=list)
     opened_at = models.DateTimeField(null=True, blank=True)
+
+
+class PologPazara(models.Model):
+    class Upisao(models.TextChoices):
+        BORISLAV = 'borislav', 'Borislav'
+        SASA = 'sasa', 'Sasa'
+        BOJAN = 'bojan', 'Bojan'
+
+    datum = models.DateField('Datum pologa', default=timezone.localdate)
+    iznos = models.DecimalField('Iznos (KM)', max_digits=12, decimal_places=2,
+                                validators=[MinValueValidator(Decimal('0.01'))])
+    napomena = models.TextField('Napomena', max_length=500, blank=True)
+    upisao = models.CharField('Upisao polog', max_length=8, choices=Upisao.choices, blank=True, default='')
+    evidentirao = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    kreiran = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-datum', '-pk')
+        verbose_name = 'Polog pazara'
+        verbose_name_plural = 'Polozi pazara'
+        constraints = [models.CheckConstraint(condition=models.Q(iznos__gt=0), name='polog_pazara_pozitivan_iznos')]
+
+
+class BankovniPolog(models.Model):
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    iznos = models.DecimalField('Iznos za banku (KM)', max_digits=12, decimal_places=2,
+                                validators=[MinValueValidator(Decimal('0.01'))])
+    evidentirao = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    kreiran = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Bankovni polog'
+        verbose_name_plural = 'Bankovni polozi'
+        constraints = [models.CheckConstraint(condition=models.Q(iznos__gt=0), name='bankovni_polog_pozitivan_iznos')]
+
+
+class ViberKuponDodjela(models.Model):
+    TRAJANJE = timedelta(days=7)
+
+    coupon = models.OneToOneField(Coupon, on_delete=models.CASCADE, related_name='viber_dodjela')
+    narudzba = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True)
+
+    @classmethod
+    def granica_izdavanja(cls):
+        return timezone.now() - cls.TRAJANJE

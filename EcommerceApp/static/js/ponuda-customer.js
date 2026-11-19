@@ -64,6 +64,7 @@
         form.hidden = true;
         search.value = '';
         search.focus();
+        searchCustomers();
     });
     function setMode(isNew) {
         form.hidden = false;
@@ -86,23 +87,21 @@
         status.textContent = 'Novi kupac će biti sačuvan u Kupcima i dodan na ponudu.';
         form.elements.ime_prezime.focus();
     });
-    search.addEventListener('input', function () {
-        addCustomer.hidden = true;
+    function searchCustomers() {
+        addCustomer.hidden = false;
         const current = ++version;
         clearTimeout(timer);
         if (controller) controller.abort();
         results.replaceChildren();
         const q = search.value.trim();
-        if (!q) return;
         timer = setTimeout(async function () {
             controller = new AbortController();
             try {
-                const response = await fetch(search.dataset.url + '?q=' + encodeURIComponent(q), {signal: controller.signal});
+                const response = await fetch(search.dataset.url + '?all=1&q=' + encodeURIComponent(q), {signal: controller.signal});
                 if (!response.ok) throw new Error('search');
                 const data = await readJson(response);
                 if (current !== version) return;
                 const rows = data.results || [];
-                addCustomer.hidden = rows.length !== 0;
                 if (!rows.length) results.textContent = 'Kupac nije pronađen. Klikni + Dodaj kupca.';
                 rows.forEach(customer => {
                     const button = document.createElement('button');
@@ -119,5 +118,7 @@
                 if (current === version && error.name !== 'AbortError') results.textContent = 'Pretraga nije uspjela. Pokušaj ponovo.';
             }
         }, 180);
-    });
+    }
+    search.addEventListener('input', searchCustomers);
+    if (!searchWrap.hidden) searchCustomers();
 })();

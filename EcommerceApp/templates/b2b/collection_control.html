@@ -1,0 +1,33 @@
+<dialog class="b2b-quantity-dialog b2b-new-arrivals-dialog" aria-labelledby="b2b-control-title-{{ collection_key }}" data-b2b-control="{{ collection_key }}">
+  <h2 id="b2b-control-title-{{ collection_key }}">{{ title }}</h2>
+  <form method="post" action="{% url endpoint %}" data-b2b-control-search>
+    {% csrf_token %}
+    <label for="b2b-control-query-{{ collection_key }}">Naziv ili šifra artikla</label>
+    <div class="b2b-control-search">
+      <input type="search" id="b2b-control-query-{{ collection_key }}" name="q" maxlength="200" required autofocus>
+      <button type="submit">Traži</button>
+    </div>
+  </form>
+  {% if collection_key == 'noviteti' %}
+  <details class="b2b-new-import" data-b2b-import>
+    <summary>Uvoz</summary>
+    <form data-b2b-import-form>
+      <label for="b2b-warehouse-import">Izaberi uvoz iz magacina</label>
+      <div class="b2b-control-search">
+        <select id="b2b-warehouse-import" required disabled></select>
+        <button type="submit" disabled>Dodaj sve artikle</button>
+      </div>
+      <p role="status" data-b2b-import-status></p>
+    </form>
+  </details>
+  {% endif %}
+  {% if collection_key == 'akcijska' %}<p>Unesi postotak sniženja. Isti postotak vrijedi za sve varijacije artikla.</p>{% endif %}
+  <p role="status" data-b2b-control-status></p>
+  <ul data-b2b-control-matches aria-label="Rezultati pretrage"></ul>
+  <h3>Odabrani artikli</h3>
+  <ul data-b2b-control-selected aria-label="Odabrani artikli"></ul>
+  <div class="quantity-dialog-actions">
+    {% if account %}<a href="{% url 'b2b_catalog' %}?ponuda={{ collection_key }}#catalog-filters">{{ link_label }}</a>{% endif %}
+    <button type="button" data-b2b-control-close>Zatvori</button>
+  </div>
+</dialog>

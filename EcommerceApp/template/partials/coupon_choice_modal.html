@@ -1,4 +1,5 @@
-{% if coupon_choices|length > 1 and not applied_coupon_code %}
+{% if not applied_coupon_code %}
+{% if coupon_choices|length > 1 or coupon_choices.0.viber_dodjela %}
 <div class="coupon-choice-modal" id="couponChoiceDialog" role="dialog" aria-modal="true" aria-labelledby="couponChoiceTitle" hidden>
     <button type="button" class="coupon-choice-backdrop" data-coupon-choice-close aria-label="Zatvori izbor nagrade"></button>
     <div class="coupon-choice-panel">
@@ -16,6 +17,7 @@
                 <span class="coupon-choice-copy">
                     <strong>{{ coupon.naziv }}</strong>
                     <span>{% if coupon.vrsta == 'dostava' %}Besplatna dostava{% elif coupon.vrsta == 'iznos' %}{{ coupon.iznos }} KM popusta{% else %}{{ coupon.postotak }}% popusta{% if coupon.automatski or coupon.loyalty_kartica_id %} na artikle koji nisu na akciji{% endif %}{% endif %}</span>
+                    {% with rok=coupon.viber_vrijedi_do %}{% if rok %}<span>Vrijedi do {{ rok|date:"d.m.Y. H:i" }}</span>{% endif %}{% endwith %}
                 </span>
                 <button type="submit" class="coupon-choice-select">Primijeni</button>
             </form>
@@ -23,4 +25,5 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endif %}

@@ -5,14 +5,17 @@ from django.contrib.auth.models import User
 
 import re
 from decimal import Decimal, InvalidOperation
+from uuid import uuid4
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import (
     Akcija,
     AkcijaQtyTier,
+    BankovniPolog,
     Banner,
     Brand,
     Category,
+    PologPazara,
     Popup,
     Product,
     SiteSettings,
@@ -20,6 +23,34 @@ from .models import (
 )
 
 
+class PologIznosForm(forms.ModelForm):
+    class Meta:
+        widgets = {
+            'iznos': forms.TextInput(attrs={'inputmode': 'decimal', 'placeholder': '0,00'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.is_bound:
+            name = self.add_prefix('iznos')
+            self.data = self.data.copy()
+            self.data[name] = self.data.get(name, '').replace(',', '.')
+
+
+class PologPazaraForm(PologIznosForm):
+    upisao = forms.ChoiceField(label='Ko je upisao polog?', choices=PologPazara.Upisao.choices)
+
+    class Meta(PologIznosForm.Meta):
+        model = PologPazara
+        fields = ('iznos', 'upisao')
+
+
+class BankovniPologForm(PologIznosForm):
+    zahtjev = forms.UUIDField(widget=forms.HiddenInput, initial=uuid4)
+
+    class Meta(PologIznosForm.Meta):
+        model = BankovniPolog
+        fields = ('iznos', 'zahtjev')
 
 
 
@@ -896,6 +927,17 @@ class CouponForm(forms.Form):
         if not kod:
             raise forms.ValidationError('Unesite broj kartice.')
         return kod.upper()
+
+
+class WebBuyerCouponForm(CouponForm):
+    postotak = forms.DecimalField(min_value=Decimal('0.01'), max_value=Decimal('100'),
+                                  max_digits=5, decimal_places=2)
+
+    def clean_kod(self):
+        kod = super().clean_kod()
+        if not re.fullmatch(r'[A-Z0-9_-]+', kod):
+            raise forms.ValidationError('Kod može sadržavati slova A–Z, brojeve, crticu i donju crtu.')
+        return kod
 
 
 class CheckoutForm(forms.Form):

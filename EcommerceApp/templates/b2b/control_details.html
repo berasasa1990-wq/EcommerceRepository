@@ -1,0 +1,58 @@
+{% if submission %}
+{% with order=submission.order %}
+<h2>Narudžba #{{ order.broj }}</h2>
+<dl class="b2b-admin-summary">
+  <div><dt>B2B korisnik</dt><dd>{{ submission.account }}</dd></div>
+  <div><dt>Datum</dt><dd>{{ submission.created_at|date:"d.m.Y. H:i" }}</dd></div>
+  <div><dt>Plaćanje</dt><dd>{{ submission.get_payment_display }}</dd></div>
+  <div><dt>Status</dt><dd>{{ order.get_status_label }}</dd></div>
+  <div><dt>Status zalihe</dt><dd>{{ order.get_lager_status_display }}</dd></div>
+  <div><dt>Ukupno bez PDV-a</dt><dd>{{ submission.netto_total|floatformat:2 }} KM</dd></div>
+  <div><dt>Popust</dt><dd>{{ order.popust|floatformat:2 }} KM</dd></div>
+  <div><dt>Dostava</dt><dd>{{ order.dostava|floatformat:2 }} KM</dd></div>
+  <div><dt>Ukupno s PDV-om</dt><dd>{{ order.ukupno|floatformat:2 }} KM</dd></div>
+  {% if order.xexpress_sifra %}<div><dt>Šifra pošiljke</dt><dd>{{ order.xexpress_sifra }}</dd></div>{% endif %}
+</dl>
+<h3>Stavke narudžbe</h3>
+<div class="b2b-admin-table">
+  <table>
+    <thead><tr><th>Artikal</th><th>Šifra</th><th>Količina</th><th>Pokupljeno</th><th>Jed. cijena s PDV-om</th></tr></thead>
+    <tbody>
+      {% for item in order.stavke.all %}
+      <tr><td>{{ item.naziv }}</td><td>{{ item.sifra|default:"—" }}</td><td>{{ item.kolicina }}</td><td>{{ item.kolicina_pokupljeno|default_if_none:"—" }}</td><td>{{ item.cijena|floatformat:2 }} KM</td></tr>
+      {% empty %}<tr><td colspan="5">Narudžba nema stavki.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+<h3>Kontakt i dostava</h3>
+{% endwith %}
+{% else %}
+<h2>{% if record.pk %}{{ record.company }}{% else %}Novi B2B korisnik{% endif %}</h2>
+{% endif %}
+{% if saved %}<p role="status">Izmjene su sačuvane.</p>{% endif %}
+<form method="post" action="{{ form_action|default:request.path }}" data-admin-save>
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <div class="b2b-admin-fields">
+    {% for field in form %}
+    <div{% if field.name == 'napomena' %} class="b2b-admin-wide"{% endif %}>
+      {{ field.label_tag }}{{ field }}{{ field.errors }}
+      {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% if rabats %}
+  <fieldset class="b2b-admin-rabats">
+    <legend>Rabati po brendovima</legend>
+    {{ rabats.management_form }}{{ rabats.non_form_errors }}
+    <div data-rabat-rows>
+      {% for row in rabats %}
+      {% include 'b2b/control_rabat_row.html' %}
+      {% endfor %}
+    </div>
+    <template data-rabat-template>{% include 'b2b/control_rabat_row.html' with row=rabats.empty_form %}</template>
+    <button type="button" data-rabat-add>Dodaj brend</button>
+  </fieldset>
+  {% endif %}
+  <div class="quantity-dialog-actions"><button type="submit">Sačuvaj izmjene</button></div>
+</form>

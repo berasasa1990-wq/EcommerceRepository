@@ -1,0 +1,7 @@
+<div class="b2b-rabat-row">
+  {% for hidden in row.hidden_fields %}{{ hidden }}{{ hidden.errors }}{% endfor %}
+  {{ row.non_field_errors }}
+  <div>{{ row.brand.label_tag }}{{ row.brand }}{{ row.brand.errors }}</div>
+  <div>{{ row.postotak.label_tag }}{{ row.postotak }}{{ row.postotak.errors }}</div>
+  <label class="b2b-rabat-remove">{{ row.DELETE }} Ukloni</label>
+</div>

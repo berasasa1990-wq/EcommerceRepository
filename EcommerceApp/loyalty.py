@@ -12,7 +12,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models import Q, Sum
 
-from .models import Coupon, LoyaltyCard, LoyaltyPurchase, Order, UserProfile
+from .models import Coupon, LoyaltyCard, LoyaltyPurchase, Order, UserProfile, ViberKuponDodjela
 
 # Session key za pending OTP pri evidentiranju kupovine
 LOYALTY_PURCHASE_OTP_SESSION_KEY = 'loyalty_purchase_otp'
@@ -1589,7 +1589,7 @@ def _pronadji_loyalty_karticu_po_kodu(kod):
     )
 
 
-def validiraj_kupon(kod, user=None, *, subtotal=None):
+def validiraj_kupon(kod, user=None, *, subtotal=None, viber_claims=()):
     """
     Validira kupon / broj loyalty kartice.
 
@@ -1603,7 +1603,7 @@ def validiraj_kupon(kod, user=None, *, subtotal=None):
     coupon = (
         Coupon.objects
         .filter(kod__iexact=kod, aktivan=True)
-        .select_related('vlasnik', 'loyalty_kartica')
+        .select_related('vlasnik', 'loyalty_kartica', 'viber_dodjela')
         .first()
     )
 
@@ -1629,6 +1629,12 @@ def validiraj_kupon(kod, user=None, *, subtotal=None):
     if not coupon:
         return None, 'Broj kartice / kupon nije pronađen ili nije aktivan.'
 
+    if getattr(coupon, 'viber_dodjela', None):
+        if coupon.kreiran <= ViberKuponDodjela.granica_izdavanja():
+            return None, 'Viber kupon je istekao.'
+        if not coupon.vlasnik_id and coupon.pk not in viber_claims:
+            return None, 'Najprije otvorite lični link za popust iz Viber poruke.'
+
     # Loyalty kartica: broj kartice u korpi = popust, bez obavezne prijave
     if coupon.automatski or coupon.loyalty_kartica_id:
         # Ažuriraj postotak prema trenutnom nivou kartice
@@ -1650,7 +1656,6 @@ def validiraj_kupon(kod, user=None, *, subtotal=None):
             return None, 'Morate biti prijavljeni da koristite ovaj kupon.'
         if coupon.vlasnik_id != user.pk:
             return None, 'Ovaj kupon možete koristiti samo vi.'
-
     return coupon, None
 
 

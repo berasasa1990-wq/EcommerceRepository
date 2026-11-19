@@ -3989,6 +3989,8 @@ def _phone_digits(value):
 @user_passes_test(warehouse_user_required)
 def magacin_kupci_lookup(request):
     query = (request.GET.get('q') or '').strip()
+    all_customers = request.GET.get('all') == '1'
+    limit = None if all_customers else 40
     qs = WarehouseCustomer.objects.order_by('-azuriran', 'ime_prezime')
     if query:
         digits = _phone_digits(query)
@@ -3999,8 +4001,8 @@ def magacin_kupci_lookup(request):
         )
         if digits:
             filt |= Q(telefon__icontains=digits)
-        matches = list(qs.filter(filt)[:40])
-        if digits and len(matches) < 40:
+        matches = list(qs.filter(filt)[:limit])
+        if digits and (limit is None or len(matches) < limit):
             seen = {row.pk for row in matches}
             for row in WarehouseCustomer.objects.order_by('-azuriran'):
                 if row.pk in seen:
@@ -4008,12 +4010,13 @@ def magacin_kupci_lookup(request):
                 if digits in _phone_digits(row.telefon) or _customer_phone_key(query) == _customer_phone_key(row.telefon):
                     matches.append(row)
                     seen.add(row.pk)
-                if len(matches) >= 40:
+                if limit is not None and len(matches) >= limit:
                     break
         results = [_customer_payload(row) for row in matches]
     else:
-        results = [_customer_payload(row) for row in qs[:40]]
-    _add_customer_excess_payload(results)
+        results = [_customer_payload(row) for row in qs[:limit]]
+    if not all_customers:
+        _add_customer_excess_payload(results)
     return JsonResponse({'results': results, 'query': query})
 
 

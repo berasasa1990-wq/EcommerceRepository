@@ -1,0 +1,19 @@
+  <details class="account-menu">
+    <summary>
+      <span class="account-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1-3.6 3.4-5.4 7-5.4s6 1.8 7 5.4"/></svg></span>
+      <div><small>Vaš račun</small><strong>{{ account.company|default:request.user.get_username }}</strong></div>
+      <span class="account-caret" aria-hidden="true">⌄</span>
+    </summary>
+    <div class="b2b-account-actions">
+      {% if request.user.is_superuser %}
+      <div class="b2b-account-collections">
+        <button type="button" data-b2b-control-open="noviteti" aria-haspopup="dialog">Noviteti</button>
+        <button type="button" data-b2b-control-open="akcijska" aria-haspopup="dialog">Akcija</button>
+      </div>
+      <button type="button" data-admin-open aria-haspopup="dialog">Kontrola</button>
+      {% endif %}
+      {% if account %}
+      <form method="post" action="{% url 'b2b_logout' %}">{% csrf_token %}<button type="submit">Odjava</button></form>
+      {% endif %}
+    </div>
+  </details>

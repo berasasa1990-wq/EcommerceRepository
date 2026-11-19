@@ -301,6 +301,90 @@ class B2BTests(TestCase):
         from .models import B2BSubmission
         return B2BSubmission.objects.get(), data
 
+    def test_superuser_can_manage_b2b_accounts_and_orders_in_control(self):
+        from django.urls import reverse
+
+        submission, _ = self.checkout_order()
+        order = submission.order
+        account_list = reverse('b2b_control_accounts')
+        order_list = reverse('b2b_control_orders')
+        account_url = reverse('b2b_control_account', args=[self.account.pk])
+        order_url = reverse('b2b_control_order', args=[submission.pk])
+        for url in (account_list, order_list, account_url, order_url):
+            self.assertEqual(self.client.get(url).status_code, 403)
+        self.assertEqual(self.client.post(account_url).status_code, 403)
+        self.assertEqual(self.client.post(order_url).status_code, 403)
+        self.assertNotContains(self.client.get('/veleprodaja'), 'data-admin-open')
+
+        admin_client = Client()
+        admin_client.force_login(get_user_model().objects.create_superuser(username='b2b-control-panel'))
+        self.assertContains(admin_client.get('/veleprodaja'), 'data-admin-open')
+        self.assertContains(admin_client.get(account_list, {'q': 'partner'}), account_url)
+        self.assertContains(admin_client.get(order_list, {'q': order.broj}), order_url)
+        response = admin_client.get(account_url)
+        self.assertNotContains(response, self.account.password)
+        self.assertContains(response, 'data-rabat-add')
+        self.assertContains(response, 'name="brand_rabats-__prefix__-brand"')
+        self.assertIn('no-store', response['Cache-Control'])
+        brand = Brand.objects.create(naziv='Test rabata')
+        second_brand = Brand.objects.create(naziv='Drugi brend za rabat')
+        account_data = {
+            'username': self.account.username, 'company': 'Partner izmjena', 'is_active': 'on',
+            'brand_rabats-TOTAL_FORMS': '2', 'brand_rabats-INITIAL_FORMS': '0',
+            'brand_rabats-0-brand': brand.pk, 'brand_rabats-0-postotak': '7.50',
+            'brand_rabats-1-brand': second_brand.pk, 'brand_rabats-1-postotak': '12.25',
+        }
+        duplicate = admin_client.post(account_url, {**account_data, 'brand_rabats-1-brand': brand.pk})
+        self.assertNotContains(duplicate, 'Izmjene su sačuvane.')
+        self.assertFalse(self.account.brand_rabats.exists())
+        self.assertContains(admin_client.post(account_url, account_data), 'Izmjene su sačuvane.')
+        self.account.refresh_from_db()
+        self.assertEqual(self.account.company, 'Partner izmjena')
+        self.assertEqual(self.account.brand_rabats.get(brand=brand).postotak, Decimal('7.50'))
+        self.assertEqual(self.account.brand_rabats.get(brand=second_brand).postotak, Decimal('12.25'))
+
+        response = admin_client.get(order_url)
+        self.assertContains(response, self.product.naziv)
+        self.assertNotContains(response, submission.token)
+        order_data = {
+            'ime_prezime': order.ime_prezime, 'email': order.email, 'telefon': '061555123',
+            'adresa': order.adresa, 'grad': order.grad, 'napomena': 'Izmijenjena napomena',
+            'ukupno': '1.00', 'status': 'otkazana',
+        }
+        self.assertContains(admin_client.post(order_url, order_data), 'Izmjene su sačuvane.')
+        order.refresh_from_db()
+        self.assertEqual(order.napomena, 'VP narudžba\nB2B: partner\nPlaćanje: žiralno\nIzmijenjena napomena')
+        self.assertEqual(order.ukupno, Decimal('234.00'))
+        self.assertEqual(order.status, order.Status.NOVA)
+
+    def test_superuser_can_create_a_b2b_account_from_control(self):
+        from django.urls import reverse
+
+        url = reverse('b2b_control_account_add')
+        self.login()
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.assertEqual(self.client.post(url, {}).status_code, 403)
+        admin_client = Client()
+        admin_client.force_login(get_user_model().objects.create_superuser(username='b2b-create-account'))
+        self.assertContains(admin_client.get(reverse('b2b_control_accounts')), 'Dodaj novog')
+        self.assertNotContains(admin_client.get(reverse('b2b_control_orders')), 'Dodaj novog')
+        self.assertContains(admin_client.get(url), 'Novi B2B korisnik')
+        brand = Brand.objects.create(naziv='Brend za novi nalog')
+        data = {
+            'username': 'novi-partner', 'company': 'Novi partner', 'is_active': 'on',
+            'brand_rabats-TOTAL_FORMS': '1', 'brand_rabats-INITIAL_FORMS': '0',
+            'brand_rabats-0-brand': brand.pk, 'brand_rabats-0-postotak': '8.00',
+        }
+        self.assertNotContains(admin_client.post(url, data), 'Izmjene su sačuvane.')
+        self.assertFalse(B2BAccount.objects.filter(username=data['username']).exists())
+        password = 'New-partner-pass-347!'
+        response = admin_client.post(url, {**data, 'new_password': password})
+        self.assertContains(response, 'Izmjene su sačuvane.')
+        account = B2BAccount.objects.get(username=data['username'])
+        self.assertContains(response, reverse('b2b_control_account', args=[account.pk]))
+        self.assertEqual(account.brand_rabats.get(brand=brand).postotak, Decimal('8.00'))
+        self.assertEqual(Client().post('/veleprodaja', {'username': account.username, 'password': password}).status_code, 302)
+
     def test_checkout_reserves_and_queues_once(self):
         from .models import Order, B2BSubmission
         from .views_magacin import collect_pick_jobs
@@ -596,6 +680,120 @@ class B2BTests(TestCase):
         self.assertIn('ponuda=noviteti', response.url)
         settings.noviteti.clear()
         self.assertEqual(self.client.get('/veleprodaja', {'ponuda': 'noviteti'}).context['rows'], [])
+
+    def test_catalog_hides_sets_and_set_categories(self):
+        from .models import B2BSettings
+
+        sets = Category.objects.create(naziv='Setovi', roditelj=self.root)
+        subset = Category.objects.create(naziv='Paketi', roditelj=sets)
+        category_product = Product.objects.create(naziv='Skriveni paket', cijena=20, kategorija=subset)
+        flagged_product = Product.objects.create(naziv='Skriveni komplet', cijena=30, is_set=True)
+        settings = B2BSettings.objects.create()
+        settings.noviteti.add(self.product, category_product, flagged_product)
+        settings.akcijska_ponuda.add(self.product, category_product, flagged_product)
+        self.login()
+
+        for params in ({}, {'ponuda': 'noviteti'}, {'ponuda': 'akcijska'}, {'kategorija': sets.slug}):
+            response = self.client.get('/veleprodaja', params)
+            self.assertEqual([row['product'].pk for row in response.context['rows']], [self.product.pk])
+            self.assertNotContains(response, sets.slug)
+            self.assertNotContains(response, subset.slug)
+        self.assertEqual(self.client.get('/veleprodaja', {'q': 'Skriveni'}).context['rows'], [])
+        self.assertEqual(settings.noviteti.count(), 3)
+
+    def test_superuser_can_add_warehouse_import_to_b2b_new_arrivals(self):
+        from .models import B2BSettings
+
+        url = '/veleprodaja/kontrola/noviteti/'
+        sale_url = '/veleprodaja/kontrola/akcija/'
+        warehouse = Uvoz.objects.create(naziv='Uvoz iz magacina', izvor=Uvoz.Izvor.MAGACIN)
+        website = Uvoz.objects.create(naziv='Uvoz sa sajta', izvor=Uvoz.Izvor.SAJT)
+        empty = Uvoz.objects.create(naziv='Prazan uvoz', izvor=Uvoz.Izvor.MAGACIN)
+        second = Product.objects.create(naziv='Drugi artikal iz uvoza', cijena=20)
+        existing = Product.objects.create(naziv='Ručno odabran artikal', cijena=20)
+        skipped = Product.objects.create(naziv='Preskočen artikal', cijena=20)
+        hidden_set = Product.objects.create(naziv='Set iz uvoza', cijena=20, is_set=True)
+        for product, status in (
+            (self.product, 'created'), (self.product, 'updated'), (second, 'updated'),
+            (skipped, 'skipped'), (hidden_set, 'created'), (None, 'error'),
+        ):
+            UvozStavka.objects.create(uvoz=warehouse, product=product, status=status)
+        UvozStavka.objects.create(uvoz=website, product=skipped, status='created')
+        settings = B2BSettings.objects.create()
+        settings.noviteti.add(existing)
+        data = {'action': 'import', 'import_id': warehouse.pk}
+        self.login()
+        self.assertEqual(self.client.get(url, {'uvozi': '1'}).status_code, 403)
+        self.assertEqual(self.client.post(url, data).status_code, 403)
+
+        admin_client = Client()
+        admin_client.force_login(get_user_model().objects.create_superuser(username='b2b-import'))
+        self.assertContains(admin_client.get('/veleprodaja'), 'data-b2b-import')
+        imports = admin_client.get(url, {'uvozi': '1'}).json()['uvozi']
+        self.assertEqual([entry['pk'] for entry in imports], [warehouse.pk])
+        self.assertEqual(admin_client.post(url, {**data, 'import_id': website.pk}).status_code, 404)
+        self.assertEqual(admin_client.post(url, {**data, 'import_id': empty.pk}).status_code, 400)
+        self.assertEqual(admin_client.post(sale_url, data).status_code, 400)
+        for _ in range(2):
+            self.assertEqual(admin_client.post(url, data).json()['import_count'], 2)
+        expected = {existing.pk, self.product.pk, second.pk}
+        self.assertEqual(set(settings.noviteti.values_list('pk', flat=True)), expected)
+        response = self.client.get('/veleprodaja', {'ponuda': 'noviteti'})
+        self.assertEqual({row['product'].pk for row in response.context['rows']}, expected)
+        self.assertFalse(settings.akcijska_ponuda.exists())
+
+    def test_superuser_can_manage_new_arrivals_from_b2b(self):
+        from .models import B2BSettings
+
+        url = '/veleprodaja/kontrola/noviteti/'
+        data = {'action': 'add', 'product_id': self.product.pk}
+        self.login()
+        self.assertNotContains(self.client.get('/veleprodaja'), 'data-b2b-control-open')
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.assertEqual(self.client.post(url, data).status_code, 403)
+
+        admin_client = Client(enforce_csrf_checks=True)
+        admin_client.force_login(get_user_model().objects.create_superuser(username='b2b-control'))
+        for path in ('/veleprodaja', '/veleprodaja/'):
+            self.assertContains(admin_client.get(path), 'data-b2b-control-open')
+        self.assertEqual(admin_client.post(url, data).status_code, 403)
+        headers = {'X-CSRFToken': admin_client.cookies['csrftoken'].value}
+        matches = admin_client.get(url, {'q': self.product.naziv}).json()['matches']
+        self.assertEqual([match['pk'] for match in matches], [self.product.pk])
+        self.assertEqual(admin_client.post(url, data, headers=headers).status_code, 200)
+        settings = B2BSettings.objects.get()
+        self.assertFalse(settings.akcijska_ponuda.exists())
+        response = self.client.get('/veleprodaja', {'ponuda': 'noviteti'})
+        self.assertEqual([row['product'].pk for row in response.context['rows']], [self.product.pk])
+        data['action'] = 'remove'
+        self.assertEqual(admin_client.post(url, data, headers=headers).status_code, 200)
+        self.assertFalse(settings.noviteti.exists())
+        self.assertEqual(self.client.get('/veleprodaja', {'ponuda': 'noviteti'}).context['rows'], [])
+
+    def test_superuser_can_enter_a_b2b_sale_percentage(self):
+        from .models import B2BSettings
+
+        product = self.product
+        url = '/veleprodaja/kontrola/akcija/'
+        self.login()
+        data = {'action': 'add', 'product_id': product.pk, 'discount_percent': '12,50'}
+        self.assertEqual(self.client.post(url, data).status_code, 403)
+        admin_client = Client()
+        admin_client.force_login(get_user_model().objects.create_superuser(username='b2b-sale'))
+        self.assertContains(admin_client.get('/veleprodaja'), '>Akcija</button>')
+        match = admin_client.get(url, {'q': product.naziv}).json()['matches'][0]
+        self.assertEqual(Decimal(match['regular_price']), netto(product.cijena))
+        self.assertEqual(admin_client.post(url, {**data, 'discount_percent': '100.01'}).status_code, 400)
+        self.assertEqual(admin_client.post(url, data).status_code, 200)
+        response = self.client.get('/veleprodaja', {'ponuda': 'akcijska'})
+        self.assertEqual(response.context['rows'][0]['netto'], Decimal('87.50'))
+        self.assertFalse(B2BSettings.objects.get().noviteti.exists())
+        product.refresh_from_db()
+        self.assertEqual(product.cijena, Decimal('161.46'))
+        self.assertEqual(admin_client.post(url, {**data, 'discount_percent': '20'}).status_code, 200)
+        self.assertEqual(admin_client.get(url).json()['selected'][0]['discount_percent'], '20')
+        self.assertEqual(admin_client.post(url, {**data, 'action': 'remove'}).status_code, 200)
+        self.assertEqual(self.client.get('/veleprodaja', {'ponuda': 'akcijska'}).context['rows'], [])
 
     def test_b2b_admin_collections_use_search_and_save_multiple_products(self):
         from django.contrib import admin

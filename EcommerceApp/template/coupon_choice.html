@@ -13,6 +13,7 @@
         {% if coupon.vrsta == 'dostava' %}Besplatna dostava
         {% elif coupon.vrsta == 'iznos' %}{{ coupon.iznos }} KM popusta
         {% else %}{{ coupon.postotak }}% popusta{% if coupon.automatski or coupon.loyalty_kartica_id %} na artikle koji nisu na akciji{% endif %}{% endif %}
+        {% with rok=coupon.viber_vrijedi_do %}{% if rok %}<br>Vrijedi do {{ rok|date:"d.m.Y. H:i" }}{% endif %}{% endwith %}
         <br><button type="submit" class="btn btn-coupon">Primijeni ovu nagradu</button>
     </form>
     {% endfor %}

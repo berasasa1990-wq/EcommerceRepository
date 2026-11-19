@@ -1,0 +1,30 @@
+{% load static %}
+<div class="vo-buyers-table">
+    <table>
+        <thead>
+            <tr><th scope="col">Ime i prezime</th><th scope="col">Telefon</th><th scope="col">Iznos kupovine</th><th scope="col">Plaćanje</th><th scope="col">Poruka</th></tr>
+        </thead>
+        <tbody>
+            {% for buyer in buyers %}
+            <tr>
+                <td>{{ buyer.order.ime_prezime }}</td>
+                <td>{{ buyer.order.telefon|default:"—" }}</td>
+                <td>{{ buyer.order.ukupno|floatformat:2 }} KM</td>
+                <td>{% if buyer.order.placeno_karticom %}Karticom{% elif buyer.order.card_payment %}Kartica – uplata nije potvrđena{% else %}Pouzećem{% endif %}</td>
+                <td>
+                    {% if buyer.viber_url %}
+                    <button class="vo-viber" type="button" data-buyer-viber="{{ buyer.viber_url }}" data-buyer-name="{{ buyer.order.ime_prezime }}" data-buyer-coupon-url="{% url 'staff_assign_web_buyer_coupon' buyer.order.pk %}" aria-label="Pripremi Viber poruku za {{ buyer.order.ime_prezime }}">
+                        <img src="{% static 'img/contact/viber.svg' %}" width="17" height="17" alt="">
+                        Viber
+                    </button>
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Nema evidentiranih webshop kupovina.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

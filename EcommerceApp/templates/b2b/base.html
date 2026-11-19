@@ -4,8 +4,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>B2B veleprodaja | Carpologija BH</title>
-<link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20260917categoryScroll">
-<script src="{% static 'js/b2b.js' %}?v=20260912headCart" defer></script>
+<link rel="stylesheet" href="{% static 'css/b2b.css' %}?v=20261119newArrivalsImport">
+<script src="{% static 'js/b2b.js' %}?v=20261119newArrivalsImport" defer></script>
 <link rel="stylesheet" href="{% static 'css/touch-navigation.css' %}?v=20260909">
 </head>
 <body class="{% if account %}b2b-has-cart-bar{% endif %}{% block body_class %}{% endblock %}">
@@ -47,15 +47,11 @@
     <input name="q" value="{{ q }}" aria-label="Pretraži artikle" placeholder="Pretraži artikle, šifre, brendove…">
     <button type="submit">Traži</button>
   </form>
-  <details class="account-menu">
-    <summary>
-      <span class="account-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1-3.6 3.4-5.4 7-5.4s6 1.8 7 5.4"/></svg></span>
-      <div><small>Vaš račun</small><strong>{{ account.company }}</strong></div>
-      <span class="account-caret" aria-hidden="true">⌄</span>
-    </summary>
-    <form method="post" action="{% url 'b2b_logout' %}">{% csrf_token %}<button type="submit">Odjava</button></form>
-  </details>
+  {% include 'b2b/account_menu.html' %}
 </div>
+{% endif %}
+{% if not account and request.user.is_superuser and show_control_menu %}
+<div class="toolbar">{% include 'b2b/account_menu.html' %}</div>
 {% endif %}
 {% block content %}{% endblock %}
 {% if account %}
@@ -77,7 +73,11 @@
     {% endif %}
     <p class="b2b-zoom-hint">Klikom na sliku artikla možete je uvećati.</p>
   </div>
-  <a class="b2b-collection-button b2b-new-button" href="{% url 'b2b_catalog' %}?ponuda=noviteti#catalog-filters" {% if collection == 'noviteti' %}aria-current="page"{% endif %}>NOVITETI</a>
+  <a class="b2b-collection-button b2b-new-button" href="{% url 'b2b_catalog' %}?ponuda=noviteti#catalog-filters" {% if collection == 'noviteti' %}aria-current="page"{% endif %}>
+    <span class="b2b-new-arrow" aria-hidden="true">›</span>
+    NOVITETI
+    <span class="b2b-new-arrow" aria-hidden="true">‹</span>
+  </a>
   <a class="b2b-collection-button b2b-sale-button" href="{% url 'b2b_catalog' %}?ponuda=akcijska#catalog-filters" {% if collection == 'akcijska' %}aria-current="page"{% endif %}>AKCIJSKA PONUDA</a>
   <a class="cart-link" href="{% url 'b2b_cart' %}">
     <svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 3h3l3 13h11l3-10H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg>
@@ -102,6 +102,11 @@
   <img class="b2b-image-full" alt="">
   <p class="b2b-image-caption"></p>
 </dialog>
+{% endif %}
+{% if request.user.is_superuser and account or request.user.is_superuser and show_control_menu %}
+{% include 'b2b/collection_control.html' with collection_key='noviteti' title='Noviteti u veleprodaji' endpoint='b2b_manage_new_arrivals' link_label='Prikaži novitete' %}
+{% include 'b2b/collection_control.html' with collection_key='akcijska' title='Akcija u veleprodaji' endpoint='b2b_manage_sale' link_label='Prikaži akcijsku ponudu' %}
+{% include 'b2b/control_dialogs.html' %}
 {% endif %}
 {% include 'partials/permanent_input_history.html' %}
 {% if account %}

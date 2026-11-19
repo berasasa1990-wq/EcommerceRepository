@@ -3,12 +3,13 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from django import forms
 from django.contrib import messages
-from django.http import HttpResponseBadRequest, JsonResponse
+from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.urls import reverse
 from urllib.parse import urlencode
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q, Exists, OuterRef, F, Value, FloatField, Case, When
 from django.db.models.functions import Coalesce, Cast
@@ -49,6 +50,119 @@ def current_account(request):
     return None
 
 
+def b2b_set_category_ids():
+    pending = set(Category.objects.filter(Q(slug='setovi') | Q(naziv__iexact='setovi'))
+                  .values_list('pk', flat=True))
+    excluded = set()
+    while pending:
+        excluded.update(pending)
+        pending = set(Category.objects.filter(roditelj_id__in=pending)
+                      .values_list('pk', flat=True)) - excluded
+    return excluded
+
+
+def b2b_products(excluded_categories):
+    return Product.objects.filter(aktivan=True, sakriven_do_stanja=False, is_set=False).filter(
+        Q(kategorija__aktivan=True) | Q(kategorija__isnull=True)).exclude(
+        kategorija_id__in=excluded_categories)
+
+
+def b2b_import_lines():
+    return UvozStavka.objects.filter(product__isnull=False).exclude(
+        status__in=[UvozStavka.Status.ERROR, UvozStavka.Status.SKIPPED])
+
+
+def warehouse_imports():
+    return Uvoz.objects.filter(izvor=Uvoz.Izvor.MAGACIN)
+
+
+@never_cache
+@require_http_methods(['GET', 'POST'])
+def manage_collection(request, sale=False):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden()
+
+    excluded_categories = b2b_set_category_ids()
+    products = b2b_products(excluded_categories)
+    if not sale and request.method == 'GET' and request.GET.get('uvozi') == '1':
+        eligible_lines = b2b_import_lines().filter(product_id__in=products.values('pk'))
+        imports = warehouse_imports().filter(pk__in=eligible_lines.values('uvoz_id'))
+        return JsonResponse({'uvozi': list(imports.order_by('-kreiran', '-pk').values('pk', 'naziv', 'kreiran'))})
+
+    settings = B2BSettings.objects.filter(pk=1).first()
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if not sale and action == 'import':
+            import_id = request.POST.get('import_id', '')
+            if not import_id.isascii() or not import_id.isdecimal() or len(import_id) > 18:
+                return HttpResponseBadRequest()
+            warehouse_import = get_object_or_404(warehouse_imports().only('pk'), pk=int(import_id))
+            lines = b2b_import_lines().filter(uvoz=warehouse_import)
+            product_ids = list(products.filter(pk__in=lines.values('product_id')).values_list('pk', flat=True))
+            if not product_ids:
+                return JsonResponse({'error': 'Uvoz nema artikala dostupnih u B2B katalogu.'}, status=400)
+            if settings is None:
+                settings, _ = B2BSettings.objects.get_or_create(pk=1)
+            settings.noviteti.add(*product_ids)
+            return JsonResponse({'import_count': len(product_ids)})
+
+        product_id = request.POST.get('product_id', '')
+        if action not in ('add', 'remove') or not product_id.isascii() or not product_id.isdecimal() or len(product_id) > 18:
+            return HttpResponseBadRequest()
+        if action == 'add':
+            product = get_object_or_404(products, pk=int(product_id))
+            if sale:
+                field = forms.DecimalField(
+                    min_value=Decimal('0.0000000001'), max_value=Decimal('100'),
+                    max_digits=13, decimal_places=10,
+                )
+                try:
+                    discount = field.clean(request.POST.get('discount_percent', '').strip().replace(',', '.'))
+                except ValidationError:
+                    return JsonResponse({'error': 'Unesite postotak sniženja veći od 0 i najviše 100.'}, status=400)
+            if settings is None:
+                settings, _ = B2BSettings.objects.get_or_create(pk=1)
+            if sale:
+                settings.offer_items.update_or_create(product=product, defaults={'discount_percent': discount})
+            else:
+                settings.noviteti.add(product)
+        elif settings is not None:
+            if sale:
+                settings.offer_items.filter(product_id=product_id).delete()
+            else:
+                settings.noviteti.remove(int(product_id))
+        return JsonResponse({})
+
+    selected = products.none()
+    if settings:
+        members = settings.akcijska_ponuda if sale else settings.noviteti
+        selected = members.filter(is_set=False).exclude(kategorija_id__in=excluded_categories)
+    query = request.GET.get('q', '').strip()[:200]
+    matches = Product.objects.none()
+    if query:
+        matches = products.exclude(pk__in=selected.values('pk')).filter(
+            Q(naziv__icontains=query) | Q(sifra__icontains=query) |
+            Q(varijacije__sifra__icontains=query)
+        ).distinct()
+    fields = ('naziv', 'sifra', 'cijena', 'brend')
+    selected = list(selected.only(*fields).order_by('naziv', 'pk'))
+    matches = list(matches.only(*fields).order_by('naziv', 'pk')[:30])
+    divisors = brand_divisors() if sale else {}
+    discounts = discounts_for(product.pk for product in selected) if sale else {}
+
+    def describe(product):
+        result = {'pk': product.pk, 'naziv': product.naziv, 'sifra': product.sifra}
+        if sale:
+            result['regular_price'] = net_price(product, None, {}, divisors)
+            result['discount_percent'] = format(discounts.get(product.pk, Decimal('0')).normalize(), 'f')
+        return result
+
+    return JsonResponse({
+        'selected': [describe(product) for product in selected],
+        'matches': [describe(product) for product in matches],
+    })
+
+
 @never_cache
 @require_http_methods(['GET', 'POST'])
 def catalog(request):
@@ -75,7 +189,7 @@ def catalog(request):
                     return redirect('b2b_catalog')
                 cache.set(key, attempts + 1, 900)
                 form.add_error(None, 'Pogrešno korisničko ime ili šifra.')
-        response = render(request, 'b2b/login.html', {'form': form})
+        response = render(request, 'b2b/login.html', {'form': form, 'show_control_menu': True})
     else:
         b2b_settings = B2BSettings.objects.prefetch_related('banners', 'category_icons').first()
         banners = []
@@ -88,7 +202,8 @@ def catalog(request):
                 icon.category_id: icon.image.url
                 for icon in b2b_settings.category_icons.all() if icon.image
             }
-        categories = list(Category.objects.filter(aktivan=True))
+        excluded_categories = b2b_set_category_ids()
+        categories = list(Category.objects.filter(aktivan=True).exclude(pk__in=excluded_categories))
         children = {}
         ids = {c.pk for c in categories}
         for category in categories:
@@ -109,8 +224,7 @@ def catalog(request):
                               'icon': category_icon(category)})
             return nodes
         navigation = build_navigation(None)
-        products = Product.objects.filter(aktivan=True, sakriven_do_stanja=False).filter(
-            Q(kategorija_id__in=ids) | Q(kategorija__isnull=True))
+        products = b2b_products(excluded_categories)
         brands = Brand.objects.filter(artikli__in=products).distinct().order_by('naziv')
         collection = request.GET.get('ponuda', '')
         collection_labels = {'noviteti': 'NOVITETI', 'akcijska': 'AKCIJSKA PONUDA'}
@@ -166,8 +280,7 @@ def catalog(request):
             catalog_rows = catalog_rows.filter(b2b_available=True)
         priority = []
         if sort == 'newest':
-            import_lines = UvozStavka.objects.filter(product__isnull=False).exclude(
-                status__in=[UvozStavka.Status.ERROR, UvozStavka.Status.SKIPPED])
+            import_lines = b2b_import_lines()
             latest_import = Uvoz.objects.filter(
                 zaliha_primljena=True, pk__in=import_lines.values('uvoz_id'),
             ).order_by('-kreiran', '-pk').values('pk')[:1]
@@ -204,6 +317,8 @@ def catalog(request):
                          'rabat_percent': rabat_percent_for_product(product, account_brand_rabats(account))})
         params = request.GET.copy()
         params.pop('page', None)
+        if selected is None:
+            params.pop('kategorija', None)
         response = render(request, 'b2b/catalog.html', {'account': account, 'navigation': navigation, 'b2b_settings': b2b_settings, 'banners': banners,
             'collection': collection, 'collection_label': collection_labels.get(collection, ''),
             'brands': brands, 'brand_slug': brand_slug, 'sort': sort, 'per_page': per_page, 'in_stock': in_stock,
