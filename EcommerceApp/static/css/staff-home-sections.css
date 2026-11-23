@@ -62,3 +62,10 @@
 .home-editor .delete-section{margin-top:12px}
 @media(max-width:700px){.home-editor__fold-body{padding:12px}.home-editor__fold summary{padding:12px}.home-editor__fold summary small{display:block;margin:4px 0 0 16px}}
 
+
+.home-editor .home-timed-enabled{display:flex;align-items:center;gap:8px}
+.home-editor .home-timed-editor-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(85px,110px) auto;align-items:center;gap:8px;padding:6px 0}
+.home-editor .home-timed-editor-row input:not([type="hidden"]){width:100%;min-width:0}
+.home-editor .home-timed-editor-row > span{overflow-wrap:anywhere}
+.home-editor .home-timed-discount{display:flex;align-items:center;gap:5px}
+@media(max-width:480px){.home-editor .home-timed-editor-row{grid-template-columns:minmax(0,1fr) auto}.home-editor .home-timed-editor-row > span{grid-column:1/-1}}

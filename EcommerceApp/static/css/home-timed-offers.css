@@ -1,0 +1,204 @@
+html body.home-mobile-reference main > .home-products--timed {
+    display: none !important;
+    order: 3;
+}
+
+@media (max-width: 1024px) {
+    html body.home-mobile-reference main > .home-products--timed:not([hidden]) {
+        display: block !important;
+    }
+
+    .home-timed-banner {
+        box-sizing: border-box;
+        width: 100%;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) max-content;
+        align-items: center;
+        gap: clamp(5px, 1.5vw, 16px);
+        min-height: clamp(82px, 18vw, 158px);
+        margin-bottom: 10px;
+        padding: clamp(8px, 2vw, 20px);
+        background:
+            radial-gradient(ellipse at -7% -45%, #ff9d13 0 25%, transparent 26%),
+            radial-gradient(ellipse at 107% 145%, #ff9d13 0 25%, transparent 26%),
+            radial-gradient(ellipse at 100% 0%, #9d4100, transparent 24%),
+            linear-gradient(135deg, #0d0d0d, #030303);
+        color: #fff;
+    }
+
+    .home-timed-title {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(4px, 1.5vw, 16px);
+        min-width: 0;
+    }
+
+    .home-timed-tag {
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+        width: clamp(19px, 5.4vw, 56px);
+        aspect-ratio: 3 / 4;
+        border: 1px solid #ffbd66;
+        border-radius: 35% 35% 18% 18%;
+        background: linear-gradient(#ffb133, #ed4a06);
+        color: #fff;
+        font-size: clamp(14px, 4vw, 39px);
+        font-weight: 900;
+        transform: rotate(23deg);
+    }
+
+    .home-timed-banner h2 {
+        margin: 0;
+        color: #fff;
+        font-size: clamp(14px, 4.5vw, 43px);
+        font-style: italic;
+        font-weight: 950;
+        line-height: .98;
+        letter-spacing: -.035em;
+        text-transform: uppercase;
+    }
+
+    .home-timed-banner h2 span {
+        display: block;
+        color: #ff9a1a;
+    }
+
+    .home-timed-countdown {
+        display: flex;
+        align-items: center;
+        gap: clamp(4px, 1.2vw, 13px);
+        padding-left: clamp(5px, 1.4vw, 16px);
+        border-left: 1px solid #fff9;
+    }
+
+    .home-timed-countdown p {
+        margin: 0 0 4px;
+        color: #fff;
+        text-align: center;
+        font-size: clamp(10px, 2.55vw, 22px);
+        font-weight: 800;
+        line-height: 1.2;
+    }
+
+    .home-timed-clock-icon {
+        position: relative;
+        flex: 0 0 auto;
+        width: clamp(13px, 4vw, 39px);
+        aspect-ratio: 1;
+        border: 2px solid #ffb049;
+        border-radius: 50%;
+        box-shadow: 0 0 9px #ff8500a0;
+    }
+
+    .home-timed-clock-icon::before,
+    .home-timed-clock-icon::after {
+        position: absolute;
+        left: 50%;
+        width: 2px;
+        border-radius: 2px;
+        background: #ffb049;
+        content: "";
+        transform: translateX(-50%);
+    }
+
+    .home-timed-clock-icon::before { top: -5px; height: 4px; }
+    .home-timed-clock-icon::after { top: 20%; height: 34%; }
+
+    .home-timed-banner time {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: clamp(3px, .7vw, 8px);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .home-timed-banner time > span {
+        display: grid;
+        justify-items: center;
+        gap: 2px;
+        min-width: clamp(23px, 7vw, 68px);
+        padding: clamp(4px, 1.2vw, 12px) 3px;
+        border-radius: clamp(5px, 1.5vw, 14px);
+        background: linear-gradient(#f98906, #c92a00);
+        color: #fff;
+        text-shadow: 0 1px 2px #651c06;
+    }
+
+    .home-timed-banner time strong { font-size: clamp(14px, 4.3vw, 37px); line-height: 1; }
+    .home-timed-banner time small { font-size: clamp(7px, 1.7vw, 14px); font-weight: 800; line-height: 1; }
+
+    html body.home-mobile-reference main .home-products--timed .home-product-carousel__track {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+        transform: none !important;
+    }
+
+    html body.home-mobile-reference main .home-products--timed .home-product-carousel__slide {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+    }
+
+    html body.home-mobile-reference main .home-products--timed .product-catalog article.product-card--catalog.product-card--unified.product-card--timed-offer {
+        position: relative;
+        border: 0 !important;
+        background: #fff !important;
+        border-radius: 12px !important;
+        box-shadow: none !important;
+        padding: 0 10px 10px !important;
+        overflow: hidden;
+    }
+
+    html body.home-mobile-reference main .home-products--timed .product-card .product-card__title {
+        text-align: center;
+    }
+
+    html body.home-mobile-reference main .home-products--timed .product-card .product-sale-row {
+        display: flex !important;
+        justify-content: center;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 3px 7px;
+    }
+
+    html body.home-mobile-reference main .home-products--timed .product-card .price-original {
+        order: -1;
+        color: #555 !important;
+        text-decoration: line-through;
+    }
+
+    html body.home-mobile-reference main .home-products--timed .product-card .price-sale {
+        color: #be3906 !important;
+        font-weight: 850;
+    }
+
+    html body.home-mobile-reference main .home-products--timed .product-card button.product-card-add-btn {
+        --site-action-gradient: linear-gradient(#ff9500, #d73900);
+        background: var(--site-action-gradient) !important;
+        color: #fff !important;
+    }
+
+    .home-timed-sale-badge {
+        position: absolute;
+        z-index: 5;
+        top: clamp(8px, 2.5vw, 20px);
+        left: clamp(6px, 2vw, 16px);
+        padding: 4px 8px;
+        border: 1px solid #fff;
+        border-radius: 7px;
+        background: #d10c20;
+        color: #fff;
+        font-size: clamp(15px, 4vw, 32px);
+        font-style: italic;
+        font-weight: 900;
+        line-height: 1;
+        pointer-events: none;
+        transform: rotate(-8deg);
+    }
+}
+
+@media (max-width: 370px) {
+    .home-timed-clock-icon { display: none; }
+}

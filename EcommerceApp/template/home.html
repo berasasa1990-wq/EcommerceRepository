@@ -7,7 +7,8 @@
 {% endblock %}
 {% block extra_css %}
 {% if filters_active %}<link rel="stylesheet" href="{% static 'css/category-product-images.css' %}?v=20261117-mobile-search-centered">{% endif %}
-{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-uploaded-banner.css' %}?v=20261107-secondary-slider">{% endif %}
+{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-uploaded-banner.css' %}?v=20261123-shared-banner-width">{% endif %}
+{% if timed_home_offers %}<link rel="stylesheet" href="{% static 'css/home-timed-offers.css' %}?v=20261123-shared-banner-width">{% endif %}
 
 <style>
 body.home-mobile-reference main > .home-registration-banner { order: 3; display: flex; align-items: center; gap: 14px; width: 100%; min-height: 78px; box-sizing: border-box; padding: 20px 18px; margin: 12px 0; border: 1px solid #f3dac5; border-radius: 10px; background: #edf7fd; color: #263342; }
@@ -492,6 +493,36 @@ html body.home-mobile-reference .home-products .product-catalog article.product-
 
 {% include 'partials/seo_text_block.html' with text=seo_tekst_iznad placement='above' %}
 
+{% for offer in timed_home_offers %}
+<section class="category-page category-page--shop home-products home-products--timed" data-home-timed-offer>
+    <header class="home-timed-banner">
+        <div class="home-timed-title">
+            <span class="home-timed-tag" aria-hidden="true">%</span>
+            <h2 aria-label="{{ offer.title }}">{{ offer.title_first }} <span>{{ offer.title_last }}</span></h2>
+        </div>
+        <div class="home-timed-countdown">
+            <span class="home-timed-clock-icon" aria-hidden="true"></span>
+            <div>
+                <p>Akcija traje još</p>
+                <time datetime="{{ offer.ends_at|date:'c' }}" data-home-offer-clock aria-label="Akcija ističe {{ offer.ends_at|date:'d.m.Y. H:i' }}">
+                    <span><strong data-clock-part>–</strong><small>DANA</small></span>
+                    <span><strong data-clock-part>–</strong><small>SATI</small></span>
+                    <span><strong data-clock-part>–</strong><small>MIN</small></span>
+                    <span><strong data-clock-part>–</strong><small>SEK</small></span>
+                </time>
+            </div>
+        </div>
+    </header>
+    <div class="product-catalog product-catalog--compact home-product-catalog">
+        <div class="catalog-layout catalog-layout--full">
+            <div class="catalog-products">
+                {% include 'partials/home_product_carousel.html' with products=offer.products visible_mobile=2 use_home_image=True timed_offer_card=True %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endfor %}
+
 {% if featured_products %}
 <section class="category-page category-page--shop home-products home-products--izdvojeno">
     <div class="product-catalog product-catalog--compact home-product-catalog">
@@ -576,4 +607,5 @@ html body.home-mobile-reference .home-products .product-catalog article.product-
 
 {% block extra_js %}
 {% if not filters_active %}<script src="{% static 'js/home-video-autoplay.js' %}?v=20261103-desktop-videos" defer></script>{% endif %}
+{% if timed_home_offers %}<script src="{% static 'js/home-timed-offers.js' %}?v=20261123-clock-fields" defer></script>{% endif %}
 {% endblock %}

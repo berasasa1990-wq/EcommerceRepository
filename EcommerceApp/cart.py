@@ -1,6 +1,8 @@
 from decimal import ROUND_HALF_UP, Decimal
 
-from .models import Product, ProductVariation
+from django.db.models import Prefetch
+
+from .models import AkcijaFlashLine, Product, ProductVariation
 from .upsell import get_deal_info_for_cart_item, get_quantity_deal, calculate_deal_adjusted_total
 
 PDV_STOPA = Decimal('0.17')
@@ -167,6 +169,8 @@ class Cart:
             if gratis_akcija_id is not None:
                 self.cart[key]['gratis_akcija_id'] = gratis_akcija_id
                 self.cart[key]['gratis_promo'] = True
+        if not is_promo and product.has_running_home_offer():
+            self.cart[key]['home_offer_price'] = True
         self.save()
         self._track_line(key)
         return quantity
@@ -375,19 +379,47 @@ class Cart:
     def should_keep_coupon_on_cart_view(self):
         return bool(self.request.session.pop(self.COUPON_KEEP_KEY, False))
 
+    def _refresh_home_offer_prices(self, products, variants):
+        changed = False
+        for item in self.cart.values():
+            product = products.get(item['product_id'])
+            if item.get('promo_line') or item.get('timer_akcija') or not product:
+                continue
+            running = product.has_running_home_offer()
+            if not running and not item.get('home_offer_price'):
+                continue
+            sku = variants.get(item['variation_id']) if item.get('variation_id') else product
+            if sku is None:
+                continue
+            if sku is not product:
+                sku.artikal = product
+            price, regular = sku.prikazna_cijena, sku.bazna_cijena
+            values = {
+                'cijena': str(price), 'bazna_cijena': str(regular), 'na_akciji': price < regular,
+                'home_offer_price': running,
+                'discount_source': 'Katalog akcija (snižena cijena)' if price < regular else '',
+            }
+            if any(item.get(key) != value for key, value in values.items()):
+                item.update(values)
+                changed = True
+        if changed:
+            self.save()
+
     def __iter__(self):
         from .korpa_nudjenje import build_korpa_nudjenje_map
-
-        # Compute base total once (using raw prices from cart) for threshold-based discounts
-        base_total = sum(
-            Decimal(it['cijena']) * it['quantity']
-            for it in self.cart.values()
-        )
-        korpa_nudjenje_map = build_korpa_nudjenje_map(self)
-        products = {p.pk: p for p in Product.objects.filter(pk__in={item['product_id'] for item in self.cart.values()}).prefetch_related('varijacije')}
         from .plus_percent import offers_for_products
-        plus_percent_offers = offers_for_products(products.values())
+
+        products = {p.pk: p for p in Product.objects.filter(pk__in={
+            item['product_id'] for item in self.cart.values()
+        }).prefetch_related('varijacije', Prefetch(
+            'akcija_flash_lines', queryset=AkcijaFlashLine.objects.select_related('akcija').filter(akcija__aktivan=True),
+        ))}
         variants = {v.pk: v for p in products.values() for v in p.varijacije.all()}
+        self._refresh_home_offer_prices(products, variants)
+        # Compute base total once (using raw prices from cart) for threshold-based discounts.
+        base_total = sum(Decimal(it['cijena']) * it['quantity'] for it in self.cart.values())
+        korpa_nudjenje_map = build_korpa_nudjenje_map(self)
+        plus_percent_offers = offers_for_products(products.values())
         available = self.availability(products=products, variants=variants)
         from .plus_percent import discounts_for_cart
         plus_discounts = discounts_for_cart(self.cart, plus_percent_offers, available)

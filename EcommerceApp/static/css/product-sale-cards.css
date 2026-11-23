@@ -1,5 +1,5 @@
 /* Sale cards share the same warm frame and ribbon throughout the storefront. */
-html body main :is(.product-catalog,#product-showcase .product-catalog) article.product-card--catalog.product-card--unified.product-card--on-sale {
+html body main :is(.product-catalog,#product-showcase .product-catalog) article.product-card--catalog.product-card--unified.product-card--on-sale:not(.product-card--timed-offer) {
  padding:10px!important;
  border:2px solid #ff6a00!important;
  border-radius:20px!important;
@@ -35,7 +35,7 @@ html body main :is(.product-catalog,#product-showcase .product-catalog) article.
  overflow:visible;
 }
 html body main :is(.product-catalog,#product-showcase .product-catalog) article.product-card--catalog.product-card--unified.product-card--on-sale .product-sale-ribbon strong{white-space:nowrap}
-html body main :is(.product-catalog,#product-showcase .product-catalog) article.product-card--catalog.product-card--unified.product-card--on-sale .product-card__media {
+html body main :is(.product-catalog,#product-showcase .product-catalog) article.product-card--catalog.product-card--unified.product-card--on-sale:not(.product-card--timed-offer) .product-card__media {
  width:100%!important;max-width:none!important;margin:0!important;
 }
 html body main :is(.product-catalog,#product-showcase .product-catalog) article.product-card--catalog.product-card--unified.product-card--on-sale .product-image {

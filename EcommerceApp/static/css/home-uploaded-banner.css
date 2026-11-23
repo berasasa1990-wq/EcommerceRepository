@@ -73,6 +73,7 @@ html body.home-mobile-reference main > .home-uploaded-banner:not(.home-uploaded-
 /* Break the mobile banners out of any inherited page container. */
 @media (max-width:767px) {
     html body.shared-site-header.home-mobile-reference main > .home-uploaded-banner:not(.home-uploaded-banner--bestsellers),
+    html body.home-mobile-reference main > .home-products--timed > .home-timed-banner,
     html body.shared-site-header.home-mobile-reference main > .ref-promos--uploads {
         width:100vw!important;
         max-width:none!important;

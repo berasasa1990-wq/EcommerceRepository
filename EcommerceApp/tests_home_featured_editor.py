@@ -1,10 +1,16 @@
+from datetime import timedelta
+from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase
+from django.contrib.sessions.backends.db import SessionStore
+from django.utils import timezone
 
+from .cart import Cart
 from .forms import HomeFeaturedProductsForm
-from .models import HomeFeaturedProduct, HomeNovoProduct, Product, SiteSettings
+from .home_timed_offers import active_home_offers
+from .models import Akcija, HomeFeaturedProduct, HomeNovoProduct, Product, SiteSettings
 from .views import staff_home_page, _home_featured_products_uncached, _home_latest_products_uncached
 
 
@@ -76,3 +82,41 @@ class FeaturedEditorTests(TestCase):
 
     def test_unknown_section_is_rejected(self):
         self.assertEqual(staff_home_page(self.request({'section': 'invalid'})).status_code, 400)
+
+    @patch('EcommerceApp.views.messages.success')
+    def test_timed_offers_save_separate_discounts_and_expire_in_cart(self, success):
+        first, second = self.products[:2]
+        cart_request = RequestFactory().get('/')
+        cart_request.session = SessionStore()
+        cart_request.user = self.admin
+        cart = Cart(cart_request)
+        self.assertEqual(cart.add(first), 1)
+        self.assertEqual(cart.ukupno, Decimal('10.00'))
+        form_data = {
+            'section': Akcija.Tip.HOME_DAILY, 'enabled': 'on', 'artikli': [first.pk, second.pk],
+            f'popust_{first.pk}': '25,50', f'popust_{second.pk}': '15',
+        }
+        self.assertEqual(staff_home_page(self.request(form_data)).status_code, 302)
+        weekly_data = {
+            'section': Akcija.Tip.HOME_WEEKLY, 'enabled': 'on', 'artikli': [first.pk],
+            f'popust_{first.pk}': '10',
+        }
+        self.assertEqual(staff_home_page(self.request(weekly_data)).status_code, 302)
+        daily = Akcija.objects.get(tip=Akcija.Tip.HOME_DAILY)
+        weekly = Akcija.objects.get(tip=Akcija.Tip.HOME_WEEKLY)
+        self.assertEqual(daily.zavrsava - daily.pocetak, timedelta(days=1))
+        self.assertEqual(weekly.zavrsava - weekly.pocetak, timedelta(days=7))
+        self.assertEqual(staff_home_page(self.request(form_data)).status_code, 302)
+        self.assertEqual(Akcija.objects.get(pk=daily.pk).pocetak, daily.pocetak)
+        self.assertEqual([offer['title'] for offer in active_home_offers(Product.objects.all())], [
+            'Ponuda dana', 'Sedmična ponuda',
+        ])
+        self.assertEqual(cart.ukupno, Decimal('7.45'))
+        second.refresh_from_db()
+        self.assertEqual(second.prikazna_cijena, Decimal('8.50'))
+        Akcija.objects.filter(pk=daily.pk).update(pocetak=timezone.now() - timedelta(days=2))
+        self.assertEqual([offer['title'] for offer in active_home_offers(Product.objects.all())], ['Sedmična ponuda'])
+        self.assertEqual(cart.ukupno, Decimal('9.00'))
+        Akcija.objects.filter(pk=weekly.pk).update(pocetak=timezone.now() - timedelta(days=8))
+        self.assertEqual(active_home_offers(Product.objects.all()), [])
+        self.assertEqual(cart.ukupno, Decimal('10.00'))

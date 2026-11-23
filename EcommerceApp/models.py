@@ -2253,6 +2253,8 @@ class Akcija(models.Model):
         PONUDA = 'ponuda', '+ Ponuda'
         AI_PRODAJA = 'ai_prodaja', 'AI prodaja / AI dwell'
         AKCIJSKA = 'akcijska', 'Akcijska ponuda'
+        HOME_DAILY = 'ponuda_dana', 'Ponuda dana'
+        HOME_WEEKLY = 'sedmicna_ponuda', 'Sedmična ponuda'
         POSLIJE_NARUDZBE = 'poslije_narudzbe', 'Poslije narudžbe'
         # Zastarjeli (zadržani zbog postojećih redova; više se ne nude)
         SLIKA = 'slika', 'Pop-up + slika (zastarjelo)'
@@ -2264,6 +2266,7 @@ class Akcija(models.Model):
 
     # Tipovi u listi Akcije (admin)
     ACTIVE_TIPS = (Tip.PLUS_PERCENT, Tip.BUNDLE, Tip.QTY_DEAL, Tip.PONUDA, Tip.AKCIJSKA, Tip.POSLIJE_NARUDZBE)
+    HOME_TIMED_HOURS = {Tip.HOME_DAILY: 24, Tip.HOME_WEEKLY: 168}
     # Site-wide popup queue. Bundle više nije popup — prikaz ispod artikla.
     # Kupi više (qty_deal) iskače tek kad kupac doda artikal u korpu.
     POPUP_TIPS = ()
@@ -2476,6 +2479,10 @@ class Akcija(models.Model):
         verbose_name = 'Akcija'
         verbose_name_plural = 'Akcije'
         ordering = ['redoslijed', '-id']
+        constraints = [models.UniqueConstraint(
+            fields=['tip'], condition=models.Q(tip__in=['ponuda_dana', 'sedmicna_ponuda']),
+            name='unique_home_timed_offer_type',
+        )]
 
     @property
     def zavrsava(self):
@@ -3057,13 +3064,13 @@ class Akcija(models.Model):
 
     def flash_still_running(self):
         """Akcijska ponuda: aktivan i (nema kraja ili još nije istekla)."""
-        if self.tip != self.Tip.AKCIJSKA or not self.aktivan:
+        if not self.aktivan or (self.tip != self.Tip.AKCIJSKA and self.tip not in self.HOME_TIMED_HOURS):
             return False
         if self.pocetak and timezone.now() < self.pocetak:
             return False
         end = self.zavrsava
         if end is None:
-            return True
+            return self.tip == self.Tip.AKCIJSKA
         return timezone.now() < end
 
     def flash_remaining_seconds(self):
@@ -3698,14 +3705,23 @@ class Product(models.Model):
     def na_akciji(self):
         return self.prikazna_cijena is not None and self.cijena is not None and self.prikazna_cijena < self.cijena
 
-    def flash_sale_price(self, base):
-        if not self.pk or base is None:
-            return None
+    def price_offer_lines(self):
+        if not self.pk:
+            return ()
         rows = getattr(self, '_prefetched_objects_cache', {}).get('akcija_flash_lines')
         if rows is None:
             rows = self.akcija_flash_lines.select_related('akcija').filter(akcija__aktivan=True)
+        return rows
+
+    def has_running_home_offer(self):
+        return any(row.akcija.tip in Akcija.HOME_TIMED_HOURS and row.akcija.flash_still_running()
+                   for row in self.price_offer_lines())
+
+    def flash_sale_price(self, base):
+        if base is None:
+            return None
         prices = []
-        for row in rows:
+        for row in self.price_offer_lines():
             if row.akcija.flash_still_running():
                 price = _izracunaj_akcijsku_od_postotka(base, row.effective_discount_percent())
                 if price is not None and price < base:

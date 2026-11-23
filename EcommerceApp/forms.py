@@ -1287,6 +1287,40 @@ class HomeFeaturedProductsForm(forms.Form):
         return products
 
 
+class HomeTimedOfferForm(forms.Form):
+    enabled = forms.BooleanField(label='Prikaži ponudu', required=False)
+    artikli = forms.ModelMultipleChoiceField(queryset=Product.objects.none(), required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        ids = self.data.getlist('artikli') if self.is_bound else self.initial.get('artikli', ())
+        ids = [pk for pk in ids if re.fullmatch(r'[0-9]{1,18}', str(pk))]
+        products = Product.objects.filter(pk__in=ids, aktivan=True, sakriven_do_stanja=False).order_by('naziv', 'pk')
+        self.fields['artikli'].queryset = products
+        self.offer_rows = []
+        for product in products:
+            name = f'popust_{product.pk}'
+            self.fields[name] = forms.DecimalField(
+                label=f'Popust za {product.naziv} (%)',
+                min_value=Decimal('0.01'), max_value=Decimal('100'), max_digits=5, decimal_places=2,
+                widget=forms.TextInput(attrs={
+                    'inputmode': 'decimal', 'placeholder': 'Popust (%)',
+                    'aria-label': f'Popust za {product.naziv} (%)',
+                }),
+            )
+            self.offer_rows.append((product, self[name]))
+        if self.is_bound:
+            self.data = self.data.copy()
+            for _, field in self.offer_rows:
+                self.data[field.html_name] = self.data.get(field.html_name, '').replace(',', '.')
+
+    def clean(self):
+        data = super().clean()
+        if data.get('enabled') and not data.get('artikli'):
+            self.add_error('artikli', 'Odaberite barem jedan artikal.')
+        return data
+
+
 class HomepageProductImageForm(forms.Form):
     slika_pocetna = forms.ImageField(required=False, label='Slika za početnu stranicu')
 

@@ -2634,6 +2634,7 @@ def home(request):
     latest_products = []
     bestselling_products = []
     featured_products = []
+    timed_home_offers = []
     sale_products = []
     home_trust_items = []
     home_promo_cards = []
@@ -2744,6 +2745,8 @@ def home(request):
         ))
         latest_products = _home_latest_products(request)
         featured_products = _home_featured_products(request)
+        from .home_timed_offers import active_home_offers
+        timed_home_offers = active_home_offers(_home_product_queryset(request).filter(sakriven_do_stanja=False))
         featured_desktop_extra_ids = []
         home_vlogs = _home_vlogs()
         # The current home template does not render the legacy sale/trust/category/
@@ -2835,6 +2838,7 @@ def home(request):
         'hero_banners': [site_settings, *site_settings.hero_banners.filter(aktivan=True)] if not filters_active else [],
         'custom_home_sections': custom_home_sections,
         'featured_products': featured_products,
+        'timed_home_offers': timed_home_offers,
         'featured_desktop_extra_ids': featured_desktop_extra_ids if not filters_active else [],
         'sale_products': sale_products,
         'home_trust_items': home_trust_items,
@@ -9921,18 +9925,23 @@ def staff_home_sections(request):
 @user_passes_test(_superuser_required)
 def staff_home_page(request):
     from .forms import HomeFeaturedProductsForm, HomeMobileVideoForm
+    from .home_timed_offers import home_offer_forms, save_home_offer
 
     if request.GET.get('search') == '1':
         query = (request.GET.get('q') or '').strip()
         products = Product.objects.filter(aktivan=True).filter(
             Q(naziv__icontains=query) | Q(sifra__icontains=query)
-        ).order_by('naziv', 'pk')[:30] if query else []
+        )
+        if request.GET.get('timed') == '1':
+            products = products.filter(sakriven_do_stanja=False)
+        products = products.only('naziv', 'sifra').order_by('naziv', 'pk')[:30] if query else []
         return JsonResponse({'products': [
             {'id': p.pk, 'label': f'{p.naziv} ({p.sifra})'} for p in products
         ]})
     settings = SiteSettings.load()
     is_post = request.method == 'POST'
     section = request.POST.get('section', 'featured') if is_post else None
+    timed_forms = home_offer_forms(request.POST if is_post else None, section)
     selections = {
         'featured': HomeFeaturedProduct.objects.filter(postavke=settings),
         'new': HomeNovoProduct.objects.filter(postavke=settings),
@@ -9955,14 +9964,17 @@ def staff_home_page(request):
             _invalidate_storefront_product_caches()
             messages.success(request, 'Mobilni video je sačuvan.')
             return redirect('staff_home_page')
-        return render(request, 'staff/home_page.html', {
-            **_base_context(), 'featured_form': forms['featured'], 'new_form': forms['new'],
-            'video_form': video_form, 'section_count': HomeProductSection.objects.count(),
-        })
     forms['new'].fields['artikli'].label = 'Artikli u Novom u ponudi'
-    if is_post and section not in forms:
+    if is_post and section in timed_forms:
+        timed_form = timed_forms[section]['form']
+        if timed_form.is_valid():
+            save_home_offer(section, timed_form.cleaned_data)
+            _invalidate_storefront_product_caches()
+            messages.success(request, f'{timed_forms[section]["title"]} je sačuvana.')
+            return redirect('staff_home_page')
+    if is_post and section not in forms and section not in timed_forms and section != 'video':
         return HttpResponseBadRequest('Nepoznata sekcija.')
-    if is_post and forms[section].is_valid():
+    if is_post and section in forms and forms[section].is_valid():
         selected = selections[section]
         model = HomeNovoProduct if section == 'new' else HomeFeaturedProduct
         with transaction.atomic():
@@ -9977,6 +9989,7 @@ def staff_home_page(request):
     return render(request, 'staff/home_page.html', {
         **_base_context(), 'featured_form': forms['featured'], 'new_form': forms['new'],
         'section_count': HomeProductSection.objects.count(), 'video_form': video_form,
+        'timed_offers': timed_forms.values(),
     })
 
 

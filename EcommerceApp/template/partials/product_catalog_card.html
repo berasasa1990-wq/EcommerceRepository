@@ -1,6 +1,6 @@
 {% load ecommerce_extras %}
 <article
-    class="product-card product-card--catalog product-card--reference-design product-card--unified{% if home_reference_card %} product-card--home-reference{% endif %}{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if product.katalog_na_akciji %} product-card--on-sale{% endif %}"
+    class="product-card product-card--catalog product-card--reference-design product-card--unified{% if home_reference_card %} product-card--home-reference{% endif %}{% if timed_offer_card %} product-card--timed-offer{% endif %}{% if product.je_novitet %} product-card--novitet{% endif %}{% if product.je_hit %} product-card--hit{% endif %}{% if product.katalog_na_akciji %} product-card--on-sale{% endif %}"
     data-product-card
     data-product-id="{{ product.pk }}"
     {% if product.slika %}data-image-key="{{ product.slika.name }}"{% endif %}
@@ -13,7 +13,9 @@
     {% if product.na_stanju %}data-in-stock="1"{% endif %}
 >
     {% if product.katalog_na_akciji or product.katalog_akcija_postotak %}
+    {% if not timed_offer_card %}
     <div class="product-sale-ribbon"><span>SNIŽENO</span>{% if product.katalog_akcija_postotak %}<strong>-{{ product.katalog_akcija_postotak }}%</strong>{% endif %}</div>
+    {% endif %}
     {% elif product.je_novitet or home_section_badge == 'novo' %}
     <span class="product-card-corner-badge product-card-corner-badge--novitet">Novo</span>
     {% elif product.je_hit or home_section_badge == 'hit' %}
@@ -23,6 +25,9 @@
     <div class="product-card__top">
         <div class="product-card__media">
             <div class="product-image">
+                {% if timed_offer_card and product.katalog_akcija_postotak %}
+                <strong class="home-timed-sale-badge">−{{ product.katalog_akcija_postotak }}%</strong>
+                {% endif %}
                 <a href="{% if staff_edit_mode %}{% url 'staff_magacin_brzi_unos_aktivacija' product.pk %}{% else %}{{ product.get_absolute_url }}{% endif %}" class="product-card__media-link" aria-label="{{ product.naziv }}"{% if staff_edit_mode %} target="_blank" rel="noopener"{% endif %}>
                     {% include 'partials/product_image.html' with product=product image_loading=image_loading|default:'lazy' image_sizes=image_sizes|default:'(max-width: 768px) 100vw, 25vw' %}
                     {% include 'partials/product_staff_overlay.html' with product=product %}

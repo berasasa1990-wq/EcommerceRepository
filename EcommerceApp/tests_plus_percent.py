@@ -34,7 +34,11 @@ class PlusPercentTests(SimpleTestCase):
         request.session = {'cart': {key: {**line, 'cijena': '100', 'bazna_cijena': '100',
             'naziv': str(line['product_id']), 'product_naziv': str(line['product_id'])}
             for key, line in self.lines.items()}}
-        products = [SimpleNamespace(pk=i, varijacije=SimpleNamespace(all=lambda: []), je_pakovanje=False) for i in (1, 2)]
+        products = [
+            SimpleNamespace(pk=i, varijacije=SimpleNamespace(all=lambda: []), je_pakovanje=False,
+                            has_running_home_offer=lambda: False)
+            for i in (1, 2)
+        ]
         cart = Cart(request)
         with patch('EcommerceApp.cart.Product.objects') as manager, \
              patch('EcommerceApp.korpa_nudjenje.build_korpa_nudjenje_map', return_value={}), \
