@@ -48,6 +48,7 @@
         aktivan: 1,
         redoslijed: 1,
         popust_postotak: 1,
+        kompletan_lager: 1,
         pocetak: 1,
         trajanje_sati: 1,
     };
@@ -70,6 +71,11 @@
         var tip = $('#id_tip').val();
         var allowed = $.extend({}, FIELDS_BY_TIP[tip] || {});
         var trigger = $('#id_bundle_trigger').val();
+        var stockSale = tip === AKCIJSKA_TIP && $('#id_kompletan_lager').is(':checked');
+        if (stockSale) {
+            allowed.kraj_lagera = true;
+            allowed.trajanje_sati = false;
+        }
         if (tip === BUNDLE_TIP) {
             allowed.artikal = trigger === 'trigger_product';
             allowed.kategorija = trigger === 'category';
@@ -87,7 +93,7 @@
         $form.find('.inline-group').each(function () {
             this.hidden = !(
                 (tip === BUNDLE_TIP && $(this).find('.akcija-inline-bundle-lines').addBack('.akcija-inline-bundle-lines').length) ||
-                ((tip === AKCIJSKA_TIP || tip === 'poslije_narudzbe') && $(this).find('.akcija-inline-flash-lines').addBack('.akcija-inline-flash-lines').length)
+                (((tip === AKCIJSKA_TIP && !stockSale) || tip === 'poslije_narudzbe') && $(this).find('.akcija-inline-flash-lines').addBack('.akcija-inline-flash-lines').length)
             );
         });
         $form.find('.akcija-inline-flash-lines').find('.column-redoslijed, .field-redoslijed').prop('hidden', tip === 'poslije_narudzbe');
@@ -96,13 +102,17 @@
             if (this.dataset.akcijaRequired === undefined) this.dataset.akcijaRequired = this.required ? '1' : '0';
             this.required = this.dataset.akcijaRequired === '1' && !$(this).closest('[hidden]').length;
         });
+        $form.find('.field-trajanje_sati input').prop('disabled', tip === AKCIJSKA_TIP && stockSale);
+        $form.find('.field-kraj_lagera input').prop('disabled', tip === AKCIJSKA_TIP && !stockSale);
         var guides = {
             plus_percent: '+ %: odaberite više artikala ili jednu kategoriju i unesite procenat popusta. Uslov je kupovina još jednog različitog artikla.',
             poslije_narudzbe: 'Poslije narudžbe (samo pouzećem / gotovinski, bez kartica): unesite najviše 4 artikla. Pored svakog artikla unesite njegov % sniženja. Kupac ima 15 minuta da doda po jedan komad na istu narudžbu bez dodatne dostave.',
             ponuda: '+ Ponuda: odaberi artikal koji kupac dodaje u korpu, zatim drugi artikal koji će mu se ponuditi. Popust je opcionalan.',
             qty_deal: 'Količinski popust: odaberi artikal i upiši popust uz željenu količinu. Na primjer, 2 komada → 10%. Ostale količine ostavi prazne.',
             bundle: 'Bundle: odaberi gdje se set prikazuje, zatim u tabelu dodaj artikle i količine. Set treba ukupno najmanje 2 komada. Popust može važiti za cijeli set ili za pojedinu stavku.',
-            akcijska: 'Akcijska ponuda: unesi popust i trajanje, pa odaberi artikle u tabeli. Samo oni dobijaju sniženje na redovnim karticama, stranici artikla i u korpi.'
+            akcijska: stockSale
+                ? 'Unesite procenat te datum i vrijeme početka i završetka. Popust se primjenjuje na dostupne artikle i varijacije i automatski prestaje po isteku.'
+                : 'Odaberite artikle u tabeli ili uključite Kompletan lager.'
         };
         var $guide = $('#akcija-quick-guide');
         if (!$guide.length) $guide = $('<p id="akcija-quick-guide" role="status">').css({padding:'16px', background:'#e5e5e2', color:'#292929', border:'1px solid #999', borderRadius:'6px', lineHeight:'1.6'}).prependTo($form);
@@ -122,7 +132,7 @@
     }
     $(function () {
         if (!$('#akcija_form').length) return;
-        $(document).on('change.akcija', '#id_tip, #id_bundle_trigger', update);
+        $(document).on('change.akcija', '#id_tip, #id_bundle_trigger, #id_kompletan_lager', update);
         document.addEventListener('formset:added', update);
         update();
     });

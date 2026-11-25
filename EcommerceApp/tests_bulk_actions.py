@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
-from .models import Product
+from .models import Akcija, Product
 
 
 @override_settings(STORAGES={
@@ -29,6 +29,7 @@ class BulkActionsTests(TestCase):
 
     def test_catalog_search_and_page(self):
         self.assertContains(self.client.get(self.url), 'Bulk Akcije')
+        self.assertContains(self.client.get(self.url), 'Kompletan lager')
         self.assertContains(self.client.get(reverse('staff_admin_panel')), self.url)
         data = self.client.get(self.url, {'catalog': '1', 'q': 'Eva'}).json()
         self.assertEqual(data['total'], 2)
@@ -58,6 +59,39 @@ class BulkActionsTests(TestCase):
             self.assertEqual(self.post(**changes).status_code, 400)
         self.first.refresh_from_db()
         self.assertIsNone(self.first.akcija_postotak)
+
+    def test_complete_stock_schedule_preserves_previous_prices(self):
+        Product.objects.filter(pk=self.first.pk).update(akcijska_cijena=70, akcija_do=self.end)
+        self.first.refresh_from_db()
+        start = timezone.localtime().replace(second=0, microsecond=0) + timedelta(minutes=5)
+        end = start + timedelta(hours=1)
+        response = self.client.post(self.url, {
+            'scope': 'stock', 'percent': '40',
+            'starts_at': start.strftime('%Y-%m-%dT%H:%M'),
+            'ends_at': end.strftime('%Y-%m-%dT%H:%M'),
+        })
+        self.assertEqual(response.status_code, 200, response.content)
+        sale = Akcija.objects.get(kompletan_lager=True)
+        self.assertEqual((sale.pocetak, sale.kraj_lagera), (start, end))
+        self.assertEqual(self.first.prikazna_cijena, Decimal('70'))
+        with patch('EcommerceApp.models.timezone.now', return_value=start):
+            self.assertEqual(self.first.prikazna_cijena, Decimal('60'))
+            self.assertEqual(self.second.prikazna_cijena, Decimal('30'))
+            self.assertEqual(self.other.prikazna_cijena, Decimal('80'))
+        with patch('EcommerceApp.models.timezone.now', return_value=end):
+            self.assertEqual(self.first.prikazna_cijena, Decimal('70'))
+            self.assertEqual(self.second.prikazna_cijena, Decimal('50'))
+        self.first.refresh_from_db()
+        self.assertEqual(self.first.akcijska_cijena, Decimal('70'))
+
+    def test_complete_stock_requires_valid_dates_in_order(self):
+        start = (timezone.localtime() + timedelta(days=1)).strftime('%Y-%m-%dT%H:%M')
+        for end in ('', 'neispravno', start):
+            response = self.client.post(self.url, {
+                'scope': 'stock', 'percent': '20', 'starts_at': start, 'ends_at': end,
+            })
+            self.assertEqual(response.status_code, 400)
+        self.assertFalse(Akcija.objects.filter(kompletan_lager=True).exists())
 
     def test_sale_remaining_label_updates_and_expires(self):
         from django.template.loader import render_to_string

@@ -188,9 +188,9 @@ def _in_stock_variations_qs():
 
 
 def _prefetch_product_cards(qs):
-    from .models import AkcijaFlashLine
+    from .models import Akcija, AkcijaFlashLine
     counts = ProductVariation.objects.filter(artikal_id=OuterRef('pk')).order_by().values('artikal_id').annotate(total=Count('pk')).values('total')
-    return qs.select_related('kategorija', 'kategorija__roditelj', 'brend').annotate(
+    return Akcija.with_stock_sale_percent(qs).select_related('kategorija', 'kategorija__roditelj', 'brend').annotate(
         variation_count=Coalesce(Subquery(counts, output_field=IntegerField()), Value(0)),
     ).prefetch_related(
         Prefetch('varijacije', queryset=_in_stock_variations_qs()),
@@ -286,7 +286,7 @@ def _akcija_products_qs(products_qs):
     """Artikli na akciji — u SQL-u, bez učitavanja cijelog kataloga u Python."""
     today = timezone.localdate()
     from .models import Akcija, AkcijaFlashLine
-    active_ids = [offer.pk for offer in Akcija.objects.filter(tip=Akcija.Tip.AKCIJSKA, aktivan=True)
+    active_ids = [offer.pk for offer in Akcija.objects.filter(tip=Akcija.Tip.AKCIJSKA, aktivan=True, kompletan_lager=False)
                   if offer.flash_still_running()]
     flash_products = AkcijaFlashLine.objects.filter(akcija_id__in=active_ids).filter(
         Q(popust_postotak__gt=0) | Q(popust_postotak__isnull=True, akcija__popust_postotak__gt=0)
@@ -306,9 +306,14 @@ def _akcija_products_qs(products_qs):
         & Q(varijacije__cijena__isnull=True)
         & Q(varijacije__akcijska_cijena__lt=F('cijena'))
     )
-    return products_qs.filter(
-        product_sale | variation_own_price | variation_inherit_price | Q(pk__in=flash_products)
-    ).distinct()
+    sale = product_sale | variation_own_price | variation_inherit_price | Q(pk__in=flash_products)
+    if Akcija.running_stock_sales().exists():
+        in_stock = (
+            Q(na_stanju=True, stanje__gt=0, varijacije__isnull=True)
+            | Q(varijacije__na_stanju=True, varijacije__stanje__gt=0)
+        )
+        sale |= Q(aktivan=True, sakriven_do_stanja=False) & in_stock
+    return products_qs.filter(sale).distinct()
 
 
 def _filter_size_scope_qs(filter_params, base_qs=None, *, request=None):
@@ -1686,16 +1691,19 @@ def _suggest_product_queryset(request=None):
     qs = Product.objects.filter(aktivan=True)
     if not _staff_edit_mode_enabled(request):
         qs = qs.filter(sakriven_do_stanja=False)
-    from .models import AkcijaFlashLine
+    from .models import Akcija, AkcijaFlashLine
     # Only fields needed for the image/name/price result. Pricing is batched;
     # warehouse quantities, category trees and full product details are not read.
-    return qs.only('pk', 'naziv', 'slug', 'slika', 'cijena', 'akcijska_cijena', 'akcija_do').prefetch_related(
+    return Akcija.with_stock_sale_percent(qs).only(
+        'pk', 'naziv', 'slug', 'slika', 'cijena', 'akcijska_cijena', 'akcija_do',
+        'aktivan', 'sakriven_do_stanja', 'na_stanju', 'stanje',
+    ).prefetch_related(
         Prefetch('varijacije', queryset=ProductVariation.objects.only(
-            'pk', 'artikal_id', 'cijena', 'akcijska_cijena', 'slika',
+            'pk', 'artikal_id', 'cijena', 'akcijska_cijena', 'slika', 'na_stanju', 'stanje',
         ).order_by('redoslijed', 'id')),
         Prefetch('akcija_flash_lines', queryset=AkcijaFlashLine.objects.filter(akcija__aktivan=True).select_related('akcija').only(
             'product_id', 'akcija_id', 'popust_postotak', 'akcija__tip', 'akcija__aktivan',
-            'akcija__pocetak', 'akcija__trajanje_sati', 'akcija__popust_postotak',
+            'akcija__pocetak', 'akcija__trajanje_sati', 'akcija__popust_postotak', 'akcija__kompletan_lager',
         )),
     )
 
@@ -3529,7 +3537,7 @@ def _product_page_flash_offer(product):
     from .models import Akcija, AkcijaFlashLine
 
     akcije = (
-        Akcija.objects.filter(aktivan=True, tip=Akcija.Tip.AKCIJSKA)
+        Akcija.objects.filter(aktivan=True, tip=Akcija.Tip.AKCIJSKA, kompletan_lager=False)
         .select_related('kategorija', 'kategorija__roditelj', 'artikal')
         .prefetch_related(
             Prefetch(
@@ -3548,6 +3556,8 @@ def _product_page_flash_offer(product):
         related = []
         for line in rows:
             p = line.product
+            if hasattr(product, 'stock_sale_percent'):
+                p.stock_sale_percent = product.stock_sale_percent
             pct = line.effective_discount_percent(akcija)
             pricing = akcija.flash_item_pricing(p, pct)
             if not pricing:
@@ -3781,7 +3791,7 @@ def add_to_cart(request, slug):
             if flash_id:
                 flash_akcija = (
                     _Akcija.objects.filter(
-                        pk=flash_id, aktivan=True, tip=_Akcija.Tip.AKCIJSKA,
+                        pk=flash_id, aktivan=True, tip=_Akcija.Tip.AKCIJSKA, kompletan_lager=False,
                     )
                     .prefetch_related('flash_lines')
                     .first()
@@ -3794,7 +3804,10 @@ def add_to_cart(request, slug):
                     )
                     if not in_offer:
                         flash_akcija = None
-            if flash_akcija and flash_akcija.flash_still_running():
+            if (
+                flash_akcija and flash_akcija.flash_still_running()
+                and not product.current_stock_sale_percent(variation, in_stock=True)
+            ):
                 pct = flash_akcija.popust_postotak
                 for ln in flash_akcija.flash_line_rows():
                     if ln.product_id == product.pk:
@@ -4659,6 +4672,8 @@ def update_cart(request):
 
 @require_POST
 def apply_coupon(request):
+    from .pricing import _loyalty_osnovica_iz_korpe
+
     cart = Cart(request)
     redirect_to = request.POST.get('next', 'cart')
     if request.POST.get('choose_reward') == '1':
@@ -4678,19 +4693,25 @@ def apply_coupon(request):
         kod = form.cleaned_data['kod']
 
     if kod:
+        cart_items = list(cart)
+        subtotal = sum((item['ukupno_stavka'] for item in cart_items), Decimal('0.00'))
+        eligible_total = _loyalty_osnovica_iz_korpe(cart_items)
         coupon, error = validiraj_kupon(
-            kod, request.user, subtotal=cart.ukupno,
+            kod, request.user, subtotal=subtotal,
             viber_claims=request.session.get(Cart.VIBER_COUPON_CLAIMS_KEY, ()),
         )
         if error:
             messages.error(request, error)
+        elif cart_items and eligible_total <= 0:
+            messages.warning(request, 'Artikli u korpi su već sniženi. Kupon ili kartica mogu se primijeniti samo na artikle po redovnoj cijeni.')
         else:
             cart.set_coupon_code(coupon.kod)
             cart.mark_coupon_keep_after_apply()
             if coupon.vrsta == Coupon.Vrsta.DOSTAVA:
                 messages.success(request, 'Kupon primijenjen — besplatna dostava.')
             elif coupon.vrsta == Coupon.Vrsta.IZNOS:
-                messages.success(request, f'Kupon primijenjen — {coupon.iznos} KM popusta.')
+                discount = min(coupon.iznos or Decimal('0.00'), eligible_total) if cart_items else coupon.iznos
+                messages.success(request, f'Kupon primijenjen — {discount} KM popusta.')
             elif coupon.automatski or coupon.loyalty_kartica_id:
                 pct = coupon.postotak
                 pct_label = int(pct) if pct == int(pct) else pct
@@ -4706,6 +4727,8 @@ def apply_coupon(request):
                     request,
                     f'Kupon primijenjen — popust {pct_label}%.',
                 )
+            if 0 < eligible_total < subtotal:
+                messages.info(request, 'Neki artikli su već sniženi. Kupon ili kartica vrijede samo na artikle po redovnoj cijeni.')
     if redirect_to == 'checkout':
         return redirect('checkout')
     return redirect('cart')
@@ -5466,7 +5489,6 @@ def _account_dashboard_extras(request, *, orders, loyalty, loyalty_card, profil)
         'active_orders_count': sum(1 for order in orders if order.status not in closed),
         'coupons': coupons,
         'coupons_count': len(coupons),
-        'account_latest_order': orders[0] if orders else None,
         'loyalty_spend': spend,
         'loyalty_cap': cap,
         'loyalty_progress_pct': progress_pct,
@@ -9865,6 +9887,16 @@ def staff_loyalty_card_qr(request, card_id):
     response['Content-Disposition'] = f'inline; filename="loyalty-qr-{card.kod}.png"'
     response['Cache-Control'] = 'private, max-age=120'
     return response
+
+
+@never_cache
+@login_required(login_url='login')
+@require_GET
+def account_loyalty_barcode(request):
+    from .loyalty import generisi_loyalty_barcode_png
+
+    card = get_object_or_404(LoyaltyCard, user=request.user)
+    return HttpResponse(generisi_loyalty_barcode_png(card.kod), content_type='image/png')
 
 
 @login_required(login_url='login')

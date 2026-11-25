@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/account-mobile.css' %}?v=20260915-account-complaints">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/account-mobile.css' %}?v=20261125-loyalty-barcode">{% endblock %}
 
 {% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
@@ -81,6 +81,10 @@
                 Kuponi
                 {% if coupons_count %}<span class="acc-dash-nav-count">{{ coupons_count }}</span>{% endif %}
             </a>
+            <a href="#obavjestenja" class="acc-dash-nav-link" data-acc-nav="obavjestenja">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 18h16l-2-4V9a6 6 0 0 0-12 0v5ZM10 21h4M12 1v2"/></svg>
+                Obavještenja
+            </a>
             <a href="#reklamacije" class="acc-dash-nav-link" data-acc-nav="reklamacije">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.5 15a9 9 0 1 0 .4-6.7L1 10"/></svg>
                 Reklamacije
@@ -97,11 +101,39 @@
 
         <div class="acc-dash-main">
             <a class="account-mobile-back" href="#pregled">‹ Moj nalog</a>
-            <div class="acc-panel" data-acc-panel="obavjestenja" hidden><section class="acc-card"><h2>Obavještenja o stanju</h2>{% for notice in account_stock_notices %}<p><a href="{{ notice.product.get_absolute_url }}">{{ notice.product.naziv }}</a><br><small>Pratite email — {{ notice.email }}</small></p>{% empty %}<p>Nemate aktivnih prijava za obavještenja.</p>{% endfor %}</section></div>
+            <div class="acc-panel" data-acc-panel="obavjestenja" hidden>
+                <section class="acc-card acc-stock-notices" aria-labelledby="acc-stock-notices-title">
+                    <header class="acc-stock-notices-head">
+                        <span class="acc-stock-notices-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 18h16l-2-4V9a6 6 0 0 0-12 0v5ZM10 21h4M12 1v2"/></svg>
+                        </span>
+                        <div>
+                            <h2 id="acc-stock-notices-title">Obavještenja o stanju</h2>
+                            <p>Poslat ćemo vam e-mail kada artikal ponovo bude na stanju.</p>
+                        </div>
+                    </header>
+                    {% if account_stock_notices %}
+                    <ul class="acc-stock-notices-list" role="list">
+                        {% for notice in account_stock_notices %}
+                        <li>
+                            <a class="acc-stock-notice" href="{{ notice.product.get_absolute_url }}">
+                                <span>
+                                    <strong>{{ notice.product.naziv }}</strong>
+                                    <small>{{ notice.email }}</small>
+                                </span>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="acc-stock-notices-empty">Nemate aktivnih prijava za obavještenja.</p>
+                    {% endif %}
+                </section>
+            </div>
             {# —— Pregled —— #}
             <div class="acc-panel" data-acc-panel="pregled">
                 {% include 'account/mobile_overview.html' %}
-                {% if account_latest_order %}{% include 'partials/account_order_tracking.html' with order=account_latest_order %}{% endif %}
                 <div class="acc-stats">
                     <article class="acc-stat">
                         <span class="acc-stat-icon" aria-hidden="true">

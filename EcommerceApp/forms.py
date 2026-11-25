@@ -251,11 +251,11 @@ class AkcijaAdminForm(forms.ModelForm):
         if tip == Akcija.Tip.AKCIJSKA:
             if 'popust_postotak' in self.fields:
                 self.fields['popust_postotak'].label = 'Popust (%) na ponudu'
-                self.fields['popust_postotak'].help_text = '% za artikle u tabeli ispod. Linija može imati svoj %. Prazno = bez dodatnog %.'
+                self.fields['popust_postotak'].help_text = 'Za kompletan lager unesite obavezan procenat. Kod odabranih artikala svaka stavka može imati svoj procenat.'
             if 'trajanje_sati' in self.fields:
                 self.fields['trajanje_sati'].help_text = 'Koliko sati ponuda traje od početka.'
             if 'pocetak' in self.fields:
-                self.fields['pocetak'].help_text = 'Prazno = vrijeme spremanja.'
+                self.fields['pocetak'].help_text = 'Za kompletan lager unesite datum i vrijeme. Za odabrane artikle prazno znači vrijeme spremanja.'
         instance = getattr(self, 'instance', None)
         if instance and instance.pk and (getattr(instance, 'tip', None) == Akcija.Tip.QTY_DEAL):
             for tier in instance.qty_tiers.all():
@@ -354,7 +354,18 @@ class AkcijaAdminForm(forms.ModelForm):
             if trigger == Akcija.BundleTrigger.CATEGORY and (not cleaned.get('kategorija')):
                 self.add_error('kategorija', 'Odaberite trigger kategoriju.')
         if tip == Akcija.Tip.AKCIJSKA:
-            if not cleaned.get('trajanje_sati'):
+            if cleaned.get('kompletan_lager'):
+                start = cleaned.get('pocetak')
+                end = cleaned.get('kraj_lagera')
+                if not cleaned.get('popust_postotak'):
+                    self.add_error('popust_postotak', 'Unesite popust veći od 0%.')
+                if not start:
+                    self.add_error('pocetak', 'Unesite datum i vrijeme početka.')
+                if not end:
+                    self.add_error('kraj_lagera', 'Unesite datum i vrijeme završetka.')
+                elif start and end <= start:
+                    self.add_error('kraj_lagera', 'Završetak mora biti nakon početka.')
+            elif not cleaned.get('trajanje_sati'):
                 self.add_error('trajanje_sati', 'Unesite trajanje akcijske ponude u satima.')
         elif tip == Akcija.Tip.QTY_DEAL:
             if not cleaned.get('artikal'):

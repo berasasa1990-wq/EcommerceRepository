@@ -108,10 +108,10 @@
                                 {{ item.cijena_decimal }} KM
                             {% endif %}
                         </p>
-                        {% if summary.kupon_primijenjen %}
-                            {% if item.na_akciji or item.deal_info.has_discount or item.discounted_unit_price %}
-                            <p class="cart-item-sale-notice" role="status">Artikal je već na sniženju.</p>
-                            {% endif %}
+                        {% if item.coupon_excluded %}
+                        <p class="cart-item-sale-notice">Artikal je već snižen. Kupon se ne primjenjuje.</p>
+                        {% elif item.coupon_partly_excluded %}
+                        <p class="cart-item-sale-notice">Kupon vrijedi samo za komade po redovnoj cijeni.</p>
                         {% endif %}
                         {% include 'partials/korpa_nudjenje_inline.html' with nudjenje=item.korpa_nudjenje %}
                     </div>

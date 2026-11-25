@@ -85,6 +85,16 @@ body .staff-admin-page .admin-btn:focus-visible { outline: 3px solid #0094cd; ou
             <div class="admin-btn-text"><strong>Početna stranica</strong><span>Nazivi sekcija i odabir artikala ispod bannera stolica</span></div>
             <span class="admin-btn-arrow" aria-hidden="true">→</span>
         </a>
+        <a href="{% url 'admin:EcommerceApp_akcija_changelist' %}" class="admin-btn">
+            <div class="admin-btn-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 3h8l10 10-8 8L3 11z"/>
+                    <circle cx="7.5" cy="7.5" r="1"/>
+                </svg>
+            </div>
+            <div class="admin-btn-text"><strong>Akcije</strong><span>Kreiranje, uređivanje i podešavanje akcija</span></div>
+            <span class="admin-btn-arrow" aria-hidden="true">→</span>
+        </a>
         <a href="{% url 'staff_bulk_actions' %}" class="admin-btn admin-bulk-actions">
             <div class="admin-btn-icon" aria-hidden="true">%</div>
             <div class="admin-btn-text"><strong>Bulk Akcije</strong><span>Odaberi artikle i postavi sniženje s datumom završetka</span></div>

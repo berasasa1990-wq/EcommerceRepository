@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from .cart import Cart
 from .loyalty import osiguraj_loyalty_karticu
-from .models import Coupon
+from .models import Coupon, Product
 
 
 @override_settings(STORAGES={
@@ -76,3 +76,28 @@ class CouponChoiceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'coupon_choice.html')
         self.assertContains(response, 'Unesite kod kupona ili kartice')
+
+    def test_coupon_is_rejected_for_sale_only_cart_and_applies_to_regular_items(self):
+        sale = Product.objects.create(
+            naziv='Artikal na akciji', cijena=Decimal('50'), akcijska_cijena=Decimal('30'),
+            na_stanju=True, stanje=5,
+        )
+        regular = Product.objects.create(naziv='Redovni artikal', cijena=Decimal('20'), na_stanju=True, stanje=5)
+        Coupon.objects.create(kod='PROC10', naziv='Postotni kupon', postotak=10)
+        Coupon.objects.create(kod='IZNOS40', naziv='Fiksni kupon', vrsta=Coupon.Vrsta.IZNOS, iznos=40)
+        apply = reverse('apply_coupon')
+
+        self.client.post(reverse('add_to_cart', args=[sale.slug]), {'quantity': 1})
+        rejected = self.client.post(apply, {'kod': 'PROC10'}, follow=True)
+        self.assertContains(rejected, 'Artikli u korpi su već sniženi.')
+        self.assertNotIn(Cart.COUPON_KEY, self.client.session)
+        self.assertEqual(rejected.context['summary']['kupon_popust'], Decimal('0.00'))
+
+        self.client.post(reverse('add_to_cart', args=[regular.slug]), {'quantity': 1})
+        for code, expected in [('PROC10', Decimal('2.00')), ('IZNOS40', Decimal('20.00'))]:
+            applied = self.client.post(apply, {'kod': code}, follow=True)
+            self.assertContains(applied, 'Artikal je već snižen. Kupon se ne primjenjuje.')
+            self.assertEqual(applied.context['summary']['kupon_popust'], expected)
+            items = {item['product_id']: item for item in applied.context['cart_items']}
+            self.assertNotIn('coupon_total', items[sale.pk])
+            self.assertEqual(items[regular.pk]['coupon_total'], Decimal('20.00') - expected)

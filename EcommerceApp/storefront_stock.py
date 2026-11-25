@@ -1,6 +1,6 @@
 """Live warehouse availability shared by storefront rendering and cart limits."""
 from copy import copy
-from .models import AkcijaFlashLine, Product, WarehouseStock, ProductVariation
+from .models import Akcija, AkcijaFlashLine, Product, WarehouseStock, ProductVariation
 
 
 def warehouse_quantities(products):
@@ -38,12 +38,13 @@ def storefront_products(products, *, refresh_prices=True):
     if not products:
         return []
     ids = [product.pk for product in products]
+    fields = ['pk', 'stock_sale_percent']
+    if refresh_prices:
+        fields.extend(['cijena', 'akcijska_cijena', 'akcija_do', 'stanje', 'na_stanju', 'magacin_sync_at', 'is_set'])
     prices = {
-        row['pk']: row for row in Product.objects.filter(pk__in=ids).values(
-            'pk', 'cijena', 'akcijska_cijena', 'akcija_do',
-            'stanje', 'na_stanju', 'magacin_sync_at', 'is_set',
-        )
-    } if refresh_prices else {}
+        row['pk']: row
+        for row in Akcija.with_stock_sale_percent(Product.objects.filter(pk__in=ids)).values(*fields)
+    }
     offers = {}
     for line in AkcijaFlashLine.objects.filter(product_id__in=ids, akcija__aktivan=True).select_related('akcija'):
         offers.setdefault(line.product_id, []).append(line)
@@ -57,6 +58,7 @@ def storefront_products(products, *, refresh_prices=True):
     result = []
     for original in products:
         product = copy(original)
+        product.stock_sale_percent = None
         product._prefetched_objects_cache = dict(getattr(original, '_prefetched_objects_cache', {}))
         for field, value in prices.get(product.pk, {}).items():
             if field != 'pk':

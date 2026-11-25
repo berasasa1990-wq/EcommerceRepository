@@ -81,3 +81,76 @@ class FlashCatalogPriceTests(TestCase):
             response = add_to_cart(request, self.product.slug)
             self.assertEqual(response.status_code, 200, response.content)
             self.assertEqual(next(iter(Cart(request)))['cijena_decimal'], Decimal('120'))
+
+    def test_complete_stock_sale_reprices_catalog_and_cart_at_schedule_boundaries(self):
+        from unittest.mock import patch
+        from .storefront_stock import storefront_products
+
+        now = timezone.now()
+        Product.objects.filter(pk=self.other.pk).update(akcijska_cijena=Decimal('75'))
+        self.other.refresh_from_db()
+        variant_item = Product.objects.create(naziv='Varijante', cijena=100)
+        available = ProductVariation.objects.create(
+            artikal=variant_item, naziv='Dostupna', cijena=150, akcijska_cijena=140, na_stanju=True, stanje=2,
+        )
+        sold_out = ProductVariation.objects.create(
+            artikal=variant_item, naziv='Rasprodana', cijena=100, na_stanju=False, stanje=0,
+        )
+        unavailable = Product.objects.create(naziv='Rasprodano', cijena=100, na_stanju=False, stanje=0)
+        Akcija.objects.create(
+            naziv='Kompletan lager', tip=Akcija.Tip.AKCIJSKA, kompletan_lager=True,
+            popust_postotak=10, pocetak=now + timedelta(minutes=1),
+            kraj_lagera=now + timedelta(minutes=2),
+        )
+
+        request = RequestFactory().get('/')
+        SessionMiddleware(lambda r: None).process_request(request)
+        cart = Cart(request)
+        cart.add(self.other)
+        self.assertEqual(next(iter(cart))['cijena_decimal'], Decimal('75'))
+
+        with patch('django.utils.timezone.now', return_value=now + timedelta(minutes=1)):
+            self.assertEqual(next(iter(cart))['cijena_decimal'], Decimal('72'))
+            self.assertEqual(available.prikazna_cijena, Decimal('135'))
+            self.assertEqual(sold_out.prikazna_cijena, Decimal('100'))
+            self.assertEqual(unavailable.prikazna_cijena, Decimal('100'))
+            self.assertEqual(
+                set(_akcija_products_qs(Product.objects.all())), {self.product, self.other, variant_item},
+            )
+            cached = _prefetch_product_cards(Product.objects.filter(pk=self.product.pk)).get()
+            self.assertEqual(cached.prikazna_cijena, Decimal('80'))
+
+        with patch('django.utils.timezone.now', return_value=now + timedelta(minutes=2)):
+            self.assertEqual(next(iter(cart))['cijena_decimal'], Decimal('75'))
+            self.assertEqual(available.prikazna_cijena, Decimal('140'))
+            self.assertEqual(storefront_products([cached])[0].prikazna_cijena, Decimal('80'))
+
+    def test_admin_stock_sale_requires_discount_and_ordered_dates(self):
+        from django.contrib.auth import get_user_model
+        from django.urls import reverse
+
+        user = get_user_model().objects.create_superuser('stock-admin', password='test-password')
+        self.client.force_login(user)
+        url = reverse('admin:EcommerceApp_akcija_add')
+        start = timezone.localtime().replace(microsecond=0) + timedelta(days=1)
+        end = start + timedelta(minutes=90)
+        self.assertContains(self.client.get(url), 'id_kompletan_lager')
+        data = {
+            'naziv': 'Planirani popust', 'tip': Akcija.Tip.AKCIJSKA, 'aktivan': 'on',
+            'redoslijed': '0', 'kompletan_lager': 'on', 'popust_postotak': '10',
+            'pocetak_0': start.date().isoformat(), 'pocetak_1': start.time().isoformat(),
+            'kraj_lagera_0': end.date().isoformat(), 'kraj_lagera_1': end.time().isoformat(),
+            '_save': 'Sačuvaj',
+        }
+        invalid = self.client.post(url, {
+            **data, 'popust_postotak': '0',
+            'kraj_lagera_0': start.date().isoformat(), 'kraj_lagera_1': start.time().isoformat(),
+        })
+        self.assertContains(invalid, 'Završetak mora biti nakon početka.')
+        self.assertContains(invalid, 'Unesite popust veći od 0%.')
+        self.assertEqual(self.client.post(url, data).status_code, 302)
+        sale = Akcija.objects.get(naziv='Planirani popust')
+        self.assertTrue(sale.kompletan_lager)
+        self.assertEqual(sale.pocetak, start)
+        self.assertEqual(sale.zavrsava, end)
+        self.assertFalse(sale.flash_lines.exists())

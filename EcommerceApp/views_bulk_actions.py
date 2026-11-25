@@ -2,7 +2,9 @@
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
+from django import forms
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.core.paginator import Paginator
@@ -11,7 +13,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from .models import Product
+from .models import Akcija, Product
 from .views import _superuser_required, _base_context
 from .views_magacin import _akcija_apply_product_discount
 
@@ -22,16 +24,39 @@ from .views_magacin import _akcija_apply_product_discount
 def bulk_actions(request):
     if request.method == 'POST':
         try:
-            ids = request.POST.getlist('artikal')
-            if not ids or len(ids) > 2000 or any(not value.isdigit() for value in ids):
-                raise ValueError('Označi od 1 do 2000 artikala.')
-            ids = set(map(int, ids))
+            scope = request.POST.get('scope', 'selected')
+            if scope not in ('selected', 'stock'):
+                raise ValueError('Odaberi artikle ili kompletan lager.')
             pct = Decimal(request.POST.get('percent', '').replace(',', '.'))
             if not pct.is_finite() or not 0 < pct < 100:
                 raise ValueError('Sniženje mora biti veće od 0 i manje od 100 %.')
             pct = pct.quantize(Decimal('0.01'))
             if not 0 < pct < 100:
                 raise ValueError('Unesi procenat od 0,01 do 99,99 %.')
+            if scope == 'stock':
+                date_time = forms.DateTimeField()
+                start = date_time.clean(request.POST.get('starts_at'))
+                end = date_time.clean(request.POST.get('ends_at'))
+                if end <= start:
+                    raise ValueError('Završetak akcije mora biti nakon početka.')
+                if end <= timezone.now():
+                    raise ValueError('Završetak akcije mora biti u budućnosti.')
+                Akcija.objects.create(
+                    naziv='Kompletan lager',
+                    tip=Akcija.Tip.AKCIJSKA,
+                    aktivan=True,
+                    kompletan_lager=True,
+                    popust_postotak=pct,
+                    pocetak=start,
+                    kraj_lagera=end,
+                )
+                start_label = timezone.localtime(start).strftime('%d.%m.%Y. %H:%M')
+                end_label = timezone.localtime(end).strftime('%d.%m.%Y. %H:%M')
+                return JsonResponse({'message': f'Kompletan lager −{pct}% od {start_label} do {end_label}.'})
+            ids = request.POST.getlist('artikal')
+            if not ids or len(ids) > 2000 or any(not value.isdigit() for value in ids):
+                raise ValueError('Označi od 1 do 2000 artikala.')
+            ids = set(map(int, ids))
             end = date.fromisoformat(request.POST.get('end_date', ''))
             if end < timezone.localdate():
                 raise ValueError('Datum završetka ne može biti u prošlosti.')
@@ -42,6 +67,8 @@ def bulk_actions(request):
                 for product in products:
                     _akcija_apply_product_discount(product, pct, end)
             return JsonResponse({'message': f'Akcija −{pct}% postavljena na {len(products)} artikala do {end.strftime("%d.%m.%Y.")}'})
+        except ValidationError:
+            return JsonResponse({'error': 'Unesi ispravan datum i vrijeme početka i završetka akcije.'}, status=400)
         except (ValueError, InvalidOperation) as exc:
             return JsonResponse({'error': str(exc) if isinstance(exc, ValueError) and str(exc) and not str(exc).startswith('Invalid isoformat') else 'Unesi ispravan procenat i datum završetka.'}, status=400)
     if request.GET.get('catalog') == '1':

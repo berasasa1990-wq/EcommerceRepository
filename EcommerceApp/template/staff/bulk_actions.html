@@ -1,21 +1,47 @@
 {% extends 'base.html' %}{% load static %}
 {% block page_title %}<title>Bulk Akcije</title>{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/staff-bulk-actions.css' %}?v=1">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/staff-bulk-actions.css' %}?v=3">{% endblock %}
 {% block content %}
 <section class="ba-page" id="bulkActions">
 <a href="{% url 'staff_admin_panel' %}">← Admin panel</a>
 <h1>Bulk Akcije</h1><p>Prikazani su samo artikli na stanju. Pretraži katalog i označi artikle kojima želiš postaviti akciju.</p>
 <div class="ba-toolbar"><input id="baSearch" type="search" placeholder="Naziv, šifra ili barkod — npr. Eva" aria-label="Pretraga artikala"><button id="baSelect" type="button">Označi prikazane</button><button id="baClear" type="button">Poništi odabir</button></div>
-<div class="ba-selection"><span id="baCount">Odabrano: 0</span><button id="baOpen" type="button" disabled>Postavi</button></div>
+<div class="ba-selection">
+    <span id="baCount">Odabrano: 0</span>
+    <div class="ba-selection-actions">
+        <button id="baOpenStock" type="button" aria-pressed="false">Kompletan lager</button>
+        <button id="baOpen" type="button" disabled>Postavi za odabrane</button>
+    </div>
+</div>
 <p id="baStatus" role="status" aria-live="polite"></p>
+<p id="baSaved" role="status"></p>
 <div id="baCatalog" class="ba-catalog"></div>
 <div class="ba-pagination"><button id="baPrev" type="button">← Prethodna</button><span id="baPage"></span><button id="baNext" type="button">Sljedeća →</button></div>
 <dialog id="baDialog"><form id="baForm">{% csrf_token %}
 <h2>Postavi akciju</h2><p id="baSummary"></p>
+<input type="hidden" id="baScope" name="scope" value="selected">
 <label for="baPercent">Sniženje (%)</label><input id="baPercent" name="percent" type="number" min="0.01" max="99.99" step="0.01" required placeholder="npr. 20">
-<label for="baEnd">Akcija traje do (uključujući taj datum)</label><input id="baEnd" name="end_date" type="date" min="{{ today }}" required>
-<p>Odabrani artikli dobijaju isti procenat sniženja. Postojeće akcije artikala i njihovih varijacija bit će zamijenjene.</p>
+<fieldset id="baSelectedFields" class="ba-schedule">
+    <label for="baEnd">Akcija traje do (uključujući taj datum)</label>
+    <input id="baEnd" name="end_date" type="date" min="{{ today }}" required>
+    <p>Odabrani artikli dobijaju isti procenat sniženja. Postojeće akcije artikala i njihovih varijacija bit će zamijenjene.</p>
+</fieldset>
+<fieldset id="baStockFields" class="ba-schedule" hidden disabled>
+    <fieldset class="ba-schedule-time">
+        <legend>Početak akcije</legend>
+        <label class="ba-schedule-date">Datum<input id="baStartDate" type="date" required></label>
+        <label>Sat<input id="baStartHour" type="number" inputmode="numeric" min="0" max="23" step="1" placeholder="00–23" required></label>
+        <label>Minuta<input id="baStartMinute" type="number" inputmode="numeric" min="0" max="59" step="1" placeholder="00–59" required></label>
+    </fieldset>
+    <fieldset class="ba-schedule-time">
+        <legend>Završetak akcije</legend>
+        <label class="ba-schedule-date">Datum<input id="baEndDate" type="date" required></label>
+        <label>Sat<input id="baEndHour" type="number" inputmode="numeric" min="0" max="23" step="1" placeholder="00–23" required></label>
+        <label>Minuta<input id="baEndMinute" type="number" inputmode="numeric" min="0" max="59" step="1" placeholder="00–59" required></label>
+    </fieldset>
+    <p>Vrijeme je po Sarajevu. Popust za artikle i varijacije na stanju računa se od regularne cijene. Ako je postojeća akcijska cijena niža, ona ostaje u primjeni.</p>
+</fieldset>
 <p id="baError" role="alert"></p><div class="ba-dialog-actions"><button id="baCancel" type="button">Odustani</button><button id="baApply" type="submit">Postavi akciju</button></div>
 </form></dialog>
-</section><script src="{% static 'js/staff-bulk-actions.js' %}?v=1" defer></script>
+</section><script src="{% static 'js/staff-bulk-actions.js' %}?v=4" defer></script>
 {% endblock %}

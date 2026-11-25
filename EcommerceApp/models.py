@@ -27,6 +27,13 @@ def _izracunaj_akcijsku_od_postotka(bazna_cijena, postotak):
     return (bazna_cijena * faktor).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
+def _price_with_stock_sale(price, regular_price, percent):
+    stock_sale_price = _izracunaj_akcijsku_od_postotka(regular_price, percent)
+    if stock_sale_price is None:
+        return price
+    return min(price, stock_sale_price)
+
+
 def _izracunaj_postotak_umanjenja(bazna_cijena, prikazna_cijena):
     if (
         bazna_cijena is None
@@ -2424,6 +2431,8 @@ class Akcija(models.Model):
         null=True,
         verbose_name='Početak akcije',
     )
+    kompletan_lager = models.BooleanField(default=False, verbose_name='Kompletan lager')
+    kraj_lagera = models.DateTimeField(blank=True, null=True, verbose_name='Završetak akcije')
     trajanje_sati = models.PositiveSmallIntegerField(
         blank=True,
         null=True,
@@ -2486,6 +2495,8 @@ class Akcija(models.Model):
 
     @property
     def zavrsava(self):
+        if self.tip == self.Tip.AKCIJSKA and self.kompletan_lager:
+            return self.kraj_lagera
         if not self.pocetak or not self.trajanje_sati:
             return None
         from datetime import timedelta
@@ -3062,16 +3073,30 @@ class Akcija(models.Model):
             return f'/{self.link_dugmeta.strip("/")}/'
         return reverse('register')
 
+    @classmethod
+    def running_stock_sales(cls):
+        now = timezone.now()
+        return cls.objects.filter(
+            tip=cls.Tip.AKCIJSKA, aktivan=True, kompletan_lager=True,
+            pocetak__lte=now, kraj_lagera__gt=now, popust_postotak__gt=0,
+        ).order_by('-popust_postotak', 'pk')
+
+    @classmethod
+    def with_stock_sale_percent(cls, products):
+        percent = cls.running_stock_sales().values('popust_postotak')[:1]
+        return products.annotate(stock_sale_percent=models.Subquery(percent))
+
     def flash_still_running(self):
         """Akcijska ponuda: aktivan i (nema kraja ili još nije istekla)."""
         if not self.aktivan or (self.tip != self.Tip.AKCIJSKA and self.tip not in self.HOME_TIMED_HOURS):
             return False
-        if self.pocetak and timezone.now() < self.pocetak:
+        now = timezone.now()
+        if (self.kompletan_lager and not self.pocetak) or (self.pocetak and now < self.pocetak):
             return False
         end = self.zavrsava
         if end is None:
-            return self.tip == self.Tip.AKCIJSKA
-        return timezone.now() < end
+            return self.tip == self.Tip.AKCIJSKA and not self.kompletan_lager
+        return now < end
 
     def flash_remaining_seconds(self):
         end = self.zavrsava
@@ -3084,12 +3109,12 @@ class Akcija(models.Model):
         if not product or not self.flash_still_running():
             return False
         # offer_product: bilo koji artikal iz ponude (max 4)
-        if not self.pk:
+        if not self.pk or self.kompletan_lager:
             return False
         return self.flash_lines.filter(product_id=product.pk).exists()
 
     def flash_line_rows(self):
-        if self.tip != self.Tip.AKCIJSKA or not self.pk:
+        if self.tip != self.Tip.AKCIJSKA or self.kompletan_lager or not self.pk:
             return []
         return list(
             self.flash_lines.select_related('product', 'product__kategorija')
@@ -3104,11 +3129,12 @@ class Akcija(models.Model):
         bazna = product.bazna_cijena
         pct = popust_postotak if popust_postotak is not None else self.popust_postotak
         snizena = _izracunaj_akcijsku_od_postotka(bazna, pct)
-        if snizena is None:
+        if product.current_stock_sale_percent():
             snizena = product.prikazna_cijena
-            has_discount = bool(snizena is not None and bazna is not None and snizena < bazna)
-        else:
-            has_discount = bool(bazna is not None and snizena < bazna)
+            pct = _izracunaj_postotak_umanjenja(bazna, snizena)
+        elif snizena is None:
+            snizena = product.prikazna_cijena
+        has_discount = bool(snizena is not None and bazna is not None and snizena < bazna)
         usteda = (
             (bazna - snizena).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             if has_discount
@@ -3722,18 +3748,28 @@ class Product(models.Model):
             return None
         prices = []
         for row in self.price_offer_lines():
-            if row.akcija.flash_still_running():
+            if not row.akcija.kompletan_lager and row.akcija.flash_still_running():
                 price = _izracunaj_akcijsku_od_postotka(base, row.effective_discount_percent())
                 if price is not None and price < base:
                     prices.append(price)
         return min(prices) if prices else None
+
+    def current_stock_sale_percent(self, variation=None, *, in_stock=None):
+        target = variation if variation is not None else self
+        if in_stock is None:
+            in_stock = target.na_stanju and target.stanje > 0
+        if not (self.pk and self.aktivan and not self.sakriven_do_stanja and in_stock):
+            return None
+        if hasattr(self, 'stock_sale_percent'):
+            return self.stock_sale_percent
+        return Akcija.running_stock_sales().values_list('popust_postotak', flat=True).first()
 
     @property
     def bazna_cijena(self):
         return self.cijena
 
     @property
-    def prikazna_cijena(self):
+    def price_before_stock_sale(self):
         prices = [self.cijena] if self.cijena is not None else []
         if _akcija_jos_vazi(self.akcija_do) and self.akcijska_cijena is not None:
             prices.append(self.akcijska_cijena)
@@ -3741,6 +3777,10 @@ class Product(models.Model):
         if flash_price is not None:
             prices.append(flash_price)
         return min(prices) if prices else None
+
+    @property
+    def prikazna_cijena(self):
+        return _price_with_stock_sale(self.price_before_stock_sale, self.bazna_cijena, self.current_stock_sale_percent())
 
     def _own_pakovanje_komada(self):
         """Pakovanje sa polja artikla (bez varijacija) — baza za fallback."""
@@ -4174,7 +4214,7 @@ class ProductVariation(models.Model):
         return self.cijena if self.cijena is not None else self.artikal.cijena
 
     @property
-    def efektivna_akcijska_cijena(self):
+    def price_before_stock_sale(self):
         prices = []
         if self.akcijska_cijena is not None and self.akcijska_cijena < self.bazna_cijena:
             prices.append(self.akcijska_cijena)
@@ -4185,7 +4225,12 @@ class ProductVariation(models.Model):
         flash_price = self.artikal.flash_sale_price(self.bazna_cijena)
         if flash_price is not None:
             prices.append(flash_price)
-        return min(prices) if prices else None
+        return min(prices, default=self.bazna_cijena)
+
+    @property
+    def efektivna_akcijska_cijena(self):
+        price = self.prikazna_cijena
+        return price if price < self.bazna_cijena else None
 
     @property
     def na_akciji(self):
@@ -4193,9 +4238,9 @@ class ProductVariation(models.Model):
 
     @property
     def prikazna_cijena(self):
-        if self.na_akciji:
-            return self.efektivna_akcijska_cijena
-        return self.bazna_cijena
+        return _price_with_stock_sale(
+            self.price_before_stock_sale, self.bazna_cijena, self.artikal.current_stock_sale_percent(self),
+        )
 
     @property
     def akcija_postotak_prikaz(self):

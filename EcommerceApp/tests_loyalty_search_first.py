@@ -78,3 +78,21 @@ class LoyaltySearchFirstTests(TestCase):
         card, user = izdaj_loyalty_karticu('Test', 'Kupac', '061234567')
         response = self.client.post(loyalty_member_url(card.kod), {'action': 'evidentiraj_kupovinu', 'iznos': '-10'}, follow=True)
         self.assertNotContains(response, 'id="purchaseViberDialog"')
+
+
+class AccountLoyaltyBarcodeTests(TestCase):
+    def test_signed_in_customer_receives_barcode_of_own_card_number(self):
+        from .loyalty import generisi_loyalty_barcode_png
+
+        user = User.objects.create_user('barcode-member')
+        LoyaltyCard.objects.create(user=user, kod='482913', barkod='913482')
+        url = reverse('account_loyalty_barcode')
+
+        self.assertEqual(self.client.get(url).status_code, 302)
+        self.client.force_login(user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/png')
+        self.assertIn('no-store', response['Cache-Control'])
+        self.assertEqual(response.content, generisi_loyalty_barcode_png('482913'))
+        self.assertEqual(self.client.get(url, {'card_id': '999'}).content, response.content)

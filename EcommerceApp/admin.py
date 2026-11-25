@@ -1601,7 +1601,7 @@ class AkcijaAdmin(admin.ModelAdmin):
     inlines = [AkcijaBundleLineInline]
 
     class Media:
-        js = ('admin/js/akcija_admin.v20260911.js?v=20261111-plus-percent',)
+        js = ('admin/js/akcija_admin.v20260911.js?v=20261124-kompletan-lager',)
         css = {'all': ('admin/css/akcija-admin.v20260910.css',)}
 
     # --- Fieldseti: svako polje SAMO JEDNOM (admin.E012) ---
@@ -1622,6 +1622,7 @@ class AkcijaAdmin(admin.ModelAdmin):
                 'popust_postotak',
                 'gratis_artikal',
                 'plus_artikli',
+                'kompletan_lager',
             ),
             'description': (
                 'Pretraži artikle po nazivu ili šifri. Popust je opcionalan; prazno znači bez dodatnog popusta.'
@@ -1633,11 +1634,11 @@ class AkcijaAdmin(admin.ModelAdmin):
             'fields': (
                 'pocetak',
                 'trajanje_sati',
+                'kraj_lagera',
             ),
             'description': (
-                'Sniženje važi samo za artikle odabrane u tabeli. '
-                'Trajanje u satima (od početka). Do 4 artikla u tabeli ispod. '
-                'Snižene cijene se prikazuju na redovnim karticama artikala i u korpi.'
+                'Odaberite do 4 artikla ili uključite Kompletan lager. '
+                'Za kompletan lager unesite početak i završetak akcije.'
             ),
         }),
     )
@@ -1721,7 +1722,7 @@ class AkcijaAdmin(admin.ModelAdmin):
         if tip == Akcija.Tip.POSLIJE_NARUDZBE:
             return self._FS_BASE
         if tip == Akcija.Tip.AKCIJSKA:
-            return self._FS_BASE + (('Popust na odabrane artikle', {'fields': ('popust_postotak',)}), ('Trajanje sniženja', {'fields': ('pocetak', 'trajanje_sati'), 'description': 'Sniženje važi od početka do isteka unesenog broja sati.'}))
+            return self._FS_BASE + (('Artikli i popust', {'fields': ('kompletan_lager', 'popust_postotak')}),) + self._FS_FLASH
         if tip == Akcija.Tip.QTY_DEAL:
             return self._FS_BASE + (('Artikal', {'fields': ('artikal',)}),) + self._FS_QTY + self._FS_PRIKAZ
         return self.fieldsets
@@ -1735,6 +1736,8 @@ class AkcijaAdmin(admin.ModelAdmin):
             return [bundle, flash]
         if tip == Akcija.Tip.BUNDLE:
             return [bundle]
+        if tip == Akcija.Tip.AKCIJSKA and request.POST.get('kompletan_lager') in ('on', 'true', '1'):
+            return []
         if tip in (Akcija.Tip.AKCIJSKA, Akcija.Tip.POSLIJE_NARUDZBE):
             return [flash]
         return []
@@ -1811,7 +1814,11 @@ class AkcijaAdmin(admin.ModelAdmin):
             obj.flash_trigger = Akcija.FlashTrigger.OFFER_PRODUCT
             obj.artikal = None
             obj.kategorija = None
-        if obj.tip == Akcija.Tip.AKCIJSKA and (not obj.pocetak):
+        if obj.tip != Akcija.Tip.AKCIJSKA:
+            obj.kompletan_lager = False
+        if not obj.kompletan_lager:
+            obj.kraj_lagera = None
+        if obj.tip == Akcija.Tip.AKCIJSKA and not obj.pocetak:
             from django.utils import timezone
             obj.pocetak = timezone.now()
         super().save_model(request, obj, form, change)
@@ -1842,7 +1849,7 @@ class AkcijaAdmin(admin.ModelAdmin):
             if not obj.qty_deal_tiers():
                 from django.contrib import messages as django_messages
                 django_messages.warning(request, '„Kupi više” treba barem jedan popust (npr. 2 kom → 10%).')
-        elif obj.tip == Akcija.Tip.AKCIJSKA:
+        elif obj.tip == Akcija.Tip.AKCIJSKA and not obj.kompletan_lager:
             n = obj.flash_lines.count()
             if n < 1:
                 from django.contrib import messages as django_messages
