@@ -55,12 +55,13 @@
     <div class="product-detail-grid">
         <div class="product-gallery has-thumbnails">
             <div class="product-gallery-main" id="mainProductImageWrap">
+                {% if product.katalog_na_akciji %}
+                    {% include 'partials/product_sale_badge.html' with sale_percent=product.katalog_akcija_postotak only %}
+                {% endif %}
                 <div class="pd-reference-toolbar">
                 <div class="product-gallery-overlays">
-                    {% if product.je_novitet %}
+                    {% if product.je_novitet and not product.katalog_na_akciji %}
                     <span class="product-detail-corner-badge product-detail-corner-badge--novitet is-pulse" aria-label="Noviteti">NOVITETI</span>
-                    {% elif product.na_akciji and product.akcija_postotak %}
-                    <span class="product-detail-corner-badge">-{{ product.akcija_postotak|floatformat:0 }}%</span>
                     {% endif %}
                 </div>
                 </div>

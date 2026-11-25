@@ -7,7 +7,7 @@
 {% endblock %}
 {% block extra_css %}
 {% if filters_active %}<link rel="stylesheet" href="{% static 'css/category-product-images.css' %}?v=20261117-mobile-search-centered">{% endif %}
-{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-uploaded-banner.css' %}?v=20261123-shared-banner-width">{% endif %}
+{% if not filters_active %}<link rel="stylesheet" href="{% static 'css/home-uploaded-banner.css' %}?v=20261125-timed-banner">{% endif %}
 {% if timed_home_offers %}<link rel="stylesheet" href="{% static 'css/home-timed-offers.css' %}?v=20261123-shared-banner-width">{% endif %}
 
 <style>
@@ -516,7 +516,7 @@ html body.home-mobile-reference .home-products .product-catalog article.product-
     <div class="product-catalog product-catalog--compact home-product-catalog">
         <div class="catalog-layout catalog-layout--full">
             <div class="catalog-products">
-                {% include 'partials/home_product_carousel.html' with products=offer.products visible_mobile=2 use_home_image=True timed_offer_card=True %}
+                {% include 'partials/home_product_carousel.html' with products=offer.products visible_mobile=2 use_home_image=True %}
             </div>
         </div>
     </div>

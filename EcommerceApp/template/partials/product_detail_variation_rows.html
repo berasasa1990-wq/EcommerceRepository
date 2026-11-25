@@ -9,9 +9,7 @@
             <span class="price-original card-dwell-was">{{ var.bazna_cijena }} KM</span>
             <span class="card-dwell-sale-cluster">
                 <span class="price-sale card-dwell-now">{{ var.prikazna_cijena }} KM</span>
-                {% if var.akcija_postotak_prikaz %}
-                <span class="card-dwell-badge">−{{ var.akcija_postotak_prikaz }}%</span>
-                {% endif %}
+                {% include 'partials/product_sale_badge.html' with sale_percent=var.akcija_postotak_prikaz only %}
             </span>
         </span>
         {% else %}

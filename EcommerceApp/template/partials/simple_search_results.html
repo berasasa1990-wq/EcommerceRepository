@@ -4,10 +4,24 @@
     {% include 'partials/catalog_pagination.html' with pagination_placement='top' %}
     <div class="product-grid product-grid--catalog">
         {% for item in simple_search_items %}
-        <a class="product-card product-card--catalog" href="{{ item.url }}" style="display:flex;flex-direction:column;padding:12px;text-decoration:none;color:inherit">
-            {% if item.image %}<img src="{{ item.image }}" alt="" width="240" height="240" loading="lazy" decoding="async" style="width:100%;height:auto;aspect-ratio:1;object-fit:contain">{% endif %}
+        <a class="product-card product-card--catalog{% if item.regular_price %} product-card--on-sale{% endif %}" href="{{ item.url }}" style="display:flex;flex-direction:column;padding:12px;text-decoration:none;color:inherit">
+            {% if item.regular_price %}
+            <div class="product-image">
+                {% include 'partials/product_sale_badge.html' with sale_percent=item.sale_percent only %}
+                {% if item.image %}<img src="{{ item.image }}" alt="" width="240" height="240" loading="lazy" decoding="async">{% endif %}
+            </div>
+            {% elif item.image %}
+            <img src="{{ item.image }}" alt="" width="240" height="240" loading="lazy" decoding="async" style="width:100%;height:auto;aspect-ratio:1;object-fit:contain">
+            {% endif %}
             <span class="product-card__title" style="margin:12px 0">{{ item.naziv }}</span>
+            {% if item.regular_price %}
+            <div class="product-sale-row" style="margin-top:auto">
+                <span class="price-original">{{ item.regular_price }} KM</span>
+                <strong class="price-sale">{{ item.price }} KM</strong>
+            </div>
+            {% else %}
             <strong class="price-current" style="margin-top:auto">{{ item.price }} KM</strong>
+            {% endif %}
         </a>
         {% empty %}<p class="catalog-empty">Nema artikala.</p>{% endfor %}
     </div>

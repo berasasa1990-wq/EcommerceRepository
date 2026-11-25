@@ -191,6 +191,14 @@ class SearchRankingTests(TestCase):
         self.assertNotContains(response, 'data-catalog-add')
         self.assertEqual(response.context['meta_robots_content'], 'noindex, follow')
 
+    def test_full_search_uses_shared_sale_badge_and_prices(self):
+        Product.objects.filter(pk=self.boot.pk).update(cijena=100, akcijska_cijena=75)
+        response = self.client.get('/', {'q': 'MT12221'})
+        self.assertContains(response, 'product-sale-badge">−25%')
+        self.assertContains(response, 'price-original">100.00 KM')
+        self.assertContains(response, 'price-sale">75.00 KM')
+        self.assertNotContains(response, 'data-catalog-add')
+
     def test_warm_suggestions_only_query_matching_products_and_prices(self):
         self.suggest('mašinica')
         with CaptureQueriesContext(connection) as queries:

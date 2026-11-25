@@ -1,7 +1,7 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from django.test import TestCase, RequestFactory
+from django.test import TestCase, RequestFactory, override_settings
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.utils import timezone
 
@@ -154,3 +154,55 @@ class FlashCatalogPriceTests(TestCase):
         self.assertEqual(sale.pocetak, start)
         self.assertEqual(sale.zavrsava, end)
         self.assertFalse(sale.flash_lines.exists())
+
+    def test_all_catalog_discounts_use_the_same_card_badge(self):
+        from unittest.mock import patch
+
+        from django.template.loader import render_to_string
+        from .storefront_stock import storefront_products
+
+        now = timezone.now()
+        end = now + timedelta(hours=1)
+        Akcija.objects.create(
+            naziv='Kompletan lager', tip=Akcija.Tip.AKCIJSKA, kompletan_lager=True,
+            popust_postotak=25, pocetak=now, kraj_lagera=end,
+        )
+        template = 'partials/product_catalog_card.html'
+        product = storefront_products([self.other])[0]
+        card = render_to_string(template, {'product': product, 'hide_variations': True})
+        self.assertIn('product-card--on-sale', card)
+        self.assertIn('product-sale-badge">−25%', card)
+        self.assertNotIn('product-sale-ribbon', card)
+
+        with patch('django.utils.timezone.now', return_value=end):
+            product = storefront_products([product])[0]
+            card = render_to_string(template, {'product': product, 'hide_variations': True})
+        self.assertNotIn('product-card--on-sale', card)
+        self.assertNotIn('product-sale-badge', card)
+
+        Product.objects.filter(pk=self.other.pk).update(akcijska_cijena=Decimal('60'))
+        with patch('django.utils.timezone.now', return_value=end):
+            product = storefront_products([product])[0]
+            card = render_to_string(template, {'product': product, 'hide_variations': True})
+        self.assertIn('product-sale-badge">−25%', card)
+
+
+    @override_settings(STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    })
+    def test_product_detail_displays_current_discount_on_gallery_and_variation(self):
+        from django.urls import reverse
+
+        path = reverse('product_detail', args=[self.product.slug])
+        response = self.client.get(path)
+        self.assertContains(response, 'product-sale-badge">−20%')
+        self.assertRegex(response.content.decode(), r'class="price-sale card-dwell-now">80[.,]00 KM')
+
+        ProductVariation.objects.create(
+            artikal=self.product, naziv='Veliki', cijena=150, na_stanju=True, stanje=20,
+        )
+        response = self.client.get(path)
+        self.assertContains(response, 'product-sale-badge">−20%', count=2)
+        Akcija.objects.filter(pk=self.offer.pk).update(aktivan=False)
+        self.assertNotContains(self.client.get(path), 'product-sale-badge')

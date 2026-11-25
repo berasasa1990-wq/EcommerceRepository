@@ -1708,18 +1708,26 @@ def _suggest_product_queryset(request=None):
     )
 
 
-def _simple_search_items(products):
+def _simple_search_items(products, *, show_discounts=False):
+    from .models import _izracunaj_postotak_umanjenja
+
     items = []
     for product in products:
         variations = list(product.varijacije.all())
         for variation in variations:
             variation.artikal = product
         image = product.slika or next((v.slika for v in variations if v.slika), None)
-        items.append({
+        sku = min(variations, key=lambda variant: variant.prikazna_cijena, default=product)
+        price = sku.prikazna_cijena
+        item = {
             'naziv': product.naziv, 'slug': product.slug, 'url': product.get_absolute_url(),
             'image': _suggest_thumb_url(image) if image else '',
-            'price': f'{_effective_product_price(product):.2f}',
-        })
+            'price': f'{price:.2f}',
+        }
+        if show_discounts and price < sku.bazna_cijena:
+            item['regular_price'] = f'{sku.bazna_cijena:.2f}'
+            item['sale_percent'] = _izracunaj_postotak_umanjenja(sku.bazna_cijena, price)
+        items.append(item)
     return items
 
 
@@ -2857,7 +2865,7 @@ def home(request):
         'showcase_brands': _showcase_brands() if not filters_active else [],
         'search_products': search_products,
         'simple_search': simple_search,
-        'simple_search_items': _simple_search_items(search_products) if simple_search else [],
+        'simple_search_items': _simple_search_items(search_products, show_discounts=True) if simple_search else [],
         'page_obj': page_obj,
         'filters_active': filters_active,
         'filter_params': filter_params,

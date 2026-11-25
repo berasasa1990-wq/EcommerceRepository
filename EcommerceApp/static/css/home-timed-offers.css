@@ -140,63 +140,6 @@ html body.home-mobile-reference main > .home-products--timed {
         min-width: 0 !important;
         max-width: none !important;
     }
-
-    html body.home-mobile-reference main .home-products--timed .product-catalog article.product-card--catalog.product-card--unified.product-card--timed-offer {
-        position: relative;
-        border: 0 !important;
-        background: #fff !important;
-        border-radius: 12px !important;
-        box-shadow: none !important;
-        padding: 0 10px 10px !important;
-        overflow: hidden;
-    }
-
-    html body.home-mobile-reference main .home-products--timed .product-card .product-card__title {
-        text-align: center;
-    }
-
-    html body.home-mobile-reference main .home-products--timed .product-card .product-sale-row {
-        display: flex !important;
-        justify-content: center;
-        align-items: baseline;
-        flex-wrap: wrap;
-        gap: 3px 7px;
-    }
-
-    html body.home-mobile-reference main .home-products--timed .product-card .price-original {
-        order: -1;
-        color: #555 !important;
-        text-decoration: line-through;
-    }
-
-    html body.home-mobile-reference main .home-products--timed .product-card .price-sale {
-        color: #be3906 !important;
-        font-weight: 850;
-    }
-
-    html body.home-mobile-reference main .home-products--timed .product-card button.product-card-add-btn {
-        --site-action-gradient: linear-gradient(#ff9500, #d73900);
-        background: var(--site-action-gradient) !important;
-        color: #fff !important;
-    }
-
-    .home-timed-sale-badge {
-        position: absolute;
-        z-index: 5;
-        top: clamp(8px, 2.5vw, 20px);
-        left: clamp(6px, 2vw, 16px);
-        padding: 4px 8px;
-        border: 1px solid #fff;
-        border-radius: 7px;
-        background: #d10c20;
-        color: #fff;
-        font-size: clamp(15px, 4vw, 32px);
-        font-style: italic;
-        font-weight: 900;
-        line-height: 1;
-        pointer-events: none;
-        transform: rotate(-8deg);
-    }
 }
 
 @media (max-width: 370px) {
